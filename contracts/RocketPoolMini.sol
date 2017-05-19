@@ -12,7 +12,7 @@ import "./contract/Owned.sol";
 
 contract RocketPoolMini is Owned {
 
-	/**** Properties ***********/
+    /**** Properties ***********/
 
     // Hub address
     address private rocketHubAddress;
@@ -136,7 +136,7 @@ contract RocketPoolMini is Owned {
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         status = rocketSettings.getPoolDefaultStatus();
         statusChangeTime = 0;
-	}
+    }
 
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
@@ -157,32 +157,32 @@ contract RocketPoolMini is Owned {
     /// @dev Returns the status of this pool
     function getStatus() public constant returns(uint)   {
         return status;
-	}
+    }
 
     /// @dev Returns the time the status last changed to its current status
     function getStatusChangeTime() public constant returns(uint256)   {
         return statusChangeTime;
-	}
+    }
 
     /// @dev Gets the current Ether amount sent for staking
     function getStakingBalance() public constant returns(uint256)   {
         return stakingBalance;
-	}
+    }
 
     /// @dev Gets the current Ether amount sent for staking
     function getStakingBalanceReceived() public constant returns(uint256)   {
         return stakingBalanceReceived;
-	}
+    }
 
     /// @dev Gets the current staking duration
     function getStakingDuration() public constant returns(uint256)   {
         return stakingDuration;
-	}
+    }
  
     /// @dev Gets the node address this mini pool is attached too
     function getNodeAddress() public constant returns(address)   {
         return rocketNodeAddress;
-	}
+    }
 
      /// @dev Returns true if this pool is able to send a deposit to Casper
     function getStakingDepositTimeMet() public constant returns(bool)   {
@@ -192,7 +192,7 @@ contract RocketPoolMini is Owned {
             return true;
         }
         return false;
-	}
+    }
 
     /// @dev Returns true if this pool is able to request withdrawal from Casper
     function getStakingRequestWithdrawalTimeMet() public constant returns(bool)   {
@@ -200,7 +200,7 @@ contract RocketPoolMini is Owned {
             return true;
         }
         return false;
-	}
+    }
 
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
     function getStakingWithdrawalTimeMet() public constant returns(bool)   {
@@ -212,7 +212,7 @@ contract RocketPoolMini is Owned {
             return true;
         }
         return false; 
-	}
+    }
 
 
     /// @dev Set the node address this mini pool is attached too
@@ -220,12 +220,12 @@ contract RocketPoolMini is Owned {
         rocketNodeAddress = nodeAddress;
         rocketNodeValidationCode = nodeValidationCode;
         rocketNodeRandao = nodeRandao;
-	}
+    }
 
     /// @dev Gets the current staking duration
     function setStakingDuration(uint256 newStakingDuration) public onlyLatestRocketPool   {
         stakingDuration = newStakingDuration;
-	}
+    }
 
  
 
@@ -235,22 +235,22 @@ contract RocketPoolMini is Owned {
     /// @dev Returns the user count for this pool
     function getUserCount() public constant returns(uint256)   {
         return userAddresses.length;
-	}
+    }
 
     /// @dev Returns the true if the user is in this pool
     function getUserExists(address userAddress) public constant returns(bool)   {
         return users[userAddress].exists;
-	}
+    }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
     function getUserHasDeposit(address userAddress) public constant returns(bool)   {
         return users[userAddress].exists && users[userAddress].balance > 0 ? true : false;
-	}
+    }
 
     /// @dev Returns the amount of the users deposit
     function getUserDeposit(address userAddress) public constant isPoolUser(userAddress) returns(uint256)   {
         return users[userAddress].balance;
-	}
+    }
 
     /// @dev Returns the main user properties
     function getUser(address userAddress) public constant isPoolUser(userAddress) returns(address, uint256, uint256)   {
@@ -258,13 +258,12 @@ contract RocketPoolMini is Owned {
                 users[userAddress].balance,
                 users[userAddress].created
         );
-	}
+    }
 
     /// @dev Returns the users partner address
     function getUserPartner(address userAddress) public constant isPoolUser(userAddress) returns(address)   {
         return users[userAddress].partnerAddress;
-	}
-
+    }
 
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address userAddress, uint256 updatedBalance, int256 updatedRewards, uint256 updatedFees) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
@@ -275,7 +274,7 @@ contract RocketPoolMini is Owned {
             return true;
         }
         return false;
-	}
+    }
 
 
     /// @dev Register a new user, only the latest version of the parent pool contract can do this
@@ -307,7 +306,7 @@ contract RocketPoolMini is Owned {
             }
         }
         throw;
-	}
+    }
 
 
     /// @dev Removes a user from the pool
@@ -404,7 +403,7 @@ contract RocketPoolMini is Owned {
     }
 
    
-    /// @dev Sets the status of the pool based on several parameters
+    /// @dev Sets the status of the pool based on several parameters 
     function updateStatus() public returns(bool) {
         // Get the settings to determine the status
         RocketHub rocketHub = RocketHub(rocketHubAddress);
