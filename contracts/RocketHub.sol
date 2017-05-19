@@ -198,12 +198,12 @@ contract RocketHub is Owned  {
     function setRocketNodeCheckin(address nodeAddress, uint256 averageLoad, uint256 lastCheckin) public onlyRegisteredNode(nodeAddress) onlyLatestRocketPool  {
         nodes[nodeAddress].averageLoad = averageLoad;
         nodes[nodeAddress].lastCheckin = lastCheckin;
-	}
+    }
 
     /// @dev Rocket Pool can manually/automatically deactivate a node if it is down or running badly (high load), this will stop the node accepting new pools to be assigned to it
     function setRocketNodeActive(address nodeAddress, bool activate) public onlyRegisteredNode(nodeAddress) onlyLatestRocketPool  {
         nodes[nodeAddress].active = activate;
-	}
+    }
 
     /// @dev Removes a node from storage 
     /// @param nodeAddressToRemove The node to remove.
@@ -247,7 +247,7 @@ contract RocketHub is Owned  {
                 nodes[nodeAddress].active, 
                 nodes[nodeAddress].exists
         );
-	}
+    }
 
     /// @dev Checks to see if the current node address is a legit registered Rocket Node
     /// @param nodeAccountAddress The registered rocket node address.
@@ -264,27 +264,27 @@ contract RocketHub is Owned  {
              return nodeAddresses[addressIndex];
         }
         throw;
-	}
+    }
 
     /// @dev Returns the amount of registered rocket nodes
     function getRocketNodeCount() public constant returns(uint)  {
         return nodeAddresses.length; 
-	}
+    }
 
     /// @dev Return the average server work load for this node
     function getRocketNodeAverageLoad(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256)  {
         return  nodes[nodeAddress].averageLoad;
-	}
+    }
 
     /// @dev Return the last time this node checked in with the main Rocket Pool
     function getRocketNodeLastCheckin(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256)  {
         return  nodes[nodeAddress].lastCheckin;
-	}
+    }
 
     /// @dev Return the active status of this node, if deactivated it will not accept new mini pools
     function getRocketNodeActive(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(bool)  {
         return  nodes[nodeAddress].active;
-	}
+    }
 
 
     /**** Mini Pool Storage ***************/
@@ -338,7 +338,7 @@ contract RocketHub is Owned  {
     /// @dev Returns a single rocket mini pool at the pool address
     function getRocketMiniPool(address miniPoolAddress) public constant onlyRegisteredPool(miniPoolAddress) returns(address, bool)  {
         return (pools[miniPoolAddress].poolContractAddress, pools[miniPoolAddress].exists);
-	}
+    }
 
     /// @dev Checks to see if the current pool address is a legit registered Rocket Mini Pool
     /// @param miniPoolAddress The registered rocket mini pool address.
@@ -355,12 +355,12 @@ contract RocketHub is Owned  {
              return miniPoolAddresses[addressIndex];
         }
         throw;
-	}
+    }
 
     /// @dev Returns the amount of registered rocket nodes
     function getRocketMiniPoolCount() public constant returns(uint)  {
         return miniPoolAddresses.length;
-	}
+    }
     
     
     /**** Partner Storage ***************/
@@ -425,7 +425,7 @@ contract RocketHub is Owned  {
     /// @dev Returns the amount of registered rocket partners
     function getRocketPartnerCount() public constant returns(uint)  {
         return partnerAddresses.length;
-	}
+    }
 
 
 }

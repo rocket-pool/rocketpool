@@ -181,7 +181,7 @@ contract RocketPool is Owned {
         // Nodes
         nodeSetInactiveAutomatic = true;
         nodeSetInactiveDuration = 1 hours;
-	}
+    }
 
     /// @dev Set the min eth required for a node to be registered
     /// @param amountInWei The amount in Wei
@@ -704,7 +704,7 @@ contract RocketPool is Owned {
         }else{
             throw;
         }
-	}
+    }
 
 
     /// @dev Get an available node for a pool to be assigned too
@@ -846,6 +846,5 @@ contract RocketPool is Owned {
         // Now return our memory array with only non empty values at the correct length
         return valueArray;
 	}
-
 
 }
