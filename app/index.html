@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="eng">
+    <head>
+        <title>Rocket Pool - Your friendly decentralised Ethereum Proof of Stake (POS) pool.</title>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+        <meta content="utf-8" http-equiv="encoding">
+        <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/images/favicon.ico" type="image/x-icon"> 
+        <!-- CSS -->
+        <link href="./app.css" rel='stylesheet' type='text/css'>  
+        <!-- JS Local -->
+        <script src="./app.js"></script> 
+    </head>
+    <body>
+        <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-99340568-1', 'auto');
+        ga('send', 'pageview');
+
+        </script>
+        <!-- Current Network -->
+        <div id="network" class="account" data-account-address="" title="Click to change accounts">
+            <div class="account-icon"></div>
+            <div class="account-details">
+                <div class="ether-deposits">
+                    <div><span class="account-total">0</span> ETH</div>
+                    <div><span class="deposits orange">0</span> deposits,</div>
+                    <div><span class="pending orange">0</span> pending</div>
+                </div>
+                <div class="account-address">
+                    <div><i class="fa fa-address-card"></i></div>
+                    <div class="account-label short"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Account Selection -->
+        <div id="account-select">
+            <div class="list">
+                <div class="title">select your account to use</div>
+                <div class="accounts"></div>
+            </div>
+        </div>
+        <!-- Header -->
+        <div id="header">
+            <div class="logo">
+                <div class="main-menu">
+                    <div class="top">
+                        <div class="on page-link" data-page-id="home"><i class="fa fa-cogs" title="Dashboard" data-menu="dashboard"></i></div>
+                        <div class="page-link" data-page-id="contact"><i class="fa fa-question-circle" data-menu="support" title="Support"></i></div>
+                        <div class="disabled"><i class="fa fa-cloud-download" data-menu="deposits" title="Your current deposits"></i></div>
+                        <div class="disabled"><i class="fa fa-cloud-upload" data-menu="withdrawals" title="Your current withdrawals"></i></div>
+                        <div class="disabled"><i class="fa fa-globe" data-menu="notifications" title="Notifications"></i></div> 
+                    </div>
+                    <div class="sub">
+                        <div class="menu" data-id="dashboard">
+                            <div class="on page-link" data-page-id="home"><i class="fa fa-sliders" title="Dashboard"></i><span>Dashboard</span></div>
+                            <div class="disabled"><i class="fa fa-server" title="Nodes"></i><span>Nodes</span></div>
+                            <div class="disabled"><i class="fa fa-users" title="Pools"></i><span>Pools</span></div>
+                        </div>
+                        <div class="menu" data-id="deposits">
+                            <div><i class="fa fa-lightbulb-o" title=""></i><span>web interface coming soon...</span></div>
+                        </div>
+                        <div class="menu" data-id="withdrawals">
+                            <div><i class="fa fa-lightbulb-o" title=""></i><span>web interface coming soon...</span></div>
+                        </div>
+                        <div class="menu" data-id="notifications">
+                            <div><i class="fa fa-lightbulb-o" title=""></i><span>web interface coming soon...</span></div>
+                        </div>
+                        <div class="menu" data-id="support">
+                            <div class="on page-link" data-page-id="contact"><i class="fa fa-send" title="Contact Us"></i><span>Contact Us</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="subline">
+                    earn interest 24 / 7 on your Ether
+                </div>
+                <img src="images/rocket-pool-logo.png" alt="Rocket Pool" class="desktop" />
+                <img src="images/rocket-pool-logo-mobile.png" alt="Rocket Pool" class="mobile" />
+            </div>
+        </div>
+        <!-- Main App -->
+        <div id="app">
+            <div class="section home" data-anchor="home">
+                <div class="inner">
+                     <div class="page-menu">
+                        <div class="item">
+                            <div class="label">
+                                <div class="content container">
+                                    <div class="icon"><i class="fa fa-rocket" title="Rocket Pool"></i></div>
+                                    <div class="details">
+                                        <div class="title">welcome to rocketpool</div>
+                                        <div class="text">RocketPool is a decentralised Ethereum POS pool currently in alpha.</div>
+                                        <div class="desc">Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.</div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="bg"></div>
+                        </div>
+                        <div class="item">
+                            <div class="label">
+                                <div class="content container">
+                                    <div class="icon"><i class="fa fa-info-circle" title="Learn more about Rocket Pool Proof of Stake"></i></div>
+                                    <div class="details">
+                                        <div class="title">whaaat? so many buzzwords</div>
+                                        <div class="text">There sure are! To make things a bit more clear, view our <a href="https://medium.com/@darcius/75709bd19936" target="_blank">medium article here</a> or this <a href="images/infographic-how-rocket-pool-works.png" target="_blank">infographic overview</a>.</div>
+                                        <div class="desc">We'll let you know how Rocket Pool works, plans for the future and how you'll be able to earn interest on your Ether.</div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="bg"></div>
+                        </div>
+                     </div>
+                </div>
+                <!-- Next Page -->
+                <div class="next-page bottom next-page-animation">
+                    <div class="dir page-link" data-page-id="code">
+                        <div class="icon"><i class="fa fa-arrow-circle-down" title="Next Page"></i></div>
+                        <div class="label">code and partners</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section" data-anchor="code">
+                  <div class="inner">
+                    <div class="page-menu">
+                        <div class="item">
+                            <div class="label">
+                                <div class="content container">
+                                    <div class="icon"><i class="fa fa-code" title="Rocket Pool Github Repo"></i></div>
+                                    <div class="details">
+                                        <div class="title">not just words, we have code!</div>
+                                        <div class="text">Checkout our <a href="#" target="_blank">Github repo</a> to browse the code and contracts yourself.</div>
+                                        <div class="desc">For those of you technically inclined, browse our repo for the current contracts and smart node service scripts.</div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="bg"></div>
+                        </div>
+                        <div class="item">
+                            <div class="label">
+                                <div class="content container">
+                                    <div class="icon"><i class="fa fa-cloud" title="Rocket Pool Partners"></i></div>
+                                    <div class="details">
+                                        <div class="title">3rd party partners</div>
+                                        <div class="text">Rocket Pool has a fully integrated contract API for registered partners. </div>
+                                        <div class="desc">If your an exchange, wallet provider or other Ethereum service. You'll be able to offer staking services for your users easily using our 3rd party partner API and smart node network.</div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="bg"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Next Page -->
+                <div class="next-page bottom next-page-animation">
+                    <div class="dir page-link" data-page-id="contact">
+                        <div class="icon"><i class="fa fa-arrow-circle-down" title="Next Page"></i></div>
+                        <div class="label">contact us</div>
+                    </div>
+                    <div class="dir page-link" data-page-id="home">
+                        <div class="icon"><i class="fa fa-arrow-circle-up" title="Previous Page"></i></div>
+                        <div class="label">home</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section contact" data-anchor="contact">
+                  <div class="inner">
+                    <div class="page-menu">
+                        <div class="item">
+                            <div class="label">
+                                <div class="content container">
+                                    <div class="icon"><i class="fa fa-send" title="Rocket Pool Contact Us"></i></div>
+                                    <div class="details">
+                                        <div class="title">contact us</div>
+                                        <div class="text">Want to have a chat with us? Feel free to drop us a line anytime.</div>
+                                        <div class="desc">
+                                            <form>
+                                                <input name="subject" type="text" placeholder="subject" required />
+                                                <input name="name" type="text" placeholder="your name" required />
+                                                <input name="email" type="email" placeholder="your@emailaddress.com" required />
+                                                <textarea name="message" placeholder="enter your message here and don't forget to add a reply email address above :)" required></textarea>
+                                                <button type="button">send</button>
+                                            </form>
+                                            <div class="thanks">Thanks for contacting us, we'll respond to you as soon as we can!</div>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <div class="bg"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Next Page -->
+                <div class="next-page bottom next-page-animation">
+                    <div class="dir page-link" data-page-id="code">
+                        <div class="icon"><i class="fa fa-arrow-circle-up" title="Previous Page"></i></div>
+                        <div class="label">code and partners</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- BG FX -->
+        <div id="rocket" class="fa fa-rocket2"></div>
+        <!-- Processing Overlay -->
+        <div id="loader-wrapper">
+            <div id="loader-block">
+                <div id="loader-text">
+                    <div class="line"></div>
+                </div>
+                <div id="loader">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+            <div class="loader-gradient"></div>
+            <div class="loader-section section-left"></div>
+            <div class="loader-section section-right"></div>
+        </div>
+    </body>
+
+</html>

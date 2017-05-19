@@ -1,0 +1,594 @@
+/**
+  App template / module css
+  @author David Rugendyke
+*/
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #d68000 20%;
+    background-image: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%,rgba(0,0,0,0.45) 100%), radial-gradient(farthest-side ellipse at 10% 0, #a64200 20%, #d68000);
+    background-attachment: fixed, fixed;
+    font-family: 'Open Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+div {
+    box-sizing: border-box;
+}
+
+a {
+    color: #fff;
+}
+
+*:focus {
+    outline: none;
+}
+
+/*** Colours ***********/
+
+.white {
+    color: #fff;
+}
+
+.orange {
+    color: #ffae00;
+}
+
+/*** Global ************/
+
+.container {
+    position: relative;
+    width: 1020px;
+    margin: 0 auto;
+}
+
+
+.account-icon {
+    width: 64px;
+    height: 64px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 100%;
+    /*box-shadow: inset rgba(255, 255, 255, 0.6) 0 2px 2px, inset rgba(0, 0, 0, 0.3) 0 -2px 6px;*/
+    border: 4px solid #a05f00;
+}
+
+#rocket {
+    position: absolute;
+    z-index: 1;
+    font-size: 460px;
+    color: #964800;
+    top: 105%;
+    left: 80%;
+    /*transform: rotate(-45deg);*/
+    transition: all 12s cubic-bezier(0.95, 0.05, 0.795, 0.035);
+    opacity: 0.25;
+    width: 365px;
+    height: 542px;
+    background: url('./images/bg-rocket.png') no-repeat;
+}
+
+#rocket.launched {
+    top: -300px;
+    opacity: 0;
+}
+
+
+/*** Animations **********/
+
+.next-page-animation {
+  animation: animationFrames ease 2.5s;
+  animation-iteration-count: infinite;
+  transform-origin: 50% 50%;
+  animation-fill-mode:forwards; /*when the spec is finished*/
+  -webkit-animation: animationFrames ease 2.5s;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-transform-origin: 50% 50%;
+  -webkit-animation-fill-mode:forwards; /*Chrome 16+, Safari 4+*/ 
+}
+
+@keyframes animationFrames{
+  0% {
+    opacity:0.25;
+    transform:  translateY(0px)  ;
+  }
+  50% {
+    opacity:1;
+    transform:  translateY(10px)  ;
+  }
+  100% {
+    opacity:0.25;
+    transform:  translateY(0px)  ;
+  }
+}
+
+
+@-webkit-keyframes animationFrames {
+  0% {
+    opacity:0.25;
+    -webkit-transform:  translateY(0px);
+  }
+  50% {
+    opacity:1;
+    -webkit-transform:  translateY(10px);
+  }
+  100% {
+    opacity:0.25;
+    -webkit-transform:  translateY(0px);
+  }
+}
+
+/*** Network Bar *********/
+
+#network {
+    position: absolute;
+    z-index: 5;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#network.loaded {
+    opacity: 1;
+}
+
+#network.error {
+    color: #fff;
+    background-color: #c06700;
+    padding: 4px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    opacity: 0.5
+}
+
+/*** Acount Select Screen **/
+
+#account-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(151,88,0,0.9) 0%,rgba(143,2,34,0.7) 44%,rgba(109,0,25,0.2) 100%), radial-gradient(ellipse at center, rgba(0,0,0,0) 0%,rgba(0,0,0,0.65) 100%);
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    overflow-y: auto;
+    transition:opacity 0.6s ease;
+    opacity: 0;
+    z-index: 0;
+}
+
+#account-select.open {
+    opacity: 1;
+    z-index: 100;
+}
+
+#account-select > .list {
+    position: relative;
+    margin-top: 80px;
+}
+
+#account-select > .list > .accounts {
+    position: relative;
+    display: flex;
+    align-content: center;
+    flex-direction: column;
+    background-color: transparent;
+}
+
+#account-select > .list > .accounts > div {
+    position: relative;
+    left: 0;
+    transform: scale(1);
+    transition: all 200ms ease-in;
+}
+
+#account-select > .list > .accounts > div:hover {
+    transform: scale(1.2);
+}
+
+#account-select > .list > .accounts > div:focus {
+     transform: scale(0.5);
+}
+
+#account-select > .list > .title {
+    position: relative;
+    font-weight: bold;
+    color: #fff;
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#account-select > .list > .accounts .account {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ffae00;
+    cursor: pointer;
+}
+
+#account-select > .list > .accounts .account:last-child {
+    border-bottom: 0;
+}
+
+
+
+/*** Acounts *************/
+
+.account { 
+    display: flex;
+}
+
+.account .account-icon {
+    position: relative;
+    margin-right: 15px;
+}
+
+.account .account-details {
+    position: relative;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    flex-direction: column;
+    font-size: 20px;
+    color: #fff;
+}
+
+.account .account-details .ether-deposits {
+    position: relative;
+    display: flex;
+    align-content: center;
+}
+
+.account .account-details .ether-deposits > div {
+    position: relative;
+    margin-left: 8px;
+}
+
+.account  .account-details .ether-deposits > div:first-child {
+    font-weight: bold;
+    margin-left: 0;
+}
+
+.account  .account-details .account-address {
+    position: relative;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.account  .account-details .account-address > div:first-child {
+    position: relative;
+    font-size: 26px;
+    margin-right: 10px;
+}
+
+.account  .account-details .account-address > div.account-label {
+    position: relative;
+    font-size: 20px;
+    font-weight: 500;
+    padding-top: 3px;
+}
+
+
+/*** App *****************/
+
+#app  {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    z-index: 2;
+    opacity: 1;
+    padding-top: 50px;
+}
+
+.loaded #app {
+    opacity: 1;
+}
+
+#pp-nav {
+    display: none;
+}
+
+/*** Sections ************/
+
+#app > .section {
+    padding: 0;
+    margin: 0;
+    color: #000;
+    font: 14px;
+    overflow: hidden;
+}
+
+#app > .section > div > .inner {
+    position: relative;
+}
+
+#app > .section {
+    opacity: 0;
+}
+
+#app > .section.active {
+    opacity: 1;
+}
+
+
+#app > .section .next-page {
+    position: relative;
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+}
+
+#app > .section .next-page .dir {
+    position: relative;
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+}
+
+#app > .section .next-page .dir:first-child {
+    margin-right: 25px;
+}
+
+#app > .section .next-page.top {
+    top: -195px;
+    flex-direction: column;
+}
+
+#app > .section .next-page .label {
+    position: relative;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+#app > .section .next-page .icon {
+    position: relative;
+    color: #ffae00;
+    font-size: 30px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+#app > .section .next-page.top .icon {
+    font-size: 32px;
+}
+
+/*** Header ************/
+
+#header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;    
+    z-index: 12;
+    margin-bottom: 20px;
+}
+
+#header .logo {
+    position: relative;
+    margin-top: 70px;
+}
+
+#header .logo > img {
+    position: relative;
+    width: 100%;
+}
+
+#header .logo > img.mobile {
+    display: none;
+}
+
+
+#header .logo .subline {
+    position: absolute;
+    width: 39%;
+    top: 127px;
+    left: 0;
+    text-align: right;
+    z-index: 3;
+    font-size: 18px;
+    color: #fff;
+}
+
+#header .logo .main-menu {
+    position: absolute;
+    width: 35%;
+    display: flex;
+    flex-direction: column;
+    top: 70px;
+    left: 50%;
+    transform: translateX(32%);
+    align-content: center;
+    z-index: 3;
+}
+
+#header .logo .main-menu .top, #header .logo .main-menu .sub .menu {
+    position: relative;
+    display: flex;
+    margin-bottom: 17px;
+}
+
+#header .logo .main-menu .sub .menu {
+    display: none;
+}
+
+#header .logo .main-menu .sub .menu:first-child {
+    display: flex;
+}
+
+#header .logo .main-menu .top > div, #header .logo .main-menu .sub .menu > div {
+    position: relative;
+    margin-right: 10px;
+    text-align: center;
+    color: #ffae00;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+}
+
+#header .logo .main-menu .top > div {
+    width: 44px;
+}
+
+#header .logo .main-menu .sub .menu > div {
+    cursor: pointer;
+}
+
+#header .logo .main-menu .sub .menu > div.disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+#header .logo .main-menu .sub .menu > div.on span {
+    color: #ffdd94;
+}
+
+#header .logo .main-menu .top > div:last-child, #header .logo .main-menu .sub > div:last-child {
+    margin-right: 0px;
+}
+
+#header .logo .main-menu .top > div i, #header .logo .main-menu .sub .menu > div i {
+    position: relative;
+    color: #fff;
+    font-size: 42px;
+    transition:color 0.35s ease;
+}
+
+#header .logo .main-menu .top > div i {
+    cursor: pointer;
+}
+
+#header .logo .main-menu .top > div.on i {
+    color: #ffae00;
+}
+
+#header .logo .main-menu .sub .menu > div i {
+    font-size: 20px;
+    margin-right: 8px;
+    top: 2px;
+}
+
+#header .logo .main-menu .sub .menu > div span {
+    font-size: 18px;
+    transition:color 0.3s ease;
+}
+
+#header .logo .main-menu .top > div i:hover {
+    position: relative;
+    color: #ffae00;
+}
+
+#header .logo .main-menu .top > div i:active {
+    font-size: 38px;
+    top: 3px;
+}
+
+#header .logo .main-menu > div.disabled i {
+    /*opacity: 0.3;*/
+}
+
+#header .logo .main-menu .sub .menu > div:active {
+    color: #fff;
+}
+
+/*** Page Menus ************/
+
+.page-menu {
+    position: relative;
+    width: 100%;
+}
+
+.page-menu .item {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+    
+}
+
+.page-menu .item > .label {
+    position: relative;
+    width: 100%;
+    z-index: 2;
+    padding: 30px 0;
+}
+
+.page-menu .item > .label a {
+    color: #ffdd94;
+    text-decoration: none;
+}
+
+.page-menu .item > .label > .content {
+    position: relative;
+    display: flex;
+    align-content: center;
+}
+
+.page-menu .item > .label > .content > .icon {
+    position: relative;
+    color: #ffae00;
+    font-size: 106px;
+    margin-right: 25px;
+}
+
+.page-menu .item > .label > .content > .details {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.page-menu .item > .label > .content > .details > .title {
+    position: relative;
+    font-weight: bold;
+    font-size: 45px;
+    color: #fff;
+    line-height: 45px;
+    padding-top: 15px;
+}
+
+.page-menu .item > .label > .content > .details > .text {
+    position: relative;
+    font-weight: bold;
+    font-size: 23px;
+    line-height: 25px;
+    color: #ffae00;
+    margin-top: 8px;
+}
+
+.page-menu .item > .label > .content > .details > .desc {
+    position: relative;
+    font-size: 15px;
+    color: #ffae00;
+    margin-top: 10px;
+    line-height: 15px;
+    padding-bottom: 10px;
+}
+
+.page-menu .item > .bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-image: url('./images/item-bg.png');
+    background-size: cover;
+    z-index: 1;
+    opacity: 0.45;
+}
+
