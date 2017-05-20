@@ -1,7 +1,7 @@
 /**
   Rocket Pool
   @author David Rugendyke
-  @email david@rocketpool.net
+  @email david@mail.rocketpool.net
   @version 0.1 
 */
 
