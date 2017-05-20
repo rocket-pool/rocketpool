@@ -2,7 +2,7 @@
   Rocket Pool
   @author David Rugendyke
   @email david@rocketpool.net
-  @version 0.1
+  @version 0.1 
 */
 
 var DefaultBuilder = require("truffle-default-builder");
