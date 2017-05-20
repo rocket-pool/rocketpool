@@ -12,8 +12,6 @@ contract CasperInterface is Owned {
     function deposit(bytes32 newValidationCode, bytes32 newRandao, address newWithdrawalAddress) public payable returns(bool);
     /// @dev Starting the withdrawal process from Casper
     function startWithdrawal() public registeredValidator(msg.sender) returns(bool);
-     /// @dev The withdrawal function
-    function withdrawTest(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool);
     /// @dev The withdrawal function
     function withdraw(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool);
     /// @dev Not documented in Casper yet, but would be agreat method to have that would allow users/contracts to know exactly when they can withdraw their deposit by returning a timestamp of it
