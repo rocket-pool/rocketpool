@@ -10,7 +10,15 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
 
 # Test Rocket Pool
 
-Easiest way to see Rocket Pool Alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Then run `truffle test ./test/rocketPool.js` to put Rocket Pool through its paces.
+Easiest way to see Rocket Pool Alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Make sure you have the [Truffle Default Builder](https://github.com/trufflesuite/truffle-default-builder) first installed as the default builder as a dependency of your Rocket Pool:
+```
+$ npm install truffle-default-builder --save
+```
+Then run:
+```
+$ truffle test ./test/rocketPool.js
+```
+to put Rocket Pool through its paces.
 
 # More Information and Contact
 

@@ -2,3 +2,5 @@ bin
 build
 app/config
 node/test
+node_modules
+.vscode
