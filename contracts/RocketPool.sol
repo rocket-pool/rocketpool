@@ -283,6 +283,8 @@ contract RocketPool is Owned {
 
     /// @dev Assign a new user to the next pool that will deploy
     /// @param newUserAddress New user account
+    /// @param partnerAddress The addres of the Rocket Pool partner
+    /// @param poolStakingDuration The duration that the user wishes to stake for
     function userAssignToPool(address newUserAddress, address partnerAddress, uint256 poolStakingDuration) private returns(address)  {
         // The desired pool address to asign the user too, use memory to keep costs down
         address poolAssignToAddress = 0;
