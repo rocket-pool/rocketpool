@@ -3,7 +3,7 @@
 /**
   Init - Basic initialisation JS - Observer Pattern
   @author David Rugendyke
-  @email dave@foxifly.com
+  @email david@mail.rocketpool.net
   @version 0.1
 */
 
@@ -32,7 +32,6 @@
 
         // Initialise options
         settings = $.extend(true, {}, settings, options);
-
         // Update the network we're connected too
         _updateNetwork();
         // Subscribe to certain observer accouncements
@@ -62,7 +61,7 @@
             // Use Mist/MetaMask's provider
             window.web3 = new Web3(web3.currentProvider);
         } else {
-            // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
+            // fallback - (local node)
             window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
         }
         
@@ -138,7 +137,7 @@
                 settings.currentAccount = account;
             } 
         }
-        // Now unlocked accounts?
+        // No unlocked accounts?
         if (!account || window.web3.eth.accounts.length == 0) {
             // Not using mist browser, metamask or localrpc
             $('#network.account').text('login with an ethereum browser or metamask to view accounts').addClass('error');
@@ -179,14 +178,12 @@
 	var _contactSend =  function(button) {
 		
 		var form = $('.section.contact form').first();
-
-		var content = form.find('textarea').val();
+        var content = form.find('textarea').val();
+        
 		if(content.length > 1) {
-			
 			// Show the processing screen with message
 			$.observer.publish('rocketPool/Processing/show', 'sending to Rocket Pool...');
-
-			// Send the message now
+    		// Send the message now
 			$.post('/send-contact.php', form.serialize(),
 				// Success
 				function(resp) {
@@ -281,6 +278,7 @@
             $(this).parent().addClass('on');
             $(".main-menu .sub div.menu[data-id='" + $(this).data('menu') + "']").css('display', 'flex');
         }); 
+
         // Sub menu on state
         $('.main-menu .sub .menu > div').on('click', function () { 
             $(this).siblings().removeClass('on');
@@ -325,7 +323,6 @@
     };
 
 })(jQuery);
-
 
 
 // Initalise the module and bind its element + options to it
