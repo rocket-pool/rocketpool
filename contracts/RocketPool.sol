@@ -543,7 +543,7 @@ contract RocketPool is Owned {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketFactory rocketFactory = RocketFactory(rocketHub.getRocketFactoryAddress());
         address newPoolAddress = rocketFactory.createRocketPoolMini(poolStakingDuration);
-        // Add the mini pool to the primary persistant storage so any contract upgrades won't effect the current stored mini pools
+        // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
         // Sets the rocket node if the address is ok and isn't already set
         if(rocketHub.setRocketMiniPool(newPoolAddress)) {
             // Fire the event
@@ -591,7 +591,7 @@ contract RocketPool is Owned {
     function nodeRegister(address nodeAccountAddressToRegister, string oracleID, string instanceID) public onlyOwner  {
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, oracle services etc
         if(nodeAccountAddressToRegister.balance >= minNodeWei) {
-            // Add the node to the primary persistant storage so any contract upgrades won't effect the current stored nodes
+            // Add the node to the primary persistent storage so any contract upgrades won't effect the current stored nodes
             RocketHub rocketHub = RocketHub(rocketHubAddress);
             // Sets the rocket node if the address is ok and isn't already set
             if(rocketHub.setRocketNode(nodeAccountAddressToRegister, sha3(oracleID), sha3(instanceID))) {
@@ -747,7 +747,7 @@ contract RocketPool is Owned {
     function nodeRemove(address nodeAddress) public onlyOwner {
         // Check the node doesn't currently have any registered mini pools associated with it
         if(getPoolsFilterWithNode(nodeAddress).length == 0) {
-            // Remove node from the primary persistant storage
+            // Remove node from the primary persistent storage
             RocketHub rocketHub = RocketHub(rocketHubAddress);
             // Sets the rocket partner if the address is ok and isn't already set
             if(rocketHub.setRocketNodeRemove(nodeAddress)) {
@@ -766,7 +766,7 @@ contract RocketPool is Owned {
     /// @param partnerAccountAddressToRegister The msg.sender address the partner will use
     /// @param partnerName The msg.sender address the partner will use
     function partnerRegister(address partnerAccountAddressToRegister, string partnerName) public onlyOwner  {
-        // Add the partner to the primary persistant storage so any contract upgrades won't effect the current stored partners
+        // Add the partner to the primary persistent storage so any contract upgrades won't effect the current stored partners
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Sets the rocket partner if the address is ok and isn't already set
         if(rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
@@ -804,7 +804,7 @@ contract RocketPool is Owned {
 
     /// @dev Remove a partner from the Rocket Pool network
     function partnerRemove(address partnerAddress) public onlyOwner {
-         // Remove partner from the primary persistant storage
+         // Remove partner from the primary persistent storage
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Sets the rocket partner if the address is ok and isn't already set
         if(rocketHub.setRocketPartnerRemove(partnerAddress)) {

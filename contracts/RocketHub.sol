@@ -3,7 +3,7 @@ pragma solidity ^0.4.2;
 import "./contract/Owned.sol";
 
 
-/// @title The gateway hub contract for RocketPool, controls the addresses of the main contracts used and primary persistant storage, should only ever be deployed once
+/// @title The gateway hub contract for RocketPool, controls the addresses of the main contracts used and primary persistent storage, should only ever be deployed once
 /// @author David Rugendyke
 
 contract RocketHub is Owned  {
