@@ -43,12 +43,21 @@ contract RocketPoolMini is Owned {
     /*** Structs ***************/
 
     struct User {
+        // Address of the user
         address userAddress;
+        // Backup address for the user, if the deposit is not collected when ready for a certain time limit, this address will be allowed to collect it
+        address userAddressBackupWithdrawal;
+        // Address of the partner of whom has control of the users address
         address partnerAddress;
+        // Balance deposited
         uint256 balance;
+        // Rewards received after Casper
         int256 rewards;
+        // Rocket Pool fees incured
         uint256 fees;
+        // True if the mapping exists for the user
         bool exists;
+        // When the user was created
         uint created;
     }
 
@@ -226,8 +235,7 @@ contract RocketPoolMini is Owned {
     function setStakingDuration(uint256 newStakingDuration) public onlyLatestRocketPool   {
         stakingDuration = newStakingDuration;
     }
-
- 
+     
 
 
     /*** USERS ***********************************************/
@@ -265,6 +273,12 @@ contract RocketPoolMini is Owned {
         return users[userAddress].partnerAddress;
     }
 
+    /// @dev Returns the the users backup withdrawal address
+    function getUserAddressBackupWithdrawal(address userAddress) public constant isPoolUser(userAddress) returns(address)   {
+        return users[userAddress].userAddressBackupWithdrawal;
+    }
+    
+
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address userAddress, uint256 updatedBalance, int256 updatedRewards, uint256 updatedFees) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
         if(status == 4) {
@@ -274,6 +288,29 @@ contract RocketPoolMini is Owned {
             return true;
         }
         return false;
+    }
+
+    /// @dev Set the backup address for the user to collect their deposit + rewards from if the primary address doesn't collect it after a certain time period
+    function setUserAddressBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalNew) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
+        // This can only be set before staking begins
+        if(status == 0 || status == 1) {
+            users[userAddress].userAddressBackupWithdrawal = userAddressBackupWithdrawalNew;
+            return true;
+        }
+        throw;
+    }
+
+    /// @dev Set current users address to the supplied backup one - be careful with this method when calling from the main Rocket Pool contract, all primary logic must be contained there as its upgradable
+    function setUserAddressToCurrentBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalGiven) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
+        // This can only be called when staking has been completed, do some quick double checks here too
+        if(status == 4 && users[userAddress].userAddressBackupWithdrawal != 0 && users[userAddress].userAddressBackupWithdrawal == userAddressBackupWithdrawalGiven) {
+            // Create a new mapping struct with the existing users details
+            users[userAddressBackupWithdrawalGiven] = users[userAddress];
+            // Now remove the old user
+            removeUser(userAddress);
+            return true;
+        }
+        throw;
     }
 
 
@@ -288,6 +325,7 @@ contract RocketPoolMini is Owned {
                 // Add the new user to the mapping of User structs
                 users[userAddressToAdd] = User({
                     userAddress: userAddressToAdd,
+                    userAddressBackupWithdrawal: 0,
                     partnerAddress: partnerAddressToAdd,
                     balance: 0,
                     rewards: 0,
@@ -330,6 +368,7 @@ contract RocketPoolMini is Owned {
             // Now remove from our mapping struct
             users[userAddressToRemove].exists = false;
             users[userAddressToRemove].userAddress = 0;
+            users[userAddressToRemove].userAddressBackupWithdrawal = 0;
             users[userAddressToRemove].partnerAddress = 0;
             users[userAddressToRemove].balance = 0;
             users[userAddressToRemove].rewards = 0;

@@ -56,7 +56,7 @@ contract('RocketPool', function (accounts) {
     var owner = web3.eth.coinbase;
     // RocketPool
     // Deposit gas has to cover potential mini pool contract creation, will often be much cheaper
-    var rocketDepositGas = 2250000; 
+    var rocketDepositGas = 2500000; 
     var rocketWithdrawalGas = 250000;
     // Node accounts and gas settings
     var nodeFirst = accounts[8];
@@ -75,6 +75,7 @@ contract('RocketPool', function (accounts) {
     // User accounts
     var userFirst = accounts[1];
     var userSecond = accounts[2];
+    var userSecondBackupAddress = accounts[4];
     var userThird = accounts[3];
     // Partner accounts (not real)
     var partnerFirst = accounts[5];
@@ -393,6 +394,31 @@ contract('RocketPool', function (accounts) {
         });  
     }); // End Test
 
+    // Second user sets a backup withdrawal address
+    it(userSecond + " - registers a backup withdrawal address on their deposit while minipool is in countdown", function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // RocketPool now
+                return rocketPool.deployed().then(function (rocketPoolInstance) {
+                    // Now set the backup address
+                    rocketPoolInstance.userSetWithdrawalDepositAddress(userSecondBackupAddress, miniPoolFirstInstance.address, { from: userSecond, gas: 550000 }).then(function (result) {
+                        var newBackupAddress = 0;
+                        // Check the event log now
+                        for(var i=0; i < result.logs.length; i++) {
+                            if(result.logs[i].event == 'UserSetBackupWithdrawalAddress') {
+                                newBackupAddress = result.logs[i].args._userBackupAddress
+                            }
+                        };
+                        return true; // TODO: Fix
+                    }).then(function (result) {
+                        assert.isTrue(result, "Second user registered backup address");
+                    }); 
+                });
+            });
+        });
+    });    
 
 
     // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
@@ -785,8 +811,6 @@ contract('RocketPool', function (accounts) {
             });
         });
     }); // End Test
-
-  
 
 
     // Owner attempts to remove active node

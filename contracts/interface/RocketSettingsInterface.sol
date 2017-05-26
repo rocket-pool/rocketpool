@@ -19,4 +19,8 @@ contract RocketSettingsInterface {
     function getWithdrawalFeePercInWei() public constant returns (uint256);
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
     function getWithdrawalFeeDepositAddress() public constant returns (address);
+    /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+    function getPoolUserBackupCollectEnabled() public constant returns (bool);
+    /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    function getPoolUserBackupCollectTime() public constant returns (uint256);
 }

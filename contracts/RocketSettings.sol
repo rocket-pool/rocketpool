@@ -30,7 +30,10 @@ contract RocketSettings is Owned  {
     // Done this way to take a % fee as a decimal if needed (eg 5.5%) since solidity doesn't support reals yet
     uint256 private withdrawalFeePercInWei;
     address private withdrawalFeeDepositAddress;
-
+    // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+    bool poolUserBackupCollectEnabled;
+    // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    uint256 poolUserBackupCollectTime;
     // The default status for newly created mini pools
     PoolMiniStatuses public constant poolMiniDefaultStatus = PoolMiniStatuses.PreLaunchAcceptingDeposits;
     
@@ -43,7 +46,7 @@ contract RocketSettings is Owned  {
         PreLaunchCountdown,         // 1 - The minimum required for this pool to start staking has been met and the countdown to start staking has started, users can withdraw their deposit if they change their mind during this time but cannot deposit more
         Staking,                    // 2 - The countdown has passed and the pool is now staking, users cannot deposit or withdraw until the minimum staking period has passed for their pool
         WithdrawalRequested,        // 3 - The pool has now requested withdrawl from the casper validator contract, it will stay in this status until it can withdraw
-        Withdrawalcompleted,        // 4 - The pool has now received its deposit +rewards || -penalties from the Casper contract
+        Withdrawalcompleted,        // 4 - The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
         Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
     }
 
@@ -66,6 +69,10 @@ contract RocketSettings is Owned  {
         withdrawalFeePercInWei = 0.05 ether;
         // The account to see Rocket Fees too, must be an account, not a contract address
         withdrawalFeeDepositAddress = msg.sender;
+        // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+        poolUserBackupCollectEnabled = true;
+        // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+        poolUserBackupCollectTime = 12 weeks;
         // General settings
         poolMiniNewAllowed = true;
         poolMiniMaxAllowed = 50;
@@ -143,6 +150,26 @@ contract RocketSettings is Owned  {
             return withdrawalFeeDepositAddress;
         }
         throw;
+    }
+
+    /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+    function getPoolUserBackupCollectEnabled() public constant returns (bool)  {
+        return poolUserBackupCollectEnabled;
+    }
+
+    /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    function getPoolUserBackupCollectTime() public constant returns (uint256)  {
+        return poolUserBackupCollectTime;
+    }
+
+    /// @dev Set the time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    function setPoolUserBackupCollectTime(uint256 newTimeLimit) public onlyOwner  {
+        poolUserBackupCollectTime = newTimeLimit;
+    }
+
+    /// @dev Set if users backup addressess are allowed to collect
+    function setPoolUserBackupCollectEnabled(bool backupCollectEnabled) public onlyOwner  {
+        poolUserBackupCollectEnabled = backupCollectEnabled;
     }
 
     /// @dev Set the minimum Wei required for a pool to launch

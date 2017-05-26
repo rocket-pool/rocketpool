@@ -32,9 +32,23 @@ contract RocketPool is Owned {
 
      /*** Events ****************/
 
-    event UserAddedToPool(
+    event UserAddedToPool (
         address indexed _userAddress,
         address indexed _partnerAddress,
+        address indexed _pool,
+        uint256 created 
+    );
+
+    event UserSetBackupWithdrawalAddress (
+        address indexed _userAddress,
+        address indexed _userBackupAddress,
+        address indexed _pool,
+        uint256 created 
+    );
+
+    event UserChangedToWithdrawalAddress (
+        address indexed _userAddress,
+        address indexed _userNewAddress,
         address indexed _pool,
         uint256 created 
     );
@@ -326,8 +340,9 @@ contract RocketPool is Owned {
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     function userWithdrawDeposit(address miniPoolAddress, uint256 amount) public returns(bool)  {
         // Call our transfer method, creates a transaction
-        userWithdrawDepositFromPoolTransfer(miniPoolAddress, amount, false, 0);
+        return userWithdrawDepositFromPoolTransfer(miniPoolAddress, amount, false, 0);
     }
+
 
     /// @dev User has requested withdrawing their deposit from a pool, all main checks are done here as this contract is upgradable, but mini pools are not.
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
@@ -341,7 +356,7 @@ contract RocketPool is Owned {
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // The address to use for withdrawals, can also be a partner withdrawing on behalf of their user
         address userAddress = partnerWithdrawal == true && rocketHub.getRocketPartnerExists(msg.sender) ? partnerUserAddress : msg.sender;
-        // Get the user props now, this will throw if the user doesn't exist in the given pool
+        // Get the user deposit now, this will throw if the user doesn't exist in the given pool
         uint256 userBalance = pool.getUserDeposit(userAddress);
         address userPartnerAddress = pool.getUserPartner(userAddress);
         // Now check to see if the given partner matches the users partner
@@ -403,7 +418,7 @@ contract RocketPool is Owned {
         uint256 userDepositAmountUpdated = Arithmetic.overflowResistantFraction(userDepositPercInWei, pool.getStakingBalanceReceived(), calcBase);
         // Calculate how much rewards the user earned
         userRewardsAmount = int256(userDepositAmountUpdated - userBalance);
-        // So only process fees if we've recevied rewards from Casper
+        // So only process fees if we've received rewards from Casper
         if(userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
             userFeesAmount =  Arithmetic.overflowResistantFraction(rocketSettings.getWithdrawalFeePercInWei(), uint256(userRewardsAmount), calcBase);
@@ -432,6 +447,52 @@ contract RocketPool is Owned {
         // Update our users updated balance, rewards calculated and fees incurred 
         if(pool.setUserBalanceRewardsFees(userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
             return true;
+        }
+        return false;
+    }
+
+    /// @notice Change the users backup withdrawal address
+    /// @dev A user can specify a backup withdrawal address (incase something bad happens :( or they lose their primary private keys while staking etc)
+    /// @param miniPoolAddress The address of the mini pool they the supplied user account is in.
+    /// @param newUserAddressUsedForDeposit The address the user wishes to make their backup withdrawal address
+    function userSetWithdrawalDepositAddress(address newUserAddressUsedForDeposit, address miniPoolAddress) public returns(bool)  {
+        // Get an instance of that pool contract
+        RocketPoolMini pool = getPoolInstance(miniPoolAddress);
+        // User can only set this backup address before deployment to casper
+        if(pool.getStatus() == 0 || pool.getStatus() == 1 && newUserAddressUsedForDeposit != 0) {
+            if(pool.setUserAddressBackupWithdrawal(msg.sender, newUserAddressUsedForDeposit)) {
+                // Fire the event
+                UserSetBackupWithdrawalAddress(msg.sender, newUserAddressUsedForDeposit, miniPoolAddress, now);
+            }
+        }
+        return false;
+    }
+
+    /// @notice Change a users withdrawal address to their supplied backup address - can only be done after withdrawal by the primary address has not been done after a set period
+    /// @dev A user who has supplied a backup address to allow withdrawals from (incase something bad happens :( or they lose their primary private keys while staking etc)
+    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
+    function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) public returns(bool)  {
+        // Get the hub
+        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        // Get an instance of that pool contract
+        RocketPoolMini pool = getPoolInstance(miniPoolAddress);
+        // Get the user deposit now, this will throw if the user doesn't exist in the given pool
+        uint256 userBalance = pool.getUserDeposit(userAddressUsedForDeposit);
+        // Check to make sure this feature is currently enabled
+        if(rocketSettings.getPoolUserBackupCollectEnabled()) {
+            // This can only occur after a pool has received its Casper deposit (some time ago) and the pool is allowing withdrawals and the given address must match the accounts they wish to withdraw from
+            if(now >= (pool.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && pool.getStatus() == 4 && userBalance > 0) {
+                // Ok we've gotten this far, does the address match the senders now
+                if(pool.getUserAddressBackupWithdrawal(userAddressUsedForDeposit) == msg.sender) {
+                    // Ok we're all good, lets change the initial user deposit address to the backup one so they can call the normal withdrawal process
+                    if(pool.setUserAddressToCurrentBackupWithdrawal(userAddressUsedForDeposit, msg.sender)) {
+                        // Fire the event
+                         UserChangedToWithdrawalAddress(userAddressUsedForDeposit, msg.sender, miniPoolAddress, now);
+                    }
+                }
+            }
         }
         return false;
     }
