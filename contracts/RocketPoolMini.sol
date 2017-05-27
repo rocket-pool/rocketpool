@@ -9,6 +9,7 @@ import "./contract/Owned.sol";
 
 /// @title One of the pools under the main RocketPool
 /// @author David Rugendyke
+ // TODO: Optimise this contract to use DELEGATECALL on the majority of inbuilt methods to reduce gas creation costs
 
 contract RocketPoolMini is Owned {
 
@@ -30,6 +31,8 @@ contract RocketPoolMini is Owned {
     uint256 private stakingBalanceReceived;
     // Users in this pool
     mapping (address => User) private users;
+    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
+    mapping (address => address) private usersBackupAddress;
     // Keep an array of all our user addresses for iteration
     address[] private userAddresses;
     // The current status of this pool, statuses are declared via Enum in the main hub
@@ -250,6 +253,21 @@ contract RocketPoolMini is Owned {
         return users[userAddress].exists;
     }
 
+    /// @dev Returns the users original address specified for withdrawals
+    function getUserAddressFromBackupAddress(address userBackupAddress) public constant returns(address)   {
+        return usersBackupAddress[userBackupAddress];
+    }
+
+    /// @dev Returns the true if the user has a backup address specified for withdrawals
+    function getUserBackupAddressExists(address userBackupAddress) public constant returns(bool)   {
+        return usersBackupAddress[userBackupAddress] != 0 ? true : false;
+    }
+
+    /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
+    function getUserBackupAddressOK(address userAddress, address userBackupAddress) public constant isPoolUser(userAddress) returns(bool)   {
+        return usersBackupAddress[userBackupAddress] == userAddress ? true : false;
+    }
+
     /// @dev Returns the true if the user has a deposit in this mini pool
     function getUserHasDeposit(address userAddress) public constant returns(bool)   {
         return users[userAddress].exists && users[userAddress].balance > 0 ? true : false;
@@ -273,11 +291,6 @@ contract RocketPoolMini is Owned {
         return users[userAddress].partnerAddress;
     }
 
-    /// @dev Returns the the users backup withdrawal address
-    function getUserAddressBackupWithdrawal(address userAddress) public constant isPoolUser(userAddress) returns(address)   {
-        return users[userAddress].userAddressBackupWithdrawal;
-    }
-    
 
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address userAddress, uint256 updatedBalance, int256 updatedRewards, uint256 updatedFees) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
@@ -294,7 +307,7 @@ contract RocketPoolMini is Owned {
     function setUserAddressBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalNew) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
         // This can only be set before staking begins
         if(status == 0 || status == 1) {
-            users[userAddress].userAddressBackupWithdrawal = userAddressBackupWithdrawalNew;
+            usersBackupAddress[userAddressBackupWithdrawalNew] = userAddress;
             return true;
         }
         throw;
@@ -303,14 +316,17 @@ contract RocketPoolMini is Owned {
     /// @dev Set current users address to the supplied backup one - be careful with this method when calling from the main Rocket Pool contract, all primary logic must be contained there as its upgradable
     function setUserAddressToCurrentBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalGiven) public constant isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
         // This can only be called when staking has been completed, do some quick double checks here too
-        if(status == 4 && users[userAddress].userAddressBackupWithdrawal != 0 && users[userAddress].userAddressBackupWithdrawal == userAddressBackupWithdrawalGiven) {
-            // Create a new mapping struct with the existing users details
+        if(status == 4 && usersBackupAddress[userAddressBackupWithdrawalGiven] == userAddress) {
+            // Copy the mapping struct with the existing users details
             users[userAddressBackupWithdrawalGiven] = users[userAddress];
+            // Add the user to the array of addresses
+            userAddresses.push(userAddressBackupWithdrawalGiven);
             // Now remove the old user
             removeUser(userAddress);
+            // All good
             return true;
         }
-        throw;
+        return false;
     }
 
 

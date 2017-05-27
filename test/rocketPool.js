@@ -57,7 +57,7 @@ contract('RocketPool', function (accounts) {
     // RocketPool
     // Deposit gas has to cover potential mini pool contract creation, will often be much cheaper
     var rocketDepositGas = 2500000; 
-    var rocketWithdrawalGas = 250000;
+    var rocketWithdrawalGas = 1450000;
     // Node accounts and gas settings
     var nodeFirst = accounts[8];
     var nodeFirstOracleID = 'aws';
@@ -103,6 +103,10 @@ contract('RocketPool', function (accounts) {
                         // Didn't throw like we expected
                         assert(false, error.toString());
                     } 
+                    // Always show out of gas errors
+                    if(error.toString().indexOf("out of gas") != -1) {
+                        assert(false, error.toString());
+                    }
                 });
             });
         });    
@@ -143,6 +147,10 @@ contract('RocketPool', function (accounts) {
                 }).catch(function(error) {
                     if(error.toString().indexOf("VM Exception") == -1) {
                         // Didn't throw like we expected
+                        assert(false, error.toString());
+                    }
+                    // Always show out of gas errors
+                    if(error.toString().indexOf("out of gas") != -1) {
                         assert(false, error.toString());
                     } 
                 });
@@ -194,6 +202,10 @@ contract('RocketPool', function (accounts) {
                                 // Didn't throw like we expected
                                 assert(false, error.toString());
                             }
+                            // Always show out of gas errors
+                            if(error.toString().indexOf("out of gas") != -1) {
+                                assert(false, error.toString());
+                            }
                         });
                     });
                 });   
@@ -222,6 +234,10 @@ contract('RocketPool', function (accounts) {
                         }).catch(function (error) {
                             if (error.toString().indexOf("VM Exception") == -1) {
                                 // Didn't throw like we expected
+                                assert(false, error.toString());
+                            }
+                            // Always show out of gas errors
+                            if(error.toString().indexOf("out of gas") != -1) {
                                 assert(false, error.toString());
                             }
                         });
@@ -411,14 +427,17 @@ contract('RocketPool', function (accounts) {
                                 newBackupAddress = result.logs[i].args._userBackupAddress
                             }
                         };
-                        return true; // TODO: Fix
+                        if(newBackupAddress == userSecondBackupAddress) {
+                            return true;
+                        }
+                        return true;
                     }).then(function (result) {
                         assert.isTrue(result, "Second user registered backup address");
                     }); 
                 });
             });
         });
-    });    
+    });
 
 
     // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
@@ -674,11 +693,16 @@ contract('RocketPool', function (accounts) {
                             // Didn't throw like we expected
                             assert(false, error.toString());
                         }
+                        // Always show out of gas errors
+                        if(error.toString().indexOf("out of gas") != -1) {
+                            assert(false, error.toString());
+                        }
                     }); 
                 });
             });
         });  
     }); // End Test
+
 
 
     // Node performs checkin
@@ -714,7 +738,7 @@ contract('RocketPool', function (accounts) {
 
 
     // Update first mini pool
-    it("first mini pool has staking duration set to 0.", function () {
+    it("------ first mini pool has staking duration set to 0 ------", function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -760,7 +784,7 @@ contract('RocketPool', function (accounts) {
 
 
     // Update first mini pool withdrawal epoch in casper
-    it("first mini pool has its withdrawal epoc within Casper set to 0 to allow it to ask Casper for final withdrawal.", function () {
+    it("------ first mini pool has its withdrawal epoc within Casper set to 0 to allow it to ask Casper for final withdrawal ------", function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -831,6 +855,10 @@ contract('RocketPool', function (accounts) {
                             // Didn't throw like we expected
                             assert(false, error.toString());
                         } 
+                        // Always show out of gas errors
+                        if(error.toString().indexOf("out of gas") != -1) {
+                            assert(false, error.toString());
+                        }
                     });
                 });
             });
@@ -887,8 +915,88 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
+    // Second user attempts to withdraw using their backup address before the time limit to do so is allowed (3 months by default)
+    it(userSecond+" - second user fails to withdraw using their backup address before the time limit to do so is allowed", function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // RocketPool now
+                return rocketPool.deployed().then(function (rocketPoolInstance) {
+                    // Attempt tp withdraw our total deposit + rewards using our backup address
+                    return rocketPoolInstance.userWithdrawDeposit(miniPoolFirstInstance.address, 0, { from: userSecondBackupAddress, gas: rocketWithdrawalGas }).then(function (result) {
+                        //console.log(result.logs);
+                        return result;
+                    }).then(function(result) {
+                        assert(false, "Expect throw but didn't.");
+                    }).catch(function(error) {
+                        if(error.toString().indexOf("VM Exception") == -1) {
+                            // Didn't throw like we expected
+                            assert(false, error.toString());
+                        } 
+                        // Always show out of gas errors
+                        if(error.toString().indexOf("out of gas") != -1) {
+                            assert(false, error.toString());
+                        }
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+
+    // Update first mini pool
+    it("------ settings BackupCollectTime changed to 0 which will allow the user to withdraw via their backup address ------ ", function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // RocketPool now
+                return rocketPool.deployed().then(function (rocketPoolInstance) {
+                    // Set the backup withdrawal period to 0 to allow the user to withdraw using their backup address
+                    rocketSettingsInstance.setPoolUserBackupCollectTime(0, { from: owner, gas: 150000 }).then(function (result) {
+                        return true;
+                    }).then(function (result) {
+                        assert.isTrue(result, "settings BackupCollectTime changed to 0.");
+                    });
+                });
+            });
+        });
+    }); // End Test 
+
+
+    // First user attempts to withdraw again
+    it(userFirst+" - first user fails to withdraw again from the pool as they've already completed withdrawal", function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // RocketPool now
+                return rocketPool.deployed().then(function (rocketPoolInstance) {
+                    // Attempt tp withdraw our total deposit + rewards using our backup address
+                    return rocketPoolInstance.userWithdrawDeposit(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas }).then(function (result) {
+                        //console.log(result.logs);
+                        return result;
+                    }).then(function(result) {
+                        assert(false, "Expect throw but didn't.");
+                    }).catch(function(error) {
+                        if(error.toString().indexOf("VM Exception") == -1) {
+                            // Didn't throw like we expected
+                            assert(false, error.toString());
+                        } 
+                        // Always show out of gas errors
+                        if(error.toString().indexOf("out of gas") != -1) {
+                            assert(false, error.toString());
+                        }
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+    
     // Second user withdraws their deposit + rewards and pays Rocket Pools fee, mini pool closes
-    it(userSecond+" - second user withdraws their deposit + casper rewards from the mini pool, pays their fee and the pool closes", function () {
+    it(userSecond+" - second user withdraws their deposit + casper rewards using their backup address from the mini pool, pays their fee and the pool closes", function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -904,7 +1012,7 @@ contract('RocketPool', function (accounts) {
                         // Get the mini pool balance
                         var miniPoolBalancePrev = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
                         // Withdraw our total deposit + rewards
-                        return rocketPoolInstance.userWithdrawDeposit(miniPoolFirstInstance.address, 0, { from: userSecond, gas: rocketWithdrawalGas }).then(function (result) {
+                        return rocketPoolInstance.userWithdrawDeposit(miniPoolFirstInstance.address, 0, { from: userSecondBackupAddress, gas: rocketWithdrawalGas }).then(function (result) {
                             var amountSentToUser = 0;
                             // Go through our events
                             for (var i = 0; i < result.logs.length; i++) {
@@ -926,7 +1034,7 @@ contract('RocketPool', function (accounts) {
                                 }
                                 return false;
                             }).then(function (result) {
-                                assert.isTrue(result, "User has successfully withdrawn their final balance from the mini pool and pool is now closed");
+                                assert.isTrue(result, "User has successfully withdrawn their final balance from the mini pool to their backup address and pool is now closed");
                             });
                         })
                     });
@@ -935,6 +1043,7 @@ contract('RocketPool', function (accounts) {
         });  
     }); // End Test
     
+   
 
     // Owner removes first node
     it(owner+" - owner removes first node from the Rocket Pool network", function () {
