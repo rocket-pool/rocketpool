@@ -34,13 +34,17 @@ contract RocketFactory is Owned {
         bool exists;
     }
 
+    event FlagAddress (
+        address flag
+    );
+
 
     /*** Modifiers ***************/
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
+    /// @dev Only allow access from the latest version of these RocketPool contracts
+    modifier onlyAllowedRocketContracts() {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (msg.sender != rocketHub.getRocketPoolAddress()) throw;
+        if (msg.sender != rocketHub.getRocketPoolAddress() && msg.sender != rocketHub.getRocketPartnerAPIAddress()) throw;
         _;
     }
 
@@ -57,7 +61,7 @@ contract RocketFactory is Owned {
     /// @dev Create a new RocketPoolMini contract, deploy to the etherverse and return the address to the caller
     /// @dev Note that the validation and logic for creation should be done in the calling contract
     /// @param miniPoolStakingDuration The staking duration for the mini pool
-    function createRocketPoolMini(uint256 miniPoolStakingDuration) public onlyLatestRocketPool returns(address) {
+    function createRocketPoolMini(uint256 miniPoolStakingDuration) public onlyAllowedRocketContracts returns(address) {
         // Create the new pool and add it to our list
         RocketPoolMini newPoolAddress = new RocketPoolMini(rocketHubAddress, miniPoolStakingDuration);
         // Store it now after a few checks

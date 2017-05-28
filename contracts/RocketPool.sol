@@ -107,16 +107,6 @@ contract RocketPool is Owned {
         uint256 created
     );
 
-    event PartnerRegistered (
-        address indexed _partnerSendFromAddress,
-        uint256 created
-    );
-
-    event PartnerRemoved (
-        address indexed _address,
-        uint256 created
-    );
-
     event FlagUint (
         uint256 flag
     );
@@ -124,10 +114,11 @@ contract RocketPool is Owned {
     event FlagInt (
         int256 flag
     );
-    
-     event FlagAddress (
+
+    event FlagAddress (
         address flag
     );
+
     
 
     /*** Modifiers *************/
@@ -168,12 +159,20 @@ contract RocketPool is Owned {
         _;
     }
 
+
     /// @dev Only allow access from the a RocketMiniPool contract
     modifier onlyMiniPool() {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         if (!rocketHub.getRocketMiniPoolExists(msg.sender)) throw;
         _;
     }  
+
+    /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
+    modifier onlyLatestRocketPartnerAPI() {
+        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        if (msg.sender != rocketHub.getRocketPartnerAPIAddress()) throw;
+        _;
+    } 
 
    
     /// @dev rocketPool constructor
@@ -268,11 +267,20 @@ contract RocketPool is Owned {
         deposit(msg.sender, 0, sha3('default'));
     }
 
+    /// @dev Deposit to Rocket Pool from the 3rd party partner API
+    function partnerDeposit(address partnerAddress, address partnerUserAddress, bytes32 poolStakingTimeID) public payable onlyLatestRocketPartnerAPI returns(bool) { 
+        // Make the deposit on behalf of the 3rd party partners user
+        if(deposit(partnerUserAddress, partnerAddress, poolStakingTimeID)) {
+            return true;
+        }
+        return false;       
+    }
+
     /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
     /// @param userAddress The address of the user whom the deposit belongs too
     /// @param partnerAddress The address of the registered 3rd party partner whom is in control of the supplid user account that the deposit belongs too
     /// @param poolStakingTimeID The ID (bytes32 encoded string) that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
-    function deposit(address userAddress, address partnerAddress, bytes32 poolStakingTimeID) private acceptableDeposit onlyLatestRocketPool { 
+    function deposit(address userAddress, address partnerAddress, bytes32 poolStakingTimeID) private acceptableDeposit onlyLatestRocketPool returns(bool) { 
         // Check to verify the supplied mini pool staking time id is legit
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
@@ -289,7 +297,9 @@ contract RocketPool is Owned {
         // Get the pool to withdraw the users deposit to its contract balance
         if(poolDepositTo.addDeposit.value(msg.value).gas(100000)(userAddress)) {
             // All good? Fire the event for the new deposit
-            Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);      
+            Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);   
+            // Success
+            return true;   
         }else{
             throw;
         } 
@@ -343,22 +353,28 @@ contract RocketPool is Owned {
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     function userWithdrawDeposit(address miniPoolAddress, uint256 amount) public returns(bool)  {
         // Call our transfer method, creates a transaction
-        userWithdrawDepositFromPoolTransfer(miniPoolAddress, amount, false, 0);
+        return userWithdrawDepositFromPoolTransfer(msg.sender, miniPoolAddress, amount, 0);
     }
 
-
-    /// @dev User has requested withdrawing their deposit from a pool, all main checks are done here as this contract is upgradable, but mini pools are not.
+    /// @notice Withdraw ether from Rocket Pool via a 3rd party partner
+    /// @dev A Rocket Pool 3rd party partner withdrawing their users deposit
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    /// @param partnerWithdrawal Partners can flag this as a withdrawal on behalf of one of their users.
-    /// @param partnerUserAddress The address of the partners user to withdraw from and send the funds too.
-    function userWithdrawDepositFromPoolTransfer(address miniPoolAddress, uint256 amount, bool partnerWithdrawal, address partnerUserAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool)  {
+    function userPartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress, address partnerAddress) public onlyLatestRocketPartnerAPI returns(bool)  {
+        // Call our transfer method, creates a transaction
+        return userWithdrawDepositFromPoolTransfer(partnerUserAddress, miniPoolAddress, amount, partnerAddress);
+    }
+
+    /// @dev User has requested withdrawing their deposit from a pool, all main checks are done here as this contract is upgradable, but mini pools are not.
+    /// @param userAddress The address to use for withdrawals, can also be a partners users address withdrawing on behalf of their user
+    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    /// @param partnerAddress The address of the partner 
+    function userWithdrawDepositFromPoolTransfer(address userAddress, address miniPoolAddress, uint256 amount, address partnerAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool)  {
         // Get the hub
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Get an instance of that pool contract
-        RocketPoolMini pool = getPoolInstance(miniPoolAddress); 
-        // The address to use for withdrawals, can also be a partner withdrawing on behalf of their user
-        address userAddress = partnerWithdrawal == true && rocketHub.getRocketPartnerExists(msg.sender) ? partnerUserAddress : msg.sender;                      
+        RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
         if(pool.getUserBackupAddressExists(userAddress)) {
             // Get the original deposit address now
@@ -369,19 +385,21 @@ contract RocketPool is Owned {
                // The user can't use their backup address to withdraw at this point or its not their nominated backup address trying
                 throw;
             }  
-        }     
+        }  
+             
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
         uint256 userBalance = pool.getUserDeposit(userAddress);
         address userPartnerAddress = pool.getUserPartner(userAddress);
         // Now check to see if the given partner matches the users partner
-        if(userPartnerAddress != 0 && userPartnerAddress != msg.sender) {
+        if(userPartnerAddress != 0 && partnerAddress != 0 && userPartnerAddress != partnerAddress) {
             // The supplied partner for the user does not match the sender
             throw;
         }
         // Check to see if the user is actually in this pool and has a deposit
-        if(userBalance > 0) {        
+        if(userBalance > 0) {  
             // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
             if(pool.getStatus() == 0 || pool.getStatus() == 1 || pool.getStatus() == 4) {
+                 
                     // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
                     // Users withdraw all their deposit + rewards at once when the pool has finished staking
                     // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
@@ -394,7 +412,6 @@ contract RocketPool is Owned {
                     }
                     // 0 amount or less given withdraws the entire users deposit
                     amount = amount <= 0 ? userBalance : amount;
-                   
                     // Ok send the deposit to the user from the mini pool now
                     if(pool.withdraw(userAddress, amount)) {
                         // Successful withdrawal
@@ -404,6 +421,7 @@ contract RocketPool is Owned {
                     }
                 }
         }
+        
         throw;
     }
 
@@ -835,59 +853,7 @@ contract RocketPool is Owned {
         }
     } 
     
-
-    /*** PARTNERS ***********************************************/
-
-    /// @dev Register a new partner address if it doesn't exist, only the contract creator can do this
-    /// @param partnerAccountAddressToRegister The msg.sender address the partner will use
-    /// @param partnerName The msg.sender address the partner will use
-    function partnerRegister(address partnerAccountAddressToRegister, string partnerName) public onlyOwner  {
-        // Add the partner to the primary persistent storage so any contract upgrades won't effect the current stored partners
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        // Sets the rocket partner if the address is ok and isn't already set
-        if(rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
-            // Fire the event
-            PartnerRegistered(partnerAccountAddressToRegister, now);
-        }
-	}
-
-    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()` with partner address `partnerAddress`.
-    /// @dev Deposit to Rocket Pool via a partner on behalf of their user
-    /// @param partnerUserAddress The address of the user whom the deposit belongs too and the 3rd party is in control of
-    /// @param poolStakingTimeID The ID (bytes32 encoded string) that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
-    function partnerDeposit(address partnerUserAddress, bytes32 poolStakingTimeID) public payable { 
-        // If the user is not a direct Rocket Pool user but a partner user, check the partner is legit
-        // The partner address being supplied must also match the sender address
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        // If the partner does not exist, exit
-        if(!rocketHub.getRocketPartnerExists(msg.sender)) {
-            throw;
-        }
-        // Make the deposit now and validate it
-        deposit(partnerUserAddress, msg.sender, poolStakingTimeID);
-    }
-
-    /// @notice Withdraw ether from Rocket Pool via a 3rd party partner
-    /// @dev A 3rd party partner Rocket Pool user withdrawing their users deposit
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    /// @param partnerUserAddress The address of the partners user to withdraw from and send the funds too.
-    function partnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress) public returns(bool)  {
-        // Call our transfer method, creates a transaction
-        userWithdrawDepositFromPoolTransfer(miniPoolAddress, amount, true, partnerUserAddress);
-    }
-
-
-    /// @dev Remove a partner from the Rocket Pool network
-    function partnerRemove(address partnerAddress) public onlyOwner {
-         // Remove partner from the primary persistent storage
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        // Sets the rocket partner if the address is ok and isn't already set
-        if(rocketHub.setRocketPartnerRemove(partnerAddress)) {
-            // Fire the event
-            PartnerRemoved(partnerAddress, now);
-        }
-    } 
+   
     
 
 

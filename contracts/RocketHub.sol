@@ -14,6 +14,8 @@ contract RocketHub is Owned  {
     address public rocketPoolAddress; 
     // The address of the rocket factory contract
     address public rocketFactoryAddress; 
+    // The address of the rocket partner API contract
+    address public rocketPartnerAPIAddress; 
     // The address of the main settings contract
     address public rocketSettingsAddress;
     // The address of the casper staking contract
@@ -75,9 +77,15 @@ contract RocketHub is Owned  {
 
     /*** Modifiers *************/
 
-     /// @dev Only allow access from the latest version of the main RocketPool contract
+    /// @dev Only allow access from the latest version of the main RocketPool contract
     modifier onlyLatestRocketPool() {
         if (msg.sender != rocketPoolAddress) throw;
+        _;
+    } 
+
+    /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
+    modifier onlyLatestRocketPartnerAPI() {
+        if (msg.sender != rocketPartnerAPIAddress) throw;
         _;
     } 
 
@@ -119,6 +127,14 @@ contract RocketHub is Owned  {
         }
     }
 
+    /// @dev Set the address of a new rocketpool 3rd party partner API
+    /// @param newRocketPartnerAPIAddress The address of the new rocket 3rd party partner API contract
+    function setRocketPartnerAPIAddress(address newRocketPartnerAPIAddress) public onlyOwner  {
+        if(newRocketPartnerAPIAddress != 0) {
+            rocketPartnerAPIAddress = newRocketPartnerAPIAddress;
+        }
+    }
+
     /// @dev Set the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
     /// @param newRocketSettingsAddress The address of the new rocket settings contract
     function setRocketSettingsAddress(address newRocketSettingsAddress) public onlyOwner  {
@@ -152,6 +168,11 @@ contract RocketHub is Owned  {
     /// @dev Get the address of a new rocket factory, used for automatic contract creation
     function getRocketFactoryAddress() public returns(address) {
         return rocketFactoryAddress;
+    }
+
+    /// @dev Get the address of a new rocket partner 3rd party API
+    function getRocketPartnerAPIAddress() public returns(address) {
+        return rocketPartnerAPIAddress;
     }
 
     /// @dev Get the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
@@ -368,7 +389,7 @@ contract RocketHub is Owned  {
     /// @dev Sets a new 3rd party partner address, partners can enable staking for their users using our API and infrastructure 
     /// @param partnerAddressToRegister The msg.send address associated with this partner. Partners can have multiple ones registered.
     /// @param parterName The name of the partner
-    function setRocketPartner(address partnerAddressToRegister, bytes32 parterName) public onlyLatestRocketPool returns(bool) {
+    function setRocketPartner(address partnerAddressToRegister, bytes32 parterName) public onlyLatestRocketPartnerAPI returns(bool) {
         // Basic error checking for the storage
         if (partnerAddressToRegister != 0 && partners[partnerAddressToRegister].exists == false) {
             // Add the new partner to the mapping of Partner structs
@@ -387,7 +408,7 @@ contract RocketHub is Owned  {
 
     /// @dev Removes a partner from storage 
     /// @param partnerAddressToRemove The partner to remove.
-    function setRocketPartnerRemove(address partnerAddressToRemove) public onlyRegisteredPartner(partnerAddressToRemove) onlyLatestRocketPool returns(bool) {
+    function setRocketPartnerRemove(address partnerAddressToRemove) public onlyRegisteredPartner(partnerAddressToRemove) onlyLatestRocketPartnerAPI returns(bool) {
         // Remove the partner now
         uint i = 0;
         bool found = false;
