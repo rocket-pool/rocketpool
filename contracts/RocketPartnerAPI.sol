@@ -81,7 +81,6 @@ contract RocketPartnerAPI is Owned {
     }
 
 
-
     /*** Public Partner Methods *************/
 
     /// @dev Get the address to deposit to with Rocket Pool
@@ -101,12 +100,12 @@ contract RocketPartnerAPI is Owned {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if(rocketPool.partnerDeposit.value(msg.value).gas(2800000)(msg.sender, partnerUserAddress, poolStakingTimeID)) {
+        if(rocketPool.partnerDeposit.value(msg.value).gas(2800000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
             // Fire the event now
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }
 
-        /* // Good idea, but best implemented with a shell contract that needs to spawn other shell contracts
+        /* // Good idea, but best implemented with a shell contract that needs to spawn other contracts of the same type
         if(rocketHub.getRocketPoolAddress().delegatecall(bytes4(sha3("partnerDeposit(address,bytes32)")), partnerUserAddress, poolStakingTimeID)) {
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }*/
@@ -121,8 +120,8 @@ contract RocketPartnerAPI is Owned {
         // Get the main Rocket Pool contract
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
-        // Forward the deposit to our main contract, call our transfer method, creates a transaction // TODO: Reduce gas when good limit is figured out
-        if(rocketPool.userPartnerWithdrawDeposit.gas(1350000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
+        // Forward the deposit to our main contract, call our transfer method, creates a transaction 
+        if(rocketPool.userPartnerWithdrawDeposit.gas(600000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
             // Fire the event now
             APIpartnerWithdrawalAccepted(msg.sender, partnerUserAddress, now);
         }

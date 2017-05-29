@@ -268,7 +268,7 @@ contract RocketPool is Owned {
     }
 
     /// @dev Deposit to Rocket Pool from the 3rd party partner API
-    function partnerDeposit(address partnerAddress, address partnerUserAddress, bytes32 poolStakingTimeID) public payable onlyLatestRocketPartnerAPI returns(bool) { 
+    function partnerDeposit(address partnerUserAddress, address partnerAddress, bytes32 poolStakingTimeID) public payable onlyLatestRocketPartnerAPI returns(bool) { 
         // Make the deposit on behalf of the 3rd party partners user
         if(deposit(partnerUserAddress, partnerAddress, poolStakingTimeID)) {
             return true;
@@ -371,8 +371,6 @@ contract RocketPool is Owned {
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     /// @param partnerAddress The address of the partner 
     function userWithdrawDepositFromPoolTransfer(address userAddress, address miniPoolAddress, uint256 amount, address partnerAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool)  {
-        // Get the hub
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
@@ -386,7 +384,6 @@ contract RocketPool is Owned {
                 throw;
             }  
         }  
-             
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
         uint256 userBalance = pool.getUserDeposit(userAddress);
         address userPartnerAddress = pool.getUserPartner(userAddress);
@@ -399,7 +396,6 @@ contract RocketPool is Owned {
         if(userBalance > 0) {  
             // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
             if(pool.getStatus() == 0 || pool.getStatus() == 1 || pool.getStatus() == 4) {
-                 
                     // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
                     // Users withdraw all their deposit + rewards at once when the pool has finished staking
                     // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
@@ -421,7 +417,6 @@ contract RocketPool is Owned {
                     }
                 }
         }
-        
         throw;
     }
 
