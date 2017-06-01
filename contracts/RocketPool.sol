@@ -296,6 +296,8 @@ contract RocketPool is Owned {
         RocketPoolMini poolDepositTo = getPoolInstance(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
         if(poolDepositTo.addDeposit.value(msg.value).gas(100000)(userAddress)) {
+            // Update the pools status now
+            poolDepositTo.updateStatus();
             // All good? Fire the event for the new deposit
             Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);   
             // Success

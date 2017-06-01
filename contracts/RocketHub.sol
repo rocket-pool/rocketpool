@@ -13,6 +13,8 @@ contract RocketHub is Owned  {
     // The address of the main pool contract
     address public rocketPoolAddress; 
     // The address of the rocket factory contract
+    address public rocketPoolMiniDelegateAddress; 
+    // The address of the rocket factory contract
     address public rocketFactoryAddress; 
     // The address of the rocket partner API contract
     address public rocketPartnerAPIAddress; 
@@ -127,6 +129,14 @@ contract RocketHub is Owned  {
         }
     }
 
+    /// @dev Set the address of a new rocketpoolminidelegate, usefull for upgrading the methods that any creating minipools ready from
+    /// @param newRocketPoolMiniDelegateAddress The address of the new main rocket pool contract
+    function setRocketPoolMiniDelegateAddress(address newRocketPoolMiniDelegateAddress) public onlyOwner  {
+        if(newRocketPoolMiniDelegateAddress != 0) {
+            rocketPoolMiniDelegateAddress = newRocketPoolMiniDelegateAddress;
+        }
+    }
+
     /// @dev Set the address of a new rocketpool 3rd party partner API
     /// @param newRocketPartnerAPIAddress The address of the new rocket 3rd party partner API contract
     function setRocketPartnerAPIAddress(address newRocketPartnerAPIAddress) public onlyOwner  {
@@ -163,6 +173,11 @@ contract RocketHub is Owned  {
      // Note: 3rd party services using Rocket Pool for staking should always call this first before displaying the deposit address
     function getRocketPoolAddress() public returns(address) {
         return rocketPoolAddress;
+    }
+
+    /// @dev Get the address of the minipool delgate contract
+    function getRocketPoolMiniDelegateAddress() public returns(address) {
+        return rocketPoolMiniDelegateAddress;
     }
 
     /// @dev Get the address of a new rocket factory, used for automatic contract creation

@@ -87,7 +87,7 @@ contract RocketSettings is Owned  {
 
     /// @dev Get default status of a new mini pool
     function getPoolDefaultStatus() public constant returns (uint256)  {
-        return uint(poolMiniDefaultStatus);
+        return uint256(poolMiniDefaultStatus);
     }
 
     /// @dev Check to see if new pools are allowed to be created

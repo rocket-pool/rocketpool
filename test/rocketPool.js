@@ -256,6 +256,33 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
+    /*
+   // Send Ether to Rocket pool with just less than the min amount required to launch a mini pool with no specified 3rd party user partner
+    it(userFirst+" - POOL TEST", function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // RocketPool now
+                return rocketPool.deployed().then(function (rocketPoolInstance) {
+                    // Get the min ether required to launch a mini pool
+                    return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function (result) {
+                        // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
+                        var sendAmount = result.valueOf() - web3.toWei('2', 'ether'); 
+                        return rocketPoolInstance.sendTransaction({ from: userFirst, to: rocketPoolInstance.address, value: sendAmount, gas: rocketDepositGas }).then(function(result) {
+                                return false;
+                            }).then(function (result) {
+                                assert.isTrue(result, "Funds transferred successfully, mini pool created, user reg and funds Transferred to mini pool.");
+                            });
+
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+    return;
+    */
 
     // Send Ether to Rocket pool with just less than the min amount required to launch a mini pool with no specified 3rd party user partner
     it(userFirst+" - user send ether to RP, create first mini pool, register user with pool", function () {
@@ -308,8 +335,7 @@ contract('RocketPool', function (accounts) {
         });  
     }); // End Test
 
-
-
+   
     // Have the same initial user send an deposit again, to trigger the pool to go into countdown
     it(userFirst+" - user send ether to RP from same user again, their balance updates, first mini pool remains accepting deposits and only 1 reg user", function () {
         // Check RocketHub is deployed first    
