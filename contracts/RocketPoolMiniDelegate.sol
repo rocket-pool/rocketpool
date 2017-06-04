@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
 import "./RocketHub.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -95,6 +95,10 @@ contract RocketPoolMiniDelegate is Owned {
 
     event FlagUint (
         uint256 flag
+    );
+
+     event FlagAddress (
+        address flag
     );
 
    
@@ -374,15 +378,15 @@ contract RocketPoolMiniDelegate is Owned {
             // Send our mini pools balance to casper now with our assigned nodes details
             // TODO: rocketNodeValidationCode is currently spec'd as 'bytes' in the Mauve paper, this is a variable length type that cannot be passed from contract to contract at the moment
             // This prevents the below working currently, so rocketNodeValidationCode has been changed to 'bytes32' for now until they get around to implementing passing variable memory types ( https://github.com/ethereum/EIPs/pull/211 )
-            // If for some reason this isn't implemented by the time Casper is ready, we can simply send the deposit to the mini pools assigned node who can act as an oracle then send the bytes code along with the Ether directly from the node via the nodejs service script
-            if(casper.deposit.value(this.balance).gas(500000)(rocketNodeValidationCode, rocketNodeRandao, this)) {
+            // If for some reason this isn't implemented by the time Casper is ready, we can simply send the deposit to the mini pools assigned node who can act as an oracle then send the bytes code along with the Ether directly from the node via the nodejs service script            
+            if(casper.deposit.value(this.balance).gas(400000)(rocketNodeValidationCode, rocketNodeRandao, this)) {
                 // Set the mini pool status as staking
                 status = 2;
                 // All good? Fire the event for the new casper transfer
                 PoolTransfer(this, rocketHub.getCasperAddress(), sha3('casperDeposit'), stakingBalance, 0, now); 
             }else{
                 stakingBalance = 0;
-            }         
+            }        
         }
         // Are we all set to request withdrawal of our deposit from Casper?
         if(stakingBalance > 0 && status == 2 && getStakingRequestWithdrawalTimeMet() == true) { 

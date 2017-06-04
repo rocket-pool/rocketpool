@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
 import "./RocketHub.sol";
 import "./interface/RocketSettingsInterface.sol";

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
 import "./contract/Owned.sol";
 
@@ -14,6 +14,8 @@ contract RocketHub is Owned  {
     address public rocketPoolAddress; 
     // The address of the rocket factory contract
     address public rocketPoolMiniDelegateAddress; 
+    // The address of the rocket deposit token contract
+    address public rocketDepositTokenAddress;
     // The address of the rocket factory contract
     address public rocketFactoryAddress; 
     // The address of the rocket partner API contract
@@ -161,6 +163,14 @@ contract RocketHub is Owned  {
         }
     }
 
+    /// @dev Set the address of a new rocket deposit token, used for backing / trading deposits currently staking
+    /// @param newRocketDepositTokenAddress The address of the new rocket deposit token contract
+    function setRocketDepositTokenAddress(address newRocketDepositTokenAddress) public onlyOwner  {
+        if(newRocketDepositTokenAddress != 0) {
+            rocketDepositTokenAddress = newRocketDepositTokenAddress;
+        }
+    }
+
     /// @dev Set the address of a the casper staking contract that registers our nodes as validators via the mini pools
     /// @param newCasperAddress The address of the casper contract
     function setCasperAddress(address newCasperAddress) public onlyOwner  {
@@ -193,6 +203,11 @@ contract RocketHub is Owned  {
     /// @dev Get the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
     function getRocketSettingsAddress() public returns(address) {
         return rocketSettingsAddress;
+    }
+
+    /// @dev Get the address of a new rocketpool deposit token contract
+    function getRocketDepositTokenAddress() public returns(address) {
+        return rocketDepositTokenAddress;
     }
 
     /// @dev Get the address of the casper staking contract

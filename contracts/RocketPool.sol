@@ -1,9 +1,10 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
 import "./RocketPoolMini.sol"; 
 import "./RocketFactory.sol"; 
+import "./RocketDepositToken.sol"; 
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
 
@@ -96,8 +97,9 @@ contract RocketPool is Owned {
     );
 
     event PoolAssignedToNode (
-        address indexed _miniPoolAddress,
-        address indexed _nodeAddress,
+        // TODO: Make these indexed again
+        address _miniPoolAddress,
+        address _nodeAddress,
         uint256 created
     );
 
@@ -735,6 +737,7 @@ contract RocketPool is Owned {
                         PoolAssignedToNode(poolsFound[i], nodeAddress, now);
                         // Now set the pool to begin staking with casper by updating its status with the newly assigned node
                         pool.updateStatus();
+                        //pool.call.gas(600000)(bytes4(sha3("updateStatus()")));
                     }
                 }
             }
@@ -801,7 +804,7 @@ contract RocketPool is Owned {
 
 
     /// @dev Get an available node for a pool to be assigned too
-    // TODO: As well as assigning pools by node user server load, assign by node geographic region to aid in redundancy and decentralisation
+    // TODO: As well as assigning pools by node user server load, assign by node geographic region to aid in redundancy and decentralisation 
     function nodeAvailableForPool() private returns(address) {
         // This is called only by registered Rocket mini pools 
         RocketHub rocketHub = RocketHub(rocketHubAddress);
@@ -821,7 +824,8 @@ contract RocketPool is Owned {
                 uint256 averageLoad =  rocketHub.getRocketNodeAverageLoad(currentNodeAddress);
                 bool active =  rocketHub.getRocketNodeActive(currentNodeAddress);
                 // Get the node with the lowest current work load average to help load balancing and avoid assigning to any servers currently not activated
-                nodeAddressToUse = (averageLoad <= prevAverageLoad || i == 0) && active == true ? currentNodeAddress : nodeAddressToUse;
+                // A node must also have checked in at least once before being assinged, hence why the averageLoad must be greater than zero
+                nodeAddressToUse = (averageLoad <= prevAverageLoad || i == 0) && averageLoad > 0  && active == true ? currentNodeAddress : nodeAddressToUse;
                 prevAverageLoad = averageLoad;
             }
             // We have an address to use, excellent, assign it
@@ -851,7 +855,24 @@ contract RocketPool is Owned {
     } 
     
    
-    
+     /*** DEPOSIT TOKENS ***********************************************/
+
+    /// @dev Mint deposit tokens for a user
+    /// @param userAddress Address of the user
+    /// @param amount Amount of tokens to mint
+    // TODO: Test contract - also check is pool user and their staking
+    function depositTokenMintTest(address userAddress, uint256 amount) returns(bool) {
+        // Get Rocket Hub
+        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        // Get Rocket Deposit Token
+        RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getRocketDepositTokenAddress());
+        // Now mint those tokens
+        if(rocketDepositToken.mint(userAddress, amount)) {
+            return true;
+        }
+        return false;
+    }
+
 
 
     /*** UTILITIES ***********************************************/
