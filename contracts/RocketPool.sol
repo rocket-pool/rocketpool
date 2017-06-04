@@ -529,6 +529,27 @@ contract RocketPool is Owned {
         return false;
     }
 
+
+    /// @notice Withdraw Rocket Deposit Tokens from your deposit?
+    /// @dev Will mint new tokens for this user that backs their deposit and can be traded on the open market - not available for partner accounts atm
+    /// @param miniPoolAddress The address of the mini pool they wish to withdraw tokens from.
+    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool)  {
+        // Get an instance of that pool contract
+        RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
+        // Get the user deposit now, this will throw if the user doesn't exist in the given pool
+        uint256 userBalance = pool.getUserDeposit(msg.sender);
+        // Check to see if the user is actually in this pool and has a deposit
+        if(userBalance > 0) {  
+            // Check the status, must be currently staking to allow tokens to be withdrawn
+            if(pool.getStatus() == 2) {
+
+                return true;
+            }
+        }
+        throw;
+    }
+
  
 
     /*** POOLS ***********************************************/
@@ -737,7 +758,6 @@ contract RocketPool is Owned {
                         PoolAssignedToNode(poolsFound[i], nodeAddress, now);
                         // Now set the pool to begin staking with casper by updating its status with the newly assigned node
                         pool.updateStatus();
-                        //pool.call.gas(600000)(bytes4(sha3("updateStatus()")));
                     }
                 }
             }
@@ -861,7 +881,8 @@ contract RocketPool is Owned {
     /// @param userAddress Address of the user
     /// @param amount Amount of tokens to mint
     // TODO: Test contract - also check is pool user and their staking
-    function depositTokenMintTest(address userAddress, uint256 amount) returns(bool) {
+    /*
+    function depositTokenMintTest(address userAddress, uint256 amount) private returns(bool) {
         // Get Rocket Hub
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Get Rocket Deposit Token
@@ -871,7 +892,7 @@ contract RocketPool is Owned {
             return true;
         }
         return false;
-    }
+    }*/
 
 
 
