@@ -13,4 +13,8 @@ contract RocketPoolInterface {
     function userPartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress, address partnerAddress) public onlyLatestRocketPartnerAPI returns(bool);
     /// @dev MiniPools can request the main contract to be removed
     function removePool() poolsAllowedToBeClosed onlyMiniPool returns(bool);
+    /// @dev Get all pools that are assigned to this node (explicit method)
+    /// @param nodeAddress Get pools with the current node
+     // TODO: When metropolis is released, this method can be removed as we'll be able to read variable length data between contracts then
+    function getPoolsFilterWithNodeCount(address nodeAddress) constant returns(uint256);
 }

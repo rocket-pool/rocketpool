@@ -18,6 +18,8 @@ contract RocketHub is Owned  {
     address public rocketDepositTokenAddress;
     // The address of the rocket factory contract
     address public rocketFactoryAddress; 
+    // The address of the rocket node contract
+    address public rocketNodeAddress; 
     // The address of the rocket partner API contract
     address public rocketPartnerAPIAddress; 
     // The address of the main settings contract
@@ -85,7 +87,13 @@ contract RocketHub is Owned  {
     modifier onlyLatestRocketPool() {
         if (msg.sender != rocketPoolAddress) throw;
         _;
-    } 
+    }
+
+    /// @dev Only allow access from the latest version of the RocketNode contract
+    modifier onlyLatestRocketNode() {
+        if (msg.sender != rocketNodeAddress) throw;
+        _;
+    }  
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
@@ -163,6 +171,14 @@ contract RocketHub is Owned  {
         }
     }
 
+    /// @dev Set the address of a new rocket node contract
+    /// @param newRocketNodeAddress The address of the new rocket smart node contract
+    function setRocketNodeAddress(address newRocketNodeAddress) public onlyOwner  {
+        if(newRocketNodeAddress != 0) {
+            rocketNodeAddress = newRocketNodeAddress;
+        }
+    }
+
     /// @dev Set the address of a new rocket deposit token, used for backing / trading deposits currently staking
     /// @param newRocketDepositTokenAddress The address of the new rocket deposit token contract
     function setRocketDepositTokenAddress(address newRocketDepositTokenAddress) public onlyOwner  {
@@ -200,6 +216,11 @@ contract RocketHub is Owned  {
         return rocketPartnerAPIAddress;
     }
 
+    /// @dev Get the address of the rocket node contract
+    function getRocketNodeAddress() public returns(address) {
+        return rocketNodeAddress;
+    }
+
     /// @dev Get the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
     function getRocketSettingsAddress() public returns(address) {
         return rocketSettingsAddress;
@@ -220,7 +241,7 @@ contract RocketHub is Owned  {
 
     /// @dev Sets a new registered Rocket Node to storage, the logic for adding is contained in the main Rocket Pool contract, so access to storage is only permitted through the latest version of that contract
     /// @param nodeAccountAddressToRegister The node address to add.
-    function setRocketNode(address nodeAccountAddressToRegister, bytes32 newOracleID, bytes32 newInstanceID) public onlyLatestRocketPool returns(bool) {
+    function setRocketNode(address nodeAccountAddressToRegister, bytes32 newOracleID, bytes32 newInstanceID) public onlyLatestRocketNode returns(bool) {
         // Basic error checking for the storage
         if (nodeAccountAddressToRegister != 0 && nodes[nodeAccountAddressToRegister].exists == false) {
             // Add the new node to the mapping of Node structs
@@ -252,13 +273,13 @@ contract RocketHub is Owned  {
     }
 
     /// @dev Rocket Pool can manually/automatically deactivate a node if it is down or running badly (high load), this will stop the node accepting new pools to be assigned to it
-    function setRocketNodeActive(address nodeAddress, bool activate) public onlyRegisteredNode(nodeAddress) onlyLatestRocketPool  {
+    function setRocketNodeActive(address nodeAddress, bool activate) public onlyRegisteredNode(nodeAddress) onlyLatestRocketNode  {
         nodes[nodeAddress].active = activate;
     }
 
     /// @dev Removes a node from storage 
     /// @param nodeAddressToRemove The node to remove.
-    function setRocketNodeRemove(address nodeAddressToRemove) public onlyRegisteredNode(nodeAddressToRemove) onlyLatestRocketPool returns(bool) {
+    function setRocketNodeRemove(address nodeAddressToRemove) public onlyRegisteredNode(nodeAddressToRemove) onlyLatestRocketNode returns(bool) {
         // Remove the node now
         uint i = 0;
         bool found = false;
