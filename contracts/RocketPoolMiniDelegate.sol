@@ -5,6 +5,7 @@ import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
 import "./contract/Owned.sol";
+import "./lib/Arithmetic.sol";
 
 
 /// @title The minipool delegate, should contain all primary logic for methods that minipools use, is entirely upgradable so that currently deployed pools can get any bug fixes or additions - storage here MUST match the minipool contract
@@ -127,31 +128,13 @@ contract RocketPoolMiniDelegate is Owned {
     
     /*** Methods *************/
    
-    function RocketPoolMiniDelegateInit(address deployedRocketHubAddress, uint256 miniPoolStakingDuration) onlyLatestRocketPool returns (bool) {
+   function RocketPoolMiniDelegate(address deployedRocketHubAddress) {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;
-        // Set the version
-        version = 1;
-        // Staking details
-        stakingDuration = miniPoolStakingDuration;
-        stakingBalance = 0;
-        stakingBalanceReceived = 0;
-        // The pool isn't initally assigned to a node, only later when launching
-        rocketNodeAddress = 0;
-        // New pools are set to pre launch and accept deposits by default
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
-        status = rocketSettings.getPoolDefaultStatus();
-        statusChangeTime = 0;
-        // Total deposit tokens owed by the pool
-        depositTokensWithdrawnTotal = 0;
-        // All good
-        return true;
     }
 
 
-
-     /// @dev Returns true if this pool is able to send a deposit to Casper
+    /// @dev Returns true if this pool is able to send a deposit to Casper
     function getStakingDepositTimeMet() public constant returns(bool)   {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
@@ -230,14 +213,21 @@ contract RocketPoolMiniDelegate is Owned {
 
 
     /// @dev Adds more to the current amount of deposit tokens owed by the user
-    function setUserDepositTokensOwedAdd(address userAddress, uint256 newAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
-        if(newAmount > 0 && newAmount >= users[userAddress].balance) {
+    function setUserDepositTokensOwedAdd(address userAddress, uint256 etherAmount, uint256 tokenAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
+        // Some basic double checks here, primary logic is in the main Rocket Pool contract
+        if(etherAmount > 0 && etherAmount <= users[userAddress].balance) {
+            // Balance starting
+            FlagUint(users[userAddress].balance);
             // Update their token amount
-            users[userAddress].depositTokensWithdrawn += newAmount;
+            users[userAddress].depositTokensWithdrawn += tokenAmount;
             // Update the pool token total
-            depositTokensWithdrawnTotal += newAmount;
+            depositTokensWithdrawnTotal += tokenAmount;
             // 1 ether = 1 token, deduct from their deposit
-            users[userAddress].balance -= newAmount;
+            users[userAddress].balance -= etherAmount;
+            // Balances now
+            FlagUint(users[userAddress].balance);
+            FlagUint(etherAmount);
+            FlagUint(tokenAmount);
             // Sweet
             return true;
         }
@@ -380,6 +370,10 @@ contract RocketPoolMiniDelegate is Owned {
             if(rocketPool.removePool()) {
                 // Set the status now just incase self destruct fails for any reason
                 status = 5;
+                // See if any rocket deposit tokens have been taken out
+                if(depositTokensWithdrawnTotal > 0) {
+                    // Ok, since 1 ether = 1 token, send the corro
+                }
                 // Log any dust remaining from fractions being sent when the pool closes
                 PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), sha3('poolClosing'), this.balance, 0, now);
                 // Now self destruct and send any dust left over

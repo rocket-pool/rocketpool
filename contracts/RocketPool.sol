@@ -29,7 +29,8 @@ contract RocketPool is Owned {
     bool private nodeSetInactiveAutomatic;
     // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
     uint private nodeSetInactiveDuration;
-  
+    // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
+    uint256 calcBase;
 
      /*** Events ****************/
 
@@ -101,6 +102,7 @@ contract RocketPool is Owned {
     event DepositTokensWithdrawal (
         address indexed _userAddress,
         uint256 amount,
+        uint256 tokenAmount,
         uint256 created
     );
 
@@ -192,6 +194,8 @@ contract RocketPool is Owned {
         // Nodes
         nodeSetInactiveAutomatic = true;
         nodeSetInactiveDuration = 1 hours;
+        // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
+        calcBase = 1000000000000000000;
     }
 
 
@@ -430,8 +434,6 @@ contract RocketPool is Owned {
         int256 userRewardsAmount = 0;
         // If the user has earned rewards by staking, we take our fee from that amount (not the entire deposit)
         uint256 userFeesAmount = 0;
-        // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-        uint256 calcBase = 1000000000000000000;
         // Calculate the % of the stake the user had from their original deposit
         uint256 userDepositPercInWei = Arithmetic.overflowResistantFraction(userBalance, calcBase, pool.getStakingBalance());
         // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
@@ -525,6 +527,8 @@ contract RocketPool is Owned {
     function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool)  {
         // Get the hub
         RocketHub rocketHub = RocketHub(rocketHubAddress);
+        // Rocket settings
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Get Rocket Deposit Token
         RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getRocketDepositTokenAddress());
         // Get an instance of that pool contract
@@ -537,12 +541,16 @@ contract RocketPool is Owned {
         if(amount > 0 && pool.getUserPartner(msg.sender) == 0) {  
             // Check the status, must be currently staking to allow tokens to be withdrawn
             if(pool.getStatus() == 2) {
-                // Ok lets mint those tokens now
-                if(rocketDepositToken.mint(msg.sender, amount)) {
+                // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
+                uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), amount, calcBase);
+                // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
+                uint256 tokenAmount = (amount-userDepositTokenFeePercInWei);
+                // Ok lets mint those tokens now - minus the fee amount
+                if(rocketDepositToken.mint(msg.sender, tokenAmount)) {
                     // Cool, lets update the users deposit total and flag that the user has outstanding tokens
-                    if(pool.setUserDepositTokensOwedAdd(msg.sender, amount)) {
+                    if(pool.setUserDepositTokensOwedAdd(msg.sender, amount, tokenAmount)) {
                         // Fire the event
-                        DepositTokensWithdrawal(msg.sender, amount, now);
+                        DepositTokensWithdrawal(msg.sender, amount, tokenAmount, now);
                         // All good
                         return true;
                     }

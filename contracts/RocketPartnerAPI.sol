@@ -100,7 +100,7 @@ contract RocketPartnerAPI is Owned {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if(rocketPool.partnerDeposit.value(msg.value).gas(2100000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
+        if(rocketPool.partnerDeposit.value(msg.value).gas(2300000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
             // Fire the event now
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }

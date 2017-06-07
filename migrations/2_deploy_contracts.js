@@ -16,11 +16,12 @@ var arithmeticLib = artifacts.require("./lib/Arithmetic.sol");
 // Accounts
 var accounts = web3.eth.accounts;
 
+// TODO: Optimise this using the simpler deploy option
 module.exports = function (deployer, network) {
     // Deploy rockethub first - has to be done in this order so that the following contracts already know the hub address
     deployer.deploy(arithmeticLib, rocketSettingsInterface).then(function () {
         // Lib Links
-        deployer.link(arithmeticLib, rocketPool);
+        deployer.link(arithmeticLib, [rocketPool, rocketPoolMiniDelegate]);
         // Deploy rockethub first - has to be done in this order so that the following contracts already know the hub address
         return deployer.deploy(rocketHub).then(function () {
             // Deploy casper dummy contract
@@ -40,7 +41,7 @@ module.exports = function (deployer, network) {
                                     // Deploy the rocket node
                                     return deployer.deploy(rocketNode, rocketHub.address).then(function () {
                                         // Deploy the rocket pool mini delegate
-                                        return deployer.deploy(rocketPoolMiniDelegate).then(function () {
+                                        return deployer.deploy(rocketPoolMiniDelegate, rocketHub.address).then(function () {
                                             // Update the hub with the new addresses
                                             return rocketHub.deployed().then(function (rocketHubInstance) {
                                                 console.log("\n");

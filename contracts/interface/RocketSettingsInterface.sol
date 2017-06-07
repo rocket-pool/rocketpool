@@ -23,4 +23,6 @@ contract RocketSettingsInterface {
     function getPoolUserBackupCollectEnabled() public constant returns (bool);
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
     function getPoolUserBackupCollectTime() public constant returns (uint256);
+    /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
+    function getDepositTokenWithdrawalFeePercInWei() public constant returns (uint256);
 }

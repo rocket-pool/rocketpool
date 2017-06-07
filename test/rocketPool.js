@@ -65,7 +65,7 @@ contract('RocketPool', function (accounts) {
     var owner = web3.eth.coinbase;
     // RocketPool
     // Deposit gas has to cover potential mini pool contract creation, will often be much cheaper
-    var rocketDepositGas = 2400000; 
+    var rocketDepositGas = 2600000; //24
     var rocketWithdrawalGas = 1450000;
     // Node accounts and gas settings
     var nodeFirst = accounts[8];
@@ -816,21 +816,36 @@ contract('RocketPool', function (accounts) {
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
             return rocketSettings.deployed().then(function (rocketSettingsInstance) {
-                // Check rocketDepositToken is deployed   
-                return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
-                    // RocketPool now
-                    return rocketPool.deployed().then(function (rocketPoolInstance) {
-                        // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
-                        return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function (result) {
-                            var withdrawHalfAmount = parseInt(result.valueOf()) / 2;
-                            // Try to withdraw tokens from that users minipool
-                            return rocketPoolInstance.userWithdrawDepositTokens(miniPoolSecondInstance.address, withdrawHalfAmount, { from: userThird, gas: 250000 }).then(function (result) {
-                                // Now count how many tokens that user has, should match the amount withdrawn
-                                return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
-                                    console.log(result);
-                                    
-                                }).then(function (result) {
-                                    assert.isTrue(result, "Users tokens do not match the amount withdrawn");
+                // Get the token withdrawal fee
+                return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function (result) {
+                    // Token fee
+                    var tokenWithdrawalFee = parseInt(result.valueOf());
+                    // Check rocketDepositToken is deployed   
+                    return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                        // RocketPool now
+                        return rocketPool.deployed().then(function (rocketPoolInstance) {
+                            // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
+                            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function (result) {
+                                var withdrawHalfAmount = parseInt(result.valueOf()) / 2;
+                                // Fee incurred on tokens
+                                var tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee, 'ether') * web3.fromWei(withdrawHalfAmount, 'ether'));
+                                // Try to withdraw tokens from that users minipool
+                                return rocketPoolInstance.userWithdrawDepositTokens(miniPoolSecondInstance.address, withdrawHalfAmount, { from: userThird, gas: 250000 }).then(function (result) {
+                                    // Now count how many tokens that user has, should match the amount withdrawn
+                                    return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                                        // Now count how many tokens that user has, should match the amount withdrawn
+                                        var tokenBalance = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
+                                        var userBalance = null;
+                                        return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
+                                            // The balance after withdrawing tokens
+                                            var userBalance = result.valueOf();
+                                            // console.log(tokenBalanceFeeIncurred, tokenBalance, (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred));
+                                            // Check everything
+                                            return tokenBalance == (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred)  && userBalance == withdrawHalfAmount ? true : false;
+                                        }).then(function (result) {
+                                            assert.isTrue(result, "Users tokens do not match the amount withdrawn");
+                                        });
+                                    });
                                 });
                             });
                         });
@@ -840,7 +855,103 @@ contract('RocketPool', function (accounts) {
         });  
     }); // End Test
 
-    return;
+
+
+    it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // Check rocketDepositToken is deployed   
+                return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                    // Now count how many tokens that user has
+                    return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                        // Their token balance
+                        var userThirdTokenBalance = parseInt(result.valueOf());
+                        // Transfer half to first user on the open market
+                        var tokenTransferAmount = userThirdTokenBalance / 2;
+                        // Transfer now
+                        return rocketDepositTokenInstance.transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 }).then(function (result) {
+                            // Now count how many tokens that user has
+                            return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                                var userThirdTokenBalanceAfter = parseInt(result.valueOf());
+                                // Now count first users
+                                return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function (result) {
+                                    var userFirstTokenBalance = parseInt(result.valueOf());                                   
+                                    return userThirdTokenBalanceAfter == (userThirdTokenBalance - tokenTransferAmount) && userFirstTokenBalance == tokenTransferAmount ? true : false;
+                                }).then(function (result) {
+                                    assert.isTrue(result, "Users tokens do not match the amount transferred");
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+
+    it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // Check rocketDepositToken is deployed   
+                return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                    // Now count how many tokens that user has
+                    return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                        // Their token balance
+                        var userThirdTokenBalance = parseInt(result.valueOf());
+                        // Transfer to first user on the open market
+                        var tokenTransferAmount = userThirdTokenBalance + 10000;
+                        // Transfer now
+                        return rocketDepositTokenInstance.transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 }).then(function (result) {
+                            // Now count how many tokens that user has
+                            return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                                var userThirdTokenBalanceAfter = parseInt(result.valueOf());
+                                // Check they didn't send any
+                                return userThirdTokenBalance == userThirdTokenBalanceAfter ? true : false;
+                            }).then(function (result) {
+                                assert.isTrue(result, "Users tokens were transferred");
+                            });
+                        });
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+
+    it(printTitle('userThird', 'fails to transfer tokens from userFirst account to themselves on the open market'), function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // Check rocketDepositToken is deployed   
+                return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                    // Now count how many tokens that user has
+                    return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function (result) {
+                        // Their token balance
+                        var userFirstTokenBalance = parseInt(result.valueOf());
+                        // Transfer to third user on the open market
+                        var tokenTransferAmount = userFirstTokenBalance / 2;
+                        // Transfer now
+                        return rocketDepositTokenInstance.transferFrom(userFirst, userThird, tokenTransferAmount, { from: userThird, gas: 250000 }).then(function (result) {
+                            // Now count how many tokens that user has
+                            return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function (result) {
+                                var userFirstTokenBalanceAfter = parseInt(result.valueOf());
+                                // Check they didn't send any
+                                return userFirstTokenBalance == userFirstTokenBalanceAfter ? true : false;
+                            }).then(function (result) {
+                                assert.isTrue(result, "Users tokens were transferred");
+                            });
+                        });
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
    
 
     // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
@@ -1217,12 +1328,12 @@ contract('RocketPool', function (accounts) {
     it(printTitle('owner', 'removes first node from the Rocket Pool network'), function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
-            // Check RocketSettings is deployed   
-            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+            // Check RocketNode is deployed   
+            return rocketNode.deployed().then(function (rocketNodeInstance) {
                 // RocketPool now
                 return rocketPool.deployed().then(function (rocketPoolInstance) {
                     // Remove the node now
-                    return rocketPoolInstance.nodeRemove(nodeFirst, { from: owner, gas: 100000 }).then(function (result) {
+                    return rocketNodeInstance.nodeRemove(nodeFirst, { from: owner, gas: 100000 }).then(function (result) {
                         // Go through our events
                         for (var i = 0; i < result.logs.length; i++) {
                             if (result.logs[i].event == 'NodeRemoved') {

@@ -137,11 +137,23 @@ contract RocketPoolMini is Owned {
    
     /// @dev pool constructor
     function RocketPoolMini(address deployedRocketHubAddress, uint256 miniPoolStakingDuration) {
+        // Set the address of the main hub
+        rocketHubAddress = deployedRocketHubAddress;
+        // Set the version
+        version = 1;
+        // Staking details
+        stakingDuration = miniPoolStakingDuration;
+        stakingBalance = 0;
+        stakingBalanceReceived = 0;
+        // The pool isn't initally assigned to a node, only later when launching
+        rocketNodeAddress = 0;
+        // New pools are set to pre launch and accept deposits by default
         RocketHub rocketHub = RocketHub(deployedRocketHubAddress);
-        if(rocketHub.getRocketPoolMiniDelegateAddress().delegatecall(bytes4(sha3("RocketPoolMiniDelegateInit(address,uint256)")), deployedRocketHubAddress, miniPoolStakingDuration)) {
-            // Pool successfully setup via delegate
-            PoolCreated(this, now);
-        }
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        status = rocketSettings.getPoolDefaultStatus();
+        statusChangeTime = 0;
+        // Total deposit tokens owed by the pool
+        depositTokensWithdrawnTotal = 0;
     }
 
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
@@ -190,6 +202,7 @@ contract RocketPoolMini is Owned {
     function getNodeAddress() public constant returns(address)   {
         return rocketNodeAddress;
     }
+
 
      /// @dev Returns true if this pool is able to send a deposit to Casper
     function getStakingDepositTimeMet() public constant returns(bool)   {
@@ -309,8 +322,8 @@ contract RocketPoolMini is Owned {
     }
 
     /// @dev Adds more to the current amount of deposit tokens owed by the user
-    function setUserDepositTokensOwedAdd(address userAddress, uint256 newAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
-        if(RocketHub(rocketHubAddress).getRocketPoolMiniDelegateAddress().delegatecall(bytes4(sha3("setUserDepositTokensOwedAdd(address,uint256)")), userAddress, newAmount)) {
+    function setUserDepositTokensOwedAdd(address userAddress, uint256 etherAmount, uint256 tokenAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
+        if(RocketHub(rocketHubAddress).getRocketPoolMiniDelegateAddress().delegatecall(bytes4(sha3("setUserDepositTokensOwedAdd(address,uint256,uint256)")), userAddress, etherAmount, tokenAmount)) {
             return true;
         }
         return false;

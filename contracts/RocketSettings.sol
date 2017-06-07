@@ -34,6 +34,8 @@ contract RocketSettings is Owned  {
     bool poolUserBackupCollectEnabled;
     // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
     uint256 poolUserBackupCollectTime;
+    // Deposit Token settings - fee a user is charged on their deposit for an early withdrawal using tokens, given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
+    uint256 private depositTokenWithdrawalFeePercInWei;
     // The default status for newly created mini pools
     PoolMiniStatuses public constant poolMiniDefaultStatus = PoolMiniStatuses.PreLaunchAcceptingDeposits;
     
@@ -77,6 +79,9 @@ contract RocketSettings is Owned  {
         poolMiniNewAllowed = true;
         poolMiniMaxAllowed = 50;
         poolMiniClosingAllowed = true;
+        // Deposit token settings
+        // The default fee given as a % of 1 Ether (eg 5%)
+        depositTokenWithdrawalFeePercInWei = 0.05 ether;
     }
     
 
@@ -160,6 +165,16 @@ contract RocketSettings is Owned  {
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
     function getPoolUserBackupCollectTime() public constant returns (uint256)  {
         return poolUserBackupCollectTime;
+    }
+
+    /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
+    function getDepositTokenWithdrawalFeePercInWei() public constant returns (uint256)  {
+        return depositTokenWithdrawalFeePercInWei;
+    }
+
+    /// @dev Set the Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
+    function setDepositTokenWithdrawalFeePercInWei(uint256 newTokenWithdrawalFeePercInWei) public onlyOwner  {
+        depositTokenWithdrawalFeePercInWei = newTokenWithdrawalFeePercInWei;
     }
 
     /// @dev Set the time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
