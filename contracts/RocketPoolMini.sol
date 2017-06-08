@@ -38,8 +38,8 @@ contract RocketPoolMini is Owned {
     uint256 private status;
     // The timestamp the status changed
     uint256 private statusChangeTime;
-    // The total deposit tokes owed by the minipool
-    uint256 private depositTokensWithdrawnTotal;
+    // The total ether traded for tokens owed by the minipool
+    uint256 private depositEtherTradedForTokensTotal;
     // The current version of this pool
     uint8 private version;
 
@@ -102,6 +102,12 @@ contract RocketPoolMini is Owned {
         uint256 created
     );
 
+    event DepositTokenFundSent (
+        address indexed _tokenContractAddress,
+        uint256 amount,
+        uint256 created
+    );
+
    
 
     /*** Modifiers *************/
@@ -152,8 +158,8 @@ contract RocketPoolMini is Owned {
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         status = rocketSettings.getPoolDefaultStatus();
         statusChangeTime = 0;
-        // Total deposit tokens owed by the pool
-        depositTokensWithdrawnTotal = 0;
+        // The total ether traded for tokens owed by the minipool
+        depositEtherTradedForTokensTotal = 0;
     }
 
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper

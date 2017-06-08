@@ -2,6 +2,8 @@ pragma solidity ^0.4.8;
 
 import "./RocketHub.sol";
 import "./interface/TokenERC20Interface.sol";
+import "./interface/RocketSettingsInterface.sol";
+import "./lib/Arithmetic.sol";
 
 
 /// @title The Rocket Pool Deposit Token - Can be used as a backing of your deposit and traded with others while staking
@@ -15,7 +17,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     address private rocketHubAddress;
     // Token details
     string public constant symbol = "RPD";
-    string public constant name = "Rocket Deposit Token";
+    string public constant name = "Rocket Pool Deposit";
     uint8 public constant decimals = 18;
     // Total supply
     uint256 public totalSupply = 0;
@@ -23,6 +25,8 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     mapping(address => uint256) balances;
     // Owner of account approves the transfer of an amount to another account
     mapping(address => mapping (address => uint256)) allowed;
+    // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
+    uint256 calcBase = 1000000000000000000;
 
 
     /*** Modifiers *************/
@@ -36,8 +40,25 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
 
     /*** Events *************/
 
-    event Mint(address indexed _to, uint256 value);
-    event Burn(address indexed _owner, uint256 value);
+    event Mint(
+        address indexed _to, 
+        uint256 value
+    );
+
+    event Burn(
+        address indexed _owner, 
+        uint256 value
+    );
+
+    event Deposit(
+        address indexed _sender, 
+        uint256 value,
+        uint256 now
+    );
+
+    event FlagUint (
+        uint256 flag
+    );
 
 
     /*** Methods *************/
@@ -46,6 +67,13 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     function RocketDepositToken(address deployedRocketHubAddress) {
         // Address of the main RocketHub contract, should never need updating
         rocketHubAddress = deployedRocketHubAddress;
+    }
+
+    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to the Rocket Pool Deposit Token fund at `to.address()`.
+    /// @dev Fallback function, receives ether from minipools representing outstanding deposit tokens
+    function() public payable {   
+        // Deposited from a minipool (most likely, anyone can seed the fund)
+        Deposit(msg.sender, msg.value, now);
     }
 
     /**
@@ -67,32 +95,39 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
 
     /**
     * @dev Burn these tokens when they are returned to Rocket Pool in exhange for ether
-    * @param _owner The address that will have access to spend these tokens
     * @param _amount The amount of tokens
     * @return A boolean that indicates if the operation was successful.
     */
-    function burnTokensForEther(address _owner, uint256 _amount) onlyLatestRocketPool returns (bool success) {
+    function burnTokensForEther(uint256 _amount) returns (bool success) {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
         if(this.balance < _amount) {
             throw;       
         }
+        // Get the hub
+        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        // Rocket settings
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Now send ether to the user in return for the tokens
-        if(balances[_owner] >= _amount  && _amount > 0) {
+        if(balances[msg.sender] >= _amount  && _amount > 0) {
             // Subtract from the sender
-            balances[_owner] -= _amount;    
+            balances[msg.sender] -= _amount;    
             // Updates totalSupply                  
             totalSupply -= _amount;    
+            // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
+            uint256 etherWithdrawAmountPlusBonus = _amount + Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
+            FlagUint(etherWithdrawAmountPlusBonus);
+            return false;
             // Did it send ok?
-            if (!_owner.send(_amount)) {
+            if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
                 // Add back to the sender
-                balances[_owner] += _amount;    
+                balances[msg.sender] += _amount;    
                 // Updates totalSupply                  
                 totalSupply += _amount;    
                 // Fail
                 return false;
             }else{
                 // Fire the event now                         
-                Burn(_owner, _amount);
+                Burn(msg.sender, _amount);
                 // Success
                 return true;
             }

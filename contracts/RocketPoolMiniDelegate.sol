@@ -1,6 +1,7 @@
 pragma solidity ^0.4.8;
 
 import "./RocketHub.sol";
+import "./RocketDepositToken.sol"; 
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
@@ -39,8 +40,8 @@ contract RocketPoolMiniDelegate is Owned {
     uint256 private status;
     // The timestamp the status changed
     uint256 private statusChangeTime;
-    // The total deposit tokes owed by the minipool
-    uint256 private depositTokensWithdrawnTotal;
+    // The total ether traded for tokens owed by the minipool
+    uint256 private depositEtherTradedForTokensTotal;
     // The current version of this pool
     uint8 private version;
 
@@ -95,6 +96,12 @@ contract RocketPoolMiniDelegate is Owned {
     event StatusChange (
         uint256 indexed _statusCodeNew,
         uint256 indexed _statusCodeOld,
+        uint256 created
+    );
+
+    event DepositTokenFundSent (
+        address indexed _tokenContractAddress,
+        uint256 amount,
         uint256 created
     );
 
@@ -217,17 +224,17 @@ contract RocketPoolMiniDelegate is Owned {
         // Some basic double checks here, primary logic is in the main Rocket Pool contract
         if(etherAmount > 0 && etherAmount <= users[userAddress].balance) {
             // Balance starting
-            FlagUint(users[userAddress].balance);
+            //FlagUint(users[userAddress].balance);
             // Update their token amount
             users[userAddress].depositTokensWithdrawn += tokenAmount;
-            // Update the pool token total
-            depositTokensWithdrawnTotal += tokenAmount;
+            // Update the pool ether total that has been traded for tokens, we know how much to send the token deposit fund based on this
+            depositEtherTradedForTokensTotal += etherAmount;
             // 1 ether = 1 token, deduct from their deposit
             users[userAddress].balance -= etherAmount;
             // Balances now
-            FlagUint(users[userAddress].balance);
-            FlagUint(etherAmount);
-            FlagUint(tokenAmount);
+            //FlagUint(users[userAddress].balance);
+            //FlagUint(etherAmount);
+            //FlagUint(tokenAmount);
             // Sweet
             return true;
         }
@@ -351,6 +358,36 @@ contract RocketPoolMiniDelegate is Owned {
         throw;
     }
 
+
+    // TODO: Figure out a system for dealing with users who have withdrawn all their balance as tokens
+
+
+    /// @dev Closes the pool if the conditions are right
+    function canClosePool() private returns(bool) {
+        // Get the settings to determine the status
+        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        // Set our status now - see RocketSettings.sol for pool statuses and keys
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
+        if(getUserCount() == 0) {
+            // Remove the pool from RocketHub via the latest RocketPool contract
+            RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
+            if(rocketPool.removePool()) {
+                // Set the status now just incase self destruct fails for any reason
+                status = 5;
+                // Log any dust remaining from fractions being sent when the pool closes or 
+                // ether left over from a users interest that have withdrawn all their ether as tokens already (thats our fee in this case)
+                PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), sha3('poolClosing'), this.balance, 0, now);
+                // Now self destruct and send any dust left over
+                selfdestruct(rocketSettings.getWithdrawalFeeDepositAddress());
+                // Done
+                return true;
+            }
+        }
+        return false;
+    }
+
+
    
     /// @dev Sets the status of the pool based on several parameters 
     function updateStatus() public returns(bool) {
@@ -363,22 +400,8 @@ contract RocketPoolMiniDelegate is Owned {
         // Function returns are stored in memory rather than storage
         uint256 minPoolWeiRequired = rocketSettings.getPoolMinEtherRequired();
         uint256 statusOld = status;
-        // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
-        if(getUserCount() == 0) {
-            // Remove the pool from RocketHub via the latest RocketPool contract
-            RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
-            if(rocketPool.removePool()) {
-                // Set the status now just incase self destruct fails for any reason
-                status = 5;
-                // See if any rocket deposit tokens have been taken out
-                if(depositTokensWithdrawnTotal > 0) {
-                    // Ok, since 1 ether = 1 token, send the corro
-                }
-                // Log any dust remaining from fractions being sent when the pool closes
-                PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), sha3('poolClosing'), this.balance, 0, now);
-                // Now self destruct and send any dust left over
-                selfdestruct(rocketSettings.getWithdrawalFeeDepositAddress());
-            }
+        // Check to see if we can close the pool
+        if(canClosePool()) {
             return;
         }
         // Set to awaiting status and deposits if a user has withdrawn their deposit while in countdown and the min required wei for launch is now lower than required
@@ -420,6 +443,16 @@ contract RocketPoolMiniDelegate is Owned {
             if(casper.withdraw(false)) {
                 // Set the mini pool status as having completed withdrawal, users can now withdraw
                 status = 4;
+                // Do a few landing checks now
+                // See if any ether in the pool has been traded for tokens
+                if(depositEtherTradedForTokensTotal > 0) {
+                    // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
+                    // Sender should be the node that triggered this
+                    if(rocketHub.getRocketDepositTokenAddress().call.value(depositEtherTradedForTokensTotal)()) {
+                        // Fire the event
+                        DepositTokenFundSent(rocketHub.getRocketDepositTokenAddress(), depositEtherTradedForTokensTotal, now);
+                    }
+                }
             }
         }
         // Fire the event if the status has changed

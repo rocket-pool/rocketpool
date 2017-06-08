@@ -818,11 +818,6 @@ contract RocketPool is Owned {
     
 
 
-   
-    
-   
-
-
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types
     /*** which can't currently be sent to a library contract (I'd prefer to keep these in a lib if possible, but its not atm)

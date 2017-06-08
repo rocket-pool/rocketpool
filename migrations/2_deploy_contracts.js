@@ -21,7 +21,7 @@ module.exports = function (deployer, network) {
     // Deploy rockethub first - has to be done in this order so that the following contracts already know the hub address
     deployer.deploy(arithmeticLib, rocketSettingsInterface).then(function () {
         // Lib Links
-        deployer.link(arithmeticLib, [rocketPool, rocketPoolMiniDelegate]);
+        deployer.link(arithmeticLib, [rocketPool, rocketPoolMiniDelegate, rocketDepositToken]);
         // Deploy rockethub first - has to be done in this order so that the following contracts already know the hub address
         return deployer.deploy(rocketHub).then(function () {
             // Deploy casper dummy contract
