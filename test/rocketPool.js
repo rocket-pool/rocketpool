@@ -823,28 +823,39 @@ contract('RocketPool', function (accounts) {
                     var tokenWithdrawalFee = parseInt(result.valueOf());
                     // Check rocketDepositToken is deployed   
                     return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
-                        // RocketPool now
-                        return rocketPool.deployed().then(function (rocketPoolInstance) {
-                            // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
-                            return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
-                                var withdrawHalfAmount = parseInt(result.valueOf()) / 2;                               
-                                // Fee incurred on tokens
-                                var tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee, 'ether') * web3.fromWei(withdrawHalfAmount, 'ether'));
-                                // Try to withdraw tokens from that users minipool
-                                return rocketPoolInstance.userWithdrawDepositTokens(miniPoolSecondInstance.address, withdrawHalfAmount, { from: userThird, gas: 250000 }).then(function (result) {
-                                    // Now count how many tokens that user has, should match the amount withdrawn
-                                    return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
-                                        // Now count how many tokens that user has, should match the amount withdrawn - fees
-                                        var tokenBalance = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
-                                        var userBalance = null;                                        
-                                        return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
-                                            // The balance after withdrawing tokens
-                                            var userBalance = result.valueOf();
-                                            // console.log(tokenBalanceFeeIncurred, tokenBalance, (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred));
-                                            // Check everything
-                                            return tokenBalance == (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred)  && userBalance == withdrawHalfAmount ? true : false;
-                                        }).then(function (result) {
-                                            assert.isTrue(result, "Users tokens do not match the amount withdrawn");
+                         // Get the total supply of tokens in circulation
+                        return rocketDepositTokenInstance.totalSupply.call({ from: userThird }).then(function (result) {
+                            var totalTokenSupply = parseInt(result.valueOf());
+                            // RocketPool now
+                            return rocketPool.deployed().then(function (rocketPoolInstance) {
+                                // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
+                                return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
+                                    var withdrawHalfAmount = parseInt(result.valueOf())/2;                               
+                                    // Fee incurred on tokens
+                                    var tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee, 'ether') * web3.fromWei(withdrawHalfAmount, 'ether'));
+                                    // Try to withdraw tokens from that users minipool
+                                    return rocketPoolInstance.userWithdrawDepositTokens(miniPoolSecondInstance.address, withdrawHalfAmount, { from: userThird, gas: 250000 }).then(function (result) {
+                                        // Get the total supply of tokens in circulation
+                                        return rocketDepositTokenInstance.totalSupply({ from: userThird }).then(function (result) {
+                                            var totalTokenSupplyAfter = web3.fromWei(parseInt(result.valueOf()), 'ether');                                            
+                                            // Now count how many tokens that user has, should match the amount withdrawn
+                                            return rocketDepositTokenInstance.balanceOf.call(userThird).then(function (result) {
+                                                // Now count how many tokens that user has, should match the amount withdrawn - fees
+                                                var tokenBalance = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
+                                                var userBalance = null;
+                                                return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
+                                                    // The balance after withdrawing tokens
+                                                    var userBalance = result.valueOf();
+                                                    //console.log(tokenBalanceFeeIncurred, tokenBalance, (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred), totalTokenSupplyAfter);
+                                                    // Check everything
+                                                    return tokenBalance == (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred) &&
+                                                        tokenBalance == totalTokenSupplyAfter &&
+                                                        userBalance == withdrawHalfAmount
+                                                        ? true : false;
+                                                }).then(function (result) {
+                                                    assert.isTrue(result, "Users tokens do not match the amount withdrawn");
+                                                });
+                                            });
                                         });
                                     });
                                 });
@@ -855,7 +866,6 @@ contract('RocketPool', function (accounts) {
             });
         });  
     }); // End Test
-
 
 
 
@@ -955,7 +965,7 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
-    it(printTitle('userThird', 'fails to trade their remaining tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), function () {
+    it(printTitle('userThird', 'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -981,6 +991,46 @@ contract('RocketPool', function (accounts) {
                                 assert(false, error.toString());
                             }
                         });    
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+
+    it(printTitle('userThird', 'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'), function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // Get the token withdrawal fee
+                return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function (result) {
+                    // Token fee
+                    var tokenWithdrawalFee = parseInt(result.valueOf());
+                    // Check rocketDepositToken is deployed   
+                    return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                        // RocketPool now
+                        return rocketPool.deployed().then(function (rocketPoolInstance) {
+                            // Withdraw all by passing 0
+                            return rocketPoolInstance.userWithdrawDepositTokens(miniPoolSecondInstance.address, 0, { from: userThird, gas: 250000 }).then(function (result) {
+                                // User should be removed from pool now as they dont have any deposit left, they traded it all for deposit tokens
+                                // Will throw if user doesn't exist in pool
+                                return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
+                                    return result;
+                                }).then(function (result) {
+                                    assert(false, "Expect throw but didn't.");
+                                }).catch(function (error) {
+                                    if (error.toString().indexOf("VM Exception") == -1) {
+                                        // Didn't throw like we expected
+                                        assert(false, error.toString());
+                                    }
+                                    // Always show out of gas errors
+                                    if(error.toString().indexOf("out of gas") != -1) {
+                                        assert(false, error.toString());
+                                    }
+                                });    
+                            });
+                        });
                     });
                 });
             });
@@ -1196,7 +1246,9 @@ contract('RocketPool', function (accounts) {
                                 //console.log(miniPoolStatusFirst, miniPoolBalanceFirst);
                                 //console.log(miniPoolStatusSecond, miniPoolBalanceSecond);
                                 // Ok Check it all now
-                                return miniPoolStatusFirst == 4  && miniPoolStatusSecond == 4 && miniPoolBalanceSecond > 0  && miniPoolBalanceFirst > 0 ? true : false;
+                                // second minipool was automatically closed when receiving deposit from Casper 
+                                // as all its users had been removed when taking their entire deposit out as tokens
+                                return (miniPoolStatusFirst == 4  && miniPoolBalanceFirst > 0)  && (miniPoolStatusSecond == 0 && miniPoolBalanceSecond == 0)  ? true : false;
                             }).then(function (result) {
                                 assert.isTrue(result, "Status changed successfully and deposit received from Casper");
                             });
@@ -1208,7 +1260,7 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
-    it(printTitle('---------', 'half of userThirds withdrawn token backed ethers should be in the deposit token fund now'), function () {
+    it(printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'), function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -1218,7 +1270,7 @@ contract('RocketPool', function (accounts) {
                     // Get the min ether required to launch a mini pool - the user sent half this amount for tokens originally
                     return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function (result) {
                         // These ethers are ones they withdrew tokens against
-                        var etherAmountTradedSentForTokens = parseFloat(result.valueOf()) / 2;    
+                        var etherAmountTradedSentForTokens = parseInt(result.valueOf());    
                         // Check rocketDepositToken is deployed   
                         return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
                             // Now count how many tokens that user has
@@ -1235,6 +1287,61 @@ contract('RocketPool', function (accounts) {
             });
         });  
     }); // End Test    
+
+
+    it(printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'), function () {
+        // Check RocketHub is deployed first    
+        return rocketHub.deployed().then(function (rocketHubInstance) {
+            // Check RocketSettings is deployed   
+            return rocketSettings.deployed().then(function (rocketSettingsInstance) {
+                // Check rocketDepositToken is deployed   
+                return rocketDepositToken.deployed().then(function (rocketDepositTokenInstance) {
+                     // Get the token withdrawal fee
+                    return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function (result) {
+                        // Token fee - this goes to the person who trades the tokens back in
+                        var tokenWithdrawalFee = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
+                        // Get the total supply of tokens in circulation
+                        return rocketDepositTokenInstance.totalSupply.call(userFirst).then(function (result) {
+                            var fundTokenBalance = parseFloat(result.valueOf());
+                            //console.log(result.valueOf());
+                            //console.log(web3.fromWei(fundTokenBalance, 'ether'));
+                            // Now count how many tokens that user has
+                            return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function (result) {
+                                // Their token balance
+                                var userFirstTokenBalance = parseFloat(result.valueOf());
+                                var userFirstEtherBalance = web3.eth.getBalance(userFirst).valueOf();
+                                var burnGas = 250000;
+                                // console.log(web3.fromWei(userFirstTokenBalance, 'ether'), web3.fromWei(userFirstEtherBalance, 'ether'));
+                                // Transfer now
+                                return rocketDepositTokenInstance.burnTokensForEther(userFirstTokenBalance, { from: userFirst, gas: burnGas }).then(function (result) {
+                                    // Now count how many tokens that user has, should be none
+                                    return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function (result) {
+                                        var userFirstTokenBalanceAfter = parseFloat(result.valueOf());
+                                        var userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
+                                        // Now check the tokens were burnt
+                                        return rocketDepositTokenInstance.totalSupply.call(userFirst).then(function (result) {
+                                            var fundTokenBalanceAfter = parseFloat(result.valueOf());
+                                            var etherAccountDiff = (userFirstEtherBalanceAfter - userFirstEtherBalance);
+                                            //var etherAccountTradeWithBonus = (userFirstTokenBalance * (parseFloat(tokenWithdrawalFee + 1)));
+                                            // Now check 
+                                            return userFirstTokenBalanceAfter == 0 &&
+                                                fundTokenBalanceAfter == (parseFloat(fundTokenBalance) - parseFloat(userFirstTokenBalance)) &&
+                                                etherAccountDiff > 0
+                                                ? true : false;
+                                        }).then(function (result) {
+                                            assert.isTrue(result, "Users tokens do not match the amount transferred");
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });  
+    }); // End Test
+
+
 
 
     // Owner attempts to remove active node
@@ -1444,7 +1551,7 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
-    it(printTitle('userThird', 'user withdraws their deposit + casper rewards using their backup address from the mini pool, pays their fee and the pool closes'), function () {
+    it(printTitle('userThird', 'fails to withdraw deposit as they already traded it all for rocket deposit tokens'), function () {
         // Check RocketHub is deployed first    
         return rocketHub.deployed().then(function (rocketHubInstance) {
             // Check RocketSettings is deployed   
@@ -1452,39 +1559,19 @@ contract('RocketPool', function (accounts) {
                 // RocketPool now
                 return rocketPool.deployed().then(function (rocketPoolInstance) {
                     // Get the user deposit
-                    return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function (result) {
-                        // The balance before withdrawing
-                        var depositedAmount = result.valueOf();
-                        // Fee acount is the coinbase by default
-                        var rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf(); 
-                        // Get the mini pool balance
-                        var miniPoolBalancePrev = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
-                        // Withdraw our total deposit + rewards
-                        return rocketPoolInstance.userWithdrawDeposit(miniPoolSecondInstance.address, 0, { from: userThird, gas: rocketWithdrawalGas }).then(function (result) {
-                            var amountSentToUser = 0;
-                            // Go through our events
-                            for (var i = 0; i < result.logs.length; i++) {
-                                if (result.logs[i].event == 'Transferred') {
-                                    // Did our node checkin ok?
-                                    amountSentToUser = result.logs[i].args.value;
-                                }
-                            }   
-                            // Fee acount is the coinbase by default
-                            var rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf(); 
-                            // Get the mini pool balance
-                            var miniPoolBalance = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf(); 
-                             // See if RocketHub still recognises the pool contract after its been removed and self destructed
-                            return rocketHubInstance.getRocketMiniPoolExists.call(miniPoolSecondInstance.address).then(function (result) {       
-                                var poolExists = result.valueOf();
-                                // Ok see if their account has been accredited with their deposit + rewards
-                                if (depositedAmount < amountSentToUser && poolExists == false && rpFeeAccountBalance > rpFeeAccountBalancePrev && miniPoolBalance == 0) {
-                                    return true;
-                                }
-                                return false;
-                            }).then(function (result) {
-                                assert.isTrue(result, "User has successfully withdrawn their final balance from the mini pool to their backup address and pool is now closed");
-                            });
-                        })
+                     return rocketPoolInstance.userWithdrawDeposit(miniPoolSecondInstance.address, 0, { from: userThird, gas: rocketWithdrawalGas }).then(function (result) {
+                        return result;
+                    }).then(function(result) {
+                        assert(false, "Expect throw but didn't.");
+                    }).catch(function(error) {
+                        if(error.toString().indexOf("VM Exception") == -1) {
+                            // Didn't throw like we expected
+                            assert(false, error.toString());
+                        } 
+                        // Always show out of gas errors
+                        if(error.toString().indexOf("out of gas") != -1) {
+                            assert(false, error.toString());
+                        }
                     });
                 });
             });

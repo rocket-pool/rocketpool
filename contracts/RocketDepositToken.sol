@@ -22,11 +22,11 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     // Total supply
     uint256 public totalSupply = 0;
     // Balances for each account
-    mapping(address => uint256) balances;
+    mapping(address => uint256) private balances;
     // Owner of account approves the transfer of an amount to another account
-    mapping(address => mapping (address => uint256)) allowed;
+    mapping(address => mapping (address => uint256)) private allowed;
     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-    uint256 calcBase = 1000000000000000000;
+    uint256 private calcBase = 1000000000000000000;
 
 
     /*** Modifiers *************/
@@ -115,8 +115,12 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
             totalSupply -= _amount;    
             // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
             uint256 etherWithdrawAmountPlusBonus = _amount + Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
+            // Throw if we can't cover it
+            if(this.balance < etherWithdrawAmountPlusBonus) {
+                throw;       
+            }
+            FlagUint(_amount);
             FlagUint(etherWithdrawAmountPlusBonus);
-            return false;
             // Did it send ok?
             if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
                 // Add back to the sender
@@ -139,7 +143,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     * @dev The current total supply in circulation
     * @return A uint256 that indicates the total supply currently
     */
-    function totalSupply() constant returns (uint256 totalSupply) {
+    function totalSupply() constant returns (uint256) {
         return totalSupply;
     }
 

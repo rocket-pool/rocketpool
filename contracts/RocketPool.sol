@@ -30,7 +30,7 @@ contract RocketPool is Owned {
     // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
     uint private nodeSetInactiveDuration;
     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-    uint256 calcBase;
+    uint256 private calcBase;
 
      /*** Events ****************/
 
@@ -728,6 +728,8 @@ contract RocketPool is Owned {
         RocketPoolMini pool = RocketPoolMini(0);
         // Is this a legit Rocket Node?
         if(rocketHub.getRocketNodeExists(msg.sender)) {
+            // Fire the event
+            NodeCheckin(msg.sender, currentLoadAverage, now);
             // Our shared iterator 
             uint32 i = 0;
             // Updates the current 15 min load average on the node, last checkin time etc
@@ -807,8 +809,6 @@ contract RocketPool is Owned {
                     }
                 }
             }
-            // Fire the event
-            NodeCheckin(msg.sender, currentLoadAverage, now);
         }else{
             throw;
         }

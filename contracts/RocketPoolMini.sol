@@ -171,8 +171,7 @@ contract RocketPoolMini is Owned {
             // Set the staking balance we've received
             stakingBalanceReceived = msg.value;
             // Log the deposit attempt received
-            PoolTransfer(msg.sender, this, sha3('casperDepositReturn'), msg.value, this.balance, now);  
-             
+            PoolTransfer(msg.sender, this, sha3('casperDepositReturn'), msg.value, this.balance, now);   
         }else{
            throw;
         } 

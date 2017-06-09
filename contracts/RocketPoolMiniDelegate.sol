@@ -231,6 +231,10 @@ contract RocketPoolMiniDelegate is Owned {
             depositEtherTradedForTokensTotal += etherAmount;
             // 1 ether = 1 token, deduct from their deposit
             users[userAddress].balance -= etherAmount;
+            // Does this user have any balance left? if not, they've withdrawn it all as tokens, remove them from the pool now
+            if(users[userAddress].balance <= 0) {
+                removeUser(userAddress);
+            }
             // Balances now
             //FlagUint(users[userAddress].balance);
             //FlagUint(etherAmount);
@@ -359,29 +363,30 @@ contract RocketPoolMiniDelegate is Owned {
     }
 
 
-    // TODO: Figure out a system for dealing with users who have withdrawn all their balance as tokens
-
 
     /// @dev Closes the pool if the conditions are right
     function canClosePool() private returns(bool) {
-        // Get the settings to determine the status
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        // Set our status now - see RocketSettings.sol for pool statuses and keys
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
-        // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
-        if(getUserCount() == 0) {
-            // Remove the pool from RocketHub via the latest RocketPool contract
-            RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
-            if(rocketPool.removePool()) {
-                // Set the status now just incase self destruct fails for any reason
-                status = 5;
-                // Log any dust remaining from fractions being sent when the pool closes or 
-                // ether left over from a users interest that have withdrawn all their ether as tokens already (thats our fee in this case)
-                PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), sha3('poolClosing'), this.balance, 0, now);
-                // Now self destruct and send any dust left over
-                selfdestruct(rocketSettings.getWithdrawalFeeDepositAddress());
-                // Done
-                return true;
+        // Can only close pool when not staking or awaiting for stake to be returned from Casper
+        if(status != 2 && status != 3) {
+            // Get the settings to determine the status
+            RocketHub rocketHub = RocketHub(rocketHubAddress);
+            // Set our status now - see RocketSettings.sol for pool statuses and keys
+            RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+            // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
+            if(getUserCount() == 0) {
+                // Remove the pool from RocketHub via the latest RocketPool contract
+                RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
+                if(rocketPool.removePool()) {
+                    // Set the status now just incase self destruct fails for any reason
+                    status = 5;
+                    // Log any dust remaining from fractions being sent when the pool closes or 
+                    // ether left over from a users interest that have withdrawn all their ether as tokens already (thats our fee in this case)
+                    PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), sha3('poolClosing'), this.balance, 0, now);
+                    // Now self destruct and send any dust left over
+                    selfdestruct(rocketSettings.getWithdrawalFeeDepositAddress());
+                    // Done
+                    return true;
+                }
             }
         }
         return false;
@@ -451,6 +456,8 @@ contract RocketPoolMiniDelegate is Owned {
                     if(rocketHub.getRocketDepositTokenAddress().call.value(depositEtherTradedForTokensTotal)()) {
                         // Fire the event
                         DepositTokenFundSent(rocketHub.getRocketDepositTokenAddress(), depositEtherTradedForTokensTotal, now);
+                        // If all users in this pool have withdrawn their deposits as tokens, then we won't have any users in here to withdraw ether, see if we can close
+                        canClosePool();
                     }
                 }
             }
