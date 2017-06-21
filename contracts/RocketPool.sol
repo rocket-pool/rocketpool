@@ -451,21 +451,6 @@ contract RocketPool is Owned {
             userBalanceUpdated = userDepositAmountUpdated;
         }
         
-        /*
-        FlagUint(userBalance);
-        FlagUint(pool.getStakingBalance());
-        FlagUint(pool.getStakingBalanceReceived());
-        FlagUint(rocketSettings.getWithdrawalFeePercInWei());
-        FlagUint(0);
-        FlagUint(userDepositPercInWei);
-        FlagUint(userDepositAmountUpdated);
-        FlagInt(userRewardsAmount);
-        FlagUint(userFeesAmount);
-        FlagUint(userBalanceUpdated);
-        FlagUint(0);
-        FlagUint(pool.balance - (userBalanceUpdated+userFeesAmount));
-        */
-
         // Update our users updated balance, rewards calculated and fees incurred 
         if(pool.setUserBalanceRewardsFees(userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
             return true;

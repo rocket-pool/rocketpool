@@ -223,8 +223,6 @@ contract RocketPoolMiniDelegate is Owned {
     function setUserDepositTokensOwedAdd(address userAddress, uint256 etherAmount, uint256 tokenAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool)   {
         // Some basic double checks here, primary logic is in the main Rocket Pool contract
         if(etherAmount > 0 && etherAmount <= users[userAddress].balance) {
-            // Balance starting
-            //FlagUint(users[userAddress].balance);
             // Update their token amount
             users[userAddress].depositTokensWithdrawn += tokenAmount;
             // Update the pool ether total that has been traded for tokens, we know how much to send the token deposit fund based on this
@@ -235,10 +233,6 @@ contract RocketPoolMiniDelegate is Owned {
             if(users[userAddress].balance <= 0) {
                 removeUser(userAddress);
             }
-            // Balances now
-            //FlagUint(users[userAddress].balance);
-            //FlagUint(etherAmount);
-            //FlagUint(tokenAmount);
             // Sweet
             return true;
         }

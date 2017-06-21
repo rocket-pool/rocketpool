@@ -119,8 +119,6 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
             if(this.balance < etherWithdrawAmountPlusBonus) {
                 throw;       
             }
-            FlagUint(_amount);
-            FlagUint(etherWithdrawAmountPlusBonus);
             // Did it send ok?
             if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
                 // Add back to the sender
