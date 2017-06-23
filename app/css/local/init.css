@@ -507,6 +507,11 @@ a {
     color: #fff;
 }
 
+#header .logo .main-menu a {
+    text-decoration: none;
+    color: #ffae00;
+}
+
 /*** Page Menus ************/
 
 .page-menu {

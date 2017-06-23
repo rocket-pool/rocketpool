@@ -34,6 +34,7 @@ module.exports = {
             // Vendor
             "css/vendor/jquery.pagepiling.css",    
         ],
+        "files/": "files/",
         "images/": "images/",
         "fonts/": "css/fonts/",
         "config/": "config/",
