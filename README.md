@@ -20,6 +20,10 @@ $ truffle test ./test/rocketPool.js
 ```
 to put Rocket Pool through its paces.
 
+# Rocket Pool White Paper
+
+You can read the current Rocket Pool white paper here: [http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf](http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf).
+
 # More Information and Contact
 
 For more information on Rocket Pool, check out our [website here](http://www.rocketpool.net). You can also contact us there for more information.
