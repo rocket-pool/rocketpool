@@ -16,6 +16,7 @@ module.exports = {
             "js/vendor/jquery.observer.js",
             "js/vendor/jquery.pagepiling.min.js",
             "js/vendor/jquery.scrollTo.min.js",
+            "js/vendor/flipclock.min.js",
             "js/vendor/blockies.min.js",
             // Local
             "js/local/config.js",
@@ -25,6 +26,7 @@ module.exports = {
         "app.css": [
             // Local
             "css/local/init.css",
+            "css/local/home.css",
             "css/local/contact.css",
             "css/local/overlay-processing.css",
             "css/local/responsive.css",
@@ -33,6 +35,7 @@ module.exports = {
             "css/fonts/fontawesome/font-awesome.min.css",
             // Vendor
             "css/vendor/jquery.pagepiling.css",    
+            "css/vendor/flipclock.css",    
         ],
         "files/": "files/",
         "images/": "images/",

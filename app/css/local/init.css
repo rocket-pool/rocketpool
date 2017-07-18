@@ -77,6 +77,27 @@ a {
 }
 
 
+.countdown {
+
+}
+
+.flip-clock-wrapper ul li a div div.inn {
+    background-color: #904E00 !important;  
+}
+
+.flip-clock-dot {
+    background-color: #904E00 !important;  
+}
+
+.flip-clock-divider .flip-clock-label {
+    color: #fff !important;
+    font-size: 16px;
+}
+
+.flip-clock-wrapper ul li a div {
+    outline: 0 !important;
+}
+
 /*** Animations **********/
 
 .next-page-animation {
@@ -148,7 +169,37 @@ a {
     opacity: 0.5
 }
 
-/*** Acount Select Screen **/
+
+/*** Footer Countdown **/
+
+#countdown-footer {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    margin-top: 40px;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#countdown-footer .countdown {
+    position: relative;
+    width: 460px;
+    margin: 0 auto;
+}
+
+#countdown-footer .label {
+    position: relative;
+    margin-top: 15px;
+    color: #fff;
+    font-weight: 500;
+    text-align: center;
+}
+
+
+/*** Account Select Screen **/
 
 #account-select {
     position: absolute;
@@ -312,6 +363,7 @@ a {
 
 #app > .section > div > .inner {
     position: relative;
+    top: 100px;
 }
 
 #app > .section {
@@ -330,6 +382,7 @@ a {
     display: flex;
     align-items: center; 
     justify-content: center;
+    top: 100px;
 }
 
 #app > .section .next-page .dir {

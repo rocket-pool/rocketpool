@@ -29,7 +29,6 @@
     * @return bool - success or failure
     */
     var init = function (options) {
-
         // Initialise options
         settings = $.extend(true, {}, settings, options);
         // Update the network we're connected too
@@ -42,20 +41,41 @@
         _listeners();
         // Launch the background rocket
         $('#rocket').addClass('launched');
+        // Add countdown clocks
+        _countdownClocks();
         // Little loading screen while we hookup web3        
         setTimeout(function () { 
             // Show the processing screen with message
             $.observer.publish('rocketPool/Processing/hide');
-        }, 3000);
-
+        }, 2000);
     };
 
+    /**
+    * @desc start any countdown clocks for token sales
+    */
+    var _countdownClocks = function () {
+        // Grab the current date
+        var currentDate = new Date();
+        
+        // Get any clock instances
+        $.each($('.countdown'), function (indexInArray, valueOfElement) {
+            // Set some date in the future. In this case, it's always Jan 1
+            var futureDate  = new Date($(this).data('date'));
+            // Calculate the difference in seconds between the future and current date
+            var diff = futureDate.getTime() / 1000 - currentDate.getTime() / 1000;
+            // Add the clock
+            $(this).FlipClock(diff, {
+					clockFace: 'DailyCounter',
+					countdown: true,
+					showSeconds: false
+            });
+        });
+    }
 
     /**
     * @desc update the status of the network
     */
     var _updateNetwork = function () {
-        
         // Checking if Web3 has been injected by the browser (Mist/MetaMask)
         if (typeof web3 !== 'undefined') {
             // Use Mist/MetaMask's provider
@@ -64,10 +84,8 @@
             // fallback - (local node)
             window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
         }
-        
         // Detect network type  
         web3.version.getNetwork((err, netId) => {
-            
             switch (netId) {
                 case "1":
                     settings.network = { id: 'mainnet', label: 'mainnet' };
@@ -81,7 +99,6 @@
                 default:
                     settings.network = netId ? { id: 'unknown', label: 'unknown/local network. ID - ' + netId } : false;
             }
-
             // Now update any labels when the callback completes
             $('.network-label').text(settings.network.label);
             // Publish the event
@@ -120,15 +137,13 @@
                     $(accountEl).find('.account-total').text(window.web3.fromWei(result, 'ether'));
                 }
             });
-            
         }  
     }
 
     /**
     * @desc sets an Ethereum account to use
     */
-    var _setAccount = function (account) {
-              
+    var _setAccount = function (account) {    
         // If there's no current account, use the default coinbase
         if (!settings.currentAccount && settings.network) {
             settings.currentAccount = window.web3.eth.accounts[0];
@@ -312,7 +327,7 @@
 
         /*** TEST METHODS */
         // Show the processing screen with message
-         //$.observer.publish('rocketPool/Processing/show', 'connecting to ethereum blockchain...');
+        $.observer.publish('rocketPool/Processing/show', 'looking for ethereum blockchain...');
         /*** END TEST */
 
     };

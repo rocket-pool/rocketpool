@@ -5,8 +5,10 @@
 
 /*** Homepage ************/
 
-#app > .section.home .content {
- 
+#app > .section.home .countdown {
+    /*width: 470px;
+    margin: 200px auto 50px auto;
+    */
 }
 
 
