@@ -188,7 +188,7 @@ a {
     cursor: pointer;
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
-    margin-top: 60px;
+    margin-top: 50px;
     flex-direction: column;
     justify-content: center;
 }

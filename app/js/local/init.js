@@ -255,7 +255,7 @@
         });
 
         // Initialise page piling, there's a lot more options for these    
-        if ($(window).width() >= 1050) {
+        if ($(window).height() >= 1050) {
             $('#app').pagepiling({
                 direction: 'vertical',
                 verticalCentered: true,

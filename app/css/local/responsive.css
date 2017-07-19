@@ -22,12 +22,15 @@
     .page-menu .item > .label > .content > .details > .text {
         margin-top: 0;
     }
+
+
 }
+
 
 
 /*** 1050px Wide ***********************/
 
-@media (max-width : 1050px) {
+@media (max-height : 1050px) {
 
     html, body {
         overflow: scroll !important;
@@ -110,6 +113,10 @@
     #network.error {
         border-radius: 0;
     }
+
+    .page-menu .item {
+        margin-bottom: 60px;
+    }
     
 }
 
@@ -172,6 +179,9 @@
         padding-top: 0;
     }
 
+
+ 
+
 }
 
 /*** 500px Wide ***********************/
@@ -201,10 +211,6 @@
 
     #header .logo .main-menu {
         bottom: -130px;
-    }
-
-    .page-menu .item {
-        margin-bottom: 60px;
     }
 
 }
