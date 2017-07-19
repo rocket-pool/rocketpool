@@ -90,12 +90,21 @@ a {
 }
 
 .flip-clock-divider .flip-clock-label {
-    color: #fff !important;
+    color: #F9D48B !important;
     font-size: 16px;
+    font-weight: 600;
+}
+
+.flip-clock-wrapper ul li a {
+    cursor: pointer !important;
 }
 
 .flip-clock-wrapper ul li a div {
     outline: 0 !important;
+}
+
+.flip-clock-wrapper a, .flip-clock-wrapper ul li a div div.inn {
+    color: #fff !important;
 }
 
 /*** Animations **********/
@@ -179,7 +188,7 @@ a {
     cursor: pointer;
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
-    margin-top: 40px;
+    margin-top: 60px;
     flex-direction: column;
     justify-content: center;
 }
@@ -193,9 +202,11 @@ a {
 #countdown-footer .label {
     position: relative;
     margin-top: 15px;
-    color: #fff;
-    font-weight: 500;
+    color: #F9D48B;
+    font-weight: 600;
     text-align: center;
+    font-size: 18px;
+    
 }
 
 

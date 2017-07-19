@@ -99,7 +99,7 @@
   perspective: 200px;
   margin: 0 !important;
   overflow: visible !important;
-  cursor: default !important; }
+  cursor: default; }
 
 .flip-clock-wrapper ul li a div {
   z-index: 1;

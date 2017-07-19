@@ -174,12 +174,75 @@
 
 }
 
+/*** 500px Wide ***********************/
+
+@media (max-width : 500px) {
+
+    #header .logo .subline {
+        display: none;
+    }
+
+    #countdown-footer .countdown {
+        width: 400px;
+    }
+
+    .flip-clock-wrapper ul {
+        width: 50px !important;
+        height: 70px !important;
+    }
+
+    .flip-clock-wrapper ul li a div div.inn {
+        font-size: 50px !important;
+    }
+
+    .flip-clock-wrapper ul li {
+        line-height: 70px !important;
+    }
+
+    #header .logo .main-menu {
+        bottom: -130px;
+    }
+
+    .page-menu .item {
+        margin-bottom: 60px;
+    }
+
+}
+
 /*** 450px Wide ***********************/
 
 @media (max-width : 450px) {
 
     html, body {
         margin-bottom: 120px !important;
+    }
+
+   
+    #countdown-footer .countdown {
+        width: 340px;
+    }
+
+    .flip-clock-wrapper ul {
+        width: 20px !important;
+        height: 40px !important;
+    }
+
+    .flip-clock-wrapper ul li a div div.inn {
+        font-size: 25px !important;
+    }
+
+    .flip-clock-wrapper ul li {
+        line-height: 40px !important;
+    }
+
+    .flip-clock-divider {
+        height: 55px !important;
+        top: 0;
+    }
+
+    .flip-clock-divider .flip-clock-label {
+        top: -1.9em !important;
+        right: -76px !important;
     }
 
 
