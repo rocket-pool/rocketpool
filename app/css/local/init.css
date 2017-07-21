@@ -153,16 +153,25 @@ a {
 
 /*** Network Bar *********/
 
+
+
 #network {
-    position: absolute;
-    z-index: 5;
-    bottom: 10px;
+    position: fixed;
+    bottom: 0;
     left: 50%;
+    padding: 10px;
+    z-index: 9;
     transform: translateX(-50%);
-    display: flex;
+    width: auto;
+    border: 1px solid #894A00;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease-in-out;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.5s ease-in-out;
+    display: flex;
+    background-color: #a76100;
+    border-radius: 10px 10px 0 0;
 }
 
 #network.loaded {
@@ -345,10 +354,7 @@ a {
 /*** App *****************/
 
 #app  {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+    position: relative;
     z-index: 2;
     opacity: 1;
     padding-top: 50px;
@@ -369,7 +375,6 @@ a {
     margin: 0;
     color: #000;
     font: 14px;
-    overflow: hidden;
 }
 
 #app > .section > div > .inner {
@@ -378,7 +383,7 @@ a {
 }
 
 #app > .section {
-    opacity: 0;
+    opacity: 1;
 }
 
 #app > .section.active {
@@ -394,6 +399,7 @@ a {
     align-items: center; 
     justify-content: center;
     top: 100px;
+    display: none;
 }
 
 #app > .section .next-page .dir {
@@ -434,7 +440,7 @@ a {
 /*** Header ************/
 
 #header {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     width: 100%;

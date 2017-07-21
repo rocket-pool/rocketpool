@@ -14,7 +14,7 @@ module.exports = {
             // Vendor  
             "js/vendor/jquery-3.2.1.js",
             "js/vendor/jquery.observer.js",
-            "js/vendor/jquery.pagepiling.min.js",
+            //"js/vendor/jquery.pagepiling.min.js",
             "js/vendor/jquery.scrollTo.min.js",
             "js/vendor/flipclock.min.js",
             "js/vendor/blockies.min.js",
@@ -34,7 +34,7 @@ module.exports = {
             "css/fonts/fonts.css",
             "css/fonts/fontawesome/font-awesome.min.css",
             // Vendor
-            "css/vendor/jquery.pagepiling.css",    
+            //"css/vendor/jquery.pagepiling.css",    
             "css/vendor/flipclock.css",    
         ],
         "files/": "files/",

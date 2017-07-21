@@ -30,7 +30,7 @@
 
 /*** 1050px Wide ***********************/
 
-@media (max-height : 1050px) {
+@media (max-width : 1050px) {
 
     html, body {
         overflow: scroll !important;
