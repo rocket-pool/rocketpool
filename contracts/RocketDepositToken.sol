@@ -84,7 +84,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
     */
     function mint(address _to, uint _amount) onlyLatestRocketPool returns (bool) {
         // Verify ok
-        if(_amount > 0 && (balances[_to] + _amount) > balances[_to]) {
+        if(_amount > 0 && (balances[_to] + _amount) > balances[_to] && (totalSupply + _amount) > totalSupply) {
             totalSupply += _amount;
             balances[_to] += _amount;
             Mint(_to, _amount);
@@ -107,8 +107,8 @@ contract RocketDepositToken is ERC20TokenInterface, Owned  {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Rocket settings
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
-        // Now send ether to the user in return for the tokens
-        if(balances[msg.sender] >= _amount  && _amount > 0) {
+        // Now send ether to the user in return for the tokens, perform overflow checks 
+        if(balances[msg.sender] >= _amount  && _amount > 0 && (balances[msg.sender] - _amount) < balances[msg.sender] && (totalSupply - _amount) < totalSupply) {
             // Subtract from the sender
             balances[msg.sender] -= _amount;    
             // Updates totalSupply                  
