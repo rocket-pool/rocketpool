@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -17,20 +17,17 @@ contract RocketPool is Owned {
 
 
     /**** RocketPool ************/
-    address public rocketHubAddress;
-    uint public version;
-    bool private depositsAllowed;
-    uint private minDepositWei;
-    uint private maxDepositWei;
-    bool private withdrawalsAllowed;
-    uint private minWithdrawalWei;
-    uint private maxWithdrawalWei;
-    // Are nodes allowed to be set inactive by Rocket Pool automatically
-    bool private nodeSetInactiveAutomatic;
-    // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
-    uint private nodeSetInactiveDuration;
-    // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-    uint256 private calcBase;
+    address public rocketHubAddress;                    // Address of the main hub contract
+    uint public version = 1;                            // Version of this contract
+    bool private depositsAllowed = true;                // Are deposits currently allowed?
+    uint private minDepositWei = 1 ether;               // Min required deposit
+    uint private maxDepositWei = 75 ether;              // Max required deposit
+    bool private withdrawalsAllowed = true;             // Are withdrawals allowed?
+    uint private minWithdrawalWei = 0;                  // Min allowed to be withdrawn, 0 = all
+    uint private maxWithdrawalWei = 10 ether;           // Max allowed to be withdrawn
+    bool private nodeSetInactiveAutomatic = true;       // Are nodes allowed to be set inactive by Rocket Pool automatically
+    uint private nodeSetInactiveDuration = 1 hours;     // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
+    uint256 private calcBase = 1 ether;                 // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
 
      /*** Events ****************/
 
@@ -58,7 +55,6 @@ contract RocketPool is Owned {
 	event Transferred (
         address indexed _from,
         address indexed _to, 
-        // Cant have strings indexed due to unknown size, must use a fixed type size and convert string to sha3
         bytes32 indexed _typeOf, 
         uint256 value,
         uint256 created
@@ -124,18 +120,14 @@ contract RocketPool is Owned {
 
     /// @dev Deposits must be validated
     modifier acceptableDeposit {
-        if (!depositsAllowed || msg.value < minDepositWei || msg.value > maxDepositWei) {
-            throw;
-        } 
+        assert(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
         _;
     }
 
     /// @dev withdrawals must be validated
     /// @param amount The amount to withdraw
     modifier acceptableWithdrawal(uint256 amount) {
-        if (!withdrawalsAllowed || amount < minWithdrawalWei || amount > maxWithdrawalWei) {
-            throw;
-        } 
+        assert(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
         _;
     }
 
@@ -177,25 +169,7 @@ contract RocketPool is Owned {
     /// @dev rocketPool constructor
     function RocketPool(address deployedRocketHubAddress) {
         // Set the address of the main hub
-        rocketHubAddress = deployedRocketHubAddress;
-        // Set the current version of this contract
-        version = 1;
-        // Are deposits allowed atm?
-        depositsAllowed = true;
-        // Set the min/max deposits 
-        minDepositWei = 1 ether;
-        maxDepositWei = 75 ether;
-        // Are withdrawals allowed atm?
-        withdrawalsAllowed = true;
-        // Set the min/max withdrawal 
-        // Passing 0 as the min amount will withdraw the users total
-        minWithdrawalWei = 0 ether;
-        maxWithdrawalWei = 10 ether;
-        // Nodes
-        nodeSetInactiveAutomatic = true;
-        nodeSetInactiveDuration = 1 hours;
-        // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-        calcBase = 1000000000000000000;
+        rocketHubAddress = deployedRocketHubAddress;    
     }
 
 

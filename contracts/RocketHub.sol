@@ -254,7 +254,7 @@ contract RocketHub is Owned  {
                 lastCheckin: now,
                 lastRebootAttempt: 0,
                 active: true,
-                exists: true,
+                exists: true
                 //validationCode:    , // Supplied by node upon pool deployment now due to being variable length byte code
                 // randao: 0,         // Supplied by node upon pool deployment now
             });

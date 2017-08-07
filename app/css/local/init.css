@@ -81,31 +81,6 @@ a {
 
 }
 
-.flip-clock-wrapper ul li a div div.inn {
-    background-color: #904E00 !important;  
-}
-
-.flip-clock-dot {
-    background-color: #904E00 !important;  
-}
-
-.flip-clock-divider .flip-clock-label {
-    color: #F9D48B !important;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.flip-clock-wrapper ul li a {
-    cursor: pointer !important;
-}
-
-.flip-clock-wrapper ul li a div {
-    outline: 0 !important;
-}
-
-.flip-clock-wrapper a, .flip-clock-wrapper ul li a div div.inn {
-    color: #fff !important;
-}
 
 /*** Animations **********/
 
