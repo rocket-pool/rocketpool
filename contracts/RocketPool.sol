@@ -29,7 +29,13 @@ contract RocketPool is Owned {
     uint private nodeSetInactiveDuration = 1 hours;     // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
     uint256 private calcBase = 1 ether;                 // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
 
-     /*** Events ****************/
+
+    /*** Contracts **************/
+
+    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
+
+
+    /*** Events ****************/
 
     event UserAddedToPool (
         address indexed _userAddress,
@@ -134,34 +140,28 @@ contract RocketPool is Owned {
     /// @dev New pools are allowed to be created
     modifier poolsAllowedToBeCreated() {
         // Get the mini pool count
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // New pools allowed to be created?
-        if (!rocketSettings.getPoolAllowedToBeCreated()) {
-            throw;
-        } 
+        assert(rocketSettings.getPoolAllowedToBeCreated() == true);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (this != rocketHub.getRocketPoolAddress()) throw;
+        assert(this == rocketHub.getRocketPoolAddress());
         _;
     }
 
 
     /// @dev Only allow access from the a RocketMiniPool contract
     modifier onlyMiniPool() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (!rocketHub.getRocketMiniPoolExists(msg.sender)) throw;
+        assert(rocketHub.getRocketMiniPoolExists(msg.sender) == true);
         _;
     }  
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (msg.sender != rocketHub.getRocketPartnerAPIAddress()) throw;
+        assert(msg.sender == rocketHub.getRocketPartnerAPIAddress());
         _;
     } 
 
@@ -170,6 +170,8 @@ contract RocketPool is Owned {
     function RocketPool(address deployedRocketHubAddress) {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;    
+        // Update the contract address
+        rocketHub = RocketHub(deployedRocketHubAddress);
     }
 
 
@@ -250,29 +252,24 @@ contract RocketPool is Owned {
     /// @param poolStakingTimeID The ID (bytes32 encoded string) that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
     function deposit(address userAddress, address partnerAddress, bytes32 poolStakingTimeID) private acceptableDeposit onlyLatestRocketPool returns(bool) { 
         // Check to verify the supplied mini pool staking time id is legit
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
-        if(!rocketSettings.getPoolStakingTimeExists(poolStakingTimeID)) {
-            throw;
-        }else{
-            uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(poolStakingTimeID);
-        }
+        // Legit time staking ID?
+        assert(rocketSettings.getPoolStakingTimeExists(poolStakingTimeID) == true);
+        // Set it now
+        uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(poolStakingTimeID);
         // Assign the user to a matching staking time pool if they don't already belong to one awaiting deposits
         // If no pools are currently available, a new pool for the user will be created
         address poolUserBelongsToo =  userAssignToPool(userAddress, partnerAddress, poolStakingDuration);
         // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
         RocketPoolMini poolDepositTo = getPoolInstance(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
-        if(poolDepositTo.addDeposit.value(msg.value).gas(100000)(userAddress)) {
-            // Update the pools status now
-            poolDepositTo.updateStatus();
-            // All good? Fire the event for the new deposit
-            Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);   
-            // Success
-            return true;   
-        }else{
-            throw;
-        } 
+        assert(poolDepositTo.addDeposit.value(msg.value).gas(100000)(userAddress) == true);
+        // Update the pools status now
+        poolDepositTo.updateStatus();
+        // All good? Fire the event for the new deposit
+        Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);   
+        // Success
+        return true;   
     }
 
 
@@ -298,23 +295,20 @@ contract RocketPool is Owned {
                 poolAssignToAddress = poolsFound[i];
             } 
         }     
-        // Do we have a valid pool and they are added ok?
-        if(poolAssignToAddress != 0) {
-            // Get the contract instance
-            RocketPoolMini poolAddUserTo = getPoolInstance(poolAssignToAddress);
-            // Double check the pools status is accepting deposits
-            if(poolAddUserTo.getStatus() == 0) {
-                // User is added if they don't exist in it already
-                if(poolAddUserTo.addUser(newUserAddress, partnerAddress)) {
-                    // Fire the event
-                    UserAddedToPool(newUserAddress, partnerAddress, poolAssignToAddress, now);
-                } 
-                // Return the pool address that the user belongs to
-                return poolAssignToAddress;
-            }    
-        }
-        // No available pools and new pool creation has failed, send funds back;
-        throw;
+        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
+        assert(poolAssignToAddress != 0);
+        // Get the contract instance
+        RocketPoolMini poolAddUserTo = getPoolInstance(poolAssignToAddress);
+        // Double check the pools status is accepting deposits
+        if(poolAddUserTo.getStatus() == 0) {
+            // User is added if they don't exist in it already
+            if(poolAddUserTo.addUser(newUserAddress, partnerAddress)) {
+                // Fire the event
+                UserAddedToPool(newUserAddress, partnerAddress, poolAssignToAddress, now);
+            } 
+            // Return the pool address that the user belongs to
+            return poolAssignToAddress;
+        }    
     }
 
     /// @notice Withdraw ether from Rocket Pool
@@ -347,55 +341,47 @@ contract RocketPool is Owned {
         if(pool.getUserBackupAddressExists(userAddress)) {
             // Get the original deposit address now
             // This will update the users account to match the backup address, but only after many checks and balances
-            if(userChangeWithdrawalDepositAddressToBackupAddress(pool.getUserAddressFromBackupAddress(userAddress), miniPoolAddress)) {
-                  userAddress = msg.sender;
-             }else{
-               // The user can't use their backup address to withdraw at this point or its not their nominated backup address trying
-                throw;
-            }  
+            // It will fail if the user can't use their backup address to withdraw at this point or its not their nominated backup address trying
+            assert(userChangeWithdrawalDepositAddressToBackupAddress(pool.getUserAddressFromBackupAddress(userAddress), miniPoolAddress) == true);
+            // Set the user address now
+            userAddress = msg.sender; 
         }  
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
         uint256 userBalance = pool.getUserDeposit(userAddress);
         address userPartnerAddress = pool.getUserPartner(userAddress);
         // Now check to see if the given partner matches the users partner
-        if(userPartnerAddress != 0 && partnerAddress != 0 && userPartnerAddress != partnerAddress) {
+        if(userPartnerAddress != 0 && partnerAddress != 0) {
             // The supplied partner for the user does not match the sender
-            throw;
+            assert(userPartnerAddress == partnerAddress);
         }
         // Check to see if the user is actually in this pool and has a deposit
-        if(userBalance > 0) {  
-            // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
-            if(pool.getStatus() == 0 || pool.getStatus() == 1 || pool.getStatus() == 4) {
-                    // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
-                    // Users withdraw all their deposit + rewards at once when the pool has finished staking
-                    // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
-                    if(pool.getStatus() == 4) {
-                        // Update the users new balance, rewards earned and fees incurred
-                        if(userUpdateDepositAndRewards(miniPoolAddress, userAddress)) {
-                            // Get their updated balance now as they are withdrawing it all
-                            amount = pool.getUserDeposit(userAddress);
-                        }
-                    }
-                    // 0 amount or less given withdraws the entire users deposit
-                    amount = amount <= 0 ? userBalance : amount;
-                    // Ok send the deposit to the user from the mini pool now
-                    if(pool.withdraw(userAddress, amount)) {
-                        // Successful withdrawal
-                        Transferred(miniPoolAddress, userAddress, sha3('withdrawal'), amount, now);    
-                        // Success
-                        return true; 
-                    }
-                }
+        assert(userBalance > 0);
+        // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
+        assert(pool.getStatus() == 0 || pool.getStatus() == 1 || pool.getStatus() == 4);
+        // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
+        // Users withdraw all their deposit + rewards at once when the pool has finished staking
+        // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
+        if(pool.getStatus() == 4) {
+            // Update the users new balance, rewards earned and fees incurred
+            if(userUpdateDepositAndRewards(miniPoolAddress, userAddress)) {
+                // Get their updated balance now as they are withdrawing it all
+                amount = pool.getUserDeposit(userAddress);
+            }
         }
-        throw;
+        // 0 amount or less given withdraws the entire users deposit
+        amount = amount <= 0 ? userBalance : amount;
+        // Ok send the deposit to the user from the mini pool now
+        assert(pool.withdraw(userAddress, amount) == true);
+        // Successful withdrawal
+        Transferred(miniPoolAddress, userAddress, sha3('withdrawal'), amount, now);    
+        // Success
+        return true; 
     }
 
     /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed, all main checks are done here as this contract is upgradable, but mini pools currently deployed are not 
     /// @param userAddress The address of the mini pool user.
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     function userUpdateDepositAndRewards(address miniPoolAddress, address userAddress) private returns (bool)  {
-        // Get the hub
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Get our rocket settings 
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Get an instance of that pool contract
@@ -455,7 +441,6 @@ contract RocketPool is Owned {
     /// @param userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
     function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) private returns(bool)  {
         // Get the hub
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
@@ -484,8 +469,6 @@ contract RocketPool is Owned {
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw tokens from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool)  {
-        // Get the hub
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Rocket settings
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Get Rocket Deposit Token
@@ -497,26 +480,23 @@ contract RocketPool is Owned {
         // 0 amount or less given withdraws the entire users deposit
         amount = amount <= 0 ? userBalance : amount;
         // Check to see if the user is actually in this pool and has a deposit, and is not a partner user
-        if(amount > 0 && pool.getUserPartner(msg.sender) == 0) {  
-            // Check the status, must be currently staking to allow tokens to be withdrawn
-            if(pool.getStatus() == 2) {
-                // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
-                uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), amount, calcBase);
-                // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
-                uint256 tokenAmount = (amount-userDepositTokenFeePercInWei);
-                // Ok lets mint those tokens now - minus the fee amount
-                if(rocketDepositToken.mint(msg.sender, tokenAmount)) {
-                    // Cool, lets update the users deposit total and flag that the user has outstanding tokens
-                    if(pool.setUserDepositTokensOwedAdd(msg.sender, amount, tokenAmount)) {
-                        // Fire the event
-                        DepositTokensWithdrawal(msg.sender, amount, tokenAmount, now);
-                        // All good
-                        return true;
-                    }
-                }
+        assert(amount > 0 && pool.getUserPartner(msg.sender) == 0); 
+        // Check the status, must be currently staking to allow tokens to be withdrawn
+        assert(pool.getStatus() == 2);
+        // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
+        uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), amount, calcBase);
+        // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
+        uint256 tokenAmount = (amount-userDepositTokenFeePercInWei);
+        // Ok lets mint those tokens now - minus the fee amount
+        if(rocketDepositToken.mint(msg.sender, tokenAmount)) {
+            // Cool, lets update the users deposit total and flag that the user has outstanding tokens
+            if(pool.setUserDepositTokensOwedAdd(msg.sender, amount, tokenAmount)) {
+                // Fire the event
+                DepositTokensWithdrawal(msg.sender, amount, tokenAmount, now);
+                // All good
+                return true;
             }
         }
-        throw;
     }
 
  
@@ -527,20 +507,13 @@ contract RocketPool is Owned {
     /// @param miniPoolAddress The address of the mini pool to get the contract instance of
     function getPoolInstance(address miniPoolAddress) private constant returns(RocketPoolMini)  {
         // Make sure its one of ours
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if(rocketHub.getRocketMiniPoolExists(miniPoolAddress)) {
-            // Get the pool contract instance
-            RocketPoolMini pool = RocketPoolMini(miniPoolAddress);
-            // Double check the contract exists at the given address
-            if (pool.owner() == 0) {
-                throw;
-            } else {
-                // It exists
-                return pool;
-            }
-        }else{
-            throw;
-        }
+        assert(rocketHub.getRocketMiniPoolExists(miniPoolAddress) == true);
+        // Get the pool contract instance
+        RocketPoolMini pool = RocketPoolMini(miniPoolAddress);
+        // Double check the contract exists at the given address
+        assert(pool.owner() != 0);
+        // It exists
+        return pool;
     }
 
     /// @dev Get all pools that match this status (explicit method)
@@ -594,7 +567,6 @@ contract RocketPool is Owned {
     /// @param userHasDeposit Filter pools on users that have a deposit > 0 in the pool
     function getPoolsFilter(bool returnAll, uint256 status, address nodeAddress, uint256 stakingDuration, address userAddress, bool userHasDeposit) constant private returns(address[] memory) {
         // Get the mini pool count
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount(); 
         // Create an array at the length of the current pools, then populate it
         // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
@@ -630,25 +602,21 @@ contract RocketPool is Owned {
     /// @param poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
     function createPool(uint256 poolStakingDuration) private poolsAllowedToBeCreated onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketFactory rocketFactory = RocketFactory(rocketHub.getRocketFactoryAddress());
         address newPoolAddress = rocketFactory.createRocketPoolMini(poolStakingDuration);
         // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
         // Sets the rocket node if the address is ok and isn't already set
-        if(rocketHub.setRocketMiniPool(newPoolAddress)) {
-            // Fire the event
-            PoolCreated(newPoolAddress, poolStakingDuration, now);
-            // Return the new pool address
-            return newPoolAddress;
-        }    
-        throw;
+        assert(rocketHub.setRocketMiniPool(newPoolAddress) == true);
+        // Fire the event
+        PoolCreated(newPoolAddress, poolStakingDuration, now);
+        // Return the new pool address
+        return newPoolAddress;
     } 
 
 
     /// @dev Remove a mini pool, only mini pools themselves can call this 
     function removePool() onlyMiniPool returns(bool) {
         // Remove the pool from our hub storage
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
         // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
         if (rocketSettings.getPoolAllowedToBeClosed()) {
@@ -682,95 +650,92 @@ contract RocketPool is Owned {
      // TODO: When variable length data is supported between contracts (Metropolis), move this function to RocketNode contract
     function nodeCheckin(bytes32 nodeValidationCode, bytes32 nodeRandao, uint256 currentLoadAverage) public {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketNode rocketNode = RocketNode(rocketHub.getRocketNodeAddress());
         RocketPoolMini pool = RocketPoolMini(0);
         // Is this a legit Rocket Node?
-        if(rocketHub.getRocketNodeExists(msg.sender)) {
-            // Fire the event
-            NodeCheckin(msg.sender, currentLoadAverage, now);
-            // Our shared iterator 
-            uint32 i = 0;
-            // Updates the current 15 min load average on the node, last checkin time etc
-            rocketHub.setRocketNodeCheckin(msg.sender, currentLoadAverage, now);
-            // Check to see if there are any pools thats launch countdown has expired that need to be launched for staking
-            address[] memory poolsFound = getPoolsFilterWithStatus(1);
-            // Do we have any pools awaiting launch?
-            if(poolsFound.length > 0) {
-                // Ready to launch?
-                for(i = 0; i < poolsFound.length; i++) {
-                    // Get an instance of that pool contract
-                    pool = getPoolInstance(poolsFound[i]);
-                    // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                    if(pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
-                        // Get a node for this pool to be assigned too
-                        address nodeAddress = rocketNode.nodeAvailableForPool();
-                        // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
-                        pool.setNodeDetails(nodeAddress, nodeValidationCode, nodeRandao);
-                        // Fire the event
-                        PoolAssignedToNode(poolsFound[i], nodeAddress, now);
-                        // Now set the pool to begin staking with casper by updating its status with the newly assigned node
-                        pool.updateStatus();
-                    }
+        assert(rocketHub.getRocketNodeExists(msg.sender) == true);
+        // Fire the event
+        NodeCheckin(msg.sender, currentLoadAverage, now);
+        // Our shared iterator 
+        uint32 i = 0;
+        // Updates the current 15 min load average on the node, last checkin time etc
+        rocketHub.setRocketNodeCheckin(msg.sender, currentLoadAverage, now);
+        // Check to see if there are any pools thats launch countdown has expired that need to be launched for staking
+        address[] memory poolsFound = getPoolsFilterWithStatus(1);
+        // Do we have any pools awaiting launch?
+        if(poolsFound.length > 0) {
+            // Ready to launch?
+            for(i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = getPoolInstance(poolsFound[i]);
+                // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
+                if(pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
+                    // Get a node for this pool to be assigned too
+                    address nodeAddress = rocketNode.nodeAvailableForPool();
+                    // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
+                    pool.setNodeDetails(nodeAddress, nodeValidationCode, nodeRandao);
+                    // Fire the event
+                    PoolAssignedToNode(poolsFound[i], nodeAddress, now);
+                    // Now set the pool to begin staking with casper by updating its status with the newly assigned node
+                    pool.updateStatus();
                 }
             }
-            
-            // Check to see if there are any pools that are currently staking and are due to request their deposit from Casper
-            poolsFound = getPoolsFilterWithStatus(2);
-            // Do we have any pools currently staking?
-            if(poolsFound.length > 0) {
-                // Ready for re-entry?
-                for(i = 0; i < poolsFound.length; i++) {
-                    // Get an instance of that pool contract
-                    pool = getPoolInstance(poolsFound[i]);
-                    // Is this currently staking pool due to request withdrawal from Casper?
-                    if(pool.getStakingRequestWithdrawalTimeMet() == true) {
-                        // Now set the pool to begin requesting withdrawal from casper by updating its status
-                        pool.updateStatus();
-                    }
-                }
-            }
-            // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
-            poolsFound = getPoolsFilterWithStatus(3);
-            // Do we have any pools currently awaiting on their deposit from casper?
-            if(poolsFound.length > 0) {
-                // Ready for re-entry?
-                for(i = 0; i < poolsFound.length; i++) {
-                    // Get an instance of that pool contract
-                    pool = getPoolInstance(poolsFound[i]);
-                    // If the time has passed, we can now request the deposit to be sent
-                    if(pool.getStakingWithdrawalTimeMet() == true) {
-                        // Now set the pool to begin withdrawal from casper by updating its status
-                        pool.updateStatus();
-                    }
-                }
-            }
-            // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
-            if(nodeSetInactiveAutomatic == true) {
-                // Get all the current registered nodes
-                uint256 nodeCount = rocketHub.getRocketNodeCount();
-                // Create an array at the length of the current nodes, then populate it
-                // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
-                address[] memory nodes = new address[](nodeCount);
-                // Get each node now and check
-                for(i = 0; i < nodes.length; i++) {
-                    // Get our node address
-                    address currentNodeAddress = rocketHub.getRocketNodeByIndex(i);
-                    // We've already checked in as this node above
-                    if(msg.sender != currentNodeAddress) {
-                        // Has this node reported in recently? If not, it may be down or in trouble, deactivate it to prevent new pools being assigned to it
-                        if(rocketHub.getRocketNodeLastCheckin(currentNodeAddress) < (now - nodeSetInactiveDuration) && rocketHub.getRocketNodeActive(currentNodeAddress) == true) {
-                            // Disable the node - must be manually reactivated by the function above when its back online/running well
-                            rocketHub.setRocketNodeActive(currentNodeAddress, false);
-                            // Fire the event
-                            NodeActiveStatus(currentNodeAddress, false, now);
-                        }
-                    }
-                }
-            }
-        }else{
-            throw;
         }
+        
+        // Check to see if there are any pools that are currently staking and are due to request their deposit from Casper
+        poolsFound = getPoolsFilterWithStatus(2);
+        // Do we have any pools currently staking?
+        if(poolsFound.length > 0) {
+            // Ready for re-entry?
+            for(i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = getPoolInstance(poolsFound[i]);
+                // Is this currently staking pool due to request withdrawal from Casper?
+                if(pool.getStakingRequestWithdrawalTimeMet() == true) {
+                    // Now set the pool to begin requesting withdrawal from casper by updating its status
+                    pool.updateStatus();
+                }
+            }
+        }
+        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
+        poolsFound = getPoolsFilterWithStatus(3);
+        // Do we have any pools currently awaiting on their deposit from casper?
+        if(poolsFound.length > 0) {
+            // Ready for re-entry?
+            for(i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = getPoolInstance(poolsFound[i]);
+                // If the time has passed, we can now request the deposit to be sent
+                if(pool.getStakingWithdrawalTimeMet() == true) {
+                    // Now set the pool to begin withdrawal from casper by updating its status
+                    pool.updateStatus();
+                }
+            }
+        }
+        // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
+        if(nodeSetInactiveAutomatic == true) {
+            // Get all the current registered nodes
+            uint256 nodeCount = rocketHub.getRocketNodeCount();
+            // Create an array at the length of the current nodes, then populate it
+            // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
+            address[] memory nodes = new address[](nodeCount);
+            // Get each node now and check
+            for(i = 0; i < nodes.length; i++) {
+                // Get our node address
+                address currentNodeAddress = rocketHub.getRocketNodeByIndex(i);
+                // We've already checked in as this node above
+                if(msg.sender != currentNodeAddress) {
+                    // Has this node reported in recently? If not, it may be down or in trouble, deactivate it to prevent new pools being assigned to it
+                    if(rocketHub.getRocketNodeLastCheckin(currentNodeAddress) < (now - nodeSetInactiveDuration) && rocketHub.getRocketNodeActive(currentNodeAddress) == true) {
+                        // Disable the node - must be manually reactivated by the function above when its back online/running well
+                        rocketHub.setRocketNodeActive(currentNodeAddress, false);
+                        // Fire the event
+                        NodeActiveStatus(currentNodeAddress, false, now);
+                    }
+                }
+            }
+        }
+       
     }
 
 
