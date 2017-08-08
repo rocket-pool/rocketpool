@@ -85,40 +85,40 @@ contract RocketHub is Owned  {
 
     /// @dev Only allow access from the latest version of the main RocketPool contract
     modifier onlyLatestRocketPool() {
-        if (msg.sender != rocketPoolAddress) throw;
+        assert(msg.sender == rocketPoolAddress);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketNode contract
     modifier onlyLatestRocketNode() {
-        if (msg.sender != rocketNodeAddress) throw;
+        assert(msg.sender == rocketNodeAddress);
         _;
     }  
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        if (msg.sender != rocketPartnerAPIAddress) throw;
+        assert(msg.sender == rocketPartnerAPIAddress);
         _;
     } 
 
     /// @dev Only registered pool node addresses can access
     /// @param nodeAccountAddress node account address.
     modifier onlyRegisteredNode(address nodeAccountAddress) {
-        if (getRocketNodeExists(nodeAccountAddress) == false) throw;
+        assert(getRocketNodeExists(nodeAccountAddress) == true);
         _;
     }
 
     /// @dev Only a registered mini pool
     /// @param miniPoolAddress mini pool contract address.
     modifier onlyRegisteredPool(address miniPoolAddress) { 
-        if (getRocketMiniPoolExists(miniPoolAddress) == false) throw;
+        assert(getRocketMiniPoolExists(miniPoolAddress) == true);
         _;
     }
 
     /// @dev Only registered partner addresses can access
     /// @param partnerAddress node account address.
     modifier onlyRegisteredPartner(address partnerAddress) {
-        if (getRocketPartnerExists(partnerAddress) == false) throw;
+        assert(getRocketPartnerExists(partnerAddress) == true);
         _;
     }
 
@@ -332,10 +332,8 @@ contract RocketHub is Owned  {
 
     /// @dev Returns a single rocket node address at the array index
     function getRocketNodeByIndex(uint addressIndex) public constant returns(address)  {
-        if (nodes[nodeAddresses[addressIndex]].exists == true) {
-             return nodeAddresses[addressIndex];
-        }
-        throw;
+        assert(nodes[nodeAddresses[addressIndex]].exists == true);
+        return nodeAddresses[addressIndex];
     }
 
     /// @dev Returns the amount of registered rocket nodes
@@ -423,10 +421,8 @@ contract RocketHub is Owned  {
 
     /// @dev Returns a single rocket mini pool at the array index
     function getRocketMiniPoolByIndex(uint addressIndex) public constant returns(address)  {
-        if (pools[miniPoolAddresses[addressIndex]].exists == true) {
-             return miniPoolAddresses[addressIndex];
-        }
-        throw;
+        assert(pools[miniPoolAddresses[addressIndex]].exists == true);
+        return miniPoolAddresses[addressIndex];
     }
 
     /// @dev Returns the amount of registered rocket nodes
@@ -478,7 +474,7 @@ contract RocketHub is Owned  {
             // Now remove from our mapping struct
             partners[partnerAddressToRemove].exists = false;
             partners[partnerAddressToRemove].partnerAddress = 0;
-            partners[partnerAddressToRemove].name = 0;
+            partners[partnerAddressToRemove].name = '';
             // All good
             return true;
         }
