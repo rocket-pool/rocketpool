@@ -6,7 +6,7 @@ import "./contract/Owned.sol";
 /// @title The gateway hub contract for RocketPool, controls the addresses of the main contracts used and primary persistent storage, should only ever be deployed once
 /// @author David Rugendyke
 
-contract RocketHub is Owned  {
+contract RocketHub is Owned {
 
     /**** Properties ***********/
 
@@ -134,7 +134,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocketpool, usefull for upgrading the main contract that the pools read from
     /// @param newRocketPoolAddress The address of the new main rocket pool contract
     function setRocketPoolAddress(address newRocketPoolAddress) public onlyOwner  {
-        if(newRocketPoolAddress != 0) {
+        if (newRocketPoolAddress != 0) {
             rocketPoolAddress = newRocketPoolAddress;
         }
     }
@@ -142,7 +142,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocketpoolminidelegate, usefull for upgrading the methods that any creating minipools ready from
     /// @param newRocketPoolMiniDelegateAddress The address of the new main rocket pool contract
     function setRocketPoolMiniDelegateAddress(address newRocketPoolMiniDelegateAddress) public onlyOwner  {
-        if(newRocketPoolMiniDelegateAddress != 0) {
+        if (newRocketPoolMiniDelegateAddress != 0) {
             rocketPoolMiniDelegateAddress = newRocketPoolMiniDelegateAddress;
         }
     }
@@ -150,7 +150,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocketpool 3rd party partner API
     /// @param newRocketPartnerAPIAddress The address of the new rocket 3rd party partner API contract
     function setRocketPartnerAPIAddress(address newRocketPartnerAPIAddress) public onlyOwner  {
-        if(newRocketPartnerAPIAddress != 0) {
+        if (newRocketPartnerAPIAddress != 0) {
             rocketPartnerAPIAddress = newRocketPartnerAPIAddress;
         }
     }
@@ -158,7 +158,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
     /// @param newRocketSettingsAddress The address of the new rocket settings contract
     function setRocketSettingsAddress(address newRocketSettingsAddress) public onlyOwner  {
-        if(newRocketSettingsAddress != 0) {
+        if (newRocketSettingsAddress != 0) {
             rocketSettingsAddress = newRocketSettingsAddress;
         }
     }
@@ -166,7 +166,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocket factory, used for automatic contract creation
     /// @param newRocketFactoryAddress The address of the new rocket factory contract
     function setRocketFactoryAddress(address newRocketFactoryAddress) public onlyOwner  {
-        if(newRocketFactoryAddress != 0) {
+        if (newRocketFactoryAddress != 0) {
             rocketFactoryAddress = newRocketFactoryAddress;
         }
     }
@@ -174,7 +174,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocket node contract
     /// @param newRocketNodeAddress The address of the new rocket smart node contract
     function setRocketNodeAddress(address newRocketNodeAddress) public onlyOwner  {
-        if(newRocketNodeAddress != 0) {
+        if (newRocketNodeAddress != 0) {
             rocketNodeAddress = newRocketNodeAddress;
         }
     }
@@ -182,7 +182,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a new rocket deposit token, used for backing / trading deposits currently staking
     /// @param newRocketDepositTokenAddress The address of the new rocket deposit token contract
     function setRocketDepositTokenAddress(address newRocketDepositTokenAddress) public onlyOwner  {
-        if(newRocketDepositTokenAddress != 0) {
+        if (newRocketDepositTokenAddress != 0) {
             rocketDepositTokenAddress = newRocketDepositTokenAddress;
         }
     }
@@ -190,7 +190,7 @@ contract RocketHub is Owned  {
     /// @dev Set the address of a the casper staking contract that registers our nodes as validators via the mini pools
     /// @param newCasperAddress The address of the casper contract
     function setCasperAddress(address newCasperAddress) public onlyOwner  {
-        if(newCasperAddress != 0) {
+        if (newCasperAddress != 0) {
             casperAddress = newCasperAddress;
         }
     }
@@ -249,7 +249,7 @@ contract RocketHub is Owned  {
                 nodeAccountAddress: nodeAccountAddressToRegister,
                 oracleID: newOracleID,
                 instanceID: newInstanceID,
-                region: 'tba',
+                region: "tba",
                 averageLoad: 0,
                 lastCheckin: now,
                 lastRebootAttempt: 0,
@@ -283,10 +283,10 @@ contract RocketHub is Owned  {
         // Remove the node now
         uint i = 0;
         bool found = false;
-        for(i=0; i < nodeAddresses.length; i++) {
-            if(nodeAddresses[i] == nodeAddressToRemove) {
+        for (i = 0; i < nodeAddresses.length; i++) {
+            if (nodeAddresses[i] == nodeAddressToRemove) {
                 found = true;
-                for (uint x = i; x < nodeAddresses.length-1; x++){
+                for (uint x = i; x < nodeAddresses.length-1; x++) {
                     nodeAddresses[x] = nodeAddresses[x+1];
                 }
                 delete nodeAddresses[nodeAddresses.length-1];
@@ -294,7 +294,7 @@ contract RocketHub is Owned  {
             }
         }
         // Did we find them?
-        if(found) {
+        if (found) {
             // Now remove from our mapping struct
             nodes[nodeAddressToRemove].exists = false;
             nodes[nodeAddressToRemove].nodeAccountAddress = 0;
@@ -383,8 +383,8 @@ contract RocketHub is Owned  {
         // Remove the pool now
         uint i = 0;
         bool found = false;
-        for(i=0; i < miniPoolAddresses.length; i++) {
-            if(miniPoolAddresses[i] == miniPoolAddressToRemove) {
+        for (i=0; i < miniPoolAddresses.length; i++) {
+            if (miniPoolAddresses[i] == miniPoolAddressToRemove) {
                 found = true;
                 for (uint x = i; x < miniPoolAddresses.length-1; x++){
                     miniPoolAddresses[x] = miniPoolAddresses[x+1];
@@ -394,7 +394,7 @@ contract RocketHub is Owned  {
             }
         }
         // Did we find them?
-        if(found) {
+        if (found) {
             // Now remove from our mapping struct
             pools[miniPoolAddressToRemove].exists = false;
             pools[miniPoolAddressToRemove].poolContractAddress = 0;

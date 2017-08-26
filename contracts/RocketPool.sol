@@ -34,7 +34,6 @@ contract RocketPool is Owned {
 
     RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
 
-
     /*** Events ****************/
 
     event UserAddedToPool (
@@ -177,52 +176,52 @@ contract RocketPool is Owned {
 
     // @dev Are deposits allowed for this version of Rocket Pool?
     /// @param areDepositsAllowed True or False
-    function setDepositsAllowed(bool areDepositsAllowed) public onlyOwner  {
+    function setDepositsAllowed(bool areDepositsAllowed) public onlyOwner {
         depositsAllowed = areDepositsAllowed;
     }
 
     // @dev Set the min amount of Ether required for a deposit in Wei
     /// @param amountInWei The amount in Wei
-    function setMinDepositAllowed(uint256 amountInWei) public onlyOwner  {
+    function setMinDepositAllowed(uint256 amountInWei) public onlyOwner {
         minDepositWei = amountInWei;
     }
 
     // @dev Set the max amount of Ether required for a deposit in Wei
     /// @param amountInWei The amount in Wei
-    function setMaxDepositAllowed(uint256 amountInWei) public onlyOwner  {
+    function setMaxDepositAllowed(uint256 amountInWei) public onlyOwner {
         maxDepositWei = amountInWei;
     }
 
     // @dev Are withdrawals allowed for this version of Rocket Pool?
     /// @param areWithdrawalsAllowed True or False
-    function setWithdrawalsAllowed(bool areWithdrawalsAllowed) public onlyOwner  {
+    function setWithdrawalsAllowed(bool areWithdrawalsAllowed) public onlyOwner {
         withdrawalsAllowed = areWithdrawalsAllowed;
     }
 
     // @dev Set the min amount of Ether required for a withdrawals in Wei
     /// @param amountInWei The amount in Wei
-    function setMinDepositsAllowed(uint256 amountInWei) public onlyOwner  {
+    function setMinDepositsAllowed(uint256 amountInWei) public onlyOwner {
         minWithdrawalWei = amountInWei;
     }
 
     // @dev Set the max amount of Ether required for a withdrawals in Wei
     /// @param amountInWei The amount in Wei
-    function setMaxWithdrawalAllowed(uint256 amountInWei) public onlyOwner  {
+    function setMaxWithdrawalAllowed(uint256 amountInWei) public onlyOwner {
         maxWithdrawalWei = amountInWei;
     }
 
     /// @dev Set the duration between node checkins to make the node inactive
-    function setNodeSetInactiveDuration(uint256 time) public onlyOwner  {
+    function setNodeSetInactiveDuration(uint256 time) public onlyOwner {
         nodeSetInactiveDuration = time;
     }
 
     /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
-    function setNodeSetInactiveAutomatic(bool allowed) public onlyOwner  {
+    function setNodeSetInactiveAutomatic(bool allowed) public onlyOwner {
         nodeSetInactiveAutomatic = allowed;
     }
 
     /// @dev Get the duration between node checkins to make the node inactive
-    function getNodeSetInactiveDuration() public constant returns (uint256)  {
+    function getNodeSetInactiveDuration() public constant returns (uint256) {
         return nodeSetInactiveDuration;
     }
 
@@ -234,13 +233,13 @@ contract RocketPool is Owned {
     /// @dev Fallback function, user direct deposit to Rocket Pool 
     function() public payable {   
         // Direct deposit to Rocket Pool, set partner address to 0 to indicate no partner but an awesome direct Rocket Pool user
-        deposit(msg.sender, 0, sha3('default'));
+        deposit(msg.sender, 0, sha3("default"));
     }
 
     /// @dev Deposit to Rocket Pool from the 3rd party partner API
     function partnerDeposit(address partnerUserAddress, address partnerAddress, bytes32 poolStakingTimeID) public payable onlyLatestRocketPartnerAPI returns(bool) { 
         // Make the deposit on behalf of the 3rd party partners user
-        if(deposit(partnerUserAddress, partnerAddress, poolStakingTimeID)) {
+        if (deposit(partnerUserAddress, partnerAddress, poolStakingTimeID)) {
             return true;
         }
         return false;       

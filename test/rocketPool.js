@@ -1301,7 +1301,7 @@ contract('RocketPool', function (accounts) {
                         // Token fee - this goes to the person who trades the tokens back in
                         var tokenWithdrawalFee = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
                         // Get the total supply of tokens in circulation
-                        return rocketDepositTokenInstance.totalSupply.call(userFirst).then(function (result) {
+                        return rocketDepositTokenInstance.totalSupply.call().then(function (result) {
                             var fundTokenBalance = parseFloat(result.valueOf());
                             //console.log(result.valueOf());
                             //console.log(web3.fromWei(fundTokenBalance, 'ether'));
@@ -1319,7 +1319,7 @@ contract('RocketPool', function (accounts) {
                                         var userFirstTokenBalanceAfter = parseFloat(result.valueOf());
                                         var userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
                                         // Now check the tokens were burnt
-                                        return rocketDepositTokenInstance.totalSupply.call(userFirst).then(function (result) {
+                                        return rocketDepositTokenInstance.totalSupply.call().then(function (result) {
                                             var fundTokenBalanceAfter = parseFloat(result.valueOf());
                                             var etherAccountDiff = (userFirstEtherBalanceAfter - userFirstEtherBalance);
                                             //var etherAccountTradeWithBonus = (userFirstTokenBalance * (parseFloat(tokenWithdrawalFee + 1)));

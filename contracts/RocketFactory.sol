@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.11;
 
 /***
    * Note: Since this contract handles contract creation by other contracts, it's deployment gas usage will be high depending on the amount of contracts it can create.
@@ -44,7 +44,7 @@ contract RocketFactory is Owned {
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (msg.sender != rocketHub.getRocketPoolAddress()) throw;
+        assert (msg.sender == rocketHub.getRocketPoolAddress());
         _;
     }
 
@@ -65,7 +65,7 @@ contract RocketFactory is Owned {
         // Create the new pool and add it to our list
         RocketPoolMini newPoolAddress = new RocketPoolMini(rocketHubAddress, miniPoolStakingDuration);
         // Store it now after a few checks
-        if(addContract(sha3('rocketMiniPool'), newPoolAddress)) {
+        if (addContract(sha3("rocketMiniPool"), newPoolAddress)) {
             return newPoolAddress;
         }
     } 
@@ -90,8 +90,5 @@ contract RocketFactory is Owned {
         }
         return false;
     } 
-
- 
-
 
 }

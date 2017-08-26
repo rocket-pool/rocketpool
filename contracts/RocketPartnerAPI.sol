@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.11;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -58,14 +58,14 @@ contract RocketPartnerAPI is Owned {
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (msg.sender != rocketHub.getRocketPoolAddress()) throw;
+        assert(msg.sender == rocketHub.getRocketPoolAddress());
         _;
     }
 
     /// @dev Only registered partner addresses can access
     modifier onlyRegisteredPartner() {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
-        if (rocketHub.getRocketPartnerExists(msg.sender) == false) throw;
+        assert (rocketHub.getRocketPartnerExists(msg.sender) == true);
         _;
     }
 
@@ -100,7 +100,7 @@ contract RocketPartnerAPI is Owned {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if(rocketPool.partnerDeposit.value(msg.value).gas(2300000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
+        if (rocketPool.partnerDeposit.value(msg.value).gas(2300000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
             // Fire the event now
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }
@@ -121,7 +121,7 @@ contract RocketPartnerAPI is Owned {
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
-        if(rocketPool.userPartnerWithdrawDeposit.gas(600000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
+        if (rocketPool.userPartnerWithdrawDeposit.gas(600000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
             // Fire the event now
             APIpartnerWithdrawalAccepted(msg.sender, partnerUserAddress, now);
         }
@@ -138,7 +138,7 @@ contract RocketPartnerAPI is Owned {
         // Add the partner to the primary persistent storage so any contract upgrades won't effect the current stored partners
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Sets the rocket partner if the address is ok and isn't already set
-        if(rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
+        if (rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
             // Fire the event
             PartnerRegistered(partnerAccountAddressToRegister, now);
         }
@@ -150,7 +150,7 @@ contract RocketPartnerAPI is Owned {
          // Remove partner from the primary persistent storage
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Sets the rocket partner if the address is ok and isn't already set
-        if(rocketHub.setRocketPartnerRemove(partnerAddress)) {
+        if (rocketHub.setRocketPartnerRemove(partnerAddress)) {
             // Fire the event
             PartnerRemoved(partnerAddress, now);
         }

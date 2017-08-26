@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.11;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -6,7 +6,7 @@ import "./RocketHub.sol";
 /// @title Common settings that are used across all spoke contracts, mostly the main rocketpool and the mini pools it creates
 /// @author David Rugendyke
 
-contract RocketSettings is Owned  {
+contract RocketSettings is Owned {
 
     /**** Properties ***********/
 
@@ -86,17 +86,17 @@ contract RocketSettings is Owned  {
     
 
     /// @dev Get the address of the main hub contract
-    function getRocketHubAddress() public constant returns (address)  {
+    function getRocketHubAddress() public constant returns (address) {
         return rocketHubAddress;
     }
 
     /// @dev Get default status of a new mini pool
-    function getPoolDefaultStatus() public constant returns (uint256)  {
+    function getPoolDefaultStatus() public constant returns (uint256) {
         return uint256(poolMiniDefaultStatus);
     }
 
     /// @dev Check to see if new pools are allowed to be created
-    function getPoolAllowedToBeCreated() public constant returns (bool)  { 
+    function getPoolAllowedToBeCreated() public constant returns (bool) { 
         // Get the mini pool count
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount();
@@ -108,12 +108,12 @@ contract RocketSettings is Owned  {
     }
 
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished
-    function getPoolAllowedToBeClosed() public constant returns (bool)  { 
+    function getPoolAllowedToBeClosed() public constant returns (bool) { 
         return poolMiniClosingAllowed;
     }
 
     /// @dev Check to see if the supplied staking time is a set time
-    function getPoolStakingTimeExists(bytes32 stakingTimeID) public constant returns (bool)  {
+    function getPoolStakingTimeExists(bytes32 stakingTimeID) public constant returns (bool) {
         if(poolMiniStakingTimes[stakingTimeID] >= poolMiniMinimumStakingTime) {
             return true;
         }
@@ -121,102 +121,98 @@ contract RocketSettings is Owned  {
     }
 
      /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getPoolStakingTime(bytes32 stakingTimeID) public constant returns (uint256)  {
-        if(getPoolStakingTimeExists(stakingTimeID)) {
-            return poolMiniStakingTimes[stakingTimeID];
-        }else{
-            throw;
-        }
+    function getPoolStakingTime(bytes32 stakingTimeID) public constant returns (uint256) {
+        // Make sure the staking ID exists
+        assert(getPoolStakingTimeExists(stakingTimeID) == true);
+        return poolMiniStakingTimes[stakingTimeID];
     }
 
     /// @dev Get the minimum required time for staking
-    function getPoolMiniMinimumStakingTime() public constant returns (uint256)  {
+    function getPoolMiniMinimumStakingTime() public constant returns (uint256) {
         return poolMiniMinimumStakingTime;
     }
 
     /// @dev Get the minimum time allowed for staking with Casper
-    function getPoolMinEtherRequired() public constant returns (uint256)  {
+    function getPoolMinEtherRequired() public constant returns (uint256) {
         return poolMiniMinWeiRequired;
     }
 
     /// @dev Get the time limit to stay in countdown before staking begins
-    function getPoolCountdownTime() public constant returns (uint256)  {
+    function getPoolCountdownTime() public constant returns (uint256) {
         return poolMiniCountdownTime;
     }
 
     /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getWithdrawalFeePercInWei() public constant returns (uint256)  {
+    function getWithdrawalFeePercInWei() public constant returns (uint256) {
         return withdrawalFeePercInWei;
     }
 
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
-    function getWithdrawalFeeDepositAddress() public constant returns (address)  {
-        if(withdrawalFeeDepositAddress != 0) {
-            return withdrawalFeeDepositAddress;
-        }
-        throw;
+    function getWithdrawalFeeDepositAddress() public constant returns (address) {
+        assert(withdrawalFeeDepositAddress != 0);
+        return withdrawalFeeDepositAddress;
     }
 
     /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-    function getPoolUserBackupCollectEnabled() public constant returns (bool)  {
+    function getPoolUserBackupCollectEnabled() public constant returns (bool) {
         return poolUserBackupCollectEnabled;
     }
 
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function getPoolUserBackupCollectTime() public constant returns (uint256)  {
+    function getPoolUserBackupCollectTime() public constant returns (uint256) {
         return poolUserBackupCollectTime;
     }
 
     /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getDepositTokenWithdrawalFeePercInWei() public constant returns (uint256)  {
+    function getDepositTokenWithdrawalFeePercInWei() public constant returns (uint256) {
         return depositTokenWithdrawalFeePercInWei;
     }
 
     /// @dev Set the Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function setDepositTokenWithdrawalFeePercInWei(uint256 newTokenWithdrawalFeePercInWei) public onlyOwner  {
+    function setDepositTokenWithdrawalFeePercInWei(uint256 newTokenWithdrawalFeePercInWei) public onlyOwner {
         depositTokenWithdrawalFeePercInWei = newTokenWithdrawalFeePercInWei;
     }
 
     /// @dev Set the time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function setPoolUserBackupCollectTime(uint256 newTimeLimit) public onlyOwner  {
+    function setPoolUserBackupCollectTime(uint256 newTimeLimit) public onlyOwner {
         poolUserBackupCollectTime = newTimeLimit;
     }
 
     /// @dev Set if users backup addressess are allowed to collect
-    function setPoolUserBackupCollectEnabled(bool backupCollectEnabled) public onlyOwner  {
+    function setPoolUserBackupCollectEnabled(bool backupCollectEnabled) public onlyOwner {
         poolUserBackupCollectEnabled = backupCollectEnabled;
     }
 
     /// @dev Set the minimum Wei required for a pool to launch
-    function setPoolMinEtherRequired(uint256 weiAmount) public onlyOwner  {
+    function setPoolMinEtherRequired(uint256 weiAmount) public onlyOwner {
         poolMiniMinWeiRequired = weiAmount;
     }
 
     /// @dev Set the time limit to stay in countdown before staking begins (eg 5 minutes)
-    function setPoolCountdownTime(uint256 time) public onlyOwner  {
+    function setPoolCountdownTime(uint256 time) public onlyOwner {
         poolMiniCountdownTime = time;
     }
 
     /// @dev Set the minimum mini pool staking time
-    function setPoolMinStakingTime(uint256 secondsToSet) public onlyOwner  {
-        if(secondsToSet > 0) {
+    function setPoolMinStakingTime(uint256 secondsToSet) public onlyOwner {
+        if (secondsToSet > 0) {
             poolMiniMinimumStakingTime = secondsToSet;
         }
     }
 
     /// @dev Set the mini pool staking time
-    function setPoolStakingTime(bytes32 id, uint256 secondsToSet) public onlyOwner  {
+    function setPoolStakingTime(bytes32 id, uint256 secondsToSet) public onlyOwner {
         poolMiniStakingTimes[id] = secondsToSet; 
         poolMiniStakingTimesIDs.push(id);
     }
 
     /// @dev Set the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function setWithdrawalFeePercInWei(uint256 newWithdrawalFeePercInWei) public onlyOwner  {
+    function setWithdrawalFeePercInWei(uint256 newWithdrawalFeePercInWei) public onlyOwner {
         withdrawalFeePercInWei = newWithdrawalFeePercInWei;
     }
 
     /// @dev Set the Rocket Pool withdrawal fee address, must be an account, not a contract address
-    function setWithdrawalFeeDepositAddress(address newWithdrawalFeeDepositAddress) public onlyOwner  {
+    function setWithdrawalFeeDepositAddress(address newWithdrawalFeeDepositAddress) public onlyOwner {
         withdrawalFeeDepositAddress = newWithdrawalFeeDepositAddress;
     }
     
