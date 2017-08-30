@@ -1,11 +1,14 @@
 pragma solidity ^0.4.2;
 
+// Note: For some reason Migrations.sol needs to be in the root or they run everytime
+
 contract Migrations {
   address public owner;
   uint public last_completed_migration;
 
   modifier restricted() {
-    if (msg.sender == owner) _;
+    assert(msg.sender == owner);
+    _;
   }
 
   function Migrations() {
@@ -16,8 +19,8 @@ contract Migrations {
     last_completed_migration = completed;
   }
 
-  function upgrade(address new_address) restricted {
-    Migrations upgraded = Migrations(new_address);
+  function upgrade(address newAddress) restricted {
+    Migrations upgraded = Migrations(newAddress);
     upgraded.setCompleted(last_completed_migration);
   }
 }
