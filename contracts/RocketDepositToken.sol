@@ -113,7 +113,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
             // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
             uint256 etherWithdrawAmountPlusBonus = _amount + Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
             // Throw if we can't cover it
-            assert(this.balance >= etherWithdrawAmountPlusBonus);
+            assert(this.balance < etherWithdrawAmountPlusBonus);
             // Did it send ok?
             if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
                 // Add back to the sender
