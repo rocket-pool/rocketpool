@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.11;
 
 
 /// @title ERC20 Token Interface
@@ -6,7 +6,7 @@ pragma solidity ^0.4.4;
 
 contract ERC20TokenInterface {
     // Get the total token supply
-    function totalSupply() constant returns (uint256 totalSupply);
+    function totalSupply() constant returns (uint256);
     // Get the account balance of another account with address _owner
     function balanceOf(address _owner) constant returns (uint256 balance);
     // Send _value amount of tokens to address _to
