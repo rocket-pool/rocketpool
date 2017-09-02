@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.15;
 
 contract RocketPoolInterface {
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.15;
 
 contract RocketSettingsInterface {
     /// @dev Get default status of a new mini pool
