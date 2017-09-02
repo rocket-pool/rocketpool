@@ -14,21 +14,21 @@ contract RocketPoolMini is Owned {
 
     /**** Properties ***********/
 
-    // Hub address
-    address private rocketHubAddress;                           // Node this minipool is attached to
-    address private rocketNodeAddress;                          // Node validation code for Casper
-    bytes32 private rocketNodeValidationCode;                   // Node randao for Casper
-    bytes32 private rocketNodeRandao;                           // The time this pool will stake for before withdrawal is allowed (seconds)
-    uint256 private stakingDuration;                            // The ether balance sent to stake from the pool
-    uint256 private stakingBalance = 0;                         // The ether balance sent to the pool after staking was completed in Casper
-    uint256 private stakingBalanceReceived = 0;                 // Users in this pool
-    mapping (address => User) private users;                    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
-    mapping (address => address) private usersBackupAddress;    // Keep an array of all our user addresses for iteration
-    address[] private userAddresses;                            // The current status of this pool, statuses are declared via Enum in the main hub
-    uint256 private status;                                     // The timestamp the status changed
-    uint256 private statusChangeTime;                           // The total ether traded for tokens owed by the minipool
-    uint256 private depositEtherTradedForTokensTotal;           // The current version of this pool
-    uint8 private version = 1;                                  // Current version of this minipool
+    
+    address private rocketHubAddress;                           // Hub address
+    address private rocketNodeAddress;                          // Node this minipool is attached to
+    bytes32 private rocketNodeValidationCode;                   // Node validation code for Casper
+    bytes32 private rocketNodeRandao;                           // Node randao for Casper
+    uint256 private stakingDuration;                            // The time this pool will stake for before withdrawal is allowed (seconds)
+    uint256 private stakingBalance = 0;                         // The ether balance sent to stake from the pool
+    uint256 private stakingBalanceReceived = 0;                 // The ether balance sent to the pool after staking was completed in Casper
+    mapping (address => User) private users;                    // Users in this pool
+    mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
+    address[] private userAddresses;                            // Keep an array of all our user addresses for iteration
+    uint256 private status;                                     // The current status of this pool, statuses are declared via Enum in the main hub
+    uint256 private statusChangeTime;                           // The timestamp the status changed
+    uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool
+    uint8 private version = 1;                                  // The current version of this pool
 
 
     /*** Contracts **************/
