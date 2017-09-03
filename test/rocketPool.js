@@ -732,7 +732,6 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
-
     // Node performs second checkin, sets the launch time for mini pools to 0 so that the first awaiting mini pool is launched
     it(printTitle('nodeFirst', 'first node performs second checkin, 2 minipools awaiting launch should be launched as countdown is set to 0 and balance sent to Casper'), function () {
         // Check RocketHub is deployed first    

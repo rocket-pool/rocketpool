@@ -91,8 +91,12 @@ contract RocketPoolMiniDelegate is Owned {
         uint256 flag
     );
 
-     event FlagAddress (
+    event FlagAddress (
         address flag
+    );
+
+    event FlagString (
+        string flag
     );
 
    
@@ -164,13 +168,11 @@ contract RocketPoolMiniDelegate is Owned {
     
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address userAddress, uint256 updatedBalance, int256 updatedRewards, uint256 updatedFees) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool) {
-        if (status == 4) {
-            users[userAddress].balance = updatedBalance;
-            users[userAddress].rewards = updatedRewards;
-            users[userAddress].fees = updatedFees;
-            return true;
-        }
-        return false;
+        assert(status == 4);
+        users[userAddress].balance = updatedBalance;
+        users[userAddress].rewards = updatedRewards;
+        users[userAddress].fees = updatedFees;
+        return true;
     }
 
     /// @dev Set the backup address for the user to collect their deposit + rewards from if the primary address doesn't collect it after a certain time period
@@ -184,38 +186,34 @@ contract RocketPoolMiniDelegate is Owned {
     /// @dev Set current users address to the supplied backup one - be careful with this method when calling from the main Rocket Pool contract, all primary logic must be contained there as its upgradable
     function setUserAddressToCurrentBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalGiven) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool) {
         // This can only be called when staking has been completed, do some quick double checks here too
-        if (status == 4 && usersBackupAddress[userAddressBackupWithdrawalGiven] == userAddress) {
-            // Copy the mapping struct with the existing users details
-            users[userAddressBackupWithdrawalGiven] = users[userAddress];
-            // Add the user to the array of addresses
-            userAddresses.push(userAddressBackupWithdrawalGiven);
-            // Now remove the old user
-            removeUser(userAddress);
-            // All good
-            return true;
-        }
-        return false;
+        assert(status == 4 && usersBackupAddress[userAddressBackupWithdrawalGiven] == userAddress);
+        // Copy the mapping struct with the existing users details
+        users[userAddressBackupWithdrawalGiven] = users[userAddress];
+        // Add the user to the array of addresses
+        userAddresses.push(userAddressBackupWithdrawalGiven);
+        // Now remove the old user
+        removeUser(userAddress);
+        // All good
+        return true;
     }
 
 
     /// @dev Adds more to the current amount of deposit tokens owed by the user
     function setUserDepositTokensOwedAdd(address userAddress, uint256 etherAmount, uint256 tokenAmount) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool) {
         // Some basic double checks here, primary logic is in the main Rocket Pool contract
-        if (etherAmount > 0 && etherAmount <= users[userAddress].balance) {
-            // Update their token amount
-            users[userAddress].depositTokensWithdrawn += tokenAmount;
-            // Update the pool ether total that has been traded for tokens, we know how much to send the token deposit fund based on this
-            depositEtherTradedForTokensTotal += etherAmount;
-            // 1 ether = 1 token, deduct from their deposit
-            users[userAddress].balance -= etherAmount;
-            // Does this user have any balance left? if not, they've withdrawn it all as tokens, remove them from the pool now
-            if (users[userAddress].balance <= 0) {
-                removeUser(userAddress);
-            }
-            // Sweet
-            return true;
+        assert(etherAmount > 0 && etherAmount <= users[userAddress].balance);
+        // Update their token amount
+        users[userAddress].depositTokensWithdrawn += tokenAmount;
+        // Update the pool ether total that has been traded for tokens, we know how much to send the token deposit fund based on this
+        depositEtherTradedForTokensTotal += etherAmount;
+        // 1 ether = 1 token, deduct from their deposit
+        users[userAddress].balance -= etherAmount;
+        // Does this user have any balance left? if not, they've withdrawn it all as tokens, remove them from the pool now
+        if (users[userAddress].balance <= 0) {
+            removeUser(userAddress);
         }
-        return false;
+        // Sweet
+        return true;
     }
 
 

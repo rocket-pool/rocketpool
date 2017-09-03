@@ -119,6 +119,10 @@ contract RocketPool is Owned {
         address flag
     );
 
+    event FlagBool (
+        bool flag
+    );
+
     
 
     /*** Modifiers *************/
@@ -258,7 +262,7 @@ contract RocketPool is Owned {
         uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(poolStakingTimeID);
         // Assign the user to a matching staking time pool if they don't already belong to one awaiting deposits
         // If no pools are currently available, a new pool for the user will be created
-        address poolUserBelongsToo =  userAssignToPool(userAddress, partnerAddress, poolStakingDuration);
+        address poolUserBelongsToo = userAssignToPool(userAddress, partnerAddress, poolStakingDuration);
         // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
         RocketPoolMini poolDepositTo = getPoolInstance(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
@@ -266,7 +270,7 @@ contract RocketPool is Owned {
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
-        Transferred(userAddress, poolUserBelongsToo, sha3('deposit'), msg.value, now);   
+        Transferred(userAddress, poolUserBelongsToo, sha3("deposit"), msg.value, now);   
         // Success
         return true;   
     }
@@ -284,12 +288,12 @@ contract RocketPool is Owned {
         // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
         address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, poolStakingDuration);
         // No pools awaiting? lets make one
-        if(poolsFound.length == 0) {
+        if (poolsFound.length == 0) {
             // Create new pool contract
             poolAssignToAddress = createPool(poolStakingDuration);
-        }else{
+        } else {
             // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
-            for(uint32 i = 0; i < poolsFound.length; i++) {
+            for (uint32 i = 0; i < poolsFound.length; i++) {
                 // Add them to the first available pool accepting deposits
                 poolAssignToAddress = poolsFound[i];
             } 
@@ -299,9 +303,9 @@ contract RocketPool is Owned {
         // Get the contract instance
         RocketPoolMini poolAddUserTo = getPoolInstance(poolAssignToAddress);
         // Double check the pools status is accepting deposits
-        if(poolAddUserTo.getStatus() == 0) {
+        if (poolAddUserTo.getStatus() == 0) {
             // User is added if they don't exist in it already
-            if(poolAddUserTo.addUser(newUserAddress, partnerAddress)) {
+            if (poolAddUserTo.addUser(newUserAddress, partnerAddress)) {
                 // Fire the event
                 UserAddedToPool(newUserAddress, partnerAddress, poolAssignToAddress, now);
             } 
@@ -337,7 +341,7 @@ contract RocketPool is Owned {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
-        if(pool.getUserBackupAddressExists(userAddress)) {
+        if (pool.getUserBackupAddressExists(userAddress)) {
             // Get the original deposit address now
             // This will update the users account to match the backup address, but only after many checks and balances
             // It will fail if the user can't use their backup address to withdraw at this point or its not their nominated backup address trying
@@ -349,7 +353,7 @@ contract RocketPool is Owned {
         uint256 userBalance = pool.getUserDeposit(userAddress);
         address userPartnerAddress = pool.getUserPartner(userAddress);
         // Now check to see if the given partner matches the users partner
-        if(userPartnerAddress != 0 && partnerAddress != 0) {
+        if (userPartnerAddress != 0 && partnerAddress != 0) {
             // The supplied partner for the user does not match the sender
             assert(userPartnerAddress == partnerAddress);
         }
@@ -360,9 +364,9 @@ contract RocketPool is Owned {
         // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
         // Users withdraw all their deposit + rewards at once when the pool has finished staking
         // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
-        if(pool.getStatus() == 4) {
+        if (pool.getStatus() == 4) {
             // Update the users new balance, rewards earned and fees incurred
-            if(userUpdateDepositAndRewards(miniPoolAddress, userAddress)) {
+            if (userUpdateDepositAndRewards(miniPoolAddress, userAddress)) {
                 // Get their updated balance now as they are withdrawing it all
                 amount = pool.getUserDeposit(userAddress);
             }
@@ -372,7 +376,7 @@ contract RocketPool is Owned {
         // Ok send the deposit to the user from the mini pool now
         assert(pool.withdraw(userAddress, amount) == true);
         // Successful withdrawal
-        Transferred(miniPoolAddress, userAddress, sha3('withdrawal'), amount, now);    
+        Transferred(miniPoolAddress, userAddress, sha3("withdrawal"), amount, now);    
         // Success
         return true; 
     }
@@ -400,18 +404,18 @@ contract RocketPool is Owned {
         // Calculate how much rewards the user earned
         userRewardsAmount = int256(userDepositAmountUpdated - userBalance);
         // So only process fees if we've received rewards from Casper
-        if(userRewardsAmount > 0) {
+        if (userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
-            userFeesAmount =  Arithmetic.overflowResistantFraction(rocketSettings.getWithdrawalFeePercInWei(), uint256(userRewardsAmount), calcBase);
+            userFeesAmount = Arithmetic.overflowResistantFraction(rocketSettings.getWithdrawalFeePercInWei(), uint256(userRewardsAmount), calcBase);
             // The total the user will receive '(deposit + rewards) - fees'
             userBalanceUpdated = (userDepositAmountUpdated - userFeesAmount);
-        }else{
+        } else {
             // Either no rewards have been given, or we've incurred penalites from Casper for some reason (node server failure etc), no fee charged in that case as we've dropped the ball for some reason   
             userBalanceUpdated = userDepositAmountUpdated;
         }
         
         // Update our users updated balance, rewards calculated and fees incurred 
-        if(pool.setUserBalanceRewardsFees(userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
+        if (pool.setUserBalanceRewardsFees(userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
             return true;
         }
         return false;
@@ -425,8 +429,8 @@ contract RocketPool is Owned {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // User can only set this backup address before deployment to casper, also partners cannot set this address to their own to prevent them accessing the users funds after the set withdrawal backup period expires
-        if(pool.getStatus() == 0 || pool.getStatus() == 1 && newUserAddressUsedForDeposit != 0 && pool.getUserPartner(msg.sender) != newUserAddressUsedForDeposit) {
-            if(pool.setUserAddressBackupWithdrawal(msg.sender, newUserAddressUsedForDeposit)) {
+        if (pool.getStatus() == 0 || pool.getStatus() == 1 && newUserAddressUsedForDeposit != 0 && pool.getUserPartner(msg.sender) != newUserAddressUsedForDeposit) {
+            if (pool.setUserAddressBackupWithdrawal(msg.sender, newUserAddressUsedForDeposit)) {
                 // Fire the event
                 UserSetBackupWithdrawalAddress(msg.sender, newUserAddressUsedForDeposit, miniPoolAddress, now);
             }
@@ -444,13 +448,13 @@ contract RocketPool is Owned {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // Check to make sure this feature is currently enabled
-        if(rocketSettings.getPoolUserBackupCollectEnabled()) {
+        if (rocketSettings.getPoolUserBackupCollectEnabled()) {
             // This can only occur after a pool has received its Casper deposit (some time ago) and the pool is allowing withdrawals and the given address must match the accounts they wish to withdraw from
-            if(now >= (pool.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && pool.getStatus() == 4) {
+            if (now >= (pool.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && pool.getStatus() == 4) {
                 // Ok we've gotten this far, original deposit address definitely has this address  as a backup?
-                if(pool.getUserBackupAddressOK(userAddressUsedForDeposit, msg.sender)) {
+                if (pool.getUserBackupAddressOK(userAddressUsedForDeposit, msg.sender)) {
                     // Ok we're all good, lets change the initial user deposit address to the backup one so they can call the normal withdrawal process
-                    if(pool.setUserAddressToCurrentBackupWithdrawal(userAddressUsedForDeposit, msg.sender)) {
+                    if (pool.setUserAddressToCurrentBackupWithdrawal(userAddressUsedForDeposit, msg.sender)) {
                         // Fire the event
                         UserChangedToWithdrawalAddress(userAddressUsedForDeposit, msg.sender, miniPoolAddress, now);
                         // Cool
@@ -487,9 +491,9 @@ contract RocketPool is Owned {
         // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
         uint256 tokenAmount = (amount-userDepositTokenFeePercInWei);
         // Ok lets mint those tokens now - minus the fee amount
-        if(rocketDepositToken.mint(msg.sender, tokenAmount)) {
+        if (rocketDepositToken.mint(msg.sender, tokenAmount)) {
             // Cool, lets update the users deposit total and flag that the user has outstanding tokens
-            if(pool.setUserDepositTokensOwedAdd(msg.sender, amount, tokenAmount)) {
+            if (pool.setUserDepositTokensOwedAdd(msg.sender, amount, tokenAmount)) {
                 // Fire the event
                 DepositTokensWithdrawal(msg.sender, amount, tokenAmount, now);
                 // All good
@@ -572,13 +576,13 @@ contract RocketPool is Owned {
         address[] memory pools = new address[](miniPoolCount);
         address[] memory poolsFound = new address[](miniPoolCount);
         // Retreive each pool address now by index since we can't return a variable sized array from an external contract yet
-        for(uint32 i = 0; i < pools.length; i++) {
+        for (uint32 i = 0; i < pools.length; i++) {
             // Get the address
             pools[i] = rocketHub.getRocketMiniPoolByIndex(i);
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
              // Check the pool meets any supplied filters
-            if((status < 10 && pool.getStatus() == status && stakingDuration == 0) ||
+            if ((status < 10 && pool.getStatus() == status && stakingDuration == 0) ||
                (status < 10 && pool.getStatus() == status && stakingDuration > 0 && stakingDuration == pool.getStakingDuration()) || 
                (userAddress != 0 && pool.getUserExists(userAddress)) || 
                (userAddress != 0 && userHasDeposit == true && pool.getUserHasDeposit(userAddress)) || 
@@ -620,7 +624,7 @@ contract RocketPool is Owned {
         // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
         if (rocketSettings.getPoolAllowedToBeClosed()) {
            // Sets the rocket node if the address is ok and isn't already set
-           if(rocketHub.setRocketMiniPoolRemove(msg.sender)) {
+           if (rocketHub.setRocketMiniPoolRemove(msg.sender)) {
                 // Fire the event
                 PoolRemoved(msg.sender, now);
                 // Success
@@ -662,13 +666,15 @@ contract RocketPool is Owned {
         // Check to see if there are any pools thats launch countdown has expired that need to be launched for staking
         address[] memory poolsFound = getPoolsFilterWithStatus(1);
         // Do we have any pools awaiting launch?
-        if(poolsFound.length > 0) {
+        if (poolsFound.length > 0) {
             // Ready to launch?
-            for(i = 0; i < poolsFound.length; i++) {
+            for (i = 0; i < poolsFound.length; i++) {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                if(pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
+                bool test = pool.getStakingDepositTimeMet();
+                FlagBool(test);
+                if (pool.getNodeAddress() == 0 && test == true) {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.nodeAvailableForPool();
                     // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
@@ -684,13 +690,13 @@ contract RocketPool is Owned {
         // Check to see if there are any pools that are currently staking and are due to request their deposit from Casper
         poolsFound = getPoolsFilterWithStatus(2);
         // Do we have any pools currently staking?
-        if(poolsFound.length > 0) {
+        if (poolsFound.length > 0) {
             // Ready for re-entry?
-            for(i = 0; i < poolsFound.length; i++) {
+            for (i = 0; i < poolsFound.length; i++) {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // Is this currently staking pool due to request withdrawal from Casper?
-                if(pool.getStakingRequestWithdrawalTimeMet() == true) {
+                if (pool.getStakingRequestWithdrawalTimeMet() == true) {
                     // Now set the pool to begin requesting withdrawal from casper by updating its status
                     pool.updateStatus();
                 }
@@ -699,33 +705,33 @@ contract RocketPool is Owned {
         // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
         poolsFound = getPoolsFilterWithStatus(3);
         // Do we have any pools currently awaiting on their deposit from casper?
-        if(poolsFound.length > 0) {
+        if (poolsFound.length > 0) {
             // Ready for re-entry?
-            for(i = 0; i < poolsFound.length; i++) {
+            for (i = 0; i < poolsFound.length; i++) {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // If the time has passed, we can now request the deposit to be sent
-                if(pool.getStakingWithdrawalTimeMet() == true) {
+                if (pool.getStakingWithdrawalTimeMet() == true) {
                     // Now set the pool to begin withdrawal from casper by updating its status
                     pool.updateStatus();
                 }
             }
         }
         // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
-        if(nodeSetInactiveAutomatic == true) {
+        if (nodeSetInactiveAutomatic == true) {
             // Get all the current registered nodes
             uint256 nodeCount = rocketHub.getRocketNodeCount();
             // Create an array at the length of the current nodes, then populate it
             // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
             address[] memory nodes = new address[](nodeCount);
             // Get each node now and check
-            for(i = 0; i < nodes.length; i++) {
+            for (i = 0; i < nodes.length; i++) {
                 // Get our node address
                 address currentNodeAddress = rocketHub.getRocketNodeByIndex(i);
                 // We've already checked in as this node above
-                if(msg.sender != currentNodeAddress) {
+                if (msg.sender != currentNodeAddress) {
                     // Has this node reported in recently? If not, it may be down or in trouble, deactivate it to prevent new pools being assigned to it
-                    if(rocketHub.getRocketNodeLastCheckin(currentNodeAddress) < (now - nodeSetInactiveDuration) && rocketHub.getRocketNodeActive(currentNodeAddress) == true) {
+                    if (rocketHub.getRocketNodeLastCheckin(currentNodeAddress) < (now - nodeSetInactiveDuration) && rocketHub.getRocketNodeActive(currentNodeAddress) == true) {
                         // Disable the node - must be manually reactivated by the function above when its back online/running well
                         rocketHub.setRocketNodeActive(currentNodeAddress, false);
                         // Fire the event
@@ -757,7 +763,7 @@ contract RocketPool is Owned {
         indexes[0] = 0;
         indexes[1] = 0;
         // Calculate the length of the non empty values
-		for(uint32 i = 0; i < addressArray.length; i++) {
+		for (uint32 i = 0; i < addressArray.length; i++) {
             if(addressArray[i] != 0) {
                 indexes[0]++;
             }
@@ -765,7 +771,7 @@ contract RocketPool is Owned {
         // Create a new memory array at the length of our valid values we counted
         address[] memory valueArray = new address[](indexes[0]);
         // Now populate the array
-        for(i = 0; i < addressArray.length; i++) {
+        for (i = 0; i < addressArray.length; i++) {
             if(addressArray[i] != 0) {
                 valueArray[indexes[1]] = addressArray[i];
                 indexes[1]++;
