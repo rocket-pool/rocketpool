@@ -33,7 +33,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
         // Only allow access
-        assert(msg.sender == rocketHub.getRocketPoolAddress());
+        assert(msg.sender == rocketHub.getAddress(sha3("rocketPool")));
         _;
     }
 
@@ -103,7 +103,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
         assert (this.balance >= _amount);
         // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Now send ether to the user in return for the tokens, perform overflow checks 
         if (balances[msg.sender] >= _amount && _amount > 0 && (balances[msg.sender] - _amount) < balances[msg.sender] && (totalSupply - _amount) < totalSupply) {
             // Subtract from the sender

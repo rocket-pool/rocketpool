@@ -10,22 +10,19 @@ contract RocketHub is Owned {
 
     /**** Properties ***********/
 
-    // The address of the main pool contract
-    address public rocketPoolAddress; 
-    // The address of the rocket factory contract
-    address public rocketPoolMiniDelegateAddress; 
-    // The address of the rocket deposit token contract
-    address public rocketDepositTokenAddress;
-    // The address of the rocket factory contract
-    address public rocketFactoryAddress; 
-    // The address of the rocket node contract
-    address public rocketNodeAddress; 
-    // The address of the rocket partner API contract
-    address public rocketPartnerAPIAddress; 
-    // The address of the main settings contract
-    address public rocketSettingsAddress;
-    // The address of the casper staking contract
-    address public casperAddress; 
+    
+    address public rocketPoolAddress;                   // The address of the main pool contract
+    address public rocketPoolMiniDelegateAddress;       // The address of the rocket factory contract
+    address public rocketDepositTokenAddress;           // The address of the rocket deposit token contract
+    address public rocketFactoryAddress;                // The address of the rocket factory contract
+    address public rocketNodeAddress;                   // The address of the rocket node contract
+    address public rocketPartnerAPIAddress;             // The address of the rocket partner API contract
+    address public rocketSettingsAddress;               // The address of the main settings contract
+    address public casperAddress;                       // The address of the casper staking contract 
+
+    mapping (bytes32 => address) public addressBook;    // Our contract address book               
+
+
 
 
     /**** Nodes ***************/
@@ -85,19 +82,19 @@ contract RocketHub is Owned {
 
     /// @dev Only allow access from the latest version of the main RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(msg.sender == rocketPoolAddress);
+        assert(msg.sender == addressBook[sha3("rocketPool")]);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketNode contract
     modifier onlyLatestRocketNode() {
-        assert(msg.sender == rocketNodeAddress);
+        assert(msg.sender == addressBook[sha3("rocketNode")]);
         _;
     }  
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        assert(msg.sender == rocketPartnerAPIAddress);
+        assert(msg.sender == addressBook[sha3("rocketPartnerAPI")]);
         _;
     } 
 
@@ -131,111 +128,24 @@ contract RocketHub is Owned {
 
     /**** Contract Addresses ***************/
 
-    /// @dev Set the address of a new rocketpool, usefull for upgrading the main contract that the pools read from
-    /// @param newRocketPoolAddress The address of the new main rocket pool contract
-    function setRocketPoolAddress(address newRocketPoolAddress) public onlyOwner  {
-        if (newRocketPoolAddress != 0) {
-            rocketPoolAddress = newRocketPoolAddress;
-        }
+    /// @dev Set the address of a new contract in our address book
+    /// @param addressId The bytes32 ID of the contract
+    /// @param newContractAddress The address of the new main rocket pool contract
+    function setAddress(bytes32 addressId, address newContractAddress) public onlyOwner {
+        // Check its a valid address
+        assert(newContractAddress != 0x0);
+        // Add the address now
+        addressBook[addressId] = newContractAddress;
     }
 
-    /// @dev Set the address of a new rocketpoolminidelegate, usefull for upgrading the methods that any creating minipools ready from
-    /// @param newRocketPoolMiniDelegateAddress The address of the new main rocket pool contract
-    function setRocketPoolMiniDelegateAddress(address newRocketPoolMiniDelegateAddress) public onlyOwner  {
-        if (newRocketPoolMiniDelegateAddress != 0) {
-            rocketPoolMiniDelegateAddress = newRocketPoolMiniDelegateAddress;
-        }
+    /// @dev Get the address of a contract from our address book
+    /// @param addressId The bytes32 ID of the contract
+    function getAddress(bytes32 addressId) public returns(address) {
+        // Return the address now
+        return addressBook[addressId];
     }
 
-    /// @dev Set the address of a new rocketpool 3rd party partner API
-    /// @param newRocketPartnerAPIAddress The address of the new rocket 3rd party partner API contract
-    function setRocketPartnerAPIAddress(address newRocketPartnerAPIAddress) public onlyOwner  {
-        if (newRocketPartnerAPIAddress != 0) {
-            rocketPartnerAPIAddress = newRocketPartnerAPIAddress;
-        }
-    }
-
-    /// @dev Set the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
-    /// @param newRocketSettingsAddress The address of the new rocket settings contract
-    function setRocketSettingsAddress(address newRocketSettingsAddress) public onlyOwner  {
-        if (newRocketSettingsAddress != 0) {
-            rocketSettingsAddress = newRocketSettingsAddress;
-        }
-    }
-
-    /// @dev Set the address of a new rocket factory, used for automatic contract creation
-    /// @param newRocketFactoryAddress The address of the new rocket factory contract
-    function setRocketFactoryAddress(address newRocketFactoryAddress) public onlyOwner  {
-        if (newRocketFactoryAddress != 0) {
-            rocketFactoryAddress = newRocketFactoryAddress;
-        }
-    }
-
-    /// @dev Set the address of a new rocket node contract
-    /// @param newRocketNodeAddress The address of the new rocket smart node contract
-    function setRocketNodeAddress(address newRocketNodeAddress) public onlyOwner  {
-        if (newRocketNodeAddress != 0) {
-            rocketNodeAddress = newRocketNodeAddress;
-        }
-    }
-
-    /// @dev Set the address of a new rocket deposit token, used for backing / trading deposits currently staking
-    /// @param newRocketDepositTokenAddress The address of the new rocket deposit token contract
-    function setRocketDepositTokenAddress(address newRocketDepositTokenAddress) public onlyOwner  {
-        if (newRocketDepositTokenAddress != 0) {
-            rocketDepositTokenAddress = newRocketDepositTokenAddress;
-        }
-    }
-
-    /// @dev Set the address of a the casper staking contract that registers our nodes as validators via the mini pools
-    /// @param newCasperAddress The address of the casper contract
-    function setCasperAddress(address newCasperAddress) public onlyOwner  {
-        if (newCasperAddress != 0) {
-            casperAddress = newCasperAddress;
-        }
-    }
-
-    /// @dev Get the address of a new rocketpool, usefull for upgrading the main contract that the pools read from
-     // Note: 3rd party services using Rocket Pool for staking should always call this first before displaying the deposit address
-    function getRocketPoolAddress() public returns(address) {
-        return rocketPoolAddress;
-    }
-
-    /// @dev Get the address of the minipool delgate contract
-    function getRocketPoolMiniDelegateAddress() public returns(address) {
-        return rocketPoolMiniDelegateAddress;
-    }
-
-    /// @dev Get the address of a new rocket factory, used for automatic contract creation
-    function getRocketFactoryAddress() public returns(address) {
-        return rocketFactoryAddress;
-    }
-
-    /// @dev Get the address of a new rocket partner 3rd party API
-    function getRocketPartnerAPIAddress() public returns(address) {
-        return rocketPartnerAPIAddress;
-    }
-
-    /// @dev Get the address of the rocket node contract
-    function getRocketNodeAddress() public returns(address) {
-        return rocketNodeAddress;
-    }
-
-    /// @dev Get the address of a new rocketpool settings, usefull for upgrading common settings that the pools read from
-    function getRocketSettingsAddress() public returns(address) {
-        return rocketSettingsAddress;
-    }
-
-    /// @dev Get the address of a new rocketpool deposit token contract
-    function getRocketDepositTokenAddress() public returns(address) {
-        return rocketDepositTokenAddress;
-    }
-
-    /// @dev Get the address of the casper staking contract
-    function getCasperAddress() public returns(address) {
-        return casperAddress;
-    }
-
+    
 
     /**** Node Storage ***************/
 
@@ -267,13 +177,13 @@ contract RocketHub is Owned {
     }
 
     /// @dev Update the current average server load on the node, last checkin time etc
-    function setRocketNodeCheckin(address nodeAddress, uint256 averageLoad, uint256 lastCheckin) public onlyRegisteredNode(nodeAddress) onlyLatestRocketPool  {
+    function setRocketNodeCheckin(address nodeAddress, uint256 averageLoad, uint256 lastCheckin) public onlyRegisteredNode(nodeAddress) onlyLatestRocketPool {
         nodes[nodeAddress].averageLoad = averageLoad;
         nodes[nodeAddress].lastCheckin = lastCheckin;
     }
 
     /// @dev Rocket Pool can manually/automatically deactivate a node if it is down or running badly (high load), this will stop the node accepting new pools to be assigned to it
-    function setRocketNodeActive(address nodeAddress, bool activate) public onlyRegisteredNode(nodeAddress) onlyLatestRocketNode  {
+    function setRocketNodeActive(address nodeAddress, bool activate) public onlyRegisteredNode(nodeAddress) onlyLatestRocketNode {
         nodes[nodeAddress].active = activate;
     }
 
@@ -298,9 +208,9 @@ contract RocketHub is Owned {
             // Now remove from our mapping struct
             nodes[nodeAddressToRemove].exists = false;
             nodes[nodeAddressToRemove].nodeAccountAddress = 0;
-            nodes[nodeAddressToRemove].oracleID = '';
-            nodes[nodeAddressToRemove].instanceID = '';
-            nodes[nodeAddressToRemove].region = '';
+            nodes[nodeAddressToRemove].oracleID = "";
+            nodes[nodeAddressToRemove].instanceID = "";
+            nodes[nodeAddressToRemove].region = "";
             nodes[nodeAddressToRemove].averageLoad = 0;
             nodes[nodeAddressToRemove].lastCheckin = 0;
             nodes[nodeAddressToRemove].lastRebootAttempt = 0;
@@ -312,7 +222,7 @@ contract RocketHub is Owned {
     }
 
     /// @dev Returns a single rocket node struct
-    function getRocketNode(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(address, uint256, uint256, bool, bool)  {
+    function getRocketNode(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(address, uint256, uint256, bool, bool) {
         return (nodes[nodeAddress].nodeAccountAddress,  
                 nodes[nodeAddress].averageLoad, 
                 nodes[nodeAddress].lastCheckin,
@@ -324,35 +234,35 @@ contract RocketHub is Owned {
     /// @dev Checks to see if the current node address is a legit registered Rocket Node
     /// @param nodeAccountAddress The registered rocket node address.
     function getRocketNodeExists(address nodeAccountAddress) public constant returns(bool) {
-         if(nodes[nodeAccountAddress].exists == true) {
+         if (nodes[nodeAccountAddress].exists == true) {
              return true;
          }
          return false;
     }
 
     /// @dev Returns a single rocket node address at the array index
-    function getRocketNodeByIndex(uint addressIndex) public constant returns(address)  {
+    function getRocketNodeByIndex(uint addressIndex) public constant returns(address) {
         assert(nodes[nodeAddresses[addressIndex]].exists == true);
         return nodeAddresses[addressIndex];
     }
 
     /// @dev Returns the amount of registered rocket nodes
-    function getRocketNodeCount() public constant returns(uint)  {
+    function getRocketNodeCount() public constant returns(uint) {
         return nodeAddresses.length; 
     }
 
     /// @dev Return the average server work load for this node
-    function getRocketNodeAverageLoad(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256)  {
+    function getRocketNodeAverageLoad(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256) {
         return  nodes[nodeAddress].averageLoad;
     }
 
     /// @dev Return the last time this node checked in with the main Rocket Pool
-    function getRocketNodeLastCheckin(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256)  {
+    function getRocketNodeLastCheckin(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(uint256) {
         return  nodes[nodeAddress].lastCheckin;
     }
 
     /// @dev Return the active status of this node, if deactivated it will not accept new mini pools
-    function getRocketNodeActive(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(bool)  {
+    function getRocketNodeActive(address nodeAddress) public constant onlyRegisteredNode(nodeAddress) returns(bool) {
         return  nodes[nodeAddress].active;
     }
 
@@ -383,10 +293,10 @@ contract RocketHub is Owned {
         // Remove the pool now
         uint i = 0;
         bool found = false;
-        for (i=0; i < miniPoolAddresses.length; i++) {
+        for (i = 0; i < miniPoolAddresses.length; i++) {
             if (miniPoolAddresses[i] == miniPoolAddressToRemove) {
                 found = true;
-                for (uint x = i; x < miniPoolAddresses.length-1; x++){
+                for (uint x = i; x < miniPoolAddresses.length-1; x++) {
                     miniPoolAddresses[x] = miniPoolAddresses[x+1];
                 }
                 delete miniPoolAddresses[miniPoolAddresses.length-1];
@@ -406,27 +316,27 @@ contract RocketHub is Owned {
 
 
     /// @dev Returns a single rocket mini pool at the pool address
-    function getRocketMiniPool(address miniPoolAddress) public constant onlyRegisteredPool(miniPoolAddress) returns(address, bool)  {
+    function getRocketMiniPool(address miniPoolAddress) public constant onlyRegisteredPool(miniPoolAddress) returns(address, bool) {
         return (pools[miniPoolAddress].poolContractAddress, pools[miniPoolAddress].exists);
     }
 
     /// @dev Checks to see if the current pool address is a legit registered Rocket Mini Pool
     /// @param miniPoolAddress The registered rocket mini pool address.
     function getRocketMiniPoolExists(address miniPoolAddress) public constant returns(bool) {
-         if(pools[miniPoolAddress].exists == true) {
+         if (pools[miniPoolAddress].exists == true) {
              return true;
          }
          return false;
     }
 
     /// @dev Returns a single rocket mini pool at the array index
-    function getRocketMiniPoolByIndex(uint addressIndex) public constant returns(address)  {
+    function getRocketMiniPoolByIndex(uint addressIndex) public constant returns(address) {
         assert(pools[miniPoolAddresses[addressIndex]].exists == true);
         return miniPoolAddresses[addressIndex];
     }
 
     /// @dev Returns the amount of registered rocket nodes
-    function getRocketMiniPoolCount() public constant returns(uint)  {
+    function getRocketMiniPoolCount() public constant returns(uint) {
         return miniPoolAddresses.length;
     }
     
@@ -459,10 +369,10 @@ contract RocketHub is Owned {
         // Remove the partner now
         uint i = 0;
         bool found = false;
-        for(i=0; i < partnerAddresses.length; i++) {
-            if(partnerAddresses[i] == partnerAddressToRemove) {
+        for (i = 0; i < partnerAddresses.length; i++) {
+            if (partnerAddresses[i] == partnerAddressToRemove) {
                 found = true;
-                for (uint x = i; x < partnerAddresses.length-1; x++){
+                for (uint x = i; x < partnerAddresses.length-1; x++) {
                     partnerAddresses[x] = partnerAddresses[x+1];
                 }
                 delete partnerAddresses[partnerAddresses.length-1];
@@ -470,11 +380,11 @@ contract RocketHub is Owned {
             }
         }
         // Did we find them?
-        if(found) {
+        if (found) {
             // Now remove from our mapping struct
             partners[partnerAddressToRemove].exists = false;
             partners[partnerAddressToRemove].partnerAddress = 0;
-            partners[partnerAddressToRemove].name = '';
+            partners[partnerAddressToRemove].name = "";
             // All good
             return true;
         }
@@ -484,14 +394,14 @@ contract RocketHub is Owned {
     /// @dev Checks to see if the current partner address is a legit registered Rocket partner
     /// @param partnerAddress The registered rocket partner address.
     function getRocketPartnerExists(address partnerAddress) public constant returns(bool) {
-        if(partners[partnerAddress].exists == true) {
+        if (partners[partnerAddress].exists == true) {
             return true;
         }
         return false;
     }
 
     /// @dev Returns the amount of registered rocket partners
-    function getRocketPartnerCount() public constant returns(uint)  {
+    function getRocketPartnerCount() public constant returns(uint) {
         return partnerAddresses.length;
     }
 

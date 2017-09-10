@@ -18,7 +18,7 @@ var accounts = web3.eth.accounts;
 
 // TODO: Optimise this using the simpler deploy option
 module.exports = function (deployer, network) {
-    // Deploy rockethub first - has to be done in this order so that the following contracts already know the hub address
+    // Deploy libraries
     deployer.deploy(arithmeticLib, rocketSettingsInterface).then(function () {
         // Lib Links
         deployer.link(arithmeticLib, [rocketPool, rocketPoolMiniDelegate, rocketDepositToken]);
@@ -45,39 +45,39 @@ module.exports = function (deployer, network) {
                                             // Update the hub with the new addresses
                                             return rocketHub.deployed().then(function (rocketHubInstance) {
                                                 console.log("\n");
-                                                // Set rocket pool
-                                                rocketHubInstance.setRocketPoolAddress(rocketPool.address);
+                                                // Add each contract to the main address book
+                                                rocketHubInstance.setAddress(web3.sha3("rocketPool"), rocketPool.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketPool Address');
                                                 console.log(rocketPool.address);
                                                 // Set rocket pool mini delegate
-                                                rocketHubInstance.setRocketPoolMiniDelegateAddress(rocketPoolMiniDelegate.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketPoolMiniDelegate"), rocketPoolMiniDelegate.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketPoolMiniDelegate Address');
                                                 console.log(rocketPoolMiniDelegate.address);
                                                 // Set rocket pool deposit token contract
-                                                rocketHubInstance.setRocketDepositTokenAddress(rocketDepositToken.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketDepositToken"), rocketDepositToken.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketDepositToken Address');
                                                 console.log(rocketDepositToken.address);
                                                 // Set rocket node
-                                                rocketHubInstance.setRocketNodeAddress(rocketNode.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketNode"), rocketNode.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketNode Address');
                                                 console.log(rocketNode.address);
                                                 // Set rocket factory
-                                                rocketHubInstance.setRocketFactoryAddress(rocketFactory.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketFactory"), rocketFactory.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketFactory Address');
                                                 console.log(rocketFactory.address);
                                                 // Set rocket partner API
-                                                rocketHubInstance.setRocketPartnerAPIAddress(rocketPartnerAPI.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketPartnerAPI"), rocketPartnerAPI.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketPartnerAPI Address');
                                                 console.log(rocketPartnerAPI.address);
                                                 // Set rocket settings
-                                                rocketHubInstance.setRocketSettingsAddress(rocketSettings.address);
+                                                rocketHubInstance.setAddress(web3.sha3("rocketSettings"), rocketSettings.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketSettings Address');
                                                 console.log(rocketSettings.address);
                                                 // Set casper address
-                                                rocketHubInstance.setCasperAddress(dummyCasper.address);
+                                                rocketHubInstance.setAddress(web3.sha3("dummyCasper"), dummyCasper.address);
                                                 console.log('\x1b[33m%s\x1b[0m:', 'Updated Dummy Casper Address');
                                                 console.log(dummyCasper.address);
-                                                // Reeturn
+                                                // Return
                                                 return deployer;
                                             });
                                         });

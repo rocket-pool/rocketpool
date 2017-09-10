@@ -17,12 +17,14 @@ contract RocketFactory is Owned {
 
 	/**** Properties ***********/
 
-    // Address of the main RocketHub contract
-    address private rocketHubAddress;
-    // Our rocket factory contracts
-    mapping (address => Contract) public contracts;
-    // Keep an array of all our contract addresses for iteration
-    address[] public contractAddresses;
+    address private rocketHubAddress;                   // Address of the main RocketHub contract
+    mapping (address => Contract) public contracts;     // Our rocket factory contracts
+    address[] public contractAddresses;                 // Keep an array of all our contract addresses for iteration
+
+
+    /*** Contracts **************/
+
+    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
 
 
     /*** Structs ***************/
@@ -43,8 +45,7 @@ contract RocketFactory is Owned {
 
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        assert (msg.sender == rocketHub.getRocketPoolAddress());
+        assert (msg.sender == rocketHub.getAddress(sha3("rocketPool")));
         _;
     }
 
@@ -55,6 +56,8 @@ contract RocketFactory is Owned {
     function RocketFactory(address currentRocketHubAddress) {
         // Address of the main RocketHub contract, should never need updating
         rocketHubAddress = currentRocketHubAddress;
+        // Update the contract address
+        rocketHub = RocketHub(currentRocketHubAddress);
     }
 
 

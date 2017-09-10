@@ -12,9 +12,9 @@ contract RocketPartnerAPI is Owned {
 
 
     /**** RocketNode ************/
-    address public rocketHubAddress;
-    // Version of this contract
-    uint256 public version;
+
+    address public rocketHubAddress;                // Main hub address
+    uint256 public version;                         // Version of this contract
   
 
     /*** Events ****************/
@@ -51,20 +51,22 @@ contract RocketPartnerAPI is Owned {
     event FlagAddress (
         address flag
     );
+
+    /*** Contracts **************/
+
+    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
     
 
     /*** Modifiers *************/
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        assert(msg.sender == rocketHub.getRocketPoolAddress());
+        assert(msg.sender == rocketHub.getAddress(sha3("rocketPool")));
         _;
     }
 
     /// @dev Only registered partner addresses can access
     modifier onlyRegisteredPartner() {
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         assert (rocketHub.getRocketPartnerExists(msg.sender) == true);
         _;
     }
@@ -76,6 +78,8 @@ contract RocketPartnerAPI is Owned {
     function RocketPartnerAPI(address deployedRocketHubAddress) {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;
+        // Update the contract address
+        rocketHub = RocketHub(deployedRocketHubAddress);
         // Set the current version of this contract
         version = 1;
     }
@@ -86,8 +90,7 @@ contract RocketPartnerAPI is Owned {
     /// @dev Get the address to deposit to with Rocket Pool
     function APIgetDepositAddress() public returns(address) { 
         // The partner address being supplied must also match the sender address
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        return rocketHub.getRocketPoolAddress();
+        return rocketHub.getAddress(sha3("rocketPool"));
     }
    
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()` with partner address `partnerAddress`.
@@ -97,10 +100,9 @@ contract RocketPartnerAPI is Owned {
     function APIpartnerDeposit(address partnerUserAddress, bytes32 poolStakingTimeID) public payable onlyRegisteredPartner { 
         // If the user is not a direct Rocket Pool user but a partner user, check the partner is legit
         // The partner address being supplied must also match the sender address
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if (rocketPool.partnerDeposit.value(msg.value).gas(2300000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
+        if (rocketPool.partnerDeposit.value(msg.value).gas(2400000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
             // Fire the event now
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }
@@ -118,8 +120,7 @@ contract RocketPartnerAPI is Owned {
     /// @param partnerUserAddress The address of the partners user to withdraw from and send the funds too.
     function APIpartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress) public onlyRegisteredPartner returns(bool)  {
         // Get the main Rocket Pool contract
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
         if (rocketPool.userPartnerWithdrawDeposit.gas(600000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
             // Fire the event now
@@ -136,7 +137,6 @@ contract RocketPartnerAPI is Owned {
     /// @param partnerName The msg.sender address the partner will use
     function partnerRegister(address partnerAccountAddressToRegister, string partnerName) public onlyOwner  {
         // Add the partner to the primary persistent storage so any contract upgrades won't effect the current stored partners
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
         // Sets the rocket partner if the address is ok and isn't already set
         if (rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
             // Fire the event
@@ -147,9 +147,7 @@ contract RocketPartnerAPI is Owned {
     /// @dev Remove a partner from the Rocket Pool network
     /// @param partnerAddress The address of the partner
     function partnerRemove(address partnerAddress) public onlyOwner {
-         // Remove partner from the primary persistent storage
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
-        // Sets the rocket partner if the address is ok and isn't already set
+        // Remove partner from the primary persistent storage
         if (rocketHub.setRocketPartnerRemove(partnerAddress)) {
             // Fire the event
             PartnerRemoved(partnerAddress, now);

@@ -41,7 +41,7 @@ contract RocketNode is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getRocketPoolAddress());
+        assert (msg.sender == rocketHub.getAddress(sha3("rocketPool")));
         _;
     }
 
@@ -121,7 +121,7 @@ contract RocketNode is Owned {
     /// @dev Remove a node from the Rocket Pool network
     function nodeRemove(address nodeAddress) public onlyOwner {
         // Get the hub
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getRocketPoolAddress());
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
         assert(rocketPool.getPoolsFilterWithNodeCount(nodeAddress) == 0);
         // Sets the rocket partner if the address is ok and isn't already set

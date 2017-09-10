@@ -107,23 +107,7 @@ contract RocketPool is Owned {
         uint256 created
     );
 
-    event FlagUint (
-        uint256 flag
-    );
-
-    event FlagInt (
-        int256 flag
-    );
-
-    event FlagAddress (
-        address flag
-    );
-
-    event FlagBool (
-        bool flag
-    );
-
-    
+       
 
     /*** Modifiers *************/
 
@@ -143,7 +127,7 @@ contract RocketPool is Owned {
     /// @dev New pools are allowed to be created
     modifier poolsAllowedToBeCreated() {
         // Get the mini pool count
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // New pools allowed to be created?
         assert(rocketSettings.getPoolAllowedToBeCreated() == true);
         _;
@@ -151,20 +135,19 @@ contract RocketPool is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(this == rocketHub.getRocketPoolAddress());
+        assert(this == rocketHub.getAddress(sha3("rocketPool")));
         _;
     }
 
+    /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
+    modifier onlyLatestRocketPartnerAPI() {
+        assert(msg.sender == rocketHub.getAddress(sha3("rocketPartnerAPI")));
+        _;
+    } 
 
     /// @dev Only allow access from the a RocketMiniPool contract
     modifier onlyMiniPool() {
         assert(rocketHub.getRocketMiniPoolExists(msg.sender) == true);
-        _;
-    }  
-
-    /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
-    modifier onlyLatestRocketPartnerAPI() {
-        assert(msg.sender == rocketHub.getRocketPartnerAPIAddress());
         _;
     } 
 
@@ -255,7 +238,7 @@ contract RocketPool is Owned {
     /// @param poolStakingTimeID The ID (bytes32 encoded string) that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
     function deposit(address userAddress, address partnerAddress, bytes32 poolStakingTimeID) private acceptableDeposit onlyLatestRocketPool returns(bool) { 
         // Check to verify the supplied mini pool staking time id is legit
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Legit time staking ID?
         assert(rocketSettings.getPoolStakingTimeExists(poolStakingTimeID) == true);
         // Set it now
@@ -282,7 +265,7 @@ contract RocketPool is Owned {
     /// @param newUserAddress New user account
     /// @param partnerAddress The address of the Rocket Pool partner
     /// @param poolStakingDuration The duration that the user wishes to stake for
-    function userAssignToPool(address newUserAddress, address partnerAddress, uint256 poolStakingDuration) private returns(address)  {
+    function userAssignToPool(address newUserAddress, address partnerAddress, uint256 poolStakingDuration) private returns(address) {
         // The desired pool address to asign the user too, use memory to keep costs down
         address poolAssignToAddress = 0;
         // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
@@ -318,7 +301,7 @@ contract RocketPool is Owned {
     /// @dev A regular Rocket Pool user withdrawing their deposit
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    function userWithdrawDeposit(address miniPoolAddress, uint256 amount) public returns(bool)  {
+    function userWithdrawDeposit(address miniPoolAddress, uint256 amount) public returns(bool) {
         // Call our transfer method, creates a transaction
         return userWithdrawDepositFromPoolTransfer(msg.sender, miniPoolAddress, amount, 0);
     }
@@ -327,7 +310,7 @@ contract RocketPool is Owned {
     /// @dev A Rocket Pool 3rd party partner withdrawing their users deposit
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    function userPartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress, address partnerAddress) public onlyLatestRocketPartnerAPI returns(bool)  {
+    function userPartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress, address partnerAddress) public onlyLatestRocketPartnerAPI returns(bool) {
         // Call our transfer method, creates a transaction
         return userWithdrawDepositFromPoolTransfer(partnerUserAddress, miniPoolAddress, amount, partnerAddress);
     }
@@ -337,7 +320,7 @@ contract RocketPool is Owned {
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     /// @param partnerAddress The address of the partner 
-    function userWithdrawDepositFromPoolTransfer(address userAddress, address miniPoolAddress, uint256 amount, address partnerAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool)  {
+    function userWithdrawDepositFromPoolTransfer(address userAddress, address miniPoolAddress, uint256 amount, address partnerAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool) {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
@@ -384,9 +367,9 @@ contract RocketPool is Owned {
     /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed, all main checks are done here as this contract is upgradable, but mini pools currently deployed are not 
     /// @param userAddress The address of the mini pool user.
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    function userUpdateDepositAndRewards(address miniPoolAddress, address userAddress) private returns (bool)  {
+    function userUpdateDepositAndRewards(address miniPoolAddress, address userAddress) private returns (bool) {
         // Get our rocket settings 
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // Get the current user balance
@@ -425,7 +408,7 @@ contract RocketPool is Owned {
     /// @dev A user can specify a backup withdrawal address (incase something bad happens :( or they lose their primary private keys while staking etc)
     /// @param miniPoolAddress The address of the mini pool they the supplied user account is in.
     /// @param newUserAddressUsedForDeposit The address the user wishes to make their backup withdrawal address
-    function userSetWithdrawalDepositAddress(address newUserAddressUsedForDeposit, address miniPoolAddress) public returns(bool)  {
+    function userSetWithdrawalDepositAddress(address newUserAddressUsedForDeposit, address miniPoolAddress) public returns(bool) {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // User can only set this backup address before deployment to casper, also partners cannot set this address to their own to prevent them accessing the users funds after the set withdrawal backup period expires
@@ -442,9 +425,9 @@ contract RocketPool is Owned {
     /// @dev A user who has supplied a backup address to allow withdrawals from (incase something bad happens :( or they lose their primary private keys while staking etc)
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
-    function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) private returns(bool)  {
+    function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) private returns(bool) {
         // Get the hub
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // Check to make sure this feature is currently enabled
@@ -471,11 +454,11 @@ contract RocketPool is Owned {
     /// @dev Will mint new tokens for this user that backs their deposit and can be traded on the open market - not available for partner accounts atm
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw tokens from.
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool)  {
+    function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool) {
         // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Get Rocket Deposit Token
-        RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getRocketDepositTokenAddress());
+        RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getAddress(sha3("rocketDepositToken")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
@@ -508,7 +491,7 @@ contract RocketPool is Owned {
 
     /// @dev Get an instance of the pool contract
     /// @param miniPoolAddress The address of the mini pool to get the contract instance of
-    function getPoolInstance(address miniPoolAddress) private constant returns(RocketPoolMini)  {
+    function getPoolInstance(address miniPoolAddress) private constant returns(RocketPoolMini) {
         // Make sure its one of ours
         assert(rocketHub.getRocketMiniPoolExists(miniPoolAddress) == true);
         // Get the pool contract instance
@@ -605,7 +588,7 @@ contract RocketPool is Owned {
     /// @param poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
     function createPool(uint256 poolStakingDuration) private poolsAllowedToBeCreated onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketFactory rocketFactory = RocketFactory(rocketHub.getRocketFactoryAddress());
+        RocketFactory rocketFactory = RocketFactory(rocketHub.getAddress(sha3("rocketFactory")));
         address newPoolAddress = rocketFactory.createRocketPoolMini(poolStakingDuration);
         // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
         // Sets the rocket node if the address is ok and isn't already set
@@ -620,7 +603,7 @@ contract RocketPool is Owned {
     /// @dev Remove a mini pool, only mini pools themselves can call this 
     function removePool() onlyMiniPool returns(bool) {
         // Remove the pool from our hub storage
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getRocketSettingsAddress());
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
         // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
         if (rocketSettings.getPoolAllowedToBeClosed()) {
            // Sets the rocket node if the address is ok and isn't already set
@@ -653,7 +636,7 @@ contract RocketPool is Owned {
      // TODO: When variable length data is supported between contracts (Metropolis), move this function to RocketNode contract
     function nodeCheckin(bytes32 nodeValidationCode, bytes32 nodeRandao, uint256 currentLoadAverage) public {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
-        RocketNode rocketNode = RocketNode(rocketHub.getRocketNodeAddress());
+        RocketNode rocketNode = RocketNode(rocketHub.getAddress(sha3("rocketNode")));
         RocketPoolMini pool = RocketPoolMini(0);
         // Is this a legit Rocket Node?
         assert(rocketHub.getRocketNodeExists(msg.sender) == true);
@@ -672,9 +655,7 @@ contract RocketPool is Owned {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                bool test = pool.getStakingDepositTimeMet();
-                FlagBool(test);
-                if (pool.getNodeAddress() == 0 && test == true) {
+                if (pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.nodeAvailableForPool();
                     // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
@@ -756,15 +737,14 @@ contract RocketPool is Owned {
     /// @dev This is handy as memory arrays have a fixed size when initialised, this reduces the array to only valid values (so that .length works as you'd like)
     /// @dev This can be made redundant when .push is supported on dynamic memory arrays
     /// @param addressArray An array of a fixed size of addresses
-	function utilArrayFilterValuesOnly(address[] memory addressArray) private constant returns (address[] memory)
-	{
+	function utilArrayFilterValuesOnly(address[] memory addressArray) private constant returns (address[] memory) {
         // The indexes for the arrays
         uint[] memory indexes = new uint[](2); 
         indexes[0] = 0;
         indexes[1] = 0;
         // Calculate the length of the non empty values
 		for (uint32 i = 0; i < addressArray.length; i++) {
-            if(addressArray[i] != 0) {
+            if (addressArray[i] != 0) {
                 indexes[0]++;
             }
         }
@@ -772,7 +752,7 @@ contract RocketPool is Owned {
         address[] memory valueArray = new address[](indexes[0]);
         // Now populate the array
         for (i = 0; i < addressArray.length; i++) {
-            if(addressArray[i] != 0) {
+            if (addressArray[i] != 0) {
                 valueArray[indexes[1]] = addressArray[i];
                 indexes[1]++;
             }

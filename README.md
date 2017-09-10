@@ -1,4 +1,4 @@
-*NOTE: The current Alpha of Rocket Pool requires [testrpc](https://github.com/ethereumjs/testrpc) and [truffle@3.2.4](https://github.com/trufflesuite/truffle) to run locally.
+*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc](https://github.com/ethereumjs/testrpc) and [truffle](https://github.com/trufflesuite/truffle) to run locally.
 
 # Welcome to Rocket Pool - Your new Casper friendly Ethereum POS pool
 
@@ -13,6 +13,10 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
 Easiest way to see Rocket Pool Alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Make sure you have the [Truffle Default Builder](https://github.com/trufflesuite/truffle-default-builder) first installed as the default builder as a dependency of your Rocket Pool:
 ```
 $ npm install truffle-default-builder --save
+```
+Start testrpc in a new terminal window using the current block gas limit:
+```
+$ testrpc -l 6725527
 ```
 Then run:
 ```
