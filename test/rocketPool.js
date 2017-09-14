@@ -1352,7 +1352,7 @@ contract('RocketPool', function (accounts) {
                 // RocketNode now
                 return rocketNode.deployed().then(function (rocketNodeInstance) {
                     // Remove the node now
-                    return rocketNodeInstance.nodeRemove(nodeFirst, { from: owner, gas: 100000 }).then(function (result) {
+                    return rocketNodeInstance.nodeRemove(nodeFirst, { from: owner, gas: 200000 }).then(function (result) {
                          return result;
                     }).then(function(result) {
                         assert(false, "Expect throw but didn't.");
@@ -1587,7 +1587,7 @@ contract('RocketPool', function (accounts) {
                 // RocketPool now
                 return rocketPool.deployed().then(function (rocketPoolInstance) {
                     // Remove the node now
-                    return rocketNodeInstance.nodeRemove(nodeFirst, { from: owner, gas: 100000 }).then(function (result) {
+                    return rocketNodeInstance.nodeRemove(nodeFirst, { from: owner, gas: 200000 }).then(function (result) {
                         // Go through our events
                         for (var i = 0; i < result.logs.length; i++) {
                             if (result.logs[i].event == 'NodeRemoved') {

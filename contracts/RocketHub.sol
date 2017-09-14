@@ -10,19 +10,7 @@ contract RocketHub is Owned {
 
     /**** Properties ***********/
 
-    
-    address public rocketPoolAddress;                   // The address of the main pool contract
-    address public rocketPoolMiniDelegateAddress;       // The address of the rocket factory contract
-    address public rocketDepositTokenAddress;           // The address of the rocket deposit token contract
-    address public rocketFactoryAddress;                // The address of the rocket factory contract
-    address public rocketNodeAddress;                   // The address of the rocket node contract
-    address public rocketPartnerAPIAddress;             // The address of the rocket partner API contract
-    address public rocketSettingsAddress;               // The address of the main settings contract
-    address public casperAddress;                       // The address of the casper staking contract 
-
     mapping (bytes32 => address) public addressBook;    // Our contract address book               
-
-
 
 
     /**** Nodes ***************/
@@ -76,6 +64,15 @@ contract RocketHub is Owned {
         bytes32 name;
         bool exists;
     }
+
+
+    /*** Events ****************/
+
+    event AddressBookEntryAdded (
+        bytes32 indexed _id,
+        address indexed _address,
+        uint256 created 
+    );
 
 
     /*** Modifiers *************/
@@ -136,6 +133,8 @@ contract RocketHub is Owned {
         assert(newContractAddress != 0x0);
         // Add the address now
         addressBook[addressId] = newContractAddress;
+        // Fire the event
+        AddressBookEntryAdded(addressId, newContractAddress, now);
     }
 
     /// @dev Get the address of a contract from our address book
