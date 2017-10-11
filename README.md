@@ -1,4 +1,5 @@
 # Welcome to Rocket Pool - Your new Casper friendly Ethereum POS pool
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>
 </p>
