@@ -77,6 +77,7 @@ contract RocketNode is Owned {
         address nodeAddressToUse = 0;
         uint256 prevAverageLoad = 0;
         // Retreive each node address now by index since we can't return a variable sized array from an external contract yet
+        // TODO: Optimise when metropolis is in to use RETURNDATASIZE opcode
         assert(nodes.length > 0);
         // Now loop through each
         for (uint32 i = 0; i < nodes.length; i++) {

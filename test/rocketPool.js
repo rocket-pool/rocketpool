@@ -76,11 +76,12 @@ contract('RocketPool', function (accounts) {
     var nodeSecondInstanceID = '4325';    
     var nodeRegisterGas = 500000;
     var nodeCheckinGas = 950000;
+    // UPDATE: The first version of Casper wont use the validation code, just the address of the validator, will keep this in for now incase it changes in the future
     // Bytes -Set the node validation code (EVM bytecode, serving as a sort of public key that will be used to verify blocks and other consensus messages signed by it - just an example below)
     // (converted to Bytes32 until Solidity allows passing of variable length types (bytes, string) between contracts - https://github.com/ethereum/EIPs/pull/211 )
-    var nodeFirstValidationCode = web3.sha3('PUSH1 0 CALLDATALOAD SLOAD NOT PUSH1 9 JUMPI STOP JUMPDEST PUSH1 32 CALLDATALOAD PUSH1 0 CALLDATALOAD SSTORE');
+    // var nodeFirstValidationCode = web3.sha3('PUSH1 0 CALLDATALOAD SLOAD NOT PUSH1 9 JUMPI STOP JUMPDEST PUSH1 32 CALLDATALOAD PUSH1 0 CALLDATALOAD SSTORE');
     // Bytes32 - Node value provided for the casper deposit function should be the result of computing a long chain of hashes (TODO: this will need work in the future when its defined better)
-    var nodeFirstRandao = '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658';
+    // var nodeFirstRandao = '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658';
     // User accounts
     var userFirst = accounts[1];
     var userSecond = accounts[2];
@@ -122,6 +123,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
+ 
 
     // Try to register a new partner as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a partner'), function () {
@@ -705,8 +707,6 @@ contract('RocketPool', function (accounts) {
                     var averageLoad15mins = web3.toWei(((os.loadavg()[2] / os.cpus().length)), 'ether');
                     // Checkin now
                     return rocketPoolInstance.nodeCheckin(
-                        nodeFirstValidationCode, // The nodes validation code
-                        nodeFirstRandao, // The node randao
                         averageLoad15mins, // Server Load
                         { from: nodeFirst, gas: nodeCheckinGas }).then(function (result) {     
                             var nodeAddress = 0;
@@ -746,11 +746,9 @@ contract('RocketPool', function (accounts) {
                     // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
                     return rocketSettingsInstance.setPoolCountdownTime(0, { from: web3.eth.coinbase, gas: 500000 }).then(function (result) {
                         // Launching multiple pools at once can consume a lot of gas, estimate it first
-                        return rocketPoolInstance.nodeCheckin.estimateGas(nodeFirstValidationCode, nodeFirstRandao, averageLoad15mins, {from: nodeFirst}).then(function (gasEstimate) {                           
+                        return rocketPoolInstance.nodeCheckin.estimateGas(averageLoad15mins, {from: nodeFirst}).then(function (gasEstimate) {                           
                             // Checkin now
                             return rocketPoolInstance.nodeCheckin(
-                                nodeFirstValidationCode, // The nodes validation code
-                                nodeFirstRandao, // The node randao
                                 averageLoad15mins, // Server Load
                                 { from: nodeFirst, gas: parseInt(gasEstimate)+100000 }).then(function (result) {
         
@@ -1079,8 +1077,6 @@ contract('RocketPool', function (accounts) {
                     var averageLoad15mins = web3.toWei(((os.loadavg()[2] / os.cpus().length)), 'ether');
                     // Checkin now
                     return rocketPoolInstance.nodeCheckin(
-                        nodeFirstValidationCode, // The nodes validation code
-                        nodeFirstRandao, // The node randao
                         averageLoad15mins, // Server Load
                         { from: nodeFirst, gas: nodeCheckinGas }).then(function (result) {
                              return miniPoolFirstInstance.getStatus.call().then(function (result) {
@@ -1150,7 +1146,7 @@ contract('RocketPool', function (accounts) {
                 return rocketPool.deployed().then(function (rocketPoolInstance) {
                     var averageLoad15mins = web3.toWei(((os.loadavg()[2] / os.cpus().length)), 'ether');
                     // Checkin now
-                    return rocketPoolInstance.nodeCheckin(nodeFirstValidationCode, nodeFirstRandao, averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas }).then(function (result) {
+                    return rocketPoolInstance.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas }).then(function (result) {
                         return miniPoolFirstInstance.getStatus.call().then(function (result) {
                             // Status = 3? Awaiting withdrawal from Casper
                             var miniPoolStatusFirst = result.valueOf();
@@ -1230,7 +1226,7 @@ contract('RocketPool', function (accounts) {
                     // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
                     var averageLoad15mins = web3.toWei(((os.loadavg()[2] / os.cpus().length)), 'ether');
                     // Checkin now
-                    return rocketPoolInstance.nodeCheckin(nodeFirstValidationCode, nodeFirstRandao, averageLoad15mins, { from: nodeFirst, gas: 950000 }).then(function (result) {
+                    return rocketPoolInstance.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 }).then(function (result) {
                         return miniPoolFirstInstance.getStatus.call().then(function (result) {                            
                             // Status = 4? Received deposit from casper + rewards
                             var miniPoolStatusFirst = result.valueOf();

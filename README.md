@@ -1,4 +1,4 @@
-*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@v3.4.9](https://github.com/trufflesuite/truffle) to run locally.
+*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@v3.4.11](https://github.com/trufflesuite/truffle) to run locally (Truffle 4.0 beta currently has a few issues).
 
 # Welcome to Rocket Pool - Your new Casper friendly Ethereum POS pool
 
@@ -32,7 +32,8 @@ You can read the current Rocket Pool white paper here: [http://www.rocketpool.ne
 
 For more information on Rocket Pool, check out our [website here](http://www.rocketpool.net). You can also contact us there for more information.
 
-# A Step by Step guide
+
+# A Step by Step Beginners guide
 
 The following worked example uses Mac OSX 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 15/09/2017
 

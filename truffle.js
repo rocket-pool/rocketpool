@@ -46,10 +46,19 @@ module.exports = {
     }),
     networks: {
         development: {
-        host: "localhost",
-        port: 8545,
-        network_id: "*", // Match any network id
-        gas: 5500000
-        }
+            host: "localhost",
+            port: 8545,
+            network_id: "*", // Match any network id
+            gas: 5500000
+        },
+        /*
+        // Local Parity Development 
+        dev: {
+            host: "localhost",
+            port: 8545,
+            network_id: "17", 
+            gas: 5500000,
+            from: "0x002bea02E77F561004922483bA166f463eb16765"
+        }*/
     }
 };

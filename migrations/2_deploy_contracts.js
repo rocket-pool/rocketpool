@@ -27,7 +27,7 @@ module.exports = function (deployer, network) {
             // Deploy casper dummy contract
             return deployer.deploy(dummyCasper).then(function () {
                 // Seed Casper with some funds to cover the rewards + deposit sent back
-                web3.eth.sendTransaction({ from: accounts[9], to: dummyCasper.address, value: web3.toWei('6', 'ether'), gas: 1000000 });
+                web3.eth.sendTransaction({ from: accounts[0], to: dummyCasper.address, value: web3.toWei('6', 'ether'), gas: 1000000 });
                 // Deploy rocket 3rd party partner API
                 return deployer.deploy(rocketPartnerAPI, rocketHub.address).then(function () {
                     // Deploy rocket deposit token

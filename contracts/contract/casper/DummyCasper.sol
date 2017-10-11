@@ -1,4 +1,4 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.15;
 
 import "../../contract/Owned.sol";
 
@@ -32,14 +32,11 @@ contract DummyCasper is Owned {
     /*** Structs ***************/
 
     struct Validator {
-        bytes32 validationCode; // This will be bytes according to the Mauve paper, but that type cannot be sent between contracts atm, it will be able to soon though ( https://github.com/ethereum/EIPs/pull/211 )
-        bytes32 randao;
         uint256 deposit;
+        address withdrawalAddress;
         uint256 dynastyStart;
         uint256 dynastyEnd;
-        uint256 originalDynastyStart;
         uint256 withdrawalEpoch;
-        address withdrawalAddress;
         uint256 prevCommitEpoch;
         uint256 addedEpoch;
            bool exists;
@@ -79,26 +76,20 @@ contract DummyCasper is Owned {
 
     /// @dev Deposits must be validated
     modifier acceptableDeposit(uint256 deposit) {
-        if (deposit < minDepositWei || deposit > maxDepositWei) {
-            throw;
-        } 
+        assert (deposit > minDepositWei || deposit < maxDepositWei);
         _;
     }
 
     /// @dev Withdrawals must only occur after the withdrawal epoch has been met
     /// @param withdrawalEpoch The time the validator can withdraw
     modifier acceptableWithdrawal(uint256 withdrawalEpoch) {
-        if (now < withdrawalEpoch || withdrawalEpoch == 0) {
-            throw;
-        } 
+        assert (now > withdrawalEpoch || withdrawalEpoch > 0);
         _;
     }
 
     /// @dev A valid registered node
     modifier registeredValidator(address validatorSenderAddress) {
-        if (validators[validatorSenderAddress].exists != true) {
-            throw;
-        } 
+        assert (validators[validatorSenderAddress].exists == true);
         _;
     }
 
@@ -127,22 +118,19 @@ contract DummyCasper is Owned {
     function() public payable {}
 
     /// @dev Adds a new validator to Casper
-    function addValidator(bytes32 newValidationCode, bytes32 newRandao, uint256 newDeposit,  address newWithdrawalAddress) private acceptableDeposit(newDeposit) returns(bool) {
+    function addValidator(uint256 newDeposit,  address newWithdrawalAddress) private acceptableDeposit(newDeposit) returns(bool) {
 
         // Add the new validator
         if (newWithdrawalAddress != 0) {
             // Add the new validator to the mapping of validation structs
             validators[msg.sender] = Validator({
-                validationCode: newValidationCode,
-                        randao: newRandao,
-                       deposit: newDeposit,
-             withdrawalAddress: newWithdrawalAddress,
-                  dynastyStart: 0,
-                    dynastyEnd: 1000000000000000000000000000000,
-          originalDynastyStart: 0,
-               withdrawalEpoch: withdrawalDefaultEpoch,
-               prevCommitEpoch: 0,
-                    addedEpoch: now,
+                       deposit: newDeposit, 
+             withdrawalAddress: newWithdrawalAddress, 
+               withdrawalEpoch: withdrawalDefaultEpoch, 
+                  dynastyStart: 0, 
+                    dynastyEnd: 1000000000000000000000000000000, 
+               prevCommitEpoch: 0, 
+                    addedEpoch: now, 
                         exists: true
             });
             // Increment the validator index
@@ -157,11 +145,11 @@ contract DummyCasper is Owned {
 
 
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
-    function deposit(bytes32 newValidationCode, bytes32 newRandao, address newWithdrawalAddress) public payable returns(bool) { 
+    function deposit(address newWithdrawalAddress) public payable returns(bool) { 
         // Add the validator if it passes all the required conditions
-        if(addValidator(newValidationCode, newRandao, msg.value, newWithdrawalAddress)) {
+        if (addValidator(msg.value, newWithdrawalAddress)) {
             // All good? Fire the event for the new deposit
-            Transfered(msg.sender, this, sha3('deposit'), msg.value, now); 
+            Transfered(msg.sender, this, sha3("deposit"), msg.value, now); 
             return true;
         }else{
             return false;
@@ -170,7 +158,7 @@ contract DummyCasper is Owned {
 
 
     /// @dev Start the process for a withdrawal
-    function startWithdrawal() public registeredValidator(msg.sender) returns(bool)  { 
+    function startWithdrawal() public registeredValidator(msg.sender) returns(bool) { 
         // If this a registed validator and has not already request withdrawal?
          if (validators[msg.sender].withdrawalEpoch == withdrawalDefaultEpoch) {
             // Cool, lets set the time the withdrawal will be allowed now
@@ -184,17 +172,17 @@ contract DummyCasper is Owned {
     }
 
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
-    function withdraw(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool)  { 
+    function withdraw(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool) { 
         // If this a registed validator and has not already request withdrawal?
          if (validators[msg.sender].withdrawalEpoch <= now && validators[msg.sender].deposit > 0) {
             // Set the amount to send
             uint256 withdrawalAmount = validators[msg.sender].deposit;
             uint256 withdrawalAmountProcessed = 0;
             // For testing purposes, we can similar penalties for the pool (which is highly unlikely unless we were purposefully trying to cheat)
-            if(simulatePenalties) {
+            if (simulatePenalties) {
                 // Simulate losing 4% of the deposit for nodes being offline or other external circumstances - remove the decimal by multiplying and dividing by 100
                 withdrawalAmountProcessed = withdrawalAmount - ((withdrawalAmount * 4) / 100); 
-            }else{
+            } else {
                 // Post alpha to simulate getting accurate returns, we'll be using a basic interest calculation A = P(1 + rt) (not needed atm)
                 // uint256 daysDiff = (now - validators[validationCode].withdrawalEpoch) / (60 * 60 * 24);
                 // withdrawalAmountProcessed = withdrawalAmount * (1 + (interestPerYear/100) * (daysDiff/365));
@@ -207,7 +195,7 @@ contract DummyCasper is Owned {
             // So in its place we'll just call the address of the contract and send the value (this forwards the gas needed), tho we can't test the result here as easily, but this will work for now in place of the real Casper
             // If Casper when finished doesn't support contract -> contract deposit returns, we can use a registered Rocket Node as an oracle to receive the deposit and forward it to the mini pool
             bool success = validators[msg.sender].withdrawalAddress.call.value(withdrawalAmountProcessed)();
-            if(success) {
+            if (success) {
                 Withdrawal(msg.sender, withdrawalAmount, now);
                 return true;
             }
@@ -218,12 +206,12 @@ contract DummyCasper is Owned {
 
     /// @dev Not documented in Casper yet, but would be agreat method to have that would allow users/contracts to know exactly when they can withdraw their deposit by returning a timestamp of it
      // If its not available, we can simply add a storage var to RocketSettings that can match/be slightly longer than Caspers and do the same thing
-    function getWithdrawalEpoch(address validatorSenderAddress) public registeredValidator(validatorSenderAddress) returns(uint256)  { 
+    function getWithdrawalEpoch(address validatorSenderAddress) public registeredValidator(validatorSenderAddress) returns(uint256) { 
         return validators[validatorSenderAddress].withdrawalEpoch;
     }
 
     /// @dev Set the Withdrawal Epoch - used for unit testing purposes in Rocket Pool
-    function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress)  { 
+    function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress) { 
         validators[validatorSenderAddress].withdrawalEpoch = newWithdrawalEpoch;
     }
 

@@ -266,8 +266,10 @@ contract RocketPool is Owned {
     /// @param partnerAddress The address of the Rocket Pool partner
     /// @param poolStakingDuration The duration that the user wishes to stake for
     function userAssignToPool(address newUserAddress, address partnerAddress, uint256 poolStakingDuration) private returns(address) {
-        // The desired pool address to asign the user too, use memory to keep costs down
+        // The desired pool address to asign the user too
         address poolAssignToAddress = 0;
+        // The contract of the desired pool address
+        RocketPoolMini poolAddUserTo;
         // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
         address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, poolStakingDuration);
         // No pools awaiting? lets make one
@@ -277,15 +279,27 @@ contract RocketPool is Owned {
         } else {
             // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
             for (uint32 i = 0; i < poolsFound.length; i++) {
-                // Add them to the first available pool accepting deposits
-                poolAssignToAddress = poolsFound[i];
-            } 
+                // Have we found one already?
+                if (poolAssignToAddress == 0) {
+                    // Get the contract instance
+                    poolAddUserTo = getPoolInstance(poolsFound[i]);
+                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
+                    if (poolAddUserTo.getUserExists(newUserAddress)) {
+                        // Add them to a minipool acceptind deposits that they already belong too
+                        poolAssignToAddress = poolsFound[i];
+                    }
+                }
+            }
+            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
+            if (poolAssignToAddress == 0) {
+                poolAssignToAddress = poolsFound[0];
+            }
         }     
         // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
         assert(poolAssignToAddress != 0);
         // Get the contract instance
-        RocketPoolMini poolAddUserTo = getPoolInstance(poolAssignToAddress);
-        // Double check the pools status is accepting deposits
+        poolAddUserTo = getPoolInstance(poolAssignToAddress);
+        // Double check the pools status is accepting deposits and user isn't in there already
         if (poolAddUserTo.getStatus() == 0) {
             // User is added if they don't exist in it already
             if (poolAddUserTo.addUser(newUserAddress, partnerAddress)) {
@@ -412,7 +426,7 @@ contract RocketPool is Owned {
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // User can only set this backup address before deployment to casper, also partners cannot set this address to their own to prevent them accessing the users funds after the set withdrawal backup period expires
-        if (pool.getStatus() == 0 || pool.getStatus() == 1 && newUserAddressUsedForDeposit != 0 && pool.getUserPartner(msg.sender) != newUserAddressUsedForDeposit) {
+        if ((pool.getStatus() == 0 || pool.getStatus() == 1) && newUserAddressUsedForDeposit != 0 && pool.getUserPartner(msg.sender) != newUserAddressUsedForDeposit) {
             if (pool.setUserAddressBackupWithdrawal(msg.sender, newUserAddressUsedForDeposit)) {
                 // Fire the event
                 UserSetBackupWithdrawalAddress(msg.sender, newUserAddressUsedForDeposit, miniPoolAddress, now);
@@ -634,7 +648,7 @@ contract RocketPool is Owned {
     /// @dev Nodes will checkin with Rocket Pool at a set interval (15 mins) to do things like report on average node server load, set nodes to inactive that have not checked in an unusally long amount of time etc. Only registered nodes can call this.
     /// @param currentLoadAverage The average server load for the node over the last 15 mins
      // TODO: When variable length data is supported between contracts (Metropolis), move this function to RocketNode contract
-    function nodeCheckin(bytes32 nodeValidationCode, bytes32 nodeRandao, uint256 currentLoadAverage) public {
+    function nodeCheckin(uint256 currentLoadAverage) public {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
         RocketNode rocketNode = RocketNode(rocketHub.getAddress(sha3("rocketNode")));
         RocketPoolMini pool = RocketPoolMini(0);
@@ -659,7 +673,7 @@ contract RocketPool is Owned {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.nodeAvailableForPool();
                     // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
-                    pool.setNodeDetails(nodeAddress, nodeValidationCode, nodeRandao);
+                    pool.setNodeDetails(nodeAddress);
                     // Fire the event
                     PoolAssignedToNode(poolsFound[i], nodeAddress, now);
                     // Now set the pool to begin staking with casper by updating its status with the newly assigned node

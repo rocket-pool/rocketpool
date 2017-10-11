@@ -9,7 +9,7 @@ contract CasperInterface is Owned {
     /// @dev A valid registered node validation code
     modifier registeredValidator(address validatorSenderAddress) {_;}
     /// @dev Deposit at the casper contract
-    function deposit(bytes32 newValidationCode, bytes32 newRandao, address newWithdrawalAddress) public payable returns(bool);
+    function deposit(address newWithdrawalAddress) public payable returns(bool);
     /// @dev Starting the withdrawal process from Casper
     function startWithdrawal() public registeredValidator(msg.sender) returns(bool);
     /// @dev The withdrawal function
@@ -17,5 +17,5 @@ contract CasperInterface is Owned {
     /// @dev Not documented in Casper yet, but would be agreat method to have that would allow users/contracts to know exactly when they can withdraw their deposit by returning a timestamp of it
     function getWithdrawalEpoch(address validatorSenderAddress) public registeredValidator(validatorSenderAddress) returns(uint256);
     /// @dev Set the Withdrawal Epoch - used for unit testing purposes in Rocket Pool
-    function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress);
+    function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress); 
 }

@@ -17,8 +17,6 @@ contract RocketPoolMini is Owned {
     
     address private rocketHubAddress;                           // Hub address
     address private rocketNodeAddress;                          // Node this minipool is attached to
-    bytes32 private rocketNodeValidationCode;                   // Node validation code for Casper
-    bytes32 private rocketNodeRandao;                           // Node randao for Casper
     uint256 private stakingDuration;                            // The time this pool will stake for before withdrawal is allowed (seconds)
     uint256 private stakingBalance = 0;                         // The ether balance sent to stake from the pool
     uint256 private stakingBalanceReceived = 0;                 // The ether balance sent to the pool after staking was completed in Casper
@@ -216,10 +214,8 @@ contract RocketPoolMini is Owned {
     }
 
     /// @dev Set the node address this mini pool is attached too
-    function setNodeDetails(address nodeAddress, bytes32 nodeValidationCode, bytes32 nodeRandao) public onlyLatestRocketPool {
+    function setNodeDetails(address nodeAddress) public onlyLatestRocketPool {
         rocketNodeAddress = nodeAddress;
-        rocketNodeValidationCode = nodeValidationCode;
-        rocketNodeRandao = nodeRandao;
     }
 
     /// @dev Gets the current staking duration

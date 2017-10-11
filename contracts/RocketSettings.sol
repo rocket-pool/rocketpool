@@ -64,9 +64,9 @@ contract RocketSettings is Owned {
         // This is the minimum time allowed for staking with Casper, looking to be 2 months at this point, but may obviously change at this stage
         poolMiniMinimumStakingTime = 8 weeks;
         // Set the possible staking times for mini pools
-        setPoolStakingTime(sha3('default'), poolMiniMinimumStakingTime);
-        setPoolStakingTime(sha3('medium'), 26 weeks); // 6 Months
-        setPoolStakingTime(sha3('long'), 1 years); // 1 Years
+        setPoolStakingTime(sha3("default"), poolMiniMinimumStakingTime);
+        setPoolStakingTime(sha3("medium"), 26 weeks); // 6 Months
+        setPoolStakingTime(sha3("long"), 1 years); // 1 Years
         // The default fee given as a % of 1 Ether (eg 5%)
         withdrawalFeePercInWei = 0.05 ether;
         // The account to see Rocket Fees too, must be an account, not a contract address
@@ -114,7 +114,7 @@ contract RocketSettings is Owned {
 
     /// @dev Check to see if the supplied staking time is a set time
     function getPoolStakingTimeExists(bytes32 stakingTimeID) public constant returns (bool) {
-        if(poolMiniStakingTimes[stakingTimeID] >= poolMiniMinimumStakingTime) {
+        if (poolMiniStakingTimes[stakingTimeID] >= poolMiniMinimumStakingTime) {
             return true;
         }
         return false; 

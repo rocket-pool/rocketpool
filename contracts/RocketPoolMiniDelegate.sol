@@ -18,8 +18,6 @@ contract RocketPoolMiniDelegate is Owned {
 
      address private rocketHubAddress;                          // Hub address
     address private rocketNodeAddress;                          // Node this minipool is attached to
-    bytes32 private rocketNodeValidationCode;                   // Node validation code for Casper
-    bytes32 private rocketNodeRandao;                           // Node randao for Casper
     uint256 private stakingDuration;                            // The time this pool will stake for before withdrawal is allowed (seconds)
     uint256 private stakingBalance = 0;                         // The ether balance sent to stake from the pool
     uint256 private stakingBalanceReceived = 0;                 // The ether balance sent to the pool after staking was completed in Casper
@@ -387,7 +385,7 @@ contract RocketPoolMiniDelegate is Owned {
             // TODO: rocketNodeValidationCode is currently spec'd as 'bytes' in the Mauve paper, this is a variable length type that cannot be passed from contract to contract at the moment
             // This prevents the below working currently, so rocketNodeValidationCode has been changed to 'bytes32' for now until they get around to implementing passing variable memory types ( https://github.com/ethereum/EIPs/pull/211 )
             // If for some reason this isn't implemented by the time Casper is ready, we can simply send the deposit to the mini pools assigned node who can act as an oracle then send the bytes code along with the Ether directly from the node via the nodejs service script            
-            if (casper.deposit.value(this.balance).gas(400000)(rocketNodeValidationCode, rocketNodeRandao, this)) {
+            if (casper.deposit.value(this.balance).gas(400000)(this)) {
                 // Set the mini pool status as staking
                 status = 2;
                 // All good? Fire the event for the new casper transfer
