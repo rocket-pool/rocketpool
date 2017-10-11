@@ -1,5 +1,7 @@
 *NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@v3.4.11](https://github.com/trufflesuite/truffle) to run locally (Truffle 4.0 beta currently has a few issues).
 
+[logo]: https://www.rocketpool.net/assets/images/icon-med-rocket-pool.png "Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"
+
 # Welcome to Rocket Pool - Your new Casper friendly Ethereum POS pool
 
 `Rocket Pool` is a next generation decentralised Ethereum proof of stake (POS) pool currently in Alpha and built to be compatible with Casper. Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.
@@ -32,6 +34,7 @@ You can read the current Rocket Pool white paper here: [http://www.rocketpool.ne
 
 For more information on Rocket Pool, check out our [website here](http://www.rocketpool.net). You can also contact us there for more information.
 
+---
 
 # A Step by Step Beginners guide
 
