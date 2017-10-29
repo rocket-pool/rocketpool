@@ -1,6 +1,6 @@
 # Rocket Pool - Your new Casper friendly Ethereum POS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@v3.4.11](https://github.com/trufflesuite/truffle) to run locally (Truffle 4.0 beta currently has a few issues).
+*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@4beta](https://github.com/trufflesuite/truffle) to run locally.
 
 
 

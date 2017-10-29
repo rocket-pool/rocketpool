@@ -6,7 +6,7 @@ contract Owned {
     address public newOwner;
     event OwnershipTransferred(address indexed _from, address indexed _to);
 
-    function Owned() {
+    function Owned() public {
         owner = msg.sender;
     }
 
@@ -15,11 +15,11 @@ contract Owned {
         _;
     }
 
-    function transferOwnership(address _newOwner) onlyOwner {
+    function transferOwnership(address _newOwner) public onlyOwner {
         newOwner = _newOwner;
     }
 
-    function acceptOwnership() {
+    function acceptOwnership() public {
         require(msg.sender == newOwner);
         OwnershipTransferred(owner, newOwner);
         owner = newOwner;

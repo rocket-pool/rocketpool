@@ -45,7 +45,7 @@ contract RocketFactory is Owned {
 
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getAddress(sha3("rocketPool")));
+        assert (msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
         _;
     }
 
@@ -53,7 +53,7 @@ contract RocketFactory is Owned {
     /*** Methods ***************/
 
     /// @dev RocketFactory constructor
-    function RocketFactory(address currentRocketHubAddress) {
+    function RocketFactory(address currentRocketHubAddress) public {
         // Address of the main RocketHub contract, should never need updating
         rocketHubAddress = currentRocketHubAddress;
         // Update the contract address
@@ -68,7 +68,7 @@ contract RocketFactory is Owned {
         // Create the new pool and add it to our list
         RocketPoolMini newPoolAddress = new RocketPoolMini(rocketHubAddress, miniPoolStakingDuration);
         // Store it now after a few checks
-        if (addContract(sha3("rocketMiniPool"), newPoolAddress)) {
+        if (addContract(keccak256("rocketMiniPool"), newPoolAddress)) {
             return newPoolAddress;
         }
     } 

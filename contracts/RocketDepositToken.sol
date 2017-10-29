@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./RocketHub.sol";
 import "./interface/TokenERC20Interface.sol";
@@ -33,7 +33,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
         // Only allow access
-        assert(msg.sender == rocketHub.getAddress(sha3("rocketPool")));
+        assert(msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
         _;
     }
 
@@ -63,7 +63,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /*** Methods *************/
    
     /// @dev constructor
-    function RocketDepositToken(address deployedRocketHubAddress) {
+    function RocketDepositToken(address deployedRocketHubAddress) public {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;
         // Update the contract address
@@ -83,7 +83,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount of tokens to mint.
     * @return A boolean that indicates if the operation was successful.
     */
-    function mint(address _to, uint _amount) onlyLatestRocketPool returns (bool) {
+    function mint(address _to, uint _amount) public onlyLatestRocketPool returns (bool) {
         // Verify ok
         if (_amount > 0 && (balances[_to] + _amount) > balances[_to] && (totalSupply + _amount) > totalSupply) {
             totalSupply += _amount;
@@ -99,11 +99,11 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount of tokens
     * @return A boolean that indicates if the operation was successful.
     */
-    function burnTokensForEther(uint256 _amount) returns (bool success) {
+    function burnTokensForEther(uint256 _amount) public returns (bool success) {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
         assert (this.balance >= _amount);
         // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Now send ether to the user in return for the tokens, perform overflow checks 
         if (balances[msg.sender] >= _amount && _amount > 0 && (balances[msg.sender] - _amount) < balances[msg.sender] && (totalSupply - _amount) < totalSupply) {
             // Subtract from the sender
@@ -136,7 +136,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @dev The current total supply in circulation
     * @return A uint256 that indicates the total supply currently
     */
-    function totalSupply() constant returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return totalSupply;
     }
 
@@ -145,7 +145,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _owner The address that will check the balance of
     * @return The users balance in uint256.
     */
-    function balanceOf(address _owner) constant returns (uint256 balance) {
+    function balanceOf(address _owner) public view returns (uint256 balance) {
         return balances[_owner];
     }
   
@@ -155,7 +155,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount to transfer
     * @return A boolean that indicates if the operation was successful.
     */
-    function transfer(address _to, uint256 _amount) returns (bool success) {
+    function transfer(address _to, uint256 _amount) public returns (bool success) {
         // Verify ok
         if (balances[msg.sender] >= _amount && _amount > 0 && (balances[_to] + _amount) > balances[_to]) {            
             balances[msg.sender] -= _amount;
@@ -173,7 +173,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount to transfer
     * @return A boolean that indicates if the operation was successful.
     */
-    function transferFrom(address _from, address _to, uint256 _amount) returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _amount) public returns (bool success) {
         // Verify ok
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && (balances[_to] + _amount) > balances[_to]) {
                 balances[_from] -= _amount;
@@ -192,7 +192,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount to transfer
     * @return A boolean that indicates if the operation was successful.
     */
-    function approve(address _spender, uint256 _amount) returns (bool success) {
+    function approve(address _spender, uint256 _amount) public returns (bool success) {
         allowed[msg.sender][_spender] = _amount;
         return true;
     }
@@ -203,7 +203,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _spender The address that will have access to spend these tokens
     * @return A uint256 number showing the remaining balance
     */
-    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 

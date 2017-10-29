@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./contract/Owned.sol";
 
@@ -79,19 +79,19 @@ contract RocketHub is Owned {
 
     /// @dev Only allow access from the latest version of the main RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(msg.sender == addressBook[sha3("rocketPool")]);
+        assert(msg.sender == addressBook[keccak256("rocketPool")]);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketNode contract
     modifier onlyLatestRocketNode() {
-        assert(msg.sender == addressBook[sha3("rocketNode")]);
+        assert(msg.sender == addressBook[keccak256("rocketNode")]);
         _;
     }  
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        assert(msg.sender == addressBook[sha3("rocketPartnerAPI")]);
+        assert(msg.sender == addressBook[keccak256("rocketPartnerAPI")]);
         _;
     } 
 
@@ -120,7 +120,7 @@ contract RocketHub is Owned {
     /**** Methods ***********/
 
     /// @dev RocketHub constructor
-    function RocketHub() {}
+    function RocketHub() public {}
 
 
     /**** Contract Addresses ***************/
@@ -139,7 +139,7 @@ contract RocketHub is Owned {
 
     /// @dev Get the address of a contract from our address book
     /// @param addressId The bytes32 ID of the contract
-    function getAddress(bytes32 addressId) public returns(address) {
+    function getAddress(bytes32 addressId) public view returns(address) {
         // Return the address now
         return addressBook[addressId];
     }

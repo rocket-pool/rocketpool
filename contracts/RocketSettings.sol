@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -54,7 +54,7 @@ contract RocketSettings is Owned {
 
 
     /// @dev RocketSettings constructor
-    function RocketSettings(address currentRocketHubAddress) {
+    function RocketSettings(address currentRocketHubAddress) public {
         // Address of the main RocketHub contract, should never need updating
         rocketHubAddress = currentRocketHubAddress;
         // The minimum Wei required for a pool to launch
@@ -64,9 +64,9 @@ contract RocketSettings is Owned {
         // This is the minimum time allowed for staking with Casper, looking to be 2 months at this point, but may obviously change at this stage
         poolMiniMinimumStakingTime = 8 weeks;
         // Set the possible staking times for mini pools
-        setPoolStakingTime(sha3("default"), poolMiniMinimumStakingTime);
-        setPoolStakingTime(sha3("medium"), 26 weeks); // 6 Months
-        setPoolStakingTime(sha3("long"), 1 years); // 1 Years
+        setPoolStakingTime(keccak256("default"), poolMiniMinimumStakingTime);
+        setPoolStakingTime(keccak256("medium"), 26 weeks); // 6 Months
+        setPoolStakingTime(keccak256("long"), 1 years); // 1 Years
         // The default fee given as a % of 1 Ether (eg 5%)
         withdrawalFeePercInWei = 0.05 ether;
         // The account to see Rocket Fees too, must be an account, not a contract address
@@ -86,17 +86,17 @@ contract RocketSettings is Owned {
     
 
     /// @dev Get the address of the main hub contract
-    function getRocketHubAddress() public constant returns (address) {
+    function getRocketHubAddress() public view returns (address) {
         return rocketHubAddress;
     }
 
     /// @dev Get default status of a new mini pool
-    function getPoolDefaultStatus() public constant returns (uint256) {
+    function getPoolDefaultStatus() public pure returns (uint256) {
         return uint256(poolMiniDefaultStatus);
     }
 
     /// @dev Check to see if new pools are allowed to be created
-    function getPoolAllowedToBeCreated() public constant returns (bool) { 
+    function getPoolAllowedToBeCreated() public view returns (bool) { 
         // Get the mini pool count
         RocketHub rocketHub = RocketHub(rocketHubAddress);
         uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount();
@@ -108,12 +108,12 @@ contract RocketSettings is Owned {
     }
 
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished
-    function getPoolAllowedToBeClosed() public constant returns (bool) { 
+    function getPoolAllowedToBeClosed() public view returns (bool) { 
         return poolMiniClosingAllowed;
     }
 
     /// @dev Check to see if the supplied staking time is a set time
-    function getPoolStakingTimeExists(bytes32 stakingTimeID) public constant returns (bool) {
+    function getPoolStakingTimeExists(bytes32 stakingTimeID) public view returns (bool) {
         if (poolMiniStakingTimes[stakingTimeID] >= poolMiniMinimumStakingTime) {
             return true;
         }
@@ -121,50 +121,50 @@ contract RocketSettings is Owned {
     }
 
      /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getPoolStakingTime(bytes32 stakingTimeID) public constant returns (uint256) {
+    function getPoolStakingTime(bytes32 stakingTimeID) public view returns (uint256) {
         // Make sure the staking ID exists
         assert(getPoolStakingTimeExists(stakingTimeID) == true);
         return poolMiniStakingTimes[stakingTimeID];
     }
 
     /// @dev Get the minimum required time for staking
-    function getPoolMiniMinimumStakingTime() public constant returns (uint256) {
+    function getPoolMiniMinimumStakingTime() public view returns (uint256) {
         return poolMiniMinimumStakingTime;
     }
 
     /// @dev Get the minimum time allowed for staking with Casper
-    function getPoolMinEtherRequired() public constant returns (uint256) {
+    function getPoolMinEtherRequired() public view returns (uint256) {
         return poolMiniMinWeiRequired;
     }
 
     /// @dev Get the time limit to stay in countdown before staking begins
-    function getPoolCountdownTime() public constant returns (uint256) {
+    function getPoolCountdownTime() public view returns (uint256) {
         return poolMiniCountdownTime;
     }
 
     /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getWithdrawalFeePercInWei() public constant returns (uint256) {
+    function getWithdrawalFeePercInWei() public view returns (uint256) {
         return withdrawalFeePercInWei;
     }
 
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
-    function getWithdrawalFeeDepositAddress() public constant returns (address) {
+    function getWithdrawalFeeDepositAddress() public view returns (address) {
         assert(withdrawalFeeDepositAddress != 0);
         return withdrawalFeeDepositAddress;
     }
 
     /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-    function getPoolUserBackupCollectEnabled() public constant returns (bool) {
+    function getPoolUserBackupCollectEnabled() public view returns (bool) {
         return poolUserBackupCollectEnabled;
     }
 
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function getPoolUserBackupCollectTime() public constant returns (uint256) {
+    function getPoolUserBackupCollectTime() public view returns (uint256) {
         return poolUserBackupCollectTime;
     }
 
     /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getDepositTokenWithdrawalFeePercInWei() public constant returns (uint256) {
+    function getDepositTokenWithdrawalFeePercInWei() public view returns (uint256) {
         return depositTokenWithdrawalFeePercInWei;
     }
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./RocketHub.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -41,7 +41,7 @@ contract RocketNode is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getAddress(sha3("rocketPool")));
+        assert (msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
         _;
     }
 
@@ -49,7 +49,7 @@ contract RocketNode is Owned {
     /*** Methods *************/
    
     /// @dev pool constructor
-    function RocketNode(address deployedRocketHubAddress) {
+    function RocketNode(address deployedRocketHubAddress) public {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;    
         // Update the contract address
@@ -68,7 +68,7 @@ contract RocketNode is Owned {
 
     /// @dev Get an available node for a pool to be assigned too
     // TODO: As well as assigning pools by node user server load, assign by node geographic region to aid in redundancy and decentralisation 
-    function nodeAvailableForPool() public onlyLatestRocketPool returns(address) {
+    function nodeAvailableForPool() public onlyLatestRocketPool view returns(address) {
         // Get all the current registered nodes
         uint256 nodeCount = rocketHub.getRocketNodeCount();
         // Create an array at the length of the current nodes, then populate it
@@ -104,7 +104,7 @@ contract RocketNode is Owned {
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, oracle services etc
         assert(nodeAccountAddressToRegister.balance >= minNodeWei);
         // Sets the rocket node if the address is ok and isn't already set
-        assert(rocketHub.setRocketNode(nodeAccountAddressToRegister, sha3(oracleID), sha3(instanceID)) == true);
+        assert(rocketHub.setRocketNode(nodeAccountAddressToRegister, keccak256(oracleID), keccak256(instanceID)) == true);
         // Fire the event
         NodeRegistered(nodeAccountAddressToRegister, now);
 	}
@@ -122,7 +122,7 @@ contract RocketNode is Owned {
     /// @dev Remove a node from the Rocket Pool network
     function nodeRemove(address nodeAddress) public onlyOwner {
         // Get the hub
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(keccak256("rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
         assert(rocketPool.getPoolsFilterWithNodeCount(nodeAddress) == 0);
         // Sets the rocket partner if the address is ok and isn't already set

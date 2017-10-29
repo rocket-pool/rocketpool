@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -127,7 +127,7 @@ contract RocketPool is Owned {
     /// @dev New pools are allowed to be created
     modifier poolsAllowedToBeCreated() {
         // Get the mini pool count
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // New pools allowed to be created?
         assert(rocketSettings.getPoolAllowedToBeCreated() == true);
         _;
@@ -135,13 +135,13 @@ contract RocketPool is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(this == rocketHub.getAddress(sha3("rocketPool")));
+        assert(this == rocketHub.getAddress(keccak256("rocketPool")));
         _;
     }
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        assert(msg.sender == rocketHub.getAddress(sha3("rocketPartnerAPI")));
+        assert(msg.sender == rocketHub.getAddress(keccak256("rocketPartnerAPI")));
         _;
     } 
 
@@ -153,7 +153,7 @@ contract RocketPool is Owned {
 
    
     /// @dev rocketPool constructor
-    function RocketPool(address deployedRocketHubAddress) {
+    function RocketPool(address deployedRocketHubAddress) public {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;    
         // Update the contract address
@@ -208,7 +208,7 @@ contract RocketPool is Owned {
     }
 
     /// @dev Get the duration between node checkins to make the node inactive
-    function getNodeSetInactiveDuration() public constant returns (uint256) {
+    function getNodeSetInactiveDuration() public view returns (uint256) {
         return nodeSetInactiveDuration;
     }
 
@@ -220,7 +220,7 @@ contract RocketPool is Owned {
     /// @dev Fallback function, user direct deposit to Rocket Pool 
     function() public payable {   
         // Direct deposit to Rocket Pool, set partner address to 0 to indicate no partner but an awesome direct Rocket Pool user
-        deposit(msg.sender, 0, sha3("default"));
+        deposit(msg.sender, 0, keccak256("default"));
     }
 
     /// @dev Deposit to Rocket Pool from the 3rd party partner API
@@ -238,7 +238,7 @@ contract RocketPool is Owned {
     /// @param poolStakingTimeID The ID (bytes32 encoded string) that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
     function deposit(address userAddress, address partnerAddress, bytes32 poolStakingTimeID) private acceptableDeposit onlyLatestRocketPool returns(bool) { 
         // Check to verify the supplied mini pool staking time id is legit
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Legit time staking ID?
         assert(rocketSettings.getPoolStakingTimeExists(poolStakingTimeID) == true);
         // Set it now
@@ -253,7 +253,7 @@ contract RocketPool is Owned {
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
-        Transferred(userAddress, poolUserBelongsToo, sha3("deposit"), msg.value, now);   
+        Transferred(userAddress, poolUserBelongsToo, keccak256("deposit"), msg.value, now);   
         // Success
         return true;   
     }
@@ -373,7 +373,7 @@ contract RocketPool is Owned {
         // Ok send the deposit to the user from the mini pool now
         assert(pool.withdraw(userAddress, amount) == true);
         // Successful withdrawal
-        Transferred(miniPoolAddress, userAddress, sha3("withdrawal"), amount, now);    
+        Transferred(miniPoolAddress, userAddress, keccak256("withdrawal"), amount, now);    
         // Success
         return true; 
     }
@@ -383,7 +383,7 @@ contract RocketPool is Owned {
     /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
     function userUpdateDepositAndRewards(address miniPoolAddress, address userAddress) private returns (bool) {
         // Get our rocket settings 
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // Get the current user balance
@@ -441,7 +441,7 @@ contract RocketPool is Owned {
     /// @param userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
     function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) private returns(bool) {
         // Get the hub
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);
         // Check to make sure this feature is currently enabled
@@ -470,9 +470,9 @@ contract RocketPool is Owned {
     /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     function userWithdrawDepositTokens(address miniPoolAddress, uint256 amount) public returns(bool) {
         // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Get Rocket Deposit Token
-        RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getAddress(sha3("rocketDepositToken")));
+        RocketDepositToken rocketDepositToken = RocketDepositToken(rocketHub.getAddress(keccak256("rocketDepositToken")));
         // Get an instance of that pool contract
         RocketPoolMini pool = getPoolInstance(miniPoolAddress);                 
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
@@ -505,7 +505,7 @@ contract RocketPool is Owned {
 
     /// @dev Get an instance of the pool contract
     /// @param miniPoolAddress The address of the mini pool to get the contract instance of
-    function getPoolInstance(address miniPoolAddress) private constant returns(RocketPoolMini) {
+    function getPoolInstance(address miniPoolAddress) private view returns(RocketPoolMini) {
         // Make sure its one of ours
         assert(rocketHub.getRocketMiniPoolExists(miniPoolAddress) == true);
         // Get the pool contract instance
@@ -518,44 +518,44 @@ contract RocketPool is Owned {
 
     /// @dev Get all pools that match this status (explicit method)
     /// @param status Get pools with the current status
-    function getPoolsFilterWithStatus(uint256 status) constant returns(address[] memory) {
+    function getPoolsFilterWithStatus(uint256 status) public view returns(address[] memory) {
         return getPoolsFilter(false, status, 0, 0, 0, false);  
     }
 
     /// @dev Get all pools that match this status and set staking duration (explicit method)
     /// @param status Get pools with the current status
     /// @param stakingDuration Get pools with the current staking duration
-    function getPoolsFilterWithStatusAndDuration(uint256 status, uint256 stakingDuration) constant returns(address[] memory) {
+    function getPoolsFilterWithStatusAndDuration(uint256 status, uint256 stakingDuration) public view returns(address[] memory) {
         return getPoolsFilter(false, status, 0, stakingDuration, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param nodeAddress Get pools with the current node
-    function getPoolsFilterWithNode(address nodeAddress) constant returns(address[] memory) {
+    function getPoolsFilterWithNode(address nodeAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, nodeAddress, 0, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param nodeAddress Get pools with the current node
      // TODO: When metropolis is released, this method can be removed as we'll be able to read variable length data between contracts then
-    function getPoolsFilterWithNodeCount(address nodeAddress) constant returns(uint256) {
+    function getPoolsFilterWithNodeCount(address nodeAddress) public view returns(uint256) {
         return getPoolsFilter(false, 99, nodeAddress, 0, 0, false).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
     /// @param userAddress Get pools with the current user
-    function getPoolsFilterWithUser(address userAddress) constant returns(address[] memory) {
+    function getPoolsFilterWithUser(address userAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, userAddress, false);
     }
 
     /// @dev Get all pools that match this user belongs too and has a deposit > 0 (explicit method)
     /// @param userAddress Get pools with the current user
-    function getPoolsFilterWithUserDeposit(address userAddress) constant returns(address[] memory) {
+    function getPoolsFilterWithUserDeposit(address userAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, userAddress, true);
     }
 
     /// @dev Returns all current mini pools (explicit method)
-    function getPools() constant private returns(address[] memory) {
+    function getPools() view private returns(address[] memory) {
         return getPoolsFilter(true, 99, 0, 0, 0, false);
     }
 
@@ -565,7 +565,7 @@ contract RocketPool is Owned {
     /// @param nodeAddress Filter pools that are currently assigned to this node address
     /// @param userAddress The address of a user account in the pool
     /// @param userHasDeposit Filter pools on users that have a deposit > 0 in the pool
-    function getPoolsFilter(bool returnAll, uint256 status, address nodeAddress, uint256 stakingDuration, address userAddress, bool userHasDeposit) constant private returns(address[] memory) {
+    function getPoolsFilter(bool returnAll, uint256 status, address nodeAddress, uint256 stakingDuration, address userAddress, bool userHasDeposit) view private returns(address[] memory) {
         // Get the mini pool count
         uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount(); 
         // Create an array at the length of the current pools, then populate it
@@ -591,8 +591,6 @@ contract RocketPool is Owned {
         }
         // Remove empty values from our dynamic memory array so that .length works as expected
         poolsFound = utilArrayFilterValuesOnly(poolsFound);
-        // Fire the event
-        PoolsGetWithStatus(status, poolsFound.length, now);
         // Return our pool address matching the status now
         return poolsFound;
     }
@@ -602,7 +600,7 @@ contract RocketPool is Owned {
     /// @param poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
     function createPool(uint256 poolStakingDuration) private poolsAllowedToBeCreated onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketFactory rocketFactory = RocketFactory(rocketHub.getAddress(sha3("rocketFactory")));
+        RocketFactory rocketFactory = RocketFactory(rocketHub.getAddress(keccak256("rocketFactory")));
         address newPoolAddress = rocketFactory.createRocketPoolMini(poolStakingDuration);
         // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
         // Sets the rocket node if the address is ok and isn't already set
@@ -615,9 +613,9 @@ contract RocketPool is Owned {
 
 
     /// @dev Remove a mini pool, only mini pools themselves can call this 
-    function removePool() onlyMiniPool returns(bool) {
+    function removePool() public onlyMiniPool returns(bool) {
         // Remove the pool from our hub storage
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(sha3("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
         // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
         if (rocketSettings.getPoolAllowedToBeClosed()) {
            // Sets the rocket node if the address is ok and isn't already set
@@ -650,7 +648,7 @@ contract RocketPool is Owned {
      // TODO: When variable length data is supported between contracts (Metropolis), move this function to RocketNode contract
     function nodeCheckin(uint256 currentLoadAverage) public {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
-        RocketNode rocketNode = RocketNode(rocketHub.getAddress(sha3("rocketNode")));
+        RocketNode rocketNode = RocketNode(rocketHub.getAddress(keccak256("rocketNode")));
         RocketPoolMini pool = RocketPoolMini(0);
         // Is this a legit Rocket Node?
         assert(rocketHub.getRocketNodeExists(msg.sender) == true);
@@ -751,7 +749,7 @@ contract RocketPool is Owned {
     /// @dev This is handy as memory arrays have a fixed size when initialised, this reduces the array to only valid values (so that .length works as you'd like)
     /// @dev This can be made redundant when .push is supported on dynamic memory arrays
     /// @param addressArray An array of a fixed size of addresses
-	function utilArrayFilterValuesOnly(address[] memory addressArray) private constant returns (address[] memory) {
+	function utilArrayFilterValuesOnly(address[] memory addressArray) private pure returns (address[] memory) {
         // The indexes for the arrays
         uint[] memory indexes = new uint[](2); 
         indexes[0] = 0;

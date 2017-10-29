@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -61,7 +61,7 @@ contract RocketPartnerAPI is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(msg.sender == rocketHub.getAddress(sha3("rocketPool")));
+        assert(msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
         _;
     }
 
@@ -75,7 +75,7 @@ contract RocketPartnerAPI is Owned {
     /*** Constructor *************/
    
     /// @dev rocketNode constructor
-    function RocketPartnerAPI(address deployedRocketHubAddress) {
+    function RocketPartnerAPI(address deployedRocketHubAddress) public {
         // Set the address of the main hub
         rocketHubAddress = deployedRocketHubAddress;
         // Update the contract address
@@ -88,9 +88,9 @@ contract RocketPartnerAPI is Owned {
     /*** Public Partner Methods *************/
 
     /// @dev Get the address to deposit to with Rocket Pool
-    function APIgetDepositAddress() public returns(address) { 
+    function APIgetDepositAddress() public view returns(address) { 
         // The partner address being supplied must also match the sender address
-        return rocketHub.getAddress(sha3("rocketPool"));
+        return rocketHub.getAddress(keccak256("rocketPool"));
     }
    
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()` with partner address `partnerAddress`.
@@ -100,7 +100,7 @@ contract RocketPartnerAPI is Owned {
     function APIpartnerDeposit(address partnerUserAddress, bytes32 poolStakingTimeID) public payable onlyRegisteredPartner { 
         // If the user is not a direct Rocket Pool user but a partner user, check the partner is legit
         // The partner address being supplied must also match the sender address
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(keccak256("rocketPool")));
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
         if (rocketPool.partnerDeposit.value(msg.value).gas(2400000)(partnerUserAddress, msg.sender, poolStakingTimeID)) {
             // Fire the event now
@@ -108,7 +108,7 @@ contract RocketPartnerAPI is Owned {
         }
 
         /* // Good idea, but best implemented with a shell contract that needs to spawn other contracts of the same type
-        if(rocketHub.getRocketPoolAddress().delegatecall(bytes4(sha3("partnerDeposit(address,bytes32)")), partnerUserAddress, poolStakingTimeID)) {
+        if(rocketHub.getRocketPoolAddress().delegatecall(bytes4(keccak256("partnerDeposit(address,bytes32)")), partnerUserAddress, poolStakingTimeID)) {
             APIpartnerDepositAccepted(msg.sender, partnerUserAddress, poolStakingTimeID, msg.value, now);
         }*/
     }
@@ -120,7 +120,7 @@ contract RocketPartnerAPI is Owned {
     /// @param partnerUserAddress The address of the partners user to withdraw from and send the funds too.
     function APIpartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress) public onlyRegisteredPartner returns(bool)  {
         // Get the main Rocket Pool contract
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(sha3("rocketPool")));
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(keccak256("rocketPool")));
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
         if (rocketPool.userPartnerWithdrawDeposit.gas(600000)(miniPoolAddress, amount, partnerUserAddress, msg.sender)) {
             // Fire the event now
@@ -138,7 +138,7 @@ contract RocketPartnerAPI is Owned {
     function partnerRegister(address partnerAccountAddressToRegister, string partnerName) public onlyOwner  {
         // Add the partner to the primary persistent storage so any contract upgrades won't effect the current stored partners
         // Sets the rocket partner if the address is ok and isn't already set
-        if (rocketHub.setRocketPartner(partnerAccountAddressToRegister, sha3(partnerName))) {
+        if (rocketHub.setRocketPartner(partnerAccountAddressToRegister, keccak256(partnerName))) {
             // Fire the event
             PartnerRegistered(partnerAccountAddressToRegister, now);
         }

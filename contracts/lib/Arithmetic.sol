@@ -1,11 +1,12 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.17;
 
 // Arithmetic library borrowed from Gnosis, thanks guys!
 
 library Arithmetic {
     
     function mul256By256(uint a, uint b)
-        constant
+        public
+        pure
         returns (uint ab32, uint ab1, uint ab0)
     {
         uint ahi = a >> 128;
@@ -22,8 +23,9 @@ library Arithmetic {
     // I adapted this from Fast Division of Large Integers by Karl Hasselström
     // Algorithm 3.4: Divide-and-conquer division (3 by 2)
     // Karl got it from Burnikel and Ziegler and the GMP lib implementation
-    function div256_128By256(uint a21, uint a0, uint b)
-        constant
+    function div256_128By256(uint a21, uint a0, uint b) 
+        public 
+        pure
         returns (uint q, uint r)
     {
         uint qhi = (a21 / b) << 128;
@@ -57,6 +59,8 @@ library Arithmetic {
     }
 
     function overflowResistantFraction(uint a, uint b, uint divisor)
+        public 
+        pure 
         returns (uint)
     {
         uint ab32_q1; uint ab1_r1; uint ab0;
