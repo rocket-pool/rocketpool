@@ -2,7 +2,6 @@ app
 bin
 build
 app/config
-node/test
-node/services/*.js
+node/
 node_modules
 .vscode
