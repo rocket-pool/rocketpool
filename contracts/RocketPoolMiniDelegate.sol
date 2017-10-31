@@ -292,7 +292,7 @@ contract RocketPoolMiniDelegate is Owned {
     /// @return The balance remaining for the user
     function withdraw(address userAddress, uint withdrawAmount) public onlyLatestRocketPool returns (bool) {
         // Now check balances are legit
-        assert(users[userAddress].balance >= withdrawAmount);
+        require(users[userAddress].balance >= withdrawAmount);
         // Deduct the balance right away, before sending to avoid potential recursive calls that allow a user to withdraw an amount greater than their deposit
         users[userAddress].balance -= withdrawAmount;
         // Did it send ok?
