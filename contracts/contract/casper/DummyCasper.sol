@@ -149,7 +149,7 @@ contract DummyCasper is Owned {
         // Add the validator if it passes all the required conditions
         if (addValidator(msg.value, newWithdrawalAddress)) {
             // All good? Fire the event for the new deposit
-            Transfered(msg.sender, this, sha3("deposit"), msg.value, now); 
+            Transfered(msg.sender, this, keccak256("deposit"), msg.value, now); 
             return true;
         }else{
             return false;
