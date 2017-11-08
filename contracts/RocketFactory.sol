@@ -1,12 +1,12 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.17;
 
 /***
    * Note: Since this contract handles contract creation by other contracts, it's deployment gas usage will be high depending on the amount of contracts it can create.
    * For the moment it supports the RocketPoolMini creations, but if more automatic contract creations are added, be wary of the gas for deployment as it may exceed the block gas limit
 ***/ 
 
-import "./RocketHub.sol";
 import "./RocketPoolMini.sol";
+import "./interface/RocketStorageInterface.sol";
 import "./contract/Owned.sol";
 
 
@@ -17,14 +17,14 @@ contract RocketFactory is Owned {
 
 	/**** Properties ***********/
 
-    address private rocketHubAddress;                   // Address of the main RocketHub contract
+    address private rocketStorageAddress;               // Address of the main RocketStorage contract
     mapping (address => Contract) public contracts;     // Our rocket factory contracts
     address[] public contractAddresses;                 // Keep an array of all our contract addresses for iteration
 
 
     /*** Contracts **************/
 
-    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main RocketStorage contract where primary persistant storage is maintained
 
 
     /*** Structs ***************/
@@ -36,16 +36,12 @@ contract RocketFactory is Owned {
         bool exists;
     }
 
-    event FlagAddress (
-        address flag
-    );
-
 
     /*** Modifiers ***************/
 
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
+        assert (msg.sender == rocketStorage.getAddress(keccak256("rocketNetwork.rocketPool")));
         _;
     }
 
@@ -53,11 +49,11 @@ contract RocketFactory is Owned {
     /*** Methods ***************/
 
     /// @dev RocketFactory constructor
-    function RocketFactory(address currentRocketHubAddress) public {
-        // Address of the main RocketHub contract, should never need updating
-        rocketHubAddress = currentRocketHubAddress;
+    function RocketFactory(address _rocketStorageAddress) public {
+        // Address of the main RocketStorage contract, should never need updating
+        rocketStorageAddress = _rocketStorageAddress;
         // Update the contract address
-        rocketHub = RocketHub(currentRocketHubAddress);
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
 
@@ -66,7 +62,7 @@ contract RocketFactory is Owned {
     /// @param miniPoolStakingDuration The staking duration for the mini pool
     function createRocketPoolMini(uint256 miniPoolStakingDuration) public onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketPoolMini newPoolAddress = new RocketPoolMini(rocketHubAddress, miniPoolStakingDuration);
+        RocketPoolMini newPoolAddress = new RocketPoolMini(rocketStorageAddress, miniPoolStakingDuration);
         // Store it now after a few checks
         if (addContract(keccak256("rocketMiniPool"), newPoolAddress)) {
             return newPoolAddress;

@@ -96,7 +96,7 @@ contract DummyCasper is Owned {
 
     /// @dev DummyCasper constructor
      // Must be sent an amount of Ether to cover simulated rewards after contract creation 
-    function DummyCasper() {
+    function DummyCasper() public {
         // Set Casper testing parameters
         blockTime = 14;
         epochLength = 100;
@@ -206,7 +206,7 @@ contract DummyCasper is Owned {
 
     /// @dev Not documented in Casper yet, but would be agreat method to have that would allow users/contracts to know exactly when they can withdraw their deposit by returning a timestamp of it
      // If its not available, we can simply add a storage var to RocketSettings that can match/be slightly longer than Caspers and do the same thing
-    function getWithdrawalEpoch(address validatorSenderAddress) public registeredValidator(validatorSenderAddress) returns(uint256) { 
+    function getWithdrawalEpoch(address validatorSenderAddress) public view registeredValidator(validatorSenderAddress) returns(uint256) { 
         return validators[validatorSenderAddress].withdrawalEpoch;
     }
 

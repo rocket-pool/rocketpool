@@ -8,6 +8,7 @@ var rocketPoolMini = artifacts.require("./contract/RocketPoolMini.sol");
 var rocketDepositToken = artifacts.require("./contract/RocketDepositToken.sol");
 var rocketPartnerAPI = artifacts.require("./contract/RocketPartnerAPI.sol");
 var rocketSettings = artifacts.require("./contract/RocketSettings.sol");
+var rocketStorage = artifacts.require("./contract/RocketStorage.sol");
 var casper = artifacts.require("./contract/Casper/DummyCasper.sol"); 
 
 var displayEvents = false;
@@ -100,12 +101,12 @@ contract('RocketPool', function (accounts) {
 
     // Try to register a node as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a node'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
             // RocketNode now
             return rocketNode.deployed().then(function (rocketNodeInstance) {
                 // Transaction
-                return rocketNodeInstance.nodeRegister(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from:userFirst, gas: nodeRegisterGas }).then(function (result) {
+                return rocketNodeInstance.setNode(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from:userFirst, gas: nodeRegisterGas }).then(function (result) {
                     return result;
                 }).then(function(result) {
                     assert(false, "Expect throw but didn't.");
@@ -123,8 +124,30 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
- 
 
+    // Register 2 nodes
+    it(printTitle('owner', 'register 2 nodes'), function () {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
+            // rocketNode now
+            return rocketNode.deployed().then(function (rocketNodeInstance) {
+                // Transaction
+                return rocketNodeInstance.setNode(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID,  { from: owner, gas: nodeRegisterGas }).then(function (result) {
+                    // Transaction
+                    return rocketNodeInstance.setNode(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, { from: owner, gas: nodeRegisterGas }).then(function (result) {
+                        // Now get the total with a call
+                        return rocketNodeInstance.getNodeCount.call();
+                    }).then(function (result) {
+                        assert.equal(result.valueOf(), 2, "2 Nodes registered successfully by owner");
+                    });
+                });
+            });
+        });    
+    }); // End Test
+
+    return;
+
+  
     // Try to register a new partner as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a partner'), function () {
         // Check RocketHub is deployed first    
@@ -151,25 +174,8 @@ contract('RocketPool', function (accounts) {
     }); // End Test   
     
     
-    // Register 2 nodes
-    it(printTitle('owner', 'register 2 nodes'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
-            // rocketNode now
-            return rocketNode.deployed().then(function (rocketNodeInstance) {
-                // Transaction
-                return rocketNodeInstance.nodeRegister(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID,  { from: web3.eth.coinbase, gas: nodeRegisterGas }).then(function (result) {
-                    // Transaction
-                    return rocketNodeInstance.nodeRegister(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, { from: web3.eth.coinbase, gas: nodeRegisterGas }).then(function (result) {
-                        // Now get the total with a call
-                        return rocketHubInstance.getRocketNodeCount.call();
-                    }).then(function (result) {
-                        assert.equal(result.valueOf(), 2, "2 Nodes registered successfully by owner");
-                    });
-                });
-            });
-        });    
-    }); // End Test
+    
+    return;
 
 
     // Register two 3rd party partners

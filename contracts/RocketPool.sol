@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
 import "./contract/Owned.sol";
 import "./RocketHub.sol";
@@ -6,6 +6,7 @@ import "./RocketNode.sol";
 import "./RocketPoolMini.sol"; 
 import "./RocketFactory.sol"; 
 import "./RocketDepositToken.sol"; 
+import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
 
@@ -106,6 +107,7 @@ contract RocketPool is Owned {
         uint256 tokenAmount,
         uint256 created
     );
+    
 
        
 
@@ -160,7 +162,7 @@ contract RocketPool is Owned {
         rocketHub = RocketHub(deployedRocketHubAddress);
     }
 
-
+    /* TODO: Renable when optimised for Metropolis
     // @dev Are deposits allowed for this version of Rocket Pool?
     /// @param areDepositsAllowed True or False
     function setDepositsAllowed(bool areDepositsAllowed) public onlyOwner {
@@ -211,7 +213,7 @@ contract RocketPool is Owned {
     function getNodeSetInactiveDuration() public view returns (uint256) {
         return nodeSetInactiveDuration;
     }
-
+    */
   
      /*** DEFAULT PAYABLE ***********************************************/
 
