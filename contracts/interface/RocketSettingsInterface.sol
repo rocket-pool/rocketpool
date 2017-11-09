@@ -12,9 +12,9 @@ contract RocketSettingsInterface {
     /// @dev Get the time limit to stay in countdown before staking begins
     function getPoolCountdownTime() public view returns (uint256);
     /// @dev Check to see if the supplied staking time is a set time
-    function getPoolStakingTimeExists(bytes32 stakingTimeID) public view returns (bool);
+    function getPoolStakingTimeExists(string _stakingTimeID) public view returns (bool);
     /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getPoolStakingTime(bytes32 stakingTimeID) public view returns (uint256);
+    function getPoolStakingTime(string _stakingTimeID) public view returns (uint256);
     /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     function getWithdrawalFeePercInWei() public view returns (uint256);
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)

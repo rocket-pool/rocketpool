@@ -1,7 +1,7 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
 import "./contract/Owned.sol";
-import "./RocketHub.sol";
+import "./interface/RocketStorageInterface.sol";
 
 /// @title Common settings that are used across all spoke contracts, mostly the main rocketpool and the mini pools it creates
 /// @author David Rugendyke
@@ -10,34 +10,27 @@ contract RocketSettings is Owned {
 
     /**** Properties ***********/
 
-    // Address of the main RocketHub contract
-    address private rocketHubAddress;
-    // The minimum Ether required for a pool to start staking (go from PreLaunchAcceptingDeposits to PreLaunchCountdown)
-    uint256 private poolMiniMinWeiRequired;
-    // The time limit to stay in countdown before staking begins (gives the users a chance to withdraw their Ether incase they change their mind)
-    uint256 private poolMiniCountdownTime;
-    // The default min required time for staking in weeks, this should match caspers
-    uint256 private poolMiniMinimumStakingTime;
-    // The current staking times for a pool in weeks
-    mapping (bytes32 => uint256) private poolMiniStakingTimes;
-    // Keep an array of all our staking times for iteration
-    bytes32[] private poolMiniStakingTimesIDs;
-    // General mini pool settings
-    bool private poolMiniNewAllowed;
-    uint private poolMiniMaxAllowed;
-    bool private poolMiniClosingAllowed;
-    // The default fee given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei) for withdrawing after a Casper returned deposit, is only taken from the earned rewards/interest (not total deposit)
-    // Done this way to take a % fee as a decimal if needed (eg 5.5%) since solidity doesn't support reals yet
-    uint256 private withdrawalFeePercInWei;
-    address private withdrawalFeeDepositAddress;
-    // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-    bool poolUserBackupCollectEnabled;
-    // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    uint256 poolUserBackupCollectTime;
-    // Deposit Token settings - fee a user is charged on their deposit for an early withdrawal using tokens, given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    uint256 private depositTokenWithdrawalFeePercInWei;
+    uint256 private poolMiniMinWeiRequired;                     // The minimum Ether required for a pool to start staking (go from PreLaunchAcceptingDeposits to PreLaunchCountdown)
+    uint256 private poolMiniCountdownTime;                      // The time limit to stay in countdown before staking begins (gives the users a chance to withdraw their Ether incase they change their mind)
+    uint256 private poolMiniMinimumStakingTime;                 // The default min required time for staking in weeks, this should match caspers
+    mapping (string => uint256) private poolMiniStakingTimes;   // The current staking times for a pool in weeks
+    string[] private poolMiniStakingTimesIDs;                   // Keep an array of all our staking times for iteration
+    bool private poolMiniNewAllowed;                            // Are minipools allowed to be created?
+    uint private poolMiniMaxAllowed;                            // Maximum minipools that are currently allowed
+    bool private poolMiniClosingAllowed;                        // Can minipools be closed?
+    uint256 private withdrawalFeePercInWei;                     // The default fee given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei) for withdrawing after a Casper returned deposit, is only taken from the earned rewards/interest (not total deposit)
+    address private withdrawalFeeDepositAddress;                // Where the Rocket Pool fee is withdrawn too
+    bool poolUserBackupCollectEnabled;                          // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+    uint256 poolUserBackupCollectTime;                          // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    uint256 private depositTokenWithdrawalFeePercInWei;         // Deposit Token settings - fee a user is charged on their deposit for an early withdrawal using tokens, given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
+    
     // The default status for newly created mini pools
     PoolMiniStatuses public constant poolMiniDefaultStatus = PoolMiniStatuses.PreLaunchAcceptingDeposits;
+
+
+    /*** Contracts ***********/
+
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     
 
     /*** Enums ***************/
@@ -52,11 +45,15 @@ contract RocketSettings is Owned {
         Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
     }
 
+    event FlagString (
+        string flag
+    );
+
 
     /// @dev RocketSettings constructor
-    function RocketSettings(address currentRocketHubAddress) public {
-        // Address of the main RocketHub contract, should never need updating
-        rocketHubAddress = currentRocketHubAddress;
+    function RocketSettings(address _rocketStorageAddress) public {
+        // Update the storage contract address
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // The minimum Wei required for a pool to launch
         poolMiniMinWeiRequired = 5 ether;
         // The time limit to stay in countdown before staking begins
@@ -64,9 +61,9 @@ contract RocketSettings is Owned {
         // This is the minimum time allowed for staking with Casper, looking to be 2 months at this point, but may obviously change at this stage
         poolMiniMinimumStakingTime = 8 weeks;
         // Set the possible staking times for mini pools
-        setPoolStakingTime(keccak256("default"), poolMiniMinimumStakingTime);
-        setPoolStakingTime(keccak256("medium"), 26 weeks); // 6 Months
-        setPoolStakingTime(keccak256("long"), 1 years); // 1 Years
+        setPoolStakingTime("default", poolMiniMinimumStakingTime);
+        setPoolStakingTime("medium", 26 weeks); // 6 Months
+        setPoolStakingTime("long", 1 years); // 1 Years
         // The default fee given as a % of 1 Ether (eg 5%)
         withdrawalFeePercInWei = 0.05 ether;
         // The account to see Rocket Fees too, must be an account, not a contract address
@@ -84,12 +81,6 @@ contract RocketSettings is Owned {
         depositTokenWithdrawalFeePercInWei = 0.05 ether;
     }
     
-
-    /// @dev Get the address of the main hub contract
-    function getRocketHubAddress() public view returns (address) {
-        return rocketHubAddress;
-    }
-
     /// @dev Get default status of a new mini pool
     function getPoolDefaultStatus() public pure returns (uint256) {
         return uint256(poolMiniDefaultStatus);
@@ -98,12 +89,13 @@ contract RocketSettings is Owned {
     /// @dev Check to see if new pools are allowed to be created
     function getPoolAllowedToBeCreated() public view returns (bool) { 
         // Get the mini pool count
-        RocketHub rocketHub = RocketHub(rocketHubAddress);
+        // TODO: Comeback to this when RocketStorage is implemented across the board
+        /*
         uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount();
         // New pools allowed to be created?
         if (!poolMiniNewAllowed || miniPoolCount >= poolMiniMaxAllowed) {
             return false;
-        } 
+        } */
         return true;
     }
 
@@ -113,18 +105,18 @@ contract RocketSettings is Owned {
     }
 
     /// @dev Check to see if the supplied staking time is a set time
-    function getPoolStakingTimeExists(bytes32 stakingTimeID) public view returns (bool) {
-        if (poolMiniStakingTimes[stakingTimeID] >= poolMiniMinimumStakingTime) {
+    function getPoolStakingTimeExists(string _stakingTimeID) public view returns (bool) {
+        if (poolMiniStakingTimes[_stakingTimeID] >= poolMiniMinimumStakingTime) {
             return true;
-        }
+        } 
         return false; 
     }
 
      /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getPoolStakingTime(bytes32 stakingTimeID) public view returns (uint256) {
+    function getPoolStakingTime(string _stakingTimeID) public view returns (uint256) {
         // Make sure the staking ID exists
-        assert(getPoolStakingTimeExists(stakingTimeID) == true);
-        return poolMiniStakingTimes[stakingTimeID];
+        assert(getPoolStakingTimeExists(_stakingTimeID) == true);
+        return poolMiniStakingTimes[_stakingTimeID];
     }
 
     /// @dev Get the minimum required time for staking
@@ -201,7 +193,7 @@ contract RocketSettings is Owned {
     }
 
     /// @dev Set the mini pool staking time
-    function setPoolStakingTime(bytes32 id, uint256 secondsToSet) public onlyOwner {
+    function setPoolStakingTime(string id, uint256 secondsToSet) public onlyOwner {
         poolMiniStakingTimes[id] = secondsToSet; 
         poolMiniStakingTimesIDs.push(id);
     }

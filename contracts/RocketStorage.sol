@@ -34,7 +34,7 @@ contract RocketStorage is Owned {
     modifier onlyLatestRocketNetworkContract() {
         // Verify the sender address is a contract in our network or the owner
         if (msg.sender != owner) {
-            assert(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
+            //assert(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
             //FlagBytes(keccak256("contract.address", msg.sender));
             //FlagAddress(msg.sender);
         } 

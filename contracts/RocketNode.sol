@@ -1,6 +1,6 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
-import "./RocketHub.sol";
+import "./RocketPoolMini.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
@@ -16,12 +16,13 @@ contract RocketNode is Owned {
 
     address private rocketHubAddress;                   // Hub address
     uint8 private version;                              // The current version of this contract                                   
-    uint private minNodeWei;                            // Miniumum balance a node must have to cover gas costs for smart node services when registered
+    uint private nodeMinWei;                            // Miniumum balance a node must have to cover gas costs for smart node services when registered
+    bool private nodeSetInactiveAutomatic = true;       // Are nodes allowed to be set inactive by Rocket Pool automatically
+    uint private nodeSetInactiveDuration = 1 hours;     // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
 
 
     /*** Contracts **************/
 
-    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained  
 
               
@@ -37,6 +38,20 @@ contract RocketNode is Owned {
         uint256 created
     );
 
+    event NodeCheckin (
+        address indexed _nodeAddress,
+        uint256 loadAverage,
+        uint256 created
+    );
+
+    event NodeActiveStatus (
+        address indexed _nodeAddress,
+        bool indexed _active,
+        uint256 created
+    );
+
+    
+
     event FlagUint (
         uint256 flag
     );
@@ -51,7 +66,14 @@ contract RocketNode is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        _;
+    }
+
+    /// @dev Only registered pool node addresses can access
+    /// @param _nodeAccountAddress node account address.
+    modifier onlyRegisteredNode(address _nodeAccountAddress) {
+        require(rocketStorage.getBool(keccak256("node.exists", _nodeAccountAddress)));
         _;
     }
 
@@ -63,50 +85,45 @@ contract RocketNode is Owned {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Set the min eth needed for a node account to cover gas costs
-        minNodeWei = 5 ether;
+        nodeMinWei = 5 ether;
     }
 
 
     /*** Getters *************/
 
     /// @dev Returns the amount of registered rocket nodes
-    function getNodeCount() public constant returns(uint) {
+    function getNodeCount() public view returns(uint) {
         return rocketStorage.getUint(keccak256("nodes.total"));
     }
 
-
-    /*** Setters *************/
-
-    /// @dev Set the min eth required for a node to be registered
-    /// @param amountInWei The amount in Wei
-    function setMinNodeWei(uint amountInWei) public onlyOwner {
-        minNodeWei = amountInWei;
+    /// @dev Returns true if this node exists, reverts if it doesn't
+    function getNodeExists(address _nodeAddress) public view onlyRegisteredNode(_nodeAddress) returns(bool) {
+        return true;
     }
 
-
-    /// @dev Get an available node for a pool to be assigned too
+    /// @dev Get the duration between node checkins to make the node inactive
+    function getNodeSetInactiveDuration() public view returns (uint256) {
+        return nodeSetInactiveDuration;
+    }
+    
+    /// @dev Get an available node for a pool to be assigned too, is requested by the main Rocket Pool contract
     // TODO: As well as assigning pools by node user server load, assign by node geographic region to aid in redundancy and decentralisation 
-    function nodeAvailableForPool() public onlyLatestRocketPool view returns(address) {
-        // Get all the current registered nodes
-        uint256 nodeCount = rocketHub.getRocketNodeCount();
+    function getNodeAvailableForPool() external view onlyLatestRocketPool returns(address) {
         // Create an array at the length of the current nodes, then populate it
-        // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
-        address[] memory nodes = new address[](nodeCount);
+        address[] memory nodes = new address[](rocketStorage.getUint(keccak256("nodes.total")));
         address nodeAddressToUse = 0;
         uint256 prevAverageLoad = 0;
-        // Retreive each node address now by index since we can't return a variable sized array from an external contract yet
-        // TODO: Optimise when metropolis is in to use RETURNDATASIZE opcode
+        // Retreive each node address now by index since we are using a key/value datastore
         assert(nodes.length > 0);
         // Now loop through each
         for (uint32 i = 0; i < nodes.length; i++) {
             // Get our node address
-            address currentNodeAddress = rocketHub.getRocketNodeByIndex(i);
+            address currentNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
             // Get the node details
-            uint256 averageLoad = rocketHub.getRocketNodeAverageLoad(currentNodeAddress);
-            bool active = rocketHub.getRocketNodeActive(currentNodeAddress);
+            uint256 averageLoad = rocketStorage.getUint(keccak256("node.averageLoad", currentNodeAddress));
             // Get the node with the lowest current work load average to help load balancing and avoid assigning to any servers currently not activated
             // A node must also have checked in at least once before being assinged, hence why the averageLoad must be greater than zero
-            nodeAddressToUse = (averageLoad <= prevAverageLoad || i == 0) && averageLoad > 0 && active == true ? currentNodeAddress : nodeAddressToUse;
+            nodeAddressToUse = (averageLoad <= prevAverageLoad || i == 0) && averageLoad > 0 && rocketStorage.getBool(keccak256("node.active", currentNodeAddress)) == true ? currentNodeAddress : nodeAddressToUse;
             prevAverageLoad = averageLoad;
         }
         // We have an address to use, excellent, assign it
@@ -114,6 +131,25 @@ contract RocketNode is Owned {
             return nodeAddressToUse;
         }
     } 
+
+
+    /*** Setters *************/
+
+    /// @dev Set the min eth required for a node to be registered
+    /// @param _amountInWei The amount in Wei
+    function setNodeMinWei(uint _amountInWei) public onlyOwner {
+        nodeMinWei = _amountInWei;
+    }
+
+    /// @dev Set the duration between node checkins to make the node inactive
+    function setNodeSetInactiveDuration(uint256 _time) public onlyOwner {
+        nodeSetInactiveDuration = _time;
+    }
+
+    /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
+    function setNodeSetInactiveAutomatic(bool _allowed) public onlyOwner {
+        nodeSetInactiveAutomatic = _allowed;
+    }
 
 
     /// @dev Register a new node address if it doesn't exist, only the contract creator can do this
@@ -124,7 +160,7 @@ contract RocketNode is Owned {
         // Check the address is ok
         require(_newNodeAddress != 0x0);
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, oracle services etc
-        require(_newNodeAddress.balance >= minNodeWei);
+        require(_newNodeAddress.balance >= nodeMinWei);
         // Check it doesn't already exist
         require(!rocketStorage.getBool(keccak256("node.exists", _newNodeAddress)));
         // Get how many nodes we currently have  
@@ -133,6 +169,7 @@ contract RocketNode is Owned {
         rocketStorage.setString(keccak256("node.oracleID", _newNodeAddress), _oracleID);
         rocketStorage.setString(keccak256("node.instanceID", _newNodeAddress), _instanceID);
         rocketStorage.setString(keccak256("node.region", _newNodeAddress), "tba");
+        rocketStorage.setUint(keccak256("node.averageLoad", _newNodeAddress), 0);
         rocketStorage.setUint(keccak256("node.lastCheckin", _newNodeAddress), now);
         rocketStorage.setBool(keccak256("node.active", _newNodeAddress), true);
         rocketStorage.setBool(keccak256("node.exists", _newNodeAddress), true);
@@ -150,24 +187,82 @@ contract RocketNode is Owned {
 
 
     /// @dev Owner can manually activate or deactivate a node, this will stop the node accepting new pools to be assigned to it
-    /// @param nodeAddress Address of the node
-    /// @param activeStatus The status to set the node
-    function nodeSetActiveStatus(address nodeAddress, bool activeStatus) public onlyOwner {
+    /// @param _nodeAddress Address of the node
+    /// @param _activeStatus The status to set the node
+    function nodeSetActiveStatus(address _nodeAddress, bool _activeStatus) public onlyRegisteredNode(_nodeAddress) onlyOwner {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
-        rocketHub.setRocketNodeActive(nodeAddress, activeStatus);
+        rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
     }
 
 
     /// @dev Remove a node from the Rocket Pool network
-    function nodeRemove(address nodeAddress) public onlyOwner {
+    function nodeRemove(address _nodeAddress) public onlyRegisteredNode(_nodeAddress) onlyOwner {
         // Get the hub
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(keccak256("rocketPool")));
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
-        assert(rocketPool.getPoolsFilterWithNodeCount(nodeAddress) == 0);
-        // Sets the rocket partner if the address is ok and isn't already set
-        assert(rocketHub.setRocketNodeRemove(nodeAddress) == true);
+        require(rocketPool.getPoolsFilterWithNodeCount(_nodeAddress) == 0);
+        // Get total nodes
+        uint256 nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
+        // Now remove this nodes data from storage
+        uint256 nodeIndex = rocketStorage.getUint(keccak256("node.index", _nodeAddress));
+        rocketStorage.deleteUint(keccak256("node.lastCheckin", _nodeAddress));
+        rocketStorage.deleteBool(keccak256("node.active", _nodeAddress));
+        rocketStorage.deleteBool(keccak256("node.exists", _nodeAddress));
+        rocketStorage.deleteUint(keccak256("node.index", _nodeAddress));
+        // Delete reverse lookup
+        rocketStorage.deleteAddress(keccak256("nodes.index.reverse", nodeIndex));
+        // Update total
+        rocketStorage.setUint(keccak256("nodes.total"), nodesTotal - 1);
+        // Now reindex the remaining nodes
+        nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
+        // Loop
+        for (uint i = nodeIndex+1; i <= nodesTotal; i++) {
+            address nodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
+            uint256 newIndex = i - 1;
+            rocketStorage.setUint(keccak256("node.index", nodeAddress), newIndex);
+            rocketStorage.setAddress(keccak256("nodes.index.reverse", newIndex), nodeAddress);
+        }
         // Fire the event
-        NodeRemoved(nodeAddress, now);
+        NodeRemoved(_nodeAddress, now);
     } 
+
+
+    /// @dev Nodes will checkin with Rocket Pool at a set interval (15 mins) to do things like report on average node server load, set nodes to inactive that have not checked in an unusally long amount of time etc. Only registered nodes can call this.
+    /// @param _currentLoadAverage The average server load for the node over the last 15 mins
+    function setNodeCheckin(uint256 _currentLoadAverage) public onlyRegisteredNode(msg.sender) {
+        // Get the hub
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        // Fire the event
+        NodeCheckin(msg.sender, _currentLoadAverage, now);
+        // Updates the current 15 min load average on the node, last checkin time etc
+        rocketStorage.setUint(keccak256("node.averageLoad", msg.sender), _currentLoadAverage);
+        rocketStorage.setUint(keccak256("node.lastCheckin", msg.sender), now);
+        // Check to see if there are any pools thats launch countdown has expired that need to be launched for staking
+        rocketPool.setPoolActionLaunch(msg.sender);
+        // Check to see if there are any pools that are currently staking and are due to request their deposit from Casper
+        //rocketPool.setPoolActionWithdrawRequest(msg.sender);
+        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
+        //rocketPool.setPoolActionWithdraw(msg.sender);
+        // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
+        if (nodeSetInactiveAutomatic == true) {
+            // Create an array at the length of the current nodes, then populate it
+            address[] memory nodes = new address[](getNodeCount());
+            // Get each node now and check
+            for (uint32 i = 0; i < nodes.length; i++) {
+                // Get our node address
+                address currentNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
+                // We've already checked in as this node above
+                if (msg.sender != currentNodeAddress) {
+                    // Has this node reported in recently? If not, it may be down or in trouble, deactivate it to prevent new pools being assigned to it
+                    if (rocketStorage.getUint(keccak256("node.lastCheckin", currentNodeAddress)) < (now - nodeSetInactiveDuration) && rocketStorage.getBool(keccak256("node.active", currentNodeAddress)) == true) {
+                        // Disable the node - must be manually reactivated by the function above when its back online/running well
+                        rocketStorage.setBool(keccak256("node.active", currentNodeAddress), false);
+                        // Fire the event
+                        NodeActiveStatus(currentNodeAddress, false, now);
+                    }
+                }
+            }
+        } 
+    }
 
 }

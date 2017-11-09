@@ -145,17 +145,15 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test
 
-    return;
-
   
     // Try to register a new partner as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a partner'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
             // RocketPool api now
             return rocketPartnerAPI.deployed().then(function (rocketPartnerAPIInstance) {
                 // Transaction
-                return rocketPartnerAPIInstance.partnerRegister(partnerFirst, partnerFirstName, { from: userFirst, gas: partnerRegisterGas }).then(function (result) {
+                return rocketPartnerAPIInstance.setPartner(partnerFirst, partnerFirstName, { from: userFirst, gas: partnerRegisterGas }).then(function (result) {
                     return result;
                 }).then(function(result) {
                     assert(false, "Expect throw but didn't.");
@@ -174,24 +172,21 @@ contract('RocketPool', function (accounts) {
     }); // End Test   
     
     
-    
-    return;
-
 
     // Register two 3rd party partners
     it(printTitle('owner', 'register 2 partners'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
             // RocketPool api now
             return rocketPartnerAPI.deployed().then(function (rocketPartnerAPIInstance) {
                 // Transaction
-                return rocketPartnerAPIInstance.partnerRegister(partnerFirst, partnerFirstName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
+                return rocketPartnerAPIInstance.setPartner(partnerFirst, partnerFirstName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
                     // Transaction
-                    return rocketPartnerAPIInstance.partnerRegister(partnerSecond, partnerSecondName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
+                    return rocketPartnerAPIInstance.setPartner(partnerSecond, partnerSecondName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
                         // Now get the total with a call
-                        return rocketHubInstance.getRocketNodeCount.call();
+                        return rocketPartnerAPIInstance.getPartnerCount.call();
                     }).then(function (result) {
-                        assert.equal(result.valueOf(), 2, "2 Nodes registered successfully by owner");
+                        assert.equal(result.valueOf(), 2, "2 Partners registered successfully by owner");
                     });
                 });
             });
@@ -199,10 +194,11 @@ contract('RocketPool', function (accounts) {
     }); // End Test
 
 
+    
     // Attempt to make a deposit with an incorrect pool staking time ID 
     it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
             // Check RocketSettings is deployed   
             return rocketSettings.deployed().then(function (rocketSettingsInstance) {
                 // RocketPool now
@@ -214,7 +210,7 @@ contract('RocketPool', function (accounts) {
                             // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
                             var sendAmount = result.valueOf() - web3.toWei('1', 'ether');
                             // Deposit on a behalf of the partner and also specify a incorrect pool staking time ID
-                            return rocketPartnerAPIInstance.APIpartnerDeposit(partnerFirstUserAccount, web3.sha3('beer'), { from: partnerFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
+                            return rocketPartnerAPIInstance.setAPIpartnerDeposit(partnerFirstUserAccount, 'beer', { from: partnerFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
                                 return result;
                             }).then(function (result) {
                                 assert(false, "Expect throw but didn't.");
@@ -235,11 +231,12 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
+    
    
     // Attempt to make a deposit with an unregistered 3rd party partner 
     it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), function () {
-        // Check RocketHub is deployed first    
-        return rocketHub.deployed().then(function (rocketHubInstance) {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
             // Check RocketSettings is deployed   
             return rocketSettings.deployed().then(function (rocketSettingsInstance) {
                 // RocketPool now
@@ -251,7 +248,7 @@ contract('RocketPool', function (accounts) {
                             // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
                             var sendAmount = parseInt(result.valueOf()) - parseInt(web3.toWei('1', 'ether'));
                             // Deposit on a behalf of the partner and also specify the pool staking time ID
-                            return rocketPartnerAPIInstance.APIpartnerDeposit(userThird, web3.sha3('default'), { from: userFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
+                            return rocketPartnerAPIInstance.setAPIpartnerDeposit(userThird, 'default', { from: partnerFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
                                 return result;
                             }).then(function (result) {
                                 assert(false, "Expect throw but didn't.");
@@ -272,7 +269,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
-
+    return;
 
     // Send Ether to Rocket pool with just less than the min amount required to launch a mini pool with no specified 3rd party user partner
     it(printTitle('userFirst', 'sends ether to RP, create first mini pool, registers user with pool'), function () {
