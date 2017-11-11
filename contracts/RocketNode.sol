@@ -23,7 +23,7 @@ contract RocketNode is Owned {
 
     /*** Contracts **************/
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained  
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
 
               
     /*** Events ****************/
@@ -142,21 +142,31 @@ contract RocketNode is Owned {
     }
 
     /// @dev Set the duration between node checkins to make the node inactive
-    function setNodeSetInactiveDuration(uint256 _time) public onlyOwner {
+    function setNodeInactiveDuration(uint256 _time) public onlyOwner {
         nodeSetInactiveDuration = _time;
     }
 
     /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
-    function setNodeSetInactiveAutomatic(bool _allowed) public onlyOwner {
+    function setNodeInactiveAutomatic(bool _allowed) public onlyOwner {
         nodeSetInactiveAutomatic = _allowed;
     }
 
+    /// @dev Owner can manually activate or deactivate a node, this will stop the node accepting new pools to be assigned to it
+    /// @param _nodeAddress Address of the node
+    /// @param _activeStatus The status to set the node
+    function setNodeActiveStatus(address _nodeAddress, bool _activeStatus) public onlyRegisteredNode(_nodeAddress) onlyOwner {
+        // Get our RocketHub contract with the node storage, so we can check the node is legit
+        rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
+    }
+
+
+    /*** Methods ************/
 
     /// @dev Register a new node address if it doesn't exist, only the contract creator can do this
     /// @param _newNodeAddress New nodes coinbase address
     /// @param _oracleID Current oracle identifier for this node (eg AWS, Rackspace etc)
     /// @param _instanceID The instance ID of the server to use on the oracle
-    function setNode(address _newNodeAddress, string _oracleID, string _instanceID) public onlyOwner returns (bool) {
+    function nodeAdd(address _newNodeAddress, string _oracleID, string _instanceID) public onlyOwner returns (bool) {
         // Check the address is ok
         require(_newNodeAddress != 0x0);
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, oracle services etc
@@ -186,18 +196,10 @@ contract RocketNode is Owned {
     } 
 
 
-    /// @dev Owner can manually activate or deactivate a node, this will stop the node accepting new pools to be assigned to it
-    /// @param _nodeAddress Address of the node
-    /// @param _activeStatus The status to set the node
-    function nodeSetActiveStatus(address _nodeAddress, bool _activeStatus) public onlyRegisteredNode(_nodeAddress) onlyOwner {
-        // Get our RocketHub contract with the node storage, so we can check the node is legit
-        rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
-    }
-
-
+    
     /// @dev Remove a node from the Rocket Pool network
     function nodeRemove(address _nodeAddress) public onlyRegisteredNode(_nodeAddress) onlyOwner {
-        // Get the hub
+        // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
         require(rocketPool.getPoolsFilterWithNodeCount(_nodeAddress) == 0);
@@ -229,7 +231,7 @@ contract RocketNode is Owned {
 
     /// @dev Nodes will checkin with Rocket Pool at a set interval (15 mins) to do things like report on average node server load, set nodes to inactive that have not checked in an unusally long amount of time etc. Only registered nodes can call this.
     /// @param _currentLoadAverage The average server load for the node over the last 15 mins
-    function setNodeCheckin(uint256 _currentLoadAverage) public onlyRegisteredNode(msg.sender) {
+    function nodeCheckin(uint256 _currentLoadAverage) public onlyRegisteredNode(msg.sender) {
         // Get the hub
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Fire the event
@@ -237,12 +239,11 @@ contract RocketNode is Owned {
         // Updates the current 15 min load average on the node, last checkin time etc
         rocketStorage.setUint(keccak256("node.averageLoad", msg.sender), _currentLoadAverage);
         rocketStorage.setUint(keccak256("node.lastCheckin", msg.sender), now);
-        // Check to see if there are any pools thats launch countdown has expired that need to be launched for staking
-        rocketPool.setPoolActionLaunch(msg.sender);
-        // Check to see if there are any pools that are currently staking and are due to request their deposit from Casper
-        //rocketPool.setPoolActionWithdrawRequest(msg.sender);
-        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
-        //rocketPool.setPoolActionWithdraw(msg.sender);
+        // Now check with the main Rocket Pool contract what pool actions currently need to be done
+        // 1) Assign a node to a new minipool that can be launched
+        // 2) Request deposit withdrawal from Casper for any minipools currently staking
+        // 3) Actually withdraw the deposit from Casper once it's ready for withdrawal
+        rocketPool.poolNodeActions(msg.sender); 
         // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
         if (nodeSetInactiveAutomatic == true) {
             // Create an array at the length of the current nodes, then populate it

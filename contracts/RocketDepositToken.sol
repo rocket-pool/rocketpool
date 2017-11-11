@@ -1,6 +1,7 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
-import "./RocketHub.sol";
+import "./contract/Owned.sol";
+import "./interface/RocketStorageInterface.sol";
 import "./interface/TokenERC20Interface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
@@ -25,7 +26,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
 
     /*** Contracts **************/
 
-    RocketHub rocketHub = RocketHub(0);                 // The main RocketHub contract where primary persistant storage is maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained 
 
 
     /*** Modifiers *************/
@@ -33,7 +34,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
         // Only allow access
-        assert(msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
@@ -63,11 +64,9 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /*** Methods *************/
    
     /// @dev constructor
-    function RocketDepositToken(address deployedRocketHubAddress) public {
-        // Set the address of the main hub
-        rocketHubAddress = deployedRocketHubAddress;
+    function RocketDepositToken(address _rocketStorageAddress) public {
         // Update the contract address
-        rocketHub = RocketHub(deployedRocketHubAddress);
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to the Rocket Pool Deposit Token fund at `to.address()`.
@@ -103,7 +102,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
         assert (this.balance >= _amount);
         // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Now send ether to the user in return for the tokens, perform overflow checks 
         if (balances[msg.sender] >= _amount && _amount > 0 && (balances[msg.sender] - _amount) < balances[msg.sender] && (totalSupply - _amount) < totalSupply) {
             // Subtract from the sender

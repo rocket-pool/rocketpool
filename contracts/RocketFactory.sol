@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
 /***
    * Note: Since this contract handles contract creation by other contracts, it's deployment gas usage will be high depending on the amount of contracts it can create.
@@ -59,10 +59,10 @@ contract RocketFactory is Owned {
 
     /// @dev Create a new RocketPoolMini contract, deploy to the etherverse and return the address to the caller
     /// @dev Note that the validation and logic for creation should be done in the calling contract
-    /// @param miniPoolStakingDuration The staking duration for the mini pool
-    function createRocketPoolMini(uint256 miniPoolStakingDuration) public onlyLatestRocketPool returns(address) {
+    /// @param _miniPoolStakingDuration The staking duration for the mini pool
+    function createRocketPoolMini(uint256 _miniPoolStakingDuration) public onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketPoolMini newPoolAddress = new RocketPoolMini(rocketStorageAddress, miniPoolStakingDuration);
+        RocketPoolMini newPoolAddress = new RocketPoolMini(rocketStorageAddress, _miniPoolStakingDuration);
         // Store it now after a few checks
         if (addContract(keccak256("rocketMiniPool"), newPoolAddress)) {
             return newPoolAddress;

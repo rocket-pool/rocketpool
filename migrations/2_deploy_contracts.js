@@ -40,9 +40,9 @@ module.exports = function (deployer, network) {
                     // Deploy rocket 3rd party partner API
                     return deployer.deploy(rocketPartnerAPI, rocketStorage.address).then(function () {
                         // Deploy rocket deposit token
-                        return deployer.deploy(rocketDepositToken, rocketHub.address).then(function () {
+                        return deployer.deploy(rocketDepositToken, rocketStorage.address).then(function () {
                             // Deploy rocket factory
-                            return deployer.deploy(rocketFactory, rocketHub.address).then(function () {
+                            return deployer.deploy(rocketFactory, rocketStorage.address).then(function () {
                                 // Deploy rocket settings
                                 return deployer.deploy(rocketSettings, rocketStorage.address).then(function () {
                                     // Deploy the main rocket pool
@@ -50,41 +50,13 @@ module.exports = function (deployer, network) {
                                         // Deploy the rocket node
                                         return deployer.deploy(rocketNode, rocketStorage.address).then(function () {
                                             // Deploy the rocket pool mini delegate
-                                            return deployer.deploy(rocketPoolMiniDelegate, rocketHub.address).then(function () {
+                                            return deployer.deploy(rocketPoolMiniDelegate, rocketStorage.address).then(function () {
                                                 // Update the hub with the new addresses
                                                 return rocketHub.deployed().then(function (rocketHubInstance) {
                                                      // Update the storage with the new addresses
                                                      return rocketStorage.deployed().then(function (rocketStorageInstance) {
                                                             console.log("\n");
-                                                            // Add each contract to the main address book
-                                                            rocketHubInstance.setAddress(web3.sha3("rocketPool"), rocketPool.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketPool Address');
-                                                            console.log(rocketPool.address);
-                                                            // Set rocket pool mini delegate
-                                                            rocketHubInstance.setAddress(web3.sha3("rocketPoolMiniDelegate"), rocketPoolMiniDelegate.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketPoolMiniDelegate Address');
-                                                            console.log(rocketPoolMiniDelegate.address);
-                                                            // Set rocket pool deposit token contract
-                                                            rocketHubInstance.setAddress(web3.sha3("rocketDepositToken"), rocketDepositToken.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketDepositToken Address');
-                                                            console.log(rocketDepositToken.address);
-
-                                                            // Set rocket factory
-                                                            rocketHubInstance.setAddress(web3.sha3("rocketFactory"), rocketFactory.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketFactory Address');
-                                                            console.log(rocketFactory.address);
-                                                            
-                                                            // Set rocket settings
-                                                            rocketHubInstance.setAddress(web3.sha3("rocketSettings"), rocketSettings.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Hub RocketSettings Address');
-                                                            console.log(rocketSettings.address);
-                                                            // Set casper address
-                                                            rocketHubInstance.setAddress(web3.sha3("dummyCasper"), dummyCasper.address);
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Updated Dummy Casper Address');
-                                                            console.log(dummyCasper.address);
-
-                                                            /*** NEW */
-
+  
                                                             // Rocket Pool
                                                             // First register the contract address as being part of the network so we can do a validation check using just the address
                                                             rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketPool.address), rocketPool.address);
@@ -101,12 +73,12 @@ module.exports = function (deployer, network) {
                                                             console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketNode Address');
                                                             console.log(rocketNode.address);  
 
-                                                            // Rocket Settings
-                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketSettings.address), rocketSettings.address);
-                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketSettings"), rocketSettings.address);
+                                                            // Rocket Pool Mini Delegate
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketPoolMiniDelegate.address), rocketPoolMiniDelegate.address);
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketPoolMiniDelegate"), rocketPoolMiniDelegate.address);
                                                             // Log it
-                                                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
-                                                            console.log(rocketSettings.address);  
+                                                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPoolMiniDelegate Address');
+                                                            console.log(rocketPoolMiniDelegate.address);  
 
                                                             // Rocket Factory
                                                             rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketFactory.address), rocketFactory.address);
@@ -121,6 +93,27 @@ module.exports = function (deployer, network) {
                                                             // Log it
                                                             console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPartnerAPI Address');
                                                             console.log(rocketPartnerAPI.address);
+
+                                                            // Rocket Deposit Token
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketDepositToken.address), rocketDepositToken.address);
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketPartnerAPI"), rocketDepositToken.address);
+                                                            // Log it
+                                                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketDepositToken Address');
+                                                            console.log(rocketDepositToken.address);
+
+                                                            // Rocket Settings
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketSettings.address), rocketSettings.address);
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketSettings"), rocketSettings.address);
+                                                            // Log it
+                                                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
+                                                            console.log(rocketSettings.address);  
+
+                                                            // Dummy Casper
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", dummyCasper.address), dummyCasper.address);
+                                                            rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "dummyCasper"), dummyCasper.address);
+                                                            // Log it
+                                                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage DummyCasper Address');
+                                                            console.log(dummyCasper.address);
                                   
                                                             // Return
                                                             return deployer;

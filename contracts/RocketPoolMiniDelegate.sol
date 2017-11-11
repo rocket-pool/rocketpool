@@ -1,7 +1,7 @@
-pragma solidity ^0.4.17;
+pragma solidity 0.4.18;
 
-import "./RocketHub.sol";
 import "./RocketDepositToken.sol"; 
+import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
@@ -16,7 +16,6 @@ contract RocketPoolMiniDelegate is Owned {
 
     /**** Properties ***********/
 
-     address private rocketHubAddress;                          // Hub address
     address private rocketNodeAddress;                          // Node this minipool is attached to
     uint256 private stakingDuration;                            // The time this pool will stake for before withdrawal is allowed (seconds)
     uint256 private stakingBalance = 0;                         // The ether balance sent to stake from the pool
@@ -32,7 +31,7 @@ contract RocketPoolMiniDelegate is Owned {
 
     /*** Contracts **************/
 
-    RocketHub rocketHub = RocketHub(0);                         // The main RocketHub contract where primary persistant storage is maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
 
     
     /*** Structs ***************/
@@ -111,24 +110,22 @@ contract RocketPoolMiniDelegate is Owned {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketHub.getAddress(keccak256("rocketPool")));
+        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
     
     /*** Methods *************/
    
-   function RocketPoolMiniDelegate(address deployedRocketHubAddress) public {
-        // Set the address of the main hub
-        rocketHubAddress = deployedRocketHubAddress;
-        // Update the contract address
-        rocketHub = RocketHub(deployedRocketHubAddress);
+   function RocketPoolMiniDelegate(address _rocketStorageAddress) public {
+        // Update the storage address
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
 
     /// @dev Returns true if this pool is able to send a deposit to Casper
     function getStakingDepositTimeMet() public view returns(bool) {
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         if (now >= (statusChangeTime + rocketSettings.getPoolCountdownTime())) {
             return true;
         }
@@ -145,7 +142,7 @@ contract RocketPoolMiniDelegate is Owned {
 
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
     function getStakingWithdrawalTimeMet() public returns(bool) {
-        CasperInterface casper = CasperInterface(rocketHub.getAddress(keccak256("dummyCasper")));
+        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
         // Now I'm assuming this method will exist for obvious reasons in Casper, but if it doesn't we can change this to work the same by adding
         // a new setting to RocketSettings that can match the delay required by Casper
         if (now >= casper.getWithdrawalEpoch(this)) {
@@ -309,7 +306,7 @@ contract RocketPoolMiniDelegate is Owned {
                 // Has this user incurred any fees? I
                 if (users[userAddress].fees > 0) {
                     // Get the settings to determine the status
-                    RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
+                    RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
                     // Transfer the fee amount now
                     if (rocketSettings.getWithdrawalFeeDepositAddress().send(users[userAddress].fees)) {
                         // All good? Fire the event for the fee transfer
@@ -333,11 +330,11 @@ contract RocketPoolMiniDelegate is Owned {
         // Can only close pool when not staking or awaiting for stake to be returned from Casper
         if (status != 2 && status != 3) {
             // Set our status now - see RocketSettings.sol for pool statuses and keys
-            RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
+            RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
             // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
             if (getUserCount() == 0) {
                 // Remove the pool from RocketHub via the latest RocketPool contract
-                RocketPoolInterface rocketPool = RocketPoolInterface(rocketHub.getAddress(keccak256("rocketPool")));
+                RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
                 if (rocketPool.removePool()) {
                     // Set the status now just incase self destruct fails for any reason
                     status = 5;
@@ -359,9 +356,9 @@ contract RocketPoolMiniDelegate is Owned {
     /// @dev Sets the status of the pool based on several parameters 
     function updateStatus() public returns(bool) {
         // Set our status now - see RocketSettings.sol for pool statuses and keys
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketHub.getAddress(keccak256("rocketSettings")));
+        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get Caspers function signatures using our interface
-        CasperInterface casper = CasperInterface(rocketHub.getAddress(keccak256("dummyCasper")));
+        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
         // Function returns are stored in memory rather than storage
         uint256 minPoolWeiRequired = rocketSettings.getPoolMinEtherRequired();
         uint256 statusOld = status;
@@ -389,7 +386,7 @@ contract RocketPoolMiniDelegate is Owned {
                 // Set the mini pool status as staking
                 status = 2;
                 // All good? Fire the event for the new casper transfer
-                PoolTransfer(this, rocketHub.getAddress(keccak256("dummyCasper")), keccak256("casperDeposit"), stakingBalance, 0, now); 
+                PoolTransfer(this, rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")), keccak256("casperDeposit"), stakingBalance, 0, now); 
             } else {
                 stakingBalance = 0;
             }        
@@ -413,7 +410,7 @@ contract RocketPoolMiniDelegate is Owned {
                 if (depositEtherTradedForTokensTotal > 0) {
                     // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
                     // Sender should be the node that triggered this
-                    address depositTokenContract = rocketHub.getAddress(keccak256("rocketDepositToken"));
+                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));
                     if (depositTokenContract.call.value(depositEtherTradedForTokensTotal)()) {
                         // Fire the event
                         DepositTokenFundSent(depositTokenContract, depositEtherTradedForTokensTotal, now);

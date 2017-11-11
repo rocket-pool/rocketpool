@@ -18,6 +18,7 @@ contract RocketSettings is Owned {
     bool private poolMiniNewAllowed;                            // Are minipools allowed to be created?
     uint private poolMiniMaxAllowed;                            // Maximum minipools that are currently allowed
     bool private poolMiniClosingAllowed;                        // Can minipools be closed?
+    uint256 private poolMiniCreationGas;                        // How much gas to assign for potential minipool contract creation 
     uint256 private withdrawalFeePercInWei;                     // The default fee given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei) for withdrawing after a Casper returned deposit, is only taken from the earned rewards/interest (not total deposit)
     address private withdrawalFeeDepositAddress;                // Where the Rocket Pool fee is withdrawn too
     bool poolUserBackupCollectEnabled;                          // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
@@ -76,6 +77,8 @@ contract RocketSettings is Owned {
         poolMiniNewAllowed = true;
         poolMiniMaxAllowed = 50;
         poolMiniClosingAllowed = true;
+        // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
+        poolMiniCreationGas = 2600000;  
         // Deposit token settings
         // The default fee given as a % of 1 Ether (eg 5%)
         depositTokenWithdrawalFeePercInWei = 0.05 ether;
@@ -89,13 +92,11 @@ contract RocketSettings is Owned {
     /// @dev Check to see if new pools are allowed to be created
     function getPoolAllowedToBeCreated() public view returns (bool) { 
         // Get the mini pool count
-        // TODO: Comeback to this when RocketStorage is implemented across the board
-        /*
-        uint256 miniPoolCount = rocketHub.getRocketMiniPoolCount();
+        uint256 miniPoolCount = rocketStorage.getUint(keccak256("minipools.total"));
         // New pools allowed to be created?
         if (!poolMiniNewAllowed || miniPoolCount >= poolMiniMaxAllowed) {
             return false;
-        } */
+        }
         return true;
     }
 
@@ -134,6 +135,11 @@ contract RocketSettings is Owned {
         return poolMiniCountdownTime;
     }
 
+    /// @dev Get the gas amount required to create a minipool contract upon deposit
+    function getPoolMiniCreationGas() public view returns (uint256) {
+        return poolMiniCreationGas;
+    }
+
     /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     function getWithdrawalFeePercInWei() public view returns (uint256) {
         return withdrawalFeePercInWei;
@@ -161,41 +167,46 @@ contract RocketSettings is Owned {
     }
 
     /// @dev Set the Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function setDepositTokenWithdrawalFeePercInWei(uint256 newTokenWithdrawalFeePercInWei) public onlyOwner {
-        depositTokenWithdrawalFeePercInWei = newTokenWithdrawalFeePercInWei;
+    function setDepositTokenWithdrawalFeePercInWei(uint256 _newTokenWithdrawalFeePercInWei) public onlyOwner {
+        depositTokenWithdrawalFeePercInWei = _newTokenWithdrawalFeePercInWei;
     }
 
     /// @dev Set the time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function setPoolUserBackupCollectTime(uint256 newTimeLimit) public onlyOwner {
-        poolUserBackupCollectTime = newTimeLimit;
+    function setPoolUserBackupCollectTime(uint256 _newTimeLimit) public onlyOwner {
+        poolUserBackupCollectTime = _newTimeLimit;
     }
 
     /// @dev Set if users backup addressess are allowed to collect
-    function setPoolUserBackupCollectEnabled(bool backupCollectEnabled) public onlyOwner {
-        poolUserBackupCollectEnabled = backupCollectEnabled;
+    function setPoolUserBackupCollectEnabled(bool _backupCollectEnabled) public onlyOwner {
+        poolUserBackupCollectEnabled = _backupCollectEnabled;
     }
 
     /// @dev Set the minimum Wei required for a pool to launch
-    function setPoolMinEtherRequired(uint256 weiAmount) public onlyOwner {
-        poolMiniMinWeiRequired = weiAmount;
+    function setPoolMinEtherRequired(uint256 _weiAmount) public onlyOwner {
+        poolMiniMinWeiRequired = _weiAmount;
     }
 
     /// @dev Set the time limit to stay in countdown before staking begins (eg 5 minutes)
-    function setPoolCountdownTime(uint256 time) public onlyOwner {
-        poolMiniCountdownTime = time;
+    function setPoolCountdownTime(uint256 _time) public onlyOwner {
+        poolMiniCountdownTime = _time;
     }
 
     /// @dev Set the minimum mini pool staking time
-    function setPoolMinStakingTime(uint256 secondsToSet) public onlyOwner {
-        if (secondsToSet > 0) {
-            poolMiniMinimumStakingTime = secondsToSet;
+    function setPoolMinStakingTime(uint256 _secondsToSet) public onlyOwner {
+        if (_secondsToSet > 0) {
+            poolMiniMinimumStakingTime = _secondsToSet;
         }
     }
 
     /// @dev Set the mini pool staking time
-    function setPoolStakingTime(string id, uint256 secondsToSet) public onlyOwner {
-        poolMiniStakingTimes[id] = secondsToSet; 
-        poolMiniStakingTimesIDs.push(id);
+    function setPoolStakingTime(string _id, uint256 _secondsToSet) public onlyOwner {
+        poolMiniStakingTimes[_id] = _secondsToSet; 
+        poolMiniStakingTimesIDs.push(_id);
+    }
+
+    /// @dev Set the mini pool staking time
+    function setPoolMiniCreationGas(uint256 _gas) public onlyOwner {
+        poolMiniCreationGas = _gas;
     }
 
     /// @dev Set the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)

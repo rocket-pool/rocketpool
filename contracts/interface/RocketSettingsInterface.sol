@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.18;
 
 contract RocketSettingsInterface {
     /// @dev Get default status of a new mini pool
@@ -15,6 +15,8 @@ contract RocketSettingsInterface {
     function getPoolStakingTimeExists(string _stakingTimeID) public view returns (bool);
     /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
     function getPoolStakingTime(string _stakingTimeID) public view returns (uint256);
+    /// @dev Get the gas amount required to create a minipool contract upon deposit
+    function getPoolMiniCreationGas() public view returns (uint256);
     /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     function getWithdrawalFeePercInWei() public view returns (uint256);
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
