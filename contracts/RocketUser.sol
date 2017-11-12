@@ -16,7 +16,14 @@ contract RocketUser is Owned {
 
     /**** Properties ************/
 
-    uint256 public version;                                                // Version of this contract
+    uint256 public version = 1;                             // Version of this contract
+    bool private depositsAllowed = true;                    // Are user deposits currently allowed?
+    uint256 private minDepositWei = 1 ether;                // Min required deposit
+    uint256 private maxDepositWei = 75 ether;               // Max required deposit
+    bool private withdrawalsAllowed = true;                 // Are withdrawals allowed?
+    uint256 private minWithdrawalWei = 0;                   // Min allowed to be withdrawn, 0 = all
+    uint256 private maxWithdrawalWei = 10 ether;            // Max allowed to be withdrawn
+    uint256 private calcBase = 1 ether;                     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
 
 
     /*** Contracts **************/
@@ -57,11 +64,18 @@ contract RocketUser is Owned {
         uint256 created 
     );
 
-	
-    event DepositTokensWithdrawal (
+    event UserDepositTokensWithdrawal (
         address indexed _userAddress,
         uint256 amount,
         uint256 tokenAmount,
+        uint256 created
+    );
+
+    event Transferred (
+        address indexed _from,
+        address indexed _to, 
+        bytes32 indexed _typeOf, 
+        uint256 value,
         uint256 created
     );
 
@@ -75,6 +89,25 @@ contract RocketUser is Owned {
         _;
     }
 
+    /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
+    modifier onlyLatestRocketPartnerAPI() {
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPartnerAPI")));
+        _;
+    } 
+
+    /// @dev User deposits must be validated
+    modifier acceptableDeposit {
+        assert(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
+        _;
+    }
+
+    /// @dev User withdrawals must be validated
+    /// @param amount The amount to withdraw
+    modifier acceptableWithdrawal(uint256 amount) {
+        assert(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
+        _;
+    }
+
 
     /*** Constructor *************/
    
@@ -84,6 +117,45 @@ contract RocketUser is Owned {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
+
+    /*** Setters *************/
+
+
+    // @dev Are deposits allowed for this version of Rocket Pool?
+    /// @param areDepositsAllowed True or False
+    function setUserDepositsAllowed(bool areDepositsAllowed) public onlyOwner {
+        depositsAllowed = areDepositsAllowed;
+    }
+
+    // @dev Set the min amount of Ether required for a deposit in Wei
+    /// @param amountInWei The amount in Wei
+    function setUserMinDepositAllowed(uint256 amountInWei) public onlyOwner {
+        minDepositWei = amountInWei;
+    }
+
+    // @dev Set the max amount of Ether required for a deposit in Wei
+    /// @param amountInWei The amount in Wei
+    function setUserMaxDepositAllowed(uint256 amountInWei) public onlyOwner {
+        maxDepositWei = amountInWei;
+    }
+
+    // @dev Are withdrawals allowed for this version of Rocket Pool?
+    /// @param areWithdrawalsAllowed True or False
+    function setUserWithdrawalsAllowed(bool areWithdrawalsAllowed) public onlyOwner {
+        withdrawalsAllowed = areWithdrawalsAllowed;
+    }
+
+    // @dev Set the min amount of Ether required for a withdrawals in Wei
+    /// @param amountInWei The amount in Wei
+    function setUserMinDepositsAllowed(uint256 amountInWei) public onlyOwner {
+        minWithdrawalWei = amountInWei;
+    }
+
+    // @dev Set the max amount of Ether required for a withdrawals in Wei
+    /// @param amountInWei The amount in Wei
+    function setUserMaxWithdrawalAllowed(uint256 amountInWei) public onlyOwner {
+        maxWithdrawalWei = amountInWei;
+    }
     
 
     /*** Methods *************/
@@ -91,98 +163,132 @@ contract RocketUser is Owned {
 
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()`.
     /// @dev Fallback function, user direct deposit to Rocket Pool 
-    function deposit(string _poolStakingTimeID) public payable {   
-        // Get our settings first
-        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Our main contract handles the deposit
-        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+    function userDeposit(string _poolStakingTimeID) public payable {   
         // Direct deposit to Rocket Pool, set partner address to 0 to indicate no partner but an awesome direct Rocket Pool user
-        // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if (rocketPool.deposit.value(msg.value).gas(rocketSettings.getPoolMiniCreationGas())(msg.sender, 0,  "default")) {
-            // Fire the event now
-            UserDeposit(msg.sender, _partnerUserAddress, _poolStakingTimeID, msg.value, now);
-        }
+        deposit(msg.sender, 0, _poolStakingTimeID);
     }
 
-    // TODO: Figure out where to add the withdraw method
+    /// @dev Deposit to Rocket Pool from the 3rd party partner API on behalf of their managed user
+    function userDepositFromPartner(address _partnerUserAddress, address _partnerAddress, string _poolStakingTimeID) public payable onlyLatestRocketPartnerAPI returns(bool) { 
+        // Make the deposit on behalf of the 3rd party partners user
+        if (deposit(_partnerUserAddress, _partnerAddress, _poolStakingTimeID)) {
+            return true;
+        }
+        return false;       
+    }
+
+
+    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()`.
+    /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
+    /// @param _userAddress The address of the user whom the deposit belongs too
+    /// @param _partnerAddress The address of the registered 3rd party partner whom is in control of the supplid user account that the deposit belongs too
+    /// @param _poolStakingTimeID The ID that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
+    function deposit(address _userAddress, address _partnerAddress, string _poolStakingTimeID) acceptableDeposit private returns(bool) { 
+        // Check to verify the supplied mini pool staking time id is legit
+        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        // Check to verify the supplied mini pool staking time id is legit
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        // Legit time staking ID? 
+        require(rocketSettings.getPoolStakingTimeExists(_poolStakingTimeID) == true);
+        // Set it now
+        uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(_poolStakingTimeID);
+        // Assign the user to a matching staking time pool if they don't already belong to one awaiting deposits
+        // If no pools are currently available, a new pool for the user will be created
+        address poolUserBelongsToo = rocketPool.addUserToAvailablePool(_userAddress, _partnerAddress, poolStakingDuration);
+        // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
+        RocketPoolMini poolDepositTo = RocketPoolMini(poolUserBelongsToo);
+        // Get the pool to withdraw the users deposit to its contract balance
+        assert(poolDepositTo.addDeposit.value(msg.value).gas(100000)(_userAddress) == true);
+        // Update the pools status now
+        poolDepositTo.updateStatus();
+        // All good? Fire the event for the new deposit
+        Transferred(_userAddress, poolUserBelongsToo, keccak256("deposit"), msg.value, now);   
+        // Done
+        return true;
+    }
+
     
     /// @notice Withdraw ether from Rocket Pool
     /// @dev A regular Rocket Pool user withdrawing their deposit
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    function userWithdrawDeposit(address _miniPoolAddress, uint256 _amount) external returns(bool) {
+    /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    function userWithdraw(address _miniPoolAddress, uint256 _amount) external returns(bool) {
         // Call our transfer method, creates a transaction
         return userWithdrawDepositFromPoolTransfer(msg.sender, _miniPoolAddress, _amount, 0);
     }
 
     /// @notice Withdraw ether from Rocket Pool via a 3rd party partner
     /// @dev A Rocket Pool 3rd party partner withdrawing their users deposit
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    function userPartnerWithdrawDeposit(address miniPoolAddress, uint256 amount, address partnerUserAddress, address partnerAddress) public onlyLatestRocketPartnerAPI returns(bool) {
+    /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    /// @param _partnerAddress The address of the registered 3rd party partner whom is in control of the supplid user account that the deposit belongs too
+    /// @param _partnerUserAddress The address of the registered 3rd party partners user
+    function userWithdrawFromPartner(address _miniPoolAddress, uint256 _amount, address _partnerAddress, address _partnerUserAddress) public onlyLatestRocketPartnerAPI returns(bool) {
         // Call our transfer method, creates a transaction
-        return userWithdrawDepositFromPoolTransfer(partnerUserAddress, miniPoolAddress, amount, partnerAddress);
+        return userWithdrawDepositFromPoolTransfer(_partnerUserAddress, _miniPoolAddress, _amount, _partnerAddress);
     }
 
+
     /// @dev User has requested withdrawing their deposit from a pool, all main checks are done here as this contract is upgradable, but mini pools are not.
-    /// @param userAddress The address to use for withdrawals, can also be a partners users address withdrawing on behalf of their user
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    /// @param amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
-    /// @param partnerAddress The address of the partner 
-    function userWithdrawDepositFromPoolTransfer(address userAddress, address miniPoolAddress, uint256 amount, address partnerAddress) private acceptableWithdrawal(amount) onlyLatestRocketPool returns(bool) {
+    /// @param _userAddress The address to use for withdrawals, can also be a partners users address withdrawing on behalf of their user
+    /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    /// @param _partnerAddress The address of the partner 
+    function userWithdrawDepositFromPoolTransfer(address _userAddress, address _miniPoolAddress, uint256 _amount, address _partnerAddress) private acceptableWithdrawal(_amount) onlyLatestRocketPool returns(bool) {
         // Get an instance of that pool contract
-        pool = getPoolInstance(miniPoolAddress);                 
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);         
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
-        if (pool.getUserBackupAddressExists(userAddress)) {
+        if (rocketPoolMini.getUserBackupAddressExists(_userAddress)) {
             // Get the original deposit address now
             // This will update the users account to match the backup address, but only after many checks and balances
             // It will fail if the user can't use their backup address to withdraw at this point or its not their nominated backup address trying
-            assert(userChangeWithdrawalDepositAddressToBackupAddress(pool.getUserAddressFromBackupAddress(userAddress), miniPoolAddress) == true);
+            assert(userChangeWithdrawalDepositAddressToBackupAddress(rocketPoolMini.getUserAddressFromBackupAddress(_userAddress), _miniPoolAddress) == true);
             // Set the user address now
-            userAddress = msg.sender; 
+            _userAddress = msg.sender; 
         }  
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
-        uint256 userBalance = pool.getUserDeposit(userAddress);
-        address userPartnerAddress = pool.getUserPartner(userAddress);
+        uint256 userBalance = rocketPoolMini.getUserDeposit(_userAddress);
+        address userPartnerAddress = rocketPoolMini.getUserPartner(_userAddress);
         // Now check to see if the given partner matches the users partner
-        if (userPartnerAddress != 0 && partnerAddress != 0) {
+        if (userPartnerAddress != 0 && _partnerAddress != 0) {
             // The supplied partner for the user does not match the sender
-            assert(userPartnerAddress == partnerAddress);
+            assert(userPartnerAddress == _partnerAddress);
         }
         // Check to see if the user is actually in this pool and has a deposit
         assert(userBalance > 0);
         // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
-        assert(pool.getStatus() == 0 || pool.getStatus() == 1 || pool.getStatus() == 4);
+        assert(rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1 || rocketPoolMini.getStatus() == 4);
         // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
         // Users withdraw all their deposit + rewards at once when the pool has finished staking
         // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
-        if (pool.getStatus() == 4) {
+        if (rocketPoolMini.getStatus() == 4) {
             // Update the users new balance, rewards earned and fees incurred
-            if (userUpdateDepositAndRewards(miniPoolAddress, userAddress)) {
+            if (userUpdateDepositAndRewards(_miniPoolAddress, _userAddress)) {
                 // Get their updated balance now as they are withdrawing it all
-                amount = pool.getUserDeposit(userAddress);
+                _amount = rocketPoolMini.getUserDeposit(_userAddress);
             }
         }
         // 0 amount or less given withdraws the entire users deposit
-        amount = amount <= 0 ? userBalance : amount;
+        _amount = _amount <= 0 ? userBalance : _amount;
         // Ok send the deposit to the user from the mini pool now
-        assert(pool.withdraw(userAddress, amount) == true);
+        assert(rocketPoolMini.withdraw(_userAddress, _amount) == true);
         // Successful withdrawal
-        Transferred(miniPoolAddress, userAddress, keccak256("withdrawal"), amount, now);    
+        Transferred(_miniPoolAddress, _userAddress, keccak256("withdrawal"), _amount, now);    
         // Success
         return true; 
     }
 
+
     /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed, all main checks are done here as this contract is upgradable, but mini pools currently deployed are not 
-    /// @param userAddress The address of the mini pool user.
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    function userUpdateDepositAndRewards(address miniPoolAddress, address userAddress) private returns (bool) {
+    /// @param _userAddress The address of the mini pool user.
+    /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
+    function userUpdateDepositAndRewards(address _miniPoolAddress, address _userAddress) private returns (bool) {
         // Get our rocket settings 
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get an instance of that pool contract
-        pool = getPoolInstance(miniPoolAddress);
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Get the current user balance
-        uint256 userBalance = pool.getUserDeposit(userAddress);
+        uint256 userBalance = rocketPoolMini.getUserDeposit(_userAddress);
         // The total the user will be able to withdraw +/- rewards and also minus our fee if applicable
         uint256 userBalanceUpdated = 0;
         // We also store the users calculated rewards so we can see how much the original balance has changed (can be negative if penalties occured)
@@ -190,9 +296,9 @@ contract RocketUser is Owned {
         // If the user has earned rewards by staking, we take our fee from that amount (not the entire deposit)
         uint256 userFeesAmount = 0;
         // Calculate the % of the stake the user had from their original deposit
-        uint256 userDepositPercInWei = Arithmetic.overflowResistantFraction(userBalance, calcBase, pool.getStakingBalance());
+        uint256 userDepositPercInWei = Arithmetic.overflowResistantFraction(userBalance, calcBase, rocketPoolMini.getStakingBalance());
         // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
-        uint256 userDepositAmountUpdated = Arithmetic.overflowResistantFraction(userDepositPercInWei, pool.getStakingBalanceReceived(), calcBase);
+        uint256 userDepositAmountUpdated = Arithmetic.overflowResistantFraction(userDepositPercInWei, rocketPoolMini.getStakingBalanceReceived(), calcBase);
         // Calculate how much rewards the user earned
         userRewardsAmount = int256(userDepositAmountUpdated - userBalance);
         // So only process fees if we've received rewards from Casper
@@ -207,7 +313,7 @@ contract RocketUser is Owned {
         }
         
         // Update our users updated balance, rewards calculated and fees incurred 
-        if (pool.setUserBalanceRewardsFees(userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
+        if (rocketPoolMini.setUserBalanceRewardsFees(_userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
             return true;
         }
         return false;
@@ -215,16 +321,16 @@ contract RocketUser is Owned {
 
     /// @notice Change the users backup withdrawal address
     /// @dev A user can specify a backup withdrawal address (incase something bad happens :( or they lose their primary private keys while staking etc)
-    /// @param miniPoolAddress The address of the mini pool they the supplied user account is in.
-    /// @param newUserAddressUsedForDeposit The address the user wishes to make their backup withdrawal address
-    function userSetWithdrawalDepositAddress(address newUserAddressUsedForDeposit, address miniPoolAddress) public returns(bool) {
+    /// @param _miniPoolAddress The address of the mini pool they the supplied user account is in.
+    /// @param _newUserAddressUsedForDeposit The address the user wishes to make their backup withdrawal address
+    function userSetWithdrawalDepositAddress(address _newUserAddressUsedForDeposit, address _miniPoolAddress) public returns(bool) {
         // Get an instance of that pool contract
-        pool = getPoolInstance(miniPoolAddress);
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // User can only set this backup address before deployment to casper, also partners cannot set this address to their own to prevent them accessing the users funds after the set withdrawal backup period expires
-        if ((pool.getStatus() == 0 || pool.getStatus() == 1) && newUserAddressUsedForDeposit != 0 && pool.getUserPartner(msg.sender) != newUserAddressUsedForDeposit) {
-            if (pool.setUserAddressBackupWithdrawal(msg.sender, newUserAddressUsedForDeposit)) {
+        if ((rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1) && _newUserAddressUsedForDeposit != 0 && rocketPoolMini.getUserPartner(msg.sender) != _newUserAddressUsedForDeposit) {
+            if (rocketPoolMini.setUserAddressBackupWithdrawal(msg.sender, _newUserAddressUsedForDeposit)) {
                 // Fire the event
-                UserSetBackupWithdrawalAddress(msg.sender, newUserAddressUsedForDeposit, miniPoolAddress, now);
+                UserSetBackupWithdrawalAddress(msg.sender, _newUserAddressUsedForDeposit, _miniPoolAddress, now);
             }
         }
         return false;
@@ -232,23 +338,23 @@ contract RocketUser is Owned {
 
     /// @notice Change a users withdrawal address to their supplied backup address - can only be done after withdrawal by the primary address has not been done after a set period
     /// @dev A user who has supplied a backup address to allow withdrawals from (incase something bad happens :( or they lose their primary private keys while staking etc)
-    /// @param miniPoolAddress The address of the mini pool they wish to withdraw from.
-    /// @param userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
-    function userChangeWithdrawalDepositAddressToBackupAddress(address userAddressUsedForDeposit, address miniPoolAddress) private returns(bool) {
+    /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
+    /// @param _userAddressUsedForDeposit The address used for the initial deposit that they wish to withdraw from on behalf of
+    function userChangeWithdrawalDepositAddressToBackupAddress(address _userAddressUsedForDeposit, address _miniPoolAddress) private returns(bool) {
         // Get the hub
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get an instance of that pool contract
-        pool = getPoolInstance(miniPoolAddress);
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Check to make sure this feature is currently enabled
         if (rocketSettings.getPoolUserBackupCollectEnabled()) {
             // This can only occur after a pool has received its Casper deposit (some time ago) and the pool is allowing withdrawals and the given address must match the accounts they wish to withdraw from
-            if (now >= (pool.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && pool.getStatus() == 4) {
+            if (now >= (rocketPoolMini.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && rocketPoolMini.getStatus() == 4) {
                 // Ok we've gotten this far, original deposit address definitely has this address  as a backup?
-                if (pool.getUserBackupAddressOK(userAddressUsedForDeposit, msg.sender)) {
+                if (rocketPoolMini.getUserBackupAddressOK(_userAddressUsedForDeposit, msg.sender)) {
                     // Ok we're all good, lets change the initial user deposit address to the backup one so they can call the normal withdrawal process
-                    if (pool.setUserAddressToCurrentBackupWithdrawal(userAddressUsedForDeposit, msg.sender)) {
+                    if (rocketPoolMini.setUserAddressToCurrentBackupWithdrawal(_userAddressUsedForDeposit, msg.sender)) {
                         // Fire the event
-                        UserChangedToWithdrawalAddress(userAddressUsedForDeposit, msg.sender, miniPoolAddress, now);
+                        UserChangedToWithdrawalAddress(_userAddressUsedForDeposit, msg.sender, _miniPoolAddress, now);
                         // Cool
                         return true;
                     }
@@ -267,17 +373,17 @@ contract RocketUser is Owned {
         // Rocket settings
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get an instance of that pool contract
-        pool = getPoolInstance(_miniPoolAddress);         
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);             
         // Get Rocket Deposit Token
         RocketDepositToken rocketDepositToken = RocketDepositToken(rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"))); 
         // Get the user deposit now, this will throw if the user doesn't exist in the given pool
-        uint256 userBalance = pool.getUserDeposit(msg.sender);
+        uint256 userBalance = rocketPoolMini.getUserDeposit(msg.sender);
         // 0 amount or less given withdraws the entire users deposit
         _amount = _amount <= 0 ? userBalance : _amount;
         // Check to see if the user is actually in this pool and has a deposit, and is not a partner user
-        assert(_amount > 0 && pool.getUserPartner(msg.sender) == 0); 
+        assert(_amount > 0 && rocketPoolMini.getUserPartner(msg.sender) == 0); 
         // Check the status, must be currently staking to allow tokens to be withdrawn
-        assert(pool.getStatus() == 2);
+        assert(rocketPoolMini.getStatus() == 2);
         // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
         uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
         // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
@@ -285,9 +391,9 @@ contract RocketUser is Owned {
         // Ok lets mint those tokens now - minus the fee amount
         if (rocketDepositToken.mint(msg.sender, tokenAmount)) {
             // Cool, lets update the users deposit total and flag that the user has outstanding tokens
-            if (pool.setUserDepositTokensOwedAdd(msg.sender, _amount, tokenAmount)) {
+            if (rocketPoolMini.setUserDepositTokensOwedAdd(msg.sender, _amount, tokenAmount)) {
                 // Fire the event
-                DepositTokensWithdrawal(msg.sender, _amount, tokenAmount, now);
+                UserDepositTokensWithdrawal(msg.sender, _amount, tokenAmount, now);
                 // All good
                 return true;
             }

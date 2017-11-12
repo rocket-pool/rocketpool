@@ -1,15 +1,12 @@
 pragma solidity 0.4.18;
 
 import "./contract/Owned.sol";
-import "./RocketUser.sol"; 
 import "./RocketPoolMini.sol"; 
-import "./RocketDepositToken.sol"; 
+import "./interface/RocketUserInterface.sol";
 import "./interface/RocketFactoryInterface.sol";
-import "./interface/RocketPoolMiniInterface.sol";
 import "./interface/RocketNodeInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
-import "./lib/Arithmetic.sol";
 
 
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is the primary upgradable contract
@@ -18,51 +15,21 @@ import "./lib/Arithmetic.sol";
 contract RocketPool is Owned {
 
 
-    /**** RocketPool ************/
-    uint public version = 1;                            // Version of this contract
-    bool private depositsAllowed = true;                // Are deposits currently allowed?
-    uint private minDepositWei = 1 ether;               // Min required deposit
-    uint private maxDepositWei = 75 ether;              // Max required deposit
-    bool private withdrawalsAllowed = true;             // Are withdrawals allowed?
-    uint private minWithdrawalWei = 0;                  // Min allowed to be withdrawn, 0 = all
-    uint private maxWithdrawalWei = 10 ether;           // Max allowed to be withdrawn
-    uint256 private calcBase = 1 ether;                 // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
-
 
     /*** Contracts **************/
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained  
+    RocketUserInterface rocketUser = RocketUserInterface(0);              // The main user interface methods
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
+
 
     /*** Events ****************/
 
-    event UserAddedToPool (
+    event PoolAssignedUser (
         address indexed _userAddress,
         address indexed _partnerAddress,
         address indexed _pool,
         uint256 created 
-    );
-
-    event UserSetBackupWithdrawalAddress (
-        address indexed _userAddress,
-        address indexed _userBackupAddress,
-        address indexed _pool,
-        uint256 created 
-    );
-
-    event UserChangedToWithdrawalAddress (
-        address indexed _userAddress,
-        address indexed _userNewAddress,
-        address indexed _pool,
-        uint256 created 
-    );
-
-	event Transferred (
-        address indexed _from,
-        address indexed _to, 
-        bytes32 indexed _typeOf, 
-        uint256 value,
-        uint256 created
     );
 
     event PoolCreated (
@@ -88,30 +55,11 @@ contract RocketPool is Owned {
         uint256 created
     );
 
-    event DepositTokensWithdrawal (
-        address indexed _userAddress,
-        uint256 amount,
-        uint256 tokenAmount,
-        uint256 created
-    );
-
        
 
     /*** Modifiers *************/
 
-    /// @dev Deposits must be validated
-    modifier acceptableDeposit {
-        assert(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
-        _;
-    }
-
-    /// @dev withdrawals must be validated
-    /// @param amount The amount to withdraw
-    modifier acceptableWithdrawal(uint256 amount) {
-        assert(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
-        _;
-    }
-
+    
     /// @dev New pools are allowed to be created
     modifier poolsAllowedToBeCreated() {
         // Get the mini pool count
@@ -127,16 +75,15 @@ contract RocketPool is Owned {
         _;
     }
 
-    /// @dev Only allow access for deposits from the User contract and Partner contract
-    modifier onlyAuthorisedDepositContracts() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")) || 
-               msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPartnerAPI")));
+    /// @dev Only allow access from the latest version of the main RocketNode contract
+    modifier onlyLatestRocketNode() {
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
         _;
     } 
 
-     /// @dev Only allow access from the latest version of the main RocketNode contract
-    modifier onlyLatestRocketNode() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+    /// @dev Only allow access from the latest version of the main RocketUser contract
+    modifier onlyLatestRocketUser() {
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     } 
 
@@ -155,75 +102,8 @@ contract RocketPool is Owned {
     }
 
 
-    // @dev Are deposits allowed for this version of Rocket Pool?
-    /// @param areDepositsAllowed True or False
-    function setDepositsAllowed(bool areDepositsAllowed) public onlyOwner {
-        depositsAllowed = areDepositsAllowed;
-    }
 
-    // @dev Set the min amount of Ether required for a deposit in Wei
-    /// @param amountInWei The amount in Wei
-    function setMinDepositAllowed(uint256 amountInWei) public onlyOwner {
-        minDepositWei = amountInWei;
-    }
-
-    // @dev Set the max amount of Ether required for a deposit in Wei
-    /// @param amountInWei The amount in Wei
-    function setMaxDepositAllowed(uint256 amountInWei) public onlyOwner {
-        maxDepositWei = amountInWei;
-    }
-
-    // @dev Are withdrawals allowed for this version of Rocket Pool?
-    /// @param areWithdrawalsAllowed True or False
-    function setWithdrawalsAllowed(bool areWithdrawalsAllowed) public onlyOwner {
-        withdrawalsAllowed = areWithdrawalsAllowed;
-    }
-
-    // @dev Set the min amount of Ether required for a withdrawals in Wei
-    /// @param amountInWei The amount in Wei
-    function setMinDepositsAllowed(uint256 amountInWei) public onlyOwner {
-        minWithdrawalWei = amountInWei;
-    }
-
-    // @dev Set the max amount of Ether required for a withdrawals in Wei
-    /// @param amountInWei The amount in Wei
-    function setMaxWithdrawalAllowed(uint256 amountInWei) public onlyOwner {
-        maxWithdrawalWei = amountInWei;
-    }
-
-
-     /*** Deposit **********************************************/
-
-
-    /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
-    /// @param _userAddress The address of the user whom the deposit belongs too
-    /// @param _partnerAddress The address of the registered 3rd party partner whom is in control of the supplid user account that the deposit belongs too
-    /// @param _poolStakingTimeID The ID that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
-    function deposit(address _userAddress, address _partnerAddress, string _poolStakingTimeID) external payable acceptableDeposit onlyAuthorisedDepositContracts returns(bool) { 
-        // Check to verify the supplied mini pool staking time id is legit
-        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Legit time staking ID? 
-        assert(rocketSettings.getPoolStakingTimeExists(_poolStakingTimeID) == true);
-        // Set it now
-        uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(_poolStakingTimeID);
-        // Assign the user to a matching staking time pool if they don't already belong to one awaiting deposits
-        // If no pools are currently available, a new pool for the user will be created
-        address poolUserBelongsToo = getPoolAvailable(_userAddress, _partnerAddress, poolStakingDuration);
-        // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
-        RocketPoolMini poolDepositTo = getPoolInstance(poolUserBelongsToo);
-        // Get the pool to withdraw the users deposit to its contract balance
-        assert(poolDepositTo.addDeposit.value(msg.value).gas(100000)(_userAddress) == true);
-        // Update the pools status now
-        poolDepositTo.updateStatus();
-        // All good? Fire the event for the new deposit
-        Transferred(_userAddress, poolUserBelongsToo, keccak256("deposit"), msg.value, now);   
-        // Success
-        return true;   
-    }
-
-
-
-    /*** Minipools ***********************************************/
+    /*** Mini Pools ***********************************************/
 
     /// @dev Get an instance of the pool contract
     /// @param _miniPoolAddress The address of the mini pool to get the contract instance of
@@ -237,97 +117,50 @@ contract RocketPool is Owned {
     }
 
     /// @dev Returns a count of the current minipools
-    function getPoolsCount() view private returns(uint256) {
+    function getPoolsCount() view public returns(uint256) {
         return rocketStorage.getUint(keccak256("minipools.total"));
     }
 
-    /// @dev Get an available minipool for a user to be assigned too
-    /// @param _newUserAddress New user account
-    /// @param _partnerAddress The address of the Rocket Pool partner
-    /// @param _poolStakingDuration The duration that the user wishes to stake for
-    function getPoolAvailable(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) private returns(address) {
-        // The desired pool address to asign the user too
-        address poolAssignToAddress = 0;
-        // The contract of the desired pool address
-        RocketPoolMini poolAddUserTo = RocketPoolMini(0);
-        // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
-        address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
-        // No pools awaiting? lets make one
-        if (poolsFound.length == 0) {
-            // Create new pool contract
-            poolAssignToAddress = createPool(_poolStakingDuration);
-        } else {
-            // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
-            for (uint32 i = 0; i < poolsFound.length; i++) {
-                // Have we found one already?
-                if (poolAssignToAddress == 0) {
-                    // Get the contract instance 
-                    poolAddUserTo = getPoolInstance(poolsFound[i]);
-                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
-                    if (poolAddUserTo.getUserExists(_newUserAddress)) {
-                        // Add them to a minipool acceptind deposits that they already belong too
-                        poolAssignToAddress = poolsFound[i];
-                    }
-                }
-            }
-            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
-            if (poolAssignToAddress == 0) {
-                poolAssignToAddress = poolsFound[0];
-            }
-        }    
-
-        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
-        assert(poolAssignToAddress != 0);
-        
-        // Get the contract instance
-        poolAddUserTo = getPoolInstance(poolAssignToAddress);
-        // Double check the pools status is accepting deposits and user isn't in there already
-        if (poolAddUserTo.getStatus() == 0) {
-            // User is added if they don't exist in it already
-            if (poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
-                // Fire the event
-                UserAddedToPool(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
-            } 
-            // Return the pool address that the user belongs to
-            return poolAssignToAddress;
-        }    
+    /// @dev Returns a count of the current minipools attached to this node address
+    /// @param _nodeAddress Address of the node
+    function getPoolsWithNodeCount(address _nodeAddress) view public returns(uint256) {
+        return getPoolsFilterWithNodeCount(_nodeAddress);
     }
 
     /// @dev Get all pools that match this status (explicit method)
     /// @param _status Get pools with the current status
-    function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {
+    function getPoolsFilterWithStatus(uint256 _status) private view returns(address[] memory) {
         return getPoolsFilter(false, _status, 0, 0, 0, false);  
     }
 
     /// @dev Get all pools that match this status and set staking duration (explicit method)
     /// @param _status Get pools with the current status
     /// @param _stakingDuration Get pools with the current staking duration
-    function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) public view returns(address[] memory) {
+    function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) private view returns(address[] memory) {
         return getPoolsFilter(false, _status, 0, _stakingDuration, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNode(address _nodeAddress) public view returns(address[] memory) {
+    function getPoolsFilterWithNode(address _nodeAddress) private view returns(address[] memory) {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
-     // TODO: When metropolis is released, this method can be removed as we'll be able to read variable length data between contracts then
-    function getPoolsFilterWithNodeCount(address _nodeAddress) public view returns(uint256) {
+    function getPoolsFilterWithNodeCount(address _nodeAddress) private view returns(uint256) {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
     /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUser(address _userAddress) public view returns(address[] memory) {
+    function getPoolsFilterWithUser(address _userAddress) private view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, _userAddress, false);
     }
 
     /// @dev Get all pools that match this user belongs too and has a deposit > 0 (explicit method)
     /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUserDeposit(address _userAddress) public view returns(address[] memory) {
+    function getPoolsFilterWithUserDeposit(address _userAddress) private view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, _userAddress, true);
     }
 
@@ -383,6 +216,59 @@ contract RocketPool is Owned {
         RocketPoolMini pool = getPoolInstance(_miniPoolAddress);
         pool.setStakingDuration(_poolStakingDuration);
     } 
+
+
+    /// @dev Get an available minipool for a user to be assigned too
+    /// @param _newUserAddress New user account
+    /// @param _partnerAddress The address of the Rocket Pool partner
+    /// @param _poolStakingDuration The duration that the user wishes to stake for
+    function addUserToAvailablePool(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address) {
+        // The desired pool address to asign the user too
+        address poolAssignToAddress = 0;
+        // The contract of the desired pool address
+        RocketPoolMini poolAddUserTo = RocketPoolMini(0);
+        // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
+        address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
+        // No pools awaiting? lets make one
+        if (poolsFound.length == 0) {
+            // Create new pool contract
+            poolAssignToAddress = createPool(_poolStakingDuration);
+        } else {
+            // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
+            for (uint32 i = 0; i < poolsFound.length; i++) {
+                // Have we found one already?
+                if (poolAssignToAddress == 0) {
+                    // Get the contract instance 
+                    poolAddUserTo = getPoolInstance(poolsFound[i]);
+                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
+                    if (poolAddUserTo.getUserExists(_newUserAddress)) {
+                        // Add them to a minipool acceptind deposits that they already belong too
+                        poolAssignToAddress = poolsFound[i];
+                    }
+                }
+            }
+            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
+            if (poolAssignToAddress == 0) {
+                poolAssignToAddress = poolsFound[0];
+            }
+        }    
+
+        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
+        assert(poolAssignToAddress != 0);
+        
+        // Get the contract instance
+        poolAddUserTo = getPoolInstance(poolAssignToAddress);
+        // Double check the pools status is accepting deposits and user isn't in there already
+        if (poolAddUserTo.getStatus() == 0) {
+            // User is added if they don't exist in it already
+            if (poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
+                // Fire the event
+                PoolAssignedUser(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
+            } 
+            // Return the pool address that the user belongs to
+            return poolAssignToAddress;
+        }    
+    }
 
   
     /// @dev Create a new pool 

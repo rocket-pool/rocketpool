@@ -106,7 +106,7 @@ contract('RocketPool', function (accounts) {
             // RocketNode now
             return rocketNode.deployed().then(function (rocketNodeInstance) {
                 // Transaction
-                return rocketNodeInstance.setNode(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from:userFirst, gas: nodeRegisterGas }).then(function (result) {
+                return rocketNodeInstance.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from:userFirst, gas: nodeRegisterGas }).then(function (result) {
                     return result;
                 }).then(function(result) {
                     assert(false, "Expect throw but didn't.");
@@ -132,9 +132,9 @@ contract('RocketPool', function (accounts) {
             // rocketNode now
             return rocketNode.deployed().then(function (rocketNodeInstance) {
                 // Transaction
-                return rocketNodeInstance.setNode(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID,  { from: owner, gas: nodeRegisterGas }).then(function (result) {
+                return rocketNodeInstance.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID,  { from: owner, gas: nodeRegisterGas }).then(function (result) {
                     // Transaction
-                    return rocketNodeInstance.setNode(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, { from: owner, gas: nodeRegisterGas }).then(function (result) {
+                    return rocketNodeInstance.nodeAdd(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, { from: owner, gas: nodeRegisterGas }).then(function (result) {
                         // Now get the total with a call
                         return rocketNodeInstance.getNodeCount.call();
                     }).then(function (result) {
@@ -145,6 +145,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test
 
+    return;
   
     // Try to register a new partner as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a partner'), function () {

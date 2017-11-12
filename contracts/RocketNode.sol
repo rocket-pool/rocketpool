@@ -198,11 +198,12 @@ contract RocketNode is Owned {
 
     
     /// @dev Remove a node from the Rocket Pool network
+    /// @param _nodeAddress Address of the node
     function nodeRemove(address _nodeAddress) public onlyRegisteredNode(_nodeAddress) onlyOwner {
         // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
-        require(rocketPool.getPoolsFilterWithNodeCount(_nodeAddress) == 0);
+        require(rocketPool.getPoolsWithNodeCount(_nodeAddress) == 0);
         // Get total nodes
         uint256 nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
         // Now remove this nodes data from storage

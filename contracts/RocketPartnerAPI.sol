@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 import "./contract/Owned.sol";
-import "./RocketHub.sol";
+import "./interface/RocketUserInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
@@ -20,9 +20,10 @@ contract RocketPartnerAPI is Owned {
 
     /*** Contracts **************/
 
-    RocketPoolInterface rocketPool = RocketPoolInterface(0);              // The main pool contract
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
-    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);                // The main pool contract
+    RocketUserInterface rocketUser = RocketUserInterface(0);                // The main user interface methods
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained  
+    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained
   
 
     /*** Events ****************/
@@ -82,7 +83,7 @@ contract RocketPartnerAPI is Owned {
 
     /// @dev Only registered partner addresses can access
     modifier onlyRegisteredPartner(address _partnerAddress) {
-        require(rocketStorage.getBool(keccak256("partner.exists", msg.sender)) == true);  
+        require(rocketStorage.getBool(keccak256("partner.exists", _partnerAddress)) == true);  
         _;
     }
 
@@ -136,10 +137,10 @@ contract RocketPartnerAPI is Owned {
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // If the user is not a direct Rocket Pool user but a partner user, check the partner is legit
         // The partner address being supplied must also match the sender address
-        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        rocketUser = RocketUserInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if (rocketPool.deposit.value(msg.value).gas(rocketSettings.getPoolMiniCreationGas())(_partnerUserAddress, msg.sender, _poolStakingTimeID)) {
-            // Fire the event now
+        if (rocketUser.userDepositFromPartner.value(msg.value).gas(rocketSettings.getPoolMiniCreationGas())(_partnerUserAddress, msg.sender, _poolStakingTimeID)) {
+            // Fire the event now 
             APIpartnerDepositAccepted(msg.sender, _partnerUserAddress, _poolStakingTimeID, msg.value, now);
         } 
     }
@@ -150,11 +151,11 @@ contract RocketPartnerAPI is Owned {
     /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     /// @param _partnerUserAddress The address of the partners user to withdraw from and send the funds too.
     function APIpartnerWithdrawal(address _miniPoolAddress, uint256 _amount, address _partnerUserAddress) public onlyRegisteredPartner(msg.sender) onlyWithdrawalsAllowed(msg.sender) returns(bool) {
-        // Get the main Rocket Pool contract
-        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        // Get the main Rocket User contract
+        rocketUser = RocketUserInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
-        if (rocketPool.userPartnerWithdrawDeposit.gas(600000)(_miniPoolAddress, _amount, _partnerUserAddress, msg.sender)) {
-            // Fire the event now
+        if (rocketUser.userWithdrawFromPartner.gas(600000)(_miniPoolAddress, _amount, _partnerUserAddress, msg.sender)) {
+            // Fire the event now 
             APIpartnerWithdrawalAccepted(msg.sender, _partnerUserAddress, now);
         }
     }
