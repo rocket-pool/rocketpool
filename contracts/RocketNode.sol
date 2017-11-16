@@ -244,7 +244,7 @@ contract RocketNode is Owned {
         // 1) Assign a node to a new minipool that can be launched
         // 2) Request deposit withdrawal from Casper for any minipools currently staking
         // 3) Actually withdraw the deposit from Casper once it's ready for withdrawal
-        rocketPool.poolNodeActions(msg.sender); 
+        rocketPool.poolNodeActions();  
         // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
         if (nodeSetInactiveAutomatic == true) {
             // Create an array at the length of the current nodes, then populate it

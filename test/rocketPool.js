@@ -1,4 +1,4 @@
-/*** Built with Truffle 3.2.4  */
+/*** Built with Truffle 4.0.1  */
 
 var os = require("os");
 var rocketHub = artifacts.require("./contract/RocketHub.sol");
@@ -58,15 +58,23 @@ var printTitle = function(user, desc) {
     //  PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 }
 
-
 // Start the tests
 contract('RocketPool', function (accounts) {
+
+    // Excessive? Yeah probably :)
+    console.log("\n");
+    console.log('______           _        _    ______           _ ');
+    console.log('| ___ \\         | |      | |   | ___ \\         | |');
+    console.log('| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |');
+    console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
+    console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
+    console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
     
     // The owner
     var owner = web3.eth.coinbase;
     // RocketPool
     // Deposit gas has to cover potential mini pool contract creation, will often be much cheaper
-    var rocketDepositGas = 2600000; //24
+    var rocketDepositGas = 4800000;
     var rocketWithdrawalGas = 1450000;
     // Node accounts and gas settings
     var nodeFirst = accounts[8];
@@ -145,8 +153,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test
 
-    return;
-  
+      
     // Try to register a new partner as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a partner'), function () {
         // Check RocketStorage is deployed first    
@@ -154,7 +161,7 @@ contract('RocketPool', function (accounts) {
             // RocketPool api now
             return rocketPartnerAPI.deployed().then(function (rocketPartnerAPIInstance) {
                 // Transaction
-                return rocketPartnerAPIInstance.setPartner(partnerFirst, partnerFirstName, { from: userFirst, gas: partnerRegisterGas }).then(function (result) {
+                return rocketPartnerAPIInstance.partnerAdd(partnerFirst, partnerFirstName, { from: userFirst, gas: partnerRegisterGas }).then(function (result) {
                     return result;
                 }).then(function(result) {
                     assert(false, "Expect throw but didn't.");
@@ -181,9 +188,9 @@ contract('RocketPool', function (accounts) {
             // RocketPool api now
             return rocketPartnerAPI.deployed().then(function (rocketPartnerAPIInstance) {
                 // Transaction
-                return rocketPartnerAPIInstance.setPartner(partnerFirst, partnerFirstName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
+                return rocketPartnerAPIInstance.partnerAdd(partnerFirst, partnerFirstName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
                     // Transaction
-                    return rocketPartnerAPIInstance.setPartner(partnerSecond, partnerSecondName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
+                    return rocketPartnerAPIInstance.partnerAdd(partnerSecond, partnerSecondName, { from: web3.eth.coinbase, gas: partnerRegisterGas }).then(function (result) {
                         // Now get the total with a call
                         return rocketPartnerAPIInstance.getPartnerCount.call();
                     }).then(function (result) {
@@ -194,7 +201,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test
 
-
+    
     
     // Attempt to make a deposit with an incorrect pool staking time ID 
     it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), function () {
@@ -211,12 +218,12 @@ contract('RocketPool', function (accounts) {
                             // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
                             var sendAmount = result.valueOf() - web3.toWei('1', 'ether');
                             // Deposit on a behalf of the partner and also specify a incorrect pool staking time ID
-                            return rocketPartnerAPIInstance.setAPIpartnerDeposit(partnerFirstUserAccount, 'beer', { from: partnerFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
+                            return rocketPartnerAPIInstance.APIpartnerDeposit(partnerFirstUserAccount, 'beer', { from: partnerFirst, value: sendAmount, gas: rocketDepositGas }).then(function (result) {
                                 return result;
                             }).then(function (result) {
                                 assert(false, "Expect throw but didn't.");
                             }).catch(function (error) {
-                                if (error.toString().indexOf("VM Exception") == -1) {
+                                if (error.toString().indexOf("VM Exception") == -1) { 
                                     // Didn't throw like we expected
                                     assert(false, error.toString());
                                 }
@@ -232,7 +239,7 @@ contract('RocketPool', function (accounts) {
         });    
     }); // End Test 
 
-    
+    return;
    
     // Attempt to make a deposit with an unregistered 3rd party partner 
     it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), function () {

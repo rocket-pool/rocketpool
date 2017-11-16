@@ -23,7 +23,7 @@ var arithmeticLib = artifacts.require("./lib/Arithmetic.sol");
 // Accounts
 var accounts = web3.eth.accounts;
 
-// TODO: Optimise this using the simpler deploy option
+// TODO: Optimise this using the promises instead of callbacks now that they're more mainstream
 module.exports = function (deployer, network) {
     // Deploy libraries
     deployer.deploy(arithmeticLib, rocketSettingsInterface, rocketStorageInterface).then(function () {
@@ -31,12 +31,12 @@ module.exports = function (deployer, network) {
         deployer.link(arithmeticLib, [rocketUser, rocketPoolMiniDelegate, rocketDepositToken]);
         // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
         return deployer.deploy(rocketStorage).then(function () {
-            // Deploy Rocket User
-            return deployer.deploy(rocketUser).then(function () {
-                // Deploy casper dummy contract
-                return deployer.deploy(dummyCasper).then(function () {
-                    // Seed Casper with some funds to cover the rewards + deposit sent back
-                    web3.eth.sendTransaction({ from: accounts[0], to: dummyCasper.address, value: web3.toWei('6', 'ether'), gas: 1000000 });
+            // Deploy casper dummy contract
+            return deployer.deploy(dummyCasper).then(function () {
+                // Seed Casper with some funds to cover the rewards + deposit sent back
+                web3.eth.sendTransaction({ from: accounts[0], to: dummyCasper.address, value: web3.toWei('6', 'ether'), gas: 1000000 });
+                // Deploy Rocket User
+                return deployer.deploy(rocketUser, rocketStorage.address).then(function () {
                     // Deploy rocket 3rd party partner API
                     return deployer.deploy(rocketPartnerAPI, rocketStorage.address).then(function () {
                         // Deploy rocket deposit token

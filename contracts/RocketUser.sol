@@ -79,6 +79,15 @@ contract RocketUser is Owned {
         uint256 created
     );
 
+
+    event FlagUint (
+        uint256 flag
+    );
+
+    event FlagAddress (
+        address flag
+    );
+
        
 
     /*** Modifiers *************/
@@ -185,7 +194,7 @@ contract RocketUser is Owned {
     /// @param _poolStakingTimeID The ID that determines which pool the user intends to join based on the staking time of that pool (3 months, 6 months etc)
     function deposit(address _userAddress, address _partnerAddress, string _poolStakingTimeID) acceptableDeposit private returns(bool) { 
         // Check to verify the supplied mini pool staking time id is legit
-        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check to verify the supplied mini pool staking time id is legit
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Legit time staking ID? 

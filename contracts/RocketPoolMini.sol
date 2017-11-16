@@ -2,7 +2,6 @@ pragma solidity 0.4.18;
 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
-import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
 import "./contract/Owned.sol";
 
@@ -30,6 +29,7 @@ contract RocketPoolMini is Owned {
     /*** Contracts **************/
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
+    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
 
     
     /*** Structs ***************/
@@ -105,7 +105,7 @@ contract RocketPoolMini is Owned {
     /// @dev Deposits are verified by the main pool, but must also be verified here to meet this pools conditions
     modifier acceptableDeposit {
         // Get the hub contract instance
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Only allow a users account to be incremented if the pool is in the default status which is PreLaunchAcceptingDeposits
         assert (status == rocketSettings.getPoolDefaultStatus() && msg.value > 0);
         _;
@@ -117,6 +117,13 @@ contract RocketPoolMini is Owned {
         _;
     }
 
+    /// @dev Only allow access from the latest version of the RocketUser contract
+    modifier onlyLatestRocketUser() {
+        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        _;
+    }
+
+
     
     /*** Methods *************/
    
@@ -127,14 +134,14 @@ contract RocketPoolMini is Owned {
         // Staking details
         stakingDuration = _miniPoolStakingDuration;
         // New pools are set to pre launch and accept deposits by default
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         status = rocketSettings.getPoolDefaultStatus();
         statusChangeTime = 0;
         // The total ether traded for tokens owed by the minipool
         depositEtherTradedForTokensTotal = 0;
     }
     
-
+    
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
         // Only Casper can transfer value to a pool
@@ -321,7 +328,7 @@ contract RocketPoolMini is Owned {
 
     /// @dev Add a users deposit, only the latest version of the parent pool contract can send value here, so once a new version of Rocket Pool is released, existing mini pools can no longer receive deposits
     /// @param _userAddress Users account to accredit the deposit too
-    function addDeposit(address _userAddress) public payable acceptableDeposit isPoolUser(_userAddress) onlyLatestRocketPool returns(bool) {
+    function addDeposit(address _userAddress) public payable acceptableDeposit isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         // Add to their balance
         users[_userAddress].balance += msg.value;
         // All good? Fire the event for the new deposit

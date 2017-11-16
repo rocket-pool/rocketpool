@@ -41,7 +41,7 @@ contract RocketFactory is Owned {
 
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("rocketNetwork.rocketPool")));
+        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 

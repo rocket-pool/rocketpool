@@ -55,6 +55,11 @@ contract RocketPool is Owned {
         uint256 created
     );
 
+    event FlagAddress (
+        address flag
+    );
+    
+
        
 
     /*** Modifiers *************/
@@ -268,6 +273,7 @@ contract RocketPool is Owned {
             // Return the pool address that the user belongs to
             return poolAssignToAddress;
         }    
+
     }
 
   
@@ -329,12 +335,10 @@ contract RocketPool is Owned {
        return false;
     } 
 
-
     
 
     /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
-    /// @param _nodeRequestingAddress The address of the node requesting this action
-    function poolNodeActions(address _nodeRequestingAddress) external onlyLatestRocketNode {
+    function poolNodeActions() external onlyLatestRocketNode {
         // Get our Rocket Node contract
         RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
         // Create an empty instance of a pool contract to populate later if we find one

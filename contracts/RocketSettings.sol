@@ -78,7 +78,7 @@ contract RocketSettings is Owned {
         poolMiniMaxAllowed = 50;
         poolMiniClosingAllowed = true;
         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-        poolMiniCreationGas = 2600000;  
+        poolMiniCreationGas = 4800000;  
         // Deposit token settings
         // The default fee given as a % of 1 Ether (eg 5%)
         depositTokenWithdrawalFeePercInWei = 0.05 ether;
