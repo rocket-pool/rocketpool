@@ -154,7 +154,7 @@ contract RocketPartnerAPI is Owned {
         // Get the main Rocket User contract
         rocketUser = RocketUserInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
-        if (rocketUser.userWithdrawFromPartner.gas(600000)(_miniPoolAddress, _amount, _partnerUserAddress, msg.sender)) {
+        if (rocketUser.userWithdrawFromPartner.gas(600000)(_miniPoolAddress, _amount, msg.sender, _partnerUserAddress)) {
             // Fire the event now 
             APIpartnerWithdrawalAccepted(msg.sender, _partnerUserAddress, now);
         }

@@ -26,6 +26,7 @@ contract RocketPoolInterface {
     /// @param _partnerAddress The address of the Rocket Pool partner
     /// @param _poolStakingDuration The duration that the user wishes to stake for
     function addUserToAvailablePool(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address);
+    function addUserToAvailablePoolTest(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address);
     /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
     function poolNodeActions() onlyLatestRocketNode external;
     /// @dev MiniPools can request the main contract to be removed

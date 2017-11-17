@@ -285,30 +285,21 @@ contract RocketPoolMini is Owned {
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address _userAddress, uint256 _updatedBalance, int256 _updatedRewards, uint256 _updatedFees) public isPoolUser(_userAddress) onlyLatestRocketPool returns(bool) {
         // Will throw if conditions are not met in delegate
-        if (rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserBalanceRewardsFees(address,uint256,int256,uint256)")), _userAddress, _updatedBalance, _updatedRewards, _updatedFees)) {
-            return true;
-        }
-        return false;
+        assert(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserBalanceRewardsFees(address,uint256,int256,uint256)")), _userAddress, _updatedBalance, _updatedRewards, _updatedFees) == true);
     }
 
     /// @dev Set current users address to the supplied backup one - be careful with this method when calling from the main Rocket Pool contract, all primary logic must be contained there as its upgradable
     function setUserAddressToCurrentBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalGiven) public isPoolUser(_userAddress) onlyLatestRocketPool returns(bool) {
-        if (rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserAddressToCurrentBackupWithdrawal(address,address)")), _userAddress, _userAddressBackupWithdrawalGiven)) {
-            return true;
-        }
-        return false;
+        assert(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserAddressToCurrentBackupWithdrawal(address,address)")), _userAddress, _userAddressBackupWithdrawalGiven) == true);
     }
 
     /// @dev Adds more to the current amount of deposit tokens owed by the user
     function setUserDepositTokensOwedAdd(address _userAddress, uint256 _etherAmount, uint256 _tokenAmount) public isPoolUser(_userAddress) onlyLatestRocketPool returns(bool) {
-        if (rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserDepositTokensOwedAdd(address,uint256,uint256)")), _userAddress, _etherAmount, _tokenAmount)) {
-            return true;
-        }
-        return false;
+        assert(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserDepositTokensOwedAdd(address,uint256,uint256)")), _userAddress, _etherAmount, _tokenAmount) == true);
     }
 
     /// @dev Set the backup address for the user to collect their deposit + rewards from if the primary address doesn't collect it after a certain time period
-    function setUserAddressBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalNew) public isPoolUser(_userAddress) onlyLatestRocketPool returns(bool) {
+    function setUserAddressBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalNew) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         assert(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserAddressBackupWithdrawal(address,address)")), _userAddress, _userAddressBackupWithdrawalNew) == true);
     }
 
@@ -316,10 +307,7 @@ contract RocketPoolMini is Owned {
     /// @param _userAddressToAdd New user address
     /// @param _partnerAddressToAdd The 3rd party partner the user may belong too
     function addUser(address _userAddressToAdd, address _partnerAddressToAdd) public onlyLatestRocketPool returns(bool) {
-        if (rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("addUser(address,address)")), _userAddressToAdd, _partnerAddressToAdd)) {
-            return true;
-        }
-        return false;
+        assert(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("addUser(address,address)")), _userAddressToAdd, _partnerAddressToAdd) == true);
     }
 
 
@@ -341,7 +329,7 @@ contract RocketPoolMini is Owned {
     /// @param _userAddress Users account address
     /// @param _withdrawAmount amount you want to withdraw
     /// @return The balance remaining for the user
-    function withdraw(address _userAddress, uint256 _withdrawAmount) public onlyLatestRocketPool returns (bool) {
+    function withdraw(address _userAddress, uint256 _withdrawAmount) public onlyLatestRocketUser returns (bool) {
         if (rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("withdraw(address,uint256)")), _userAddress, _withdrawAmount)) {
             return true;
         }

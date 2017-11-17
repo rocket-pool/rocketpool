@@ -58,6 +58,10 @@ contract RocketPool is Owned {
     event FlagAddress (
         address flag
     );
+
+    event FlagUint (
+        uint256 flag
+    );
     
 
        
@@ -121,6 +125,12 @@ contract RocketPool is Owned {
         return pool;
     }
 
+    /// @dev Check if this minipool exists in the network
+    /// @param _miniPoolAddress The address of the mini pool to check exists
+    function getPoolExists(address _miniPoolAddress) view public returns(bool) {
+        return rocketStorage.getBool(keccak256("minipool.exists", _miniPoolAddress));
+    }
+
     /// @dev Returns a count of the current minipools
     function getPoolsCount() view public returns(uint256) {
         return rocketStorage.getUint(keccak256("minipools.total"));
@@ -128,44 +138,44 @@ contract RocketPool is Owned {
 
     /// @dev Returns a count of the current minipools attached to this node address
     /// @param _nodeAddress Address of the node
-    function getPoolsWithNodeCount(address _nodeAddress) view public returns(uint256) {
+    function getPoolsWithNodeCount(address _nodeAddress) public view returns(uint256) {
         return getPoolsFilterWithNodeCount(_nodeAddress);
     }
 
     /// @dev Get all pools that match this status (explicit method)
     /// @param _status Get pools with the current status
-    function getPoolsFilterWithStatus(uint256 _status) private view returns(address[] memory) {
+    function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {
         return getPoolsFilter(false, _status, 0, 0, 0, false);  
     }
 
     /// @dev Get all pools that match this status and set staking duration (explicit method)
     /// @param _status Get pools with the current status
     /// @param _stakingDuration Get pools with the current staking duration
-    function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) private view returns(address[] memory) {
+    function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) public view returns(address[] memory) {
         return getPoolsFilter(false, _status, 0, _stakingDuration, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNode(address _nodeAddress) private view returns(address[] memory) {
+    function getPoolsFilterWithNode(address _nodeAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNodeCount(address _nodeAddress) private view returns(uint256) {
+    function getPoolsFilterWithNodeCount(address _nodeAddress) public view returns(uint256) {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
     /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUser(address _userAddress) private view returns(address[] memory) {
+    function getPoolsFilterWithUser(address _userAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, _userAddress, false);
     }
 
     /// @dev Get all pools that match this user belongs too and has a deposit > 0 (explicit method)
     /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUserDeposit(address _userAddress) private view returns(address[] memory) {
+    function getPoolsFilterWithUserDeposit(address _userAddress) public view returns(address[] memory) {
         return getPoolsFilter(false, 99, 0, 0, _userAddress, true);
     }
 
@@ -185,14 +195,12 @@ contract RocketPool is Owned {
         // Get the mini pool count
         uint256 miniPoolCount = getPoolsCount(); 
         // Create an array at the length of the current pools, then populate it
-        // This step would be infinitely easier and efficient if you could return variable arrays from external calls in solidity
-        // TODO: Optimise
         address[] memory pools = new address[](miniPoolCount);
         address[] memory poolsFound = new address[](miniPoolCount);
         // Retreive each pool address now by index since we are using key/value pair storage
         for (uint32 i = 0; i < pools.length; i++) {
-            // Get the address
-            pools[i] = rocketStorage.getAddress(keccak256("minipools.index.reverse", i));
+            // Get the address, match the data type for the reverse lookup
+            pools[i] = rocketStorage.getAddress(keccak256("minipools.index.reverse", uint256(i)));
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
              // Check the pool meets any supplied filters
@@ -234,6 +242,8 @@ contract RocketPool is Owned {
         RocketPoolMini poolAddUserTo = RocketPoolMini(0);
         // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
         address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
+        //FlagUint(poolsFound.length);
+        //return 0x0;
         // No pools awaiting? lets make one
         if (poolsFound.length == 0) {
             // Create new pool contract
@@ -282,12 +292,13 @@ contract RocketPool is Owned {
     function createPool(uint256 _poolStakingDuration) private poolsAllowedToBeCreated onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
         RocketFactoryInterface rocketFactory = RocketFactoryInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketFactory")));
+        // Ok make the minipool contract now
         address newPoolAddress = rocketFactory.createRocketPoolMini(_poolStakingDuration);
         // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
         // Check it doesn't already exist
-        require(!rocketStorage.getBool(keccak256("minipool.exists", newPoolAddress)));
+        require(!getPoolExists(newPoolAddress));
         // Get how many minipools we currently have  
-        uint256 minipoolCountTotal = rocketStorage.getUint(keccak256("minipools.total")); 
+        uint256 minipoolCountTotal = getPoolsCount(); 
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256("minipool.exists", newPoolAddress), true);
         // We store our data in an key/value array, so set its index so we can use an array to find it if needed
@@ -298,8 +309,9 @@ contract RocketPool is Owned {
         rocketStorage.setAddress(keccak256("minipools.index.reverse", minipoolCountTotal), newPoolAddress);
         // Fire the event
         PoolCreated(newPoolAddress, _poolStakingDuration, now);
+        FlagUint(rocketStorage.getUint(keccak256("minipools.total")));
         // Return the new pool address
-        return newPoolAddress;
+        return newPoolAddress; 
     } 
 
 

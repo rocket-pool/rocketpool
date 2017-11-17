@@ -114,6 +114,12 @@ contract RocketPoolMiniDelegate is Owned {
         _;
     }
 
+    /// @dev Only allow access from the latest version of the RocketUser contract
+    modifier onlyLatestRocketUser() {
+        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        _;
+    }
+
     
     /*** Methods *************/
    
@@ -171,7 +177,7 @@ contract RocketPoolMiniDelegate is Owned {
     }
 
     /// @dev Set the backup address for the user to collect their deposit + rewards from if the primary address doesn't collect it after a certain time period
-    function setUserAddressBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalNew) public isPoolUser(userAddress) onlyLatestRocketPool returns(bool) {
+    function setUserAddressBackupWithdrawal(address userAddress, address userAddressBackupWithdrawalNew) public isPoolUser(userAddress) onlyLatestRocketUser returns(bool) {
         // This can only be set before staking begins
         assert (status == 0 || status == 1);
         usersBackupAddress[userAddressBackupWithdrawalNew] = userAddress;
@@ -287,7 +293,7 @@ contract RocketPoolMiniDelegate is Owned {
     /// @dev Allow the user to withdraw their deposit, only possible if the pool is in prelaunch, in countdown to launch or when Casper staking is completed, only the latest main RocketPool contract can make a withdrawal which is where the main checks occur (its upgradable)
     /// @param withdrawAmount amount you want to withdraw
     /// @return The balance remaining for the user
-    function withdraw(address userAddress, uint withdrawAmount) public onlyLatestRocketPool returns (bool) {
+    function withdraw(address userAddress, uint withdrawAmount) public onlyLatestRocketUser returns (bool) {
         // Now check balances are legit
         require(users[userAddress].balance >= withdrawAmount);
         // Deduct the balance right away, before sending to avoid potential recursive calls that allow a user to withdraw an amount greater than their deposit

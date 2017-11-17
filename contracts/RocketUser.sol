@@ -243,9 +243,9 @@ contract RocketUser is Owned {
     /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
     /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     /// @param _partnerAddress The address of the partner 
-    function userWithdrawDepositFromPoolTransfer(address _userAddress, address _miniPoolAddress, uint256 _amount, address _partnerAddress) private acceptableWithdrawal(_amount) onlyLatestRocketPool returns(bool) {
+    function userWithdrawDepositFromPoolTransfer(address _userAddress, address _miniPoolAddress, uint256 _amount, address _partnerAddress) private acceptableWithdrawal(_amount) returns(bool) {
         // Get an instance of that pool contract
-        rocketPoolMini = RocketPoolMini(_miniPoolAddress);         
+        rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
         if (rocketPoolMini.getUserBackupAddressExists(_userAddress)) {
             // Get the original deposit address now
@@ -263,6 +263,7 @@ contract RocketUser is Owned {
             // The supplied partner for the user does not match the sender
             assert(userPartnerAddress == _partnerAddress);
         }
+
         // Check to see if the user is actually in this pool and has a deposit
         assert(userBalance > 0);
         // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
@@ -340,6 +341,8 @@ contract RocketUser is Owned {
             if (rocketPoolMini.setUserAddressBackupWithdrawal(msg.sender, _newUserAddressUsedForDeposit)) {
                 // Fire the event
                 UserSetBackupWithdrawalAddress(msg.sender, _newUserAddressUsedForDeposit, _miniPoolAddress, now);
+                // All good
+                return true; 
             }
         }
         return false;
