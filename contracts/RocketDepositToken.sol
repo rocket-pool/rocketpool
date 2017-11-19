@@ -31,10 +31,10 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
 
     /*** Modifiers *************/
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
+    /// @dev Only allow access from the latest version of the RocketUser contract
+    modifier onlyLatestRocketUser() {
         // Only allow access
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     }
 
@@ -82,7 +82,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     * @param _amount The amount of tokens to mint.
     * @return A boolean that indicates if the operation was successful.
     */
-    function mint(address _to, uint _amount) public onlyLatestRocketPool returns (bool) {
+    function mint(address _to, uint _amount) public onlyLatestRocketUser returns (bool) {
         // Verify ok
         if (_amount > 0 && (balances[_to] + _amount) > balances[_to] && (totalSupply + _amount) > totalSupply) {
             totalSupply += _amount;

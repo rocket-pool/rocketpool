@@ -127,8 +127,8 @@ contract RocketUser is Owned {
     }
 
 
-    /*** Setters *************/
 
+    /*** Setters *************/
 
     // @dev Are deposits allowed for this version of Rocket Pool?
     /// @param areDepositsAllowed True or False
@@ -207,7 +207,7 @@ contract RocketUser is Owned {
         // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
         RocketPoolMini poolDepositTo = RocketPoolMini(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
-        assert(poolDepositTo.addDeposit.value(msg.value).gas(100000)(_userAddress) == true);
+        assert(poolDepositTo.deposit.value(msg.value).gas(100000)(_userAddress) == true);
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
@@ -381,6 +381,7 @@ contract RocketUser is Owned {
     /// @dev Will mint new tokens for this user that backs their deposit and can be traded on the open market - not available for partner accounts atm
     /// @param _miniPoolAddress The address of the mini pool they wish to withdraw tokens from.
     /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
+    // TODO: Allow partners to withdraw deposit tokens for their users
     function userWithdrawDepositTokens(address _miniPoolAddress, uint256 _amount) public returns(bool) {
         // Rocket settings
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
@@ -393,7 +394,7 @@ contract RocketUser is Owned {
         // 0 amount or less given withdraws the entire users deposit
         _amount = _amount <= 0 ? userBalance : _amount;
         // Check to see if the user is actually in this pool and has a deposit, and is not a partner user
-        assert(_amount > 0 && rocketPoolMini.getUserPartner(msg.sender) == 0); 
+        assert(_amount > 0 && rocketPoolMini.getUserPartner(msg.sender) == 0);        
         // Check the status, must be currently staking to allow tokens to be withdrawn
         assert(rocketPoolMini.getStatus() == 2);
         // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens

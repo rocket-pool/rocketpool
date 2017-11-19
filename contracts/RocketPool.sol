@@ -64,8 +64,6 @@ contract RocketPool is Owned {
     );
     
 
-       
-
     /*** Modifiers *************/
 
     
@@ -136,12 +134,6 @@ contract RocketPool is Owned {
         return rocketStorage.getUint(keccak256("minipools.total"));
     }
 
-    /// @dev Returns a count of the current minipools attached to this node address
-    /// @param _nodeAddress Address of the node
-    function getPoolsWithNodeCount(address _nodeAddress) public view returns(uint256) {
-        return getPoolsFilterWithNodeCount(_nodeAddress);
-    }
-
     /// @dev Get all pools that match this status (explicit method)
     /// @param _status Get pools with the current status
     function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {
@@ -161,7 +153,7 @@ contract RocketPool is Owned {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false);  
     }
 
-    /// @dev Get all pools that are assigned to this node (explicit method)
+    /// @dev Return count of all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
     function getPoolsFilterWithNodeCount(address _nodeAddress) public view returns(uint256) {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
@@ -203,12 +195,12 @@ contract RocketPool is Owned {
             pools[i] = rocketStorage.getAddress(keccak256("minipools.index.reverse", uint256(i)));
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
-             // Check the pool meets any supplied filters
+            // Check the pool meets any supplied filters
             if ((_status < 10 && pool.getStatus() == _status && _stakingDuration == 0) ||
                (_status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
                (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
                (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 
-               (_nodeAddress != 0) || 
+               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) || 
                _returnAll == true) {
                     // Matched
                     poolsFound[i] = pools[i];
@@ -242,8 +234,6 @@ contract RocketPool is Owned {
         RocketPoolMini poolAddUserTo = RocketPoolMini(0);
         // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
         address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
-        //FlagUint(poolsFound.length);
-        //return 0x0;
         // No pools awaiting? lets make one
         if (poolsFound.length == 0) {
             // Create new pool contract
@@ -309,7 +299,6 @@ contract RocketPool is Owned {
         rocketStorage.setAddress(keccak256("minipools.index.reverse", minipoolCountTotal), newPoolAddress);
         // Fire the event
         PoolCreated(newPoolAddress, _poolStakingDuration, now);
-        FlagUint(rocketStorage.getUint(keccak256("minipools.total")));
         // Return the new pool address
         return newPoolAddress; 
     } 
@@ -325,6 +314,7 @@ contract RocketPool is Owned {
             uint256 minipoolsTotal = rocketStorage.getUint(keccak256("minipools.total"));
             // Now remove this minipools data from storage
             uint256 minipoolsIndex = rocketStorage.getUint(keccak256("minipool.index", msg.sender));
+            // Remove the existance flag
             rocketStorage.deleteBool(keccak256("minipool.exists", msg.sender));
             // Delete reverse lookup
             rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsIndex));
@@ -335,9 +325,8 @@ contract RocketPool is Owned {
             // Loop
             for (uint i = minipoolsIndex+1; i <= minipoolsTotal; i++) {
                 address minipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", i));
-                uint256 newIndex = i - 1;
-                rocketStorage.setUint(keccak256("minipool.index", minipoolAddress), newIndex);
-                rocketStorage.setAddress(keccak256("minipools.index.reverse", newIndex), minipoolAddress);
+                rocketStorage.setUint(keccak256("minipool.index", minipoolAddress), i - 1);
+                rocketStorage.setAddress(keccak256("minipools.index.reverse", i - 1), minipoolAddress);
             }
             // Fire the event
             PoolRemoved(msg.sender, now);
@@ -350,6 +339,7 @@ contract RocketPool is Owned {
     
 
     /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
+    /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
     function poolNodeActions() external onlyLatestRocketNode {
         // Get our Rocket Node contract
         RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
@@ -371,12 +361,16 @@ contract RocketPool is Owned {
                 if (pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.getNodeAvailableForPool();
+                    // That node must exist
+                    require(nodeAddress != 0x0);
                     // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
                     pool.setNodeDetails(nodeAddress);
                     // Fire the event
                     PoolAssignedToNode(nodeAddress, poolsFound[i], now);
                     // Now set the pool to begin staking with casper by updating its status with the newly assigned node
                     pool.updateStatus();
+                    // Exit the loop
+                    break;
                 }
             }
         }
@@ -392,6 +386,8 @@ contract RocketPool is Owned {
                 if (pool.getStakingRequestWithdrawalTimeMet() == true) {
                     // Now set the pool to begin requesting withdrawal from casper by updating its status
                     pool.updateStatus();
+                    // Exit the loop
+                    break;
                 }
             }
         }
@@ -407,6 +403,8 @@ contract RocketPool is Owned {
                 if (pool.getStakingWithdrawalTimeMet() == true) {
                     // Now set the pool to begin withdrawal from casper by updating its status
                     pool.updateStatus();
+                    // Exit the loop
+                    break;
                 }
             }
         }

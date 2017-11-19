@@ -111,12 +111,12 @@ contract RocketNode is Owned {
     function getNodeAvailableForPool() external view onlyLatestRocketPool returns(address) {
         // Create an array at the length of the current nodes, then populate it
         address[] memory nodes = new address[](rocketStorage.getUint(keccak256("nodes.total")));
-        address nodeAddressToUse = 0;
+        address nodeAddressToUse = 0x0;
         uint256 prevAverageLoad = 0;
         // Retreive each node address now by index since we are using a key/value datastore
         assert(nodes.length > 0);
-        // Now loop through each
-        for (uint32 i = 0; i < nodes.length; i++) {
+        // Now loop through each, requires uint256 so that the hash matches the index correctly
+        for (uint256 i = 0; i < nodes.length; i++) {
             // Get our node address
             address currentNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
             // Get the node details
@@ -127,7 +127,7 @@ contract RocketNode is Owned {
             prevAverageLoad = averageLoad;
         }
         // We have an address to use, excellent, assign it
-        if (nodeAddressToUse != 0) {
+        if (nodeAddressToUse != 0x0) {
             return nodeAddressToUse;
         }
     } 
@@ -203,7 +203,7 @@ contract RocketNode is Owned {
         // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check the node doesn't currently have any registered mini pools associated with it
-        require(rocketPool.getPoolsWithNodeCount(_nodeAddress) == 0);
+        require(rocketPool.getPoolsFilterWithNodeCount(_nodeAddress) == 0);
         // Get total nodes
         uint256 nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
         // Now remove this nodes data from storage
@@ -241,6 +241,7 @@ contract RocketNode is Owned {
         rocketStorage.setUint(keccak256("node.averageLoad", msg.sender), _currentLoadAverage);
         rocketStorage.setUint(keccak256("node.lastCheckin", msg.sender), now);
         // Now check with the main Rocket Pool contract what pool actions currently need to be done
+        // This method is designed to only process one minipool from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
         // 1) Assign a node to a new minipool that can be launched
         // 2) Request deposit withdrawal from Casper for any minipools currently staking
         // 3) Actually withdraw the deposit from Casper once it's ready for withdrawal

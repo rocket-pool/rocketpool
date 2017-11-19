@@ -23,6 +23,7 @@ var arithmeticLib = artifacts.require("./lib/Arithmetic.sol");
 // Accounts
 var accounts = web3.eth.accounts;
 
+
 // TODO: Optimise this using the promises instead of callbacks now that they're more mainstream
 module.exports = function (deployer, network) {
     // Deploy libraries
@@ -101,7 +102,7 @@ module.exports = function (deployer, network) {
 
                                                     // Rocket Deposit Token
                                                     rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.address", rocketDepositToken.address), rocketDepositToken.address);
-                                                    rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketPartnerAPI"), rocketDepositToken.address);
+                                                    rocketStorageInstance.setAddress(config.web3Utils.soliditySha3("contract.name", "rocketDepositToken"), rocketDepositToken.address);
                                                     // Log it
                                                     console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketDepositToken Address');
                                                     console.log(rocketDepositToken.address);

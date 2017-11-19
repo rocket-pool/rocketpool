@@ -62,16 +62,7 @@ contract RocketPartnerAPI is Owned {
         address indexed _address,
         uint256 created
     );
-
-    event FlagUint (
-        uint256 flag
-    );
-    
-    event FlagAddress (
-        address flag
-    );
-
-       
+      
 
     /*** Modifiers *************/
 
@@ -116,6 +107,11 @@ contract RocketPartnerAPI is Owned {
     /// @dev Returns the amount of registered rocket nodes
     function getPartnerCount() public view returns(uint) {
         return rocketStorage.getUint(keccak256("partners.total"));
+    }
+
+    /// @dev Returns the array index of the partner
+    function getPartnerIndex(address _partnerAddress) public view onlyRegisteredPartner(_partnerAddress) returns(uint) {
+        return rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
     }
 
 
@@ -211,8 +207,6 @@ contract RocketPartnerAPI is Owned {
     /// @dev Remove a partner from the Rocket Pool network, note that a partner should first have its user deposits disabled so that their users can withdraw
     /// @param _partnerAddress The address of the partner
     function partnerRemove(address _partnerAddress) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
-        // The partner must have had their deposits disabled before they can be deleted
-        require(!rocketStorage.getBool(keccak256("partner.depositsAllowed", _partnerAddress)));
         // Get total partners
         uint256 partnersTotal = rocketStorage.getUint(keccak256("partners.total"));
         // Now remove this partner data from storage

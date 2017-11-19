@@ -15,7 +15,7 @@ contract RocketPoolInterface {
     modifier onlyAuthorisedDepositContracts() {_;}
     /// @dev Returns a count of the current minipools attached to this node address
     /// @param _nodeAddress Address of the node
-    function getPoolsWithNodeCount(address _nodeAddress) view public returns(uint256);
+    function getPoolsFilterWithNodeCount(address _nodeAddress) view public returns(uint256);
     /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
     /// @param _userAddress The address of the user whom the deposit belongs too
     /// @param _partnerAddress The address of the registered 3rd party partner whom is in control of the supplid user account that the deposit belongs too

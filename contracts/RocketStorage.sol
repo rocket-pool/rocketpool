@@ -18,25 +18,14 @@ contract RocketStorage is Owned {
     mapping(bytes32 => bool)       private boolStorage;
     mapping(bytes32 => int256)     private intStorage;
 
-    event FlagAddress (
-        address flag
-    );
-
-    event FlagBytes (
-        bytes32 flag
-    );
-   
-
 
     /*** Modifiers ************/
 
-    /// @dev Only allow access from the latest version of a contract in the Rocket Pool network
+    /// @dev Only allow access from the latest version of a contract in the Rocket Pool network or the owner
     modifier onlyLatestRocketNetworkContract() {
         // Verify the sender address is a contract in our network or the owner
         if (msg.sender != owner) {
-            //assert(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
-            //FlagBytes(keccak256("contract.address", msg.sender));
-            //FlagAddress(msg.sender);
+            assert(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
         } 
         _;
     }

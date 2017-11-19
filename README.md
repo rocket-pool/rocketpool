@@ -1,6 +1,6 @@
 # Rocket Pool - Your new Casper friendly Ethereum POS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v4.1.1](https://github.com/ethereumjs/testrpc) and [truffle@4beta](https://github.com/trufflesuite/truffle) to run locally.
+*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v6.0.3](https://github.com/ethereumjs/testrpc) and [truffle@4](https://github.com/trufflesuite/truffle) to run locally.
 
 
 
@@ -19,9 +19,13 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
 
 # Test Rocket Pool
 
-Easiest way to see Rocket Pool Alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Make sure you have the [Truffle Default Builder](https://github.com/trufflesuite/truffle-default-builder) first installed as the default builder as a dependency of your Rocket Pool - please see the end of this readme file for step by step instructions :
+<p align="center">
+  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof of Stake (POS) Pool"/>
+</p>
+
+Easiest way to see Rocket Pool alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Make sure you have the 'web3-utils' npm package first installed as a dependency of Rocket Pool - please see the end of this readme file for step by step instructions :
 ```
-$ npm install truffle-default-builder --save
+$ npm install web3-utils --save
 ```
 Start testrpc in a new terminal window using the current block gas limit:
 ```
@@ -70,7 +74,7 @@ $ sudo apt-get -y install nodejs
 ```
 install testrpc:
 ```
-$ sudo npm install -g ethereumjs-testrpc@v4.1.1
+$ sudo npm install -g ethereumjs-testrpc
 ```
 get rocketpool:
 ```
@@ -78,7 +82,7 @@ $ git clone https://github.com/darcius/rocketpool
 ```
 install truffle:
 ```
-$ sudo npm install -g truffle@v3.4.9
+$ sudo npm install -g truffle
 ```
 open the rocketpool directory:
 ```
@@ -86,7 +90,7 @@ $ cd rocketpool
 ```
 initialise truffle:
 ```
-$ sudo npm install truffle-default-builder --save
+$ sudo npm install web3-utils --save
 ```
 open new Terminal window:
 ```
