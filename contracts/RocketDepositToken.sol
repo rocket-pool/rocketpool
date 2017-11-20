@@ -5,6 +5,7 @@ import "./interface/RocketStorageInterface.sol";
 import "./interface/TokenERC20Interface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
+import "./lib/SafeMath.sol";
 
 
 /// @title The Rocket Pool Deposit Token - Can be used as a backing of your deposit and traded with others while staking
@@ -27,6 +28,11 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     /*** Contracts **************/
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained 
+
+
+    /**** Libs *****************/
+    
+    using SafeMath for uint;
 
 
     /*** Modifiers *************/
@@ -84,9 +90,9 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     */
     function mint(address _to, uint _amount) public onlyLatestRocketUser returns (bool) {
         // Verify ok
-        if (_amount > 0 && (balances[_to] + _amount) > balances[_to] && (totalSupply + _amount) > totalSupply) {
-            totalSupply += _amount;
-            balances[_to] += _amount;
+        if (_amount > 0) {
+            totalSupply = totalSupply.add(_amount);
+            balances[_to] = balances[_to].add(_amount);
             Mint(_to, _amount);
             return true;
         }
@@ -100,25 +106,25 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     */
     function burnTokensForEther(uint256 _amount) public returns (bool success) {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
-        assert (this.balance >= _amount);
+        require (this.balance >= _amount);
         // Rocket settings
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Now send ether to the user in return for the tokens, perform overflow checks 
-        if (balances[msg.sender] >= _amount && _amount > 0 && (balances[msg.sender] - _amount) < balances[msg.sender] && (totalSupply - _amount) < totalSupply) {
+        // Now send ether to the user in return for the tokens
+        if (balances[msg.sender] >= _amount && _amount > 0) {
             // Subtract from the sender
-            balances[msg.sender] -= _amount;    
+            balances[msg.sender] = balances[msg.sender].sub(_amount);    
             // Updates totalSupply                  
-            totalSupply -= _amount;    
+            totalSupply = totalSupply.sub(_amount);    
             // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
             uint256 etherWithdrawAmountPlusBonus = _amount + Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
             // Throw if we can't cover it
-            assert(this.balance >= etherWithdrawAmountPlusBonus);
+            require(this.balance >= etherWithdrawAmountPlusBonus);
             // Did it send ok?
             if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
                 // Add back to the sender
-                balances[msg.sender] += _amount;    
+                balances[msg.sender] = balances[msg.sender].add(_amount);    
                 // Updates totalSupply                  
-                totalSupply += _amount;    
+                totalSupply = totalSupply.add(_amount);    
                 // Fail
                 return false;
             } else {
@@ -156,9 +162,9 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     */
     function transfer(address _to, uint256 _amount) public returns (bool success) {
         // Verify ok
-        if (balances[msg.sender] >= _amount && _amount > 0 && (balances[_to] + _amount) > balances[_to]) {            
-            balances[msg.sender] -= _amount;
-            balances[_to] += _amount;
+        if (balances[msg.sender] >= _amount && _amount > 0) {            
+            balances[msg.sender] = balances[msg.sender].sub(_amount);
+            balances[_to] = balances[_to].add(_amount);
             return true;
         } else {
            return false;
@@ -174,10 +180,10 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     */
     function transferFrom(address _from, address _to, uint256 _amount) public returns (bool success) {
         // Verify ok
-        if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && (balances[_to] + _amount) > balances[_to]) {
-                balances[_from] -= _amount;
-                allowed[_from][msg.sender] -= _amount;
-                balances[_to] += _amount;
+        if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0) {
+                balances[_from] = balances[_from].sub(_amount);
+                allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
+                balances[_to] = balances[_to].add(_amount);
                 return true;
             } else {
                 return false;
