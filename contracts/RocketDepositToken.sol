@@ -12,10 +12,10 @@ import "./lib/SafeMath.sol";
 /// @author David Rugendyke
 
 contract RocketDepositToken is ERC20TokenInterface, Owned {
+    
 
     /**** Properties ***********/
 
-    
     address private rocketHubAddress;                                   // Address of the main RocketHub contract
     string public constant symbol = "RPD";                              // Token symbol
     string public constant name = "Rocket Pool Deposit";                // Token name
@@ -60,10 +60,6 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
         address indexed _sender, 
         uint256 value,
         uint256 created
-    );
-
-    event FlagUint (
-        uint256 flag
     );
 
 
@@ -116,7 +112,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
             // Updates totalSupply                  
             totalSupply = totalSupply.sub(_amount);    
             // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
-            uint256 etherWithdrawAmountPlusBonus = _amount + Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
+            uint256 etherWithdrawAmountPlusBonus = _amount.add(Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase));
             // Throw if we can't cover it
             require(this.balance >= etherWithdrawAmountPlusBonus);
             // Did it send ok?
