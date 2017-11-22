@@ -121,6 +121,23 @@ contract('RocketPool', function (accounts) {
     var miniPoolFirstInstance;
     var miniPoolSecondInstance;
 
+
+    // Owners direct access to storage is removed after initialisation when deployed
+    it(printTitle('owner', 'fail to access storage directly after deployment'), function () {
+        // Check RocketStorage is deployed first    
+        return rocketStorage.deployed().then(function (rocketStorageInstance) {
+            // Transaction
+            return rocketStorageInstance.setBool(web3.sha3("test.access"), true, { from:owner, gas: 250000 }).then(function (result) {
+                return result;
+            }).then(function(result) { 
+                assert(false, "Expect throw but didn't.");
+            }).catch(function (error) {
+                return checkThrow(error);
+            });
+        });    
+    }); // End Test 
+    
+
     // Try to register a node as a non rocket pool owner 
     it(printTitle('non owner', 'fail to register a node'), function () {
         // Check RocketStorage is deployed first    

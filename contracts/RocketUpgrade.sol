@@ -42,11 +42,11 @@ contract RocketUpgrade is Owned {
         // Check it exists
         require(oldContractAddress != 0x0);
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
-        rocketStorage.setAddress(keccak256("rocket.contract", _name), _upgradedContractAddress);
+        rocketStorage.setAddress(keccak256("contract.name", _name), _upgradedContractAddress);
         // Add the new contract address for a direct verification using the address (used in RocketStorage to verify its a legit contract using only the msg.sender)
-        rocketStorage.setAddress(keccak256("rocket.contract.address", _upgradedContractAddress), _upgradedContractAddress);
+        rocketStorage.setAddress(keccak256("contract.address", _upgradedContractAddress), _upgradedContractAddress);
         // Remove the old contract address verification
-        rocketStorage.setAddress(keccak256("rocket.contract.address", oldContractAddress), 0x0);
+        rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
     }
     
 

@@ -19,14 +19,18 @@ contract RocketStorage is Owned {
     mapping(bytes32 => int256)     private intStorage;
 
 
+
     /*** Modifiers ************/
 
-    /// @dev Only allow access from the latest version of a contract in the Rocket Pool network or the owner
+    /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        // Verify the sender address is a contract in our network or the owner
-        if (msg.sender != owner) {
-            assert(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
-        } 
+        // The owner is only allowed to set the storage upon deployment to register the initial contracts, afterwards their direct access is disabled
+        if (msg.sender == owner) {
+            require(boolStorage[keccak256("contract.storage.initialised")] == false);
+        } else {
+            // Make sure the access is permitted to only contracts in our Dapp
+            require(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
+        }
         _;
     }
 
