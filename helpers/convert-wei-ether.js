@@ -12,5 +12,5 @@ program
   .version('0.0.1')
   .option('-w, --wei [weiAmount]', 'The amount in wei')
   .parse(process.argv);
-  
-console.log(program.wei+' = '+Units.convert(program.wei, 'wei', 'ether')+' ether');
+
+console.log(program.wei + ' = ' + Units.convert(program.wei, 'wei', 'ether') + ' ether');
