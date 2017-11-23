@@ -12,11 +12,11 @@
  */
 rocketPool.Init = (function($) {
   // Basic module settings
-  var name = 'Init';
+  const name = 'Init';
   // Module event prefix with namespacing
-  var eventNS = rocketPool.ns + '/' + name;
+  const eventNS = rocketPool.ns + '/' + name;
   // Defaults
-  var settings = {
+  let settings = {
     network: {},
     currentAccount: false,
   };
@@ -26,7 +26,7 @@ rocketPool.Init = (function($) {
    * @param object options - settings for the module
    * @return bool - success or failure
    */
-  var init = function(options) {
+  const init = function(options) {
     // Initialise options
     settings = $.extend(true, {}, settings, options);
     // Update the network we're connected too
@@ -51,16 +51,16 @@ rocketPool.Init = (function($) {
   /**
    * @desc start any countdown clocks for token sales
    */
-  var _countdownClocks = function() {
+  const _countdownClocks = function() {
     // Grab the current date
-    var currentDate = new Date();
+    const currentDate = new Date();
 
     // Get any clock instances
     $.each($('.countdown'), function(indexInArray, valueOfElement) {
       // Set some date in the future. In this case, it's always Jan 1
-      var futureDate = new Date($(this).data('date'));
+      const futureDate = new Date($(this).data('date'));
       // Calculate the difference in seconds between the future and current date
-      var diff = futureDate.getTime() / 1000 - currentDate.getTime() / 1000;
+      const diff = futureDate.getTime() / 1000 - currentDate.getTime() / 1000;
       // Add the clock
       $(this).FlipClock(diff, {
         clockFace: 'DailyCounter',
@@ -73,7 +73,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc update the status of the network
    */
-  var _updateNetwork = function() {
+  const _updateNetwork = function() {
     // Checking if Web3 has been injected by the browser (Mist/MetaMask)
     if (typeof web3 !== 'undefined') {
       // Use Mist/MetaMask's provider
@@ -109,9 +109,9 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum accounts details
    */
-  var _setAccountDetails = function(accountEl) {
+  const _setAccountDetails = function(accountEl) {
     // Get the address
-    var address = accountEl.data('account-address');
+    const address = accountEl.data('account-address');
     if (address) {
       // Generate account icons and labels
       $.each($(accountEl).find('.account-icon'), function(indexInArray, valueOfElement) {
@@ -123,10 +123,10 @@ rocketPool.Init = (function($) {
       });
       // Labels
       $.each($(accountEl).find('.account-label'), function(indexInArray, valueOfElement) {
-        var label = address;
+        let label = address;
         // Is it a short label
         if ($(this).hasClass('short')) {
-          var length = 26;
+          const length = 26;
           label = label.substring(0, length / 2) + '...' + label.substring(label.length - length / 2, label.length);
         }
         // Set it now
@@ -148,7 +148,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum account to use
    */
-  var _setAccount = function(account) {
+  const _setAccount = function(account) {
     // If there's no current account, use the default coinbase
     if (!settings.currentAccount && settings.network) {
       settings.currentAccount = window.web3.eth.accounts[0];
@@ -175,16 +175,16 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum account list to select from
    */
-  var _setAccountList = function() {
+  const _setAccountList = function() {
     // Get our account html template
-    var template = $('#network.account').html();
+    const template = $('#network.account').html();
     // Empty the list
-    var list = $('#account-select .accounts').first();
+    const list = $('#account-select .accounts').first();
     list.empty();
     // Build the list now
     $.each(window.web3.eth.accounts, function(index, account) {
       // Add it to the list
-      var item = $('<div class="account" data-account-address="' + account + '">' + template + '</div>');
+      const item = $('<div class="account" data-account-address="' + account + '">' + template + '</div>');
       // Update it now
       _setAccountDetails(item);
       // Append it
@@ -195,9 +195,9 @@ rocketPool.Init = (function($) {
   /**
    * @desc Send an enquiry to Rocket Pool
    */
-  var _contactSend = function(button) {
-    var form = $('.section.contact form').first();
-    var content = form.find('textarea').val();
+  const _contactSend = function(button) {
+    const form = $('.section.contact form').first();
+    const content = form.find('textarea').val();
 
     if (content.length > 1) {
       // Show the processing screen with message
@@ -233,7 +233,7 @@ rocketPool.Init = (function($) {
    * @desc subsribe to dom wide observer aanouncments
    * @example $.observer.subscribe(eventNS+'/function', _function);
    */
-  var _subscribers = function() {
+  const _subscribers = function() {
     // When the network changes
     $.observer.subscribe(eventNS + '/networkDetected', _setAccount);
     $.observer.subscribe(eventNS + '/networkDetected', _setAccountList);
@@ -245,7 +245,7 @@ rocketPool.Init = (function($) {
    * @desc publish dom wide observer aanouncments
    * @example $.observer.publish(eventNS+'/function', parameterOne, ParameterTwo, etc);
    */
-  var _publishers = function() {
+  const _publishers = function() {
     // Publish which network we're initially connected too
     $.observer.publish(eventNS + '/network/change', settings.network);
 
@@ -284,7 +284,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc internal event listers that don't require interacting with anything outside this module
    */
-  var _listeners = function() {
+  const _listeners = function() {
     // Show sub menu on the main menu
     $('.main-menu .top > div > i').on('click', function() {
       $('.main-menu .sub .menu').hide();

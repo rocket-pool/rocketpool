@@ -1,27 +1,27 @@
 // Config
-var config = require('../truffle.js');
+const config = require('../truffle.js');
 
 // Contacts
-var rocketStorage = artifacts.require('./RocketStorage.sol');
-var rocketPool = artifacts.require('./RocketPool.sol');
-var rocketUser = artifacts.require('./RocketUser.sol');
-var rocketNode = artifacts.require('./RocketNode.sol');
-var rocketPoolMiniDelegate = artifacts.require('./RocketPoolMiniDelegate.sol');
-var rocketDepositToken = artifacts.require('./RocketDepositToken.sol');
-var rocketPartnerAPI = artifacts.require('./RocketPartnerAPI.sol');
-var rocketSettings = artifacts.require('./RocketSettings.sol');
-var rocketFactory = artifacts.require('./RocketFactory.sol');
-var dummyCasper = artifacts.require('./contract/casper/DummyCasper.sol');
+const rocketStorage = artifacts.require('./RocketStorage.sol');
+const rocketPool = artifacts.require('./RocketPool.sol');
+const rocketUser = artifacts.require('./RocketUser.sol');
+const rocketNode = artifacts.require('./RocketNode.sol');
+const rocketPoolMiniDelegate = artifacts.require('./RocketPoolMiniDelegate.sol');
+const rocketDepositToken = artifacts.require('./RocketDepositToken.sol');
+const rocketPartnerAPI = artifacts.require('./RocketPartnerAPI.sol');
+const rocketSettings = artifacts.require('./RocketSettings.sol');
+const rocketFactory = artifacts.require('./RocketFactory.sol');
+const dummyCasper = artifacts.require('./contract/casper/DummyCasper.sol');
 
 // Interfaces
-var rocketStorageInterface = artifacts.require('./contracts/interface/RocketStorageInterface.sol');
-var rocketSettingsInterface = artifacts.require('./contracts/interface/RocketSettingsInterface.sol');
+const rocketStorageInterface = artifacts.require('./contracts/interface/RocketStorageInterface.sol');
+const rocketSettingsInterface = artifacts.require('./contracts/interface/RocketSettingsInterface.sol');
 
 // Libs
-var arithmeticLib = artifacts.require('./lib/Arithmetic.sol');
+const arithmeticLib = artifacts.require('./lib/Arithmetic.sol');
 
 // Accounts
-var accounts = web3.eth.accounts;
+const accounts = web3.eth.accounts;
 
 module.exports = async function(deployer, network) {
   // Deploy libraries

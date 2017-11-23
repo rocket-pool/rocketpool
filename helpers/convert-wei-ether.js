@@ -4,8 +4,8 @@
  * Quickly convert wei to ether
  */
 
-var program = require('commander');
-var Units = require('ethereumjs-units');
+const program = require('commander');
+const Units = require('ethereumjs-units');
 
 // Set the command parameters
 program

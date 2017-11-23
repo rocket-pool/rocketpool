@@ -3,7 +3,7 @@ sudo: required
 group: beta
 language: node_js
 node_js:
-  - 6
+  - 9
 cache:
   yarn: true
 before_script:
