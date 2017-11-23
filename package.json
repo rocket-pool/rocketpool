@@ -1,0 +1,16 @@
+{
+  "name": "rocketpool",
+  "version": "1.0.0",
+  "description": "A next generation decentralised Ethereum proof of stake pool",
+  "repository": "git@github.com:darcius/rocketpool.git",
+  "author": "David Rugendyke <david@rocketpool.net>",
+  "scripts": {
+    "console": "truffle console",
+    "test": "scripts/test.sh ./test/rocketPool.js"
+  },
+  "devDependencies": {
+    "ganache-cli": "^6.0.3",
+    "truffle": "^4.0.1",
+    "web3-utils": "^1.0.0-beta.26"
+  }
+}
