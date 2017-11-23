@@ -5,7 +5,7 @@
   @version 1.0
 */
 
-rocketPool.Processing = (function($) {
+rocketPool.Processing = ($ => {
   // Basic module settings
   const name = 'Processing';
   // Module event prefix with namespacing
@@ -20,7 +20,7 @@ rocketPool.Processing = (function($) {
    * @param object options - settings for the module
    * @return bool - success or failure
    */
-  const init = function(options) {
+  const init = options => {
     // Initialise navbar & options
     settings = $.extend(true, {}, settings, options);
     // Set the main container
@@ -34,7 +34,7 @@ rocketPool.Processing = (function($) {
   /**
    * Shows the processing screen
    */
-  const _show = function(text, addDots) {
+  const _show = (text, addDots) => {
     $('body').removeClass('loaded');
     _setText(text);
     // Are we adding animated dots?
@@ -47,7 +47,7 @@ rocketPool.Processing = (function($) {
   /**
    * Change the text
    */
-  const _setText = function(text) {
+  const _setText = text => {
     // This action can be subscribed too, so make sure we have the instance
     const loader = !settings.loader ? $('#loader-wrapper') : settings.loader;
     loader.find('.line').text(text.toLowerCase());
@@ -56,7 +56,7 @@ rocketPool.Processing = (function($) {
   /**
    * Hides the processing screen
    */
-  const _hide = function() {
+  const _hide = () => {
     $('body').addClass('loaded');
     settings.loader.find('.line').text('');
   };
@@ -64,11 +64,11 @@ rocketPool.Processing = (function($) {
   /**
    * Adds loading "dots" to the end of the text
    */
-  const _addDots = function() {
+  const _addDots = () => {
     const textLine = settings.loader.find('.line');
     const span = $('<span/>').appendTo(textLine);
 
-    const dots = window.setInterval(function() {
+    const dots = window.setInterval(() => {
       if (span.text().length >= 3) {
         span.text('');
       } else {
@@ -82,7 +82,7 @@ rocketPool.Processing = (function($) {
    * @desc subsribe to dom wide observer aanouncments
    * @example $.observer.subscribe(eventNS+'/function', _function);
    */
-  const _subscribers = function() {
+  const _subscribers = () => {
     // Show the processing screen
     $.observer.subscribe(eventNS + '/show', _show);
 
@@ -97,7 +97,7 @@ rocketPool.Processing = (function($) {
    * @desc publish dom wide observer aanouncments
    * @example $.observer.publish(eventNS+'/function', parameterOne, ParameterTwo, etc);
    */
-  const _publishers = function() {};
+  const _publishers = () => {};
 
   /**
    *  Make available our public methods

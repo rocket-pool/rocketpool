@@ -23,15 +23,15 @@ const arithmeticLib = artifacts.require('./lib/Arithmetic.sol');
 // Accounts
 const accounts = web3.eth.accounts;
 
-module.exports = async function(deployer, network) {
+module.exports = async (deployer, network) => {
   // Deploy libraries
-  deployer.deploy(arithmeticLib, rocketSettingsInterface, rocketStorageInterface).then(function() {
+  deployer.deploy(arithmeticLib, rocketSettingsInterface, rocketStorageInterface).then(() => {
     // Lib Links
     deployer.link(arithmeticLib, [rocketUser, rocketPoolMiniDelegate, rocketDepositToken]);
     // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
-    return deployer.deploy(rocketStorage).then(function() {
+    return deployer.deploy(rocketStorage).then(() => {
       // Deploy casper dummy contract
-      return deployer.deploy(dummyCasper).then(function() {
+      return deployer.deploy(dummyCasper).then(() => {
         // Seed Casper with some funds to cover the rewards + deposit sent back
         web3.eth.sendTransaction({
           from: accounts[0],
@@ -40,23 +40,23 @@ module.exports = async function(deployer, network) {
           gas: 1000000,
         });
         // Deploy Rocket User
-        return deployer.deploy(rocketUser, rocketStorage.address).then(function() {
+        return deployer.deploy(rocketUser, rocketStorage.address).then(() => {
           // Deploy rocket 3rd party partner API
-          return deployer.deploy(rocketPartnerAPI, rocketStorage.address).then(function() {
+          return deployer.deploy(rocketPartnerAPI, rocketStorage.address).then(() => {
             // Deploy rocket deposit token
-            return deployer.deploy(rocketDepositToken, rocketStorage.address).then(function() {
+            return deployer.deploy(rocketDepositToken, rocketStorage.address).then(() => {
               // Deploy rocket factory
-              return deployer.deploy(rocketFactory, rocketStorage.address).then(function() {
+              return deployer.deploy(rocketFactory, rocketStorage.address).then(() => {
                 // Deploy rocket settings
-                return deployer.deploy(rocketSettings, rocketStorage.address).then(function() {
+                return deployer.deploy(rocketSettings, rocketStorage.address).then(() => {
                   // Deploy the main rocket pool
-                  return deployer.deploy(rocketPool, rocketStorage.address).then(function() {
+                  return deployer.deploy(rocketPool, rocketStorage.address).then(() => {
                     // Deploy the rocket node
-                    return deployer.deploy(rocketNode, rocketStorage.address).then(function() {
+                    return deployer.deploy(rocketNode, rocketStorage.address).then(() => {
                       // Deploy the rocket pool mini delegate
-                      return deployer.deploy(rocketPoolMiniDelegate, rocketStorage.address).then(function() {
+                      return deployer.deploy(rocketPoolMiniDelegate, rocketStorage.address).then(() => {
                         // Update the storage with the new addresses
-                        return rocketStorage.deployed().then(async function(rocketStorageInstance) {
+                        return rocketStorage.deployed().then(async rocketStorageInstance => {
                           console.log('\n');
 
                           // Rocket Pool

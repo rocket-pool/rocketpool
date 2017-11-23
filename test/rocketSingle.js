@@ -1,24 +1,24 @@
 // Testing a single unit test
 
-var os = require('os');
-var rocketHub = artifacts.require('./contract/RocketHub.sol');
-var rocketPool = artifacts.require('./contract/RocketPool.sol');
-var rocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
-var rocketSettings = artifacts.require('./contract/RocketSettings.sol');
+const os = require('os');
+const rocketHub = artifacts.require('./contract/RocketHub.sol');
+const rocketPool = artifacts.require('./contract/RocketPool.sol');
+const rocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
+const rocketSettings = artifacts.require('./contract/RocketSettings.sol');
 
-var displayEvents = false;
+const displayEvents = false;
 
 // Display events triggered during the tests
 if (displayEvents) {
-  rocketPool.deployed().then(function(rocketPoolInstance) {
+  rocketPool.deployed().then(rocketPoolInstance => {
     var eventWatch = rocketPoolInstance
       .allEvents({
         fromBlock: 0,
         toBlock: 'latest',
       })
-      .watch(function(error, result) {
+      .watch((error, result) => {
         // Print the event to console
-        var printEvent = function(type, result, colour) {
+        var printEvent = (type, result, colour) => {
           console.log('\n');
           console.log(
             colour,
@@ -42,7 +42,7 @@ if (displayEvents) {
                 fromBlock: 0,
                 toBlock: 'latest',
               })
-              .watch(function(error, result) {
+              .watch((error, result) => {
                 // This will catch all pool events, regardless of how they originated.
                 if (error == null) {
                   printEvent('minipool', result, '\x1b[32m%s\x1b[0m');
@@ -54,17 +54,17 @@ if (displayEvents) {
   });
 }
 
-contract('RocketPool', function(accounts) {
+contract('RocketPool', accounts => {
   // User accounts
   var userFirst = accounts[1];
   // Estimate the correct withdrawal based on %
-  it('Estimate the correct withdrawal based on %', function() {
+  it('Estimate the correct withdrawal based on %', () => {
     // RocketPool now
-    return rocketPool.deployed().then(function(rocketPoolInstance) {
+    return rocketPool.deployed().then(rocketPoolInstance => {
       // Transaction
       return rocketPoolInstance
         .userWithdrawDepositTest({ from: userFirst, to: rocketPoolInstance.address, gas: 250000 })
-        .then(function(result) {
+        .then(result => {
           for (var i = 0; i < result.logs.length; i++) {
             if (result.logs[i].event == 'FlagUint' || result.logs[i].event == 'FlagInt') {
               console.log(web3.fromWei(result.logs[i].args.flag.valueOf(), 'ether'));
@@ -72,7 +72,7 @@ contract('RocketPool', function(accounts) {
           }
           return result;
         })
-        .then(function(result) {
+        .then(result => {
           assert.isTrue(result, 'Single Unit Test Failed');
         });
     });

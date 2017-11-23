@@ -1,29 +1,29 @@
 /*** Built with Truffle 4.0.1  */
 
-var os = require('os');
-var rocketUser = artifacts.require('./contract/RocketUser.sol');
-var rocketNode = artifacts.require('./contract/RocketNode.sol');
-var rocketPool = artifacts.require('./contract/RocketPool.sol');
-var rocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
-var rocketDepositToken = artifacts.require('./contract/RocketDepositToken.sol');
-var rocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI.sol');
-var rocketSettings = artifacts.require('./contract/RocketSettings.sol');
-var rocketStorage = artifacts.require('./contract/RocketStorage.sol');
-var casper = artifacts.require('./contract/Casper/DummyCasper.sol');
+const os = require('os');
+const rocketUser = artifacts.require('./contract/RocketUser.sol');
+const rocketNode = artifacts.require('./contract/RocketNode.sol');
+const rocketPool = artifacts.require('./contract/RocketPool.sol');
+const rocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
+const rocketDepositToken = artifacts.require('./contract/RocketDepositToken.sol');
+const rocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI.sol');
+const rocketSettings = artifacts.require('./contract/RocketSettings.sol');
+const rocketStorage = artifacts.require('./contract/RocketStorage.sol');
+const casper = artifacts.require('./contract/Casper/DummyCasper.sol');
 
-var displayEvents = false;
+const displayEvents = false;
 
 // Display events triggered during the tests
 if (displayEvents) {
-  rocketPool.deployed().then(function(rocketPoolInstance) {
+  rocketPool.deployed().then(rocketPoolInstance => {
     var eventWatch = rocketPoolInstance
       .allEvents({
         fromBlock: 0,
         toBlock: 'latest',
       })
-      .watch(function(error, result) {
+      .watch((error, result) => {
         // Print the event to console
-        var printEvent = function(type, result, colour) {
+        var printEvent = (type, result, colour) => {
           console.log('\n');
           console.log(
             colour,
@@ -47,7 +47,7 @@ if (displayEvents) {
                 fromBlock: 0,
                 toBlock: 'latest',
               })
-              .watch(function(error, result) {
+              .watch((error, result) => {
                 // This will catch all pool events, regardless of how they originated.
                 if (error == null) {
                   printEvent('minipool', result, '\x1b[32m%s\x1b[0m');
@@ -60,13 +60,13 @@ if (displayEvents) {
 }
 
 // Print nice titles for each unit test
-var printTitle = function(user, desc) {
+var printTitle = (user, desc) => {
   return '\x1b[33m' + user + '\033[00m: \033[01;34m' + desc;
   //  PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 };
 
 // Checks to see if a throw was triggered
-var checkThrow = function(error) {
+var checkThrow = error => {
   if (error.toString().indexOf('VM Exception') == -1) {
     // Didn't throw like we expected
     return assert(false, error.toString());
@@ -78,7 +78,7 @@ var checkThrow = function(error) {
 };
 
 // Start the tests
-contract('RocketPool', function(accounts) {
+contract('RocketPool', accounts => {
   // Excessive? Yeah probably :)
   console.log('\n');
   console.log('______           _        _    ______           _ ');
@@ -126,40 +126,40 @@ contract('RocketPool', function(accounts) {
   var miniPoolSecondInstance;
 
   // Owners direct access to storage is removed after initialisation when deployed
-  it(printTitle('owner', 'fail to access storage directly after deployment'), function() {
+  it(printTitle('owner', 'fail to access storage directly after deployment'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Transaction
       return rocketStorageInstance
         .setBool(web3.sha3('test.access'), true, { from: owner, gas: 250000 })
-        .then(function(result) {
+        .then(result => {
           return result;
         })
-        .then(function(result) {
+        .then(result => {
           assert(false, "Expect throw but didn't.");
         })
-        .catch(function(error) {
+        .catch(error => {
           return checkThrow(error);
         });
     });
   }); // End Test
 
   // Try to register a node as a non rocket pool owner
-  it(printTitle('non owner', 'fail to register a node'), function() {
+  it(printTitle('non owner', 'fail to register a node'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // RocketNode now
-      return rocketNode.deployed().then(function(rocketNodeInstance) {
+      return rocketNode.deployed().then(rocketNodeInstance => {
         // Transaction
         return rocketNodeInstance
           .nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from: userFirst, gas: nodeRegisterGas })
-          .then(function(result) {
+          .then(result => {
             return result;
           })
-          .then(function(result) {
+          .then(result => {
             assert(false, "Expect throw but didn't.");
           })
-          .catch(function(error) {
+          .catch(error => {
             return checkThrow(error);
           });
       });
@@ -167,23 +167,23 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Register 2 nodes
-  it(printTitle('owner', 'register 2 nodes'), function() {
+  it(printTitle('owner', 'register 2 nodes'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // rocketNode now
-      return rocketNode.deployed().then(function(rocketNodeInstance) {
+      return rocketNode.deployed().then(rocketNodeInstance => {
         // Transaction
         return rocketNodeInstance
           .nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from: owner, gas: nodeRegisterGas })
-          .then(function(result) {
+          .then(result => {
             // Transaction
             return rocketNodeInstance
               .nodeAdd(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, { from: owner, gas: nodeRegisterGas })
-              .then(function(result) {
+              .then(result => {
                 // Now get the total with a call
                 return rocketNodeInstance.getNodeCount.call();
               })
-              .then(function(result) {
+              .then(result => {
                 assert.equal(result.valueOf(), 2, '2 Nodes registered successfully by owner');
               });
           });
@@ -192,21 +192,21 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Try to register a new partner as a non rocket pool owner
-  it(printTitle('non owner', 'fail to register a partner'), function() {
+  it(printTitle('non owner', 'fail to register a partner'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // RocketPool api now
-      return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+      return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
         // Transaction
         return rocketPartnerAPIInstance
           .partnerAdd(partnerFirst, partnerFirstName, { from: userFirst, gas: partnerRegisterGas })
-          .then(function(result) {
+          .then(result => {
             return result;
           })
-          .then(function(result) {
+          .then(result => {
             assert(false, "Expect throw but didn't.");
           })
-          .catch(function(error) {
+          .catch(error => {
             return checkThrow(error);
           });
       });
@@ -214,23 +214,23 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Register two 3rd party partners
-  it(printTitle('owner', 'register 2 partners'), function() {
+  it(printTitle('owner', 'register 2 partners'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // RocketPool api now
-      return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+      return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
         // Transaction
         return rocketPartnerAPIInstance
           .partnerAdd(partnerFirst, partnerFirstName, { from: web3.eth.coinbase, gas: partnerRegisterGas })
-          .then(function(result) {
+          .then(result => {
             // Transaction
             return rocketPartnerAPIInstance
               .partnerAdd(partnerSecond, partnerSecondName, { from: web3.eth.coinbase, gas: partnerRegisterGas })
-              .then(function(result) {
+              .then(result => {
                 // Now get the total with a call
                 return rocketPartnerAPIInstance.getPartnerCount.call();
               })
-              .then(function(result) {
+              .then(result => {
                 assert.equal(result.valueOf(), 2, '2 Partners registered successfully by owner');
               });
           });
@@ -239,17 +239,17 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Attempt to make a deposit with an incorrect pool staking time ID
-  it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), function() {
+  it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // RocketPool api now
-          return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+          return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
             // Get the min ether required to launch a mini pool
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
               var sendAmount = result.valueOf() - web3.toWei('1', 'ether');
               // Deposit on a behalf of the partner and also specify a incorrect pool staking time ID
@@ -259,13 +259,13 @@ contract('RocketPool', function(accounts) {
                   value: sendAmount,
                   gas: rocketDepositGas,
                 })
-                .then(function(result) {
+                .then(result => {
                   return result;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert(false, "Expect throw but didn't.");
                 })
-                .catch(function(error) {
+                .catch(error => {
                   return checkThrow(error);
                 });
             });
@@ -276,29 +276,29 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Attempt to make a deposit with an unregistered 3rd party partner
-  it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), function() {
+  it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // RocketPool api now
-          return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+          return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
             // Get the min ether required to launch a mini pool
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
               var sendAmount = parseInt(result.valueOf()) - parseInt(web3.toWei('1', 'ether'));
               // Deposit on a behalf of the partner and also specify the pool staking time ID
               return rocketPartnerAPIInstance
                 .APIpartnerDeposit(userThird, 'default', { from: userSecond, value: sendAmount, gas: rocketDepositGas })
-                .then(function(result) {
+                .then(result => {
                   return result;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert(false, "Expect throw but didn't.");
                 })
-                .catch(function(error) {
+                .catch(error => {
                   return checkThrow(error);
                 });
             });
@@ -309,15 +309,15 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Send Ether to Rocket pool with just less than the min amount required to launch a mini pool with no specified 3rd party user partner
-  it(printTitle('userFirst', 'sends ether to RP, create first mini pool, registers user with pool'), function() {
+  it(printTitle('userFirst', 'sends ether to RP, create first mini pool, registers user with pool'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketUser now
-        return rocketUser.deployed().then(function(rocketUserInstance) {
+        return rocketUser.deployed().then(rocketUserInstance => {
           // Get the min ether required to launch a mini pool
-          return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+          return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
             // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
             var sendAmount = parseInt(result.valueOf()) - parseInt(web3.toWei('2', 'ether'));
             return rocketUserInstance
@@ -327,7 +327,7 @@ contract('RocketPool', function(accounts) {
                 value: sendAmount,
                 gas: rocketDepositGas,
               })
-              .then(function(result) {
+              .then(result => {
                 // Now check the events
                 var poolAddress = 0;
                 var poolCreated = false;
@@ -343,7 +343,7 @@ contract('RocketPool', function(accounts) {
                 miniPoolFirstInstance = rocketPoolMini.at(poolAddress);
                 return miniPoolFirstInstance.getStatus
                   .call()
-                  .then(function(result) {
+                  .then(result => {
                     // Status = 0? The default
                     poolStatus = result.valueOf();
                     poolBalance = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
@@ -353,7 +353,7 @@ contract('RocketPool', function(accounts) {
                     }
                     return false;
                   })
-                  .then(function(result) {
+                  .then(result => {
                     assert.isTrue(
                       result,
                       'Funds transferred successfully, mini pool created, user reg and funds Transferred to mini pool.'
@@ -372,15 +372,15 @@ contract('RocketPool', function(accounts) {
       'userFirst',
       'sends ether to RP again, their balance updates, first mini pool remains accepting deposits and only 1 reg user'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Get the min ether required to launch a mini pool
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // Transaction - Send Ether as a user, send enough not to trigger the pool to enter countdown status for launch
               var minDepositRequiredForLaunch = result.valueOf();
               var sendAmount = web3.toWei('1', 'ether');
@@ -391,7 +391,7 @@ contract('RocketPool', function(accounts) {
                   value: sendAmount,
                   gas: rocketDepositGas,
                 })
-                .then(function(result) {
+                .then(result => {
                   // Now check the events
                   var userSendAmount = 0;
                   var userSendAddress = 0;
@@ -408,16 +408,16 @@ contract('RocketPool', function(accounts) {
                   }
                   // Get the instance the prev mini pool
                   var miniPoolInstance = rocketPoolMini.at(poolAddress);
-                  return miniPoolFirstInstance.getStatus.call().then(function(result) {
+                  return miniPoolFirstInstance.getStatus.call().then(result => {
                     poolStatus = result.valueOf();
                     poolBalance = web3.eth.getBalance(miniPoolInstance.address).valueOf();
                     // Now just count the users to make sure this user wasn't added twice
-                    return miniPoolInstance.getUserCount.call().then(function(result) {
+                    return miniPoolInstance.getUserCount.call().then(result => {
                       userCount = result.valueOf();
                       // Now get the user
                       return miniPoolInstance.getUser
                         .call(userFirst)
-                        .then(function(result) {
+                        .then(result => {
                           var user = result.valueOf();
                           var userBalance = result[1].valueOf();
                           // Now check everything
@@ -432,7 +432,7 @@ contract('RocketPool', function(accounts) {
                           }
                           return false;
                         })
-                        .then(function(result) {
+                        .then(result => {
                           assert.isTrue(
                             result,
                             'Funds transferred successfully, mini pool remains accepting deposits, user balance updated.'
@@ -451,15 +451,15 @@ contract('RocketPool', function(accounts) {
   // Have a new user send an deposit, to trigger the pool to go into countdown
   it(
     printTitle('userSecond', 'sends ether to RP, first mini pool status changes to countdown and only 2 reg users'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Get the min ether required to launch a mini pool
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // Transaction - Send Ether as a user, send enough not to trigger the pool to enter countdown status for launch
               var sendAmount = web3.toWei('5', 'ether');
               rocketUserInstance
@@ -469,7 +469,7 @@ contract('RocketPool', function(accounts) {
                   value: sendAmount,
                   gas: rocketDepositGas,
                 })
-                .then(function(result) {
+                .then(result => {
                   // Now check the events
                   var userSendAmount = 0;
                   var userSendAddress = 0;
@@ -486,13 +486,13 @@ contract('RocketPool', function(accounts) {
                   }
                   // Get the instance the prev mini pool
                   var miniPoolInstance = rocketPoolMini.at(poolAddress);
-                  return miniPoolFirstInstance.getStatus.call().then(function(result) {
+                  return miniPoolFirstInstance.getStatus.call().then(result => {
                     poolStatus = result.valueOf();
                     poolBalance = web3.eth.getBalance(miniPoolInstance.address).valueOf();
                     // Now just count the users to make sure this user wasn't added twice
                     return miniPoolInstance.getUserCount
                       .call()
-                      .then(function(result) {
+                      .then(result => {
                         userCount = result.valueOf();
                         // Now check everything
                         if (
@@ -505,7 +505,7 @@ contract('RocketPool', function(accounts) {
                         }
                         return false;
                       })
-                      .then(function(result) {
+                      .then(result => {
                         assert.isTrue(
                           result,
                           'Funds transferred successfully, mini pool moved to countdown status, user balance updated.'
@@ -523,20 +523,20 @@ contract('RocketPool', function(accounts) {
   // Second user sets a backup withdrawal address
   it(
     printTitle('userSecond', 'registers a backup withdrawal address on their deposit while minipool is in countdown'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Now set the backup address
             rocketUserInstance
               .userSetWithdrawalDepositAddress(userSecondBackupAddress, miniPoolFirstInstance.address, {
                 from: userSecond,
                 gas: 550000,
               })
-              .then(function(result) {
+              .then(result => {
                 var newBackupAddress = 0;
                 // Check the event log now
                 for (var i = 0; i < result.logs.length; i++) {
@@ -549,7 +549,7 @@ contract('RocketPool', function(accounts) {
                 }
                 return true;
               })
-              .then(function(result) {
+              .then(result => {
                 assert.isTrue(result, 'Second user registered backup address');
               });
           });
@@ -564,19 +564,19 @@ contract('RocketPool', function(accounts) {
       'partnerFirst',
       'send ether to RP on behalf of their user, second mini pool is created for them and is accepting deposits'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketPool now
-          return rocketPool.deployed().then(function(rocketPoolInstance) {
+          return rocketPool.deployed().then(rocketPoolInstance => {
             // RocketUser now
-            return rocketUser.deployed().then(function(rocketUserInstance) {
+            return rocketUser.deployed().then(rocketUserInstance => {
               // RocketPool api now
-              return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+              return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
                 // Get the min ether required to launch a mini pool
-                return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+                return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
                   // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
                   var sendAmount = parseInt(result.valueOf()) - parseInt(web3.toWei('1', 'ether'));
                   // Deposit on a behalf of the partner and also specify the pool staking time ID
@@ -586,7 +586,7 @@ contract('RocketPool', function(accounts) {
                       value: sendAmount,
                       gas: rocketDepositGas,
                     })
-                    .then(function(result) {
+                    .then(result => {
                       var poolAddress = 0;
                       var poolCreated = false;
                       var poolStatus = null;
@@ -601,19 +601,19 @@ contract('RocketPool', function(accounts) {
                       // Now find the pools our users belongs too, should just be one
                       return rocketPoolInstance.getPoolsFilterWithUser
                         .call(partnerFirstUserAccount, { from: partnerFirst })
-                        .then(function(result) {
+                        .then(result => {
                           // Setup our checks
                           var userPools = result.valueOf();
                           // Get an instance of that pool and do further checks
                           var miniPoolInstance = rocketPoolMini.at(userPools[0]);
-                          return miniPoolInstance.getStatus.call().then(function(result) {
+                          return miniPoolInstance.getStatus.call().then(result => {
                             // Status = 0? The default
                             poolStatus = result.valueOf();
                             poolBalance = web3.eth.getBalance(miniPoolInstance.address).valueOf();
                             // Now just count the users to make sure this user is the only one in this new pool
                             return miniPoolInstance.getUserCount
                               .call()
-                              .then(function(result) {
+                              .then(result => {
                                 userCount = result.valueOf();
                                 // Now check everything
                                 if (
@@ -626,7 +626,7 @@ contract('RocketPool', function(accounts) {
                                 }
                                 return false;
                               })
-                              .then(function(result) {
+                              .then(result => {
                                 assert.isTrue(
                                   result,
                                   'Funds transferred successfully, mini pool created, user registered with partner and funds Transferred to mini pool.'
@@ -645,59 +645,57 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // First partner withdraws half their users previous Ether from the pool before it has launched for staking
-  it(printTitle('partnerFirst', 'withdraws half their users previous deposit from the mini pool'), function() {
+  it(printTitle('partnerFirst', 'withdraws half their users previous deposit from the mini pool'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketUser now
-        return rocketUser.deployed().then(function(rocketUserInstance) {
+        return rocketUser.deployed().then(rocketUserInstance => {
           // RocketPool api now
-          return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+          return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
             // RocketPool now
-            return rocketPool.deployed().then(function(rocketPoolInstance) {
+            return rocketPool.deployed().then(rocketPoolInstance => {
               // Get the users deposit total
-              return rocketPoolInstance.getPoolsFilterWithUserDeposit
-                .call(partnerFirstUserAccount)
-                .then(function(result) {
-                  var pools = result.valueOf();
-                  if (pools.length != 1) {
-                    return false;
-                  }
-                  // Get an instance of that pool and do further checks
-                  var miniPoolInstance = rocketPoolMini.at(pools[0]);
-                  return miniPoolInstance.getStatus.call().then(function(result) {
-                    // Get the pool status
-                    var poolStatus = result.valueOf();
-                    // Get the user deposit
-                    return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(function(result) {
-                      var depositedAmount = result.valueOf();
-                      var withdrawalAmount = depositedAmount / 2;
-                      // Withdraw half our deposit now through the main parent contract
-                      return rocketPartnerAPIInstance
-                        .APIpartnerWithdrawal(miniPoolInstance.address, withdrawalAmount, partnerFirstUserAccount, {
-                          from: partnerFirst,
-                          gas: 4000000,
-                        })
-                        .then(function(result) {
-                          // Get our balance again
-                          return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(function(result) {
-                            var depositedAmountAfter = result.valueOf();
-                            if (depositedAmountAfter == depositedAmount - withdrawalAmount) {
-                              return true;
-                            }
-                            return false;
-                          });
-                        })
-                        .then(function(result) {
-                          assert.isTrue(
-                            result,
-                            'User has successfully withdrawn half of their balance from the mini pool.'
-                          );
+              return rocketPoolInstance.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).then(result => {
+                var pools = result.valueOf();
+                if (pools.length != 1) {
+                  return false;
+                }
+                // Get an instance of that pool and do further checks
+                var miniPoolInstance = rocketPoolMini.at(pools[0]);
+                return miniPoolInstance.getStatus.call().then(result => {
+                  // Get the pool status
+                  var poolStatus = result.valueOf();
+                  // Get the user deposit
+                  return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(result => {
+                    var depositedAmount = result.valueOf();
+                    var withdrawalAmount = depositedAmount / 2;
+                    // Withdraw half our deposit now through the main parent contract
+                    return rocketPartnerAPIInstance
+                      .APIpartnerWithdrawal(miniPoolInstance.address, withdrawalAmount, partnerFirstUserAccount, {
+                        from: partnerFirst,
+                        gas: 4000000,
+                      })
+                      .then(result => {
+                        // Get our balance again
+                        return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(result => {
+                          var depositedAmountAfter = result.valueOf();
+                          if (depositedAmountAfter == depositedAmount - withdrawalAmount) {
+                            return true;
+                          }
+                          return false;
                         });
-                    });
+                      })
+                      .then(result => {
+                        assert.isTrue(
+                          result,
+                          'User has successfully withdrawn half of their balance from the mini pool.'
+                        );
+                      });
                   });
                 });
+              });
             });
           });
         });
@@ -711,56 +709,54 @@ contract('RocketPool', function(accounts) {
       'partnerFirst',
       'withdraws their users remaining deposit from the mini pool, their user is removed from it and the mini pool is destroyed as it has no users anymore'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketPool now
-          return rocketPool.deployed().then(function(rocketPoolInstance) {
+          return rocketPool.deployed().then(rocketPoolInstance => {
             // RocketPool api now
-            return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+            return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
               // Get the users deposit total
-              return rocketPoolInstance.getPoolsFilterWithUserDeposit
-                .call(partnerFirstUserAccount)
-                .then(function(result) {
-                  var pools = result.valueOf();
-                  if (pools.length != 1) {
-                    return false;
-                  }
-                  // Get an instance of that pool and do further checks
-                  var miniPoolInstance = rocketPoolMini.at(pools[0]);
-                  return miniPoolInstance.getStatus.call().then(function(result) {
-                    // Get the pool status
-                    var poolStatus = result.valueOf();
-                    // Get the user deposit
-                    return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(function(result) {
-                      var depositedAmount = result.valueOf();
-                      var withdrawalAmount = depositedAmount;
-                      // Withdraw our deposit now through the main parent contract
-                      return rocketPartnerAPIInstance
-                        .APIpartnerWithdrawal(miniPoolInstance.address, withdrawalAmount, partnerFirstUserAccount, {
-                          from: partnerFirst,
-                          gas: rocketWithdrawalGas,
-                        })
-                        .then(function(result) {
-                          // See if RocketHub still recognises the pool contract after its been removed and self destructed
-                          return rocketPoolInstance.getPoolExists
-                            .call(pools[0])
-                            .then(function(result) {
-                              // If the pool doesn't exist, success!
-                              return result.valueOf() == true ? false : true;
-                            })
-                            .then(function(result) {
-                              assert.isTrue(
-                                result,
-                                'User has successfully withdrawn their balance from the mini pool and has been removed from the pool.'
-                              );
-                            });
-                        });
-                    });
+              return rocketPoolInstance.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).then(result => {
+                var pools = result.valueOf();
+                if (pools.length != 1) {
+                  return false;
+                }
+                // Get an instance of that pool and do further checks
+                var miniPoolInstance = rocketPoolMini.at(pools[0]);
+                return miniPoolInstance.getStatus.call().then(result => {
+                  // Get the pool status
+                  var poolStatus = result.valueOf();
+                  // Get the user deposit
+                  return miniPoolInstance.getUserDeposit.call(partnerFirstUserAccount).then(result => {
+                    var depositedAmount = result.valueOf();
+                    var withdrawalAmount = depositedAmount;
+                    // Withdraw our deposit now through the main parent contract
+                    return rocketPartnerAPIInstance
+                      .APIpartnerWithdrawal(miniPoolInstance.address, withdrawalAmount, partnerFirstUserAccount, {
+                        from: partnerFirst,
+                        gas: rocketWithdrawalGas,
+                      })
+                      .then(result => {
+                        // See if RocketHub still recognises the pool contract after its been removed and self destructed
+                        return rocketPoolInstance.getPoolExists
+                          .call(pools[0])
+                          .then(result => {
+                            // If the pool doesn't exist, success!
+                            return result.valueOf() == true ? false : true;
+                          })
+                          .then(result => {
+                            assert.isTrue(
+                              result,
+                              'User has successfully withdrawn their balance from the mini pool and has been removed from the pool.'
+                            );
+                          });
+                      });
                   });
                 });
+              });
             });
           });
         });
@@ -773,17 +769,17 @@ contract('RocketPool', function(accounts) {
       'userThird',
       'sends a lot of ether to RP, creates second mini pool, registers user with pool and sets status of minipool to countdown'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketPool now
-          return rocketPool.deployed().then(function(rocketPoolInstance) {
+          return rocketPool.deployed().then(rocketPoolInstance => {
             // RocketUser now
-            return rocketUser.deployed().then(function(rocketUserInstance) {
+            return rocketUser.deployed().then(rocketUserInstance => {
               // Get the min ether required to launch a mini pool
-              return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+              return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
                 // Transaction - Send Ether as a user, enough to create pool and set it into countdown
                 var sendAmount = result.valueOf();
                 return rocketUserInstance
@@ -793,7 +789,7 @@ contract('RocketPool', function(accounts) {
                     value: sendAmount,
                     gas: rocketDepositGas,
                   })
-                  .then(function(result) {
+                  .then(result => {
                     // Now check the events
                     var userSendAmount = 0;
                     var userSendAddress = 0;
@@ -811,13 +807,13 @@ contract('RocketPool', function(accounts) {
                     }
                     // Get an instance of that pool and do further checks
                     miniPoolSecondInstance = rocketPoolMini.at(poolAddress);
-                    return miniPoolSecondInstance.getStatus.call().then(function(result) {
+                    return miniPoolSecondInstance.getStatus.call().then(result => {
                       // Status = 0? The default
                       poolStatus = result.valueOf();
                       poolBalance = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
                       return miniPoolSecondInstance.getUserPartner
                         .call(userThird)
-                        .then(function(result) {
+                        .then(result => {
                           // Partner check
                           userPartnerAddress = result.valueOf();
                           // Now check everything
@@ -831,7 +827,7 @@ contract('RocketPool', function(accounts) {
                           }
                           return false;
                         })
-                        .then(function(result) {
+                        .then(result => {
                           assert.isTrue(
                             result,
                             'Funds transferred successfully, mini pool created, user reg and funds Transferred to mini pool.'
@@ -848,23 +844,23 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // Attempt to make a withdraw of rocket deposit tokens too early
-  it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), function() {
+  it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketUser now
-        return rocketUser.deployed().then(function(rocketUserInstance) {
+        return rocketUser.deployed().then(rocketUserInstance => {
           // Try to withdraw tokens from that users minipool
           return rocketUserInstance
             .userWithdrawDepositTokens(miniPoolSecondInstance.address, 0, { from: userThird, gas: 150000 })
-            .then(function(result) {
+            .then(result => {
               return result;
             })
-            .then(function(result) {
+            .then(result => {
               assert(false, "Expect throw but didn't.");
             })
-            .catch(function(error) {
+            .catch(error => {
               return checkThrow(error);
             });
         });
@@ -878,15 +874,15 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs checkin, no mini pool awaiting launch should not be launched yet as the countdown has not passed for either'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             // RocketPool now
-            return rocketPool.deployed().then(function(rocketPoolInstance) {
+            return rocketPool.deployed().then(rocketPoolInstance => {
               // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
               // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
               var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
@@ -896,7 +892,7 @@ contract('RocketPool', function(accounts) {
                   averageLoad15mins, // Server Load
                   { from: nodeFirst, gas: nodeCheckinGas }
                 )
-                .then(function(result) {
+                .then(result => {
                   var nodeAddress = 0;
                   var loadAverage = 0;
                   for (var i = 0; i < result.logs.length; i++) {
@@ -909,12 +905,12 @@ contract('RocketPool', function(accounts) {
                   // Check the node doesn't belong to any pools now
                   return rocketPoolInstance.getPoolsFilterWithNodeCount
                     .call(nodeAddress)
-                    .then(function(result) {
+                    .then(result => {
                       var poolCount = result.valueOf();
                       // Check it
                       return nodeFirst == nodeAddress && loadAverage && poolCount == 0 ? true : false;
                     })
-                    .then(function(result) {
+                    .then(result => {
                       assert.isTrue(result, 'Node has checked in successfully.');
                     });
                 });
@@ -931,33 +927,33 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs second checkin, 1 of the 2 minipools awaiting launch should be launched as countdown is set to 0 and balance sent to Casper'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketPool now
-          return rocketPool.deployed().then(function(rocketPoolInstance) {
+          return rocketPool.deployed().then(rocketPoolInstance => {
             // RocketNode now
-            return rocketNode.deployed().then(function(rocketNodeInstance) {
+            return rocketNode.deployed().then(rocketNodeInstance => {
               // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
               // Also Solidity doesn't deal with decimals atm, so convert to a whole number for the load
               var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
               // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
               return rocketSettingsInstance
                 .setPoolCountdownTime(0, { from: web3.eth.coinbase, gas: 500000 })
-                .then(function(result) {
+                .then(result => {
                   // Launching multiple pools at once can consume a lot of gas, estimate it first
                   return rocketNodeInstance.nodeCheckin
                     .estimateGas(averageLoad15mins, { from: nodeFirst })
-                    .then(function(gasEstimate) {
+                    .then(gasEstimate => {
                       // Checkin now
                       return rocketNodeInstance
                         .nodeCheckin(
                           averageLoad15mins, // Server Load
                           { from: nodeFirst, gas: parseInt(gasEstimate) + 100000 }
                         )
-                        .then(function(result) {
+                        .then(result => {
                           var nodeCheckinOk = false;
                           var minipools = [];
                           var minipoolParams = {
@@ -977,7 +973,7 @@ contract('RocketPool', function(accounts) {
                             }
                           }
                           // Check that the first minipool contract has been attached to the node
-                          return rocketPoolInstance.getPoolsFilterWithNode.call(nodeFirst).then(function(result) {
+                          return rocketPoolInstance.getPoolsFilterWithNode.call(nodeFirst).then(result => {
                             // Get minipools
                             var minipoolsAttached = result.valueOf();
                             // Get the balance, should be 0 as the Ether has been sent to Casper for staking
@@ -985,7 +981,7 @@ contract('RocketPool', function(accounts) {
                             // Update the pool info
                             return miniPoolFirstInstance.getStatus
                               .call()
-                              .then(function(result) {
+                              .then(result => {
                                 // Status = 2? Launched
                                 var minipoolStatus = result.valueOf();
                                 // Check it all now
@@ -997,7 +993,7 @@ contract('RocketPool', function(accounts) {
                                   nodeCheckinOk == true
                                 );
                               })
-                              .then(function(result) {
+                              .then(result => {
                                 assert.isTrue(
                                   result,
                                   'Node has checked in successfully and launched the first mini pool successfully.'
@@ -1020,33 +1016,33 @@ contract('RocketPool', function(accounts) {
       'nodeSecond',
       'second node performs first checkin, 2 of the 2 minipools awaiting launch should be launched as countdown is set to 0 and balance sent to Casper'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketPool now
-          return rocketPool.deployed().then(function(rocketPoolInstance) {
+          return rocketPool.deployed().then(rocketPoolInstance => {
             // RocketNode now
-            return rocketNode.deployed().then(function(rocketNodeInstance) {
+            return rocketNode.deployed().then(rocketNodeInstance => {
               // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
               // Also Solidity doesn't deal with decimals atm, so convert to a whole number for the load
               var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
               // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
               return rocketSettingsInstance
                 .setPoolCountdownTime(0, { from: web3.eth.coinbase, gas: 500000 })
-                .then(function(result) {
+                .then(result => {
                   // Launching multiple pools at once can consume a lot of gas, estimate it first
                   return rocketNodeInstance.nodeCheckin
                     .estimateGas(averageLoad15mins, { from: nodeSecond })
-                    .then(function(gasEstimate) {
+                    .then(gasEstimate => {
                       // Checkin now
                       return rocketNodeInstance
                         .nodeCheckin(
                           averageLoad15mins, // Server Load
                           { from: nodeSecond, gas: parseInt(gasEstimate) + 100000 }
                         )
-                        .then(function(result) {
+                        .then(result => {
                           var nodeCheckinOk = false;
                           var minipools = [];
                           var minipoolParams = {
@@ -1066,7 +1062,7 @@ contract('RocketPool', function(accounts) {
                             }
                           }
                           // Check that the first minipool contract has been attached to the node
-                          return rocketPoolInstance.getPoolsFilterWithNode.call(nodeSecond).then(function(result) {
+                          return rocketPoolInstance.getPoolsFilterWithNode.call(nodeSecond).then(result => {
                             // Get minipools
                             var minipoolsAttached = result.valueOf();
                             // Get the balance, should be 0 as the Ether has been sent to Casper for staking
@@ -1074,7 +1070,7 @@ contract('RocketPool', function(accounts) {
                             // Update the pool info
                             return miniPoolSecondInstance.getStatus
                               .call()
-                              .then(function(result) {
+                              .then(result => {
                                 // Status = 2? Launched
                                 var minipoolStatus = result.valueOf();
                                 // Check it all now
@@ -1086,7 +1082,7 @@ contract('RocketPool', function(accounts) {
                                   nodeCheckinOk == true
                                 );
                               })
-                              .then(function(result) {
+                              .then(result => {
                                 assert.isTrue(
                                   result,
                                   'Node has checked in successfully and launched the first mini pool successfully.'
@@ -1108,24 +1104,24 @@ contract('RocketPool', function(accounts) {
       'userThird',
       'withdraws 50% of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // Get the token withdrawal fee
-          return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function(result) {
+          return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(result => {
             // Token fee
             var tokenWithdrawalFee = parseInt(result.valueOf());
             // Check rocketDepositToken is deployed
-            return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+            return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
               // Get the total supply of tokens in circulation
-              return rocketDepositTokenInstance.totalSupply.call({ from: userThird }).then(function(result) {
+              return rocketDepositTokenInstance.totalSupply.call({ from: userThird }).then(result => {
                 var totalTokenSupply = parseInt(result.valueOf());
                 // RocketUser now
-                return rocketUser.deployed().then(function(rocketUserInstance) {
+                return rocketUser.deployed().then(rocketUserInstance => {
                   // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
-                  return miniPoolSecondInstance.getUserDeposit.call(userThird).then(function(result) {
+                  return miniPoolSecondInstance.getUserDeposit.call(userThird).then(result => {
                     var withdrawHalfAmount = parseInt(result.valueOf()) / 2;
                     // Fee incurred on tokens
                     var tokenBalanceFeeIncurred = parseFloat(
@@ -1137,18 +1133,18 @@ contract('RocketPool', function(accounts) {
                         from: userThird,
                         gas: 250000,
                       })
-                      .then(function(result) {
+                      .then(result => {
                         // Get the total supply of tokens in circulation
-                        return rocketDepositTokenInstance.totalSupply({ from: userThird }).then(function(result) {
+                        return rocketDepositTokenInstance.totalSupply({ from: userThird }).then(result => {
                           var totalTokenSupplyAfter = web3.fromWei(parseInt(result.valueOf()), 'ether');
                           // Now count how many tokens that user has, should match the amount withdrawn
-                          return rocketDepositTokenInstance.balanceOf.call(userThird).then(function(result) {
+                          return rocketDepositTokenInstance.balanceOf.call(userThird).then(result => {
                             // Now count how many tokens that user has, should match the amount withdrawn - fees
                             var tokenBalance = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
                             var userBalance = null;
                             return miniPoolSecondInstance.getUserDeposit
                               .call(userThird)
-                              .then(function(result) {
+                              .then(result => {
                                 // The balance after withdrawing tokens
                                 var userBalance = result.valueOf();
                                 //console.log(tokenBalanceFeeIncurred, tokenBalance, (web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred), totalTokenSupplyAfter);
@@ -1160,7 +1156,7 @@ contract('RocketPool', function(accounts) {
                                   ? true
                                   : false;
                               })
-                              .then(function(result) {
+                              .then(result => {
                                 assert.isTrue(result, 'Users tokens do not match the amount withdrawn');
                               });
                           });
@@ -1176,15 +1172,15 @@ contract('RocketPool', function(accounts) {
     }
   ); // End Test
 
-  it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), function() {
+  it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // Check rocketDepositToken is deployed
-        return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+        return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
           // Now count how many tokens that user has
-          return rocketDepositTokenInstance.balanceOf.call(userThird).then(function(result) {
+          return rocketDepositTokenInstance.balanceOf.call(userThird).then(result => {
             // Their token balance
             var userThirdTokenBalance = parseInt(result.valueOf());
             // Transfer half to first user on the open market
@@ -1192,21 +1188,21 @@ contract('RocketPool', function(accounts) {
             // Transfer now
             return rocketDepositTokenInstance
               .transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 })
-              .then(function(result) {
+              .then(result => {
                 // Now count how many tokens that user has
-                return rocketDepositTokenInstance.balanceOf.call(userThird).then(function(result) {
+                return rocketDepositTokenInstance.balanceOf.call(userThird).then(result => {
                   var userThirdTokenBalanceAfter = parseInt(result.valueOf());
                   // Now count first users
                   return rocketDepositTokenInstance.balanceOf
                     .call(userFirst)
-                    .then(function(result) {
+                    .then(result => {
                       var userFirstTokenBalance = parseInt(result.valueOf());
                       return userThirdTokenBalanceAfter == userThirdTokenBalance - tokenTransferAmount &&
                         userFirstTokenBalance == tokenTransferAmount
                         ? true
                         : false;
                     })
-                    .then(function(result) {
+                    .then(result => {
                       assert.isTrue(result, 'Users tokens do not match the amount transferred');
                     });
                 });
@@ -1217,15 +1213,15 @@ contract('RocketPool', function(accounts) {
     });
   }); // End Test
 
-  it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), function() {
+  it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // Check rocketDepositToken is deployed
-        return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+        return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
           // Now count how many tokens that user has
-          return rocketDepositTokenInstance.balanceOf.call(userThird).then(function(result) {
+          return rocketDepositTokenInstance.balanceOf.call(userThird).then(result => {
             // Their token balance
             var userThirdTokenBalance = parseInt(result.valueOf());
             // Transfer to first user on the open market
@@ -1233,16 +1229,16 @@ contract('RocketPool', function(accounts) {
             // Transfer now
             return rocketDepositTokenInstance
               .transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 })
-              .then(function(result) {
+              .then(result => {
                 // Now count how many tokens that user has
                 return rocketDepositTokenInstance.balanceOf
                   .call(userThird)
-                  .then(function(result) {
+                  .then(result => {
                     var userThirdTokenBalanceAfter = parseInt(result.valueOf());
                     // Check they didn't send any
                     return userThirdTokenBalance == userThirdTokenBalanceAfter ? true : false;
                   })
-                  .then(function(result) {
+                  .then(result => {
                     assert.isTrue(result, 'Users tokens were transferred');
                   });
               });
@@ -1254,15 +1250,15 @@ contract('RocketPool', function(accounts) {
 
   it(
     printTitle('userThird', 'fails to transfer tokens from userFirst account to themselves on the open market'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // Check rocketDepositToken is deployed
-          return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+          return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
             // Now count how many tokens that user has
-            return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function(result) {
+            return rocketDepositTokenInstance.balanceOf.call(userFirst).then(result => {
               // Their token balance
               var userFirstTokenBalance = parseInt(result.valueOf());
               // Transfer to third user on the open market
@@ -1270,16 +1266,16 @@ contract('RocketPool', function(accounts) {
               // Transfer now
               return rocketDepositTokenInstance
                 .transferFrom(userFirst, userThird, tokenTransferAmount, { from: userThird, gas: 250000 })
-                .then(function(result) {
+                .then(result => {
                   // Now count how many tokens that user has
                   return rocketDepositTokenInstance.balanceOf
                     .call(userFirst)
-                    .then(function(result) {
+                    .then(result => {
                       var userFirstTokenBalanceAfter = parseInt(result.valueOf());
                       // Check they didn't send any
                       return userFirstTokenBalance == userFirstTokenBalanceAfter ? true : false;
                     })
-                    .then(function(result) {
+                    .then(result => {
                       assert.isTrue(result, 'Users tokens were transferred');
                     });
                 });
@@ -1295,27 +1291,27 @@ contract('RocketPool', function(accounts) {
       'userThird',
       'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // Check rocketDepositToken is deployed
-          return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+          return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
             // Now count how many tokens that user has
-            return rocketDepositTokenInstance.balanceOf.call(userThird).then(function(result) {
+            return rocketDepositTokenInstance.balanceOf.call(userThird).then(result => {
               // Their token balance
               var userThirdTokenBalance = parseInt(result.valueOf());
               // Transfer now
               return rocketDepositTokenInstance
                 .burnTokensForEther(userThirdTokenBalance, { from: userThird, gas: 250000 })
-                .then(function(result) {
+                .then(result => {
                   return result;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert(false, "Expect throw but didn't.");
                 })
-                .catch(function(error) {
+                .catch(error => {
                   return checkThrow(error);
                 });
             });
@@ -1330,34 +1326,34 @@ contract('RocketPool', function(accounts) {
       'userThird',
       'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // Get the token withdrawal fee
-          return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function(result) {
+          return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(result => {
             // Token fee
             var tokenWithdrawalFee = parseInt(result.valueOf());
             // Check rocketDepositToken is deployed
-            return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+            return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
               // RocketUser now
-              return rocketUser.deployed().then(function(rocketUserInstance) {
+              return rocketUser.deployed().then(rocketUserInstance => {
                 // Withdraw all by passing 0
                 return rocketUserInstance
                   .userWithdrawDepositTokens(miniPoolSecondInstance.address, 0, { from: userThird, gas: 250000 })
-                  .then(function(result) {
+                  .then(result => {
                     // User should be removed from pool now as they dont have any deposit left, they traded it all for deposit tokens
                     // Will throw if user doesn't exist in pool
                     return miniPoolSecondInstance.getUserDeposit
                       .call(userThird)
-                      .then(function(result) {
+                      .then(result => {
                         return result;
                       })
-                      .then(function(result) {
+                      .then(result => {
                         assert(false, "Expect throw but didn't.");
                       })
-                      .catch(function(error) {
+                      .catch(error => {
                         return checkThrow(error);
                       });
                   });
@@ -1370,23 +1366,23 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
-  it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), function() {
+  it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketUser now
-        return rocketUser.deployed().then(function(rocketUserInstance) {
+        return rocketUser.deployed().then(rocketUserInstance => {
           // Attemp withdrawal of all our deposit now
           return rocketUserInstance
             .userWithdraw(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas })
-            .then(function(result) {
+            .then(resul => {
               return result;
             })
-            .then(function(result) {
+            .then(result => {
               assert(false, "Expect throw but didn't.");
             })
-            .catch(function(error) {
+            .catch(error => {
               return checkThrow(error);
             });
         });
@@ -1400,13 +1396,13 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs another checkin, first mini pool currently staking should remain staking on it'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
             // Checkin now
             return rocketNodeInstance
@@ -1414,8 +1410,8 @@ contract('RocketPool', function(accounts) {
                 averageLoad15mins, // Server Load
                 { from: nodeFirst, gas: nodeCheckinGas }
               )
-              .then(function(result) {
-                return miniPoolFirstInstance.getStatus.call().then(function(result) {
+              .then(result => {
+                return miniPoolFirstInstance.getStatus.call().then(result => {
                   // Status = 2? Still staking
                   miniPoolStatus = result.valueOf();
                   // Get the balance, should be 0 as the Ether has been sent to Casper for staking
@@ -1424,7 +1420,7 @@ contract('RocketPool', function(accounts) {
                   return miniPoolStatus == 2 && miniPoolBalance == 0 ? true : false;
                 });
               })
-              .then(function(result) {
+              .then(result => {
                 assert.isTrue(result, 'Node has checked in successfully.');
               });
           });
@@ -1434,20 +1430,20 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // Update first mini pool
-  it(printTitle('---------', 'first mini pool has staking duration set to 0'), function() {
+  it(printTitle('---------', 'first mini pool has staking duration set to 0'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // Set the mini pool staking duration to 0 for testing so it will attempt to request withdrawal from Casper
           rocketPoolInstance
             .setPoolStakingDuration(miniPoolFirstInstance.address, 0, { from: owner, gas: 150000 })
-            .then(function(result) {
+            .then(result => {
               return true;
             })
-            .then(function(result) {
+            .then(result => {
               assert.isTrue(result, 'First mini pool has staking duration set to 0.');
             });
         });
@@ -1456,20 +1452,20 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Update second mini pool
-  it(printTitle('---------', 'second mini pool has staking duration set to 0'), function() {
+  it(printTitle('---------', 'second mini pool has staking duration set to 0'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // Set the mini pool staking duration to 0 for testing so it will attempt to request withdrawal from Casper
           rocketPoolInstance
             .setPoolStakingDuration(miniPoolSecondInstance.address, 0, { from: owner, gas: 150000 })
-            .then(function(result) {
+            .then(result => {
               return true;
             })
-            .then(function(result) {
+            .then(result => {
               assert.isTrue(result, 'Second mini pool has staking duration set to 0.');
             });
         });
@@ -1483,31 +1479,31 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs another checkin after both minipools have staking duration set to 0. Only minipool attached to first node will signal awaiting withdrawal from Casper.'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
             // Checkin now
             return rocketNodeInstance
               .nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas })
-              .then(function(result) {
+              .then(result => {
                 return miniPoolFirstInstance.getStatus
                   .call()
-                  .then(function(result) {
+                  .then(result => {
                     // Status = 3? Awaiting withdrawal from Casper
                     var miniPoolStatusFirst = result.valueOf();
-                    return miniPoolSecondInstance.getStatus.call().then(function(result) {
+                    return miniPoolSecondInstance.getStatus.call().then(result => {
                       // Status = 3? Awaiting withdrawal from Casper
                       var miniPoolStatusSecond = result.valueOf();
                       // Ok Check it all now
                       return miniPoolStatusFirst == 3 && miniPoolStatusSecond == 2 ? true : false;
                     });
                   })
-                  .then(function(result) {
+                  .then(result => {
                     assert.isTrue(result, 'Node has checked in successfully.');
                   });
               });
@@ -1523,31 +1519,31 @@ contract('RocketPool', function(accounts) {
       'nodeSecond',
       'second node performs another checkin after both minipools have staking duration set to 0. Only minipool attached to second node will signal awaiting withdrawal from Casper.'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
             // Checkin now
             return rocketNodeInstance
               .nodeCheckin(averageLoad15mins, { from: nodeSecond, gas: nodeCheckinGas })
-              .then(function(result) {
+              .then(result => {
                 return miniPoolFirstInstance.getStatus
                   .call()
-                  .then(function(result) {
+                  .then(result => {
                     // Status = 3? Awaiting withdrawal from Casper
                     var miniPoolStatusFirst = result.valueOf();
-                    return miniPoolSecondInstance.getStatus.call().then(function(result) {
+                    return miniPoolSecondInstance.getStatus.call().then(result => {
                       // Status = 3? Awaiting withdrawal from Casper
                       var miniPoolStatusSecond = result.valueOf();
                       // Ok Check it all now
                       return miniPoolStatusFirst == 3 && miniPoolStatusSecond == 3 ? true : false;
                     });
                   })
-                  .then(function(result) {
+                  .then(result => {
                     assert.isTrue(result, 'Node has checked in successfully.');
                   });
               });
@@ -1563,26 +1559,26 @@ contract('RocketPool', function(accounts) {
       '---------',
       'first mini pool has its withdrawal epoc within Casper set to 0 to allow it to ask Casper for final withdrawal'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return casper.deployed().then(function(casperInstance) {
+        return casper.deployed().then(casperInstance => {
           // Set the withdrawal request to a week ago
           var newWithdrawalEpoch = Math.round(new Date().getTime() / 1000) - 604800;
           return casperInstance
             .setWithdrawalEpoch(miniPoolFirstInstance.address, newWithdrawalEpoch, { from: owner, gas: 150000 })
-            .then(function(result) {
+            .then(result => {
               // Now get it to check its been updated
               return casperInstance.getWithdrawalEpoch
                 .call(miniPoolFirstInstance.address, { from: owner })
-                .then(function(result) {
+                .then(result => {
                   if (result && result.valueOf() == newWithdrawalEpoch) {
                     return true;
                   }
                   return false;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert.isTrue(result, 'First mini pool has its withdrawal epoc within Casper set to 0');
                 });
             });
@@ -1597,26 +1593,26 @@ contract('RocketPool', function(accounts) {
       '---------',
       'second mini pool has its withdrawal epoc within Casper set to 0 to allow it to ask Casper for final withdrawal'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return casper.deployed().then(function(casperInstance) {
+        return casper.deployed().then(casperInstance => {
           // Set the withdrawal request to a week ago
           var newWithdrawalEpoch = Math.round(new Date().getTime() / 1000) - 604800;
           return casperInstance
             .setWithdrawalEpoch(miniPoolSecondInstance.address, newWithdrawalEpoch, { from: owner, gas: 150000 })
-            .then(function(result) {
+            .then(result => {
               // Now get it to check its been updated
               return casperInstance.getWithdrawalEpoch
                 .call(miniPoolSecondInstance.address, { from: owner })
-                .then(function(result) {
+                .then(result => {
                   if (result && result.valueOf() == newWithdrawalEpoch) {
                     return true;
                   }
                   return false;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert.isTrue(result, 'Second mini pool has its withdrawal epoc within Casper set to 0');
                 });
             });
@@ -1631,49 +1627,47 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs another checkin and first mini pool to change status and request actual deposit withdrawal from Casper'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             // Our average load (simplified) is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
             var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
             // Checkin now
-            return rocketNodeInstance
-              .nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 })
-              .then(function(result) {
-                return miniPoolFirstInstance.getStatus.call().then(function(result) {
-                  // Status = 4? Received deposit from casper + rewards
-                  var miniPoolStatusFirst = result.valueOf();
-                  // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-                  var miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
-                  // Check second pool
-                  return miniPoolSecondInstance.getStatus
-                    .call()
-                    .then(function(result) {
-                      // Status = 4? Received deposit from casper + rewards
-                      var miniPoolStatusSecond = result.valueOf();
-                      // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-                      var miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
-                      //console.log(miniPoolStatusFirst, miniPoolBalanceFirst);
-                      //console.log(miniPoolStatusSecond, miniPoolBalanceSecond);
-                      // Ok Check it all now
-                      // second minipool was automatically closed when receiving deposit from Casper
-                      // as all its users had been removed when taking their entire deposit out as tokens
-                      return miniPoolStatusFirst == 4 &&
-                        miniPoolBalanceFirst > 0 &&
-                        (miniPoolStatusSecond == 3 && miniPoolBalanceSecond == 0)
-                        ? true
-                        : false;
-                    })
-                    .then(function(result) {
-                      assert.isTrue(result, 'Status changed successfully and deposit received from Casper');
-                    });
-                });
+            return rocketNodeInstance.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 }).then(result => {
+              return miniPoolFirstInstance.getStatus.call().then(result => {
+                // Status = 4? Received deposit from casper + rewards
+                var miniPoolStatusFirst = result.valueOf();
+                // Get the balance, should be 0 as the Ether has been sent to Casper for staking
+                var miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
+                // Check second pool
+                return miniPoolSecondInstance.getStatus
+                  .call()
+                  .then(result => {
+                    // Status = 4? Received deposit from casper + rewards
+                    var miniPoolStatusSecond = result.valueOf();
+                    // Get the balance, should be 0 as the Ether has been sent to Casper for staking
+                    var miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
+                    //console.log(miniPoolStatusFirst, miniPoolBalanceFirst);
+                    //console.log(miniPoolStatusSecond, miniPoolBalanceSecond);
+                    // Ok Check it all now
+                    // second minipool was automatically closed when receiving deposit from Casper
+                    // as all its users had been removed when taking their entire deposit out as tokens
+                    return miniPoolStatusFirst == 4 &&
+                      miniPoolBalanceFirst > 0 &&
+                      (miniPoolStatusSecond == 3 && miniPoolBalanceSecond == 0)
+                      ? true
+                      : false;
+                  })
+                  .then(result => {
+                    assert.isTrue(result, 'Status changed successfully and deposit received from Casper');
+                  });
               });
+            });
           });
         });
       });
@@ -1686,50 +1680,48 @@ contract('RocketPool', function(accounts) {
       'nodeFirst',
       'first node performs another checkin and second mini pool requests deposit from Casper, receives it then closes the pool as all users have withdrawn deposit as tokens'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             // Our average load (simplified) is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
             var averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
             // Checkin now
-            return rocketNodeInstance
-              .nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 })
-              .then(function(result) {
-                return miniPoolFirstInstance.getStatus.call().then(function(result) {
-                  // Status = 4? Received deposit from casper + rewards
-                  var miniPoolStatusFirst = result.valueOf();
-                  // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-                  var miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
-                  // Check second pool
-                  return miniPoolSecondInstance.getStatus
-                    .call()
-                    .then(function(result) {
-                      // Status = 4? Received deposit from casper + rewards
-                      var miniPoolStatusSecond = result.valueOf();
-                      // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-                      var miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
-                      //console.log(miniPoolSecondInstance.address);
-                      //console.log(miniPoolStatusFirst, miniPoolBalanceFirst);
-                      //console.log(miniPoolStatusSecond, miniPoolBalanceSecond);
-                      // Ok Check it all now
-                      // second minipool was automatically closed when receiving deposit from Casper
-                      // as all its users had been removed when taking their entire deposit out as tokens
-                      return miniPoolStatusFirst == 4 &&
-                        miniPoolBalanceFirst > 0 &&
-                        (miniPoolStatusSecond == 0 && miniPoolBalanceSecond == 0)
-                        ? true
-                        : false;
-                    })
-                    .then(function(result) {
-                      assert.isTrue(result, 'Status changed successfully and deposit received from Casper');
-                    });
-                });
+            return rocketNodeInstance.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 }).then(result => {
+              return miniPoolFirstInstance.getStatus.call().then(result => {
+                // Status = 4? Received deposit from casper + rewards
+                var miniPoolStatusFirst = result.valueOf();
+                // Get the balance, should be 0 as the Ether has been sent to Casper for staking
+                var miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
+                // Check second pool
+                return miniPoolSecondInstance.getStatus
+                  .call()
+                  .then(result => {
+                    // Status = 4? Received deposit from casper + rewards
+                    var miniPoolStatusSecond = result.valueOf();
+                    // Get the balance, should be 0 as the Ether has been sent to Casper for staking
+                    var miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecondInstance.address).valueOf();
+                    //console.log(miniPoolSecondInstance.address);
+                    //console.log(miniPoolStatusFirst, miniPoolBalanceFirst);
+                    //console.log(miniPoolStatusSecond, miniPoolBalanceSecond);
+                    // Ok Check it all now
+                    // second minipool was automatically closed when receiving deposit from Casper
+                    // as all its users had been removed when taking their entire deposit out as tokens
+                    return miniPoolStatusFirst == 4 &&
+                      miniPoolBalanceFirst > 0 &&
+                      (miniPoolStatusSecond == 0 && miniPoolBalanceSecond == 0)
+                      ? true
+                      : false;
+                  })
+                  .then(result => {
+                    assert.isTrue(result, 'Status changed successfully and deposit received from Casper');
+                  });
               });
+            });
           });
         });
       });
@@ -1738,28 +1730,28 @@ contract('RocketPool', function(accounts) {
 
   it(
     printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Get the min ether required to launch a mini pool - the user sent half this amount for tokens originally
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // These ethers are ones they withdrew tokens against
               var etherAmountTradedSentForTokens = parseInt(result.valueOf());
               // Check rocketDepositToken is deployed
-              return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
+              return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
                 // Now count how many tokens that user has
                 return rocketDepositTokenInstance.balanceOf
                   .call(userThird)
-                  .then(function(result) {
+                  .then(result => {
                     var depositTokenFundBalance = web3.eth.getBalance(rocketDepositTokenInstance.address).valueOf();
                     // Ok?
                     return depositTokenFundBalance == etherAmountTradedSentForTokens ? true : false;
                   })
-                  .then(function(result) {
+                  .then(result => {
                     assert.isTrue(result, 'depositTokenFundBalance does not match etherAmountTradedSentForTokens');
                   });
               });
@@ -1770,88 +1762,84 @@ contract('RocketPool', function(accounts) {
     }
   ); // End Test
 
-  it(
-    printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'),
-    function() {
-      // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
-        // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
-          // Check rocketDepositToken is deployed
-          return rocketDepositToken.deployed().then(function(rocketDepositTokenInstance) {
-            // Get the token withdrawal fee
-            return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(function(result) {
-              // Token fee - this goes to the person who trades the tokens back in
-              var tokenWithdrawalFee = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
-              // Get the total supply of tokens in circulation
-              return rocketDepositTokenInstance.totalSupply.call().then(function(result) {
-                var fundTokenBalance = parseFloat(result.valueOf());
-                //console.log(result.valueOf());
-                //console.log(web3.fromWei(fundTokenBalance, 'ether'));
-                // Now count how many tokens that user has
-                return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function(result) {
-                  // Their token balance
-                  var userFirstTokenBalance = parseFloat(result.valueOf());
-                  var userFirstEtherBalance = web3.eth.getBalance(userFirst).valueOf();
-                  var burnGas = 250000;
-                  // console.log(web3.fromWei(userFirstTokenBalance, 'ether'), web3.fromWei(userFirstEtherBalance, 'ether'));
-                  // Transfer now
-                  return rocketDepositTokenInstance
-                    .burnTokensForEther(userFirstTokenBalance, { from: userFirst, gas: burnGas })
-                    .then(function(result) {
-                      // Now count how many tokens that user has, should be none
-                      return rocketDepositTokenInstance.balanceOf.call(userFirst).then(function(result) {
-                        var userFirstTokenBalanceAfter = parseFloat(result.valueOf());
-                        var userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
-                        // Now check the tokens were burnt
-                        return rocketDepositTokenInstance.totalSupply
-                          .call()
-                          .then(function(result) {
-                            var fundTokenBalanceAfter = parseFloat(result.valueOf());
-                            var etherAccountDiff = userFirstEtherBalanceAfter - userFirstEtherBalance;
-                            //var etherAccountTradeWithBonus = (userFirstTokenBalance * (parseFloat(tokenWithdrawalFee + 1)));
-                            // Now check
-                            return userFirstTokenBalanceAfter == 0 &&
-                              fundTokenBalanceAfter ==
-                                parseFloat(fundTokenBalance) - parseFloat(userFirstTokenBalance) &&
-                              etherAccountDiff > 0
-                              ? true
-                              : false;
-                          })
-                          .then(function(result) {
-                            assert.isTrue(result, 'Users tokens do not match the amount transferred');
-                          });
-                      });
+  it(printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'), () => {
+    // Check RocketStorage is deployed first
+    return rocketStorage.deployed().then(rocketStorageInstance => {
+      // Check RocketSettings is deployed
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
+        // Check rocketDepositToken is deployed
+        return rocketDepositToken.deployed().then(rocketDepositTokenInstance => {
+          // Get the token withdrawal fee
+          return rocketSettingsInstance.getDepositTokenWithdrawalFeePercInWei.call().then(result => {
+            // Token fee - this goes to the person who trades the tokens back in
+            var tokenWithdrawalFee = parseFloat(web3.fromWei(result.valueOf(), 'ether'));
+            // Get the total supply of tokens in circulation
+            return rocketDepositTokenInstance.totalSupply.call().then(result => {
+              var fundTokenBalance = parseFloat(result.valueOf());
+              //console.log(result.valueOf());
+              //console.log(web3.fromWei(fundTokenBalance, 'ether'));
+              // Now count how many tokens that user has
+              return rocketDepositTokenInstance.balanceOf.call(userFirst).then(result => {
+                // Their token balance
+                var userFirstTokenBalance = parseFloat(result.valueOf());
+                var userFirstEtherBalance = web3.eth.getBalance(userFirst).valueOf();
+                var burnGas = 250000;
+                // console.log(web3.fromWei(userFirstTokenBalance, 'ether'), web3.fromWei(userFirstEtherBalance, 'ether'));
+                // Transfer now
+                return rocketDepositTokenInstance
+                  .burnTokensForEther(userFirstTokenBalance, { from: userFirst, gas: burnGas })
+                  .then(result => {
+                    // Now count how many tokens that user has, should be none
+                    return rocketDepositTokenInstance.balanceOf.call(userFirst).then(result => {
+                      var userFirstTokenBalanceAfter = parseFloat(result.valueOf());
+                      var userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
+                      // Now check the tokens were burnt
+                      return rocketDepositTokenInstance.totalSupply
+                        .call()
+                        .then(result => {
+                          var fundTokenBalanceAfter = parseFloat(result.valueOf());
+                          var etherAccountDiff = userFirstEtherBalanceAfter - userFirstEtherBalance;
+                          //var etherAccountTradeWithBonus = (userFirstTokenBalance * (parseFloat(tokenWithdrawalFee + 1)));
+                          // Now check
+                          return userFirstTokenBalanceAfter == 0 &&
+                            fundTokenBalanceAfter == parseFloat(fundTokenBalance) - parseFloat(userFirstTokenBalance) &&
+                            etherAccountDiff > 0
+                            ? true
+                            : false;
+                        })
+                        .then(result => {
+                          assert.isTrue(result, 'Users tokens do not match the amount transferred');
+                        });
                     });
-                });
+                  });
               });
             });
           });
         });
       });
-    }
-  ); // End Test
+    });
+  }); // End Test
 
   // Owner attempts to remove active node
   it(
     printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has mini pools attached to it'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketNode now
-          return rocketNode.deployed().then(function(rocketNodeInstance) {
+          return rocketNode.deployed().then(rocketNodeInstance => {
             // Remove the node now
             return rocketNodeInstance
               .nodeRemove(nodeFirst, { from: owner, gas: 200000 })
-              .then(function(result) {
+              .then(result => {
                 return result;
               })
-              .then(function(result) {
+              .then(result => {
                 assert(false, "Expect throw but didn't.");
               })
-              .catch(function(error) {
+              .catch(error => {
                 return checkThrow(error);
               });
           });
@@ -1861,88 +1849,85 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // First user withdraws their deposit + rewards and pays Rocket Pools fee
-  it(
-    printTitle('userFirst', 'withdraws their deposit + casper rewards from the mini pool and pays their fee'),
-    function() {
-      // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
-        // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
-          // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
-            // Get the user deposit
-            return miniPoolFirstInstance.getUserDeposit.call(userFirst).then(function(result) {
-              // The balance before withdrawing
-              var depositedAmount = result.valueOf();
-              // Fee acount is the coinbase by default
-              var rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
-              // Get the mini pool balance
-              var miniPoolBalancePrev = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
-              // Withdraw our total deposit + rewards
-              return rocketUserInstance
-                .userWithdraw(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas })
-                .then(function(result) {
-                  var amountSentToUser = 0;
-                  // Go through our events
-                  for (var i = 0; i < result.logs.length; i++) {
-                    if (result.logs[i].event == 'Transferred') {
-                      // Did our node checkin ok?
-                      amountSentToUser = result.logs[i].args.value;
-                    }
+  it(printTitle('userFirst', 'withdraws their deposit + casper rewards from the mini pool and pays their fee'), () => {
+    // Check RocketStorage is deployed first
+    return rocketStorage.deployed().then(rocketStorageInstance => {
+      // Check RocketSettings is deployed
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
+        // RocketUser now
+        return rocketUser.deployed().then(rocketUserInstance => {
+          // Get the user deposit
+          return miniPoolFirstInstance.getUserDeposit.call(userFirst).then(result => {
+            // The balance before withdrawing
+            var depositedAmount = result.valueOf();
+            // Fee acount is the coinbase by default
+            var rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
+            // Get the mini pool balance
+            var miniPoolBalancePrev = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
+            // Withdraw our total deposit + rewards
+            return rocketUserInstance
+              .userWithdraw(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas })
+              .then(result => {
+                var amountSentToUser = 0;
+                // Go through our events
+                for (var i = 0; i < result.logs.length; i++) {
+                  if (result.logs[i].event == 'Transferred') {
+                    // Did our node checkin ok?
+                    amountSentToUser = result.logs[i].args.value;
                   }
-                  // Fee acount is the coinbase by default
-                  var rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
-                  // Get the mini pool balance
-                  var miniPoolBalance = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
-                  // Now just count the users to make sure this user has been removed after withdrawing their balance and paying the fee
-                  return miniPoolFirstInstance.getUserCount.call().then(function(result) {
-                    var userCount = result.valueOf();
-                    // Ok see if their account has been accredited with their deposit + rewards
-                    if (
-                      depositedAmount < amountSentToUser &&
-                      userCount == 1 &&
-                      rpFeeAccountBalance > rpFeeAccountBalancePrev &&
-                      miniPoolBalance < miniPoolBalancePrev
-                    ) {
-                      return true;
-                    }
-                    return false;
-                  });
-                })
-                .then(function(result) {
-                  assert.isTrue(result, 'User has successfully withdrawn their final balance from the mini pool.');
+                }
+                // Fee acount is the coinbase by default
+                var rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
+                // Get the mini pool balance
+                var miniPoolBalance = web3.eth.getBalance(miniPoolFirstInstance.address).valueOf();
+                // Now just count the users to make sure this user has been removed after withdrawing their balance and paying the fee
+                return miniPoolFirstInstance.getUserCount.call().then(result => {
+                  var userCount = result.valueOf();
+                  // Ok see if their account has been accredited with their deposit + rewards
+                  if (
+                    depositedAmount < amountSentToUser &&
+                    userCount == 1 &&
+                    rpFeeAccountBalance > rpFeeAccountBalancePrev &&
+                    miniPoolBalance < miniPoolBalancePrev
+                  ) {
+                    return true;
+                  }
+                  return false;
                 });
-            });
+              })
+              .then(result => {
+                assert.isTrue(result, 'User has successfully withdrawn their final balance from the mini pool.');
+              });
           });
         });
       });
-    }
-  ); // End Test
+    });
+  }); // End Test
 
   // Second user attempts to withdraw using their backup address before the time limit to do so is allowed (3 months by default)
   it(
     printTitle('userSecond', 'fails to withdraw using their backup address before the time limit to do so is allowed'),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Attempt tp withdraw our total deposit + rewards using our backup address
             return rocketUserInstance
               .userWithdraw(miniPoolFirstInstance.address, 0, {
                 from: userSecondBackupAddress,
                 gas: rocketWithdrawalGas,
               })
-              .then(function(result) {
+              .then(result => {
                 //console.log(result.logs);
                 return result;
               })
-              .then(function(result) {
+              .then(result => {
                 assert(false, "Expect throw but didn't.");
               })
-              .catch(function(error) {
+              .catch(error => {
                 return checkThrow(error);
               });
           });
@@ -1957,20 +1942,20 @@ contract('RocketPool', function(accounts) {
       '---------',
       'settings BackupCollectTime changed to 0 which will allow the user to withdraw via their backup address'
     ),
-    function() {
+    () => {
       /// Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // Set the backup withdrawal period to 0 to allow the user to withdraw using their backup address
             rocketSettingsInstance
               .setPoolUserBackupCollectTime(0, { from: owner, gas: 150000 })
-              .then(function(result) {
+              .then(result => {
                 return true;
               })
-              .then(function(result) {
+              .then(result => {
                 assert.isTrue(result, 'settings BackupCollectTime changed to 0.');
               });
           });
@@ -1980,33 +1965,29 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // First user attempts to withdraw again
-  it(
-    printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"),
-    function() {
-      /// Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
-        // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
-          // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
-            // Attempt tp withdraw our total deposit + rewards using our backup address
-            return rocketUserInstance
-              .userWithdraw(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas })
-              .then(function(result) {
-                //console.log(result.logs);
-                return result;
-              })
-              .then(function(result) {
-                assert(false, "Expect throw but didn't.");
-              })
-              .catch(function(error) {
-                return checkThrow(error);
-              });
-          });
+  it(printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"), () => {
+    /// Check RocketStorage is deployed first
+    return rocketStorage.deployed().then(rocketStorageInstance => {
+      // Check RocketSettings is deployed
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
+        // RocketUser now
+        return rocketUser.deployed().then(rocketUserInstance => {
+          // Attempt tp withdraw our total deposit + rewards using our backup address
+          return rocketUserInstance
+            .userWithdraw(miniPoolFirstInstance.address, 0, { from: userFirst, gas: rocketWithdrawalGas })
+            .then(result => {
+              return result;
+            })
+            .then(result => {
+              assert(false, "Expect throw but didn't.");
+            })
+            .catch(error => {
+              return checkThrow(error);
+            });
         });
       });
-    }
-  ); // End Test
+    });
+  }); // End Test
 
   // Second user withdraws their deposit + rewards and pays Rocket Pools fee, mini pool closes
   it(
@@ -2014,17 +1995,17 @@ contract('RocketPool', function(accounts) {
       'userSecond',
       'withdraws their deposit + casper rewards using their backup address from the mini pool, pays their fee and the pool closes'
     ),
-    function() {
+    () => {
       // Check RocketStorage is deployed first
-      return rocketStorage.deployed().then(function(rocketStorageInstance) {
+      return rocketStorage.deployed().then(rocketStorageInstance => {
         // Check RocketSettings is deployed
-        return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+        return rocketSettings.deployed().then(rocketSettingsInstance => {
           // RocketUser now
-          return rocketUser.deployed().then(function(rocketUserInstance) {
+          return rocketUser.deployed().then(rocketUserInstance => {
             // RocketPool now
-            return rocketPool.deployed().then(function(rocketPoolInstance) {
+            return rocketPool.deployed().then(rocketPoolInstance => {
               // Get the user deposit
-              return miniPoolFirstInstance.getUserDeposit.call(userSecond).then(function(result) {
+              return miniPoolFirstInstance.getUserDeposit.call(userSecond).then(result => {
                 // The balance before withdrawing
                 var depositedAmount = result.valueOf();
                 // Fee acount is the coinbase by default
@@ -2037,7 +2018,7 @@ contract('RocketPool', function(accounts) {
                     from: userSecondBackupAddress,
                     gas: rocketWithdrawalGas,
                   })
-                  .then(function(result) {
+                  .then(result => {
                     var amountSentToUser = 0;
                     // Go through our events
                     for (var i = 0; i < result.logs.length; i++) {
@@ -2053,7 +2034,7 @@ contract('RocketPool', function(accounts) {
                     // See if RocketHub still recognises the pool contract after its been removed and self destructed
                     return rocketPoolInstance.getPoolExists
                       .call(miniPoolFirstInstance.address)
-                      .then(function(result) {
+                      .then(result => {
                         var poolExists = result.valueOf();
                         // Ok see if their account has been accredited with their deposit + rewards
                         if (
@@ -2066,7 +2047,7 @@ contract('RocketPool', function(accounts) {
                         }
                         return false;
                       })
-                      .then(function(result) {
+                      .then(result => {
                         assert.isTrue(
                           result,
                           'User has successfully withdrawn their final balance from the mini pool to their backup address and pool is now closed'
@@ -2082,17 +2063,17 @@ contract('RocketPool', function(accounts) {
   ); // End Test
 
   // Owner removes first node
-  it(printTitle('owner', 'removes first node from the Rocket Pool network'), function() {
+  it(printTitle('owner', 'removes first node from the Rocket Pool network'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketNode is deployed
-      return rocketNode.deployed().then(function(rocketNodeInstance) {
+      return rocketNode.deployed().then(rocketNodeInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // Remove the node now
           return rocketNodeInstance
             .nodeRemove(nodeFirst, { from: owner, gas: 200000 })
-            .then(function(result) {
+            .then(result => {
               // Go through our events
               for (var i = 0; i < result.logs.length; i++) {
                 if (result.logs[i].event == 'NodeRemoved') {
@@ -2105,7 +2086,7 @@ contract('RocketPool', function(accounts) {
               }
               return false;
             })
-            .then(function(result) {
+            .then(result => {
               assert.isTrue(result, 'Owner has successfully removed the node from the Rocket network');
             });
         });
@@ -2114,51 +2095,49 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Owner removes first partner - users attached to this partner can still withdraw
-  it(printTitle('owner', 'removes first partner from the Rocket Pool network'), function() {
+  it(printTitle('owner', 'removes first partner from the Rocket Pool network'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // RocketPool api now
-          return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+          return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
             // Now check the second partner array index
-            return rocketPartnerAPIInstance.getPartnerIndex.call(partnerSecond).then(function(result) {
+            return rocketPartnerAPIInstance.getPartnerIndex.call(partnerSecond).then(result => {
               // Record the index to see if it updates correctly after removing the first partner
               var partnerSecondIndexPrev = result.valueOf();
               // Remove the node now
-              return rocketPartnerAPIInstance
-                .partnerRemove(partnerFirst, { from: owner, gas: 500000 })
-                .then(function(result) {
-                  // Go through our events
-                  for (var i = 0; i < result.logs.length; i++) {
-                    if (result.logs[i].event == 'PartnerRemoved') {
-                      // Did our partner get removed ok?
-                      var partnerAddress = result.logs[i].args._address;
-                    }
+              return rocketPartnerAPIInstance.partnerRemove(partnerFirst, { from: owner, gas: 500000 }).then(result => {
+                // Go through our events
+                for (var i = 0; i < result.logs.length; i++) {
+                  if (result.logs[i].event == 'PartnerRemoved') {
+                    // Did our partner get removed ok?
+                    var partnerAddress = result.logs[i].args._address;
                   }
-                  // The partner count should be one now
-                  return rocketPartnerAPIInstance.getPartnerCount.call().then(function(result) {
-                    var partnerCount = result.valueOf();
-                    // Now check the remaining partner array was reindexed correctly using the key/value storage
-                    return rocketPartnerAPIInstance.getPartnerIndex
-                      .call(partnerSecond)
-                      .then(function(result) {
-                        var partnerSecondIndex = result.valueOf();
-                        // Check it all
-                        return (
-                          partnerAddress == partnerFirst &&
-                          partnerCount == 1 &&
-                          partnerSecondIndex == 0 &&
-                          partnerSecondIndexPrev == 1
-                        );
-                      })
-                      .then(function(result) {
-                        assert.isTrue(result, 'Owner has successfully removed the partner from the Rocket network');
-                      });
-                  });
+                }
+                // The partner count should be one now
+                return rocketPartnerAPIInstance.getPartnerCount.call().then(result => {
+                  var partnerCount = result.valueOf();
+                  // Now check the remaining partner array was reindexed correctly using the key/value storage
+                  return rocketPartnerAPIInstance.getPartnerIndex
+                    .call(partnerSecond)
+                    .then(result => {
+                      var partnerSecondIndex = result.valueOf();
+                      // Check it all
+                      return (
+                        partnerAddress == partnerFirst &&
+                        partnerCount == 1 &&
+                        partnerSecondIndex == 0 &&
+                        partnerSecondIndexPrev == 1
+                      );
+                    })
+                    .then(result => {
+                      assert.isTrue(result, 'Owner has successfully removed the partner from the Rocket network');
+                    });
                 });
+              });
             });
           });
         });
@@ -2167,17 +2146,17 @@ contract('RocketPool', function(accounts) {
   }); // End Test
 
   // Attempt to make a deposit with after being removed as a partner
-  it(printTitle('partnerFirst', 'attempt to make a deposit with after being removed as a partner'), function() {
+  it(printTitle('partnerFirst', 'attempt to make a deposit with after being removed as a partner'), () => {
     // Check RocketStorage is deployed first
-    return rocketStorage.deployed().then(function(rocketStorageInstance) {
+    return rocketStorage.deployed().then(rocketStorageInstance => {
       // Check RocketSettings is deployed
-      return rocketSettings.deployed().then(function(rocketSettingsInstance) {
+      return rocketSettings.deployed().then(rocketSettingsInstance => {
         // RocketPool now
-        return rocketPool.deployed().then(function(rocketPoolInstance) {
+        return rocketPool.deployed().then(rocketPoolInstance => {
           // RocketPool api now
-          return rocketPartnerAPI.deployed().then(function(rocketPartnerAPIInstance) {
+          return rocketPartnerAPI.deployed().then(rocketPartnerAPIInstance => {
             // Get the min ether required to launch a mini pool
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(function(result) {
+            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
               // Transaction - Send Ether as a user, but send just enough to create the pool, but not launch it
               var sendAmount = result.valueOf() - web3.toWei('1', 'ether');
               // Deposit on a behalf of the partner and also specify a incorrect pool staking time ID
@@ -2187,13 +2166,13 @@ contract('RocketPool', function(accounts) {
                   value: sendAmount,
                   gas: rocketDepositGas,
                 })
-                .then(function(result) {
+                .then(result => {
                   return result;
                 })
-                .then(function(result) {
+                .then(result => {
                   assert(false, "Expect throw but didn't.");
                 })
-                .catch(function(error) {
+                .catch(error => {
                   return checkThrow(error);
                 });
             });

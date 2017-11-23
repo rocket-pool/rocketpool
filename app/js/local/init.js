@@ -10,7 +10,7 @@
 /**
  * @desc initialise the app
  */
-rocketPool.Init = (function($) {
+rocketPool.Init = ($ => {
   // Basic module settings
   const name = 'Init';
   // Module event prefix with namespacing
@@ -26,7 +26,7 @@ rocketPool.Init = (function($) {
    * @param object options - settings for the module
    * @return bool - success or failure
    */
-  const init = function(options) {
+  const init = options => {
     // Initialise options
     settings = $.extend(true, {}, settings, options);
     // Update the network we're connected too
@@ -42,7 +42,7 @@ rocketPool.Init = (function($) {
     // Add countdown clocks
     _countdownClocks();
     // Little loading screen while we hookup web3
-    setTimeout(function() {
+    setTimeout(() => {
       // Show the processing screen with message
       $.observer.publish('rocketPool/Processing/hide');
     }, 2000);
@@ -51,12 +51,12 @@ rocketPool.Init = (function($) {
   /**
    * @desc start any countdown clocks for token sales
    */
-  const _countdownClocks = function() {
+  const _countdownClocks = () => {
     // Grab the current date
     const currentDate = new Date();
 
     // Get any clock instances
-    $.each($('.countdown'), function(indexInArray, valueOfElement) {
+    $.each($('.countdown'), (indexInArray, valueOfElement) => {
       // Set some date in the future. In this case, it's always Jan 1
       const futureDate = new Date($(this).data('date'));
       // Calculate the difference in seconds between the future and current date
@@ -73,7 +73,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc update the status of the network
    */
-  const _updateNetwork = function() {
+  const _updateNetwork = () => {
     // Checking if Web3 has been injected by the browser (Mist/MetaMask)
     if (typeof web3 !== 'undefined') {
       // Use Mist/MetaMask's provider
@@ -109,12 +109,12 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum accounts details
    */
-  const _setAccountDetails = function(accountEl) {
+  const _setAccountDetails = accountEl => {
     // Get the address
     const address = accountEl.data('account-address');
     if (address) {
       // Generate account icons and labels
-      $.each($(accountEl).find('.account-icon'), function(indexInArray, valueOfElement) {
+      $.each($(accountEl).find('.account-icon'), (indexInArray, valueOfElement) => {
         // Blockies
         $(this).css(
           'background-image',
@@ -122,7 +122,7 @@ rocketPool.Init = (function($) {
         );
       });
       // Labels
-      $.each($(accountEl).find('.account-label'), function(indexInArray, valueOfElement) {
+      $.each($(accountEl).find('.account-label'), (indexInArray, valueOfElement) => {
         let label = address;
         // Is it a short label
         if ($(this).hasClass('short')) {
@@ -135,7 +135,7 @@ rocketPool.Init = (function($) {
           .text(label);
       });
       // Update the account totals
-      window.web3.eth.getBalance(address, function(error, result) {
+      window.web3.eth.getBalance(address, (error, result) => {
         if (!error) {
           $(accountEl)
             .find('.account-total')
@@ -148,7 +148,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum account to use
    */
-  const _setAccount = function(account) {
+  const _setAccount = account => {
     // If there's no current account, use the default coinbase
     if (!settings.currentAccount && settings.network) {
       settings.currentAccount = window.web3.eth.accounts[0];
@@ -175,14 +175,14 @@ rocketPool.Init = (function($) {
   /**
    * @desc sets an Ethereum account list to select from
    */
-  const _setAccountList = function() {
+  const _setAccountList = () => {
     // Get our account html template
     const template = $('#network.account').html();
     // Empty the list
     const list = $('#account-select .accounts').first();
     list.empty();
     // Build the list now
-    $.each(window.web3.eth.accounts, function(index, account) {
+    $.each(window.web3.eth.accounts, (index, account) => {
       // Add it to the list
       const item = $('<div class="account" data-account-address="' + account + '">' + template + '</div>');
       // Update it now
@@ -195,7 +195,7 @@ rocketPool.Init = (function($) {
   /**
    * @desc Send an enquiry to Rocket Pool
    */
-  const _contactSend = function(button) {
+  const _contactSend = button => {
     const form = $('.section.contact form').first();
     const content = form.find('textarea').val();
 
@@ -207,7 +207,7 @@ rocketPool.Init = (function($) {
         '/send-contact.php',
         form.serialize(),
         // Success
-        function(resp) {
+        resp => {
           // Build the options for the new box
           if (resp.success) {
             // Show success message
@@ -219,10 +219,10 @@ rocketPool.Init = (function($) {
           }
         }
       )
-        .done(function() {})
-        .fail(function() {})
-        .always(function() {
-          setTimeout(function() {
+        .done(() => {})
+        .fail(() => {})
+        .always(() => {
+          setTimeout(() => {
             $.observer.publish('rocketPool/Processing/hide');
           }, 1000);
         });
@@ -233,7 +233,7 @@ rocketPool.Init = (function($) {
    * @desc subsribe to dom wide observer aanouncments
    * @example $.observer.subscribe(eventNS+'/function', _function);
    */
-  const _subscribers = function() {
+  const _subscribers = () => {
     // When the network changes
     $.observer.subscribe(eventNS + '/networkDetected', _setAccount);
     $.observer.subscribe(eventNS + '/networkDetected', _setAccountList);
@@ -245,48 +245,23 @@ rocketPool.Init = (function($) {
    * @desc publish dom wide observer aanouncments
    * @example $.observer.publish(eventNS+'/function', parameterOne, ParameterTwo, etc);
    */
-  const _publishers = function() {
+  const _publishers = () => {
     // Publish which network we're initially connected too
     $.observer.publish(eventNS + '/network/change', settings.network);
 
     // Account select
-    $('#account-select').on('click', '.account', function() {
+    $('#account-select').on('click', '.account', () => {
       $('#account-select').removeClass('open');
       $.observer.publish(eventNS + '/accountChanged', $(this).data('account-address'));
     });
-
-    // Initialise page piling, there's a lot more options for these
-    /*
-        if ($(window).height() >= 1050) {
-            $('#app').pagepiling({
-                direction: 'vertical',
-                verticalCentered: true,
-                scrollingSpeed: 700,
-                easing: 'swing',
-                sectionSelector: '.section',
-                animateAnchor: false,
-                loopBottom: true,
-                normalScrollElementTouchThreshold: 4,
-                //events
-                onLeave: function (index, nextIndex, direction) {
-                    $.observer.publish(eventNS+'/pageLeave', index, nextIndex, direction);
-                },
-                afterLoad: function (anchorLink, index) { 
-                    $.observer.publish(eventNS+'/pageLoaded', anchorLink, index);
-                },
-                afterRender: function () { 
-                    $.observer.publish(eventNS+'/pageRendered');
-                },
-            });
-        }*/
   };
 
   /**
    * @desc internal event listers that don't require interacting with anything outside this module
    */
-  const _listeners = function() {
+  const _listeners = () => {
     // Show sub menu on the main menu
-    $('.main-menu .top > div > i').on('click', function() {
+    $('.main-menu .top > div > i').on('click', () => {
       $('.main-menu .sub .menu').hide();
       $(this)
         .parent()
@@ -299,7 +274,7 @@ rocketPool.Init = (function($) {
     });
 
     // Sub menu on state
-    $('.main-menu .sub .menu > div').on('click', function() {
+    $('.main-menu .sub .menu > div').on('click', () => {
       $(this)
         .siblings()
         .removeClass('on');
@@ -307,7 +282,7 @@ rocketPool.Init = (function($) {
     });
 
     // Move to new pages
-    $(document).on('click', '.page-link', function() {
+    $(document).on('click', '.page-link', () => {
       if ($(this).data('page-id')) {
         if ($.fn.pagepiling.moveTo) {
           $.fn.pagepiling.moveTo($(this).data('page-id'));
@@ -318,12 +293,12 @@ rocketPool.Init = (function($) {
     });
 
     // Contact form
-    $('.section.contact form button').on('click', function() {
+    $('.section.contact form button').on('click', () => {
       _contactSend($(this));
     });
 
     // Show account lists
-    $('#network.account').on('click', function() {
+    $('#network.account').on('click', () => {
       if (!$(this).hasClass('error')) {
         $('#account-select').addClass('open');
       }

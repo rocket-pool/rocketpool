@@ -52,7 +52,7 @@ if (web3.isConnected()) {
 
   // Write it
   const obj = { contract: program.contract, deploymentGas: gasEstimate };
-  jsonfile.writeFile(jsonGasFile, obj, function(err) {
+  jsonfile.writeFile(jsonGasFile, obj, err => {
     if (err) {
       console.error('Error saving gas results');
     }

@@ -5,7 +5,7 @@
   @version 0.1 
 */
 
-var Web3Utils = require('web3-utils');
+const Web3Utils = require('web3-utils');
 
 module.exports = {
   web3Utils: Web3Utils,
