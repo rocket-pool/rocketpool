@@ -2,14 +2,11 @@
 
 *NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v6.0.3](https://github.com/ethereumjs/testrpc) and [truffle@4](https://github.com/trufflesuite/truffle) to run locally.
 
-
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>
 </p>
 
 ---
-
 
 `Rocket Pool` is a next generation decentralised Ethereum proof of stake (POS) pool currently in Alpha and built to be compatible with Casper. Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.
 
@@ -23,19 +20,11 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof of Stake (POS) Pool"/>
 </p>
 
-Easiest way to see Rocket Pool alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. Make sure you have the 'web3-utils' npm package first installed as a dependency of Rocket Pool - please see the end of this readme file for step by step instructions :
+Easiest way to see Rocket Pool alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
+```bash
+$ yarn && yarn test
 ```
-$ npm install web3-utils --save
-```
-Start testrpc in a new terminal window using the current block gas limit:
-```
-$ testrpc -l 6725527
-```
-Then run:
-```
-$ truffle test ./test/rocketPool.js
-```
-to put Rocket Pool through its paces.
+This will start testrpc (if not already started) with the current block gas limit and put Rocket Pool through its paces.
 
 # Rocket Pool White Paper
 
@@ -56,47 +45,35 @@ download and install Ubuntu onto a new VM -> https://www.ubuntu.com/download/des
 open a Terminal window and install some pre-requisites:
 
 install git:
-```
+```bash
 $ sudo apt -y install git
 ```
 install curl:  
-```
+```bash
 $ sudo apt -y install curl
 ```
 install npm:
-```
+```bash
 $ sudo apt -y install npm
 ```
 install node.js:
-```
+```bash
 $ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 $ sudo apt-get -y install nodejs
 ```
-install testrpc:
-```
-$ sudo npm install -g ethereumjs-testrpc
-```
 get rocketpool:
-```
+```bash
 $ git clone https://github.com/darcius/rocketpool
 ```
-install truffle:
-```
-$ sudo npm install -g truffle
-```
 open the rocketpool directory:
-```
+```bash
 $ cd rocketpool
 ```
-initialise truffle:
+install Yarn:
+```bash
+$ sudo npm install yarn
 ```
-$ sudo npm install web3-utils --save
-```
-open new Terminal window:
-```
-testrpc -l 6725527
-```
-in original Terminal window:
-```
-$ truffle test ./test/rocketPool.js
+install npm packages and run tests:
+```bash
+$ yarn && yarn test
 ```
