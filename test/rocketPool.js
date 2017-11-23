@@ -334,12 +334,13 @@ contract('RocketPool', accounts => {
                 let poolStatus = null;
                 let poolBalance = 0;
 
-                for (let i = 0; i < result.logs.length; i++) {
-                  if (result.logs[i].event == 'Transferred') {
+                result.logs.forEach(log => {
+                  if (log.event == 'Transferred') {
                     poolCreated = true;
-                    poolAddress = result.logs[i].args._to;
+                    poolAddress = log.args._to;
                   }
-                }
+                });
+
                 // Get an instance of that pool and do further checks
                 miniPoolFirstInstance = rocketPoolMini.at(poolAddress);
                 return miniPoolFirstInstance.getStatus
@@ -401,13 +402,14 @@ contract('RocketPool', accounts => {
                   let poolStatus = null;
                   let poolBalance = 0;
 
-                  for (let i = 0; i < result.logs.length; i++) {
-                    if (result.logs[i].event == 'Transferred') {
-                      userSendAmount = result.logs[i].args.value;
-                      userSendAddress = result.logs[i].args._from;
-                      poolAddress = result.logs[i].args._to;
+                  result.logs.forEach(log => {
+                    if (log.event == 'Transferred') {
+                      userSendAmount = log.args.value;
+                      userSendAddress = log.args._from;
+                      poolAddress = log.args._to;
                     }
-                  }
+                  });
+
                   // Get the instance the prev mini pool
                   const miniPoolInstance = rocketPoolMini.at(poolAddress);
                   return miniPoolFirstInstance.getStatus.call().then(result => {
@@ -480,13 +482,14 @@ contract('RocketPool', accounts => {
                   let poolStatus = null;
                   let poolBalance = 0;
 
-                  for (let i = 0; i < result.logs.length; i++) {
-                    if (result.logs[i].event == 'Transferred') {
-                      userSendAmount = result.logs[i].args.value;
-                      userSendAddress = result.logs[i].args._from;
-                      poolAddress = result.logs[i].args._to;
+                  result.logs.forEach(log => {
+                    if (log.event == 'Transferred') {
+                      userSendAmount = log.args.value;
+                      userSendAddress = log.args._from;
+                      poolAddress = log.args._to;
                     }
-                  }
+                  });
+
                   // Get the instance the prev mini pool
                   const miniPoolInstance = rocketPoolMini.at(poolAddress);
                   return miniPoolFirstInstance.getStatus.call().then(result => {
@@ -541,12 +544,14 @@ contract('RocketPool', accounts => {
               })
               .then(result => {
                 let newBackupAddress = 0;
+
                 // Check the event log now
-                for (let i = 0; i < result.logs.length; i++) {
-                  if (result.logs[i].event == 'UserSetBackupWithdrawalAddress') {
-                    newBackupAddress = result.logs[i].args._userBackupAddress;
+                result.logs.forEach(log => {
+                  if (log.event == 'UserSetBackupWithdrawalAddress') {
+                    newBackupAddress = log.args._userBackupAddress;
                   }
-                }
+                });
+
                 if (newBackupAddress == userSecondBackupAddress) {
                   return true;
                 }
@@ -597,11 +602,12 @@ contract('RocketPool', accounts => {
                       let userRegistered = false;
                       let userPartnerAddress = 0;
 
-                      for (let i = 0; i < result.logs.length; i++) {
-                        if (result.logs[i].event == 'APIpartnerDepositAccepted') {
-                          userPartnerAddress = result.logs[i].args._partner;
+                      result.logs.forEach(log => {
+                        if (log.event == 'APIpartnerDepositAccepted') {
+                          userPartnerAddress = log.args._partner;
                         }
-                      }
+                      });
+
                       // Now find the pools our users belongs too, should just be one
                       return rocketPoolInstance.getPoolsFilterWithUser
                         .call(partnerFirstUserAccount, { from: partnerFirst })
@@ -802,13 +808,15 @@ contract('RocketPool', accounts => {
                     let poolAddress = 0;
                     let poolStatus = null;
                     let poolBalance = 0;
-                    for (let i = 0; i < result.logs.length; i++) {
-                      if (result.logs[i].event == 'Transferred') {
-                        userSendAmount = result.logs[i].args.value;
-                        userSendAddress = result.logs[i].args._from;
-                        poolAddress = result.logs[i].args._to;
+
+                    result.logs.forEach(log => {
+                      if (log.event == 'Transferred') {
+                        userSendAmount = log.args.value;
+                        userSendAddress = log.args._from;
+                        poolAddress = log.args._to;
                       }
-                    }
+                    });
+
                     // Get an instance of that pool and do further checks
                     miniPoolSecondInstance = rocketPoolMini.at(poolAddress);
                     return miniPoolSecondInstance.getStatus.call().then(result => {
@@ -899,13 +907,15 @@ contract('RocketPool', accounts => {
                 .then(result => {
                   let nodeAddress = 0;
                   let loadAverage = 0;
-                  for (let i = 0; i < result.logs.length; i++) {
-                    if (result.logs[i].event == 'NodeCheckin') {
+
+                  result.logs.forEach(log => {
+                    if (log.event == 'NodeCheckin') {
                       // Did our node checkin ok?
-                      nodeAddress = result.logs[i].args._nodeAddress.valueOf();
-                      loadAverage = result.logs[i].args.loadAverage.valueOf();
+                      nodeAddress = log.args._nodeAddress.valueOf();
+                      loadAverage = log.args.loadAverage.valueOf();
                     }
-                  }
+                  });
+
                   // Check the node doesn't belong to any pools now
                   return rocketPoolInstance.getPoolsFilterWithNodeCount
                     .call(nodeAddress)
@@ -966,16 +976,17 @@ contract('RocketPool', accounts => {
                             status: 0,
                             balance: 0,
                           };
-                          for (let i = 0; i < result.logs.length; i++) {
-                            if (result.logs[i].event == 'NodeCheckin') {
+
+                          result.logs.forEach(log => {
+                            if (log.event == 'NodeCheckin') {
                               // Did our node checkin ok?
                               nodeCheckinOk =
-                                result.logs[i].args._nodeAddress == nodeFirst &&
-                                result.logs[i].args.loadAverage == averageLoad15mins
+                                log.args._nodeAddress == nodeFirst && log.args.loadAverage == averageLoad15mins
                                   ? true
                                   : false;
                             }
-                          }
+                          });
+
                           // Check that the first minipool contract has been attached to the node
                           return rocketPoolInstance.getPoolsFilterWithNode.call(nodeFirst).then(result => {
                             // Get minipools
@@ -1055,16 +1066,17 @@ contract('RocketPool', accounts => {
                             status: 0,
                             balance: 0,
                           };
-                          for (let i = 0; i < result.logs.length; i++) {
-                            if (result.logs[i].event == 'NodeCheckin') {
+
+                          result.logs.forEach(log => {
+                            if (log.event == 'NodeCheckin') {
                               // Did our node checkin ok?
                               nodeCheckinOk =
-                                result.logs[i].args._nodeAddress == nodeSecond &&
-                                result.logs[i].args.loadAverage == averageLoad15mins
+                                log.args._nodeAddress == nodeSecond && log.args.loadAverage == averageLoad15mins
                                   ? true
                                   : false;
                             }
-                          }
+                          });
+
                           // Check that the first minipool contract has been attached to the node
                           return rocketPoolInstance.getPoolsFilterWithNode.call(nodeSecond).then(result => {
                             // Get minipools
@@ -1873,12 +1885,12 @@ contract('RocketPool', accounts => {
               .then(result => {
                 let amountSentToUser = 0;
                 // Go through our events
-                for (let i = 0; i < result.logs.length; i++) {
-                  if (result.logs[i].event == 'Transferred') {
-                    // Did our node checkin ok?
-                    amountSentToUser = result.logs[i].args.value;
+                result.logs.forEach(log => {
+                  if (log.event == 'Transferred') {
+                    amountSentToUser = log.args.value;
                   }
-                }
+                });
+
                 // Fee acount is the coinbase by default
                 const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
                 // Get the mini pool balance
@@ -2023,13 +2035,14 @@ contract('RocketPool', accounts => {
                   })
                   .then(result => {
                     let amountSentToUser = 0;
+
                     // Go through our events
-                    for (let i = 0; i < result.logs.length; i++) {
-                      if (result.logs[i].event == 'Transferred') {
-                        // Did our node checkin ok?
-                        amountSentToUser = result.logs[i].args.value;
+                    result.logs.forEach(log => {
+                      if (log.event == 'Transferred') {
+                        amountSentToUser = log.args.value;
                       }
-                    }
+                    });
+
                     // Fee acount is the coinbase by default
                     const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
                     // Get the mini pool balance
@@ -2078,13 +2091,15 @@ contract('RocketPool', accounts => {
             .nodeRemove(nodeFirst, { from: owner, gas: 200000 })
             .then(result => {
               let nodeAddress = null;
+
               // Go through our events
-              for (let i = 0; i < result.logs.length; i++) {
-                if (result.logs[i].event == 'NodeRemoved') {
+              result.logs.forEach(log => {
+                if (log.event == 'NodeRemoved') {
                   // Did our node get removed ok?
-                  nodeAddress = result.logs[i].args._address;
+                  nodeAddress = log.args._address;
                 }
-              }
+              });
+
               if (nodeAddress == nodeFirst) {
                 return true;
               }
@@ -2117,12 +2132,13 @@ contract('RocketPool', accounts => {
                 let partnerAddress = null;
 
                 // Go through our events
-                for (let i = 0; i < result.logs.length; i++) {
-                  if (result.logs[i].event == 'PartnerRemoved') {
+                result.logs.forEach(log => {
+                  if (log.event == 'PartnerRemoved') {
                     // Did our partner get removed ok?
-                    partnerAddress = result.logs[i].args._address;
+                    partnerAddress = log.args._address;
                   }
-                }
+                });
+
                 // The partner count should be one now
                 return rocketPartnerAPIInstance.getPartnerCount.call().then(result => {
                   const partnerCount = result.valueOf();

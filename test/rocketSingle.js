@@ -65,11 +65,12 @@ contract('RocketPool', accounts => {
       return rocketPoolInstance
         .userWithdrawDepositTest({ from: userFirst, to: rocketPoolInstance.address, gas: 250000 })
         .then(result => {
-          for (let i = 0; i < result.logs.length; i++) {
-            if (result.logs[i].event == 'FlagUint' || result.logs[i].event == 'FlagInt') {
-              console.log(web3.fromWei(result.logs[i].args.flag.valueOf(), 'ether'));
+          result.logs.forEach(log => {
+            if (log.event == 'FlagUint' || log.event == 'FlagInt') {
+              console.log(web3.fromWei(log.args.flag.valueOf(), 'ether'));
             }
-          }
+            return result;
+          });
           return result;
         })
         .then(result => {
