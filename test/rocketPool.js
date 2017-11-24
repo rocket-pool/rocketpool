@@ -601,7 +601,7 @@ contract('RocketPool', accounts => {
                       let poolBalance = 0;
                       let userRegistered = false;
                       let userPartnerAddress = 0;
-
+    
                       result.logs.forEach(log => {
                         if (log.event == 'APIpartnerDepositAccepted') {
                           userPartnerAddress = log.args._partner;

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
   Init - Basic initialisation JS - Observer Pattern
   @author David Rugendyke
