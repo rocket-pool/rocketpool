@@ -1,17 +1,16 @@
 // Testing a single unit test
-
 const os = require('os');
-const rocketHub = artifacts.require('./contract/RocketHub.sol');
-const rocketPool = artifacts.require('./contract/RocketPool.sol');
-const rocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
-const rocketSettings = artifacts.require('./contract/RocketSettings.sol');
+
+const RocketPool = artifacts.require('./contract/RocketPool.sol');
+const RocketPoolMini = artifacts.require('./contract/RocketPoolMini.sol');
+const RocketSettings = artifacts.require('./contract/RocketSettings.sol');
 
 const displayEvents = false;
 
 // Display events triggered during the tests
 if (displayEvents) {
-  rocketPool.deployed().then(rocketPoolInstance => {
-    const eventWatch = rocketPoolInstance
+  RocketPool.deployed().then(rocketPool => {
+    const eventWatch = rocketPool
       .allEvents({
         fromBlock: 0,
         toBlock: 'latest',
@@ -35,9 +34,9 @@ if (displayEvents) {
           // Listen for new pool events too
           if (result.event == 'PoolCreated') {
             // Get an instance of that pool
-            const poolInstance = rocketPoolMini.at(result.args._address);
+            const miniPool = RocketPoolMini.at(result.args._address);
             // Watch for events in mini pools also as with the main contract
-            const poolEventWatch = poolInstance
+            const poolEventWatch = miniPool
               .allEvents({
                 fromBlock: 0,
                 toBlock: 'latest',
@@ -58,24 +57,20 @@ contract('RocketPool', accounts => {
   // User accounts
   const userFirst = accounts[1];
   // Estimate the correct withdrawal based on %
-  it('Estimate the correct withdrawal based on %', () => {
-    // RocketPool now
-    return rocketPool.deployed().then(rocketPoolInstance => {
-      // Transaction
-      return rocketPoolInstance
-        .userWithdrawDepositTest({ from: userFirst, to: rocketPoolInstance.address, gas: 250000 })
-        .then(result => {
-          result.logs.forEach(log => {
-            if (log.event == 'FlagUint' || log.event == 'FlagInt') {
-              console.log(web3.fromWei(log.args.flag.valueOf(), 'ether'));
-            }
-            return result;
-          });
-          return result;
-        })
-        .then(result => {
-          assert.isTrue(result, 'Single Unit Test Failed');
-        });
+  it('Estimate the correct withdrawal based on %', async () => {
+    const rocketPool = await RocketPool.deployed();
+
+    const result = await rocketPool.userWithdrawDepositTest({
+      from: userFirst,
+      to: rocketPoolInstance.address,
+      gas: 250000,
     });
-  }); // End Test
+
+    result.logs.forEach(log => {
+      if (log.event == 'FlagUint' || log.event == 'FlagInt') {
+        console.log(web3.fromWei(log.args.flag.valueOf(), 'ether'));
+      }
+    });
+    assert.isTrue(result, 'Single unit test failed');
+  });
 });
