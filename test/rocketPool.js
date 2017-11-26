@@ -102,6 +102,7 @@ contract('RocketPool', accounts => {
   // Deposit gas has to cover potential mini pool contract creation, will often be much cheaper
   const rocketDepositGas = 4800000;
   const rocketWithdrawalGas = 1450000;
+
   // Node accounts and gas settings
   const nodeFirst = accounts[8];
   const nodeFirstOracleID = 'aws';
@@ -122,29 +123,46 @@ contract('RocketPool', accounts => {
   const userSecond = accounts[2];
   const userSecondBackupAddress = accounts[4];
   const userThird = accounts[3];
-  // Partner accounts (not real)
+
+  // Mocks partner accounts
   const partnerFirst = accounts[5];
   const partnerFirstName = 'Coinbase';
   const partnerFirstUserAccount = accounts[6];
   const partnerSecond = accounts[7];
   const partnerSecondName = 'MEW';
   const partnerRegisterGas = 200000;
-  // Mini Pools
+
+  // Minipools
   let miniPoolFirstInstance;
   let miniPoolSecondInstance;
 
+  // Contracts
+  let rocketStorage;
+  let rocketSettings;
+  let rocketUser;
+  let rocketNode;
+  let rocketDeposit;
+  let rocketPool;
+  let rocketPartnerAPI;
+
+  beforeEach(async () => {
+    rocketStorage = await RocketStorage.deployed();
+    rocketSettings = await RocketSettings.deployed();
+    rocketUser = await RocketUser.deployed();
+    rocketNode = await RocketNode.deployed();
+    rocketDeposit = await RocketDepositToken.deployed();
+    rocketPool = await RocketPool.deployed();
+    rocketPartnerAPI = await RocketPartnerAPI.deployed();
+  });
+
   // Owners direct access to storage is removed after initialisation when deployed
   it(printTitle('owner', 'fail to access storage directly after deployment'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
     const result = rocketStorage.setBool(web3.sha3('test.access'), true, { from: owner, gas: 250000 });
     await assertThrows(result);
   });
 
   // Try to register a node as a non rocket pool owner
   it(printTitle('non owner', 'fail to register a node'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketNode = await RocketNode.deployed();
-
     const result = rocketNode.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, {
       from: userFirst,
       gas: nodeRegisterGas,
@@ -154,24 +172,17 @@ contract('RocketPool', accounts => {
 
   // Register 2 nodes
   it(printTitle('owner', 'register 2 nodes'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketNode = await RocketNode.deployed();
-
     await rocketNode.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from: owner, gas: nodeRegisterGas });
     await rocketNode.nodeAdd(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, {
       from: owner,
       gas: nodeRegisterGas,
     });
-
     const result = await rocketNode.getNodeCount.call();
     assert.equal(result.valueOf(), 2, '2 Nodes registered successfully by owner');
   });
 
   // Try to register a new partner as a non rocket pool owner
   it(printTitle('non owner', 'fail to register a partner'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     const result = rocketPartnerAPI.partnerAdd(partnerFirst, partnerFirstName, {
       from: userFirst,
       gas: partnerRegisterGas,
@@ -181,9 +192,6 @@ contract('RocketPool', accounts => {
 
   // Register two 3rd party partners
   it(printTitle('owner', 'register 2 partners'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     await rocketPartnerAPI.partnerAdd(partnerFirst, partnerFirstName, {
       from: web3.eth.coinbase,
       gas: partnerRegisterGas,
@@ -199,11 +207,6 @@ contract('RocketPool', accounts => {
 
   // Attempt to make a deposit with an incorrect pool staking time ID
   it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketPool = await RocketPool.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     // Get the min ether required to launch a mini pool
     const minEther = await rocketSettings.getPoolMinEtherRequired.call().valueOf();
     // Calculate just enough ether to create the pool
@@ -220,11 +223,6 @@ contract('RocketPool', accounts => {
 
   // Attempt to make a deposit with an unregistered 3rd party partner
   it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketPool = await RocketPool.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     // Get the min ether required to launch a mini pool
     const minEther = await rocketSettings.getPoolMinEtherRequired.call().valueOf();
     // Calculate just enough ether to create the pool
@@ -587,12 +585,6 @@ contract('RocketPool', accounts => {
 
   // First partner withdraws half their users previous Ether from the pool before it has launched for staking
   it(printTitle('partnerFirst', 'withdraws half their users previous deposit from the mini pool'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketUser = await RocketUser.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-    const rocketPool = await RocketPool.deployed();
-
     // Get the user deposit total
     const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
     assert.equal(pools.length, 1);
@@ -625,11 +617,6 @@ contract('RocketPool', accounts => {
       'withdraws their users remaining deposit from the mini pool, their user is removed from it and the mini pool is destroyed as it has no users anymore'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketPool = await RocketPool.deployed();
-      const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
       // Get the users deposit total
       const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
       assert.equal(pools.length, 1);
@@ -736,10 +723,6 @@ contract('RocketPool', accounts => {
 
   // Attempt to make a withdraw of rocket deposit tokens too early
   it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketUser = await RocketUser.deployed();
-
     // Try to withdraw tokens from that users' minipool
     const result = rocketUser.userWithdrawDepositTokens(miniPoolSecondInstance.address, 0, {
       from: userThird,
@@ -989,11 +972,6 @@ contract('RocketPool', accounts => {
       'withdraws 50% of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketDeposit = await RocketDepositToken.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Get the token withdrawal fee
       const tokenWithdrawalFee = await rocketSettings.getDepositTokenWithdrawalFeePercInWei.call().valueOf();
       // Get the total supply of tokens in circulation
@@ -1035,10 +1013,6 @@ contract('RocketPool', accounts => {
   );
 
   it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketDeposit = await RocketDepositToken.deployed();
-
     // Count how many tokens that user has
     const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird).valueOf();
     // Transfer half to first user on the open market
@@ -1058,10 +1032,6 @@ contract('RocketPool', accounts => {
   });
 
   it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketDeposit = await RocketDepositToken.deployed();
-
     // Count how many tokens that user has
     const userThirdTokenBalance = parseInt(await rocketDeposit.balanceOf.call(userThird).valueOf());
     // Transfer to first user on the open market
@@ -1079,19 +1049,15 @@ contract('RocketPool', accounts => {
   it(
     printTitle('userThird', 'fails to transfer tokens from userFirst account to themselves on the open market'),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketDepoist = await RocketDepositToken.deployed();
-
       // Count how many tokens that user has
-      const userFirstTokenBalance = parseInt(await rocketDepoist.balanceOf.call(userFirst).valueOf());
+      const userFirstTokenBalance = parseInt(await rocketDeposit.balanceOf.call(userFirst).valueOf());
       // Transfer to third user on the open market
       const tokenTransferAmount = userFirstTokenBalance / 2;
       // Transfer now
-      await rocketDepoist.transferFrom(userFirst, userThird, tokenTransferAmount, { from: userThird, gas: 250000 });
+      await rocketDeposit.transferFrom(userFirst, userThird, tokenTransferAmount, { from: userThird, gas: 250000 });
 
       // Now count how many tokens that user has
-      const userFirstTokenBalanceAfter = parseInt(await rocketDepoist.balanceOf.call(userFirst).valueOf());
+      const userFirstTokenBalanceAfter = parseInt(await rocketDeposit.balanceOf.call(userFirst).valueOf());
 
       assert.equal(userFirstTokenBalanceAfter, userFirstTokenBalance, 'Users tokens were transferred');
     }
@@ -1103,15 +1069,9 @@ contract('RocketPool', accounts => {
       'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketDeposit = await RocketDepositToken.deployed();
-
       const userThirdTokenBalance = parseInt(await rocketDeposit.balanceOf.call(userThird).valueOf());
-
       // Transfer now
       const result = rocketDeposit.burnTokensForEther(userThirdTokenBalance, { from: userThird, gas: 250000 });
-
       await assertThrows(result);
     }
   );
@@ -1122,11 +1082,6 @@ contract('RocketPool', accounts => {
       'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketDeposit = await RocketDepositToken.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Get the token withdrawal fee
       const tokenWithdrawalFee = parseInt(await rocketSettings.getDepositTokenWithdrawalFeePercInWei.call().valueOf());
 
@@ -1142,10 +1097,6 @@ contract('RocketPool', accounts => {
 
   // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
   it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketUser = await RocketUser.deployed();
-
     // Attempt withdrawal of all our deposit now
     const result = rocketUser.userWithdraw(miniPoolFirstInstance.address, 0, {
       from: userFirst,
@@ -1494,45 +1445,18 @@ contract('RocketPool', accounts => {
 
   it(
     printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'),
-    () => {
-      // Check RocketStorage is deployed first
-      return RocketStorage.deployed().then(rocketStorageInstance => {
-        // Check RocketSettings is deployed
-        return RocketSettings.deployed().then(rocketSettingsInstance => {
-          // RocketUser now
-          return RocketUser.deployed().then(rocketUserInstance => {
-            // Get the min ether required to launch a mini pool - the user sent half this amount for tokens originally
-            return rocketSettingsInstance.getPoolMinEtherRequired.call().then(result => {
-              // These ethers are ones they withdrew tokens against
-              const etherAmountTradedSentForTokens = parseInt(result.valueOf());
-              // Check rocketDepositToken is deployed
-              return RocketDepositToken.deployed().then(rocketDepositTokenInstance => {
-                // Now count how many tokens that user has
-                return rocketDepositTokenInstance.balanceOf
-                  .call(userThird)
-                  .then(result => {
-                    const depositTokenFundBalance = web3.eth.getBalance(rocketDepositTokenInstance.address).valueOf();
-                    // Ok?
-                    return depositTokenFundBalance == etherAmountTradedSentForTokens ? true : false;
-                  })
-                  .then(result => {
-                    assert.isTrue(result, 'depositTokenFundBalance does not match etherAmountTradedSentForTokens');
-                  });
-              });
-            });
-          });
-        });
-      });
+    async () => {
+      // Get the min ether required to launch a mini pool - the user sent half this amount for tokens originally
+      const etherAmountTradedSentForTokens = parseInt(await rocketSettings.getPoolMinEtherRequired.call().valueOf());
+      const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address).valueOf();
+
+      assert.equal(etherAmountTradedSentForTokens, depositTokenFundBalance);
     }
-  ); // End Test
+  );
 
   it(
     printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketDeposit = await RocketDepositToken.deployed();
-
       // Get the token withdrawal fee
       const tokenWithdrawalFeeWei = await rocketSettings.getDepositTokenWithdrawalFeePercInWei.call().valueOf();
       // Token fee - this goes to the person who trades the tokens back in
@@ -1547,7 +1471,7 @@ contract('RocketPool', accounts => {
 
       // Transfer now
       await rocketDeposit.burnTokensForEther(userFirstTokenBalance, { from: userFirst, gas: burnGas });
-      
+
       // Now count how many tokens that user has, should be none
       const userFirstTokenBalanceAfter = parseFloat(await rocketDeposit.balanceOf.call(userFirst).valueOf());
       const userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
@@ -1565,10 +1489,6 @@ contract('RocketPool', accounts => {
   it(
     printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has mini pools attached to it'),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketNode = await RocketNode.deployed();
-
       // Remove the node now
       const result = rocketNode.nodeRemove(nodeFirst, { from: owner, gas: 200000 });
       await assertThrows(result);
@@ -1579,10 +1499,6 @@ contract('RocketPool', accounts => {
   it(
     printTitle('userFirst', 'withdraws their deposit + Casper rewards from the mini pool and pays their fee'),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Get the user deposit
       const depositedAmount = await miniPoolFirstInstance.getUserDeposit.call(userFirst).valueOf();
       // Fee acount is Coinbase by default
@@ -1619,10 +1535,6 @@ contract('RocketPool', accounts => {
   it(
     printTitle('userSecond', 'fails to withdraw using their backup address before the time limit to do so is allowed'),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Attemp tp withdraw our total deposit + rewards using our backup address
       const result = rocketUser.userWithdraw(miniPoolFirstInstance.address, 0, {
         from: userSecondBackupAddress,
@@ -1639,10 +1551,6 @@ contract('RocketPool', accounts => {
       'settings BackupCollectTime changed to 0 which will allow the user to withdraw via their backup address'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Set the backup withdrawal period to 0 to allow the user to withdraw using their backup address
       const result = await rocketSettings.setPoolUserBackupCollectTime(0, { from: owner, gas: 150000 });
       assert.isTrue(true, 'settings BackupCollectTime changed to 0.'); // dummy assert for now
@@ -1653,10 +1561,6 @@ contract('RocketPool', accounts => {
   it(
     printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketUser = await RocketUser.deployed();
-
       // Attempt tp withdraw our total deposit + rewards using our backup address
       const result = rocketUser.userWithdraw(miniPoolFirstInstance.address, 0, {
         from: userFirst,
@@ -1673,11 +1577,6 @@ contract('RocketPool', accounts => {
       'withdraws their deposit + Casper rewards using their backup address from the mini pool, pays their fee and the pool closes'
     ),
     async () => {
-      const rocketStorage = await RocketStorage.deployed();
-      const rocketSettings = await RocketSettings.deployed();
-      const rocketUser = await RocketUser.deployed();
-      const rocketPool = await RocketPool.deployed();
-
       // Get the user deposit
       const depositedAmount = await miniPoolFirstInstance.getUserDeposit.call(userSecond).valueOf();
       // Fee account is Coinbase by default
@@ -1713,10 +1612,6 @@ contract('RocketPool', accounts => {
 
   // Owner removes first node
   it(printTitle('owner', 'removes first node from the Rocket Pool network'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketNode = await RocketNode.deployed();
-    const rocketPool = await RocketPool.deployed();
-
     // Remove the node now
     const result = await rocketNode.nodeRemove(nodeFirst, { from: owner, gas: 200000 });
 
@@ -1730,11 +1625,6 @@ contract('RocketPool', accounts => {
 
   // Owner removes first partner - users attached to this partner can still withdraw
   it(printTitle('owner', 'removes first partner from the Rocket Pool network'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketPool = await RocketPool.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     // Check the second partner array index
     const partnerSecondIndexPrev = await rocketPartnerAPI.getPartnerIndex.call(partnerSecond).valueOf();
     // Remove the node now
@@ -1758,11 +1648,6 @@ contract('RocketPool', accounts => {
 
   // Attempt to make a deposit with after being removed as a partner
   it(printTitle('partnerFirst', 'attempt to make a deposit with after being removed as a partner'), async () => {
-    const rocketStorage = await RocketStorage.deployed();
-    const rocketSettings = await RocketSettings.deployed();
-    const rocketPool = await RocketPool.deployed();
-    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
-
     // Get the min ether required to launch a mini pool
     const minEther = await rocketSettings.getPoolMinEtherRequired.call().valueOf();
     const sendAmount = minEther - web3.toWei('1', 'ether');
