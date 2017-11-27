@@ -6,7 +6,7 @@
   "author": "David Rugendyke <david@rocketpool.net>",
   "scripts": {
     "console": "truffle console",
-    "test": "scripts/test.sh ./test/rocketPool.js",
+    "test": "scripts/test.sh test/rocketPool.js",
     "format": "prettier --write '**/*.js'"
   },
   "devDependencies": {

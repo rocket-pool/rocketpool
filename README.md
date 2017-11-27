@@ -22,7 +22,7 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
 
 Easiest way to see Rocket Pool alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
 ```bash
-$ yarn && yarn test
+$ npm install && npm test
 ```
 This will start testrpc (if not already started) with the current block gas limit and put Rocket Pool through its paces.
 
@@ -69,11 +69,7 @@ open the rocketpool directory:
 ```bash
 $ cd rocketpool
 ```
-install Yarn:
-```bash
-$ sudo npm install yarn
-```
 install npm packages and run tests:
 ```bash
-$ yarn && yarn test
+$ npm install && npm test
 ```
