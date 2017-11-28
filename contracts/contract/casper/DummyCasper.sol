@@ -1,6 +1,6 @@
 pragma solidity 0.4.18;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /// @title A dummy shell Casper contract used to simulate sending to and receiving from the actual Casper contract when it's completed. 
  // Obviously this could change a lot and in no way reflects the actual Casper code, it's just a basic contract simulation based on the Mauve Paper for Rocket Pool to interact with until actual Casper is done or specified 100%.
