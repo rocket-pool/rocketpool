@@ -6,6 +6,8 @@
   "author": "David Rugendyke <david@rocketpool.net>",
   "scripts": {
     "console": "truffle console",
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
     "test": "scripts/test.sh test/rocketPool.js",
     "format": "prettier --write '**/*.js'"
   },
@@ -13,7 +15,8 @@
     "ganache-cli": "^6.0.3",
     "prettier": "^1.8.2",
     "truffle": "^4.0.1",
-    "web3-utils": "^1.0.0-beta.26"
+    "web3-utils": "^1.0.0-beta.26",
+    "zeppelin-solidity": "^1.4.0"
   },
   "prettier": {
     "singleQuote": true,

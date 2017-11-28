@@ -62,7 +62,7 @@ contract('RocketPool', accounts => {
 
     const result = await rocketPool.userWithdrawDepositTest({
       from: userFirst,
-      to: rocketPoolInstance.address,
+      to: rocketPool.address,
       gas: 250000,
     });
 
