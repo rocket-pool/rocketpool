@@ -1,6 +1,7 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketUserInterface.sol";
 import "./interface/RocketFactoryInterface.sol";
@@ -12,7 +13,7 @@ import "./interface/RocketSettingsInterface.sol";
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is the primary upgradable contract
 /// @author David Rugendyke
 
-contract RocketPool is Owned {
+contract RocketPool is Ownable {
 
 
 

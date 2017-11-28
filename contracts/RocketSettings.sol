@@ -1,12 +1,13 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+
 import "./interface/RocketStorageInterface.sol";
 
 /// @title Common settings that are used across all spoke contracts, mostly the main rocketpool and the mini pools it creates
 /// @author David Rugendyke
 
-contract RocketSettings is Owned {
+contract RocketSettings is Ownable {
 
     /**** Properties ***********/
 

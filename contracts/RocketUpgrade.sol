@@ -1,14 +1,14 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+
 import "./RocketStorage.sol";
 
 
 /// @title Upgrades for Rocket Pool network contracts
 /// @author David Rugendyke
 
-contract RocketUpgrade is Owned {
-
+contract RocketUpgrade is Ownable {
 
     /**** Properties ***********/
 

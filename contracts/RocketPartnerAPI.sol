@@ -1,6 +1,7 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+
 import "./interface/RocketUserInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -10,8 +11,7 @@ import "./interface/RocketPoolInterface.sol";
 /// @title RocketPartnerAPI - Used by Rocket Pool partners to access the Rocket Pool network
 /// @author David Rugendyke
 
-contract RocketPartnerAPI is Owned {
-
+contract RocketPartnerAPI is Ownable {
 
     /**** RocketNode ************/
 

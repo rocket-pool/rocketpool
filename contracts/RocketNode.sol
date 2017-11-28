@@ -1,16 +1,16 @@
 pragma solidity 0.4.18;
 
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
-import "./contract/Owned.sol";
-
 
 /// @title The Rocket Smart Node contract - more methods for nodes will be moved from RocketPool to here when metropolis is released
 /// @author David Rugendyke
 
-contract RocketNode is Owned {
+contract RocketNode is Ownable {
 
     /**** Properties ***********/
 

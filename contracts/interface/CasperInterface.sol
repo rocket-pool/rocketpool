@@ -1,11 +1,11 @@
 pragma solidity 0.4.18;
 
-import "../contract/Owned.sol";
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 /// @title An interface for Caspers methods that RocketPool will need (this will obviously change a bit until Casper is spec'd 100%, but allows for easier integration)
 /// @author David Rugendyke
 
-contract CasperInterface is Owned {
+contract CasperInterface is Ownable {
     /// @dev A valid registered node validation code
     modifier registeredValidator(address validatorSenderAddress) {_;}
     /// @dev Deposit at the casper contract
