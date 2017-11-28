@@ -1,4 +1,2 @@
-'use strict';
-
-// Create the namespace for our app & modules            
-var rocketPool = rocketPool || { 'ns':'rocketPool' };
+// Create the namespace for our app & modules
+const rocketPool = rocketPool || { ns: 'rocketPool' };
