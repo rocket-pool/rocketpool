@@ -12,6 +12,7 @@ import "./interface/RocketPoolInterface.sol";
 /// @title Rocket Pool Users
 /// @author David Rugendyke
 
+
 contract RocketUser is Ownable {
 
     /**** Properties ************/
@@ -88,8 +89,6 @@ contract RocketUser is Ownable {
         address flag
     );
 
-       
-
     /*** Modifiers *************/
 
     /// @dev Only allow access from the latest version of the RocketPool contract
@@ -117,7 +116,6 @@ contract RocketUser is Ownable {
         _;
     }
 
-
     /*** Constructor *************/
    
     /// @dev rocketUser constructor
@@ -125,8 +123,6 @@ contract RocketUser is Ownable {
         // Update the contract address 
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
-
-
 
     /*** Setters *************/
 
@@ -166,9 +162,7 @@ contract RocketUser is Ownable {
         maxWithdrawalWei = amountInWei;
     }
     
-
     /*** Methods *************/
-
 
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()`.
     /// @dev Fallback function, user direct deposit to Rocket Pool 
@@ -185,7 +179,6 @@ contract RocketUser is Ownable {
         }
         return false;       
     }
-
 
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()`.
     /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
@@ -215,7 +208,6 @@ contract RocketUser is Ownable {
         // Done
         return true;
     }
-
     
     /// @notice Withdraw ether from Rocket Pool
     /// @dev A regular Rocket Pool user withdrawing their deposit
@@ -236,7 +228,6 @@ contract RocketUser is Ownable {
         // Call our transfer method, creates a transaction
         return userWithdrawDepositFromPoolTransfer(_partnerUserAddress, _miniPoolAddress, _amount, _partnerAddress);
     }
-
 
     /// @dev User has requested withdrawing their deposit from a pool, all main checks are done here as this contract is upgradable, but mini pools are not.
     /// @param _userAddress The address to use for withdrawals, can also be a partners users address withdrawing on behalf of their user
@@ -287,7 +278,6 @@ contract RocketUser is Ownable {
         // Success
         return true; 
     }
-
 
     /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed, all main checks are done here as this contract is upgradable, but mini pools currently deployed are not 
     /// @param _userAddress The address of the mini pool user.
@@ -376,7 +366,6 @@ contract RocketUser is Ownable {
         return false;
     }
 
-
     /// @notice Withdraw Rocket Deposit Tokens from your deposit?
     /// @dev Will mint new tokens for this user that backs their deposit and can be traded on the open market - not available for partner accounts atm
     /// @param _miniPoolAddress The address of the mini pool they wish to withdraw tokens from.
@@ -412,7 +401,4 @@ contract RocketUser is Ownable {
             }
         }
     }
-
- 
-
 }

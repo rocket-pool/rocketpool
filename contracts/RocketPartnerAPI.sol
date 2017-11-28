@@ -90,7 +90,6 @@ contract RocketPartnerAPI is Ownable {
         _;
     }
 
-    
     /*** Constructor *************/
    
     /// @dev rocketNode constructor
@@ -100,7 +99,6 @@ contract RocketPartnerAPI is Ownable {
         // Set the current version of this contract
         version = 1;
     }
-
 
      /*** Getters *************/
 
@@ -114,14 +112,12 @@ contract RocketPartnerAPI is Ownable {
         return rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
     }
 
-
     /// @dev Get the address to deposit to with Rocket Pool
     function getAPIdepositAddress() public view returns(address) { 
         // The partner address being supplied must also match the sender address
         return this;
     }
 
-    
     /*** Setters *************/
    
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()` with partner address `partnerAddress`.
@@ -155,8 +151,6 @@ contract RocketPartnerAPI is Ownable {
             APIpartnerWithdrawalAccepted(msg.sender, _partnerUserAddress, now);
         }
     }
-
-
 
     /*** Owner Only Partner Methods *************/
 
@@ -202,7 +196,6 @@ contract RocketPartnerAPI is Ownable {
         // Fire the event
         PartnerRegistered(_newPartnerAddress, now);
     } 
-
 
     /// @dev Remove a partner from the Rocket Pool network, note that a partner should first have its user deposits disabled so that their users can withdraw
     /// @param _partnerAddress The address of the partner

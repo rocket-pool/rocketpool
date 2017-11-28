@@ -8,13 +8,13 @@ import "./RocketStorage.sol";
 /// @title Upgrades for Rocket Pool network contracts
 /// @author David Rugendyke
 
+
 contract RocketUpgrade is Ownable {
 
     /**** Properties ***********/
 
     address private rocketStorageAddress;                  // Address of the main RocketStorage contract
 
-    
     /*** Contracts **************/
 
     RocketStorage rocketStorage = RocketStorage(0);        // The main RocketStorage contract where primary persistant storage is maintained
@@ -29,7 +29,6 @@ contract RocketUpgrade is Ownable {
         // Update the contract address
         rocketStorage = RocketStorage(rocketStorageAddress);
     }
-
 
     /**** Contract Upgrade Methods ***********/
 
@@ -48,6 +47,4 @@ contract RocketUpgrade is Ownable {
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
     }
-    
-
 }

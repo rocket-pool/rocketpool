@@ -14,14 +14,18 @@ import "./interface/RocketSettingsInterface.sol";
 /// @author David Rugendyke
 
 contract RocketPool is Ownable {
-
     /*** Contracts **************/
 
     RocketUserInterface rocketUser = RocketUserInterface(0);              // The main user interface methods
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
 
-
+    /// @dev rocketPool constructor
+    function RocketPool(address _rocketStorageAddress) public { 
+        // Update the contract address 
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    }
+    
     /*** Events ****************/
 
     event PoolAssignedUser (
@@ -62,9 +66,7 @@ contract RocketPool is Ownable {
         uint256 flag
     );
     
-
     /*** Modifiers *************/
-
     
     /// @dev New pools are allowed to be created
     modifier poolsAllowedToBeCreated() {
@@ -100,14 +102,131 @@ contract RocketPool is Ownable {
         _;
     }
 
-   
-    /// @dev rocketPool constructor
-    function RocketPool(address _rocketStorageAddress) public { 
-        // Update the contract address 
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    /*** External functions *************/
+
+    /// @dev Get an available minipool for a user to be assigned too
+    /// @param _newUserAddress New user account
+    /// @param _partnerAddress The address of the Rocket Pool partner
+    /// @param _poolStakingDuration The duration that the user wishes to stake for
+    function addUserToAvailablePool(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address) {
+        // The desired pool address to asign the user too
+        address poolAssignToAddress = 0;
+        // The contract of the desired pool address
+        RocketPoolMini poolAddUserTo = RocketPoolMini(0);
+        // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
+        address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
+        // No pools awaiting? lets make one
+        if (poolsFound.length == 0) {
+            // Create new pool contract
+            poolAssignToAddress = createPool(_poolStakingDuration);
+        } else {
+            // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
+            for (uint32 i = 0; i < poolsFound.length; i++) {
+                // Have we found one already?
+                if (poolAssignToAddress == 0) {
+                    // Get the contract instance 
+                    poolAddUserTo = getPoolInstance(poolsFound[i]);
+                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
+                    if (poolAddUserTo.getUserExists(_newUserAddress)) {
+                        // Add them to a minipool acceptind deposits that they already belong too
+                        poolAssignToAddress = poolsFound[i];
+                    }
+                }
+            }
+            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
+            if (poolAssignToAddress == 0) {
+                poolAssignToAddress = poolsFound[0];
+            }
+        }    
+
+        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
+        assert(poolAssignToAddress != 0);
+        
+        // Get the contract instance
+        poolAddUserTo = getPoolInstance(poolAssignToAddress);
+        // Double check the pools status is accepting deposits and user isn't in there already
+        if (poolAddUserTo.getStatus() == 0) {
+            // User is added if they don't exist in it already
+            if (poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
+                // Fire the event
+                PoolAssignedUser(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
+            } 
+            // Return the pool address that the user belongs to
+            return poolAssignToAddress;
+        }    
     }
 
-
+        /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
+    /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
+    function poolNodeActions() external onlyLatestRocketNode {
+        // Get our Rocket Node contract
+        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        // Create an empty instance of a pool contract to populate later if we find one
+        RocketPoolMini pool = RocketPoolMini(0);
+        // Our shared iterator 
+        uint32 i = 0;
+        // Find the pools requested with the status
+        address[] memory poolsFound = getPoolsFilterWithStatus(1);
+        // Do we have any pools awaiting launch?
+        if (poolsFound.length > 0) {
+            // Ready to launch?
+            for (i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = RocketPoolMini(poolsFound[i]);
+                // Check its ok
+                require(pool.owner() != 0x0);
+                // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
+                if (pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
+                    // Get a node for this pool to be assigned too
+                    address nodeAddress = rocketNode.getNodeAvailableForPool();
+                    // That node must exist
+                    require(nodeAddress != 0x0);
+                    // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
+                    pool.setNodeDetails(nodeAddress);
+                    // Fire the event
+                    PoolAssignedToNode(nodeAddress, poolsFound[i], now);
+                    // Now set the pool to begin staking with casper by updating its status with the newly assigned node
+                    pool.updateStatus();
+                    // Exit the loop
+                    break;
+                }
+            }
+        }
+        // See if there are any pools thats can start the withdrawal process with Casper
+        poolsFound = getPoolsFilterWithStatus(2);
+        // Do we have any pools currently staking?
+        if (poolsFound.length > 0) {
+            // Ready for re-entry?
+            for (i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = getPoolInstance(poolsFound[i]);
+                // Is this currently staking pool due to request withdrawal from Casper?
+                if (pool.getStakingRequestWithdrawalTimeMet() == true) {
+                    // Now set the pool to begin requesting withdrawal from casper by updating its status
+                    pool.updateStatus();
+                    // Exit the loop
+                    break;
+                }
+            }
+        }
+        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
+        poolsFound = getPoolsFilterWithStatus(3);
+        // Do we have any pools currently awaiting on their deposit from casper?
+        if (poolsFound.length > 0) {
+            // Ready for re-entry?
+            for (i = 0; i < poolsFound.length; i++) {
+                // Get an instance of that pool contract
+                pool = getPoolInstance(poolsFound[i]);
+                // If the time has passed, we can now request the deposit to be sent
+                if (pool.getStakingWithdrawalTimeMet() == true) {
+                    // Now set the pool to begin withdrawal from casper by updating its status
+                    pool.updateStatus();
+                    // Exit the loop
+                    break;
+                }
+            }
+        }
+    } 
 
     /*** Mini Pools ***********************************************/
 
@@ -199,10 +318,9 @@ contract RocketPool is Ownable {
                (_status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
                (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
                (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 
-               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) || 
-               _returnAll == true) {
-                    // Matched
-                    poolsFound[i] = pools[i];
+               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) || _returnAll == true) {
+                // Matched
+                poolsFound[i] = pools[i];
             }
         }
         // Remove empty values from our dynamic memory array so that .length works as expected
@@ -210,7 +328,6 @@ contract RocketPool is Ownable {
         // Return our pool address matching the status now
         return poolsFound;
     }
-
 
     /// @dev Manually update the staking duration of a mini pool if needed, only the owner
     /// @param _miniPoolAddress Address of the minipool.
@@ -220,61 +337,6 @@ contract RocketPool is Ownable {
         RocketPoolMini pool = getPoolInstance(_miniPoolAddress);
         pool.setStakingDuration(_poolStakingDuration);
     } 
-
-
-    /// @dev Get an available minipool for a user to be assigned too
-    /// @param _newUserAddress New user account
-    /// @param _partnerAddress The address of the Rocket Pool partner
-    /// @param _poolStakingDuration The duration that the user wishes to stake for
-    function addUserToAvailablePool(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address) {
-        // The desired pool address to asign the user too
-        address poolAssignToAddress = 0;
-        // The contract of the desired pool address
-        RocketPoolMini poolAddUserTo = RocketPoolMini(0);
-        // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
-        address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
-        // No pools awaiting? lets make one
-        if (poolsFound.length == 0) {
-            // Create new pool contract
-            poolAssignToAddress = createPool(_poolStakingDuration);
-        } else {
-            // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
-            for (uint32 i = 0; i < poolsFound.length; i++) {
-                // Have we found one already?
-                if (poolAssignToAddress == 0) {
-                    // Get the contract instance 
-                    poolAddUserTo = getPoolInstance(poolsFound[i]);
-                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
-                    if (poolAddUserTo.getUserExists(_newUserAddress)) {
-                        // Add them to a minipool acceptind deposits that they already belong too
-                        poolAssignToAddress = poolsFound[i];
-                    }
-                }
-            }
-            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
-            if (poolAssignToAddress == 0) {
-                poolAssignToAddress = poolsFound[0];
-            }
-        }    
-
-        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
-        assert(poolAssignToAddress != 0);
-        
-        // Get the contract instance
-        poolAddUserTo = getPoolInstance(poolAssignToAddress);
-        // Double check the pools status is accepting deposits and user isn't in there already
-        if (poolAddUserTo.getStatus() == 0) {
-            // User is added if they don't exist in it already
-            if (poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
-                // Fire the event
-                PoolAssignedUser(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
-            } 
-            // Return the pool address that the user belongs to
-            return poolAssignToAddress;
-        }    
-
-    }
-
   
     /// @dev Create a new pool 
     /// @param _poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
@@ -301,7 +363,6 @@ contract RocketPool is Ownable {
         // Return the new pool address
         return newPoolAddress; 
     } 
-
 
     /// @dev Remove a mini pool, only mini pools themselves can call this 
     function removePool() public onlyMiniPool(msg.sender) returns(bool) {
@@ -332,85 +393,8 @@ contract RocketPool is Ownable {
             // Success
             return true;   
         }
-       return false;
+        return false;
     } 
-
-    
-
-    /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
-    /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
-    function poolNodeActions() external onlyLatestRocketNode {
-        // Get our Rocket Node contract
-        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
-        // Create an empty instance of a pool contract to populate later if we find one
-        RocketPoolMini pool = RocketPoolMini(0);
-        // Our shared iterator 
-        uint32 i = 0;
-        // Find the pools requested with the status
-        address[] memory poolsFound = getPoolsFilterWithStatus(1);
-        // Do we have any pools awaiting launch?
-        if (poolsFound.length > 0) {
-            // Ready to launch?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = RocketPoolMini(poolsFound[i]);
-                // Check its ok
-                require(pool.owner() != 0x0);
-                // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                if (pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
-                    // Get a node for this pool to be assigned too
-                    address nodeAddress = rocketNode.getNodeAvailableForPool();
-                    // That node must exist
-                    require(nodeAddress != 0x0);
-                    // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
-                    pool.setNodeDetails(nodeAddress);
-                    // Fire the event
-                    PoolAssignedToNode(nodeAddress, poolsFound[i], now);
-                    // Now set the pool to begin staking with casper by updating its status with the newly assigned node
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-        // See if there are any pools thats can start the withdrawal process with Casper
-        poolsFound = getPoolsFilterWithStatus(2);
-        // Do we have any pools currently staking?
-        if (poolsFound.length > 0) {
-            // Ready for re-entry?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = getPoolInstance(poolsFound[i]);
-                // Is this currently staking pool due to request withdrawal from Casper?
-                if (pool.getStakingRequestWithdrawalTimeMet() == true) {
-                    // Now set the pool to begin requesting withdrawal from casper by updating its status
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
-        poolsFound = getPoolsFilterWithStatus(3);
-        // Do we have any pools currently awaiting on their deposit from casper?
-        if (poolsFound.length > 0) {
-            // Ready for re-entry?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = getPoolInstance(poolsFound[i]);
-                // If the time has passed, we can now request the deposit to be sent
-                if (pool.getStakingWithdrawalTimeMet() == true) {
-                    // Now set the pool to begin withdrawal from casper by updating its status
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-    } 
-   
-   
-
 
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types
@@ -421,13 +405,13 @@ contract RocketPool is Ownable {
     /// @dev This is handy as memory arrays have a fixed size when initialised, this reduces the array to only valid values (so that .length works as you'd like)
     /// @dev This can be made redundant when .push is supported on dynamic memory arrays
     /// @param addressArray An array of a fixed size of addresses
-	function utilArrayFilterValuesOnly(address[] memory addressArray) private pure returns (address[] memory) {
+    function utilArrayFilterValuesOnly(address[] memory addressArray) private pure returns (address[] memory) {
         // The indexes for the arrays
         uint[] memory indexes = new uint[](2); 
         indexes[0] = 0;
         indexes[1] = 0;
         // Calculate the length of the non empty values
-		for (uint32 i = 0; i < addressArray.length; i++) {
+        for (uint32 i = 0; i < addressArray.length; i++) {
             if (addressArray[i] != 0) {
                 indexes[0]++;
             }
@@ -443,6 +427,5 @@ contract RocketPool is Ownable {
         }
         // Now return our memory array with only non empty values at the correct length
         return valueArray;
-	}
-
+    }
 }

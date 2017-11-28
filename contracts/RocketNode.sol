@@ -10,6 +10,7 @@ import "./interface/RocketPoolInterface.sol";
 /// @title The Rocket Smart Node contract - more methods for nodes will be moved from RocketPool to here when metropolis is released
 /// @author David Rugendyke
 
+
 contract RocketNode is Ownable {
 
     /**** Properties ***********/
@@ -88,7 +89,6 @@ contract RocketNode is Ownable {
         nodeMinWei = 5 ether;
     }
 
-
     /*** Getters *************/
 
     /// @dev Returns the amount of registered rocket nodes
@@ -132,7 +132,6 @@ contract RocketNode is Ownable {
         }
     } 
 
-
     /*** Setters *************/
 
     /// @dev Set the min eth required for a node to be registered
@@ -158,7 +157,6 @@ contract RocketNode is Ownable {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
         rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
     }
-
 
     /*** Methods ************/
 
@@ -195,8 +193,6 @@ contract RocketNode is Ownable {
         return true;
     } 
 
-
-    
     /// @dev Remove a node from the Rocket Pool network
     /// @param _nodeAddress Address of the node
     function nodeRemove(address _nodeAddress) public onlyRegisteredNode(_nodeAddress) onlyOwner {
@@ -228,7 +224,6 @@ contract RocketNode is Ownable {
         // Fire the event
         NodeRemoved(_nodeAddress, now);
     } 
-
 
     /// @dev Nodes will checkin with Rocket Pool at a set interval (15 mins) to do things like report on average node server load, set nodes to inactive that have not checked in an unusally long amount of time etc. Only registered nodes can call this.
     /// @param _currentLoadAverage The average server load for the node over the last 15 mins
@@ -267,5 +262,4 @@ contract RocketNode is Ownable {
             }
         } 
     }
-
 }

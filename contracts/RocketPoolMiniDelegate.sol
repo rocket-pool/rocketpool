@@ -14,6 +14,7 @@ import "./lib/Arithmetic.sol";
 /// @title The minipool delegate, should contain all primary logic for methods that minipools use, is entirely upgradable so that currently deployed pools can get any bug fixes or additions - storage here MUST match the minipool contract
 /// @author David Rugendyke
 
+
 contract RocketPoolMiniDelegate is Ownable {
 
     /**** Properties ***********/
@@ -36,11 +37,9 @@ contract RocketPoolMiniDelegate is Ownable {
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
 
-
     /**** Libs *****************/
     
     using SafeMath for uint;
-
     
     /*** Structs ***************/
 
@@ -56,9 +55,7 @@ contract RocketPoolMiniDelegate is Ownable {
         uint created;                                           // Creation timestamp
     }
 
-      
     /*** Events ****************/
-
 
     event PoolTransfer (
         address indexed _from,                                  // Transferred from 
@@ -92,7 +89,6 @@ contract RocketPoolMiniDelegate is Ownable {
         uint256 created                                         // Creation timestamp
     );
    
-
     /*** Modifiers *************/
 
     /// @dev Only registered users with this pool
@@ -101,7 +97,6 @@ contract RocketPoolMiniDelegate is Ownable {
         assert (userAddress != 0 && users[userAddress].exists != false);
         _;
     }
-
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
@@ -123,15 +118,13 @@ contract RocketPoolMiniDelegate is Ownable {
         assert (status == rocketSettings.getPoolDefaultStatus() && msg.value > 0);
         _;
     }
-
     
     /*** Methods *************/
    
-   function RocketPoolMiniDelegate(address _rocketStorageAddress) public {
-        // Update the storage address
+    function RocketPoolMiniDelegate(address _rocketStorageAddress) public {
+    // Update the storage address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
-
 
     /// @dev Returns true if this pool is able to send a deposit to Casper
     function getStakingDepositTimeMet() public returns(bool) { 
@@ -162,15 +155,12 @@ contract RocketPoolMiniDelegate is Ownable {
         return false; 
     }
 
-
-
     /*** USERS ***********************************************/
 
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
         return userAddresses.length;
     }
-
     
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
     function setUserBalanceRewardsFees(address _userAddress, uint256 _updatedBalance, int256 _updatedRewards, uint256 _updatedFees) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
@@ -203,7 +193,6 @@ contract RocketPoolMiniDelegate is Ownable {
         return true;
     }
 
-
     /// @dev Adds more to the current amount of deposit tokens owed by the user
     function setUserDepositTokensOwedAdd(address _userAddress, uint256 _etherAmount, uint256 _tokenAmount) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         // Some basic double checks here, primary logic is in the main Rocket Pool contract
@@ -221,7 +210,6 @@ contract RocketPoolMiniDelegate is Ownable {
         // Sweet
         return true;
     }
-
 
     /// @dev Register a new user, only the latest version of the parent pool contract can do this
     /// @param _userAddressToAdd New user address
@@ -252,7 +240,6 @@ contract RocketPoolMiniDelegate is Ownable {
         }
         return false;
     }
-
 
     /// @dev Removes a user from the pool
     /// @param _userAddressToRemove The users address
@@ -291,7 +278,6 @@ contract RocketPoolMiniDelegate is Ownable {
         revert();
     }
 
-
     /*** POOL ***********************************************/
 
     /// @dev Add a users deposit, only the latest version of the parent pool contract can send value here, so once a new version of Rocket Pool is released, existing mini pools can no longer receive deposits
@@ -304,7 +290,6 @@ contract RocketPoolMiniDelegate is Ownable {
         // If all went well
         return true;
     }
-
     
     /// @dev Allow the user to withdraw their deposit, only possible if the pool is in prelaunch, in countdown to launch or when Casper staking is completed, only the latest main RocketPool contract can make a withdrawal which is where the main checks occur (its upgradable)
     /// @param withdrawAmount amount you want to withdraw
@@ -346,7 +331,6 @@ contract RocketPoolMiniDelegate is Ownable {
         revert();
     }
 
-
     /// @dev Closes the pool if the conditions are right
     function canClosePool() private returns(bool) {
         // Can only close pool when not staking or awaiting for stake to be returned from Casper
@@ -371,7 +355,6 @@ contract RocketPoolMiniDelegate is Ownable {
             }
         }
     }
-
    
     /// @dev Sets the status of the pool based on several parameters 
     function updateStatus() public returns(bool) {
@@ -446,5 +429,4 @@ contract RocketPoolMiniDelegate is Ownable {
             StatusChange(status, statusOld, now);
         } 
     }
-    
 }

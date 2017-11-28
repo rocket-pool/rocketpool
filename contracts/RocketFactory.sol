@@ -12,6 +12,7 @@ import "./interface/RocketStorageInterface.sol";
 /// @title Where we build the rockets! New contracts created by Rocket Pool are done here so they can be tracked.
 /// @author David Rugendyke
 
+
 contract RocketFactory is Ownable {
 
 	/**** Properties ***********/
@@ -54,7 +55,6 @@ contract RocketFactory is Ownable {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
-
 
     /// @dev Create a new RocketPoolMini contract, deploy to the etherverse and return the address to the caller
     /// @dev Note that the validation and logic for creation should be done in the calling contract

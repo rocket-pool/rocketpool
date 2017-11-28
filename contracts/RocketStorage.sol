@@ -5,8 +5,8 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
 
-contract RocketStorage is Ownable {
 
+contract RocketStorage is Ownable {
 
     /**** Storage Types *******/
 
@@ -16,7 +16,6 @@ contract RocketStorage is Ownable {
     mapping(bytes32 => bytes)      private bytesStorage;
     mapping(bytes32 => bool)       private boolStorage;
     mapping(bytes32 => int256)     private intStorage;
-
 
 
     /*** Modifiers ************/
@@ -33,10 +32,8 @@ contract RocketStorage is Ownable {
         _;
     }
 
-
     /**** Get Methods ***********/
    
-
     /// @param _key The key for the record
     function getAddress(bytes32 _key) external view returns (address) {
         return addressStorage[_key];
@@ -67,9 +64,7 @@ contract RocketStorage is Ownable {
         return intStorage[_key];
     }
 
-
     /**** Set Methods ***********/
-
 
     /// @param _key The key for the record
     function setAddress(bytes32 _key, address _value) onlyLatestRocketNetworkContract external {
@@ -100,7 +95,6 @@ contract RocketStorage is Ownable {
     function setInt(bytes32 _key, int _value) onlyLatestRocketNetworkContract external {
         intStorage[_key] = _value;
     }
-
 
     /**** Delete Methods ***********/
     
@@ -133,5 +127,4 @@ contract RocketStorage is Ownable {
     function deleteInt(bytes32 _key) onlyLatestRocketNetworkContract external {
         delete intStorage[_key];
     }
-
 }
