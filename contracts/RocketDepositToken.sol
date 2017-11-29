@@ -1,17 +1,16 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/math/SafeMath.sol"; 
-import "zeppelin-solidity/contracts/token/ERC20.sol";
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
+import "./contract/Ownable.sol";
+import "./interface/ERC20.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
+import "./lib/SafeMath.sol";
 
 
 /// @title The Rocket Pool Deposit Token - Can be used as a backing of your deposit and traded with others while staking
 /// @author David Rugendyke
-
 contract RocketDepositToken is ERC20, Ownable {
 
     /**** Properties ***********/

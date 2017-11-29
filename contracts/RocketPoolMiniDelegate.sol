@@ -1,20 +1,18 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/ownership/Ownable.sol"; 
 
+import "./contract/Ownable.sol";
 import "./RocketDepositToken.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
 import "./lib/Arithmetic.sol";
+import "./lib/SafeMath.sol";
 
 
 /// @title The minipool delegate, should contain all primary logic for methods that minipools use, is entirely upgradable so that currently deployed pools can get any bug fixes or additions - storage here MUST match the minipool contract
 /// @author David Rugendyke
-
-
 contract RocketPoolMiniDelegate is Ownable {
 
     /**** Properties ***********/

@@ -1,5 +1,6 @@
 pragma solidity 0.4.18;
 
+
 contract RocketFactoryInterface {
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {_;}

@@ -1,11 +1,11 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+
+import "./contract/Ownable.sol";
+
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
-
-
 contract RocketStorage is Ownable {
 
     /**** Storage Types *******/

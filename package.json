@@ -15,8 +15,7 @@
     "ganache-cli": "^6.0.3",
     "prettier": "^1.8.2",
     "truffle": "^4.0.1",
-    "web3-utils": "^1.0.0-beta.26",
-    "zeppelin-solidity": "^1.4.0"
+    "web3-utils": "^1.0.0-beta.26"
   },
   "prettier": {
     "singleQuote": true,

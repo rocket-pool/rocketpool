@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
+import "./contract/Ownable.sol";
 import "./interface/RocketUserInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -17,7 +17,6 @@ contract RocketPartnerAPI is Ownable {
 
     uint256 public version;                         // Version of this contract
 
-
     /*** Contracts **************/
 
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                // The main pool contract
@@ -25,7 +24,6 @@ contract RocketPartnerAPI is Ownable {
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained
   
-
     /*** Events ****************/
 
     event APIpartnerDepositAccepted (
@@ -63,7 +61,6 @@ contract RocketPartnerAPI is Ownable {
         uint256 created
     );
       
-
     /*** Modifiers *************/
 
     /// @dev Only allow access from the latest version of the RocketPool contract
@@ -225,6 +222,4 @@ contract RocketPartnerAPI is Ownable {
         // Fire the event
         PartnerRemoved(_partnerAddress, now);
     } 
-    
-
 }

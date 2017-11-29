@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
+import "./contract/Ownable.sol";
 import "./RocketPoolMini.sol"; 
 import "./RocketDepositToken.sol"; 
 import "./interface/RocketStorageInterface.sol";
@@ -11,8 +11,6 @@ import "./interface/RocketPoolInterface.sol";
 
 /// @title Rocket Pool Users
 /// @author David Rugendyke
-
-
 contract RocketUser is Ownable {
 
     /**** Properties ************/

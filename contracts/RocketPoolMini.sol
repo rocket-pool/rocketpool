@@ -1,15 +1,14 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
+import "./contract/Ownable.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/CasperInterface.sol";
 
+
 /// @title A minipool under the main RocketPool, all major logic is contained within the RocketPoolMiniDelegate contract which is upgradable when minipools are deployed
 /// @author David Rugendyke
-
-
 contract RocketPoolMini is Ownable {
 
     /**** Properties ***********/

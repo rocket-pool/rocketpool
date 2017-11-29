@@ -1,18 +1,17 @@
 pragma solidity 0.4.18;
 
+
+import "./contract/Ownable.sol";
+import "./RocketPoolMini.sol";
+import "./interface/RocketStorageInterface.sol";
+
 /***
    * Note: Since this contract handles contract creation by other contracts, it's deployment gas usage will be high depending on the amount of contracts it can create.
    * For the moment it supports the RocketPoolMini creations, but if more automatic contract creations are added, be wary of the gas for deployment as it may exceed the block gas limit
 ***/ 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-
-import "./RocketPoolMini.sol";
-import "./interface/RocketStorageInterface.sol";
 
 /// @title Where we build the rockets! New contracts created by Rocket Pool are done here so they can be tracked.
 /// @author David Rugendyke
-
-
 contract RocketFactory is Ownable {
 
 	/**** Properties ***********/
