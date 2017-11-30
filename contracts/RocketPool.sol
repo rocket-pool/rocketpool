@@ -95,6 +95,16 @@ contract RocketPool is Ownable {
         _;
     }
 
+    
+    /*** Constructor *************/
+
+    /// @dev rocketPool constructor
+    function RocketPool(address _rocketStorageAddress) public { 
+        // Update the contract address 
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    }
+    
+
     /*** External functions *************/
 
     /// @dev Get an available minipool for a user to be assigned too
