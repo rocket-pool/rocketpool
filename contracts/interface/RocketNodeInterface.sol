@@ -1,5 +1,6 @@
 pragma solidity 0.4.18;
 
+
 contract RocketNodeInterface {
     /// @dev Only allow access from the latest version of the main RocketNode contract
     modifier onlyLatestRocketPool() {_;}

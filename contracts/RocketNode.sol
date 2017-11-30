@@ -1,16 +1,16 @@
 pragma solidity 0.4.18;
 
+
+import "./contract/Ownable.sol";
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
-import "./contract/Owned.sol";
 
 
 /// @title The Rocket Smart Node contract - more methods for nodes will be moved from RocketPool to here when metropolis is released
 /// @author David Rugendyke
-
-contract RocketNode is Owned {
+contract RocketNode is Ownable {
 
     /**** Properties ***********/
 
@@ -88,7 +88,6 @@ contract RocketNode is Owned {
         nodeMinWei = 5 ether;
     }
 
-
     /*** Getters *************/
 
     /// @dev Returns the amount of registered rocket nodes
@@ -132,7 +131,6 @@ contract RocketNode is Owned {
         }
     } 
 
-
     /*** Setters *************/
 
     /// @dev Set the min eth required for a node to be registered
@@ -158,7 +156,6 @@ contract RocketNode is Owned {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
         rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
     }
-
 
     /*** Methods ************/
 
@@ -195,8 +192,6 @@ contract RocketNode is Owned {
         return true;
     } 
 
-
-    
     /// @dev Remove a node from the Rocket Pool network
     /// @param _nodeAddress Address of the node
     function nodeRemove(address _nodeAddress) public onlyRegisteredNode(_nodeAddress) onlyOwner {
@@ -228,7 +223,6 @@ contract RocketNode is Owned {
         // Fire the event
         NodeRemoved(_nodeAddress, now);
     } 
-
 
     /// @dev Nodes will checkin with Rocket Pool at a set interval (15 mins) to do things like report on average node server load, set nodes to inactive that have not checked in an unusally long amount of time etc. Only registered nodes can call this.
     /// @param _currentLoadAverage The average server load for the node over the last 15 mins
@@ -267,5 +261,4 @@ contract RocketNode is Owned {
             }
         } 
     }
-
 }

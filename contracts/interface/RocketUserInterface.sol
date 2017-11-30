@@ -1,5 +1,6 @@
 pragma solidity 0.4.18;
 
+
 contract RocketUserInterface {
     /// @dev User deposits must be validated
     modifier acceptableDeposit() {_;}

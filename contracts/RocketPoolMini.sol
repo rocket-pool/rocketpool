@@ -1,15 +1,15 @@
 pragma solidity 0.4.18;
 
+
+import "./contract/Ownable.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/CasperInterface.sol";
-import "./contract/Owned.sol";
 
 
 /// @title A minipool under the main RocketPool, all major logic is contained within the RocketPoolMiniDelegate contract which is upgradable when minipools are deployed
 /// @author David Rugendyke
-
-contract RocketPoolMini is Owned {
+contract RocketPoolMini is Ownable {
 
     /**** Properties ***********/
 
@@ -127,7 +127,6 @@ contract RocketPoolMini is Owned {
         depositEtherTradedForTokensTotal = 0;
     }
     
-    
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
         // Only Casper can transfer value to a pool
@@ -207,7 +206,6 @@ contract RocketPoolMini is Owned {
     function setStakingDuration(uint256 newStakingDuration) public onlyLatestRocketPool {
         stakingDuration = newStakingDuration;
     }   
-
 
     /*** USERS ***********************************************/
 
@@ -296,8 +294,6 @@ contract RocketPoolMini is Owned {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("addUser(address,address)")), _userAddressToAdd, _partnerAddressToAdd) == true);
         return true;
     }
-
-
 
     /*** POOL ***********************************************/
 

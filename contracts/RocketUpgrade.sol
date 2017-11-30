@@ -1,20 +1,18 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+
+import "./contract/Ownable.sol";
 import "./RocketStorage.sol";
 
 
 /// @title Upgrades for Rocket Pool network contracts
 /// @author David Rugendyke
-
-contract RocketUpgrade is Owned {
-
+contract RocketUpgrade is Ownable {
 
     /**** Properties ***********/
 
     address private rocketStorageAddress;                  // Address of the main RocketStorage contract
 
-    
     /*** Contracts **************/
 
     RocketStorage rocketStorage = RocketStorage(0);        // The main RocketStorage contract where primary persistant storage is maintained
@@ -29,7 +27,6 @@ contract RocketUpgrade is Owned {
         // Update the contract address
         rocketStorage = RocketStorage(rocketStorageAddress);
     }
-
 
     /**** Contract Upgrade Methods ***********/
 
@@ -48,6 +45,4 @@ contract RocketUpgrade is Owned {
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
     }
-    
-
 }

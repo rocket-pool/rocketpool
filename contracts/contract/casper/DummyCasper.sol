@@ -1,13 +1,13 @@
 pragma solidity 0.4.18;
 
-import "../../contract/Owned.sol";
+
+import "../Ownable.sol";
 
 
 /// @title A dummy shell Casper contract used to simulate sending to and receiving from the actual Casper contract when it's completed. 
  // Obviously this could change a lot and in no way reflects the actual Casper code, it's just a basic contract simulation based on the Mauve Paper for Rocket Pool to interact with until actual Casper is done or specified 100%.
 /// @author David Rugendyke
-
-contract DummyCasper is Owned {
+contract DummyCasper is Ownable {
 
     /**** Storage ************/
     uint256 public blockTime;
@@ -18,7 +18,6 @@ contract DummyCasper is Owned {
     uint256 public maxDepositWei;
     uint256 public interestPerYear;
 
-
     /**** Validators ***************/
 
     // The current validators
@@ -27,7 +26,6 @@ contract DummyCasper is Owned {
     address[] private validatorSenderAddresses;
     // Number of validators
     uint256 nextValidatorIndex;
-
 
     /*** Structs ***************/
 
@@ -39,7 +37,7 @@ contract DummyCasper is Owned {
         uint256 withdrawalEpoch;
         uint256 prevCommitEpoch;
         uint256 addedEpoch;
-           bool exists;
+        bool exists;
     }
 
     /*** Events ***************/
@@ -70,7 +68,6 @@ contract DummyCasper is Owned {
     event FlagAddress (
         address flag
     );
-
 
     /*** Modifiers *************/
 
@@ -124,14 +121,14 @@ contract DummyCasper is Owned {
         if (newWithdrawalAddress != 0) {
             // Add the new validator to the mapping of validation structs
             validators[msg.sender] = Validator({
-                       deposit: newDeposit, 
-             withdrawalAddress: newWithdrawalAddress, 
-               withdrawalEpoch: withdrawalDefaultEpoch, 
-                  dynastyStart: 0, 
-                    dynastyEnd: 1000000000000000000000000000000, 
-               prevCommitEpoch: 0, 
-                    addedEpoch: now, 
-                        exists: true
+                deposit: newDeposit, 
+                withdrawalAddress: newWithdrawalAddress, 
+                withdrawalEpoch: withdrawalDefaultEpoch, 
+                dynastyStart: 0, 
+                dynastyEnd: 1000000000000000000000000000000, 
+                prevCommitEpoch: 0, 
+                addedEpoch: now, 
+                exists: true
             });
             // Increment the validator index
             nextValidatorIndex += 1;
@@ -151,7 +148,7 @@ contract DummyCasper is Owned {
             // All good? Fire the event for the new deposit
             Transfered(msg.sender, this, keccak256("deposit"), msg.value, now); 
             return true;
-        }else{
+        } else {
             return false;
         }
     }
@@ -160,7 +157,7 @@ contract DummyCasper is Owned {
     /// @dev Start the process for a withdrawal
     function startWithdrawal() public registeredValidator(msg.sender) returns(bool) { 
         // If this a registed validator and has not already request withdrawal?
-         if (validators[msg.sender].withdrawalEpoch == withdrawalDefaultEpoch) {
+        if (validators[msg.sender].withdrawalEpoch == withdrawalDefaultEpoch) {
             // Cool, lets set the time the withdrawal will be allowed now
             validators[msg.sender].withdrawalEpoch = now + withdrawalDelay;
             // Fire the event
@@ -168,13 +165,13 @@ contract DummyCasper is Owned {
             // Return
             return true;
          }
-         return false;
+        return false;
     }
 
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
     function withdraw(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool) { 
         // If this a registed validator and has not already request withdrawal?
-         if (validators[msg.sender].withdrawalEpoch <= now && validators[msg.sender].deposit > 0) {
+        if (validators[msg.sender].withdrawalEpoch <= now && validators[msg.sender].deposit > 0) {
             // Set the amount to send
             uint256 withdrawalAmount = validators[msg.sender].deposit;
             uint256 withdrawalAmountProcessed = 0;
@@ -195,12 +192,13 @@ contract DummyCasper is Owned {
             // So in its place we'll just call the address of the contract and send the value (this forwards the gas needed), tho we can't test the result here as easily, but this will work for now in place of the real Casper
             // If Casper when finished doesn't support contract -> contract deposit returns, we can use a registered Rocket Node as an oracle to receive the deposit and forward it to the mini pool
             bool success = validators[msg.sender].withdrawalAddress.call.value(withdrawalAmountProcessed)();
+            
             if (success) {
                 Withdrawal(msg.sender, withdrawalAmount, now);
                 return true;
             }
+
             return false;
-            
          }
     }
 
@@ -214,5 +212,4 @@ contract DummyCasper is Owned {
     function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress) { 
         validators[validatorSenderAddress].withdrawalEpoch = newWithdrawalEpoch;
     }
-
 }

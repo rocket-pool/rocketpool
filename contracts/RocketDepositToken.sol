@@ -1,8 +1,9 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+
+import "./contract/Ownable.sol";
+import "./interface/ERC20.sol";
 import "./interface/RocketStorageInterface.sol";
-import "./interface/TokenERC20Interface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/Arithmetic.sol";
 import "./lib/SafeMath.sol";
@@ -10,16 +11,14 @@ import "./lib/SafeMath.sol";
 
 /// @title The Rocket Pool Deposit Token - Can be used as a backing of your deposit and traded with others while staking
 /// @author David Rugendyke
-
-contract RocketDepositToken is ERC20TokenInterface, Owned {
-    
+contract RocketDepositToken is ERC20, Ownable {
 
     /**** Properties ***********/
+    string public constant SYMBOL = "RPD";                              // Token symbol
+    string public constant NAME = "Rocket Pool Deposit";                // Token name
+    uint8 public constant DECIMALS = 18;                                // Decimal places
 
     address private rocketHubAddress;                                   // Address of the main RocketHub contract
-    string public constant symbol = "RPD";                              // Token symbol
-    string public constant name = "Rocket Pool Deposit";                // Token name
-    uint8 public constant decimals = 18;                                // Decimal places
     uint256 public totalSupply = 0;                                     // Total supply
     mapping(address => uint256) private balances;                       // Balances for each account
     mapping(address => mapping (address => uint256)) private allowed;   // Owner of account approves the transfer of an amount to another account
@@ -163,7 +162,7 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
             balances[_to] = balances[_to].add(_amount);
             return true;
         } else {
-           return false;
+            return false;
         }
     }
 
@@ -177,15 +176,14 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
     function transferFrom(address _from, address _to, uint256 _amount) public returns (bool success) {
         // Verify ok
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0) {
-                balances[_from] = balances[_from].sub(_amount);
-                allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
-                balances[_to] = balances[_to].add(_amount);
-                return true;
-            } else {
-                return false;
-            }
+            balances[_from] = balances[_from].sub(_amount);
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
+            balances[_to] = balances[_to].add(_amount);
+            return true;
+        } else {
+            return false;
         }
-
+    }
 
     /**
     * @dev Allow _spender to withdraw from your account, multiple times, up to the _value amount. If this function is called again it overwrites the current allowance with _value.
@@ -208,6 +206,4 @@ contract RocketDepositToken is ERC20TokenInterface, Owned {
         return allowed[_owner][_spender];
     }
 
-
-       
 }

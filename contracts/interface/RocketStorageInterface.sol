@@ -1,5 +1,6 @@
 pragma solidity 0.4.18;
 
+
 // Our eternal storage interface
 contract RocketStorageInterface {
     // Modifiers

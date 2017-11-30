@@ -3,7 +3,6 @@ pragma solidity 0.4.18;
 // Arithmetic library borrowed from Gnosis, thanks guys!
 
 library Arithmetic {
-    
     function mul256By256(uint a, uint b)
         public
         pure

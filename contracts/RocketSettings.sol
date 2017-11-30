@@ -1,12 +1,13 @@
 pragma solidity 0.4.18;
 
-import "./contract/Owned.sol";
+
+import "./contract/Ownable.sol";
 import "./interface/RocketStorageInterface.sol";
+
 
 /// @title Common settings that are used across all spoke contracts, mostly the main rocketpool and the mini pools it creates
 /// @author David Rugendyke
-
-contract RocketSettings is Owned {
+contract RocketSettings is Ownable {
 
     /**** Properties ***********/
 
@@ -26,7 +27,7 @@ contract RocketSettings is Owned {
     uint256 private depositTokenWithdrawalFeePercInWei;         // Deposit Token settings - fee a user is charged on their deposit for an early withdrawal using tokens, given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     
     // The default status for newly created mini pools
-    PoolMiniStatuses public constant poolMiniDefaultStatus = PoolMiniStatuses.PreLaunchAcceptingDeposits;
+    PoolMiniStatuses public constant MINIPOOL_DEFAULT_STATUS = PoolMiniStatuses.PreLaunchAcceptingDeposits;
 
 
     /*** Contracts ***********/
@@ -86,7 +87,7 @@ contract RocketSettings is Owned {
     
     /// @dev Get default status of a new mini pool
     function getPoolDefaultStatus() public pure returns (uint256) {
-        return uint256(poolMiniDefaultStatus);
+        return uint256(MINIPOOL_DEFAULT_STATUS);
     }
 
     /// @dev Check to see if new pools are allowed to be created

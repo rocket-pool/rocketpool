@@ -1,5 +1,6 @@
 pragma solidity 0.4.18;
 
+
 contract RocketSettingsInterface {
     /// @dev Get default status of a new mini pool
     function getPoolDefaultStatus() public view returns (uint256);
