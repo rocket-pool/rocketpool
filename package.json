@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A next generation decentralised Ethereum proof of stake pool",
   "repository": "git@github.com:darcius/rocketpool.git",
-  "author": "David Rugendyke <david@rocketpool.net>",
+  "author": "David Rugendyke <david@mail.rocketpool.net>",
   "scripts": {
     "console": "truffle console",
     "compile": "truffle compile",

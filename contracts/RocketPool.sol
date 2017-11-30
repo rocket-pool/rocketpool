@@ -1,6 +1,5 @@
 pragma solidity 0.4.18;
 
-
 import "./contract/Ownable.sol";
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketUserInterface.sol";
@@ -10,21 +9,16 @@ import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 
 
-/// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is the primary upgradable contract
+/// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is main pool management contract
 /// @author David Rugendyke
 contract RocketPool is Ownable {
+
     /*** Contracts **************/
 
     RocketUserInterface rocketUser = RocketUserInterface(0);              // The main user interface methods
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
-
-    /// @dev rocketPool constructor
-    function RocketPool(address _rocketStorageAddress) public { 
-        // Update the contract address 
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-    }
-
+  
     /*** Events ****************/
 
     event PoolAssignedUser (
@@ -155,7 +149,7 @@ contract RocketPool is Ownable {
         }    
     }
 
-        /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
+    /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
     /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
     function poolNodeActions() external onlyLatestRocketNode {
         // Get our Rocket Node contract
@@ -317,7 +311,8 @@ contract RocketPool is Ownable {
                (_status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
                (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
                (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 
-               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) || _returnAll == true) {
+               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) ||
+                _returnAll == true) {
                 // Matched
                 poolsFound[i] = pools[i];
             }
