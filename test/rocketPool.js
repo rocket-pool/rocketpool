@@ -292,7 +292,7 @@ contract('RocketPool', accounts => {
       const miniPool = RocketPoolMini.at(poolAddress);
 
       // Get the pool status
-      const poolStatus = await miniPoolFirst.getStatus.call().valueOf();
+      const poolStatus = await miniPool.getStatus.call().valueOf();
       const poolBalance = web3.eth.getBalance(miniPool.address).valueOf();
 
       // Now just count the users to make sure this user wasn't added twice

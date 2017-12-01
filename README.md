@@ -1,6 +1,6 @@
 # Rocket Pool - Your new Casper friendly Ethereum POS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [testrpc@v6.0.3](https://github.com/ethereumjs/testrpc) and [truffle@4](https://github.com/trufflesuite/truffle) to run locally.
+*NOTE: The current Alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli) and [truffle@4](https://github.com/trufflesuite/truffle) to run locally.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>
@@ -20,11 +20,11 @@ The contracts are written in `solidity` and built with the Ethereum framework `t
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof of Stake (POS) Pool"/>
 </p>
 
-Easiest way to see Rocket Pool alpha in action is to clone the repo, have testrpc running and the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
+Easiest way to see Rocket Pool alpha in action is to clone the repo, have Ganache running and the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
 ```bash
 $ npm install && npm test
 ```
-This will start testrpc (if not already started) with the current block gas limit and put Rocket Pool through its paces.
+This will start Ganache (if not already started) with the current block gas limit and put Rocket Pool through its paces.
 
 # Rocket Pool White Paper
 
