@@ -101,35 +101,25 @@ contract RocketDepositToken is ERC20, Ownable {
     */
     function burnTokensForEther(uint256 _amount) public returns (bool success) {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
-        require (this.balance >= _amount);
+        require(this.balance >= _amount);
+        // Check to see if the sender has a sufficient token balance and is burning some tokens
+        require(balances[msg.sender] >= _amount && _amount > 0);
         // Rocket settings
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Now send ether to the user in return for the tokens
-        if (balances[msg.sender] >= _amount && _amount > 0) {
-            // Subtract from the sender
-            balances[msg.sender] = balances[msg.sender].sub(_amount);    
-            // Updates totalSupply                  
-            totalSupply = totalSupply.sub(_amount);    
-            // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
-            uint256 etherWithdrawAmountPlusBonus = _amount.add(Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase));
-            // Throw if we can't cover it
-            require(this.balance >= etherWithdrawAmountPlusBonus);
-            // Did it send ok?
-            if (!msg.sender.send(etherWithdrawAmountPlusBonus)) {
-                // Add back to the sender
-                balances[msg.sender] = balances[msg.sender].add(_amount);    
-                // Updates totalSupply                  
-                totalSupply = totalSupply.add(_amount);    
-                // Fail
-                return false;
-            } else {
-                // Fire the event now                         
-                Burn(msg.sender, _amount);
-                // Success
-                return true;
-            }
-        }
-        return false;
+        // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
+        uint256 etherWithdrawAmountPlusBonus = _amount.add(Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase));
+        // Check to see if we have enough ether to cover the full withdrawal amount
+        require(this.balance >= etherWithdrawAmountPlusBonus);
+        // Subtract tokens from the sender's balance
+        balances[msg.sender] = balances[msg.sender].sub(_amount);
+        // Update total token supply
+        totalSupply = totalSupply.sub(_amount);
+        // Transfer the full withdrawal amount to the sender
+        msg.sender.transfer(etherWithdrawAmountPlusBonus);
+        // Fire Burn event
+        Burn(msg.sender, _amount);
+        // Success
+        return true;
     }
 
     /**
