@@ -96,8 +96,9 @@ contract RocketNode is Ownable {
     }
 
     /// @dev Returns true if this node exists, reverts if it doesn't
+    /// @param _nodeAddress node account address.
     function getNodeExists(address _nodeAddress) public view onlyRegisteredNode(_nodeAddress) returns(bool) {
-        return true;
+        return true; 
     }
 
     /// @dev Get the duration between node checkins to make the node inactive
@@ -155,6 +156,22 @@ contract RocketNode is Ownable {
     function setNodeActiveStatus(address _nodeAddress, bool _activeStatus) public onlyRegisteredNode(_nodeAddress) onlyOwner {
         // Get our RocketHub contract with the node storage, so we can check the node is legit
         rocketStorage.setBool(keccak256("node.active", _nodeAddress), _activeStatus);
+    }
+
+    /// @dev Owner can change a nodes oracle ID ('aws', 'rackspace' etc)
+    /// @param _nodeAddress Address of the node
+    /// @param _oracleID The oracle ID
+    function setNodeOracleID(address _nodeAddress, string _oracleID) public onlyRegisteredNode(_nodeAddress) onlyOwner {
+        // Get our RocketHub contract with the node storage, so we can check the node is legit
+        rocketStorage.setString(keccak256("node.oracleID", _nodeAddress), _oracleID);
+    }
+
+    /// @dev Owner can change a nodes instance ID ('aws', 'rackspace' etc)
+    /// @param _nodeAddress Address of the node
+    /// @param _instanceID The instance ID
+    function setNodeInstanceID(address _nodeAddress, string _instanceID) public onlyRegisteredNode(_nodeAddress) onlyOwner {
+        // Get our RocketHub contract with the node storage, so we can check the node is legit
+        rocketStorage.setString(keccak256("node.instanceID", _nodeAddress), _instanceID);
     }
 
     /*** Methods ************/
@@ -232,7 +249,11 @@ contract RocketNode is Ownable {
         // Fire the event
         NodeCheckin(msg.sender, _currentLoadAverage, now);
         // Updates the current 15 min load average on the node, last checkin time etc
-        rocketStorage.setUint(keccak256("node.averageLoad", msg.sender), _currentLoadAverage);
+        // Get the last checkin and only update if its changed to save on gas
+        if (rocketStorage.getUint(keccak256("node.averageLoad", msg.sender)) != _currentLoadAverage) {
+            rocketStorage.setUint(keccak256("node.averageLoad", msg.sender), _currentLoadAverage);
+        }
+        // Update the current checkin time
         rocketStorage.setUint(keccak256("node.lastCheckin", msg.sender), now);
         // Now check with the main Rocket Pool contract what pool actions currently need to be done
         // This method is designed to only process one minipool from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate

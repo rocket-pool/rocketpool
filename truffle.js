@@ -16,14 +16,13 @@ module.exports = {
       network_id: '*', // Match any network id
       gas: 6725527,
     },
-    /*
-        // Local Parity Development 
-        dev: {
-            host: "localhost",
-            port: 8545,
-            network_id: "17", 
-            gas: 5500000,
-            from: "0x002bea02E77F561004922483bA166f463eb16765"
-        }*/
+    // Local Parity Development 
+    dev: {
+        host: "localhost",
+        port: 8545,
+        network_id: "17", 
+        from: "0x00d972e71288652A4B93D7a057D905364240D48A",
+        gas: 6725527,
+    }
   },
 };
