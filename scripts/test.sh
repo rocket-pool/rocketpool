@@ -7,37 +7,37 @@ set -o errexit
 trap cleanup EXIT
 
 cleanup() {
-  # Kill the testrpc instance that we started (if we started one and if it's still running).
-  if [ -n "$testrpc_pid" ] && ps -p $testrpc_pid > /dev/null; then
-    kill -9 $testrpc_pid
+  # Kill the Ganache instance that we started (if we started one and if it's still running).
+  if [ -n "$ganache_pid" ] && ps -p $ganache_pid > /dev/null; then
+    kill -9 $ganache_pid
   fi
 }
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
-  testrpc_port=8555
+  ganache_port=8555
 else
-  testrpc_port=8545
+  ganache_port=8545
 fi
 
-testrpc_running() {
-  nc -z localhost "$testrpc_port"
+ganache_running() {
+  nc -z localhost "$ganache_port"
 }
 
-start_testrpc() {
+start_ganache() {
   if [ "$SOLIDITY_COVERAGE" = true ]; then
-    node_modules/.bin/testrpc-sc --gasLimit 6725527 --port "$testrpc_port" > /dev/null &
+    node_modules/.bin/ganache-cli --gasLimit 6725527 --port "$ganache_port" > /dev/null &
   else
-    node_modules/.bin/testrpc --gasLimit 6725527 > /dev/null &
+    node_modules/.bin/ganache-cli --gasLimit 6725527 > /dev/null &
   fi
 
-  testrpc_pid=$!
+  ganache_pid=$!
 }
 
-if testrpc_running; then
-  echo "Using existing testrpc instance"
+if ganache_running; then
+  echo "Using existing Ganache instance"
 else
-  echo "Starting our own testrpc instance"
-  start_testrpc
+  echo "Starting our own Ganache instance"
+  start_ganache
 fi
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
