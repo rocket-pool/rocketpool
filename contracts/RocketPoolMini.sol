@@ -93,19 +93,19 @@ contract RocketPoolMini is Ownable {
     /// @dev Only registered users with this pool
     /// @param _userAddress The users address.
     modifier isPoolUser(address _userAddress) {
-        assert (_userAddress != 0 && users[_userAddress].exists != false);
+        require(_userAddress != 0 && users[_userAddress].exists != false);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketUser contract
     modifier onlyLatestRocketUser() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     }
 
@@ -130,7 +130,7 @@ contract RocketPoolMini is Ownable {
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
         // Only Casper can transfer value to a pool
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
         // Set the staking balance we've received
         stakingBalanceReceived = msg.value;
         // Log the deposit attempt received

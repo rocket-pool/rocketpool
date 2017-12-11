@@ -40,7 +40,7 @@ contract RocketFactory is Ownable {
 
     /// @dev Only allow access from the latest version of these RocketPool contracts
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 

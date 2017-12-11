@@ -66,7 +66,7 @@ contract RocketNode is Ownable {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
@@ -114,7 +114,7 @@ contract RocketNode is Ownable {
         address nodeAddressToUse = 0x0;
         uint256 prevAverageLoad = 0;
         // Retreive each node address now by index since we are using a key/value datastore
-        assert(nodes.length > 0);
+        require(nodes.length > 0);
         // Now loop through each, requires uint256 so that the hash matches the index correctly
         for (uint256 i = 0; i < nodes.length; i++) {
             // Get our node address

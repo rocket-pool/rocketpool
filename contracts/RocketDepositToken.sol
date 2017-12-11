@@ -39,7 +39,7 @@ contract RocketDepositToken is ERC20, Ownable {
     /// @dev Only allow access from the latest version of the RocketUser contract
     modifier onlyLatestRocketUser() {
         // Only allow access
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     }
 

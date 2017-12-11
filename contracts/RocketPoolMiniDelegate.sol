@@ -92,19 +92,19 @@ contract RocketPoolMiniDelegate is Ownable {
     /// @dev Only registered users with this pool
     /// @param userAddress The users address.
     modifier isPoolUser(address userAddress) {
-        assert (userAddress != 0 && users[userAddress].exists != false);
+        require(userAddress != 0 && users[userAddress].exists != false);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketUser contract
     modifier onlyLatestRocketUser() {
-        assert (msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     }
 
@@ -113,7 +113,7 @@ contract RocketPoolMiniDelegate is Ownable {
         // Get the hub contract instance
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Only allow a users account to be incremented if the pool is in the default status which is PreLaunchAcceptingDeposits
-        assert (status == rocketSettings.getPoolDefaultStatus() && msg.value > 0);
+        require(status == rocketSettings.getPoolDefaultStatus() && msg.value > 0);
         _;
     }
     
