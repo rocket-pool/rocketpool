@@ -293,40 +293,32 @@ contract RocketPoolMiniDelegate is Ownable {
     /// @param withdrawAmount amount you want to withdraw
     /// @return The balance remaining for the user
     function withdraw(address userAddress, uint withdrawAmount) public onlyLatestRocketUser returns (bool) {
-        // Now check balances are legit
-        require(users[userAddress].balance >= withdrawAmount);
-        // Deduct the balance right away, before sending to avoid potential recursive calls that allow a user to withdraw an amount greater than their deposit
+        // Check that the user has a sufficient balance and is withdrawing a positive amount
+        require(users[userAddress].balance >= withdrawAmount && withdrawAmount > 0);
+        // Deduct the withdrawal amount from the user's balance
         users[userAddress].balance = users[userAddress].balance.sub(withdrawAmount);
-        // Did it send ok?
-        if (!userAddress.send(withdrawAmount)) {
-            // Nope, add the amount back to the users account
-            users[userAddress].balance = users[userAddress].balance.add(withdrawAmount);
-            // Fail
-        } else {
-            // All good? Fire the event for the withdrawal
-            PoolTransfer(this, userAddress, keccak256("withdrawal"), withdrawAmount, users[userAddress].balance, now);
-            // Remove this user if they don't have any funds left in this pool
-            if (users[userAddress].balance <= 0) {
-                // Has this user incurred any fees? I
-                if (users[userAddress].fees > 0) {
-                    // Get the settings to determine the status
-                    rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-                    // Transfer the fee amount now
-                    if (rocketSettings.getWithdrawalFeeDepositAddress().send(users[userAddress].fees)) {
-                        // All good? Fire the event for the fee transfer
-                        PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), keccak256("fee"), users[userAddress].fees, users[userAddress].balance, now);
-                    }
-                }
-                // Remove the user from the pool now they dont have a balance
-                removeUser(userAddress);
+        // Remove this user if they don't have any funds left in this pool
+        if (users[userAddress].balance <= 0) {
+            // Has this user incurred any fees?
+            if (users[userAddress].fees > 0) {
+                // Get the settings to determine the status
+                rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+                // Transfer the fee amount now
+                rocketSettings.getWithdrawalFeeDepositAddress().transfer(users[userAddress].fees);
+                // Fire the event for the fee transfer
+                PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), keccak256("fee"), users[userAddress].fees, users[userAddress].balance, now);
             }
-            // Update the status of the pool
-            updateStatus();
-            // Success
-            return true;
+            // Remove the user from the pool now they dont have a balance
+            removeUser(userAddress);
         }
-        // Throw to show the delegatecall was not successful
-        revert();
+        // Update the status of the pool
+        updateStatus();
+        // Send withdrawal amount to user's address
+        userAddress.transfer(withdrawAmount);
+        // Fire the event for the withdrawal
+        PoolTransfer(this, userAddress, keccak256("withdrawal"), withdrawAmount, users[userAddress].balance, now);
+        // Success
+        return true;
     }
 
     /// @dev Closes the pool if the conditions are right
