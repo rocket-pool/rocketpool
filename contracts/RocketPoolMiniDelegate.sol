@@ -255,25 +255,22 @@ contract RocketPoolMiniDelegate is Ownable {
                 userAddresses.length--;
             }
         }
-        // Did we find them?
-        if (found) {
-            // Now remove from our mapping struct
-            users[_userAddressToRemove].exists = false;
-            users[_userAddressToRemove].userAddress = 0;
-            users[_userAddressToRemove].userAddressBackupWithdrawal = 0;
-            users[_userAddressToRemove].partnerAddress = 0;
-            users[_userAddressToRemove].balance = 0;
-            users[_userAddressToRemove].rewards = 0;
-            users[_userAddressToRemove].depositTokensWithdrawn = 0;
-            users[_userAddressToRemove].fees = 0;
-            users[_userAddressToRemove].created = 0;
-            // Update the status of the pool if needed
-            updateStatus();
-            // All good
-            return true;
-        }
-        // Throw to show the delegatecall was not successful
-        revert();
+        // Check that user was found
+        require(found);
+        // Now remove from our mapping struct
+        users[_userAddressToRemove].exists = false;
+        users[_userAddressToRemove].userAddress = 0;
+        users[_userAddressToRemove].userAddressBackupWithdrawal = 0;
+        users[_userAddressToRemove].partnerAddress = 0;
+        users[_userAddressToRemove].balance = 0;
+        users[_userAddressToRemove].rewards = 0;
+        users[_userAddressToRemove].depositTokensWithdrawn = 0;
+        users[_userAddressToRemove].fees = 0;
+        users[_userAddressToRemove].created = 0;
+        // Update the status of the pool if needed
+        updateStatus();
+        // All good
+        return true;
     }
 
     /*** POOL ***********************************************/
