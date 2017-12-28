@@ -91,26 +91,26 @@ contract RocketUser is Ownable {
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPartnerAPI")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketPartnerAPI")));
         _;
     } 
 
     /// @dev User deposits must be validated
     modifier acceptableDeposit {
-        assert(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
+        require(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
         _;
     }
 
     /// @dev User withdrawals must be validated
     /// @param amount The amount to withdraw
     modifier acceptableWithdrawal(uint256 amount) {
-        assert(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
+        require(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
         _;
     }
 
@@ -198,7 +198,7 @@ contract RocketUser is Ownable {
         // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
         RocketPoolMini poolDepositTo = RocketPoolMini(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
-        assert(poolDepositTo.deposit.value(msg.value).gas(100000)(_userAddress) == true);
+        require(poolDepositTo.deposit.value(msg.value).gas(100000)(_userAddress) == true);
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
@@ -240,7 +240,7 @@ contract RocketUser is Ownable {
             // Get the original deposit address now
             // This will update the users account to match the backup address, but only after many checks and balances
             // It will fail if the user can't use their backup address to withdraw at this point or its not their nominated backup address trying
-            assert(userChangeWithdrawalDepositAddressToBackupAddress(rocketPoolMini.getUserAddressFromBackupAddress(_userAddress), _miniPoolAddress) == true);
+            require(userChangeWithdrawalDepositAddressToBackupAddress(rocketPoolMini.getUserAddressFromBackupAddress(_userAddress), _miniPoolAddress) == true);
             // Set the user address now
             _userAddress = msg.sender; 
         }  
@@ -250,13 +250,13 @@ contract RocketUser is Ownable {
         // Now check to see if the given partner matches the users partner
         if (userPartnerAddress != 0 && _partnerAddress != 0) {
             // The supplied partner for the user does not match the sender
-            assert(userPartnerAddress == _partnerAddress);
+            require(userPartnerAddress == _partnerAddress);
         }
 
         // Check to see if the user is actually in this pool and has a deposit
-        assert(userBalance > 0);
+        require(userBalance > 0);
         // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
-        assert(rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1 || rocketPoolMini.getStatus() == 4);
+        require(rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1 || rocketPoolMini.getStatus() == 4);
         // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
         // Users withdraw all their deposit + rewards at once when the pool has finished staking
         // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
@@ -270,7 +270,7 @@ contract RocketUser is Ownable {
         // 0 amount or less given withdraws the entire users deposit
         _amount = _amount <= 0 ? userBalance : _amount;
         // Ok send the deposit to the user from the mini pool now
-        assert(rocketPoolMini.withdraw(_userAddress, _amount) == true);
+        require(rocketPoolMini.withdraw(_userAddress, _amount) == true);
         // Successful withdrawal
         Transferred(_miniPoolAddress, _userAddress, keccak256("withdrawal"), _amount, now);    
         // Success
@@ -381,9 +381,9 @@ contract RocketUser is Ownable {
         // 0 amount or less given withdraws the entire users deposit
         _amount = _amount <= 0 ? userBalance : _amount;
         // Check to see if the user is actually in this pool and has a deposit, and is not a partner user
-        assert(_amount > 0 && rocketPoolMini.getUserPartner(msg.sender) == 0);        
+        require(_amount > 0 && rocketPoolMini.getUserPartner(msg.sender) == 0);        
         // Check the status, must be currently staking to allow tokens to be withdrawn
-        assert(rocketPoolMini.getStatus() == 2);
+        require(rocketPoolMini.getStatus() == 2);
         // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
         uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
         // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount

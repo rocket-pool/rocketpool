@@ -117,7 +117,7 @@ contract RocketSettings is Ownable {
      /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
     function getPoolStakingTime(string _stakingTimeID) public view returns (uint256) {
         // Make sure the staking ID exists
-        assert(getPoolStakingTimeExists(_stakingTimeID) == true);
+        require(getPoolStakingTimeExists(_stakingTimeID) == true);
         return poolMiniStakingTimes[_stakingTimeID];
     }
 
@@ -148,7 +148,7 @@ contract RocketSettings is Ownable {
 
     /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
     function getWithdrawalFeeDepositAddress() public view returns (address) {
-        assert(withdrawalFeeDepositAddress != 0);
+        require(withdrawalFeeDepositAddress != 0);
         return withdrawalFeeDepositAddress;
     }
 

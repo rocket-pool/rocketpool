@@ -66,25 +66,25 @@ contract RocketPool is Ownable {
         // Get the mini pool count
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // New pools allowed to be created?
-        assert(rocketSettings.getPoolAllowedToBeCreated() == true);
+        require(rocketSettings.getPoolAllowedToBeCreated() == true);
         _;
     }
 
     /// @dev Only allow access from the latest version of the RocketPool contract
     modifier onlyLatestRocketPool() {
-        assert(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+        require(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         _;
     }
 
     /// @dev Only allow access from the latest version of the main RocketNode contract
     modifier onlyLatestRocketNode() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
         _;
     } 
 
     /// @dev Only allow access from the latest version of the main RocketUser contract
     modifier onlyLatestRocketUser() {
-        assert(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         _;
     } 
 
