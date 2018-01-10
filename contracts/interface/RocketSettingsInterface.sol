@@ -31,7 +31,7 @@ contract RocketSettingsInterface {
     /// @dev Get the min eth needed for a node account to cover gas costs
     function getNodeMinWei() public view returns (uint256);
     /// @dev Get the gas price for node checkins in Wei
-    function getNodeCheckinGasPrice() public view returns (uint256);
+    function getNodeCheckinGasPriceWei() public view returns (uint256);
     /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
     function getNodeSetInactiveAutomatic() public view returns (bool);
     /// @dev Get the gas price for node checkins in Wei

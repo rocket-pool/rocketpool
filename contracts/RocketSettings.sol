@@ -27,7 +27,7 @@ contract RocketSettings is Ownable {
     uint256 private poolUserBackupCollectTime;                  // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
     uint256 private depositTokenWithdrawalFeePercInWei;         // Deposit Token settings - fee a user is charged on their deposit for an early withdrawal using tokens, given as a uint256 % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     uint256 private nodeMinWei;                                 // Miniumum balance a node must have to cover gas costs for smart node services when registered
-    uint256 private nodeCheckinGasPrice;                        // Nodes gas price to use when checking in
+    uint256 private nodeCheckinGasPriceWei;                        // Nodes gas price to use when checking in
     bool    private nodeSetInactiveAutomatic;                   // Are nodes allowed to be set inactive by Rocket Pool automatically
     uint256 private nodeSetInactiveDuration;                    // The duration between node checkins to make the node inactive (server failure, DDOS etc) and prevent new pools being assigned to it
     
@@ -80,7 +80,7 @@ contract RocketSettings is Ownable {
         depositTokenWithdrawalFeePercInWei = 0.05 ether;                // The default fee given as a % of 1 Ether (eg 5%)
         // Node settings
         nodeMinWei = 5 ether;                                           // Set the min eth needed for a node account to cover gas costs
-        nodeCheckinGasPrice = 20000000000;                              // Set the gas price for node checkins in Wei
+        nodeCheckinGasPriceWei = 20000000000;                           // Set the gas price for node checkins in Wei (20 gwei)
         nodeSetInactiveAutomatic = true;                                // Can nodes be set inactive automatically by the contract
         nodeSetInactiveDuration = 1 hours;                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     }
@@ -173,8 +173,8 @@ contract RocketSettings is Ownable {
     }
 
     /// @dev Get the gas price for node checkins in Wei
-    function getNodeCheckinGasPrice() public view returns (uint256) {
-        return nodeCheckinGasPrice;
+    function getNodeCheckinGasPriceWei() public view returns (uint256) {
+        return nodeCheckinGasPriceWei;
     }
 
     /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
@@ -246,12 +246,12 @@ contract RocketSettings is Ownable {
     }
 
     /// @dev Set the gas price for node checkins in Wei
-    function setNodeCheckinGasPrice(uint256 _nodeGasCheckinPrice) public onlyOwner {
-        nodeCheckinGasPrice = _nodeGasCheckinPrice;
+    function setNodeCheckinGasPriceWei(uint256 _nodeGasCheckinPrice) public onlyOwner {
+        nodeCheckinGasPriceWei = _nodeGasCheckinPrice;
     }
 
     /// @dev Set if nodes are allowed to be set inactive by Rocket Pool automatically
-    function setNodeCheckinGasPrice(bool _nodeSetInactiveAutomatic) public onlyOwner {
+    function setNodeSetInactiveAutomatic(bool _nodeSetInactiveAutomatic) public onlyOwner {
         nodeSetInactiveAutomatic = _nodeSetInactiveAutomatic;
     }
 
