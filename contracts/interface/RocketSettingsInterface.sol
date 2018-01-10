@@ -28,4 +28,12 @@ contract RocketSettingsInterface {
     function getPoolUserBackupCollectTime() public view returns (uint256);
     /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
     function getDepositTokenWithdrawalFeePercInWei() public view returns (uint256);
+    /// @dev Get the min eth needed for a node account to cover gas costs
+    function getNodeMinWei() public view returns (uint256);
+    /// @dev Get the gas price for node checkins in Wei
+    function getNodeCheckinGasPrice() public view returns (uint256);
+    /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
+    function getNodeSetInactiveAutomatic() public view returns (bool);
+    /// @dev Get the gas price for node checkins in Wei
+    function getNodeSetInactiveDuration() public view returns (uint256);
 }

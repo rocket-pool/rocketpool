@@ -1,6 +1,6 @@
 # Rocket Pool - Your new Casper friendly Ethereum POS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli) and [truffle@4](https://github.com/trufflesuite/truffle) to run locally.
+*NOTE: The current Alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle) and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>

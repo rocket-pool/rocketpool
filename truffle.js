@@ -18,11 +18,11 @@ module.exports = {
     },
     // Local Parity Development 
     dev: {
-        host: "localhost",
+        host: "127.0.0.1",
         port: 8545,
-        network_id: "17", 
-        from: "0x00d972e71288652A4B93D7a057D905364240D48A",
-        gas: 6725527,
+        network_id: "*", 
+        from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
+        gas: 5994142,
     }
   },
 };
