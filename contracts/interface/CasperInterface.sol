@@ -1,21 +1,38 @@
 pragma solidity 0.4.18;
 
-import "../contract/Ownable.sol";
-
 
 /// @title An interface for Caspers methods that RocketPool will need (this will obviously change a bit until Casper is spec'd 100%, but allows for easier integration)
 /// @author David Rugendyke
-contract CasperInterface is Ownable {
-    /// @dev A valid registered node validation code
-    modifier registeredValidator(address validatorSenderAddress) {_;}
-    /// @dev Deposit at the casper contract
-    function deposit(address newWithdrawalAddress) public payable returns(bool);
-    /// @dev Starting the withdrawal process from Casper
-    function startWithdrawal() public registeredValidator(msg.sender) returns(bool);
-    /// @dev The withdrawal function
-    function withdraw(bool simulatePenalties) public registeredValidator(msg.sender) returns(bool);
-    /// @dev Not documented in Casper yet, but would be agreat method to have that would allow users/contracts to know exactly when they can withdraw their deposit by returning a timestamp of it
-    function getWithdrawalEpoch(address validatorSenderAddress) public registeredValidator(validatorSenderAddress) returns(uint256);
-    /// @dev Set the Withdrawal Epoch - used for unit testing purposes in Rocket Pool
-    function setWithdrawalEpoch(address validatorSenderAddress, uint256 newWithdrawalEpoch) public onlyOwner registeredValidator(validatorSenderAddress); 
+contract CasperInterface {
+    /// @dev Only allow access from the owner
+    modifier onlyOwner() {_;}
+     /// @dev Get the current Casper dynasty
+    function get_dynasty() public view returns(uint128);
+    /// @dev Get the validator index for the withdrawal address
+    function get_validator_indexes(address withdrawal_addr) public view returns(uint256);
+     /// @dev Get the current Casper epoch
+    function get_current_epoch() public view returns(uint256);
+    /// @dev Get the current Casper epoch
+    function get_deposit_size(uint256 validator_index) public view returns(uint256);
+    /// @dev Get the current withdrawal delay in blocks
+    function get_withdrawal_delay() public view returns(uint256);
+    /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
+    function deposit(address validator_address, address withdrawal_address) public payable;
+    /// @dev Start the process for a withdrawal
+    function logout(bytes logout_msg) public;
+    /// @dev Allow a validator to withdraw their deposit +interest/-penalties
+    function withdraw(uint256 validator_index, bool simulate_penalties) public returns(bool); 
+    /// @dev Get the current start epoch of this dynasty
+    function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128);
+    /// @dev Validator data 
+    function get_validators__dynasty_start(uint128 validator_index) view returns (uint128);
+    function get_validators__dynasty_end(uint128 validator_index) view returns (uint128);
+    function get_validators__addr(uint128 validator_index) view returns (address);
+    function get_validators__withdrawal_address(uint128 validator_index) view returns (address);
+    /// @dev RP only - Increment the current epoc to simulate Caspers epochs incrementing
+    function set_update_epoch() onlyOwner public;
+    /// @dev RP only - Increment the dynasty to simulate Caspers blocks being finalised
+    function set_increment_dynasty(uint256 _amount) onlyOwner public;
+
+
 }

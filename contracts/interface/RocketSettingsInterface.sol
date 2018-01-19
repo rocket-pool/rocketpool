@@ -2,38 +2,46 @@ pragma solidity 0.4.18;
 
 
 contract RocketSettingsInterface {
+    /// @dev Get the current average block time for the network
+    function getAverageBlockTime() public view returns (uint256);
     /// @dev Get default status of a new mini pool
     function getPoolDefaultStatus() public view returns (uint256);
+    /// @dev The minimum Wei required for a pool to launch
+    function getMiniPoolLaunchWei() public view returns (uint256);
+    /// @dev The time limit to stay in countdown before staking begins
+    function getMiniPoolCountDownTime() public view returns (uint256);
     /// @dev Check to see if new pools are allowed to be created
     function getPoolAllowedToBeCreated() public view returns (bool);
+    /// @dev Minipools allowed to be created?
+    function getMiniPoolNewEnabled() public view returns (bool);
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished
-    function getPoolAllowedToBeClosed() public view returns (bool);
-     /// @dev Get the minimum time allowed for staking with Casper
-    function getPoolMinEtherRequired() public view returns (uint256);
-    /// @dev Get the time limit to stay in countdown before staking begins
-    function getPoolCountdownTime() public view returns (uint256);
-    /// @dev Check to see if the supplied staking time is a set time
-    function getPoolStakingTimeExists(string _stakingTimeID) public view returns (bool);
-    /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getPoolStakingTime(string _stakingTimeID) public view returns (uint256);
-    /// @dev Get the gas amount required to create a minipool contract upon deposit
-    function getPoolMiniCreationGas() public view returns (uint256);
-    /// @dev Get the Rocket Pool post Casper fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getWithdrawalFeePercInWei() public view returns (uint256);
-    /// @dev Get the Rocket Pool withdrawal fee address (defaults to RocketHub)
-    function getWithdrawalFeeDepositAddress() public view returns (address);
+    function getMiniPoolClosingEnabled() public view returns (bool);
+    /// @dev Maximum amount of minipool contracts allowed
+    function getMiniPoolMax() public view returns (uint256);
+    /// @dev This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
+    function getMiniPoolNewGas() public view returns (uint256);
+    /// @dev The gas required for depositing with Casper and being added as a validator
+    function getMiniPoolDepositGas() public view returns (uint256);
+     /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
+    function getMiniPoolStakingTime(string _stakingTimeID) public view returns (uint256);
+    /// @dev Get the minimum required time for staking
+    function getMiniPoolMinimumStakingTime() public view returns (uint256);
+    /// @dev The default fee given as a % of 1 Ether (eg 5%)    
+    function getMiniPoolWithdrawalFeePerc() public view returns (uint256);
+    /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
+    function getMiniPoolWithdrawalFeeDepositAddress() public view returns (uint256);
     /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-    function getPoolUserBackupCollectEnabled() public view returns (bool);
+    function getMiniPoolBackupCollectEnabled() public view returns (bool);
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function getPoolUserBackupCollectTime() public view returns (uint256);
-    /// @dev The Rocket Pool deposit token withdrawal fee, given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function getDepositTokenWithdrawalFeePercInWei() public view returns (uint256);
-    /// @dev Get the min eth needed for a node account to cover gas costs
-    function getNodeMinWei() public view returns (uint256);
+    function getMiniPoolBackupCollectTime() public view returns (uint256);
+    /// @dev The default fee given as a % of 1 Ether (eg 5%)
+    function getTokenRPDWithdrawalFeePerc() public view returns (uint256);
+    /// @dev Get the min eth needed for a node coinbase account to cover gas costs associated with checkins
+    function getSmartNodeEtherMin() public view returns (uint256);
     /// @dev Get the gas price for node checkins in Wei
-    function getNodeCheckinGasPriceWei() public view returns (uint256);
-    /// @dev Are nodes allowed to be set inactive by Rocket Pool automatically
-    function getNodeSetInactiveAutomatic() public view returns (bool);
-    /// @dev Get the gas price for node checkins in Wei
-    function getNodeSetInactiveDuration() public view returns (uint256);
+    function getSmartNodeCheckinGas() public view returns (uint256);
+    /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
+    function getSmartNodeSetInactiveAutomatic() public view returns (bool);
+    /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+    function getSmartNodeSetInactiveDuration() public view returns (uint256);
 }

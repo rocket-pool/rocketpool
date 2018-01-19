@@ -144,13 +144,21 @@ contract RocketPoolMiniDelegate is Ownable {
 
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
     function getStakingWithdrawalTimeMet() public returns(bool) {
-        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
-        // Now I'm assuming this method will exist for obvious reasons in Casper, but if it doesn't we can change this to work the same by adding
-        // a new setting to RocketSettings that can match the delay required by Casper
-        if (now >= casper.getWithdrawalEpoch(this)) {
+        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
+        // Verify with casper that the withdrawal can be made
+        uint128 validatorIndex = casper.get_validator_indexes(address(this));
+        // Check it's actually a validator
+        if (validatorIndex > 0) {
+            // These rules below must match the ones Casper has for withdrawing
+            // Verify the dynasty is correct for withdrawing 
+            assert(casper.get_dynasty() >= casper.get_validators__dynasty_end(validatorIndex) + 1);
+            // Verify the end epoch is correct for withdrawing
+            uint128 endEpoch = casper.get_dynasty_start_epoch(casper.get_validators__dynasty_end(validatorIndex) + 1);
+            assert(casper.get_current_epoch() >= endEpoch + casper.get_withdrawal_delay());
+            // All good
             return true;
         }
-        return false; 
+        return false;
     }
 
     /*** USERS ***********************************************/
@@ -348,7 +356,7 @@ contract RocketPoolMiniDelegate is Ownable {
         // Set our status now - see RocketSettings.sol for pool statuses and keys
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get Caspers function signatures using our interface
-        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
+        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Function returns are stored in memory rather than storage
         uint256 minPoolWeiRequired = rocketSettings.getPoolMinEtherRequired();
         uint256 statusOld = status;
@@ -368,18 +376,12 @@ contract RocketPoolMiniDelegate is Ownable {
         if (this.balance >= minPoolWeiRequired && status == 1 && rocketNodeAddress != 0 && stakingBalance == 0 && getStakingDepositTimeMet() == true) { 
             // Set our current staking balance
             stakingBalance = this.balance;
-            // Send our mini pools balance to casper now with our assigned nodes details
-            // TODO: rocketNodeValidationCode is currently spec'd as 'bytes' in the Mauve paper, this is a variable length type that cannot be passed from contract to contract at the moment
-            // This prevents the below working currently, so rocketNodeValidationCode has been changed to 'bytes32' for now until they get around to implementing passing variable memory types ( https://github.com/ethereum/EIPs/pull/211 )
-            // If for some reason this isn't implemented by the time Casper is ready, we can simply send the deposit to the mini pools assigned node who can act as an oracle then send the bytes code along with the Ether directly from the node via the nodejs service script            
-            if (casper.deposit.value(this.balance).gas(400000)(this)) {
-                // Set the mini pool status as staking
-                status = 2;
-                // All good? Fire the event for the new casper transfer
-                PoolTransfer(this, rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")), keccak256("casperDeposit"), stakingBalance, 0, now); 
-            } else {
-                stakingBalance = 0;
-            }        
+            // Send our mini pools balance to casper now with our assigned nodes details, will throw if Caspers min deposit is not met
+            assert(casper.deposit.value(this.balance).gas(rocketSettings.getMiniPoolDepositGas())(rocketNodeAddress, address(this)));
+            // Set the mini pool status as staking
+            status = 2;
+            // All good? Fire the event for the new casper transfer
+            PoolTransfer(this, rocketStorage.getAddress(keccak256("contract.name", "casper")), keccak256("casperDeposit"), stakingBalance, 0, now);       
         }
         // Are we all set to request withdrawal of our deposit from Casper?
         if (stakingBalance > 0 && status == 2 && getStakingRequestWithdrawalTimeMet() == true) { 

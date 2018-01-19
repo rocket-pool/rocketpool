@@ -59,6 +59,20 @@ module.exports = async (deployer, network) => {
                         return rocketStorage.deployed().then(async rocketStorageInstance => {
                           console.log('\n');
 
+                          // Dummy Casper
+                          await rocketStorageInstance.setAddress(
+                            config.web3Utils.soliditySha3('contract.address', dummyCasper.address),
+                            dummyCasper.address
+                          );
+                          await rocketStorageInstance.setAddress(
+                            config.web3Utils.soliditySha3('contract.name', 'casper'),
+                            dummyCasper.address
+                          );
+                          // Log it
+                          console.log('\x1b[33m%s\x1b[0m:', 'Set Storage DummyCasper Address');
+                          console.log(dummyCasper.address);
+
+
                           // Rocket Pool
                           // First register the contract address as being part of the network so we can do a validation check using just the address
                           await rocketStorageInstance.setAddress(
@@ -165,18 +179,6 @@ module.exports = async (deployer, network) => {
                           console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
                           console.log(rocketSettings.address);
 
-                          // Dummy Casper
-                          await rocketStorageInstance.setAddress(
-                            config.web3Utils.soliditySha3('contract.address', dummyCasper.address),
-                            dummyCasper.address
-                          );
-                          await rocketStorageInstance.setAddress(
-                            config.web3Utils.soliditySha3('contract.name', 'dummyCasper'),
-                            dummyCasper.address
-                          );
-                          // Log it
-                          console.log('\x1b[33m%s\x1b[0m:', 'Set Storage DummyCasper Address');
-                          console.log(dummyCasper.address);
 
                           // Disable owners direct access to storage now
                           await rocketStorageInstance.setBool(

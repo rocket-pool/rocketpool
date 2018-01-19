@@ -130,7 +130,7 @@ contract RocketPoolMini is Ownable {
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
         // Only Casper can transfer value to a pool
-        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "dummyCasper")));
+        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Set the staking balance we've received
         stakingBalanceReceived = msg.value;
         // Log the deposit attempt received
