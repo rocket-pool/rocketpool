@@ -49,6 +49,7 @@ contract RocketNode is Ownable {
         uint256 created
     );
 
+
        
 
     /*** Modifiers *************/
@@ -155,7 +156,7 @@ contract RocketNode is Ownable {
         // Check the address is ok
         require(_newNodeAddress != 0x0);
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, oracle services etc
-        require(_newNodeAddress.balance >= rocketSettings.getNodeMinWei());
+        require(_newNodeAddress.balance >= rocketSettings.getSmartNodeEtherMin());
         // Check it doesn't already exist
         require(!rocketStorage.getBool(keccak256("node.exists", _newNodeAddress)));
         // Get how many nodes we currently have  
@@ -235,7 +236,7 @@ contract RocketNode is Ownable {
         // 3) Actually withdraw the deposit from Casper once it's ready for withdrawal
         rocketPool.poolNodeActions();  
         // Now see what nodes haven't checked in recently and disable them if needed to prevent new pools being assigned to them
-        if (rocketSettings.getNodeSetInactiveAutomatic() == true) {
+        if (rocketSettings.getSmartNodeSetInactiveAutomatic() == true) {
             // Create an array at the length of the current nodes, then populate it
             address[] memory nodes = new address[](getNodeCount());
             // Get each node now and check
@@ -245,7 +246,7 @@ contract RocketNode is Ownable {
                 // We've already checked in as this node above
                 if (msg.sender != currentNodeAddress) {
                     // Has this node reported in recently? If not, it may be down or in trouble, deactivate it to prevent new pools being assigned to it
-                    if (rocketStorage.getUint(keccak256("node.lastCheckin", currentNodeAddress)) < (now - rocketSettings.getNodeSetInactiveDuration()) && rocketStorage.getBool(keccak256("node.active", currentNodeAddress)) == true) {
+                    if (rocketStorage.getUint(keccak256("node.lastCheckin", currentNodeAddress)) < (now - rocketSettings.getSmartNodeSetInactiveDuration()) && rocketStorage.getBool(keccak256("node.active", currentNodeAddress)) == true) {
                         // Disable the node - must be manually reactivated by the function above when its back online/running well
                         rocketStorage.setBool(keccak256("node.active", currentNodeAddress), false);
                         // Fire the event

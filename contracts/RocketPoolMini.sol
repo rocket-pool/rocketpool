@@ -121,7 +121,7 @@ contract RocketPoolMini is Ownable {
         stakingDuration = _miniPoolStakingDuration;
         // New pools are set to pre launch and accept deposits by default
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        status = rocketSettings.getPoolDefaultStatus();
+        status = rocketSettings.getMiniPoolDefaultStatus();
         statusChangeTime = 0;
         // The total ether traded for tokens owed by the minipool
         depositEtherTradedForTokensTotal = 0;
@@ -138,13 +138,13 @@ contract RocketPoolMini is Ownable {
     }
 
     /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
-    function getMiniDelegateBooleanResponse(bytes4 signature) public returns (bool) {
+    function getMiniDelegateBooleanResponse(bytes4 _signature) public returns (bool) {
         address minipoolDelegateAddress = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate"));
         bool response = false;
         assembly {
             let returnSize := 32
             let mem := mload(0x40)
-            mstore(mem, signature)
+            mstore(mem, _signature)
             let err := delegatecall(sub(gas, 10000), minipoolDelegateAddress, mem, 0x44, mem, returnSize)
             response := mload(mem)
             mstore(0x40, add(mem,0x44))
@@ -183,28 +183,28 @@ contract RocketPoolMini is Ownable {
     }
 
     /// @dev Returns true if this pool is able to send a deposit to Casper   
-    function getStakingDepositTimeMet() public returns (bool) {
-        return getMiniDelegateBooleanResponse(bytes4(keccak256("getStakingDepositTimeMet()")));
+    function getCanDeposit() public returns (bool) {
+        return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanDeposit()")));
     }
 
-    /// @dev Returns true if this pool is able to request withdrawal from Casper
-    function getStakingRequestWithdrawalTimeMet() public returns(bool) {
-        return getMiniDelegateBooleanResponse(bytes4(keccak256("getStakingRequestWithdrawalTimeMet()")));
+    /// @dev Returns true if this pool is able to request logging out of the validator set from Casper
+    function getCanLogout() public returns(bool) {
+        return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanLogout()")));
     }
 
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
-    function getStakingWithdrawalTimeMet() public returns(bool) {
-        return getMiniDelegateBooleanResponse(bytes4(keccak256("getStakingWithdrawalTimeMet()")));
+    function getCanWithdraw() public returns(bool) {
+        return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanWithdraw()")));
     }
 
     /// @dev Set the node address this mini pool is attached too
-    function setNodeDetails(address nodeAddress) public onlyLatestRocketPool {
-        rocketNodeAddress = nodeAddress;
+    function setNodeDetails(address _nodeAddress) public onlyLatestRocketPool {
+        rocketNodeAddress = _nodeAddress;
     }
 
     /// @dev Gets the current staking duration
-    function setStakingDuration(uint256 newStakingDuration) public onlyLatestRocketPool {
-        stakingDuration = newStakingDuration;
+    function setStakingDuration(uint256 _newStakingDuration) public onlyLatestRocketPool {
+        stakingDuration = _newStakingDuration;
     }   
 
     /*** USERS ***********************************************/

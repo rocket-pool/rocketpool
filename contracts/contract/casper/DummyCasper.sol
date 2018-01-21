@@ -10,7 +10,7 @@ import "../Ownable.sol";
 contract DummyCasper is Ownable {
 
     /**** Vars ************/
-    uint256 public withdrawal_delay = 10;                                   // Blocks until the actual withdrawal can happen after requesting
+    uint128 public withdrawal_delay = 1;                                    // Blocks until the actual withdrawal can happen after requesting
     uint128 public dynasty;                                                 // The current dynasty - increment when votes[epoch-2].is_finalized
     uint256 public next_dynasty_wei_delta;                                  // Amount of wei added to the total deposits in the next dynasty
     uint256 public second_next_dynasty_wei_delta;                           // Amount of wei added to the total deposits in the dynasty after that
@@ -53,30 +53,22 @@ contract DummyCasper is Ownable {
     /*** Events ***************/
 
     event Transfered (
-        address indexed _from,
-        address indexed _to, 
-        bytes32 indexed _typeOf, 
+        address from,
+        address to, 
+        bytes32 typeOf, 
         uint256 value,
         uint256 created
     );
 
     event Logout (
-        address indexed _addressSender,
+        address addressSender,
         uint256 created
     );
 
     event Withdrawal (
-        address indexed _addressSender,
+        address addressSender,
         uint256 amount,
         uint256 created
-    );
-
-    event FlagUint (
-        uint256 flag
-    );
-
-    event FlagAddress (
-        address flag
     );
 
 
@@ -136,8 +128,8 @@ contract DummyCasper is Ownable {
     }
 
     /// @dev Get the current start epoch of this dynasty
-    function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128) {
-        return dynasty_start_epoch[dynasty];
+    function get_dynasty_start_epoch(uint128 _dynasty) public view returns (uint128) {
+        return dynasty_start_epoch[_dynasty];
     }
 
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
@@ -173,7 +165,7 @@ contract DummyCasper is Ownable {
         // We're not using signatures to identify validators via messages in this dummy casper, just use msg.sender for now
         uint256 validator_index = validator_indexes[msg.sender];
         // Make sure we haven't already withdrawn
-        validators[validator_index].end_dynasty > dynasty + 2;
+        assert(validators[validator_index].end_dynasty > dynasty + 2);
         // Set the end dynasty
         validators[validator_index].end_dynasty = dynasty + 2;
         second_next_dynasty_wei_delta -= validators[validator_index].deposit;
@@ -210,7 +202,7 @@ contract DummyCasper is Ownable {
         // Remove the validator now
         delete_validator(validator_index);
         // Log it
-        Withdrawal(msg.sender, withdraw_amount, now);
+        Withdrawal(validators[validator_index].withdrawal_addr, withdrawal_amount_processed, now);
     }
 
     /// @dev Delete the validator
@@ -223,13 +215,19 @@ contract DummyCasper is Ownable {
     }
 
     /// @dev Increment the current epoc to simulate Caspers epochs incrementing
-    function set_update_epoch(uint128 _amount) public onlyOwner { 
+    function set_increment_epoch() public onlyOwner { 
         // Set the current epoch
-        current_epoch = _amount > current_epoch ? current_epoch += _amount : current_epoch;
+        current_epoch += 1;
     }
 
     /// @dev Increment the dynasty to simulate Caspers blocks being finalised
-    function set_increment_dynasty(uint128 _amount) public onlyOwner { 
-        dynasty = _amount > dynasty ? dynasty += _amount : dynasty;
+    function set_increment_dynasty() public onlyOwner { 
+        dynasty += 1;
+        // Update the start of the dynasty epoch
+        dynasty_start_epoch[dynasty] = current_epoch;
+        total_prevdyn_deposits = total_curdyn_deposits;
+        total_curdyn_deposits += next_dynasty_wei_delta;
+        next_dynasty_wei_delta = second_next_dynasty_wei_delta;
+        second_next_dynasty_wei_delta = 0;
     }
 }

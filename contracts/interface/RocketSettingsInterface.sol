@@ -4,14 +4,26 @@ pragma solidity 0.4.18;
 contract RocketSettingsInterface {
     /// @dev Get the current average block time for the network
     function getAverageBlockTime() public view returns (uint256);
+    /// @dev Are user deposits currently allowed?                                                 
+    function getUserDepositAllowed() public view returns (bool);
+    /// @dev Min required deposit in Wei 
+    function getUserDepositMin() public view returns (uint256);
+    /// @dev Max allowed deposit in Wei 
+    function getUserDepositMax() public view returns (uint256);
+    /// @dev Are withdrawals allowed?                                            
+    function getUserWithdrawalAllowed() public view returns (bool);
+    /// @dev Min allowed to be withdrawn in Wei, 0 = all
+    function getUserWithdrawalMin() public view returns (uint256);
+    /// @dev Max allowed to be withdrawn in Wei
+    function getUserWithdrawalMax() public view returns (uint256);
     /// @dev Get default status of a new mini pool
-    function getPoolDefaultStatus() public view returns (uint256);
+    function getMiniPoolDefaultStatus() public view returns (uint256);
     /// @dev The minimum Wei required for a pool to launch
-    function getMiniPoolLaunchWei() public view returns (uint256);
+    function getMiniPoolLaunchAmount() public view returns (uint256);
     /// @dev The time limit to stay in countdown before staking begins
     function getMiniPoolCountDownTime() public view returns (uint256);
     /// @dev Check to see if new pools are allowed to be created
-    function getPoolAllowedToBeCreated() public view returns (bool);
+    function getMiniPoolAllowedToBeCreated() public view returns (bool);
     /// @dev Minipools allowed to be created?
     function getMiniPoolNewEnabled() public view returns (bool);
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished
@@ -29,7 +41,7 @@ contract RocketSettingsInterface {
     /// @dev The default fee given as a % of 1 Ether (eg 5%)    
     function getMiniPoolWithdrawalFeePerc() public view returns (uint256);
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
-    function getMiniPoolWithdrawalFeeDepositAddress() public view returns (uint256);
+    function getMiniPoolWithdrawalFeeDepositAddress() public view returns (address);
     /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
     function getMiniPoolBackupCollectEnabled() public view returns (bool);
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit

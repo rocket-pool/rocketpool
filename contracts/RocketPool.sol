@@ -66,7 +66,7 @@ contract RocketPool is Ownable {
         // Get the mini pool count
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // New pools allowed to be created?
-        require(rocketSettings.getPoolAllowedToBeCreated() == true);
+        require(rocketSettings.getMiniPoolAllowedToBeCreated() == true);
         _;
     }
 
@@ -140,7 +140,8 @@ contract RocketPool is Ownable {
             if (poolAssignToAddress == 0) {
                 poolAssignToAddress = poolsFound[0];
             }
-        }    
+        }  
+          
 
         // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
         assert(poolAssignToAddress != 0);
@@ -179,7 +180,7 @@ contract RocketPool is Ownable {
                 // Check its ok
                 require(pool.owner() != 0x0);
                 // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                if (pool.getNodeAddress() == 0 && pool.getStakingDepositTimeMet() == true) {
+                if (pool.getNodeAddress() == 0 && pool.getCanDeposit() == true) {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.getNodeAvailableForPool();
                     // That node must exist
@@ -204,7 +205,7 @@ contract RocketPool is Ownable {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // Is this currently staking pool due to request withdrawal from Casper?
-                if (pool.getStakingRequestWithdrawalTimeMet() == true) {
+                if (pool.getCanLogout() == true) {
                     // Now set the pool to begin requesting withdrawal from casper by updating its status
                     pool.updateStatus();
                     // Exit the loop
@@ -221,7 +222,7 @@ contract RocketPool is Ownable {
                 // Get an instance of that pool contract
                 pool = getPoolInstance(poolsFound[i]);
                 // If the time has passed, we can now request the deposit to be sent
-                if (pool.getStakingWithdrawalTimeMet() == true) {
+                if (pool.getCanWithdraw() == true) {
                     // Now set the pool to begin withdrawal from casper by updating its status
                     pool.updateStatus();
                     // Exit the loop
@@ -373,7 +374,7 @@ contract RocketPool is Ownable {
         // Remove the pool from our hub storage
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
-        if (rocketSettings.getPoolAllowedToBeClosed()) {
+        if (rocketSettings.getMiniPoolClosingEnabled()) {
             // Get total minipools
             uint256 minipoolsTotal = rocketStorage.getUint(keccak256("minipools.total"));
             // Now remove this minipools data from storage

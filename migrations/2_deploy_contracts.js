@@ -59,6 +59,10 @@ module.exports = async (deployer, network) => {
                         return rocketStorage.deployed().then(async rocketStorageInstance => {
                           console.log('\n');
 
+                          // Log it
+                          console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Address');
+                          console.log(rocketStorage.address);
+
                           // Dummy Casper
                           await rocketStorageInstance.setAddress(
                             config.web3Utils.soliditySha3('contract.address', dummyCasper.address),
@@ -175,6 +179,10 @@ module.exports = async (deployer, network) => {
                             config.web3Utils.soliditySha3('contract.name', 'rocketSettings'),
                             rocketSettings.address
                           );
+                          // Initialise the base settings for the initial deployment
+                         rocketSettingsInstance = await rocketSettings.deployed();
+                         rocketSettingsInstance.init();
+
                           // Log it
                           console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
                           console.log(rocketSettings.address);

@@ -113,7 +113,7 @@ contract RocketPoolMiniDelegate is Ownable {
         // Get the hub contract instance
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Only allow a users account to be incremented if the pool is in the default status which is PreLaunchAcceptingDeposits
-        require(status == rocketSettings.getPoolDefaultStatus() && msg.value > 0);
+        require(status == rocketSettings.getMiniPoolDefaultStatus() && msg.value > 0);
         _;
     }
     
@@ -125,38 +125,63 @@ contract RocketPoolMiniDelegate is Ownable {
     }
 
     /// @dev Returns true if this pool is able to send a deposit to Casper
-    function getStakingDepositTimeMet() public returns(bool) { 
+    function getCanDeposit() public returns(bool) { 
         // Get the pool count down time
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        if (now >= statusChangeTime.add(rocketSettings.getPoolCountdownTime())) {
+        if (now >= statusChangeTime.add(rocketSettings.getMiniPoolCountDownTime())) {
             return true;
         }
         return false;
     }
 
-    /// @dev Returns true if this pool is able to request withdrawal from Casper
-    function getStakingRequestWithdrawalTimeMet() public view returns(bool) {
+    event FlagUint (
+        uint128 flag
+    );
+
+    event FlagAddress (
+        address flag
+    );
+
+    /// @dev Returns true if this pool is able to request logging out of the validator set from Casper
+    function getCanLogout() public view returns(bool) {
+        // Load the casper interface
+        CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
+        // Check if our staking time has passed first
         if (now >= statusChangeTime.add(stakingDuration)) {
-            return true;
+            // Get our minipools validator index
+            uint128 validatorIndex = casper.get_validator_indexes(address(this));
+            // Now check to see if we meet the Casper requirements for logging out before attempting
+            // We must not have already logged out
+            if (casper.get_validators__dynasty_end(validatorIndex) > casper.get_dynasty() + 2) {
+                // Ok to logout
+                return true;
+            }
         }
         return false;
     }
+
+    
 
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
-    function getStakingWithdrawalTimeMet() public returns(bool) {
+    function getCanWithdraw() public view returns(bool) {
+        // Load the casper interface
         CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Verify with casper that the withdrawal can be made
         uint128 validatorIndex = casper.get_validator_indexes(address(this));
-        // Check it's actually a validator
-        if (validatorIndex > 0) {
-            // These rules below must match the ones Casper has for withdrawing
-            // Verify the dynasty is correct for withdrawing 
-            assert(casper.get_dynasty() >= casper.get_validators__dynasty_end(validatorIndex) + 1);
+        FlagAddress(address(this));
+        FlagUint(uint128(validatorIndex));
+        FlagUint(casper.get_dynasty());
+        FlagUint(casper.get_validators__dynasty_start(validatorIndex));
+        FlagUint(casper.get_validators__dynasty_end(validatorIndex));
+        FlagUint(casper.get_dynasty_start_epoch(casper.get_validators__dynasty_end(validatorIndex) + 1));
+        FlagUint(casper.get_current_epoch());
+        FlagUint(casper.get_withdrawal_delay());
+        // These rules below must match the ones Casper has for withdrawing
+        // Verify the dynasty is correct for withdrawing 
+        if (casper.get_dynasty() >= casper.get_validators__dynasty_end(validatorIndex) + 1) {
             // Verify the end epoch is correct for withdrawing
             uint128 endEpoch = casper.get_dynasty_start_epoch(casper.get_validators__dynasty_end(validatorIndex) + 1);
-            assert(casper.get_current_epoch() >= endEpoch + casper.get_withdrawal_delay());
-            // All good
-            return true;
+            return casper.get_current_epoch() >= endEpoch + casper.get_withdrawal_delay() ? true : false;
         }
         return false;
     }
@@ -308,10 +333,10 @@ contract RocketPoolMiniDelegate is Ownable {
             if (users[userAddress].fees > 0) {
                 // Get the settings to determine the status
                 rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-                // Transfer the fee amount now
-                rocketSettings.getWithdrawalFeeDepositAddress().transfer(users[userAddress].fees);
+                // Transfer the fee amount now 
+                rocketSettings.getMiniPoolWithdrawalFeeDepositAddress().transfer(users[userAddress].fees);
                 // Fire the event for the fee transfer
-                PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), keccak256("fee"), users[userAddress].fees, users[userAddress].balance, now);
+                PoolTransfer(this, rocketSettings.getMiniPoolWithdrawalFeeDepositAddress(), keccak256("fee"), users[userAddress].fees, users[userAddress].balance, now);
             }
             // Remove the user from the pool now they dont have a balance
             removeUser(userAddress);
@@ -341,9 +366,9 @@ contract RocketPoolMiniDelegate is Ownable {
                     status = 5;
                     // Log any dust remaining from fractions being sent when the pool closes or 
                     // ether left over from a users interest that have withdrawn all their ether as tokens already (thats our fee in this case)
-                    PoolTransfer(this, rocketSettings.getWithdrawalFeeDepositAddress(), keccak256("poolClosing"), this.balance, 0, now);
+                    PoolTransfer(this, rocketSettings.getMiniPoolWithdrawalFeeDepositAddress(), keccak256("poolClosing"), this.balance, 0, now);
                     // Now self destruct and send any dust left over
-                    selfdestruct(rocketSettings.getWithdrawalFeeDepositAddress());
+                    selfdestruct(rocketSettings.getMiniPoolWithdrawalFeeDepositAddress());
                     // Done
                     return true;
                 }
@@ -358,7 +383,7 @@ contract RocketPoolMiniDelegate is Ownable {
         // Get Caspers function signatures using our interface
         CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Function returns are stored in memory rather than storage
-        uint256 minPoolWeiRequired = rocketSettings.getPoolMinEtherRequired();
+        uint256 minPoolWeiRequired = rocketSettings.getMiniPoolLaunchAmount();
         uint256 statusOld = status;
         // Check to see if we can close the pool
         if (canClosePool()) {
@@ -373,42 +398,42 @@ contract RocketPoolMiniDelegate is Ownable {
             status = 1;
         }
         // If all the parameters for staking are ok and a rocketNodeAddress has been set by the node checkin, we are now ready for staking
-        if (this.balance >= minPoolWeiRequired && status == 1 && rocketNodeAddress != 0 && stakingBalance == 0 && getStakingDepositTimeMet() == true) { 
+        if (this.balance >= minPoolWeiRequired && status == 1 && rocketNodeAddress != 0 && stakingBalance == 0 && getCanDeposit() == true) { 
             // Set our current staking balance
             stakingBalance = this.balance;
             // Send our mini pools balance to casper now with our assigned nodes details, will throw if Caspers min deposit is not met
-            assert(casper.deposit.value(this.balance).gas(rocketSettings.getMiniPoolDepositGas())(rocketNodeAddress, address(this)));
+            casper.deposit.value(this.balance).gas(rocketSettings.getMiniPoolDepositGas())(rocketNodeAddress, address(this));
             // Set the mini pool status as staking
             status = 2;
             // All good? Fire the event for the new casper transfer
             PoolTransfer(this, rocketStorage.getAddress(keccak256("contract.name", "casper")), keccak256("casperDeposit"), stakingBalance, 0, now);       
         }
         // Are we all set to request withdrawal of our deposit from Casper?
-        if (stakingBalance > 0 && status == 2 && getStakingRequestWithdrawalTimeMet() == true) { 
-            // Request withdrawal now
-            if (casper.startWithdrawal()) {
-                // Set the mini pool status as having requested withdrawal
-                status = 3;
-            }
+        if (stakingBalance > 0 && status == 2 && getCanLogout() == true) { 
+            // TODO: Add in bytes message for validator
+            bytes memory logoutMsg;
+            // Request logout now, will throw if conditions not met
+            casper.logout(logoutMsg);
+            // Set the mini pool status as having requested withdrawal
+            status = 3;
         }
         // Are we all set to actually withdraw our deposit + rewards from Casper?
-        if (stakingBalance > 0 && status == 3 && getStakingWithdrawalTimeMet() == true) {
-            // Request withdrawal now
-            if (casper.withdraw(false)) {
-                // Set the mini pool status as having completed withdrawal, users can now withdraw
-                status = 4;
-                // Do a few landing checks now
-                // See if any ether in the pool has been traded for tokens
-                if (depositEtherTradedForTokensTotal > 0) {
-                    // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
-                    // Sender should be the node that triggered this
-                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));
-                    if (depositTokenContract.call.value(depositEtherTradedForTokensTotal)()) {
-                        // Fire the event
-                        DepositTokenFundSent(depositTokenContract, depositEtherTradedForTokensTotal, now);
-                        // If all users in this pool have withdrawn their deposits as tokens, then we won't have any users in here to withdraw ether, see if we can close
-                        canClosePool();
-                    }
+        if (stakingBalance > 0 && status == 3 && getCanWithdraw() == true) {
+            // Request withdrawal now 
+            casper.withdraw(casper.get_validator_indexes(address(this)), false);
+            // Set the mini pool status as having completed withdrawal, users can now withdraw
+            status = 4; 
+            // Do a few landing checks now
+            // See if any ether in the pool has been traded for tokens
+            if (depositEtherTradedForTokensTotal > 0) {
+                // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
+                // Sender should be the node that triggered this
+                address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));
+                if (depositTokenContract.call.value(depositEtherTradedForTokensTotal)()) {
+                    // Fire the event
+                    DepositTokenFundSent(depositTokenContract, depositEtherTradedForTokensTotal, now);
+                    // If all users in this pool have withdrawn their deposits as tokens, then we won't have any users in here to withdraw ether, see if we can close
+                    canClosePool();
                 }
             }
         }

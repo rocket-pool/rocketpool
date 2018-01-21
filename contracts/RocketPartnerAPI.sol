@@ -128,7 +128,7 @@ contract RocketPartnerAPI is Ownable {
         // The partner address being supplied must also match the sender address
         rocketUser = RocketUserInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
-        if (rocketUser.userDepositFromPartner.value(msg.value).gas(rocketSettings.getPoolMiniCreationGas())(_partnerUserAddress, msg.sender, _poolStakingTimeID)) {
+        if (rocketUser.userDepositFromPartner.value(msg.value).gas(rocketSettings.getMiniPoolNewGas())(_partnerUserAddress, msg.sender, _poolStakingTimeID)) {
             // Fire the event now 
             APIpartnerDepositAccepted(msg.sender, _partnerUserAddress, _poolStakingTimeID, msg.value, now);
         } 

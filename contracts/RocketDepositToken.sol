@@ -107,7 +107,7 @@ contract RocketDepositToken is ERC20, Ownable {
         // Rocket settings
         RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
-        uint256 etherWithdrawAmountPlusBonus = _amount.add(Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase));
+        uint256 etherWithdrawAmountPlusBonus = _amount.add(Arithmetic.overflowResistantFraction(rocketSettings.getTokenRPDWithdrawalFeePerc(), _amount, calcBase));
         // Check to see if we have enough ether to cover the full withdrawal amount
         require(this.balance >= etherWithdrawAmountPlusBonus);
         // Subtract tokens from the sender's balance

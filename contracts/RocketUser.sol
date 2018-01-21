@@ -16,12 +16,6 @@ contract RocketUser is Ownable {
     /**** Properties ************/
 
     uint256 public version = 1;                             // Version of this contract
-    bool private depositsAllowed = true;                    // Are user deposits currently allowed?
-    uint256 private minDepositWei = 1 ether;                // Min required deposit
-    uint256 private maxDepositWei = 75 ether;               // Max required deposit
-    bool private withdrawalsAllowed = true;                 // Are withdrawals allowed?
-    uint256 private minWithdrawalWei = 0;                   // Min allowed to be withdrawn, 0 = all
-    uint256 private maxWithdrawalWei = 10 ether;            // Max allowed to be withdrawn
     uint256 private calcBase = 1 ether;                     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
 
 
@@ -79,13 +73,6 @@ contract RocketUser is Ownable {
     );
 
 
-    event FlagUint (
-        uint256 flag
-    );
-
-    event FlagAddress (
-        address flag
-    );
 
     /*** Modifiers *************/
 
@@ -103,14 +90,16 @@ contract RocketUser is Ownable {
 
     /// @dev User deposits must be validated
     modifier acceptableDeposit {
-        require(depositsAllowed && msg.value >= minDepositWei && msg.value <= maxDepositWei); 
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        require(rocketSettings.getUserDepositAllowed() && msg.value >= rocketSettings.getUserDepositMin() && msg.value <= rocketSettings.getUserDepositMax()); 
         _;
     }
 
     /// @dev User withdrawals must be validated
     /// @param amount The amount to withdraw
     modifier acceptableWithdrawal(uint256 amount) {
-        require(withdrawalsAllowed && amount >= minWithdrawalWei && amount <= maxWithdrawalWei);
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        require(rocketSettings.getUserWithdrawalAllowed() && amount >= rocketSettings.getUserWithdrawalMin() && amount <= rocketSettings.getUserWithdrawalMax());
         _;
     }
 
@@ -122,43 +111,6 @@ contract RocketUser is Ownable {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
-    /*** Setters *************/
-
-    // @dev Are deposits allowed for this version of Rocket Pool?
-    /// @param areDepositsAllowed True or False
-    function setUserDepositsAllowed(bool areDepositsAllowed) public onlyOwner {
-        depositsAllowed = areDepositsAllowed;
-    }
-
-    // @dev Set the min amount of Ether required for a deposit in Wei
-    /// @param amountInWei The amount in Wei
-    function setUserMinDepositAllowed(uint256 amountInWei) public onlyOwner {
-        minDepositWei = amountInWei;
-    }
-
-    // @dev Set the max amount of Ether required for a deposit in Wei
-    /// @param amountInWei The amount in Wei
-    function setUserMaxDepositAllowed(uint256 amountInWei) public onlyOwner {
-        maxDepositWei = amountInWei;
-    }
-
-    // @dev Are withdrawals allowed for this version of Rocket Pool?
-    /// @param areWithdrawalsAllowed True or False
-    function setUserWithdrawalsAllowed(bool areWithdrawalsAllowed) public onlyOwner {
-        withdrawalsAllowed = areWithdrawalsAllowed;
-    }
-
-    // @dev Set the min amount of Ether required for a withdrawals in Wei
-    /// @param amountInWei The amount in Wei
-    function setUserMinDepositsAllowed(uint256 amountInWei) public onlyOwner {
-        minWithdrawalWei = amountInWei;
-    }
-
-    // @dev Set the max amount of Ether required for a withdrawals in Wei
-    /// @param amountInWei The amount in Wei
-    function setUserMaxWithdrawalAllowed(uint256 amountInWei) public onlyOwner {
-        maxWithdrawalWei = amountInWei;
-    }
     
     /*** Methods *************/
 
@@ -188,10 +140,8 @@ contract RocketUser is Ownable {
         rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // Check to verify the supplied mini pool staking time id is legit
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Legit time staking ID? 
-        require(rocketSettings.getPoolStakingTimeExists(_poolStakingTimeID) == true);
         // Set it now
-        uint256 poolStakingDuration = rocketSettings.getPoolStakingTime(_poolStakingTimeID);
+        uint256 poolStakingDuration = rocketSettings.getMiniPoolStakingTime(_poolStakingTimeID);
         // Assign the user to a matching staking time pool if they don't already belong to one awaiting deposits
         // If no pools are currently available, a new pool for the user will be created
         address poolUserBelongsToo = rocketPool.addUserToAvailablePool(_userAddress, _partnerAddress, poolStakingDuration);
@@ -302,7 +252,7 @@ contract RocketUser is Ownable {
         // So only process fees if we've received rewards from Casper
         if (userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
-            userFeesAmount = Arithmetic.overflowResistantFraction(rocketSettings.getWithdrawalFeePercInWei(), uint256(userRewardsAmount), calcBase);
+            userFeesAmount = Arithmetic.overflowResistantFraction(rocketSettings.getMiniPoolWithdrawalFeePerc(), uint256(userRewardsAmount), calcBase);
             // The total the user will receive '(deposit + rewards) - fees'
             userBalanceUpdated = (userDepositAmountUpdated - userFeesAmount);
         } else {
@@ -346,9 +296,9 @@ contract RocketUser is Ownable {
         // Get an instance of that pool contract
         rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Check to make sure this feature is currently enabled
-        if (rocketSettings.getPoolUserBackupCollectEnabled()) {
+        if (rocketSettings.getMiniPoolBackupCollectEnabled()) {
             // This can only occur after a pool has received its Casper deposit (some time ago) and the pool is allowing withdrawals and the given address must match the accounts they wish to withdraw from
-            if (now >= (rocketPoolMini.getStatusChangeTime() + rocketSettings.getPoolUserBackupCollectTime()) && rocketPoolMini.getStatus() == 4) {
+            if (now >= (rocketPoolMini.getStatusChangeTime() + rocketSettings.getMiniPoolBackupCollectTime()) && rocketPoolMini.getStatus() == 4) {
                 // Ok we've gotten this far, original deposit address definitely has this address  as a backup?
                 if (rocketPoolMini.getUserBackupAddressOK(_userAddressUsedForDeposit, msg.sender)) {
                     // Ok we're all good, lets change the initial user deposit address to the backup one so they can call the normal withdrawal process
@@ -385,9 +335,9 @@ contract RocketUser is Ownable {
         // Check the status, must be currently staking to allow tokens to be withdrawn
         require(rocketPoolMini.getStatus() == 2);
         // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
-        uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getDepositTokenWithdrawalFeePercInWei(), _amount, calcBase);
+        uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getTokenRPDWithdrawalFeePerc(), _amount, calcBase);
         // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
-        uint256 tokenAmount = (_amount-userDepositTokenFeePercInWei);
+        uint256 tokenAmount = (_amount - userDepositTokenFeePercInWei);
         // Ok lets mint those tokens now - minus the fee amount
         if (rocketDepositToken.mint(msg.sender, tokenAmount)) {
             // Cool, lets update the users deposit total and flag that the user has outstanding tokens

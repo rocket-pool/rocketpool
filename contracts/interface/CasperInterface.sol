@@ -9,13 +9,13 @@ contract CasperInterface {
      /// @dev Get the current Casper dynasty
     function get_dynasty() public view returns(uint128);
     /// @dev Get the validator index for the withdrawal address
-    function get_validator_indexes(address withdrawal_addr) public view returns(uint256);
+    function get_validator_indexes(address withdrawal_addr) public view returns(uint128);
      /// @dev Get the current Casper epoch
-    function get_current_epoch() public view returns(uint256);
+    function get_current_epoch() public view returns(uint128);
     /// @dev Get the current Casper epoch
-    function get_deposit_size(uint256 validator_index) public view returns(uint256);
+    function get_deposit_size(uint256 validator_index) public view returns(uint128);
     /// @dev Get the current withdrawal delay in blocks
-    function get_withdrawal_delay() public view returns(uint256);
+    function get_withdrawal_delay() public view returns(uint128);
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
     function deposit(address validator_address, address withdrawal_address) public payable;
     /// @dev Start the process for a withdrawal
@@ -25,14 +25,14 @@ contract CasperInterface {
     /// @dev Get the current start epoch of this dynasty
     function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128);
     /// @dev Validator data 
-    function get_validators__dynasty_start(uint128 validator_index) view returns (uint128);
-    function get_validators__dynasty_end(uint128 validator_index) view returns (uint128);
-    function get_validators__addr(uint128 validator_index) view returns (address);
-    function get_validators__withdrawal_address(uint128 validator_index) view returns (address);
+    function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128);
+    function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128);
+    function get_validators__addr(uint128 validator_index) public view returns (address);
+    function get_validators__withdrawal_address(uint128 validator_index) public view returns (address);
     /// @dev RP only - Increment the current epoc to simulate Caspers epochs incrementing
-    function set_update_epoch() onlyOwner public;
+    function set_increment_epoch() onlyOwner public;
     /// @dev RP only - Increment the dynasty to simulate Caspers blocks being finalised
-    function set_increment_dynasty(uint256 _amount) onlyOwner public;
+    function set_increment_dynasty() onlyOwner public;
 
 
 }
