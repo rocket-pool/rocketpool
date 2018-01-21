@@ -87,6 +87,7 @@ contract RocketPoolMiniDelegate is Ownable {
         uint256 created                                         // Creation timestamp
     );
    
+
     /*** Modifiers *************/
 
     /// @dev Only registered users with this pool
@@ -117,6 +118,7 @@ contract RocketPoolMiniDelegate is Ownable {
         _;
     }
     
+    
     /*** Methods *************/
    
     function RocketPoolMiniDelegate(address _rocketStorageAddress) public {
@@ -133,14 +135,6 @@ contract RocketPoolMiniDelegate is Ownable {
         }
         return false;
     }
-
-    event FlagUint (
-        uint128 flag
-    );
-
-    event FlagAddress (
-        address flag
-    );
 
     /// @dev Returns true if this pool is able to request logging out of the validator set from Casper
     function getCanLogout() public view returns(bool) {
@@ -160,22 +154,12 @@ contract RocketPoolMiniDelegate is Ownable {
         return false;
     }
 
-    
-
     /// @dev Returns true if this pool is able to withdraw its deposit + rewards from Casper
     function getCanWithdraw() public view returns(bool) {
         // Load the casper interface
         CasperInterface casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Verify with casper that the withdrawal can be made
         uint128 validatorIndex = casper.get_validator_indexes(address(this));
-        FlagAddress(address(this));
-        FlagUint(uint128(validatorIndex));
-        FlagUint(casper.get_dynasty());
-        FlagUint(casper.get_validators__dynasty_start(validatorIndex));
-        FlagUint(casper.get_validators__dynasty_end(validatorIndex));
-        FlagUint(casper.get_dynasty_start_epoch(casper.get_validators__dynasty_end(validatorIndex) + 1));
-        FlagUint(casper.get_current_epoch());
-        FlagUint(casper.get_withdrawal_delay());
         // These rules below must match the ones Casper has for withdrawing
         // Verify the dynasty is correct for withdrawing 
         if (casper.get_dynasty() >= casper.get_validators__dynasty_end(validatorIndex) + 1) {
@@ -185,6 +169,7 @@ contract RocketPoolMiniDelegate is Ownable {
         }
         return false;
     }
+
 
     /*** USERS ***********************************************/
 
@@ -305,6 +290,7 @@ contract RocketPoolMiniDelegate is Ownable {
         // All good
         return true;
     }
+    
 
     /*** POOL ***********************************************/
 
