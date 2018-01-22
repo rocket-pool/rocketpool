@@ -197,8 +197,9 @@ contract DummyCasper is Ownable {
         // and this fails on contract -> contract sends (thanks to ConsenSys for the breakdown - https://github.com/ConsenSys/Ethereum-Development-Best-Practices/wiki/Fallback-functions-and-the-fundamental-limitations-of-using-send()-in-Ethereum-&-Solidity )
         // So in its place we'll just call the address of the contract and send the value (this forwards the gas needed), tho we can't test the result here as easily, but this will work for now in place of the real Casper
         // If Casper when finished doesn't support contract -> contract deposit returns with gas, we can use a registered Rocket Node checkin to action the deposit after it's received by a minipool
-        // send(validators[validator_index].withdrawal_addr, withdraw_amount)
         assert(validators[validator_index].withdrawal_addr.call.value(withdrawal_amount_processed)() == true);
+        // Update: Looks like Casper just uses Send which won't allow for any automatic remote contract execution due to limited gas. We'll use smart node checkins now to check for return deposits and action them automatically
+        //assert(validators[validator_index].withdrawal_addr.send(withdrawal_amount_processed) == true);;
         // Remove the validator now
         delete_validator(validator_index);
         // Log it

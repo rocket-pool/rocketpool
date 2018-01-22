@@ -76,11 +76,6 @@ contract RocketUser is Ownable {
 
     /*** Modifiers *************/
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
-        require(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-        _;
-    }
 
     /// @dev Only allow access from the latest version of the main RocketPartnerAPI contract
     modifier onlyLatestRocketPartnerAPI() {
