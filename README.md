@@ -1,6 +1,6 @@
 # Rocket Pool - Your new Casper friendly Ethereum POS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle) and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
+*NOTE: The current alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle) and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>
@@ -8,11 +8,11 @@
 
 ---
 
-`Rocket Pool` is a next generation decentralised Ethereum proof of stake (POS) pool currently in Alpha and built to be compatible with Casper. Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.
+`Rocket Pool` is a next generation decentralised Ethereum proof of stake (POS) pool currently in alpha and built to be compatible with Casper. Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.
 
 Unlike traditional centralsed POW pools, Rocket Pool utilises the power of smart contracts to create a self regulating decentralised network of smart nodes that allows users with any amount of Ether to earn interest on their deposit and help secure the Ethereum network at the same time.
 
-The contracts are written in `solidity` and built with the Ethereum framework `truffle`. This project is currently in Alpha and undergoing heavy work.
+The contracts are written in `solidity` and built with the Ethereum framework `truffle`. This project is currently in alpha and undergoing heavy work.
 
 # Test Rocket Pool
 
