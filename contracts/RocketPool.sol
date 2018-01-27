@@ -1,6 +1,6 @@
 pragma solidity 0.4.18;
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketUserInterface.sol";
 import "./interface/RocketFactoryInterface.sol";
@@ -11,12 +11,11 @@ import "./interface/RocketSettingsInterface.sol";
 
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is main pool management contract
 /// @author David Rugendyke
-contract RocketPool is Ownable {
+contract RocketPool is RocketBase {
 
     /*** Contracts **************/
 
     RocketUserInterface rocketUser = RocketUserInterface(0);              // The main user interface methods
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
   
     /*** Events ****************/
@@ -99,9 +98,9 @@ contract RocketPool is Ownable {
     /*** Constructor *************/
 
     /// @dev rocketPool constructor
-    function RocketPool(address _rocketStorageAddress) public { 
-        // Update the contract address 
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketPool(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
+        version = 1;
     }
     
 
@@ -178,7 +177,7 @@ contract RocketPool is Ownable {
                 // Get an instance of that pool contract
                 pool = RocketPoolMini(poolsFound[i]);
                 // Check its ok
-                require(pool.owner() != 0x0);
+                require(address(pool) != 0x0);
                 // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
                 if (pool.getNodeAddress() == 0 && pool.getCanDeposit() == true) {
                     // Get a node for this pool to be assigned too
@@ -240,7 +239,7 @@ contract RocketPool is Ownable {
         // Get the pool contract instance
         RocketPoolMini pool = RocketPoolMini(_miniPoolAddress);
         // Double check the contract exists at the given address
-        assert(pool.owner() != 0);
+        assert(address(pool) != 0x0);
         // It exists
         return pool;
     }

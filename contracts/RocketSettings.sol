@@ -1,17 +1,13 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
 
 
 /// @title Common settings that are used across all spoke contracts, mostly the main rocketpool and the mini pools it creates
 /// @author David Rugendyke
-contract RocketSettings is Ownable {
-
-     /*** Contracts ***********/
-
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained  
+contract RocketSettings is RocketBase {
 
 
     /*** Enums ***************/
@@ -27,62 +23,48 @@ contract RocketSettings is Ownable {
     }
 
 
-
     /// @dev RocketSettings constructor
-    function RocketSettings(address _rocketStorageAddress) public {
-        
-        /*** Contracts ***/
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress); 
+    function RocketSettings(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+
+        /*** Version ***/
+        version = 1;
+
+        /*** Users ***/
+        setUserDepositAllowed(true);                                                        // Are user deposits currently allowed?
+        setUserDepositMin(1 ether);                                                         // Min required deposit in Wei 
+        setUserDepositMax(75 ether);                                                        // Max allowed deposit in Wei 
+        setUserWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
+        setUserWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
+        setUserWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei          
+
+        /*** Minipools ***/
+        setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
+        setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
+        setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
+        setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+        setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
+        setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
+        setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
+        setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
+        setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+        setMiniPoolBackupCollectTime(12 weeks);                                             // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+        setMiniPoolNewEnabled(true);                                                        // Minipools allowed to be created?
+        setMiniPoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
+        setMiniPoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
+        setMiniPoolNewGas(4800000);                                                         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
+        setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
+
+        /*** RPL and RPD Tokens ***/
+        setTokenRPDWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)
+
+        /*** Smart Nodes ***/                                            
+        setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
+        setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
+        setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
+        setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
         
     }
 
-    /*** Set Defaults ************/
-
-    /// @dev RocketSettings constructor
-    function init() public onlyOwner {
-
-        // Initialise the base settings after the main initial deployment, must be done after the contract is deployed to allow for RocketStorage to allow access
-        if(rocketStorage.getBool(keccak256("settings.init")) == false) {
-
-            /*** Users ***/
-            setUserDepositAllowed(true);                                                        // Are user deposits currently allowed?
-            setUserDepositMin(1 ether);                                                         // Min required deposit in Wei 
-            setUserDepositMax(75 ether);                                                        // Max allowed deposit in Wei 
-            setUserWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
-            setUserWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
-            setUserWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei          
-
-            /*** Minipools ***/
-            setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
-            setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
-            setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
-            setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-            setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
-            setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
-            setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
-            setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
-            setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-            setMiniPoolBackupCollectTime(12 weeks);                                             // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-            setMiniPoolNewEnabled(true);                                                        // Minipools allowed to be created?
-            setMiniPoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
-            setMiniPoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
-            setMiniPoolNewGas(4800000);                                                         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-            setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
-
-            /*** RPL and RPD Tokens ***/
-            setTokenRPDWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)
-
-            /*** Smart Nodes ***/                                            
-            setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-            setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
-            setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
-            setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-
-            /*** Set Init ***/
-            rocketStorage.setBool(keccak256("settings.init"), true);
-        }
-
-    }
 
 
     /*** Getters *****************/
@@ -245,7 +227,7 @@ contract RocketSettings is Ownable {
     /*** Setters **********************/
 
     /// @dev Set the current average block time in seconds in the ethereum
-    function setAverageBlockTime(uint256 _timeInSeconds) public onlyOwner {
+    function setAverageBlockTime(uint256 _timeInSeconds) public onlySuperUser {
         require(_timeInSeconds > 0);
         rocketStorage.setUint(keccak256("settings.network.blocktime"), _timeInSeconds);  
     }
@@ -254,32 +236,32 @@ contract RocketSettings is Ownable {
     /*** Users ***/
 
     /// @dev Are user deposits currently allowed?                                                 
-    function setUserDepositAllowed(bool _enabled) public onlyOwner {
+    function setUserDepositAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.user.deposit.allowed"), _enabled); 
     }
 
     /// @dev Min required deposit in Wei 
-    function setUserDepositMin(uint256 _weiAmount) public onlyOwner {
+    function setUserDepositMin(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.user.deposit.min"), _weiAmount); 
     }
 
     /// @dev Max allowed deposit in Wei 
-    function setUserDepositMax(uint256 _weiAmount) public onlyOwner {
+    function setUserDepositMax(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.user.deposit.max"), _weiAmount); 
     }
 
     /// @dev Are withdrawals allowed?                                            
-    function setUserWithdrawalAllowed(bool _enabled) public onlyOwner {
+    function setUserWithdrawalAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.user.withdrawal.allowed"), _enabled); 
     }
 
     /// @dev Min allowed to be withdrawn in Wei, 0 = all
-    function setUserWithdrawalMin(uint256 _weiAmount) public onlyOwner {
+    function setUserWithdrawalMin(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.user.withdrawal.min"), _weiAmount); 
     }
 
     /// @dev Max allowed to be withdrawn in Wei
-    function setUserWithdrawalMax(uint256 _weiAmount) public onlyOwner {
+    function setUserWithdrawalMax(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.user.withdrawal.max"), _weiAmount); 
     }
 
@@ -287,68 +269,68 @@ contract RocketSettings is Ownable {
     /*** Minipools ***/
 
     /// @dev Set the minipools default status
-    function setMiniPoolDefaultStatus(uint256 _statusID) public onlyOwner {
+    function setMiniPoolDefaultStatus(uint256 _statusID) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.status.default"), _statusID);  
     }
 
     /// @dev Set the minimum Wei required for a pool to launch
-    function setMiniPoolLaunchAmount(uint256 _weiAmount) public onlyOwner {
+    function setMiniPoolLaunchAmount(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.launch.wei"), _weiAmount);  
     }
 
     /// @dev Set the time limit to stay in countdown before staking begins (eg 5 minutes)
-    function setMiniPoolCountDownTime(uint256 _time) public onlyOwner {
+    function setMiniPoolCountDownTime(uint256 _time) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.countdown.time"), _time);  
     }
 
     /// @dev Set the possible staking times for minipools (the withdrawal time from Casper is added onto this, it is not included) 
-    function setMiniPoolStakingTime(string _option, uint256 _time) public onlyOwner {
+    function setMiniPoolStakingTime(string _option, uint256 _time) public onlySuperUser {
         require(_time > 0);
         rocketStorage.setUint(keccak256("settings.minipool.staking.option", _option), _time);  
     }
 
     /// @dev Set the Rocket Pool post Casper withdrawal fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function setMiniPoolWithdrawalFeePerc(uint256 _withdrawalFeePerc) public onlyOwner {
+    function setMiniPoolWithdrawalFeePerc(uint256 _withdrawalFeePerc) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.fee.withdrawal.perc"), _withdrawalFeePerc); 
     }
 
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
-    function setMiniPoolWithdrawalFeeDepositAddress(address _depositAddress) public onlyOwner {
+    function setMiniPoolWithdrawalFeeDepositAddress(address _depositAddress) public onlySuperUser {
         rocketStorage.setAddress(keccak256("settings.minipool.fee.withdrawal.address"), _depositAddress); 
     }
 
     /// @dev Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-    function setMiniPoolBackupCollectEnabled(bool _enabled) public onlyOwner {
+    function setMiniPoolBackupCollectEnabled(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.minipool.backupcollect.enabled"), _enabled); 
     }
 
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function setMiniPoolBackupCollectTime(uint256 _time) public onlyOwner {
+    function setMiniPoolBackupCollectTime(uint256 _time) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.backupcollect.time"), _time); 
     }
 
     /// @dev Minipools allowed to be created?
-    function setMiniPoolNewEnabled(bool _enabled) public onlyOwner {
+    function setMiniPoolNewEnabled(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.minipool.new.enabled"), _enabled); 
     }
 
     /// @dev Minipools allowed to be closed?
-    function setMiniPoolClosingEnabled(bool _enabled) public onlyOwner {
+    function setMiniPoolClosingEnabled(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.minipool.closed.enabled"), _enabled); 
     }
 
     /// @dev Maximum amount of minipool contracts allowed
-    function setMiniPoolMax(uint256 _amount) public onlyOwner {
+    function setMiniPoolMax(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.maxamount"), _amount); 
     }
 
     /// @dev This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-    function setMiniPoolNewGas(uint256 _gas) public onlyOwner {
+    function setMiniPoolNewGas(uint256 _gas) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.new.gas"), _gas); 
     }
 
     /// @dev The gas required for depositing with Casper and being added as a validator
-    function setMiniPoolDepositGas(uint256 _gas) public onlyOwner {
+    function setMiniPoolDepositGas(uint256 _gas) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.minipool.deposit.gas"), _gas); 
     }
 
@@ -356,7 +338,7 @@ contract RocketSettings is Ownable {
     /*** Tokens ***/
     
     /// @dev The default fee given as a % of 1 Ether (eg 5%)
-    function setTokenRPDWithdrawalFeePerc(uint256 _withdrawalFeePerc) public onlyOwner {
+    function setTokenRPDWithdrawalFeePerc(uint256 _withdrawalFeePerc) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.token.rpd.fee.withdrawal.perc"), _withdrawalFeePerc); 
     }
 
@@ -364,22 +346,22 @@ contract RocketSettings is Ownable {
     /*** Smart Nodes ***/
 
     /// @dev Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-    function setSmartNodeEtherMin(uint256 _weiAmount) public onlyOwner {
+    function setSmartNodeEtherMin(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.account.ether.min"), _weiAmount); 
     }
 
     /// @dev Set the gas price for node checkins in Wei
-    function setSmartNodeCheckinGas(uint256 _weiAmount) public onlyOwner {
+    function setSmartNodeCheckinGas(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.checkin.gas"), _weiAmount); 
     }
 
     /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
-    function setSmartNodeSetInactiveAutomatic(bool _enable) public onlyOwner {
+    function setSmartNodeSetInactiveAutomatic(bool _enable) public onlySuperUser {
         rocketStorage.setBool(keccak256("settings.smartnode.setinactive.automatic"), _enable); 
     }
 
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-    function setSmartNodeSetInactiveDuration(uint256 _amount) public onlyOwner {
+    function setSmartNodeSetInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.setinactive.duration"), _amount); 
     }
 

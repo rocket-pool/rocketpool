@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketPoolMini.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -10,18 +10,11 @@ import "./interface/RocketPoolInterface.sol";
 
 /// @title The Rocket Smart Node contract
 /// @author David Rugendyke
-contract RocketNode is Ownable {
-
-    /**** Properties ***********/
-
-    address private rocketHubAddress;                   // Hub address
-    uint8 private version;                              // The current version of this contract                                   
-   
-
+contract RocketNode is RocketBase {
+                          
 
     /*** Contracts **************/
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained 
 
               
@@ -72,9 +65,9 @@ contract RocketNode is Ownable {
     /*** Methods *************/
    
     /// @dev pool constructor
-    function RocketNode(address _rocketStorageAddress) public {
-        // Update the contract address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketNode(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
+        version = 1;
     }
 
     /*** Getters *************/

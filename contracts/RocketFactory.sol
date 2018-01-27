@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketPoolMini.sol";
 import "./interface/RocketStorageInterface.sol";
 
@@ -12,18 +12,12 @@ import "./interface/RocketStorageInterface.sol";
 
 /// @title Where we build the rockets! New contracts created by Rocket Pool are done here so they can be tracked.
 /// @author David Rugendyke
-contract RocketFactory is Ownable {
+contract RocketFactory is RocketBase {
 
 	/**** Properties ***********/
 
-    address private rocketStorageAddress;               // Address of the main RocketStorage contract
     mapping (address => Contract) public contracts;     // Our rocket factory contracts
     address[] public contractAddresses;                 // Keep an array of all our contract addresses for iteration
-
-
-    /*** Contracts **************/
-
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main RocketStorage contract where primary persistant storage is maintained
 
 
     /*** Structs ***************/
@@ -48,11 +42,9 @@ contract RocketFactory is Ownable {
     /*** Methods ***************/
 
     /// @dev RocketFactory constructor
-    function RocketFactory(address _rocketStorageAddress) public {
-        // Address of the main RocketStorage contract, should never need updating
-        rocketStorageAddress = _rocketStorageAddress;
-        // Update the contract address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketFactory(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
+        version = 1;
     }
 
     /// @dev Create a new RocketPoolMini contract, deploy to the etherverse and return the address to the caller
@@ -60,7 +52,7 @@ contract RocketFactory is Ownable {
     /// @param _miniPoolStakingDuration The staking duration for the mini pool
     function createRocketPoolMini(uint256 _miniPoolStakingDuration) public onlyLatestRocketPool returns(address) {
         // Create the new pool and add it to our list
-        RocketPoolMini newPoolAddress = new RocketPoolMini(rocketStorageAddress, _miniPoolStakingDuration);
+        RocketPoolMini newPoolAddress = new RocketPoolMini(address(rocketStorage), _miniPoolStakingDuration);
         // Store it now after a few checks
         if (addContract(keccak256("rocketMiniPool"), newPoolAddress)) {
             return newPoolAddress;

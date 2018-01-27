@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./interface/RocketUserInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -11,17 +11,14 @@ import "./interface/RocketPoolInterface.sol";
 /// @title RocketPartnerAPI - Used by Rocket Pool partners to access the Rocket Pool network
 /// @author David Rugendyke
 
-contract RocketPartnerAPI is Ownable {
+contract RocketPartnerAPI is RocketBase {
 
-    /**** RocketNode ************/
 
-    uint256 public version;                         // Version of this contract
 
     /*** Contracts **************/
 
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                // The main pool contract
     RocketUserInterface rocketUser = RocketUserInterface(0);                // The main user interface methods
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained
   
     /*** Events ****************/
@@ -90,10 +87,8 @@ contract RocketPartnerAPI is Ownable {
     /*** Constructor *************/
    
     /// @dev rocketNode constructor
-    function RocketPartnerAPI(address _rocketStorageAddress) public {
-        // Update the contract address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Set the current version of this contract
+    function RocketPartnerAPI(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
         version = 1;
     }
 

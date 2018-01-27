@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./interface/ERC20.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -11,22 +11,17 @@ import "./lib/SafeMath.sol";
 
 /// @title The Rocket Pool Deposit Token - Can be used as a backing of your deposit and traded with others while staking
 /// @author David Rugendyke
-contract RocketDepositToken is ERC20, Ownable {
+contract RocketDepositToken is ERC20, RocketBase {
 
     /**** Properties ***********/
     string public constant SYMBOL = "RPD";                              // Token symbol
     string public constant NAME = "Rocket Pool Deposit";                // Token name
     uint8 public constant DECIMALS = 18;                                // Decimal places
 
-    address private rocketHubAddress;                                   // Address of the main RocketHub contract
     uint256 public totalSupply = 0;                                     // Total supply
     mapping(address => uint256) private balances;                       // Balances for each account
     mapping(address => mapping (address => uint256)) private allowed;   // Owner of account approves the transfer of an amount to another account
     uint256 private calcBase = 1000000000000000000;                     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet   
-
-    /*** Contracts **************/
-
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage  contract where primary persistant storage is maintained 
 
 
     /**** Libs *****************/
@@ -65,9 +60,9 @@ contract RocketDepositToken is ERC20, Ownable {
     /*** Methods *************/
    
     /// @dev constructor
-    function RocketDepositToken(address _rocketStorageAddress) public {
-        // Update the contract address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketDepositToken(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
+        version = 1;
     }
 
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to the Rocket Pool Deposit Token fund at `to.address()`.

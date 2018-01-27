@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/CasperInterface.sol";
@@ -9,7 +9,7 @@ import "./interface/CasperInterface.sol";
 
 /// @title A minipool under the main RocketPool, all major logic is contained within the RocketPoolMiniDelegate contract which is upgradable when minipools are deployed
 /// @author David Rugendyke
-contract RocketPoolMini is Ownable {
+contract RocketPoolMini is RocketBase {
 
     /**** Properties ***********/
 
@@ -22,13 +22,11 @@ contract RocketPoolMini is Ownable {
     address[] private userAddresses;                            // Keep an array of all our user addresses for iteration
     uint256 private status;                                     // The current status of this pool, statuses are declared via Enum in the main hub
     uint256 private statusChangeTime;                           // The timestamp the status changed
-    uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool
-    uint8 private version = 1;                                  // The current version of this pool
+    uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool                                
 
 
     /*** Contracts **************/
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
 
     
@@ -114,9 +112,9 @@ contract RocketPoolMini is Ownable {
     /*** Methods *************/
    
     /// @dev pool constructor
-    function RocketPoolMini(address _rocketStorageAddress, uint256 _miniPoolStakingDuration) public {
-        // Update the storage address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketPoolMini(address _rocketStorageAddress, uint256 _miniPoolStakingDuration) RocketBase(_rocketStorageAddress) public {
+        // The current version of this pool
+        version = 1;
         // Staking details
         stakingDuration = _miniPoolStakingDuration;
         // New pools are set to pre launch and accept deposits by default

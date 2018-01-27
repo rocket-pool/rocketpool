@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketDepositToken.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
@@ -13,7 +13,7 @@ import "./lib/SafeMath.sol";
 
 /// @title The minipool delegate, should contain all primary logic for methods that minipools use, is entirely upgradable so that currently deployed pools can get any bug fixes or additions - storage here MUST match the minipool contract
 /// @author David Rugendyke
-contract RocketPoolMiniDelegate is Ownable {
+contract RocketPoolMiniDelegate is RocketBase {
 
     /**** Properties ***********/
 
@@ -27,17 +27,16 @@ contract RocketPoolMiniDelegate is Ownable {
     uint256 private status;                                     // The current status of this pool, statuses are declared via Enum in the main hub
     uint256 private statusChangeTime;                           // The timestamp the status changed
     uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool
-    uint8 private version = 1;                                  // The current version of this pool
 
 
     /*** Contracts **************/
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
 
     /**** Libs *****************/
     
     using SafeMath for uint;
+
     
     /*** Structs ***************/
 
@@ -121,9 +120,9 @@ contract RocketPoolMiniDelegate is Ownable {
     
     /*** Methods *************/
    
-    function RocketPoolMiniDelegate(address _rocketStorageAddress) public {
-    // Update the storage address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketPoolMiniDelegate(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // The current version of this pool
+        version = 1; 
     }
 
     /// @dev Returns true if this pool is able to send a deposit to Casper

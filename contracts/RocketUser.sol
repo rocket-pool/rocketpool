@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketPoolMini.sol"; 
 import "./RocketDepositToken.sol"; 
 import "./interface/RocketStorageInterface.sol";
@@ -11,11 +11,10 @@ import "./interface/RocketPoolInterface.sol";
 
 /// @title Rocket Pool Users
 /// @author David Rugendyke
-contract RocketUser is Ownable {
+contract RocketUser is RocketBase {
 
     /**** Properties ************/
 
-    uint256 public version = 1;                             // Version of this contract
     uint256 private calcBase = 1 ether;                     // Use this as our base unit to remove the decimal place by multiplying and dividing by it since solidity doesn't support reals yet
 
 
@@ -23,7 +22,6 @@ contract RocketUser is Ownable {
 
     RocketPoolMini rocketPoolMini = RocketPoolMini(0);                    // The mini pool contract
     RocketPoolInterface rocketPool = RocketPoolInterface(0);              // The main pool contract
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);     // The main storage contract where primary persistant storage is maintained  
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
   
 
@@ -101,9 +99,9 @@ contract RocketUser is Ownable {
     /*** Constructor *************/
    
     /// @dev rocketUser constructor
-    function RocketUser(address _rocketStorageAddress) public { 
-        // Update the contract address 
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function RocketUser(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        // Version
+        version = 1;
     }
 
     

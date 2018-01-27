@@ -1,31 +1,21 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 import "./RocketStorage.sol";
 
 
 /// @title Upgrades for Rocket Pool network contracts
 /// @author David Rugendyke
-contract RocketUpgrade is Ownable {
-
-    /**** Properties ***********/
-
-    address private rocketStorageAddress;                  // Address of the main RocketStorage contract
-
-    /*** Contracts **************/
-
-    RocketStorage rocketStorage = RocketStorage(0);        // The main RocketStorage contract where primary persistant storage is maintained
+contract RocketUpgrade is RocketBase {
 
 
     /*** Constructor ***********/    
 
     /// @dev RocketUpgrade constructor
-    function RocketUpgrade(address _rocketStorageAddress) public {
-        // Address of the main RocketStorage contract, should never need updating
-        rocketStorageAddress = _rocketStorageAddress;
-        // Update the contract address
-        rocketStorage = RocketStorage(rocketStorageAddress);
+    function RocketUpgrade() public {
+        // Set the version
+        version = 1;
     }
 
     /**** Contract Upgrade Methods ***********/
@@ -33,7 +23,7 @@ contract RocketUpgrade is Ownable {
     /// @param _name The name of an existing contract in the network
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
     // TODO: Write unit test to verify
-    function upgradeContract(bytes32 _name, address _upgradedContractAddress) onlyOwner external {
+    function upgradeContract(string _name, address _upgradedContractAddress) onlyOwner external {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256("rocketContract", _name));
         // Check it exists

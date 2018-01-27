@@ -1,12 +1,12 @@
 pragma solidity 0.4.18;
 
 
-import "./contract/Ownable.sol";
+import "./RocketBase.sol";
 
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
-contract RocketStorage is Ownable {
+contract RocketStorage {
 
     /**** Storage Types *******/
 
@@ -22,15 +22,21 @@ contract RocketStorage is Ownable {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        // The owner is only allowed to set the storage upon deployment to register the initial contracts, afterwards their direct access is disabled
-        if (msg.sender == owner) {
-            require(boolStorage[keccak256("contract.storage.initialised")] == false);
-        } else {
+        // The owner and other contracts are only allowed to set the storage upon deployment to register the initial contracts/settings, afterwards their direct access is disabled
+        if (boolStorage[keccak256("contract.storage.initialised")] == true) {
             // Make sure the access is permitted to only contracts in our Dapp
             require(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
         }
         _;
     }
+
+
+    /// @dev constructor
+    function RocketStorage() public {
+        // Set the main owner upon deployment
+        boolStorage[keccak256("access.role", "owner", msg.sender)] = true;
+    }
+
 
     /**** Get Methods ***********/
    
