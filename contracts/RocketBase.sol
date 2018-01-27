@@ -31,24 +31,24 @@ contract RocketBase {
     * @dev Modifier to scope access to admins
     */
     modifier onlyAdmin() {
-            roleCheck("admin", msg.sender);
-            _;
+        roleCheck("admin", msg.sender);
+        _;
     }
 
     /**
     * @dev Modifier to scope access to admins
     */
     modifier onlySuperUser() {
-            require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender));
-            _;
+        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender));
+        _;
     }
 
     /**
     * @dev Reverts if the address doesn't have this role
     */
     modifier onlyRole(string _role) {
-            roleCheck(_role, msg.sender);
-            _;
+        roleCheck(_role, msg.sender);
+        _;
     }
 
   
