@@ -1,9 +1,6 @@
 pragma solidity 0.4.18;
 
 
-import "./RocketBase.sol";
-
-
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
 contract RocketStorage {
