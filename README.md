@@ -1,26 +1,26 @@
-# Rocket Pool - Your new Casper friendly Ethereum POS pool
+# Rocket Pool - Your new Casper-friendly Ethereum PoS pool
 
-*NOTE: The current Alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle) and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
+*NOTE: The current alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle), and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof of Stake (POS) Pool"/>
+  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Pool"/>
 </p>
 
 ---
 
-`Rocket Pool` is a next generation decentralised Ethereum proof of stake (POS) pool currently in Alpha and built to be compatible with Casper. Features include Casper compatibility, smart nodes, decentralised infrastructure with automatic smart contract load balancing.
+`Rocket Pool` is a next-generation decentralised Ethereum proof-of-stake (PoS) pool currently in alpha. Features include Casper compatibility, smart nodes, and decentralised infrastructure with automatic smart contract load balancing.
 
-Unlike traditional centralsed POW pools, Rocket Pool utilises the power of smart contracts to create a self regulating decentralised network of smart nodes that allows users with any amount of Ether to earn interest on their deposit and help secure the Ethereum network at the same time.
+Unlike traditional centralised proof-of-work (PoW) pools, Rocket Pool utilises the power of smart contracts to create a self-regulating decentralised network of smart nodes that allows users with any amount of ether to earn interest on their deposits and help secure the Ethereum network at the same time.
 
-The contracts are written in `solidity` and built with the Ethereum framework `truffle`. This project is currently in Alpha and undergoing heavy work.
+Contracts are written in `solidity` and built with the Ethereum framework `truffle`. This project is currently in alpha and undergoing heavy work.
 
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof of Stake (POS) Pool"/>
+  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Pool"/>
 </p>
 
-Easiest way to see Rocket Pool alpha in action is to clone the repo, have Ganache running and the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
+To see Rocket Pool alpha in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
 ```bash
 $ npm install && npm test
 ```
@@ -30,19 +30,25 @@ This will start Ganache (if not already started) with the current block gas limi
 
 You can read the current Rocket Pool white paper here: [http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf](http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf).
 
-# More Information and Contact
+# Contact and Additional Information
 
-For more information on Rocket Pool, check out our [website here](http://www.rocketpool.net). You can also contact us there for more information.
+Check out [our website](http://www.rocketpool.net) for more information on Rocket Pool.
+
+Contact form: https://www.rocketpool.net/#contact
+
+Twitter: https://twitter.com/Rocket_Pool
+
+Join our Slack channel! http://slack.rocketpool.net
 
 ---
 
-# A Step by Step Beginners guide
+# A Step-by-Step Beginners Guide
 
-The following worked example uses Mac OSX 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 15/09/2017
+The following worked example uses macOS Sierra 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 15/09/2017.
 
-download and install Ubuntu onto a new VM -> https://www.ubuntu.com/download/desktop - tested with v16.04
+Download and install Ubuntu onto a new VM -> https://www.ubuntu.com/download/desktop - tested with v16.04
 
-open a Terminal window and install some pre-requisites:
+Open a terminal window and install some pre-requisites:
 
 install git:
 ```bash
