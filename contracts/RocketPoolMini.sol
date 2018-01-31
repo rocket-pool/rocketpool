@@ -27,20 +27,21 @@ contract RocketPoolMini is RocketBase {
 
     /*** Contracts **************/
 
-    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
+    CasperInterface casper = CasperInterface(0);                            // Interface of the Casper contract
+    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained
 
     
     /*** Structs ***************/
 
     struct User {
         address userAddress;                                    // Address of the user
-        address userAddressBackupWithdrawal;                    // Address of the partner of whom has control of the users address
-        address partnerAddress;                                 // Balance deposited
-        uint256 balance;                                        // Rewards received after Casper
-        int256 rewards;                                         // Rocket Pool deposit tokens withdrawn
-        uint256 depositTokensWithdrawn;                         // Rocket Pool fees incured
-        uint256 fees;                                           // True if the mapping exists for the user
-        bool exists;                                            // When the user was created
+        address userAddressBackupWithdrawal;                    // Users widow address
+        address partnerAddress;                                 // Address of the partner of whom has control of the users address
+        uint256 balance;                                        // Balance deposited
+        int256 rewards;                                         // Rewards received after Casper
+        uint256 depositTokensWithdrawn;                         // Rocket Pool deposit tokens withdrawn
+        uint256 fees;                                           // Rocket Pool fees incured
+        bool exists;                                            // User exists?
         uint created;                                           // Creation timestamp
     }
 
@@ -60,6 +61,7 @@ contract RocketPoolMini is RocketBase {
         uint256 balance,                                        // Balance of the transfer
         uint256 created                                         // Creation timestamp
     );
+    
 
     event UserAdded (
         address indexed _userAddress,                           // Users address
@@ -67,7 +69,7 @@ contract RocketPoolMini is RocketBase {
     );
 
     event DepositReceived (
-        address indexed _userAddress,                           // Users address
+        address indexed _fromAddress,                           // From address
         uint256 amount,                                         // Amount of the deposit
         uint256 created                                         // Creation timestamp
     );
@@ -115,6 +117,8 @@ contract RocketPoolMini is RocketBase {
     function RocketPoolMini(address _rocketStorageAddress, uint256 _miniPoolStakingDuration) RocketBase(_rocketStorageAddress) public {
         // The current version of this pool
         version = 1;
+        // Set the address of the Casper contract
+        casper = CasperInterface(rocketStorage.getAddress(keccak256("contract.name", "casper")));
         // Staking details
         stakingDuration = _miniPoolStakingDuration;
         // New pools are set to pre launch and accept deposits by default
@@ -127,12 +131,8 @@ contract RocketPoolMini is RocketBase {
     
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
-        // Only Casper can transfer value to a pool
-        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "casper")));
-        // Set the staking balance we've received
-        stakingBalanceReceived = msg.value;
-        // Log the deposit attempt received
-        PoolTransfer(msg.sender, this, keccak256("casperDepositReturn"), msg.value, this.balance, now);       
+        // Log the deposit received
+        DepositReceived(msg.sender, msg.value, now);       
     }
 
     /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
@@ -150,8 +150,13 @@ contract RocketPoolMini is RocketBase {
         return response; 
     }
 
+    /// @dev Returns the current validator index in Casper of this minipool
+    function getCasperValidatorIndex() public view returns(uint128) {
+        return casper.get_validator_indexes(address(this));
+    }
+
     /// @dev Returns the status of this pool
-    function getStatus() public view returns(uint) {
+    function getStatus() public view returns(uint256) {
         return status;
     }
 
@@ -195,15 +200,21 @@ contract RocketPoolMini is RocketBase {
         return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanWithdraw()")));
     }
 
+    /// @dev Returns true if this pool is able to allow withdrawals after staking is completed
+    function getCanUsersWithdraw() public returns(bool) {
+        return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanUsersWithdraw()")));
+    }
+
     /// @dev Set the node address this mini pool is attached too
-    function setNodeDetails(address _nodeAddress) public onlyLatestRocketPool {
+    function setNodeDetails(address _nodeAddress) external onlyLatestRocketPool {
         rocketNodeAddress = _nodeAddress;
     }
 
     /// @dev Gets the current staking duration
-    function setStakingDuration(uint256 _newStakingDuration) public onlyLatestRocketPool {
+    function setStakingDuration(uint256 _newStakingDuration) external onlyLatestRocketPool {
         stakingDuration = _newStakingDuration;
-    }   
+    }  
+ 
 
     /*** USERS ***********************************************/
 
@@ -261,26 +272,26 @@ contract RocketPoolMini is RocketBase {
     }
 
     /// @dev Rocket Pool updating the users balance, rewards earned and fees occured after staking and rewards are included
-    function setUserBalanceRewardsFees(address _userAddress, uint256 _updatedBalance, int256 _updatedRewards, uint256 _updatedFees) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
+    function setUserBalanceRewardsFees(address _userAddress, uint256 _updatedBalance, int256 _updatedRewards, uint256 _updatedFees) external isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         // Will throw if conditions are not met in delegate
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserBalanceRewardsFees(address,uint256,int256,uint256)")), _userAddress, _updatedBalance, _updatedRewards, _updatedFees) == true);
         return true;
     }
 
     /// @dev Set current users address to the supplied backup one - be careful with this method when calling from the main Rocket Pool contract, all primary logic must be contained there as its upgradable
-    function setUserAddressToCurrentBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalGiven) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
+    function setUserAddressToCurrentBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalGiven) external isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserAddressToCurrentBackupWithdrawal(address,address)")), _userAddress, _userAddressBackupWithdrawalGiven) == true);
         return true;
     }
 
     /// @dev Adds more to the current amount of deposit tokens owed by the user
-    function setUserDepositTokensOwedAdd(address _userAddress, uint256 _etherAmount, uint256 _tokenAmount) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
+    function setUserDepositTokensOwedAdd(address _userAddress, uint256 _etherAmount, uint256 _tokenAmount) external isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserDepositTokensOwedAdd(address,uint256,uint256)")), _userAddress, _etherAmount, _tokenAmount) == true);
         return true;
     }
 
     /// @dev Set the backup address for the user to collect their deposit + rewards from if the primary address doesn't collect it after a certain time period
-    function setUserAddressBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalNew) public isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
+    function setUserAddressBackupWithdrawal(address _userAddress, address _userAddressBackupWithdrawalNew) external isPoolUser(_userAddress) onlyLatestRocketUser returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("setUserAddressBackupWithdrawal(address,address)")), _userAddress, _userAddressBackupWithdrawalNew) == true);
         return true;
     }
@@ -288,7 +299,7 @@ contract RocketPoolMini is RocketBase {
     /// @dev Register a new user, only the latest version of the parent pool contract can do this
     /// @param _userAddressToAdd New user address
     /// @param _partnerAddressToAdd The 3rd party partner the user may belong too
-    function addUser(address _userAddressToAdd, address _partnerAddressToAdd) public onlyLatestRocketPool returns(bool) {
+    function addUser(address _userAddressToAdd, address _partnerAddressToAdd) external onlyLatestRocketPool returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("addUser(address,address)")), _userAddressToAdd, _partnerAddressToAdd) == true);
         return true;
     }
@@ -297,7 +308,7 @@ contract RocketPoolMini is RocketBase {
 
     /// @dev Add a users deposit, only the latest version of the parent pool contract can send value here, so once a new version of Rocket Pool is released, existing mini pools can no longer receive deposits
     /// @param _userAddress Users account to accredit the deposit too
-    function deposit(address _userAddress) public payable onlyLatestRocketUser returns(bool) {
+    function deposit(address _userAddress) external payable onlyLatestRocketUser returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("deposit(address)")), _userAddress) == true);
         return true;
     }
@@ -306,7 +317,7 @@ contract RocketPoolMini is RocketBase {
     /// @param _userAddress Users account address
     /// @param _withdrawAmount amount you want to withdraw
     /// @return The balance remaining for the user
-    function withdraw(address _userAddress, uint256 _withdrawAmount) public onlyLatestRocketUser returns (bool) {
+    function withdraw(address _userAddress, uint256 _withdrawAmount) external onlyLatestRocketUser returns (bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("withdraw(address,uint256)")), _userAddress, _withdrawAmount) == true); 
         return true;
     }

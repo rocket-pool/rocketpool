@@ -21,7 +21,7 @@ contract CasperInterface {
     /// @dev Start the process for a withdrawal
     function logout(bytes logout_msg) public;
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
-    function withdraw(uint256 validator_index, bool simulate_penalties) public returns(bool); 
+    function withdraw(uint256 validator_index) public returns(bool); 
     /// @dev Get the current start epoch of this dynasty
     function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128);
     /// @dev Validator data 

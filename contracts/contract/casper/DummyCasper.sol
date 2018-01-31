@@ -22,6 +22,7 @@ contract DummyCasper is Ownable {
     uint256 public min_deposit_size = 2 ether;                              // Min deposit required
     //mapping (int128 => uint256)  public deposit_scale_factor = 1 ether;   // Value used to calculate the per-epoch fee that validators should be charged given as a % of 1 Ether = 100%, 0.5 Ether = 50%
     mapping (uint128 => uint128) public dynasty_start_epoch;                // Mapping of dynasty to start epoch of that dynasty
+    bool public simulate_penalties = false;                                 // Simulate penalties in Casper
 
 
     
@@ -35,7 +36,7 @@ contract DummyCasper is Ownable {
 
     mapping (uint256 => Validator) public validators;                       // The current validators
     mapping (address => uint128)  public validator_indexes;                 // All validators are indexed by their withdrawal address
-    uint128 next_validator_index;                                           // Number of validators
+    uint128 next_validator_index = 1;                                       // Number of validators
 
 
     /*** Structs ***************/
@@ -175,7 +176,7 @@ contract DummyCasper is Ownable {
     }
 
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
-    function withdraw(uint256 validator_index, bool simulate_penalties) public returns(bool) { 
+    function withdraw(uint256 validator_index) public returns(bool) { 
         // Check that we can withdraw
         assert(dynasty >= validators[validator_index].end_dynasty + 1);
         // Withdraw
@@ -198,9 +199,9 @@ contract DummyCasper is Ownable {
         // and this fails on contract -> contract sends (thanks to ConsenSys for the breakdown - https://github.com/ConsenSys/Ethereum-Development-Best-Practices/wiki/Fallback-functions-and-the-fundamental-limitations-of-using-send()-in-Ethereum-&-Solidity )
         // So in its place we'll just call the address of the contract and send the value (this forwards the gas needed), tho we can't test the result here as easily, but this will work for now in place of the real Casper
         // If Casper when finished doesn't support contract -> contract deposit returns with gas, we can use a registered Rocket Node checkin to action the deposit after it's received by a minipool
-        assert(validators[validator_index].withdrawal_addr.call.value(withdrawal_amount_processed)() == true);
+        // assert(validators[validator_index].withdrawal_addr.call.value(withdrawal_amount_processed)() == true);
         // Update: Looks like Casper just uses Send which won't allow for any automatic remote contract execution due to limited gas. We'll use smart node checkins now to check for return deposits and action them automatically
-        //assert(validators[validator_index].withdrawal_addr.send(withdrawal_amount_processed) == true);;
+        assert(validators[validator_index].withdrawal_addr.send(withdrawal_amount_processed));
         // Remove the validator now
         delete_validator(validator_index);
         // Log it
@@ -231,5 +232,10 @@ contract DummyCasper is Ownable {
         total_curdyn_deposits += next_dynasty_wei_delta;
         next_dynasty_wei_delta = second_next_dynasty_wei_delta;
         second_next_dynasty_wei_delta = 0;
+    }
+
+    /// @dev Simulate penalties by Casper happening
+    function set_simulate_penalties(bool _option) public onlyOwner { 
+        simulate_penalties = _option;
     }
 }

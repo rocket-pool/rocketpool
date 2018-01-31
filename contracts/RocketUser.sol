@@ -141,7 +141,7 @@ contract RocketUser is RocketBase {
         // We have a pool for the user, get the pool to withdraw the users deposit to its own contract account
         RocketPoolMini poolDepositTo = RocketPoolMini(poolUserBelongsToo);
         // Get the pool to withdraw the users deposit to its contract balance
-        require(poolDepositTo.deposit.value(msg.value).gas(100000)(_userAddress) == true);
+        require(poolDepositTo.deposit.value(msg.value).gas(150000)(_userAddress) == true);
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
@@ -176,6 +176,8 @@ contract RocketUser is RocketBase {
     /// @param _amount The amount in Wei to withdraw, passing 0 will withdraw the users whole balance.
     /// @param _partnerAddress The address of the partner 
     function userWithdrawDepositFromPoolTransfer(address _userAddress, address _miniPoolAddress, uint256 _amount, address _partnerAddress) private acceptableWithdrawal(_amount) returns(bool) {
+        // Get our rocket settings 
+        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get an instance of that pool contract
         rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
@@ -195,15 +197,14 @@ contract RocketUser is RocketBase {
             // The supplied partner for the user does not match the sender
             require(userPartnerAddress == _partnerAddress);
         }
-
         // Check to see if the user is actually in this pool and has a deposit
         require(userBalance > 0);
         // Check the status, must be accepting deposits, counting down to staking launch to allow withdrawals before staking incase users change their mind or officially awaiting withdrawals after staking
         require(rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1 || rocketPoolMini.getStatus() == 4);
         // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
-        // Users withdraw all their deposit + rewards at once when the pool has finished staking
-        // We need to update the users balance, rewards earned and fees incurred totals, then allow withdrawals
-        if (rocketPoolMini.getStatus() == 4) {
+        // Users withdraw all their deposit + rewards at once when the pool has finished staking 
+        // We need to update the users balance, rewards earned and fees incurred totals
+        if (rocketPoolMini.getStatus() == 4 && rocketPoolMini.getCanUsersWithdraw() == true) {
             // Update the users new balance, rewards earned and fees incurred
             if (userUpdateDepositAndRewards(_miniPoolAddress, _userAddress)) {
                 // Get their updated balance now as they are withdrawing it all
@@ -220,7 +221,7 @@ contract RocketUser is RocketBase {
         return true; 
     }
 
-    /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed, all main checks are done here as this contract is upgradable, but mini pools currently deployed are not 
+    /// @dev Our mini pool has requested to update its users deposit amount and rewards after staking has been completed 
     /// @param _userAddress The address of the mini pool user.
     /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
     function userUpdateDepositAndRewards(address _miniPoolAddress, address _userAddress) private returns (bool) {

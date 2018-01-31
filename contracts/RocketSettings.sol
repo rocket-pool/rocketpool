@@ -18,53 +18,60 @@ contract RocketSettings is RocketBase {
         PreLaunchCountdown,         // 1 - The minimum required for this pool to start staking has been met and the countdown to start staking has started, users can withdraw their deposit if they change their mind during this time but cannot deposit more
         Staking,                    // 2 - The countdown has passed and the pool is now staking, users cannot deposit or withdraw until the minimum staking period has passed for their pool
         LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
-        Withdrawn,                  // 4 - The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
+        Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
         Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
     }
 
 
     /// @dev RocketSettings constructor
     function RocketSettings(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
-
         /*** Version ***/
         version = 1;
-
-        /*** Users ***/
-        setUserDepositAllowed(true);                                                        // Are user deposits currently allowed?
-        setUserDepositMin(1 ether);                                                         // Min required deposit in Wei 
-        setUserDepositMax(75 ether);                                                        // Max allowed deposit in Wei 
-        setUserWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
-        setUserWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
-        setUserWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei          
-
-        /*** Minipools ***/
-        setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
-        setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
-        setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
-        setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-        setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
-        setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
-        setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
-        setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
-        setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
-        setMiniPoolBackupCollectTime(12 weeks);                                             // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-        setMiniPoolNewEnabled(true);                                                        // Minipools allowed to be created?
-        setMiniPoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
-        setMiniPoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
-        setMiniPoolNewGas(4800000);                                                         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-        setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
-
-        /*** RPL and RPD Tokens ***/
-        setTokenRPDWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)
-
-        /*** Smart Nodes ***/                                            
-        setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-        setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
-        setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
-        setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-        
     }
 
+
+    /// @dev Initialise after deployment to not exceed the gas block limit
+    function init() public onlyOwner {
+        // Only set defaults on deployment
+        if (!rocketStorage.getBool(keccak256("settings.init"))) {
+
+             /*** Users ***/
+            setUserDepositAllowed(true);                                                        // Are user deposits currently allowed?
+            setUserDepositMin(1 ether);                                                         // Min required deposit in Wei 
+            setUserDepositMax(75 ether);                                                        // Max allowed deposit in Wei 
+            setUserWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
+            setUserWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
+            setUserWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
+
+            /*** Minipools ***/
+            setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
+            setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
+            setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
+            setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
+            setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
+            setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
+            setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
+            setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
+            setMiniPoolBackupCollectTime(12 weeks);                                             // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+            setMiniPoolNewEnabled(true);                                                        // Minipools allowed to be created?
+            setMiniPoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
+            setMiniPoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
+            setMiniPoolNewGas(4800000);                                                         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
+            setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
+
+            /*** RPL and RPD Tokens ***/
+            setTokenRPDWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)
+
+            /*** Smart Nodes ***/                                            
+            setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
+            setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
+            setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
+            setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+
+            rocketStorage.setBool(keccak256("settings.init"), true);
+        }
+    }
 
 
     /*** Getters *****************/

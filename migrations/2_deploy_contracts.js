@@ -195,11 +195,16 @@ module.exports = async (deployer, network) => {
                               config.web3Utils.soliditySha3('contract.name', 'rocketSettings'),
                               rocketSettings.address
                             );
-
-
                             // Log it
                             console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
                             console.log(rocketSettings.address);
+                            console.log('\n');
+
+                            /*** Initialise **********/
+                            const rocketSettingsInstance = await rocketSettings.deployed();
+                            await rocketSettingsInstance.init();
+
+                            console.log('\x1b[32m%s\x1b[0m', 'Post - Settings Initialised');
 
                             /*** Permissions *********/
                             
@@ -209,7 +214,7 @@ module.exports = async (deployer, network) => {
                               true
                             );
                             // Log it
-                            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Direct Access Removed');
+                            console.log('\x1b[32m%s\x1b[0m', 'Post - Storage Direct Access Removed');
                             // Return
                             return deployer;
                           });
