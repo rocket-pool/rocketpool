@@ -204,7 +204,9 @@ contract RocketUser is RocketBase {
         // The pool has now received its deposit +rewards || -penalties from the Casper contract and users can withdraw
         // Users withdraw all their deposit + rewards at once when the pool has finished staking 
         // We need to update the users balance, rewards earned and fees incurred totals
-        if (rocketPoolMini.getStatus() == 4 && rocketPoolMini.getCanUsersWithdraw() == true) {
+        if (rocketPoolMini.getStatus() == 4) {
+            // Only proceed if the user can withdraw based on the minipool conditions
+            require(rocketPoolMini.getCanUsersWithdraw() == true);
             // Update the users new balance, rewards earned and fees incurred
             if (userUpdateDepositAndRewards(_miniPoolAddress, _userAddress)) {
                 // Get their updated balance now as they are withdrawing it all
