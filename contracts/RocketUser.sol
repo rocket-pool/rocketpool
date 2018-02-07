@@ -7,11 +7,17 @@ import "./RocketDepositToken.sol";
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
+import "./lib/SafeMath.sol";
 
 
 /// @title Rocket Pool Users
 /// @author David Rugendyke
 contract RocketUser is RocketBase {
+
+    /**** Libs *****************/
+    
+    using SafeMath for uint;
+
 
     /**** Properties ************/
 
@@ -70,6 +76,9 @@ contract RocketUser is RocketBase {
         uint256 created
     );
 
+    event FlagUint (
+        uint256 flag
+    );
 
 
     /*** Modifiers *************/
@@ -239,23 +248,20 @@ contract RocketUser is RocketBase {
         int256 userRewardsAmount = 0;
         // If the user has earned rewards by staking, we take our fee from that amount (not the entire deposit)
         uint256 userFeesAmount = 0;
-        // Calculate the % of the stake the user had from their original deposit
-        uint256 userDepositPercInWei = Arithmetic.overflowResistantFraction(userBalance, calcBase, rocketPoolMini.getStakingBalance());
-        // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
-        uint256 userDepositAmountUpdated = Arithmetic.overflowResistantFraction(userDepositPercInWei, rocketPoolMini.getStakingBalanceReceived(), calcBase);
+         // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
+        uint256 userDepositAmountUpdated = rocketPoolMini.getStakingBalanceReceived().mul(userBalance) / rocketPoolMini.getStakingBalance();
         // Calculate how much rewards the user earned
-        userRewardsAmount = int256(userDepositAmountUpdated - userBalance);
+        userRewardsAmount = int256(userDepositAmountUpdated.sub(userBalance));
         // So only process fees if we've received rewards from Casper
         if (userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
-            userFeesAmount = Arithmetic.overflowResistantFraction(rocketSettings.getMiniPoolWithdrawalFeePerc(), uint256(userRewardsAmount), calcBase);
+            userFeesAmount = uint256(userRewardsAmount).mul(rocketSettings.getMiniPoolWithdrawalFeePerc()) / calcBase;
             // The total the user will receive '(deposit + rewards) - fees'
-            userBalanceUpdated = (userDepositAmountUpdated - userFeesAmount);
+            userBalanceUpdated = userDepositAmountUpdated.sub(userFeesAmount);
         } else {
             // Either no rewards have been given, or we've incurred penalites from Casper for some reason (node server failure etc), no fee charged in that case as we've dropped the ball for some reason   
             userBalanceUpdated = userDepositAmountUpdated;
         }
-        
         // Update our users updated balance, rewards calculated and fees incurred 
         if (rocketPoolMini.setUserBalanceRewardsFees(_userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
             return true;
@@ -331,7 +337,7 @@ contract RocketUser is RocketBase {
         // Check the status, must be currently staking to allow tokens to be withdrawn
         require(rocketPoolMini.getStatus() == 2);
         // Take the fee out of the tokens to be sent, need to do it this way incase they are withdrawing their entire balance as tokens
-        uint256 userDepositTokenFeePercInWei = Arithmetic.overflowResistantFraction(rocketSettings.getTokenRPDWithdrawalFeePerc(), _amount, calcBase);
+        uint256 userDepositTokenFeePercInWei = _amount.mul(rocketSettings.getTokenRPDWithdrawalFeePerc()) / calcBase;
         // Take the token withdrawal fee from the ether amount so we can make tokens which match that amount
         uint256 tokenAmount = (_amount - userDepositTokenFeePercInWei);
         // Ok lets mint those tokens now - minus the fee amount

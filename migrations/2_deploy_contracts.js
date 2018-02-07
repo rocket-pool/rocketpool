@@ -18,17 +18,10 @@ const dummyCasper = artifacts.require('./contract/casper/DummyCasper.sol');
 const rocketStorageInterface = artifacts.require('./contracts/interface/RocketStorageInterface.sol');
 const rocketSettingsInterface = artifacts.require('./contracts/interface/RocketSettingsInterface.sol');
 
-// Libs
-const arithmeticLib = artifacts.require('./lib/Arithmetic.sol');
-
 // Accounts
 const accounts = web3.eth.accounts;
 
 module.exports = async (deployer, network) => {
-  // Deploy libraries
-  deployer.deploy(arithmeticLib, rocketSettingsInterface, rocketStorageInterface).then(() => {
-    // Lib Links
-    deployer.link(arithmeticLib, [rocketUser, rocketPoolMiniDelegate, rocketDepositToken]);
     // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
     return deployer.deploy(rocketStorage).then(() => {
       // Deploy casper dummy contract
@@ -229,5 +222,4 @@ module.exports = async (deployer, network) => {
         });
       });
     });
-  });
 };

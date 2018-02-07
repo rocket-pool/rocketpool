@@ -7,7 +7,6 @@ import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
 import "./interface/CasperInterface.sol";
-import "./lib/Arithmetic.sol";
 import "./lib/SafeMath.sol";
 
 
