@@ -26,19 +26,6 @@ contract RocketVault is RocketBase {
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);        // The main settings contract most global parameters are maintained
 
 
-    /*** Enums ***************/
-
-    // Account types that are handled by the RocketVault, their corresponding uint value is commented below
-    enum Accounts { 
-        RPDEther, // 0 - Accepting deposits for the pool, users can deposit multiple times and it will update their balance
-        PreLaunchCountdown,         // 1 - The minimum required for this pool to start staking has been met and the countdown to start staking has started, users can withdraw their deposit if they change their mind during this time but cannot deposit more
-        Staking,                    // 2 - The countdown has passed and the pool is now staking, users cannot deposit or withdraw until the minimum staking period has passed for their pool
-        LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
-        Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
-        Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
-    }
-
-
     /*** Events ****************/
 
     event Deposit (
@@ -150,7 +137,7 @@ contract RocketVault is RocketBase {
         // Check deposits are allowed currently and that the deposit sender is registered to deposit
         require(_amount > 0);
         require(rocketSettings.getVaultDepositAllowed());
-        require(rocketStorage.getBool(keccak256("vault.deposit.allowed", msg.sender)) == true); 
+        require(rocketStorage.getBool(keccak256("vault.account.deposit.allowed", msg.sender)) == true); 
         require(rocketStorage.getAddress(keccak256("vault.account", _account)) != 0x0); 
     }
 
@@ -164,10 +151,10 @@ contract RocketVault is RocketBase {
         require(_amount > 0);
         require(_withdrawalAddress != 0x0);
         require(rocketSettings.getVaultWithdrawalAllowed());
-        require(rocketStorage.getBool(keccak256("vault.withdrawal.allowed", msg.sender)) == true); 
+        require(rocketStorage.getBool(keccak256("vault.account.withdrawal.allowed", msg.sender)) == true); 
         require(rocketStorage.getAddress(keccak256("vault.account", _account)) != 0x0); 
         require(rocketStorage.getUint(keccak256("vault.account.balance", _account)).sub(_amount) >= 0);
     }
-    
+
 
 }
