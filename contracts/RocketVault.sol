@@ -76,13 +76,13 @@ contract RocketVault is RocketBase {
             deposit = _amount;
         }
         // Verify deposit is ok based on the account type and exact values transferred to the vault, throws if not
-        acceptableDeposit(_account, _amount);
+        acceptableDeposit(_account, deposit);
         // Get how many individual deposits in this account we currently have  
         uint256 depositNumber = rocketStorage.getUint(keccak256("vault.account.deposits.total", _account)); 
         // Deposit into the account and keep track of its balance
-        rocketStorage.setUint(keccak256("vault.account.balance", _account), rocketStorage.getUint(keccak256("vault.account.balance", _account)).add(msg.value));
+        rocketStorage.setUint(keccak256("vault.account.balance", _account), rocketStorage.getUint(keccak256("vault.account.balance", _account)).add(deposit));
         // Record the deposit amount
-        rocketStorage.setUint(keccak256("vault.account.deposit.amount", _account, depositNumber), msg.value);
+        rocketStorage.setUint(keccak256("vault.account.deposit.amount", _account, depositNumber), deposit);
         // Record who made the deposit
         rocketStorage.setAddress(keccak256("vault.account.deposit.address", _account, depositNumber), msg.sender);
         // Record the time
@@ -90,7 +90,7 @@ contract RocketVault is RocketBase {
         // Update total deposits made into this account
         rocketStorage.setUint(keccak256("vault.account.deposits.total", _account), depositNumber + 1);
         // Log it
-        Deposit(msg.sender, _account, msg.value, depositNumber, now);
+        Deposit(msg.sender, _account, deposit, depositNumber, now);
         // Return the current deposit number
         return depositNumber;
     }
