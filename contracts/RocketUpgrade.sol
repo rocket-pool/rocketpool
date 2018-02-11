@@ -10,10 +10,19 @@ import "./RocketStorage.sol";
 contract RocketUpgrade is RocketBase {
 
 
+     /*** Events ****************/
+
+    event ContractUpgraded (
+        address indexed _oldContractAddress,                    // Address of the contract being upgraded
+        address indexed _newContractAddress,                    // Address of the new contract
+        uint256 created                                         // Creation timestamp
+    );
+
+
     /*** Constructor ***********/    
 
     /// @dev RocketUpgrade constructor
-    function RocketUpgrade() public {
+    function RocketUpgrade(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -34,5 +43,7 @@ contract RocketUpgrade is RocketBase {
         rocketStorage.setAddress(keccak256("contract.address", _upgradedContractAddress), _upgradedContractAddress);
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
+        // Log it
+        ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
 }

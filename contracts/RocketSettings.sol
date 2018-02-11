@@ -69,6 +69,10 @@ contract RocketSettings is RocketBase {
             setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
             setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
 
+            /*** Vault ***/
+            setVaultDepositAllowed(true);                                                       // Are deposits into the Rocket Vault allowed?
+            setVaultWithdrawalAllowed(true);                                                    // Are withdrawals from the Rocket Vault allowed?
+
             rocketStorage.setBool(keccak256("settings.init"), true);
         }
     }
@@ -231,6 +235,21 @@ contract RocketSettings is RocketBase {
     }
     
 
+    /*** Vault ***/
+
+    /// @dev Deposits allowed?
+    function getVaultDepositAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256("settings.vault.deposit.allowed"));
+    }
+
+    /// @dev Withdrawals allowed?
+    function getVaultWithdrawalAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256("settings.vault.withdrawal.allowed"));
+    }
+
+
+
+
     /*** Setters **********************/
 
     /// @dev Set the current average block time in seconds in the ethereum
@@ -370,6 +389,20 @@ contract RocketSettings is RocketBase {
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function setSmartNodeSetInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.setinactive.duration"), _amount); 
+    }
+
+
+
+    /*** Vault ***/
+
+    /// @dev Deposits allowed?
+    function setVaultDepositAllowed(bool _enable) public onlySuperUser {
+        rocketStorage.setBool(keccak256("settings.vault.deposit.allowed"), _enable);
+    }
+
+    /// @dev Withdrawals allowed?
+    function setVaultWithdrawalAllowed(bool _enable) public onlySuperUser {
+        rocketStorage.setBool(keccak256("settings.vault.withdrawal.allowed"), _enable);
     }
 
 

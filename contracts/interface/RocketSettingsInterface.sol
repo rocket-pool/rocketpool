@@ -56,4 +56,9 @@ contract RocketSettingsInterface {
     function getSmartNodeSetInactiveAutomatic() public view returns (bool);
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function getSmartNodeSetInactiveDuration() public view returns (uint256);
+     /// @dev Deposits allowed?
+    function getVaultDepositAllowed() public view returns (bool);
+    /// @dev Withdrawals allowed?
+    function getVaultWithdrawalAllowed() public view returns (bool);
+
 }

@@ -76,9 +76,6 @@ contract RocketUser is RocketBase {
         uint256 created
     );
 
-    event FlagUint (
-        uint256 flag
-    );
 
 
     /*** Modifiers *************/
@@ -98,10 +95,10 @@ contract RocketUser is RocketBase {
     }
 
     /// @dev User withdrawals must be validated
-    /// @param amount The amount to withdraw
-    modifier acceptableWithdrawal(uint256 amount) {
+    /// @param _amount The amount to withdraw
+    modifier acceptableWithdrawal(uint256 _amount) {
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        require(rocketSettings.getUserWithdrawalAllowed() && amount >= rocketSettings.getUserWithdrawalMin() && amount <= rocketSettings.getUserWithdrawalMax());
+        require(rocketSettings.getUserWithdrawalAllowed() && _amount >= rocketSettings.getUserWithdrawalMin() && _amount <= rocketSettings.getUserWithdrawalMax());
         _;
     }
 

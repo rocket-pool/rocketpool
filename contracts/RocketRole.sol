@@ -10,9 +10,20 @@ contract RocketRole is RocketBase {
 
      /*** Events **************/
 
-    event RoleAdded(string _roleName, address _address);
-    event RoleRemoved(string _roleName, address _address);
-    event OwnershipTransferred(address indexed _previousOwner, address indexed _newOwner);
+    event RoleAdded(
+        string _roleName, 
+        address _address
+    );
+
+    event RoleRemoved(
+        string _roleName, 
+        address _address
+    );
+
+    event OwnershipTransferred(
+        address indexed _previousOwner, 
+        address indexed _newOwner
+    );
 
 
     /*** Modifiers ************/
