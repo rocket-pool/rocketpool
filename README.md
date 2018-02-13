@@ -3,7 +3,7 @@
 *NOTE: The current alpha of Rocket Pool requires the latest [ganache-cli@v6.0.3](https://github.com/trufflesuite/ganache-cli), [truffle@4](https://github.com/trufflesuite/truffle), and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Pool"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Pool"/>
 </p>
 
 ---
@@ -17,7 +17,7 @@ Contracts are written in `solidity` and built with the Ethereum framework `truff
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/darcius/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Pool"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Pool"/>
 </p>
 
 To see Rocket Pool alpha in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
@@ -38,7 +38,7 @@ Contact form: https://www.rocketpool.net/#contact
 
 Twitter: https://twitter.com/Rocket_Pool
 
-Join our Slack channel! http://slack.rocketpool.net
+Join our Discord chat channel! https://discordapp.com/invite/tCRG54c
 
 ---
 
@@ -69,7 +69,7 @@ $ sudo apt-get -y install nodejs
 ```
 get rocketpool:
 ```bash
-$ git clone https://github.com/darcius/rocketpool
+$ git clone https://github.com/rocket-pool/rocketpool
 ```
 open the rocketpool directory:
 ```bash
