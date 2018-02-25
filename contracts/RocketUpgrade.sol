@@ -3,11 +3,17 @@ pragma solidity 0.4.19;
 
 import "./RocketBase.sol";
 import "./RocketStorage.sol";
+import "./interface/ERC20.sol";
 
 
 /// @title Upgrades for Rocket Pool network contracts
 /// @author David Rugendyke
 contract RocketUpgrade is RocketBase {
+
+
+    /*** Contracts **************/
+
+    ERC20 tokenContract = ERC20(0);                             // The address of an ERC20 token contract
 
 
      /*** Events ****************/
@@ -31,17 +37,31 @@ contract RocketUpgrade is RocketBase {
 
     /// @param _name The name of an existing contract in the network
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
-    // TODO: Write unit test to verify
-    function upgradeContract(string _name, address _upgradedContractAddress, bool _force) onlyOwner external {
+    /// @param _forceEther Force the upgrade even if this contract has ether in it
+     /// @param _forceTokens Force the upgrade even if this contract has known tokens in it
+    // TODO: Write unit tests to verify
+    function upgradeContract(string _name, address _upgradedContractAddress, bool _forceEther, bool _forceTokens) onlyOwner external {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
-        // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
-        // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
-        if(oldContractAddress.balance > 0) {
-            require(_force == true);
-        }
         // Check it exists
         require(oldContractAddress != 0x0);
+        // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
+        // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
+        if (oldContractAddress.balance > 0) {
+            require(_forceEther == true);
+        }
+        // Check for any known tokens assigned to this contract, RPL
+        tokenContract = ERC20(rocketStorage.getAddress(keccak256("token.address", "RPL")));
+        // Make sure their balance is 0
+        if (tokenContract.balanceOf(oldContractAddress) > 0) {
+            require(_forceTokens == true);
+        }
+        // Check for any known tokens assigned to this contract, RPD
+        tokenContract = ERC20(rocketStorage.getAddress(keccak256("token.address", "RPD")));
+        // Make sure their balance is 0
+        if (tokenContract.balanceOf(oldContractAddress) > 0) {
+            require(_forceTokens == true);
+        }
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
         rocketStorage.setAddress(keccak256("contract.name", _name), _upgradedContractAddress);
         // Add the new contract address for a direct verification using the address (used in RocketStorage to verify its a legit contract using only the msg.sender)

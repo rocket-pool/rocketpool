@@ -138,7 +138,7 @@ contract RocketVault is RocketBase {
         require(_amount > 0);
         require(rocketSettings.getVaultDepositAllowed());
         require(rocketStorage.getBool(keccak256("vault.account.deposit.allowed", msg.sender)) == true); 
-        require(rocketStorage.getAddress(keccak256("vault.account", _account)) != 0x0); 
+        require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) != 0x0); 
     }
 
     /// @dev User withdrawals must be validated
@@ -152,9 +152,50 @@ contract RocketVault is RocketBase {
         require(_withdrawalAddress != 0x0);
         require(rocketSettings.getVaultWithdrawalAllowed());
         require(rocketStorage.getBool(keccak256("vault.account.withdrawal.allowed", msg.sender)) == true); 
-        require(rocketStorage.getAddress(keccak256("vault.account", _account)) != 0x0); 
+        require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) != 0x0); 
         require(rocketStorage.getUint(keccak256("vault.account.balance", _account)).sub(_amount) >= 0);
     }
+
+
+    /*** Setters **************/
+
+    /// @dev Creates a new vault account that can accept deposits
+    /// @param _account The name of the account to set in RocketVault
+    /// @param _tokenAddress If this account represents a vault for an ERC20 token, this is its contract address
+    function setAccountAdd(string _account, address _tokenAddress) external onlySuperUser {
+        // Check the account name is valid
+        require(bytes(_account).length > 0);
+        // Check it doesn't already exist
+        require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) == 0x0); 
+        // Check the balance is 0
+        require(rocketStorage.getUint(keccak256("vault.account.balance", _account)) == 0);
+        // Ok good to go
+        rocketStorage.setString(keccak256("vault.account", _account), _account); 
+        rocketStorage.setAddress(keccak256("vault.account.owner", _account), msg.sender); 
+        // Are we storing a token address for this account?
+        if (_tokenAddress != 0x0) {
+            rocketStorage.setAddress(keccak256("vault.account.token.address", _account), _tokenAddress); 
+        }
+    }
+
+
+    // @dev Remove a vault account, only the owner of that account can do this
+    /// @param _account The name of the account to remove in RocketVault
+    function setAccountRemove(string _account) external onlySuperUser {
+        // Check the balance is 0
+        require(rocketStorage.getUint(keccak256("vault.account.balance", _account)) == 0);
+        // Check it's the account owner
+        require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) == msg.sender); 
+        // Ok remove now
+        rocketStorage.deleteUint(keccak256("vault.account.balance", _account));
+        rocketStorage.deleteAddress(keccak256("vault.account.owner",  _account));
+        rocketStorage.deleteBool(keccak256("vault.account.deposit.allowed",  _account));
+        rocketStorage.deleteBool(keccak256("vault.account.withdrawal.allowed",  _account));
+        rocketStorage.deleteUint(keccak256("vault.account.deposits.total", _account));
+        rocketStorage.deleteAddress(keccak256("vault.account.token.address",  _account));
+    }
+
+
 
 
 }
