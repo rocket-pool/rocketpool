@@ -51,13 +51,13 @@ contract RocketUpgrade is RocketBase {
             require(_forceEther == true);
         }
         // Check for any known tokens assigned to this contract, RPL
-        tokenContract = ERC20(rocketStorage.getAddress(keccak256("token.address", "RPL")));
+        tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolToken")));
         // Make sure their balance is 0
         if (tokenContract.balanceOf(oldContractAddress) > 0) {
             require(_forceTokens == true);
         }
         // Check for any known tokens assigned to this contract, RPD
-        tokenContract = ERC20(rocketStorage.getAddress(keccak256("token.address", "RPD")));
+        tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken")));
         // Make sure their balance is 0
         if (tokenContract.balanceOf(oldContractAddress) > 0) {
             require(_forceTokens == true);
