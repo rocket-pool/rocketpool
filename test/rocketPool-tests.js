@@ -1,14 +1,9 @@
 const os = require('os');
+import { printTitle, assertThrows, printEvent } from './utils';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper} from './artifacts';
 
-const RocketUser = artifacts.require('./contract/RocketUser');
-const RocketNode = artifacts.require('./contract/RocketNode');
-const RocketPool = artifacts.require('./contract/RocketPool');
-const RocketPoolMini = artifacts.require('./contract/RocketPoolMini');
-const RocketDepositToken = artifacts.require('./contract/RocketDepositToken');
-const RocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI');
-const RocketSettings = artifacts.require('./contract/RocketSettings');
-const RocketStorage = artifacts.require('./contract/RocketStorage');
-const Casper = artifacts.require('./contract/Casper/DummyCasper');
+// Import modular tests
+import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 
 const displayEvents = false;
 
@@ -21,17 +16,6 @@ if (displayEvents) {
         toBlock: 'latest',
       })
       .watch((error, result) => {
-        // Print the event to console
-        const printEvent = (type, result, colour) => {
-          console.log('\n');
-          console.log(
-            colour,
-            '*** ' + type.toUpperCase() + ' EVENT: ' + result.event + ' *******************************'
-          );
-          console.log('\n');
-          console.log(result.args);
-          console.log('\n');
-        };
         // This will catch all events, regardless of how they originated.
         if (error == null) {
           // Print the event
@@ -57,20 +41,6 @@ if (displayEvents) {
       });
   });
 }
-
-// Print nice titles for each unit test
-const printTitle = (user, desc) => {
-  return '\x1b[33m' + user + '\033[00m: \033[01;34m' + desc;
-};
-
-const assertThrows = async (promise, err) => {
-  try {
-    await promise;
-    assert.isNotOk(true, err);
-  } catch (e) {
-    assert.include(e.message, 'VM Exception');
-  }
-};
 
 // Start the tests
 contract('RocketPool', accounts => {
@@ -136,6 +106,7 @@ contract('RocketPool', accounts => {
   let rocketDeposit;
   let rocketPool;
   let rocketPartnerAPI;
+  let rocketVault;
   let casper;
 
   beforeEach(async () => {
@@ -146,6 +117,7 @@ contract('RocketPool', accounts => {
     rocketDeposit = await RocketDepositToken.deployed();
     rocketPool = await RocketPool.deployed();
     rocketPartnerAPI = await RocketPartnerAPI.deployed();
+    rocketVault = await RocketVault.deployed();
     casper = await Casper.deployed();
   });
 
@@ -1277,4 +1249,10 @@ contract('RocketPool', accounts => {
     });
     await assertThrows(result);
   });
+
+  rocketVaultAdminTests({
+      owner: owner,
+      accounts: accounts
+    });
+
 });

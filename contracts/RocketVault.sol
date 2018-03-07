@@ -59,7 +59,7 @@ contract RocketVault is RocketBase {
     /*** Constructor ***********/    
 
     /// @dev RocketVault constructor
-    function RocketVault() public {
+    function RocketVault(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -193,12 +193,23 @@ contract RocketVault is RocketBase {
         }
     }
 
+    // @dev Returns whether an account's deposits are enabled (true) or disabled (false)
+    // @param _account The name of the account to test whether deposits are enabled or disabled
+    function getAccountDepositsEnabled(string _account) external view returns(bool) {
+        return rocketStorage.getBool(keccak256("vault.account.deposit.enabled", _account));
+    }
 
     // @dev Disable/Enable a vault accounts deposits, only the owner of that account or top level owner can do this
     /// @param _account The name of the account to disable/enable deposits for in RocketVault
     function setAccountDepositsEnabled(string _account, bool _option) onlyAccountOwner(_account) external {
         // Ok set the option now
         rocketStorage.setBool(keccak256("vault.account.deposit.enabled", _account), _option);
+    }
+
+    // @dev Returns whether an account's withdrawals are enabled (true) or disabled (false)
+    // @param _account The name of the account to test whether withdrawals are enabled or disabled
+    function getAccountWithdrawalsEnabled(string _account) external view returns(bool) {
+        return rocketStorage.getBool(keccak256("vault.account.withdrawal.enabled", _account));
     }
 
     // @dev Disable/Enable a vault accounts withdrawals, only the owner of that account or top level owner can do this

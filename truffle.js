@@ -7,6 +7,19 @@
 
 const Web3Utils = require('web3-utils');
 
+// Importing babel to be able to use ES6 imports
+require("babel-register")({
+  presets: [
+    ["env", {
+      "targets" : {
+        "node" : "8.0"
+      }
+    }]
+  ],
+  retainLines: true,
+});
+require("babel-polyfill");
+
 module.exports = {
   web3Utils: Web3Utils,
   networks: {
