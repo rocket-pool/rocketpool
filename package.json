@@ -8,7 +8,7 @@
     "console": "truffle console",
     "compile": "truffle compile",
     "migrate": "truffle migrate",
-    "test": "scripts/test.sh test/rocketPool.js",
+    "test": "scripts/test.sh test/rocketPool-tests.js",
     "format": "prettier --write '**/*.js'"
   },
   "devDependencies": {
