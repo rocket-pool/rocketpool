@@ -101,11 +101,11 @@ module.exports = async (deployer, network) => {
                                 );
                                 await rocketStorageInstance.setAddress(
                                   config.web3.utils.soliditySha3('contract.name', 'rocketRole'),
-                                  rocketUser.address
+                                  rocketRole.address
                                 );
                                 // Log it
-                                console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketUser Address');
-                                console.log(rocketUser.address);
+                                console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketRole Address');
+                                console.log(rocketRole.address);
 
                                 // Rocket User
                                 await rocketStorageInstance.setAddress(
