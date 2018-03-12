@@ -5,8 +5,6 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 
 // Import modular tests
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
-// The newer version of Web3 is used for hashing, the old one that comes with truffle does it incorrectly. Waiting for them to upgrade truffles web3.
-const web3New = require('web3');
 
 const displayEvents = false;
 
