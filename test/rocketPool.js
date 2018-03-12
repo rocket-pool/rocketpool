@@ -1078,14 +1078,11 @@ contract('RocketPool', accounts => {
       // Get the balance, should be 0 as the Ether has been sent to Casper for staking
       const miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirst.address).valueOf();
 
-      // Status = 4? Received deposit from casper + rewards
-      const miniPoolStatusSecond = await miniPoolSecond.getStatus.call().valueOf();
-      // Get the balance, should be 0 as the Ether has been sent to Casper for staking
+      // Second minipool should have closed and it's balance is 0 as all users have withdrawn ether as RPD tokens
       const miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecond.address).valueOf();
 
       assert.equal(miniPoolStatusFirst, 4, 'Invalid first minipool status');
       assert.isTrue(miniPoolBalanceFirst > 0, 'Invalid first minipool balance');
-      assert.equal(miniPoolStatusSecond, 0, 'Invalid second minipool status');
       assert.equal(miniPoolBalanceSecond, 0, 'Invalid second minipool balance');
     }
   );
