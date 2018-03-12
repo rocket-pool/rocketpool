@@ -140,11 +140,8 @@ contract RocketPool is RocketBase {
                 poolAssignToAddress = poolsFound[0];
             }
         }  
-          
-
         // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
         assert(poolAssignToAddress != 0);
-        
         // Get the contract instance
         poolAddUserTo = getPoolInstance(poolAssignToAddress);
         // Double check the pools status is accepting deposits and user isn't in there already
@@ -182,10 +179,10 @@ contract RocketPool is RocketBase {
                 if (pool.getNodeAddress() == 0 && pool.getCanDeposit() == true) {
                     // Get a node for this pool to be assigned too
                     address nodeAddress = rocketNode.getNodeAvailableForPool();
-                    // That node must exist
-                    require(nodeAddress != 0x0);
                     // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
-                    pool.setNodeDetails(nodeAddress);
+                    pool.setNodeOwner(nodeAddress); 
+                    // Set this nodes validation code for the minipool to use
+                    pool.setNodeValCodeAddress(rocketNode.getNodeValCodeAddress(nodeAddress)); 
                     // Fire the event
                     PoolAssignedToNode(nodeAddress, poolsFound[i], now);
                     // Now set the pool to begin staking with casper by updating its status with the newly assigned node
@@ -229,7 +226,6 @@ contract RocketPool is RocketBase {
                 }
             }
         }
-
 
     } 
 
@@ -282,6 +278,12 @@ contract RocketPool is RocketBase {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
     }
 
+    /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
+    /// @param _nodeAddress Get pools with the current node
+    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress) public view returns(uint256) {
+        return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
+    }
+
     /// @dev Get all pools that match this user belongs too (explicit method)
     /// @param _userAddress Get pools with the current user
     function getPoolsFilterWithUser(address _userAddress) public view returns(address[] memory) {
@@ -319,7 +321,7 @@ contract RocketPool is RocketBase {
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
             // Check the pool meets any supplied filters
-            if ((_status < 10 && pool.getStatus() == _status && _stakingDuration == 0) ||
+            if ((_status < 10 && pool.getStatus() == _status && _stakingDuration == 0) || 
                (_status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
                (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
                (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 

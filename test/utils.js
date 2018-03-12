@@ -25,3 +25,8 @@ export function printEvent (type, result, colour) {
   console.log(result.args);
   console.log('\n');
 };
+
+const web3New = require('web3');
+export function soliditySha3(value){
+    return web3New.utils.soliditySha3(value);
+}

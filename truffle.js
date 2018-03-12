@@ -5,7 +5,7 @@
   @version 0.1 
 */
 
-const Web3Utils = require('web3-utils');
+const Web3 = require('web3');
 
 // Importing babel to be able to use ES6 imports
 require("babel-register")({
@@ -21,7 +21,7 @@ require("babel-register")({
 require("babel-polyfill");
 
 module.exports = {
-  web3Utils: Web3Utils,
+  web3: Web3,
   networks: {
     development: {
       host: 'localhost',

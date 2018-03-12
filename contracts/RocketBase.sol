@@ -61,11 +61,13 @@ contract RocketBase {
     }
 
 
+    /*** Role Utilities */
+
     /**
     * @dev Check if an address has this role
     * @return bool
     */
-    function roleHas(string _role, address _address) view internal returns (bool) {
+    function roleHas(string _role, address _address) internal view returns (bool) {
         return rocketStorage.getBool(keccak256("access.role", _role, _address));
     }
 
@@ -76,5 +78,6 @@ contract RocketBase {
         require(roleHas(_role, _address) == true);
     }
 
+    
     
 }

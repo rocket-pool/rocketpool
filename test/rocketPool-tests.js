@@ -1,9 +1,12 @@
+// OS methods
 const os = require('os');
-import { printTitle, assertThrows, printEvent } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper} from './artifacts';
+import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper, CasperValidation} from './artifacts';
 
 // Import modular tests
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
+// The newer version of Web3 is used for hashing, the old one that comes with truffle does it incorrectly. Waiting for them to upgrade truffles web3.
+const web3New = require('web3');
 
 const displayEvents = false;
 
@@ -63,11 +66,17 @@ contract('RocketPool', accounts => {
 
   // Node accounts and gas settings
   const nodeFirst = accounts[8];
-  const nodeFirstOracleID = 'aws';
+  const nodeFirstProviderID = 'aws';
+  const nodeFirstSubnetID = 'nvirginia';
   const nodeFirstInstanceID = 'i-1234567890abcdef5';
+  const nodeFirstRegionID = 'usa-east';
+  let nodeFirstValCodeAddress = 0;
   const nodeSecond = accounts[9];
-  const nodeSecondOracleID = 'rackspace';
+  const nodeSecondProviderID = 'rackspace';
+  const nodeSecondSubnetID = 'ohio';
   const nodeSecondInstanceID = '4325';
+  const nodeSecondRegionID = 'usa-east';
+  let nodeSecondValCodeAddress = 0;
   const nodeRegisterGas = 1600000;
   const nodeCheckinGas = 950000;
 
@@ -158,27 +167,49 @@ contract('RocketPool', accounts => {
     }
   );
 
-
-  // Try to register a node as a non rocket pool owner
-  it(printTitle('non owner', 'fail to register a node'), async () => {
-    const result = rocketNode.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, {
-      from: userFirst,
-      gas: nodeRegisterGas,
-    });
-    await assertThrows(result);
+  // Register validation contract address for node
+  it(printTitle('nodeFirst', 'create validation contract and set address'), async () => {
+    // Creates a blank contract for use in making validation address contracts
+    // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
+    const nodeFirstValCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: nodeFirst});    
+    nodeFirstValCodeAddress = nodeFirstValCodeContract.address;
+    assert.notEqual(nodeFirstValCodeAddress, 0, 'Validation contract creation failed');
   });
 
-  // Register 2 nodes
-  it(printTitle('owner', 'register 2 nodes'), async () => {
-    await rocketNode.nodeAdd(nodeFirst, nodeFirstOracleID, nodeFirstInstanceID, { from: owner, gas: nodeRegisterGas });
-    await rocketNode.nodeAdd(nodeSecond, nodeSecondOracleID, nodeSecondInstanceID, {
-      from: owner,
-      gas: nodeRegisterGas,
-    });
+   // Register test node
+  it(printTitle('owner', 'register first node and verify it\'s signature and validation contract are correct'), async () => {
+    // Sign the message for the nodeAdd function to prove ownership of the address being registered
+    let signature =  web3.eth.sign(nodeFirst, soliditySha3(nodeFirstValCodeAddress));
+    await rocketNode.nodeAdd(nodeFirst, nodeFirstProviderID, nodeFirstSubnetID, nodeFirstInstanceID, nodeFirstRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
+    const result = await rocketNode.getNodeCount.call().valueOf();
+    assert.equal(result, 1, 'Invalid number of nodes registered');
+  });
+
+  // Try to register a node with a wrong validation address
+  it(printTitle('owner', 'fail to register a node with a validation contract that does not match'), async () => {
+     // Sign the message for the nodeAdd function to prove ownership of the address being registered
+     let signature = web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
+     const result = rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
+     await assertThrows(result);
+  });
+
+  // Register validation contract address for node
+  it(printTitle('nodeSecond', 'create validation contract and set address'), async () => {
+    // Creates a blank contract for use in making validation address contracts
+    // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
+    const nodeSecondValCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: nodeSecond});    
+    nodeSecondValCodeAddress = nodeSecondValCodeContract.address;
+    assert.notEqual(nodeSecondValCodeAddress, 0, 'Validation contract creation failed');
+  });
+
+   // Register test node
+  it(printTitle('owner', 'register second node and verify it\'s signature and validation contract are correct'), async () => {
+    // Sign the message for the nodeAdd function to prove ownership of the address being registered
+    let signature =  web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
+    await rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeSecondValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
     const result = await rocketNode.getNodeCount.call().valueOf();
     assert.equal(result, 2, 'Invalid number of nodes registered');
   });
-
 
   // Try to register a new partner as a non rocket pool owner
   it(printTitle('non owner', 'fail to register a partner'), async () => {

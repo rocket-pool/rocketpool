@@ -21,7 +21,7 @@ export default function({owner, accounts}){
         });
 
         // As an owner I must be able to add a token account to the vault.
-        it(printTitle("owner", "can add a token account to the vault"), async () => { 
+       it(printTitle("owner", "can add a token account to the vault"), async () => { 
             await scenarioAddAccount({
                 accountName: "owner.token",
                 ownerAddress: owner,
@@ -30,7 +30,7 @@ export default function({owner, accounts}){
         });
 
         // As an owner I must not be able to add an account without a name.
-        it(printTitle("owner", "cannot add an account without a name"), async () => {
+       it(printTitle("owner", "cannot add an account without a name"), async () => {
             let promise = scenarioAddAccount({
                 accountName: "", // empty account name is invalid
                 ownerAddress: owner
@@ -39,7 +39,7 @@ export default function({owner, accounts}){
         });
 
         // As an owner I must not be able to add an account that already exists.
-        it(printTitle("owner", "cannot add an account that already exists"), async () => {
+       it(printTitle("owner", "cannot add an account that already exists"), async () => {
             const existingAccountName = "owner.alreadyExists";
 
             // add an account with a specific name
@@ -55,7 +55,7 @@ export default function({owner, accounts}){
             await assertThrows(promise);
         });
 
-        it(printTitle("owner", "can disable/enable account deposits"), async () => {
+       it(printTitle("owner", "can disable/enable account deposits"), async () => {
             // create an admin to become owner of the account            
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
@@ -72,7 +72,7 @@ export default function({owner, accounts}){
             });
         });
 
-        it(printTitle("owner", "can disable/enable account withdrawals"), async () => {
+       it(printTitle("owner", "can disable/enable account withdrawals"), async () => {
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
@@ -89,7 +89,7 @@ export default function({owner, accounts}){
         });
 
         // As an admin I must be able to add a non-token account to the vault.
-        it(printTitle("admin", "can add a non-token account to the vault"), async () => {
+       it(printTitle("admin", "can add a non-token account to the vault"), async () => {
             const rocketRole = await RocketRole.deployed();
             const adminAddress = accounts[1];
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
@@ -102,7 +102,7 @@ export default function({owner, accounts}){
         });
 
          // As an admin I must be able to add a token account to the vault.
-         it(printTitle("admin", "can add a token account to the vault"), async () => {
+        it(printTitle("admin", "can add a token account to the vault"), async () => {
             const rocketRole = await RocketRole.deployed();
             const adminAddress = accounts[1];
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
@@ -115,7 +115,7 @@ export default function({owner, accounts}){
         });
 
         // As an admin I must not be able to add an account without a name.
-        it(printTitle("admin", "cannot add an account without a name"), async () => {
+       it(printTitle("admin", "cannot add an account without a name"), async () => {
             const rocketRole = await RocketRole.deployed();
             const adminAddress = accounts[1];
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
@@ -128,7 +128,7 @@ export default function({owner, accounts}){
         });
 
         // As an admin I must not be able to add an account that already exists.
-        it(printTitle("admin", "cannot add an account that already exists"), async () => {
+       it(printTitle("admin", "cannot add an account that already exists"), async () => {
             const rocketRole = await RocketRole.deployed();
             const adminAddress = accounts[1];
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
@@ -148,7 +148,7 @@ export default function({owner, accounts}){
         });
 
         // As an account owner I must be able to enable/disable account deposits
-        it(printTitle("account owner", "can disable/enable account deposits"), async () => {
+       it(printTitle("account owner", "can disable/enable account deposits"), async () => {
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
@@ -168,7 +168,7 @@ export default function({owner, accounts}){
         });
 
         // As an account owner I must be able to enable/disable account withdrawals
-        it(printTitle("account owner", "can disable/enable account withdrawals"), async () => {
+       it(printTitle("account owner", "can disable/enable account withdrawals"), async () => {
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
@@ -188,7 +188,7 @@ export default function({owner, accounts}){
         });
 
         // As a random account I must not be able to add an account to the vault
-        it(printTitle("random account", "cannot add an account to the vault"), async () => {
+       it(printTitle("random account", "cannot add an account to the vault"), async () => {
             let randomAccount = accounts[2];
             let promise = scenarioAddAccount({
                 accountName: "random.nontoken",
@@ -201,7 +201,7 @@ export default function({owner, accounts}){
         });
 
         // As a random account I must not be able to add a token account to the vault
-        it(printTitle("random account", "cannot add a token account to the vault"), async () => {
+       it(printTitle("random account", "cannot add a token account to the vault"), async () => {
             let randomAccount = accounts[2];
             let promise = scenarioAddAccount({
                 accountName: "random.token",
@@ -214,7 +214,7 @@ export default function({owner, accounts}){
         });
 
         // As a random account I cannot enable/disable account deposits
-        it(printTitle("random account", "cannot disable/enable account deposits"), async () => {            
+       it(printTitle("random account", "cannot disable/enable account deposits"), async () => {            
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
@@ -235,7 +235,7 @@ export default function({owner, accounts}){
         });
 
         // As a random account I cannot enable/disable account withdrawals
-        it(printTitle("random account", "cannot disable/enable account withdrawals"), async () => {            
+       it(printTitle("random account", "cannot disable/enable account withdrawals"), async () => {            
             const rocketRole = await RocketRole.deployed();
             const accountOwner = accounts[1];
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
