@@ -1,21 +1,12 @@
 // OS methods
 const os = require('os');
-// The newer version of Web3 is used for hashing, the old one that comes with truffle does it incorrectly. Waiting for them to upgrade truffles web3.
-const web3New = require('web3');
+import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper, CasperValidation} from './artifacts';
 
-const RocketUser = artifacts.require('./contract/RocketUser');
-const RocketNode = artifacts.require('./contract/RocketNode');
-const RocketPool = artifacts.require('./contract/RocketPool');
-const RocketPoolMini = artifacts.require('./contract/RocketPoolMini');
-const RocketDepositToken = artifacts.require('./contract/RocketDepositToken');
-const RocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI');
-const RocketSettings = artifacts.require('./contract/RocketSettings');
-const RocketStorage = artifacts.require('./contract/RocketStorage');
-const Casper = artifacts.require('./contract/Casper/DummyCasper');
-const CasperValidation = artifacts.require('./contract/Casper/Validation');
+// Import modular tests
+import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 
 const displayEvents = false;
-
 
 // Display events triggered during the tests
 if (displayEvents) {
@@ -26,17 +17,6 @@ if (displayEvents) {
         toBlock: 'latest',
       })
       .watch((error, result) => {
-        // Print the event to console
-        const printEvent = (type, result, colour) => {
-          console.log('\n');
-          console.log(
-            colour,
-            '*** ' + type.toUpperCase() + ' EVENT: ' + result.event + ' *******************************'
-          );
-          console.log('\n');
-          console.log(result.args);
-          console.log('\n');
-        };
         // This will catch all events, regardless of how they originated.
         if (error == null) {
           // Print the event
@@ -62,22 +42,6 @@ if (displayEvents) {
       });
   });
 }
-
-// Print nice titles for each unit test
-const printTitle = (user, desc) => {
-  return '\x1b[33m' + user + '\033[00m: \033[01;34m' + desc;
-};
-
-const assertThrows = async (promise, err) => {
-  try {
-    await promise;
-    assert.isNotOk(true, err);
-  } catch (e) {
-    assert.include(e.message, 'VM Exception');
-  }
-};
-
-
 
 // Start the tests
 contract('RocketPool', accounts => {
@@ -149,6 +113,7 @@ contract('RocketPool', accounts => {
   let rocketDeposit;
   let rocketPool;
   let rocketPartnerAPI;
+  let rocketVault;
   let casper;
 
   beforeEach(async () => {
@@ -159,6 +124,7 @@ contract('RocketPool', accounts => {
     rocketDeposit = await RocketDepositToken.deployed();
     rocketPool = await RocketPool.deployed();
     rocketPartnerAPI = await RocketPartnerAPI.deployed();
+    rocketVault = await RocketVault.deployed();
     casper = await Casper.deployed();
   });
 
@@ -211,7 +177,7 @@ contract('RocketPool', accounts => {
    // Register test node
   it(printTitle('owner', 'register first node and verify it\'s signature and validation contract are correct'), async () => {
     // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeFirst, web3New.utils.soliditySha3(nodeFirstValCodeAddress));
+    let signature =  web3.eth.sign(nodeFirst, soliditySha3(nodeFirstValCodeAddress));
     await rocketNode.nodeAdd(nodeFirst, nodeFirstProviderID, nodeFirstSubnetID, nodeFirstInstanceID, nodeFirstRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
     const result = await rocketNode.getNodeCount.call().valueOf();
     assert.equal(result, 1, 'Invalid number of nodes registered');
@@ -220,7 +186,7 @@ contract('RocketPool', accounts => {
   // Try to register a node with a wrong validation address
   it(printTitle('owner', 'fail to register a node with a validation contract that does not match'), async () => {
      // Sign the message for the nodeAdd function to prove ownership of the address being registered
-     let signature = web3.eth.sign(nodeSecond, web3New.utils.soliditySha3(nodeSecondValCodeAddress));
+     let signature = web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
      const result = rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
      await assertThrows(result);
   });
@@ -237,7 +203,7 @@ contract('RocketPool', accounts => {
    // Register test node
   it(printTitle('owner', 'register second node and verify it\'s signature and validation contract are correct'), async () => {
     // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeSecond, web3New.utils.soliditySha3(nodeSecondValCodeAddress));
+    let signature =  web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
     await rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeSecondValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
     const result = await rocketNode.getNodeCount.call().valueOf();
     assert.equal(result, 2, 'Invalid number of nodes registered');
@@ -1309,4 +1275,10 @@ contract('RocketPool', accounts => {
     });
     await assertThrows(result);
   });
+
+  rocketVaultAdminTests({
+      owner: owner,
+      accounts: accounts
+    });
+
 });
