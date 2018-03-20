@@ -7,6 +7,6 @@ export async function scenarioUpgradeContract({contractName, upgradedContractAdd
 	const rocketUpgrade = await RocketUpgrade.deployed();
 
 	// Upgrade a contract
-	rocketUpgrade.upgradeContract(contractName, upgradedContractAddress, forceEther, forceTokens, {from: fromAddress});
+	await rocketUpgrade.upgradeContract(contractName, upgradedContractAddress, forceEther, forceTokens, {from: fromAddress});
 
 };

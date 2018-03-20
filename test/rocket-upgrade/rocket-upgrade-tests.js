@@ -32,8 +32,6 @@ export default function({owner, accounts}) {
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketRole.address,
-                forceEther: false,
-                forceTokens: false,
                 fromAddress: owner,
             });
             
@@ -42,6 +40,19 @@ export default function({owner, accounts}) {
 
             // Assert contract address has been updated
             assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'regular contract was not upgraded');
+
+        });
+
+
+        // Non-owner cannot upgrade a regular contract
+        it(printTitle('non owner', 'cannot upgrade a regular contract'), async () => {
+
+            // Upgrade rocketUser contract to rocketRole contract address
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketRole.address,
+                fromAddress: accounts[1],
+            }), 'regular contract was upgraded');
 
         });
 
