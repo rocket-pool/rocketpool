@@ -44,6 +44,19 @@ export default function({owner, accounts}) {
         });
 
 
+        // Owner cannot upgrade a regular contract that does not exist
+        it(printTitle('owner', 'cannot upgrade a nonexistent contract'), async () => {
+
+            // Upgrade nonexistent contract to rocketRole contract address
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'nonexistentContract',
+                upgradedContractAddress: rocketRole.address,
+                fromAddress: owner,
+            }), 'nonexistent contract was upgraded');
+
+        });
+
+
         // Non-owner cannot upgrade a regular contract
         it(printTitle('non owner', 'cannot upgrade a regular contract'), async () => {
 
