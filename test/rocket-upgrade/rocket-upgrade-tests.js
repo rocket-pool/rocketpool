@@ -1,8 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketUpgrade, RocketStorage, RocketUser, RocketRole, RocketPool } from '../artifacts';
+import { RocketStorage, RocketDepositToken, RocketUser, RocketRole } from '../artifacts';
 import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
-
-const Web3 = require('web3');
 
 export default function({owner, accounts}) {
 
@@ -10,17 +8,15 @@ export default function({owner, accounts}) {
 
 
         // Contract dependencies
-        let rocketUpgrade;
         let rocketStorage;
-        let rocketUserOriginal;
-        let rocketUserNew1;
-        let rocketUserNew2;
+        let rocketDepositToken;
+        let rocketUser;
+        let rocketRole;
         before(async () => {
-            rocketUpgrade = await RocketUpgrade.deployed();
             rocketStorage = await RocketStorage.deployed();
-            rocketUserOriginal = await RocketUser.deployed();
-            rocketUserNew1 = await RocketRole.deployed();
-            rocketUserNew2 = await RocketPool.deployed();
+            rocketDepositToken = await RocketDepositToken.deployed();
+            rocketUser = await RocketUser.deployed();
+            rocketRole = await RocketRole.deployed();
         });
 
 
@@ -30,15 +26,22 @@ export default function({owner, accounts}) {
             // Old rocketUser contract address
             let rocketUserAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
 
-            // Upgrade rocketUser contract to rocketRole contract address
+            // Upgrade rocketUser contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew1.address,
+                upgradedContractAddress: rocketRole.address,
                 fromAddress: owner,
             });
             
             // New rocketUser contract address
             let rocketUserAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
+
+            // Reset rocketUser contract address
+            await scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketUser.address,
+                fromAddress: owner,
+            });
 
             // Assert contract address has been updated
             assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'regular contract was not upgraded');
@@ -49,10 +52,10 @@ export default function({owner, accounts}) {
         // Cannot upgrade a regular contract that does not exist
         it(printTitle('owner', 'cannot upgrade a nonexistent contract'), async () => {
 
-            // Upgrade nonexistent contract to rocketRole contract address
+            // Upgrade nonexistent contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'nonexistentContract',
-                upgradedContractAddress: rocketUserNew2.address,
+                upgradedContractAddress: rocketRole.address,
                 fromAddress: owner,
             }), 'nonexistent contract was upgraded');
 
@@ -65,9 +68,29 @@ export default function({owner, accounts}) {
             // Upgrade rocketUser contract to its own address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew1.address,
+                upgradedContractAddress: rocketUser.address,
                 fromAddress: owner,
             }), 'contract was upgraded to its current address');
+
+        });
+
+
+        // Cannot upgrade a regular contract with an ether balance
+        it(printTitle('owner', 'cannot upgrade a contract with an ether balance'), async () => {
+
+            // Send ether to rocketDepositToken contract
+            let tx = await web3.eth.sendTransaction({
+                from: accounts[1],
+                to: rocketDepositToken.address,
+                value: web3.toWei('1', 'ether'),
+            });
+
+            // Upgrade rocketDepositToken contract address
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketDepositToken',
+                upgradedContractAddress: rocketRole.address,
+                fromAddress: owner,
+            }), 'contract with an ether balance was upgraded');
 
         });
 
@@ -75,10 +98,10 @@ export default function({owner, accounts}) {
         // Non-owner cannot upgrade a regular contract
         it(printTitle('non owner', 'cannot upgrade a regular contract'), async () => {
 
-            // Upgrade rocketUser contract to rocketRole contract address
+            // Upgrade rocketUser contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew2.address,
+                upgradedContractAddress: rocketRole.address,
                 fromAddress: accounts[1],
             }), 'regular contract was upgraded by non owner');
 
