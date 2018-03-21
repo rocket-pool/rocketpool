@@ -87,6 +87,9 @@ export default function({owner, accounts}) {
                 value: web3.toWei('1', 'ether'),
             });
 
+            // Check rocketDepositToken contract ether balance
+            assert.notEqual(web3.eth.getBalance(rocketDepositToken.address).valueOf(), 0, 'contract does not have an ether balance');
+
             // Upgrade rocketDepositToken contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
@@ -99,6 +102,9 @@ export default function({owner, accounts}) {
 
         // Can upgrade a regular contract with an ether balance by force
         it(printTitle('owner', 'can upgrade a contract with an ether balance by force'), async () => {
+
+            // Check rocketDepositToken contract ether balance
+            assert.notEqual(web3.eth.getBalance(rocketDepositToken.address).valueOf(), 0, 'contract does not have an ether balance');
 
             // Old rocketDepositToken contract address
             let rocketDepositTokenAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken'));
@@ -132,11 +138,15 @@ export default function({owner, accounts}) {
 
             // Account at index 3 has an RPD balance
             let rpdFromAccount = accounts[3];
-            let rpdBalance = await rocketDepositToken.balanceOf(rpdFromAccount);
+            let rpdFromBalance = await rocketDepositToken.balanceOf(rpdFromAccount);
 
             // Send 50% of RPD to rocketUser contract
-            let rpdSendAmount = parseInt(rpdBalance.valueOf() / 2);
+            let rpdSendAmount = parseInt(rpdFromBalance.valueOf() / 2);
             await rocketDepositToken.transfer(rocketUser.address, rpdSendAmount, {from: rpdFromAccount});
+
+            // Check rocketUser contract RPD balance
+            let rocketUserRpdBalance = await rocketDepositToken.balanceOf(rocketUser.address);
+            assert.notEqual(rocketUserRpdBalance.valueOf(), 0, 'contract does not have an RPD balance');
 
             // Upgrade rocketUser contract address
             await assertThrows(scenarioUpgradeContract({
@@ -144,6 +154,40 @@ export default function({owner, accounts}) {
                 upgradedContractAddress: rocketUserNew.address,
                 fromAddress: owner,
             }), 'contract with an RPD balance was upgraded');
+
+        });
+
+
+        // Can upgrade a regular contract with an RPD balance by force
+        it(printTitle('owner', 'can upgrade a contract with an RPD balance by force'), async () => {
+
+            // Check rocketUser contract RPD balance
+            let rocketUserRpdBalance = await rocketDepositToken.balanceOf(rocketUser.address);
+            assert.notEqual(rocketUserRpdBalance.valueOf(), 0, 'contract does not have an RPD balance');
+
+            // Old rocketUser contract address
+            let rocketUserAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
+
+            // Upgrade rocketUser contract address
+            await scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketUserNew.address,
+                fromAddress: owner,
+                forceTokens: true,
+            });
+
+            // New rocketUser contract address
+            let rocketUserAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
+
+            // Reset rocketUser contract address
+            await scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketUser.address,
+                fromAddress: owner,
+            });
+
+            // Assert contract address has been updated
+            assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'contract with an RPD balance was not upgraded by force');
 
         });
 
