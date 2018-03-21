@@ -121,7 +121,7 @@ contract RocketVault is RocketBase {
         rocketStorage.setAddress(keccak256("vault.account.withdrawal.address", _account, withdrawalNumber), msg.sender);
         // Record the time
         rocketStorage.setUint(keccak256("vault.account.withdrawal.time", _account, withdrawalNumber), now);
-        // Update total deposits made into this account
+        // Update total withdrawals made from this account
         rocketStorage.setUint(keccak256("vault.account.withdrawal.total", _account), withdrawalNumber + 1);
         // Are we transferring ether or tokens?
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
