@@ -95,6 +95,38 @@ export default function({owner, accounts}) {
         });
 
 
+        // Can upgrade a regular contract with an ether balance by force
+        it(printTitle('owner', 'can upgrade a contract with an ether balance by force'), async () => {
+
+            // Old rocketDepositToken contract address
+            let rocketDepositTokenAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken'));
+
+            // Upgrade rocketDepositToken contract address
+            await scenarioUpgradeContract({
+                contractName: 'rocketDepositToken',
+                upgradedContractAddress: rocketRole.address,
+                fromAddress: owner,
+                forceEther: true,
+            });
+
+            // New rocketDepositToken contract address
+            let rocketDepositTokenAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken'));
+
+            // Reset rocketDepositToken contract address
+            await scenarioUpgradeContract({
+                contractName: 'rocketDepositToken',
+                upgradedContractAddress: rocketDepositToken.address,
+                fromAddress: owner,
+                forceEther: true,
+                forceTokens: true,
+            });
+
+            // Assert contract address has been updated
+            assert.notEqual(rocketDepositTokenAddressOld, rocketDepositTokenAddressNew, 'contract with an ether balance was not upgraded by force');
+
+        });
+
+
         // Non-owner cannot upgrade a regular contract
         it(printTitle('non owner', 'cannot upgrade a regular contract'), async () => {
 
