@@ -181,7 +181,6 @@ contract RocketVault is RocketBase {
         require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) == 0x0); 
         // Check the balance is 0
         require(rocketStorage.getUint(keccak256("vault.account.balance", _account)) == 0);
-        // Check there has been
         // Ok good to go
         rocketStorage.setString(keccak256("vault.account", _account), _account); 
         rocketStorage.setAddress(keccak256("vault.account.owner", _account), msg.sender); 
