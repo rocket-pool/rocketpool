@@ -45,6 +45,8 @@ contract RocketUpgrade is RocketBase {
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
         // Check it exists
         require(oldContractAddress != 0x0);
+        // Check it is not the contract's current address
+        require(oldContractAddress != _upgradedContractAddress);
         // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
         // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
         if (oldContractAddress.balance > 0) {

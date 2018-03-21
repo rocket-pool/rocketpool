@@ -1,5 +1,5 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketUpgrade, RocketStorage, RocketUser, RocketRole } from '../artifacts';
+import { RocketUpgrade, RocketStorage, RocketUser, RocketRole, RocketPool } from '../artifacts';
 import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
 
 const Web3 = require('web3');
@@ -12,13 +12,15 @@ export default function({owner, accounts}) {
         // Contract dependencies
         let rocketUpgrade;
         let rocketStorage;
-        let rocketUser;
-        let rocketRole;
+        let rocketUserOriginal;
+        let rocketUserNew1;
+        let rocketUserNew2;
         before(async () => {
             rocketUpgrade = await RocketUpgrade.deployed();
             rocketStorage = await RocketStorage.deployed();
-            rocketUser = await RocketUser.deployed();
-            rocketRole = await RocketRole.deployed();
+            rocketUserOriginal = await RocketUser.deployed();
+            rocketUserNew1 = await RocketRole.deployed();
+            rocketUserNew2 = await RocketPool.deployed();
         });
 
 
@@ -31,7 +33,7 @@ export default function({owner, accounts}) {
             // Upgrade rocketUser contract to rocketRole contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUserNew1.address,
                 fromAddress: owner,
             });
             
@@ -44,15 +46,28 @@ export default function({owner, accounts}) {
         });
 
 
-        // Owner cannot upgrade a regular contract that does not exist
+        // Cannot upgrade a regular contract that does not exist
         it(printTitle('owner', 'cannot upgrade a nonexistent contract'), async () => {
 
             // Upgrade nonexistent contract to rocketRole contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'nonexistentContract',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUserNew2.address,
                 fromAddress: owner,
             }), 'nonexistent contract was upgraded');
+
+        });
+
+
+        // Cannot upgrade a regular contract to its current address
+        it(printTitle('owner', 'cannot upgrade a contract to its current address'), async () => {
+
+            // Upgrade rocketUser contract to its own address
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketUserNew1.address,
+                fromAddress: owner,
+            }), 'contract was upgraded to its current address');
 
         });
 
@@ -63,9 +78,9 @@ export default function({owner, accounts}) {
             // Upgrade rocketUser contract to rocketRole contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUserNew2.address,
                 fromAddress: accounts[1],
-            }), 'regular contract was upgraded');
+            }), 'regular contract was upgraded by non owner');
 
         });
 
