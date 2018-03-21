@@ -130,7 +130,20 @@ export default function({owner, accounts}) {
         // Cannot upgrade a regular contract with an RPD balance
         it(printTitle('owner', 'cannot upgrade a contract with an RPD balance'), async () => {
 
-            
+            // Account at index 3 has an RPD balance
+            let rpdFromAccount = accounts[3];
+            let rpdBalance = await rocketDepositToken.balanceOf(rpdFromAccount);
+
+            // Send 50% of RPD to rocketUser contract
+            let rpdSendAmount = parseInt(rpdBalance.valueOf() / 2);
+            await rocketDepositToken.transfer(rocketUser.address, rpdSendAmount, {from: rpdFromAccount});
+
+            // Upgrade rocketUser contract address
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketUser',
+                upgradedContractAddress: rocketUserNew.address,
+                fromAddress: owner,
+            }), 'contract with an RPD balance was upgraded');
 
         });
 
