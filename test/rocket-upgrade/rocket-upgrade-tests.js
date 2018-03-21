@@ -1,5 +1,5 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketStorage, RocketDepositToken, RocketUser, RocketRole } from '../artifacts';
+import { RocketStorage, RocketDepositToken, RocketUser } from '../artifacts';
 import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
 
 export default function({owner, accounts}) {
@@ -10,13 +10,15 @@ export default function({owner, accounts}) {
         // Contract dependencies
         let rocketStorage;
         let rocketDepositToken;
+        let rocketDepositTokenNew;
         let rocketUser;
-        let rocketRole;
+        let rocketUserNew;
         before(async () => {
             rocketStorage = await RocketStorage.deployed();
             rocketDepositToken = await RocketDepositToken.deployed();
+            rocketDepositTokenNew = await RocketDepositToken.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
             rocketUser = await RocketUser.deployed();
-            rocketRole = await RocketRole.deployed();
+            rocketUserNew = await RocketUser.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
         });
 
 
@@ -29,7 +31,7 @@ export default function({owner, accounts}) {
             // Upgrade rocketUser contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUserNew.address,
                 fromAddress: owner,
             });
             
@@ -55,7 +57,7 @@ export default function({owner, accounts}) {
             // Upgrade nonexistent contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'nonexistentContract',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUser.address,
                 fromAddress: owner,
             }), 'nonexistent contract was upgraded');
 
@@ -88,7 +90,7 @@ export default function({owner, accounts}) {
             // Upgrade rocketDepositToken contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketDepositTokenNew.address,
                 fromAddress: owner,
             }), 'contract with an ether balance was upgraded');
 
@@ -104,7 +106,7 @@ export default function({owner, accounts}) {
             // Upgrade rocketDepositToken contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketDepositTokenNew.address,
                 fromAddress: owner,
                 forceEther: true,
             });
@@ -117,12 +119,18 @@ export default function({owner, accounts}) {
                 contractName: 'rocketDepositToken',
                 upgradedContractAddress: rocketDepositToken.address,
                 fromAddress: owner,
-                forceEther: true,
-                forceTokens: true,
             });
 
             // Assert contract address has been updated
             assert.notEqual(rocketDepositTokenAddressOld, rocketDepositTokenAddressNew, 'contract with an ether balance was not upgraded by force');
+
+        });
+
+
+        // Cannot upgrade a regular contract with an RPD balance
+        it(printTitle('owner', 'cannot upgrade a contract with an RPD balance'), async () => {
+
+            
 
         });
 
@@ -133,7 +141,7 @@ export default function({owner, accounts}) {
             // Upgrade rocketUser contract address
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
-                upgradedContractAddress: rocketRole.address,
+                upgradedContractAddress: rocketUserNew.address,
                 fromAddress: accounts[1],
             }), 'regular contract was upgraded by non owner');
 
