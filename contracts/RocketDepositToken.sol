@@ -13,9 +13,9 @@ import "./lib/SafeMath.sol";
 contract RocketDepositToken is ERC20, RocketBase {
 
     /**** Properties ***********/
-    string public constant symbol = "RPD";                              // Token symbol
-    string public constant name = "Rocket Pool Deposit";                // Token name
-    uint8 public constant decimals = 18;                                // Decimal places
+    string public constant SYMBOL = "RPD";                              // Token symbol
+    string public constant NAME = "Rocket Pool Deposit";                // Token name
+    uint8 public constant DECIMALS = 18;                                // Decimal places
 
     uint256 public totalSupply = 0;                                     // Total supply
     mapping(address => uint256) private balances;                       // Balances for each account

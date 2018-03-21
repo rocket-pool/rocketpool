@@ -28,6 +28,6 @@ export function printEvent (type, result, colour) {
 
 // The newer version of Web3 is used for hashing, the old one that comes with truffle does it incorrectly. Waiting for them to upgrade truffles web3.
 const web3New = require('web3');
-export function soliditySha3() {
-    return web3New.utils.soliditySha3.apply(web3New, Array.prototype.slice.call(arguments));
+export function soliditySha3(value){
+    return web3New.utils.soliditySha3(value);
 }

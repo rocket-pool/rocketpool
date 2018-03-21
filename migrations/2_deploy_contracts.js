@@ -214,16 +214,6 @@ module.exports = async (deployer, network) => {
                                   console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketDepositToken Address');
                                   console.log(rocketDepositToken.address);
 
-                                  // Rocket Pool Token
-                                  // :TODO: Update to correct address after RPL token contract created
-                                  await rocketStorageInstance.setAddress(
-                                    config.web3.utils.soliditySha3('contract.name', 'rocketPoolToken'),
-                                    rocketDepositToken.address
-                                  );
-                                  // Log it
-                                  console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPoolToken Address');
-                                  console.log(rocketDepositToken.address);
-
                                   // Rocket Vault
                                   await rocketStorageInstance.setAddress(
                                     config.web3.utils.soliditySha3('contract.address', rocketVault.address),
