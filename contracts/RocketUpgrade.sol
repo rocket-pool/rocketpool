@@ -45,22 +45,21 @@ contract RocketUpgrade is RocketBase {
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
         // Check it exists
         require(oldContractAddress != 0x0);
+        // Check it is not the contract's current address
+        require(oldContractAddress != _upgradedContractAddress);
         // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
         // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
-        if (oldContractAddress.balance > 0) {
-            require(_forceEther == true);
+        if (!_forceEther) {
+            require(oldContractAddress.balance == 0);
         }
-        // Check for any known tokens assigned to this contract, RPL
-        tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolToken")));
-        // Make sure their balance is 0
-        if (tokenContract.balanceOf(oldContractAddress) > 0) {
-            require(_forceTokens == true);
-        }
-        // Check for any known tokens assigned to this contract, RPD
-        tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken")));
-        // Make sure their balance is 0
-        if (tokenContract.balanceOf(oldContractAddress) > 0) {
-            require(_forceTokens == true);
+        // Check for any known tokens assigned to this contract
+        if (!_forceTokens) {
+            // Check for RPL
+            tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolToken")));
+            require(tokenContract.balanceOf(oldContractAddress) == 0);
+            // Check for RPD
+            tokenContract = ERC20(rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken")));
+            require(tokenContract.balanceOf(oldContractAddress) == 0);
         }
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
         rocketStorage.setAddress(keccak256("contract.name", _name), _upgradedContractAddress);
