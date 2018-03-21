@@ -133,6 +133,11 @@ export default function({owner, accounts}) {
         });
 
 
+        // TODO: create RPL system unit tests:
+        // - cannot upgrade a contract with an RPL balance
+        // - can upgrade a contract with an RPL balance by force
+
+
         // Cannot upgrade a regular contract with an RPD balance
         it(printTitle('owner', 'cannot upgrade a contract with an RPD balance'), async () => {
 
