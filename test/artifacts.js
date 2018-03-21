@@ -8,5 +8,6 @@ export const RocketVault = artifacts.require('./contract/RocketVault');
 export const RocketRole = artifacts.require('./contract/RocketRole');
 export const RocketSettings = artifacts.require('./contract/RocketSettings');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
+export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
 export const Casper = artifacts.require('./contract/Casper/DummyCasper');
 export const CasperValidation = artifacts.require('./contract/Casper/Validation');
