@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketSettings } from '../artifacts';
-import { scenarioAddAccount, scenarioDepositEtherSuccessfully, scenarioWithdrawEtherSuccessfully } from './rocket-vault-scenarios';
+import { scenarioAddAccount, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -27,7 +27,7 @@ export default function({owner, accounts}) {
             });
 
             // Deposit ether
-            await scenarioDepositEtherSuccessfully({
+            await scenarioDepositEther({
                 accountName: soliditySha3("owner.created.nontoken"),
                 fromAddress: owner,
                 depositAmount: web3.toWei('2', 'ether'),
@@ -40,12 +40,31 @@ export default function({owner, accounts}) {
         it(printTitle('owner', 'can withdraw ether from created non-token account'), async () => {
 
             // Withdraw ether
-            await scenarioWithdrawEtherSuccessfully({
+            await scenarioWithdrawEther({
                 accountName: soliditySha3("owner.created.nontoken"),
                 fromAddress: owner,
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('1', 'ether'),
             });
+
+        });
+
+
+        // Owner cannot deposit ether into account while vault deposits are disabled
+        it(printTitle('owner', 'cannot deposit ether into account while vault deposits disabled'), async () => {
+
+            // Disable vault deposits
+            await rocketSettings.setVaultDepositAllowed(false);
+
+            // Deposit ether
+            await assertThrows(scenarioDepositEther({
+                accountName: soliditySha3("owner.created.nontoken"),
+                fromAddress: owner,
+                depositAmount: web3.toWei('1', 'ether'),
+            }), 'ether was deposited while vault deposits disabled');
+
+            // Re-enable vault deposits
+            await rocketSettings.setVaultDepositAllowed(true);
 
         });
 

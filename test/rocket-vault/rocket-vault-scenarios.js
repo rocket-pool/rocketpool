@@ -64,8 +64,8 @@ export async function sceanarioWithdrawalsEnabling({accountName, accountToTestEn
     assert.isTrue(withdrawalEnabled, "Account withdrawals should be enabled.");
 }
 
-// Deposit ether successfully
-export async function scenarioDepositEtherSuccessfully({accountName, fromAddress, depositAmount}) {
+// Deposit ether to account
+export async function scenarioDepositEther({accountName, fromAddress, depositAmount}) {
     const rocketVault = await RocketVault.deployed();
 
     // Get old vault & account balances
@@ -85,8 +85,8 @@ export async function scenarioDepositEtherSuccessfully({accountName, fromAddress
 
 }
 
-// Withdraw ether successfully
-export async function scenarioWithdrawEtherSuccessfully({accountName, fromAddress, withdrawalAddress, withdrawalAmount}) {
+// Withdraw ether from account to address
+export async function scenarioWithdrawEther({accountName, fromAddress, withdrawalAddress, withdrawalAmount}) {
     const rocketVault = await RocketVault.deployed();
 
     // Get old address & account balances
