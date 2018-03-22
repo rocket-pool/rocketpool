@@ -68,7 +68,6 @@ contract RocketVault is RocketBase {
     /**** Methods ***********/
 
 
-
     /// @dev Deposits to RocketVault can be of ether or tokens
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being deposited in RocketVault
@@ -190,6 +189,12 @@ contract RocketVault is RocketBase {
             rocketStorage.getBool(keccak256("vault.account.withdrawal.allowed", _account, msg.sender)) && // Sender allowed to withdraw from account
             rocketStorage.getAddress(keccak256("vault.account.owner", _account)) != 0x0 // Account exists (has owner)
         );
+    }
+
+    /// @dev Check the balance of an account (returns 0 for nonexistent accounts)
+    /// @param _account The name of the account to check the balance of
+    function getBalance(bytes32 _account) external view returns (uint256) {
+        return rocketStorage.getUint(keccak256("vault.account.balance", _account));
     }
 
 
