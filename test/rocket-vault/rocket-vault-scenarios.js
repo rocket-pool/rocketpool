@@ -1,4 +1,4 @@
-import { soliditySha3 } from '../utils';
+import { assertThrows, soliditySha3 } from '../utils';
 import { RocketStorage, RocketVault } from "../artifacts";
 
 /** SCENARIOS */
@@ -64,7 +64,33 @@ export async function sceanarioWithdrawalsEnabling({accountName, accountToTestEn
     assert.isTrue(withdrawalEnabled, "Account withdrawals should be enabled.");
 }
 
-// Deposit ether to account
+// Runs allow deposits scenario and asserts deposits work while address is allowed
+export async function scenarioAllowDeposits({accountName, depositAddress, fromAddress}) {
+    const rocketVault = await RocketVault.deployed();
+
+    // Allow deposits
+    await rocketVault.setAccountDepositsAllowed(accountName, depositAddress, true, {from: fromAddress});
+
+    // Deposit ether from address
+    await scenarioDepositEther({
+        accountName,
+        fromAddress: depositAddress,
+        depositAmount: web3.toWei('1', 'ether'),
+    });
+
+    // Disallow deposits
+    await rocketVault.setAccountDepositsAllowed(accountName, depositAddress, false, {from: fromAddress});
+
+    // Deposit ether from address
+    await assertThrows(scenarioDepositEther({
+        accountName,
+        fromAddress: depositAddress,
+        depositAmount: web3.toWei('1', 'ether'),
+    }), 'disallowed address deposited ether into account');
+
+}
+
+// Deposits ether to account and asserts balances updated correctly
 export async function scenarioDepositEther({accountName, fromAddress, depositAmount}) {
     const rocketVault = await RocketVault.deployed();
 
@@ -85,7 +111,7 @@ export async function scenarioDepositEther({accountName, fromAddress, depositAmo
 
 }
 
-// Withdraw ether from account to address
+// Withdraws ether from account to address and asserts balances updated correctly
 export async function scenarioWithdrawEther({accountName, fromAddress, withdrawalAddress, withdrawalAmount}) {
     const rocketVault = await RocketVault.deployed();
 

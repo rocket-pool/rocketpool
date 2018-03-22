@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketSettings } from '../artifacts';
-import { scenarioAddAccount, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
+import { scenarioAddAccount, scenarioAllowDeposits, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -206,6 +206,19 @@ export default function({owner, accounts}) {
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('1', 'ether'),
             }), 'random address withdrew ether from account');
+
+        });
+
+
+        // Owner can allow/disallow deposits from an address
+        it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
+
+            // Run allow deposits scenario
+            await scenarioAllowDeposits({
+                accountName: soliditySha3('owner.created.nontoken'),
+                depositAddress: accounts[9],
+                fromAddress: owner,
+            });
 
         });
 
