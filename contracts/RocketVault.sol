@@ -168,6 +168,28 @@ contract RocketVault is RocketBase {
         require(rocketStorage.getUint(keccak256("vault.account.balance", _account)).sub(_amount) >= 0);
     }
 
+    // @dev Checks whether the sending address can deposit into an account
+    // @param _account The name of the account to check
+    function canDeposit(bytes32 _account) external view returns (bool) {
+        return (
+            rocketStorage.getBool(keccak256("settings.vault.deposit.allowed")) && // Vault deposits enabled (not using rocketSettings to keep method pure)
+            rocketStorage.getBool(keccak256("vault.account.deposit.enabled", _account)) && // Account deposits enabled
+            rocketStorage.getBool(keccak256("vault.account.deposit.allowed", _account, msg.sender)) && // Sender allowed to deposit into account
+            rocketStorage.getAddress(keccak256("vault.account.owner", _account)) != 0x0 // Account exists (has owner)
+        );
+    }
+
+    // @dev Checks whether the sending address can withdraw from an account
+    // @param _account The name of the account to check
+    function canWithdraw(bytes32 _account) external view returns (bool) {
+        return (
+            rocketStorage.getBool(keccak256("settings.vault.withdrawal.allowed")) && // Vault withdrawals enabled (not using rocketSettings to keep method pure)
+            rocketStorage.getBool(keccak256("vault.account.withdrawal.enabled", _account)) && // Account withdrawals enabled
+            rocketStorage.getBool(keccak256("vault.account.withdrawal.allowed", _account, msg.sender)) && // Sender allowed to withdraw from account
+            rocketStorage.getAddress(keccak256("vault.account.owner", _account)) != 0x0 // Account exists (has owner)
+        );
+    }
+
 
     /*** Setters **************/
 
