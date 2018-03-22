@@ -1,5 +1,5 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketVault, RocketSettings } from '../artifacts';
+import { RocketVault, RocketSettings, RocketRole } from '../artifacts';
 import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
@@ -10,9 +10,11 @@ export default function({owner, accounts}) {
         // Contract dependencies
         let rocketVault;
         let rocketSettings;
+        let rocketRole;
         before(async () => {
             rocketVault = await RocketVault.deployed();
             rocketSettings = await RocketSettings.deployed();
+            rocketRole = await RocketRole.deployed();
         });
 
 
@@ -232,6 +234,38 @@ export default function({owner, accounts}) {
                 withdrawalAddress: accounts[9],
                 withdrawToAddress: accounts[1],
                 fromAddress: owner,
+            });
+
+        });
+
+
+        // Account owner can allow/disallow deposits from an address
+        it(printTitle('account owner', 'can allow/disallow deposits from an address'), async () => {
+
+            // Create non-token account under random address
+            await rocketRole.adminRoleAdd('admin', accounts[8], {from: owner});
+            await rocketVault.setAccountAdd(soliditySha3('nonowner.created.nontoken'), 0x0, {from: accounts[8]});
+            await rocketRole.adminRoleRemove('admin', accounts[8], {from: owner});
+
+            // Run allow deposits scenario
+            await scenarioAllowDeposits({
+                accountName: soliditySha3('nonowner.created.nontoken'),
+                depositAddress: accounts[9],
+                fromAddress: accounts[8],
+            });
+
+        });
+
+
+        // Account owner can allow/disallow withdrawals from an address
+        it(printTitle('account owner', 'can allow/disallow withdrawals from an address'), async () => {
+
+            // Run allow withdrawals scenario
+            await scenarioAllowWithdrawals({
+                accountName: soliditySha3('nonowner.created.nontoken'),
+                withdrawalAddress: accounts[9],
+                withdrawToAddress: accounts[1],
+                fromAddress: accounts[8],
             });
 
         });
