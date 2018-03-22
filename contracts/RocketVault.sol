@@ -30,7 +30,7 @@ contract RocketVault is RocketBase {
 
     event Deposit (
         address indexed _from,
-         string indexed _account,
+        bytes32 indexed _account,
         uint256 value,
         uint256 index,
         uint256 created
@@ -38,7 +38,7 @@ contract RocketVault is RocketBase {
 
     event Withdrawal (
         address indexed _to,
-         string indexed _account,
+        bytes32 indexed _account,
         uint256 value,
         uint256 index,
         uint256 created
@@ -49,7 +49,7 @@ contract RocketVault is RocketBase {
 
 
     /// @dev Only allow access from the owner of that account
-    modifier onlyAccountOwner(string _account) {
+    modifier onlyAccountOwner(bytes32 _account) {
         // Check it's the account owner or the top level owner
         require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) == msg.sender || roleHas("owner", msg.sender) == true);
         _;
@@ -70,7 +70,7 @@ contract RocketVault is RocketBase {
     /// @dev Deposits to RocketVault can be of ether or tokens
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being deposited in RocketVault
-    function deposit(string _account, uint256 _amount) payable external returns(uint256) {
+    function deposit(bytes32 _account, uint256 _amount) payable external returns(uint256) {
         // Actual amount to deposit
         uint256 deposit = 0;
         // Determine how much is being deposited based on the account type, can be either ether or tokens
@@ -108,7 +108,7 @@ contract RocketVault is RocketBase {
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being withdrawn in RocketVault
     /// @param _withdrawalAddress The address to withdraw too
-    function withdrawal(string _account, uint256 _amount, address _withdrawalAddress) external returns(uint256) {
+    function withdrawal(bytes32 _account, uint256 _amount, address _withdrawalAddress) external returns(uint256) {
         // Verify withdrawal is ok based on the account type and exact values transferred to the vault, throws if not
         acceptableWithdrawal(_account, _amount, _withdrawalAddress);
         // Get how many individual withdrawals in this account we currently have  
@@ -142,7 +142,7 @@ contract RocketVault is RocketBase {
     /// @dev Deposits must be validated
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount to deposit in RocketVault
-    function acceptableDeposit(string _account, uint256 _amount) private {
+    function acceptableDeposit(bytes32 _account, uint256 _amount) private {
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Check deposits are allowed currently and that the deposit sender is registered to deposit
         require(_amount > 0);
@@ -156,7 +156,7 @@ contract RocketVault is RocketBase {
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount to withdraw from RocketVault
     /// @param _withdrawalAddress The address to withdraw too
-    function acceptableWithdrawal(string _account, uint256 _amount, address _withdrawalAddress) private {
+    function acceptableWithdrawal(bytes32 _account, uint256 _amount, address _withdrawalAddress) private {
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Check withdrawals are allowed currently and that the deposit sender is registered to withdraw
         require(_amount > 0);
@@ -174,15 +174,16 @@ contract RocketVault is RocketBase {
     /// @dev Creates a new vault account that can accept deposits
     /// @param _account The name of the account to set in RocketVault
     /// @param _tokenAddress If this account represents a vault for an ERC20 token, this is its contract address
-    function setAccountAdd(string _account, address _tokenAddress) external onlySuperUser {
+    function setAccountAdd(bytes32 _account, address _tokenAddress) external onlySuperUser {
         // Check the account name is valid
-        require(bytes(_account).length > 0);
+        require(_account != 0x0);
         // Check it doesn't already exist
         require(rocketStorage.getAddress(keccak256("vault.account.owner", _account)) == 0x0); 
         // Check the balance is 0
         require(rocketStorage.getUint(keccak256("vault.account.balance", _account)) == 0);
         // Ok good to go
-        rocketStorage.setString(keccak256("vault.account", _account), _account); 
+        // TODO: check if this key is necessary
+        //rocketStorage.setString(keccak256("vault.account", _account), _account);
         rocketStorage.setAddress(keccak256("vault.account.owner", _account), msg.sender); 
         rocketStorage.setBool(keccak256("vault.account.deposit.enabled", _account), true);
         rocketStorage.setBool(keccak256("vault.account.withdrawal.enabled", _account), true);
@@ -194,26 +195,26 @@ contract RocketVault is RocketBase {
 
     // @dev Returns whether an account's deposits are enabled (true) or disabled (false)
     // @param _account The name of the account to test whether deposits are enabled or disabled
-    function getAccountDepositsEnabled(string _account) external view returns(bool) {
+    function getAccountDepositsEnabled(bytes32 _account) external view returns(bool) {
         return rocketStorage.getBool(keccak256("vault.account.deposit.enabled", _account));
     }
 
     // @dev Disable/Enable a vault accounts deposits, only the owner of that account or top level owner can do this
     /// @param _account The name of the account to disable/enable deposits for in RocketVault
-    function setAccountDepositsEnabled(string _account, bool _option) onlyAccountOwner(_account) external {
+    function setAccountDepositsEnabled(bytes32 _account, bool _option) onlyAccountOwner(_account) external {
         // Ok set the option now
         rocketStorage.setBool(keccak256("vault.account.deposit.enabled", _account), _option);
     }
 
     // @dev Returns whether an account's withdrawals are enabled (true) or disabled (false)
     // @param _account The name of the account to test whether withdrawals are enabled or disabled
-    function getAccountWithdrawalsEnabled(string _account) external view returns(bool) {
+    function getAccountWithdrawalsEnabled(bytes32 _account) external view returns(bool) {
         return rocketStorage.getBool(keccak256("vault.account.withdrawal.enabled", _account));
     }
 
     // @dev Disable/Enable a vault accounts withdrawals, only the owner of that account or top level owner can do this
     /// @param _account The name of the account to disable/enable deposits for in RocketVault
-    function setAccountWithdrawalsEnabled(string _account, bool _option) onlyAccountOwner(_account) external {
+    function setAccountWithdrawalsEnabled(bytes32 _account, bool _option) onlyAccountOwner(_account) external {
         // Ok set the option now
         rocketStorage.setBool(keccak256("vault.account.withdrawal.enabled", _account), _option);
     }

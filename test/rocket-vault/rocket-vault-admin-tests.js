@@ -1,4 +1,4 @@
-import { printTitle, assertThrows } from "../utils";
+import { printTitle, assertThrows, soliditySha3 } from "../utils";
 import { RocketVault, RocketRole } from "../artifacts";
 import { scenarioAddAccount, scenarioDepositEnabling, sceanarioWithdrawalsEnabling } from "./rocket-vault-scenarios";
 
@@ -14,7 +14,7 @@ export default function({owner, accounts}){
         // As an owner I must be able to add a non-token account to the vault.
         it(printTitle("owner", "can add a non-token account to the vault"), async () => {
             await scenarioAddAccount({
-                accountName: "owner.nontoken",
+                accountName: soliditySha3("owner.nontoken"),
                 ownerAddress: owner,
                 tokenContractAddress: 0x0
             });
@@ -23,7 +23,7 @@ export default function({owner, accounts}){
         // As an owner I must be able to add a token account to the vault.
        it(printTitle("owner", "can add a token account to the vault"), async () => { 
             await scenarioAddAccount({
-                accountName: "owner.token",
+                accountName: soliditySha3("owner.token"),
                 ownerAddress: owner,
                 tokenContractAddress: 0xa917e0023dae346fe728ae51376a430df1ea9335 // random address
             });
@@ -40,7 +40,7 @@ export default function({owner, accounts}){
 
         // As an owner I must not be able to add an account that already exists.
        it(printTitle("owner", "cannot add an account that already exists"), async () => {
-            const existingAccountName = "owner.alreadyExists";
+            const existingAccountName = soliditySha3("owner.alreadyExists");
 
             // add an account with a specific name
             await rocketVault.setAccountAdd(existingAccountName, 0x0, {from: owner});
@@ -62,7 +62,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account by the admin account
-            const accountName = "owner.deposits.enabling";
+            const accountName = soliditySha3("owner.deposits.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner});
 
             // test owner can disable/enable account deposits of an account not owned by them
@@ -78,7 +78,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account owned by some account owner
-            const accountName = "owner.withdrawals.enabling";
+            const accountName = soliditySha3("owner.withdrawals.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner});
 
             // test owner can disable/enable account withdrawals of an account not owned by them 
@@ -95,7 +95,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
 
             await scenarioAddAccount({
-                accountName: "admin.nontoken",
+                accountName: soliditySha3("admin.nontoken"),
                 ownerAddress: adminAddress,
                 tokenContractAddress: 0x0
             });
@@ -108,7 +108,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
 
             await scenarioAddAccount({
-                accountName: "admin.token",
+                accountName: soliditySha3("admin.token"),
                 ownerAddress: adminAddress,
                 tokenContractAddress: 0xa917e0023dae346fe728ae51376a430df1ea9335 // random address
             });
@@ -134,7 +134,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", adminAddress, {from: owner});
 
             // add an account with a specific name
-            const existingAccountName = "admin.alreadyExists";
+            const existingAccountName = soliditySha3("admin.alreadyExists");
             await rocketVault.setAccountAdd(existingAccountName, 0x0, {from: owner});
 
             // try to add another with the same name
@@ -154,7 +154,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account, accountOwner must be admin to add an account
-            const accountName = "accountowner.deposit.enabling";
+            const accountName = soliditySha3("accountowner.deposit.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner});            
 
             // remove admin role so we are testing account ownership only
@@ -174,7 +174,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account, accountOwner must be admin to add an account
-            const accountName = "accountowner.withdrawal.enabling";
+            const accountName = soliditySha3("accountowner.withdrawal.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner});            
 
             // remove admin role so we are testing account ownership only
@@ -191,7 +191,7 @@ export default function({owner, accounts}){
        it(printTitle("random account", "cannot add an account to the vault"), async () => {
             let randomAccount = accounts[2];
             let promise = scenarioAddAccount({
-                accountName: "random.nontoken",
+                accountName: soliditySha3("random.nontoken"),
                 ownerAddress: randomAccount,
                 tokenContractAddress: 0x0
             });
@@ -204,7 +204,7 @@ export default function({owner, accounts}){
        it(printTitle("random account", "cannot add a token account to the vault"), async () => {
             let randomAccount = accounts[2];
             let promise = scenarioAddAccount({
-                accountName: "random.token",
+                accountName: soliditySha3("random.token"),
                 ownerAddress: randomAccount,
                 tokenContractAddress: 0xa917e0023dae346fe728ae51376a430df1ea9335
             });
@@ -220,7 +220,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account, accountOwner must be admin to add an account
-            const accountName = "random.deposit.enabling";
+            const accountName = soliditySha3("random.deposit.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner}); 
 
             let randomAccount = accounts[2];
@@ -241,7 +241,7 @@ export default function({owner, accounts}){
             await rocketRole.adminRoleAdd("admin", accountOwner, {from: owner});
 
             // add an account, accountOwner must be admin to add an account
-            const accountName = "random.withdrawals.enabling";
+            const accountName = soliditySha3("random.withdrawals.enabling");
             await rocketVault.setAccountAdd(accountName, 0x0, {from: accountOwner}); 
 
             let randomAccount = accounts[2];
