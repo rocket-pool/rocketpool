@@ -90,6 +90,34 @@ export async function scenarioAllowDeposits({accountName, depositAddress, fromAd
 
 }
 
+// Runs allow withdrawals scenario and asserts withdrawals work while address is allowed
+export async function scenarioAllowWithdrawals({accountName, withdrawalAddress, withdrawToAddress, fromAddress}) {
+    const rocketVault = await RocketVault.deployed();
+
+    // Allow withdrawals
+    await rocketVault.setAccountWithdrawalsAllowed(accountName, withdrawalAddress, true, {from: fromAddress});
+
+    // Withdraw ether to address
+    await scenarioWithdrawEther({
+        accountName,
+        fromAddress: withdrawalAddress,
+        withdrawalAddress: withdrawToAddress,
+        withdrawalAmount: web3.toWei('1', 'ether'),
+    });
+
+    // Disallow withdrawals
+    await rocketVault.setAccountWithdrawalsAllowed(accountName, withdrawalAddress, false, {from: fromAddress});
+
+    // Withdraw ether to address
+    await assertThrows(scenarioWithdrawEther({
+        accountName,
+        fromAddress: withdrawalAddress,
+        withdrawalAddress: withdrawToAddress,
+        withdrawalAmount: web3.toWei('1', 'ether'),
+    }), 'disallowed address withdrew ether from account');
+
+}
+
 // Deposits ether to account and asserts balances updated correctly
 export async function scenarioDepositEther({accountName, fromAddress, depositAmount}) {
     const rocketVault = await RocketVault.deployed();

@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketSettings } from '../artifacts';
-import { scenarioAddAccount, scenarioAllowDeposits, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
+import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -217,6 +217,20 @@ export default function({owner, accounts}) {
             await scenarioAllowDeposits({
                 accountName: soliditySha3('owner.created.nontoken'),
                 depositAddress: accounts[9],
+                fromAddress: owner,
+            });
+
+        });
+
+
+        // Owner can allow/disallow withdrawals from an address
+        it(printTitle('owner', 'can allow/disallow withdrawals from an address'), async () => {
+
+            // Run allow withdrawals scenario
+            await scenarioAllowWithdrawals({
+                accountName: soliditySha3('owner.created.nontoken'),
+                withdrawalAddress: accounts[9],
+                withdrawToAddress: accounts[1],
                 fromAddress: owner,
             });
 
