@@ -21,14 +21,14 @@ export default function({owner, accounts}) {
 
             // Create non-token account
             await scenarioAddAccount({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 ownerAddress: owner,
                 tokenContractAddress: 0x0,
             });
 
             // Deposit ether
             await scenarioDepositEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 depositAmount: web3.toWei('10', 'ether'),
             });
@@ -41,7 +41,7 @@ export default function({owner, accounts}) {
 
             // Withdraw ether
             await scenarioWithdrawEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('1', 'ether'),
@@ -55,7 +55,7 @@ export default function({owner, accounts}) {
 
             // Deposit ether
             await assertThrows(scenarioDepositEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 depositAmount: web3.toWei('0', 'ether'),
             }), 'zero ether was deposited into account');
@@ -71,7 +71,7 @@ export default function({owner, accounts}) {
 
             // Deposit ether
             await assertThrows(scenarioDepositEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 depositAmount: web3.toWei('1', 'ether'),
             }), 'ether was deposited while vault deposits disabled');
@@ -86,17 +86,17 @@ export default function({owner, accounts}) {
         it(printTitle('owner', 'cannot deposit ether into account while account deposits disabled'), async () => {
 
             // Disable account deposits
-            await rocketVault.setAccountDepositsEnabled(soliditySha3("owner.created.nontoken"), false, {from: owner});
+            await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.nontoken'), false, {from: owner});
 
             // Deposit ether
             await assertThrows(scenarioDepositEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 depositAmount: web3.toWei('1', 'ether'),
             }), 'ether was deposited while account deposits disabled');
 
             // Re-enable account deposits
-            await rocketVault.setAccountDepositsEnabled(soliditySha3("owner.created.nontoken"), true, {from: owner});
+            await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.nontoken'), true, {from: owner});
 
         });
 
@@ -106,11 +106,39 @@ export default function({owner, accounts}) {
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('0', 'ether'),
             }), 'zero ether was withdrawn from account');
+
+        });
+
+
+        // Owner cannot withdraw more ether than their account balance
+        it(printTitle('owner', 'cannot withdraw more ether than account balance'), async () => {
+
+            // Withdraw ether
+            await assertThrows(scenarioWithdrawEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: owner,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('20', 'ether'),
+            }), 'more ether than account balance was withdrawn');
+
+        });
+
+
+        // Owner cannot withdraw ether to a null address
+        it(printTitle('owner', 'cannot withdraw ether to a null address'), async () => {
+
+            // Withdraw ether
+            await assertThrows(scenarioWithdrawEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: owner,
+                withdrawalAddress: '0x0000000000000000000000000000000000000000',
+                withdrawalAmount: web3.toWei('1', 'ether'),
+            }), 'ether was withdrawn to a null address');
 
         });
 
@@ -123,7 +151,7 @@ export default function({owner, accounts}) {
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('1', 'ether'),
@@ -139,18 +167,18 @@ export default function({owner, accounts}) {
         it(printTitle('owner', 'cannot withdraw ether from account while account withdrawals disabled'), async () => {
 
             // Disable account withdrawals
-            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3("owner.created.nontoken"), false, {from: owner});
+            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.nontoken'), false, {from: owner});
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
-                accountName: soliditySha3("owner.created.nontoken"),
+                accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
                 withdrawalAddress: accounts[1],
                 withdrawalAmount: web3.toWei('1', 'ether'),
             }), 'ether was withdrawn while account withdrawals disabled');
 
             // Re-enable account withdrawals
-            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3("owner.created.nontoken"), true, {from: owner});
+            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.nontoken'), true, {from: owner});
 
         });
 
