@@ -186,7 +186,9 @@ contract RocketVault is RocketBase {
         //rocketStorage.setString(keccak256("vault.account", _account), _account);
         rocketStorage.setAddress(keccak256("vault.account.owner", _account), msg.sender); 
         rocketStorage.setBool(keccak256("vault.account.deposit.enabled", _account), true);
+        rocketStorage.setBool(keccak256("vault.account.deposit.allowed", _account, msg.sender), true);
         rocketStorage.setBool(keccak256("vault.account.withdrawal.enabled", _account), true);
+        rocketStorage.setBool(keccak256("vault.account.withdrawal.allowed", _account, msg.sender), true);
         // Are we storing a token address for this account?
         if (_tokenAddress != 0x0) {
             rocketStorage.setAddress(keccak256("vault.account.token.address", _account), _tokenAddress); 
