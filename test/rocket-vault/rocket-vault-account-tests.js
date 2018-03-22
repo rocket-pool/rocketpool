@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketSettings } from '../artifacts';
-import { scenarioAddAccount, scenarioDepositEtherSuccessfully } from './rocket-vault-scenarios';
+import { scenarioAddAccount, scenarioDepositEtherSuccessfully, scenarioWithdrawEtherSuccessfully } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -30,7 +30,21 @@ export default function({owner, accounts}) {
             await scenarioDepositEtherSuccessfully({
                 accountName: soliditySha3("owner.created.nontoken"),
                 fromAddress: owner,
-                depositAmount: web3.toWei('1', 'ether'),
+                depositAmount: web3.toWei('2', 'ether'),
+            });
+
+        });
+
+
+        // Owner can withdraw ether from created non-token account
+        it(printTitle('owner', 'can withdraw ether from created non-token account'), async () => {
+
+            // Withdraw ether
+            await scenarioWithdrawEtherSuccessfully({
+                accountName: soliditySha3("owner.created.nontoken"),
+                fromAddress: owner,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('1', 'ether'),
             });
 
         });

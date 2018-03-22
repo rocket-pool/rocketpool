@@ -85,6 +85,27 @@ export async function scenarioDepositEtherSuccessfully({accountName, fromAddress
 
 }
 
+// Withdraw ether successfully
+export async function scenarioWithdrawEtherSuccessfully({accountName, fromAddress, withdrawalAddress, withdrawalAmount}) {
+    const rocketVault = await RocketVault.deployed();
+
+    // Get old address & account balances
+    let addressBalanceOld = web3.eth.getBalance(withdrawalAddress).valueOf();
+    let accountBalanceOld = await rocketVault.getBalance(accountName);
+
+    // Withdraw ether
+    await rocketVault.withdraw(accountName, withdrawalAmount, withdrawalAddress, {from: fromAddress});
+
+    // Get new address & account balances
+    let addressBalanceNew = web3.eth.getBalance(withdrawalAddress).valueOf();
+    let accountBalanceNew = await rocketVault.getBalance(accountName);
+
+    assert.notEqual(addressBalanceOld, addressBalanceNew, 'Address ether balance was not increased');
+    assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account ether balance was not decreased');
+    assert.equal((addressBalanceNew - addressBalanceOld), (accountBalanceOld.valueOf() - accountBalanceNew.valueOf()), 'Account ether balance was updated incorrectly');
+
+}
+
 /** ASSERTS */
 
 // Asserts that an account has been recorded correctly
