@@ -17,9 +17,9 @@ export default function({owner, accounts}) {
 
 
         // Owner can deposit ether into created non-token account
-        it(printTitle('owner', 'can deposit ether into created non-token account'), async () => {
+        it(printTitle('allowed address', 'can deposit ether into created non-token account'), async () => {
 
-            // Create non-token account
+            // Create non-token account; owner is allowed by default on creation
             await scenarioAddAccount({
                 accountName: soliditySha3('owner.created.nontoken'),
                 ownerAddress: owner,
@@ -37,7 +37,7 @@ export default function({owner, accounts}) {
 
 
         // Owner can withdraw ether from created non-token account
-        it(printTitle('owner', 'can withdraw ether from created non-token account'), async () => {
+        it(printTitle('allowed address', 'can withdraw ether from created non-token account'), async () => {
 
             // Withdraw ether
             await scenarioWithdrawEther({
@@ -51,7 +51,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot deposit zero ether into account
-        it(printTitle('owner', 'cannot deposit zero ether into account'), async () => {
+        it(printTitle('allowed address', 'cannot deposit zero ether into account'), async () => {
 
             // Deposit ether
             await assertThrows(scenarioDepositEther({
@@ -64,7 +64,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot deposit ether into account while vault deposits are disabled
-        it(printTitle('owner', 'cannot deposit ether into account while vault deposits disabled'), async () => {
+        it(printTitle('allowed address', 'cannot deposit ether into account while vault deposits disabled'), async () => {
 
             // Disable vault deposits
             await rocketSettings.setVaultDepositAllowed(false);
@@ -83,7 +83,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot deposit ether into account while account deposits are disabled
-        it(printTitle('owner', 'cannot deposit ether into account while account deposits disabled'), async () => {
+        it(printTitle('allowed address', 'cannot deposit ether into account while account deposits disabled'), async () => {
 
             // Disable account deposits
             await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.nontoken'), false, {from: owner});
@@ -102,7 +102,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot withdraw zero ether from account
-        it(printTitle('owner', 'cannot withdraw zero ether from account'), async () => {
+        it(printTitle('allowed address', 'cannot withdraw zero ether from account'), async () => {
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
@@ -116,7 +116,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot withdraw more ether than their account balance
-        it(printTitle('owner', 'cannot withdraw more ether than account balance'), async () => {
+        it(printTitle('allowed address', 'cannot withdraw more ether than account balance'), async () => {
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
@@ -130,7 +130,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot withdraw ether to a null address
-        it(printTitle('owner', 'cannot withdraw ether to a null address'), async () => {
+        it(printTitle('allowed address', 'cannot withdraw ether to a null address'), async () => {
 
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
@@ -144,7 +144,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot withdraw ether from account while vault withdrawals are disabled
-        it(printTitle('owner', 'cannot withdraw ether from account while vault withdrawals disabled'), async () => {
+        it(printTitle('allowed address', 'cannot withdraw ether from account while vault withdrawals disabled'), async () => {
 
             // Disable vault withdrawals
             await rocketSettings.setVaultWithdrawalAllowed(false);
@@ -164,7 +164,7 @@ export default function({owner, accounts}) {
 
 
         // Owner cannot withdraw ether from account while account withdrawals are disabled
-        it(printTitle('owner', 'cannot withdraw ether from account while account withdrawals disabled'), async () => {
+        it(printTitle('allowed address', 'cannot withdraw ether from account while account withdrawals disabled'), async () => {
 
             // Disable account withdrawals
             await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.nontoken'), false, {from: owner});
