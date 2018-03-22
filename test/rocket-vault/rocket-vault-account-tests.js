@@ -50,6 +50,19 @@ export default function({owner, accounts}) {
         });
 
 
+        // Owner cannot deposit zero ether into account
+        it(printTitle('owner', 'cannot deposit zero ether into account'), async () => {
+
+            // Deposit ether
+            await assertThrows(scenarioDepositEther({
+                accountName: soliditySha3("owner.created.nontoken"),
+                fromAddress: owner,
+                depositAmount: web3.toWei('0', 'ether'),
+            }), 'zero ether was deposited into account');
+
+        });
+
+
         // Owner cannot deposit ether into account while vault deposits are disabled
         it(printTitle('owner', 'cannot deposit ether into account while vault deposits disabled'), async () => {
 
@@ -84,6 +97,20 @@ export default function({owner, accounts}) {
 
             // Re-enable account deposits
             await rocketVault.setAccountDepositsEnabled(soliditySha3("owner.created.nontoken"), true, {from: owner});
+
+        });
+
+
+        // Owner cannot withdraw zero ether from account
+        it(printTitle('owner', 'cannot withdraw zero ether from account'), async () => {
+
+            // Withdraw ether
+            await assertThrows(scenarioWithdrawEther({
+                accountName: soliditySha3("owner.created.nontoken"),
+                fromAddress: owner,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0', 'ether'),
+            }), 'zero ether was withdrawn from account');
 
         });
 
