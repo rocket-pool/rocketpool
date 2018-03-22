@@ -69,6 +69,25 @@ export default function({owner, accounts}) {
         });
 
 
+        // Owner cannot deposit ether into account while account deposits are disabled
+        it(printTitle('owner', 'cannot deposit ether into account while account deposits disabled'), async () => {
+
+            // Disable account deposits
+            await rocketVault.setAccountDepositsEnabled(soliditySha3("owner.created.nontoken"), false, {from: owner});
+
+            // Deposit ether
+            await assertThrows(scenarioDepositEther({
+                accountName: soliditySha3("owner.created.nontoken"),
+                fromAddress: owner,
+                depositAmount: web3.toWei('1', 'ether'),
+            }), 'ether was deposited while account deposits disabled');
+
+            // Re-enable account deposits
+            await rocketVault.setAccountDepositsEnabled(soliditySha3("owner.created.nontoken"), true, {from: owner});
+
+        });
+
+
     });
 
 };
