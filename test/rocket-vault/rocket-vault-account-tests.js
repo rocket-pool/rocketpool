@@ -183,6 +183,33 @@ export default function({owner, accounts}) {
         });
 
 
+        // Random address cannot deposit ether into account
+        it(printTitle('random address', 'cannot deposit ether into account'), async () => {
+
+            // Deposit ether
+            await assertThrows(scenarioDepositEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: accounts[9],
+                depositAmount: web3.toWei('1', 'ether'),
+            }), 'random address deposited ether into account');
+
+        });
+
+
+        // Random address cannot withdraw ether from account
+        it(printTitle('random address', 'cannot withdraw ether from account'), async () => {
+
+            // Withdraw ether
+            await assertThrows(scenarioWithdrawEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: accounts[9],
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('1', 'ether'),
+            }), 'random address withdrew ether from account');
+
+        });
+
+
     });
 
 };
