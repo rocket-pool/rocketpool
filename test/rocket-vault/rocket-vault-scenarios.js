@@ -64,6 +64,27 @@ export async function sceanarioWithdrawalsEnabling({accountName, accountToTestEn
     assert.isTrue(withdrawalEnabled, "Account withdrawals should be enabled.");
 }
 
+// Deposit ether successfully
+export async function scenarioDepositEtherSuccessfully({accountName, fromAddress, depositAmount}) {
+    const rocketVault = await RocketVault.deployed();
+
+    // Get old vault & account balances
+    let vaultBalanceOld = web3.eth.getBalance(rocketVault.address).valueOf();
+    let accountBalanceOld = await rocketVault.getBalance(accountName);
+
+    // Deposit ether
+    await rocketVault.deposit(accountName, 0, {from: fromAddress, value: depositAmount});
+
+    // Get new vault & account balances
+    let vaultBalanceNew = web3.eth.getBalance(rocketVault.address).valueOf();
+    let accountBalanceNew = await rocketVault.getBalance(accountName);
+
+    assert.notEqual(vaultBalanceOld, vaultBalanceNew, 'Vault ether balance was not increased');
+    assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account ether balance was not increased');
+    assert.equal((vaultBalanceNew - vaultBalanceOld), (accountBalanceNew.valueOf() - accountBalanceOld.valueOf()), 'Account ether balance was updated incorrectly');
+
+}
+
 /** ASSERTS */
 
 // Asserts that an account has been recorded correctly
