@@ -108,7 +108,7 @@ contract RocketVault is RocketBase {
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being withdrawn in RocketVault
     /// @param _withdrawalAddress The address to withdraw too
-    function withdrawal(bytes32 _account, uint256 _amount, address _withdrawalAddress) external returns(uint256) {
+    function withdraw(bytes32 _account, uint256 _amount, address _withdrawalAddress) external returns(uint256) {
         // Verify withdrawal is ok based on the account type and exact values transferred to the vault, throws if not
         acceptableWithdrawal(_account, _amount, _withdrawalAddress);
         // Get how many individual withdrawals in this account we currently have  
