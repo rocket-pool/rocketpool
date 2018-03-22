@@ -201,11 +201,25 @@ contract RocketVault is RocketBase {
         return rocketStorage.getBool(keccak256("vault.account.deposit.enabled", _account));
     }
 
-    // @dev Disable/Enable a vault accounts deposits, only the owner of that account or top level owner can do this
-    /// @param _account The name of the account to disable/enable deposits for in RocketVault
+    // @dev Disable/Enable a vault account's deposits, only the owner of that account or top level owner can do this
+    // @param _account The name of the account to disable/enable deposits for in RocketVault
     function setAccountDepositsEnabled(bytes32 _account, bool _option) onlyAccountOwner(_account) external {
         // Ok set the option now
         rocketStorage.setBool(keccak256("vault.account.deposit.enabled", _account), _option);
+    }
+
+    // @dev Returns whether an account's deposits are allowed (true) or disallowed (false)
+    // @param _account The name of the account
+    // @param _address The address to test whether deposits are allowed or disallowed for
+    function getAccountDepositsAllowed(bytes32 _account, address _address) external view returns(bool) {
+        return rocketStorage.getBool(keccak256("vault.account.deposit.allowed", _account, _address));
+    }
+
+    // @dev Allow/Disallow a vault account's deposits for an address, only the owner of that account or top level owner can do this
+    // @param _account The name of the account
+    // @param _address The address to allow/disallow deposits for
+    function setAccountDepositsAllowed(bytes32 _account, address _address, bool _option) onlyAccountOwner(_account) external {
+        rocketStorage.setBool(keccak256("vault.account.deposit.allowed", _account, _address), _option);
     }
 
     // @dev Returns whether an account's withdrawals are enabled (true) or disabled (false)
@@ -214,14 +228,26 @@ contract RocketVault is RocketBase {
         return rocketStorage.getBool(keccak256("vault.account.withdrawal.enabled", _account));
     }
 
-    // @dev Disable/Enable a vault accounts withdrawals, only the owner of that account or top level owner can do this
-    /// @param _account The name of the account to disable/enable deposits for in RocketVault
+    // @dev Disable/Enable a vault account's withdrawals, only the owner of that account or top level owner can do this
+    // @param _account The name of the account to disable/enable deposits for in RocketVault
     function setAccountWithdrawalsEnabled(bytes32 _account, bool _option) onlyAccountOwner(_account) external {
         // Ok set the option now
         rocketStorage.setBool(keccak256("vault.account.withdrawal.enabled", _account), _option);
     }
 
+    // @dev Returns whether an account's withdrawals are allowed (true) or disallowed (false)
+    // @param _account The name of the account
+    // @param _address The address to test whether withdrawals are allowed or disallowed for
+    function getAccountWithdrawalsAllowed(bytes32 _account, address _address) external view returns(bool) {
+        return rocketStorage.getBool(keccak256("vault.account.withdrawal.allowed", _account, _address));
+    }
 
+    // @dev Allow/Disallow a vault account's withdrawals for an address, only the owner of that account or top level owner can do this
+    // @param _account The name of the account
+    // @param _address The address to allow/disallow withdrawals for
+    function setAccountWithdrawalsAllowed(bytes32 _account, address _address, bool _option) onlyAccountOwner(_account) external {
+        rocketStorage.setBool(keccak256("vault.account.withdrawal.allowed", _account, _address), _option);
+    }
 
 
 }
