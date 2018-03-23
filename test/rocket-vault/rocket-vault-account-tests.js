@@ -187,33 +187,6 @@ export default function({owner, accounts}) {
         });
 
 
-        // Random address cannot deposit ether into account
-        it(printTitle('random address', 'cannot deposit ether into account'), async () => {
-
-            // Deposit ether
-            await assertThrows(scenarioDepositEther({
-                accountName: soliditySha3('owner.created.nontoken'),
-                fromAddress: accounts[9],
-                depositAmount: web3.toWei('1', 'ether'),
-            }), 'random address deposited ether into account');
-
-        });
-
-
-        // Random address cannot withdraw ether from account
-        it(printTitle('random address', 'cannot withdraw ether from account'), async () => {
-
-            // Withdraw ether
-            await assertThrows(scenarioWithdrawEther({
-                accountName: soliditySha3('owner.created.nontoken'),
-                fromAddress: accounts[9],
-                withdrawalAddress: accounts[1],
-                withdrawalAmount: web3.toWei('1', 'ether'),
-            }), 'random address withdrew ether from account');
-
-        });
-
-
         // Allowed address can deposit tokens into token account
         it(printTitle('allowed address', 'can deposit tokens into token account'), async () => {
 
@@ -366,6 +339,75 @@ export default function({owner, accounts}) {
                 withdrawalAddress: '0x0000000000000000000000000000000000000000',
                 withdrawalAmount: web3.toWei('0.1', 'ether'),
             }), 'tokens were withdrawn to a null address');
+
+        });
+
+
+        // Allowed address cannot withdraw tokens from account while vault withdrawals are disabled
+        it(printTitle('allowed address', 'cannot withdraw tokens from account while vault withdrawals disabled'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Disable vault withdrawals
+            await rocketSettings.setVaultWithdrawalAllowed(false);
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0.1', 'ether'),
+            }), 'tokens were withdrawn while vault withdrawals disabled');
+
+            // Re-enable vault withdrawals
+            await rocketSettings.setVaultWithdrawalAllowed(true);
+
+        });
+
+
+        // Allowed address cannot withdraw tokens from account while account withdrawals are disabled
+        it(printTitle('allowed address', 'cannot withdraw tokens from account while account withdrawals disabled'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Disable account withdrawals
+            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.token'), false, {from: owner});
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0.1', 'ether'),
+            }), 'tokens were withdrawn while account withdrawals disabled');
+
+            // Re-enable account withdrawals
+            await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.token'), true, {from: owner});
+
+        });
+
+
+        // Random address cannot deposit ether into account
+        it(printTitle('random address', 'cannot deposit ether into account'), async () => {
+
+            // Deposit ether
+            await assertThrows(scenarioDepositEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: accounts[9],
+                depositAmount: web3.toWei('1', 'ether'),
+            }), 'random address deposited ether into account');
+
+        });
+
+
+        // Random address cannot withdraw ether from account
+        it(printTitle('random address', 'cannot withdraw ether from account'), async () => {
+
+            // Withdraw ether
+            await assertThrows(scenarioWithdrawEther({
+                accountName: soliditySha3('owner.created.nontoken'),
+                fromAddress: accounts[9],
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('1', 'ether'),
+            }), 'random address withdrew ether from account');
 
         });
 
