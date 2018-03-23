@@ -1,7 +1,19 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper, CasperValidation} from './artifacts';
+import {
+  RocketUser,
+  RocketNode,
+  RocketPool,
+  RocketPoolMini,
+  RocketDepositToken,
+  RocketPartnerAPI,
+  RocketVault,
+  RocketSettings,
+  RocketStorage,
+  Casper,
+  CasperValidation,
+} from './artifacts';
 
 // Import modular tests
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -136,79 +148,113 @@ contract('RocketPool', accounts => {
   });
 
   // Simulate Caspers epoch and dynasty changing
-  it(
-    printTitle(
-      'casper',
-      'simulate Caspers epoch and dynasty changing'
-    ),
-    async () => {
+  it(printTitle('casper', 'simulate Caspers epoch and dynasty changing'), async () => {
+    // Increment epoch
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      // Increment epoch
-      await casper.set_increment_epoch({
-        from: owner
-      });
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      await casper.set_increment_epoch({
-        from: owner
-      });
-      
-      // Increment dynasty 
-      await casper.set_increment_dynasty({
-        from: owner
-      });
+    // Increment dynasty
+    await casper.set_increment_dynasty({
+      from: owner,
+    });
 
-      // Check that the first minipool contract has been attached to the node
-      const casperDynasty = await casper.get_dynasty.call().valueOf();
-      const casperEpoch = await casper.get_current_epoch.call().valueOf();
+    // Check that the first minipool contract has been attached to the node
+    const casperDynasty = await casper.get_dynasty.call().valueOf();
+    const casperEpoch = await casper.get_current_epoch.call().valueOf();
 
-      assert.equal(casperEpoch, 2, 'Casper epoch does not match');
-      assert.equal(casperDynasty, 1, 'Casper dynasty does not match');
-    }
-  );
+    assert.equal(casperEpoch, 2, 'Casper epoch does not match');
+    assert.equal(casperDynasty, 1, 'Casper dynasty does not match');
+  });
 
   // Register validation contract address for node
   it(printTitle('nodeFirst', 'create validation contract and set address'), async () => {
     // Creates a blank contract for use in making validation address contracts
     // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
-    const nodeFirstValCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: nodeFirst});    
+    const nodeFirstValCodeContract = await CasperValidation.new({
+      gas: 500000,
+      gasPrice: 10000000000,
+      from: nodeFirst,
+    });
     nodeFirstValCodeAddress = nodeFirstValCodeContract.address;
     assert.notEqual(nodeFirstValCodeAddress, 0, 'Validation contract creation failed');
   });
 
-   // Register test node
-  it(printTitle('owner', 'register first node and verify it\'s signature and validation contract are correct'), async () => {
-    // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeFirst, soliditySha3(nodeFirstValCodeAddress));
-    await rocketNode.nodeAdd(nodeFirst, nodeFirstProviderID, nodeFirstSubnetID, nodeFirstInstanceID, nodeFirstRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
-    const result = await rocketNode.getNodeCount.call().valueOf();
-    assert.equal(result, 1, 'Invalid number of nodes registered');
-  });
+  // Register test node
+  it(
+    printTitle('owner', "register first node and verify it's signature and validation contract are correct"),
+    async () => {
+      // Sign the message for the nodeAdd function to prove ownership of the address being registered
+      let signature = web3.eth.sign(nodeFirst, soliditySha3(nodeFirstValCodeAddress));
+      await rocketNode.nodeAdd(
+        nodeFirst,
+        nodeFirstProviderID,
+        nodeFirstSubnetID,
+        nodeFirstInstanceID,
+        nodeFirstRegionID,
+        nodeFirstValCodeAddress,
+        signature,
+        { from: owner, gas: nodeRegisterGas }
+      );
+      const result = await rocketNode.getNodeCount.call().valueOf();
+      assert.equal(result, 1, 'Invalid number of nodes registered');
+    }
+  );
 
   // Try to register a node with a wrong validation address
   it(printTitle('owner', 'fail to register a node with a validation contract that does not match'), async () => {
-     // Sign the message for the nodeAdd function to prove ownership of the address being registered
-     let signature = web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
-     const result = rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeFirstValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
-     await assertThrows(result);
+    // Sign the message for the nodeAdd function to prove ownership of the address being registered
+    let signature = web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
+    const result = rocketNode.nodeAdd(
+      nodeSecond,
+      nodeSecondProviderID,
+      nodeSecondSubnetID,
+      nodeSecondInstanceID,
+      nodeSecondRegionID,
+      nodeFirstValCodeAddress,
+      signature,
+      { from: owner, gas: nodeRegisterGas }
+    );
+    await assertThrows(result);
   });
 
   // Register validation contract address for node
   it(printTitle('nodeSecond', 'create validation contract and set address'), async () => {
     // Creates a blank contract for use in making validation address contracts
     // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
-    const nodeSecondValCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: nodeSecond});    
+    const nodeSecondValCodeContract = await CasperValidation.new({
+      gas: 500000,
+      gasPrice: 10000000000,
+      from: nodeSecond,
+    });
     nodeSecondValCodeAddress = nodeSecondValCodeContract.address;
     assert.notEqual(nodeSecondValCodeAddress, 0, 'Validation contract creation failed');
   });
 
-   // Register test node
-  it(printTitle('owner', 'register second node and verify it\'s signature and validation contract are correct'), async () => {
-    // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
-    await rocketNode.nodeAdd(nodeSecond, nodeSecondProviderID, nodeSecondSubnetID, nodeSecondInstanceID, nodeSecondRegionID, nodeSecondValCodeAddress, signature, { from: owner, gas: nodeRegisterGas });
-    const result = await rocketNode.getNodeCount.call().valueOf();
-    assert.equal(result, 2, 'Invalid number of nodes registered');
-  });
+  // Register test node
+  it(
+    printTitle('owner', "register second node and verify it's signature and validation contract are correct"),
+    async () => {
+      // Sign the message for the nodeAdd function to prove ownership of the address being registered
+      let signature = web3.eth.sign(nodeSecond, soliditySha3(nodeSecondValCodeAddress));
+      await rocketNode.nodeAdd(
+        nodeSecond,
+        nodeSecondProviderID,
+        nodeSecondSubnetID,
+        nodeSecondInstanceID,
+        nodeSecondRegionID,
+        nodeSecondValCodeAddress,
+        signature,
+        { from: owner, gas: nodeRegisterGas }
+      );
+      const result = await rocketNode.getNodeCount.call().valueOf();
+      assert.equal(result, 2, 'Invalid number of nodes registered');
+    }
+  );
 
   // Try to register a new partner as a non rocket pool owner
   it(printTitle('non owner', 'fail to register a partner'), async () => {
@@ -296,7 +342,6 @@ contract('RocketPool', accounts => {
     assert.equal(poolBalance, sendAmount, 'Invalid minipool balance');
   });
 
-
   // Have the same initial user send an deposit again, to trigger the pool to go into countdown
   it(
     printTitle(
@@ -345,7 +390,6 @@ contract('RocketPool', accounts => {
       assert.equal(userBalance, minEtherRequired - web3.toWei('1', 'ether'), 'Invalid user balance');
     }
   );
-
 
   // Have a new user send an deposit, to trigger the pool to go into countdown
   it(
@@ -609,7 +653,9 @@ contract('RocketPool', accounts => {
       const minipoolStatus = await miniPoolFirst.getStatus.call().valueOf();
       // Check its a validator in Casper
       const casperValidatorIndex = await casper.get_validator_indexes.call(miniPoolFirst.address).valueOf();
-      const casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex).valueOf();
+      const casperValidatorDynastyStart = await casper.get_validators__dynasty_start
+        .call(casperValidatorIndex)
+        .valueOf();
 
       assert.equal(nodeAddress, nodeFirst, 'Node address does not match');
       assert.equal(loadAverage, averageLoad15mins, 'Load average does not match');
@@ -622,38 +668,30 @@ contract('RocketPool', accounts => {
   );
 
   // Simulate Caspers epoch and dynasty changing for the second deposit
-  it(
-    printTitle(
-      'casper',
-      'simulate Caspers epoch and dynasty changing for the second deposit'
-    ),
-    async () => {
+  it(printTitle('casper', 'simulate Caspers epoch and dynasty changing for the second deposit'), async () => {
+    // Increment epoch
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      // Increment epoch
-      await casper.set_increment_epoch({
-        from: owner
-      });
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      await casper.set_increment_epoch({
-        from: owner
-      });
-      
-      // Increment dynasty 
-      await casper.set_increment_dynasty({
-        from: owner
-      });
+    // Increment dynasty
+    await casper.set_increment_dynasty({
+      from: owner,
+    });
 
-      await casper.set_increment_epoch({
-        from: owner
-      });
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      // Increment dynasty 
-      await casper.set_increment_dynasty({
-        from: owner
-      });
-
-    }
-  );
+    // Increment dynasty
+    await casper.set_increment_dynasty({
+      from: owner,
+    });
+  });
 
   // Node performs second checkin, sets the launch time for minipools to 0 so that the second awaiting minipool is launched
   it(
@@ -689,7 +727,9 @@ contract('RocketPool', accounts => {
       const minipoolStatus = await miniPoolSecond.getStatus.call().valueOf();
       // Check its a validator in Casper
       const casperValidatorIndex = await casper.get_validator_indexes.call(miniPoolSecond.address).valueOf();
-      const casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex).valueOf();
+      const casperValidatorDynastyStart = await casper.get_validators__dynasty_start
+        .call(casperValidatorIndex)
+        .valueOf();
 
       assert.equal(nodeAddress, nodeSecond, 'Node address does not match');
       assert.equal(loadAverage, averageLoad15mins, 'Load average does not match');
@@ -701,7 +741,6 @@ contract('RocketPool', accounts => {
       assert.equal(casperValidatorDynastyStart, 5, 'Invalid validator dynasty');
     }
   );
-
 
   it(
     printTitle(
@@ -875,30 +914,21 @@ contract('RocketPool', accounts => {
   });
 
   // Simulate Caspers epoch and dynasty changing to allow withdrawals
-  it(
-    printTitle(
-      'casper',
-      'simulate Caspers epoch and dynasty changing to allow withdrawals'
-    ),
-    async () => {
+  it(printTitle('casper', 'simulate Caspers epoch and dynasty changing to allow withdrawals'), async () => {
+    // Increment epoch
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      // Increment epoch
-      await casper.set_increment_epoch({
-        from: owner
-      });
+    await casper.set_increment_epoch({
+      from: owner,
+    });
 
-      await casper.set_increment_epoch({
-        from: owner
-      });
-      
-      // Increment dynasty 
-      await casper.set_increment_dynasty({
-        from: owner
-      });
-
-    }
-  );
-
+    // Increment dynasty
+    await casper.set_increment_dynasty({
+      from: owner,
+    });
+  });
 
   // Node performs checkin
   it(
@@ -941,8 +971,6 @@ contract('RocketPool', accounts => {
     }
   );
 
-
-
   // Simulate Caspers epoch and dynasty changing for the second deposit
   it(
     printTitle(
@@ -950,50 +978,47 @@ contract('RocketPool', accounts => {
       'simulate Caspers epoch and dynasty incrementing to allow first minipool validator to withdraw'
     ),
     async () => {
-      
       // Increment epoch
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
 
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
 
-      // Increment dynasty 
+      // Increment dynasty
       await casper.set_increment_dynasty({
-        from: owner
+        from: owner,
       });
 
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
 
-      // Increment dynasty 
+      // Increment dynasty
       await casper.set_increment_dynasty({
-        from: owner
+        from: owner,
       });
 
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
 
-      // Increment dynasty 
+      // Increment dynasty
       await casper.set_increment_dynasty({
-        from: owner
+        from: owner,
       });
 
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
 
       await casper.set_increment_epoch({
-        from: owner
+        from: owner,
       });
-
     }
   );
-
 
   // Node performs checkin
   it(
@@ -1024,7 +1049,6 @@ contract('RocketPool', accounts => {
       assert.equal(miniPoolBalanceSecond.valueOf(), 0, 'Invalid second minipool balance');
     }
   );
-
 
   // Node performs checkin
   it(
@@ -1109,7 +1133,6 @@ contract('RocketPool', accounts => {
     }
   );
 
-
   // First user withdraws their deposit + rewards and pays Rocket Pools fee
   it(
     printTitle('userFirst', 'withdraws their deposit + Casper rewards from the minipool and pays their fee'),
@@ -1158,7 +1181,6 @@ contract('RocketPool', accounts => {
       await assertThrows(result);
     }
   );
-  
 
   // Update first minipool
   it(
@@ -1215,7 +1237,6 @@ contract('RocketPool', accounts => {
       const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
       // Get the minipool balance
       const miniPoolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
-
 
       // See if RocketStorage still recognises the pool contract after its been removed and self destructed
       const poolExists = await rocketPool.getPoolExists.call(miniPoolFirst.address).valueOf();
@@ -1278,10 +1299,9 @@ contract('RocketPool', accounts => {
   });
 
   rocketVaultAdminTests({
-      owner: owner,
-      accounts: accounts
-    });
+    owner: owner,
+    accounts: accounts,
+  });
 
   rocketUpgradeTests({owner, accounts});
-
 });
