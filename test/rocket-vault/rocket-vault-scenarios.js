@@ -177,9 +177,31 @@ export async function scenarioDepositTokens({accountName, fromAddress, depositAm
     let vaultBalanceNew = await rocketDepositToken.balanceOf(rocketVault.address);
     let accountBalanceNew = await rocketVault.getBalance(accountName);
 
-    assert.notEqual(vaultBalanceOld, vaultBalanceNew, 'Vault token balance was not increased');
+    assert.notEqual(vaultBalanceOld.valueOf(), vaultBalanceNew.valueOf(), 'Vault token balance was not increased');
     assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account token balance was not increased');
-    assert.equal((vaultBalanceNew - vaultBalanceOld), (accountBalanceNew.valueOf() - accountBalanceOld.valueOf()), 'Account token balance was updated incorrectly');
+    assert.equal((vaultBalanceNew.valueOf() - vaultBalanceOld.valueOf()), (accountBalanceNew.valueOf() - accountBalanceOld.valueOf()), 'Account token balance was updated incorrectly');
+
+}
+
+// Withdraws tokens from account to address and asserts balances updated correctly
+export async function scenarioWithdrawTokens({accountName, fromAddress, withdrawalAddress, withdrawalAmount}) {
+    const rocketVault = await RocketVault.deployed();
+    const rocketDepositToken = await RocketDepositToken.deployed();
+
+    // Get old address & account balances
+    let addressBalanceOld = await rocketDepositToken.balanceOf(withdrawalAddress);
+    let accountBalanceOld = await rocketVault.getBalance(accountName);
+
+    // Withdraw tokens
+    await rocketVault.withdraw(accountName, withdrawalAmount, withdrawalAddress, {from: fromAddress});
+
+    // Get new address & account balances
+    let addressBalanceNew = await rocketDepositToken.balanceOf(withdrawalAddress);
+    let accountBalanceNew = await rocketVault.getBalance(accountName);
+
+    assert.notEqual(addressBalanceOld.valueOf(), addressBalanceNew.valueOf(), 'Address token balance was not increased');
+    assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account token balance was not decreased');
+    assert.equal((addressBalanceNew.valueOf() - addressBalanceOld.valueOf()), (accountBalanceOld.valueOf() - accountBalanceNew.valueOf()), 'Account token balance was updated incorrectly');
 
 }
 

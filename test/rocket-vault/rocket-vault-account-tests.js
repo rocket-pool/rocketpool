@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
-import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens } from './rocket-vault-scenarios';
+import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens, scenarioWithdrawTokens } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -235,7 +235,22 @@ export default function({owner, accounts}) {
             await scenarioDepositTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                depositAmount: web3.toWei('0.1', 'ether'),
+                depositAmount: web3.toWei('0.5', 'ether'),
+            });
+
+        });
+
+
+        // Allowed address can withdraw tokens from token account
+        it(printTitle('allowed address', 'can withdraw tokens from token account'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Withdraw tokens
+            await scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0.1', 'ether'),
             });
 
         });
