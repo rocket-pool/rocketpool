@@ -3,6 +3,7 @@ pragma solidity 0.4.19;
 
 import "./RocketBase.sol";
 import "./RocketStorage.sol";
+import "./RocketVaultStore.sol";
 import "./interface/ERC20.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/SafeMath.sol";
@@ -10,8 +11,7 @@ import "./lib/SafeMath.sol";
 
 /// @title Ether/Tokens held by Rocket Pool are stored here in the vault for safe keeping
 /// @author David Rugendyke
- // TODO: Add in deposits/withdrawals for RPL tokens
- // TODO: Add in an upgrade method that will allow the balance and tokens to be transferred to a new RocketVault contract, but only if it matches the current 'contract.name' == RocketVault in storage
+/// TODO: Add in deposits/withdrawals for RPL tokens
 contract RocketVault is RocketBase {
 
 
