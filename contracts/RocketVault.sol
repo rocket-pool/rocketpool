@@ -24,6 +24,7 @@ contract RocketVault is RocketBase {
 
     ERC20 tokenContract = ERC20(0);                                             // The address of an ERC20 token contract
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);        // The main settings contract most global parameters are maintained
+    RocketVaultStore vaultStore = RocketVaultStore(0);                          // The rocket vault store of ether & tokens
 
 
     /*** Events ****************/

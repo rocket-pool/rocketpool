@@ -39,6 +39,19 @@ contract RocketVaultStore is RocketBase {
     /**** Methods **************/
 
 
+    /// @dev Deposit ether
+    function depositEther() payable onlyLatestRocketVault external returns (bool) {
+        return true;
+    }
+
+
+    /// @dev Withdraw ether to address
+    /// @param _withdrawalAddress The address to withdraw ether to
+    /// @param _amount The amount of ether to withdraw
+    function withdrawEther(address _withdrawalAddress, uint256 amount) onlyLatestRocketVault external returns (bool) {
+        _withdrawalAddress.transfer(_amount);
+        return true;
+    }
 
 
 }
