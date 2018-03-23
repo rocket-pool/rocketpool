@@ -1,5 +1,5 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketVault, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
+import { RocketVault, RocketVaultStore, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
 import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens, scenarioWithdrawTokens } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
@@ -9,11 +9,13 @@ export default function({owner, accounts}) {
 
         // Contract dependencies
         let rocketVault;
+        let rocketVaultStore;
         let rocketDepositToken;
         let rocketSettings;
         let rocketRole;
         before(async () => {
             rocketVault = await RocketVault.deployed();
+            rocketVaultStore = await RocketVaultStore.deployed();
             rocketDepositToken = await RocketDepositToken.deployed();
             rocketSettings = await RocketSettings.deployed();
             rocketRole = await RocketRole.deployed();
@@ -503,6 +505,31 @@ export default function({owner, accounts}) {
                 fromAddress: accountOwner,
             });
 
+        });
+
+
+        // Random address cannot deposit ether directly to store
+        it(printTitle('random address', 'cannot deposit ether to rocket vault store'), async () => {
+            await assertThrows(rocketVaultStore.depositEther({
+                from: owner,
+                value: web3.toWei('1', 'ether'),
+            }), 'random address deposited ether directly to rocket vault store');
+        });
+
+
+        // Random address cannot withdraw ether directly from store
+        it(printTitle('random address', 'cannot withdraw ether from rocket vault store'), async () => {
+            await assertThrows(rocketVaultStore.withdrawEther(accounts[1], web3.toWei('1', 'ether'), {
+                from: owner,
+            }), 'random address withdrew ether directly from rocket vault store');
+        });
+
+
+        // Random address cannot withdraw tokens directly from store
+        it(printTitle('random address', 'cannot withdraw tokens from rocket vault store'), async () => {
+            await assertThrows(rocketVaultStore.withdrawTokens(rocketDepositToken.address, accounts[1], web3.toWei('0.1', 'ether'), {
+                from: owner,
+            }), 'random address withdrew tokens directly from rocket vault store');
         });
 
 
