@@ -1,6 +1,6 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketVault, RocketSettings, RocketRole } from '../artifacts';
-import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther } from './rocket-vault-scenarios';
+import { RocketVault, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
+import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens } from './rocket-vault-scenarios';
 
 export default function({owner, accounts}) {
 
@@ -9,19 +9,21 @@ export default function({owner, accounts}) {
 
         // Contract dependencies
         let rocketVault;
+        let rocketDepositToken;
         let rocketSettings;
         let rocketRole;
         before(async () => {
             rocketVault = await RocketVault.deployed();
+            rocketDepositToken = await RocketDepositToken.deployed();
             rocketSettings = await RocketSettings.deployed();
             rocketRole = await RocketRole.deployed();
         });
 
 
-        // Allowed address can deposit ether into created non-token account
-        it(printTitle('allowed address', 'can deposit ether into created non-token account'), async () => {
+        // Allowed address can deposit ether into non-token account
+        it(printTitle('allowed address', 'can deposit ether into non-token account'), async () => {
 
-            // Create non-token account; owner is allowed by default on creation
+            // Create non-token account; account owner is allowed by default on creation
             await scenarioAddAccount({
                 accountName: soliditySha3('owner.created.nontoken'),
                 ownerAddress: owner,
@@ -38,8 +40,8 @@ export default function({owner, accounts}) {
         });
 
 
-        // Allowed address can withdraw ether from created non-token account
-        it(printTitle('allowed address', 'can withdraw ether from created non-token account'), async () => {
+        // Allowed address can withdraw ether from non-token account
+        it(printTitle('allowed address', 'can withdraw ether from non-token account'), async () => {
 
             // Withdraw ether
             await scenarioWithdrawEther({
@@ -212,6 +214,33 @@ export default function({owner, accounts}) {
         });
 
 
+        // Allowed address can deposit tokens into token account
+        it(printTitle('allowed address', 'can deposit tokens into token account'), async () => {
+
+            // Account at index 3 has an RPD balance
+            const tokenAddress = accounts[3];
+
+            // Create token account
+            await scenarioAddAccount({
+                accountName: soliditySha3('owner.created.token'),
+                ownerAddress: owner,
+                tokenContractAddress: rocketDepositToken.address,
+            });
+
+            // Allow deposits & withdrawals from token account
+            await rocketVault.setAccountDepositsAllowed(soliditySha3('owner.created.token'), tokenAddress, true, {from: owner});
+            await rocketVault.setAccountWithdrawalsAllowed(soliditySha3('owner.created.token'), tokenAddress, true, {from: owner});
+
+            // Deposit tokens
+            await scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                depositAmount: web3.toWei('0.1', 'ether'),
+            });
+
+        });
+
+
         // Owner can allow/disallow deposits from an address
         it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
 
@@ -241,17 +270,18 @@ export default function({owner, accounts}) {
 
         // Account owner can allow/disallow deposits from an address
         it(printTitle('account owner', 'can allow/disallow deposits from an address'), async () => {
+            const accountOwner = accounts[8];
 
             // Create non-token account under random address
-            await rocketRole.adminRoleAdd('admin', accounts[8], {from: owner});
-            await rocketVault.setAccountAdd(soliditySha3('nonowner.created.nontoken'), 0x0, {from: accounts[8]});
-            await rocketRole.adminRoleRemove('admin', accounts[8], {from: owner});
+            await rocketRole.adminRoleAdd('admin', accountOwner, {from: owner});
+            await rocketVault.setAccountAdd(soliditySha3('nonowner.created.nontoken'), 0x0, {from: accountOwner});
+            await rocketRole.adminRoleRemove('admin', accountOwner, {from: owner});
 
             // Run allow deposits scenario
             await scenarioAllowDeposits({
                 accountName: soliditySha3('nonowner.created.nontoken'),
                 depositAddress: accounts[9],
-                fromAddress: accounts[8],
+                fromAddress: accountOwner,
             });
 
         });
@@ -259,13 +289,14 @@ export default function({owner, accounts}) {
 
         // Account owner can allow/disallow withdrawals from an address
         it(printTitle('account owner', 'can allow/disallow withdrawals from an address'), async () => {
+            const accountOwner = accounts[8];
 
             // Run allow withdrawals scenario
             await scenarioAllowWithdrawals({
                 accountName: soliditySha3('nonowner.created.nontoken'),
                 withdrawalAddress: accounts[9],
                 withdrawToAddress: accounts[1],
-                fromAddress: accounts[8],
+                fromAddress: accountOwner,
             });
 
         });

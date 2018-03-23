@@ -1,5 +1,5 @@
 import { assertThrows, soliditySha3 } from '../utils';
-import { RocketStorage, RocketVault } from "../artifacts";
+import { RocketStorage, RocketVault, RocketDepositToken } from "../artifacts";
 
 /** SCENARIOS */
 
@@ -157,6 +157,29 @@ export async function scenarioWithdrawEther({accountName, fromAddress, withdrawa
     assert.notEqual(addressBalanceOld, addressBalanceNew, 'Address ether balance was not increased');
     assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account ether balance was not decreased');
     assert.equal((addressBalanceNew - addressBalanceOld), (accountBalanceOld.valueOf() - accountBalanceNew.valueOf()), 'Account ether balance was updated incorrectly');
+
+}
+
+// Deposits tokens to account and asserts balances updated correctly
+export async function scenarioDepositTokens({accountName, fromAddress, depositAmount}) {
+    const rocketVault = await RocketVault.deployed();
+    const rocketDepositToken = await RocketDepositToken.deployed();
+
+    // Get old vault & account balances
+    let vaultBalanceOld = await rocketDepositToken.balanceOf(rocketVault.address);
+    let accountBalanceOld = await rocketVault.getBalance(accountName);
+
+    // Allow deposit & deposit tokens
+    await rocketDepositToken.approve(rocketVault.address, depositAmount, {from: fromAddress});
+    await rocketVault.deposit(accountName, depositAmount, {from: fromAddress});
+
+    // Get new vault & account balances
+    let vaultBalanceNew = await rocketDepositToken.balanceOf(rocketVault.address);
+    let accountBalanceNew = await rocketVault.getBalance(accountName);
+
+    assert.notEqual(vaultBalanceOld, vaultBalanceNew, 'Vault token balance was not increased');
+    assert.notEqual(accountBalanceOld.valueOf(), accountBalanceNew.valueOf(), 'Account token balance was not increased');
+    assert.equal((vaultBalanceNew - vaultBalanceOld), (accountBalanceNew.valueOf() - accountBalanceOld.valueOf()), 'Account token balance was updated incorrectly');
 
 }
 
