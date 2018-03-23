@@ -82,7 +82,7 @@ contract RocketVault is RocketBase {
             // Capture the amount of ether sent
             deposit = msg.value;
             // Send ether to the store
-            vaultStore.depositEther.value(deposit)();
+            require(vaultStore.depositEther.value(deposit)() == true);
         } else {
             // Make sure ether balance is not sent with token deposit
             require(msg.value == 0);
@@ -135,7 +135,7 @@ contract RocketVault is RocketBase {
         // Are we transferring ether or tokens?
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
             // Transfer the withdrawal amount to the sender
-            vaultStore.withdrawEther(_withdrawalAddress, _amount);
+            require(vaultStore.withdrawEther(_withdrawalAddress, _amount) == true);
         } else {
             // Transfer the tokens from our Vault contract account
             tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
