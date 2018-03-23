@@ -412,6 +412,39 @@ export default function({owner, accounts}) {
         });
 
 
+        // Random address cannot deposit tokens into account
+        it(printTitle('random address', 'cannot deposit tokens into account'), async () => {
+
+            // Send some tokens to random address
+            const tokenAddress = accounts[3];
+            const randomTokenAddress = accounts[9];
+            await rocketDepositToken.transfer(randomTokenAddress, web3.toWei('0.2', 'ether'), {from: tokenAddress});
+
+            // Deposit tokens
+            await assertThrows(scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: randomTokenAddress,
+                depositAmount: web3.toWei('0.1', 'ether'),
+            }), 'random address deposited tokens into account');
+
+        });
+
+
+        // Random address cannot withdraw tokens from account
+        it(printTitle('random address', 'cannot withdraw tokens from account'), async () => {
+            const randomTokenAddress = accounts[9];
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: randomTokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0.1', 'ether'),
+            }), 'random address withdrew tokens from account');
+
+        });
+
+
         // Owner can allow/disallow deposits from an address
         it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
 
