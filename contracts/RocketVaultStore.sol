@@ -11,8 +11,6 @@ contract RocketVaultStore is RocketBase {
 
 
     /**** Libs *****************/
-    
-    using SafeMath for uint;
 
 
     /*** Contracts *************/
@@ -48,7 +46,7 @@ contract RocketVaultStore is RocketBase {
     /// @dev Withdraw ether to address
     /// @param _withdrawalAddress The address to withdraw ether to
     /// @param _amount The amount of ether to withdraw
-    function withdrawEther(address _withdrawalAddress, uint256 amount) onlyLatestRocketVault external returns (bool) {
+    function withdrawEther(address _withdrawalAddress, uint256 _amount) onlyLatestRocketVault external returns (bool) {
         _withdrawalAddress.transfer(_amount);
         return true;
     }
