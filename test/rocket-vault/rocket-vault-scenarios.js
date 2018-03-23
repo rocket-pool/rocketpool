@@ -1,5 +1,5 @@
 import { assertThrows, soliditySha3 } from '../utils';
-import { RocketStorage, RocketVault, RocketDepositToken } from "../artifacts";
+import { RocketStorage, RocketVault, RocketVaultStore, RocketDepositToken } from "../artifacts";
 
 /** SCENARIOS */
 
@@ -121,16 +121,17 @@ export async function scenarioAllowWithdrawals({accountName, withdrawalAddress, 
 // Deposits ether to account and asserts balances updated correctly
 export async function scenarioDepositEther({accountName, fromAddress, depositAmount}) {
     const rocketVault = await RocketVault.deployed();
+    const rocketVaultStore = await RocketVaultStore.deployed();
 
     // Get old vault & account balances
-    let vaultBalanceOld = web3.eth.getBalance(rocketVault.address).valueOf();
+    let vaultBalanceOld = web3.eth.getBalance(rocketVaultStore.address).valueOf();
     let accountBalanceOld = await rocketVault.getBalance(accountName);
 
     // Deposit ether
     await rocketVault.deposit(accountName, 0, {from: fromAddress, value: depositAmount});
 
     // Get new vault & account balances
-    let vaultBalanceNew = web3.eth.getBalance(rocketVault.address).valueOf();
+    let vaultBalanceNew = web3.eth.getBalance(rocketVaultStore.address).valueOf();
     let accountBalanceNew = await rocketVault.getBalance(accountName);
 
     assert.notEqual(vaultBalanceOld, vaultBalanceNew, 'Vault ether balance was not increased');
