@@ -69,6 +69,7 @@ contract RocketVault is RocketBase {
 
 
     /// @dev Deposits to RocketVault can be of ether or tokens
+    /// @dev Token deposits must be preceded by a call to tokenContract.approve(rocketVault.address, depositAmount);
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being deposited in RocketVault
     function deposit(bytes32 _account, uint256 _amount) payable external returns(uint256) {
@@ -79,10 +80,10 @@ contract RocketVault is RocketBase {
             // Capture the amount of ether sent
             deposit = msg.value;
         } else {
-            // Transfer the tokens from the users account, user must initiate this transaction so we know exactly how many tokens we received
+            // Transfer the tokens from the users account
             tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
             // Send them to Rocket Vault now
-            require(tokenContract.transfer(address(this), _amount) == true);
+            require(tokenContract.transferFrom(msg.sender, address(this), _amount) == true);
             // Set the amount now
             deposit = _amount;
         }
