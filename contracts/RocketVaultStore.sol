@@ -2,6 +2,7 @@ pragma solidity 0.4.19;
 
 
 import "./RocketBase.sol";
+import "./interface/ERC20.sol";
 
 
 /// @title Ether/Tokens held in the RocketVault are stored here
@@ -10,10 +11,9 @@ import "./RocketBase.sol";
 contract RocketVaultStore is RocketBase {
 
 
-    /**** Libs *****************/
-
-
     /*** Contracts *************/
+
+    ERC20 tokenContract = ERC20(0);         // The address of an ERC20 token contract
 
 
     /*** Modifiers *************/
@@ -38,7 +38,7 @@ contract RocketVaultStore is RocketBase {
 
 
     /// @dev Deposit ether
-    function depositEther() payable onlyLatestRocketVault external returns (bool) {
+    function depositEther() payable external onlyLatestRocketVault returns (bool) {
         return true;
     }
 
@@ -46,9 +46,19 @@ contract RocketVaultStore is RocketBase {
     /// @dev Withdraw ether to address
     /// @param _withdrawalAddress The address to withdraw ether to
     /// @param _amount The amount of ether to withdraw
-    function withdrawEther(address _withdrawalAddress, uint256 _amount) onlyLatestRocketVault external returns (bool) {
+    function withdrawEther(address _withdrawalAddress, uint256 _amount) external onlyLatestRocketVault returns (bool) {
         _withdrawalAddress.transfer(_amount);
         return true;
+    }
+
+
+    /// @dev Withdraw tokens to address
+    /// @param _tokenAddress The address of the ERC20 token contract
+    /// @param _withdrawalAddress The address to withdraw tokens to
+    /// @param _amount The amount of tokens to withdraw
+    function withdrawTokens(address _tokenAddress, address _withdrawalAddress, uint256 _amount) external onlyLatestRocketVault returns (bool) {
+        tokenContract = ERC20(_tokenAddress);
+        return tokenContract.transfer(_withdrawalAddress, _amount);
     }
 
 

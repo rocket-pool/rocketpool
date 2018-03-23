@@ -123,14 +123,14 @@ export async function scenarioDepositEther({accountName, fromAddress, depositAmo
     const rocketVault = await RocketVault.deployed();
     const rocketVaultStore = await RocketVaultStore.deployed();
 
-    // Get old vault & account balances
+    // Get old vault store & account balances
     let vaultBalanceOld = web3.eth.getBalance(rocketVaultStore.address).valueOf();
     let accountBalanceOld = await rocketVault.getBalance(accountName);
 
     // Deposit ether
     await rocketVault.deposit(accountName, 0, {from: fromAddress, value: depositAmount});
 
-    // Get new vault & account balances
+    // Get new vault store & account balances
     let vaultBalanceNew = web3.eth.getBalance(rocketVaultStore.address).valueOf();
     let accountBalanceNew = await rocketVault.getBalance(accountName);
 
@@ -164,18 +164,19 @@ export async function scenarioWithdrawEther({accountName, fromAddress, withdrawa
 // Deposits tokens to account and asserts balances updated correctly
 export async function scenarioDepositTokens({accountName, fromAddress, depositAmount, etherBalance = 0}) {
     const rocketVault = await RocketVault.deployed();
+    const rocketVaultStore = await RocketVaultStore.deployed();
     const rocketDepositToken = await RocketDepositToken.deployed();
 
-    // Get old vault & account balances
-    let vaultBalanceOld = await rocketDepositToken.balanceOf(rocketVault.address);
+    // Get old vault store & account balances
+    let vaultBalanceOld = await rocketDepositToken.balanceOf(rocketVaultStore.address);
     let accountBalanceOld = await rocketVault.getBalance(accountName);
 
     // Allow deposit & deposit tokens
     await rocketDepositToken.approve(rocketVault.address, depositAmount, {from: fromAddress});
     await rocketVault.deposit(accountName, depositAmount, {from: fromAddress, value: etherBalance});
 
-    // Get new vault & account balances
-    let vaultBalanceNew = await rocketDepositToken.balanceOf(rocketVault.address);
+    // Get new vault store & account balances
+    let vaultBalanceNew = await rocketDepositToken.balanceOf(rocketVaultStore.address);
     let accountBalanceNew = await rocketVault.getBalance(accountName);
 
     assert.notEqual(vaultBalanceOld.valueOf(), vaultBalanceNew.valueOf(), 'Vault token balance was not increased');

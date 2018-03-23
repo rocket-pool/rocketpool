@@ -81,15 +81,15 @@ contract RocketVault is RocketBase {
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
             // Capture the amount of ether sent
             deposit = msg.value;
-            // Send ether to the store
+            // Send the ether to the store
             require(vaultStore.depositEther.value(deposit)() == true);
         } else {
             // Make sure ether balance is not sent with token deposit
             require(msg.value == 0);
             // Transfer the tokens from the users account
             tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
-            // Send them to Rocket Vault now
-            require(tokenContract.transferFrom(msg.sender, address(this), _amount) == true);
+            // Send them to the store now
+            require(tokenContract.transferFrom(msg.sender, vaultStore, _amount) == true);
             // Set the amount now
             deposit = _amount;
         }
@@ -134,13 +134,11 @@ contract RocketVault is RocketBase {
         rocketStorage.setUint(keccak256("vault.account.withdrawal.total", _account), withdrawalNumber + 1);
         // Are we transferring ether or tokens?
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
-            // Transfer the withdrawal amount to the sender
+            // Transfer the withdrawal amount from the store to the sender
             require(vaultStore.withdrawEther(_withdrawalAddress, _amount) == true);
         } else {
-            // Transfer the tokens from our Vault contract account
-            tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
-            // Send them from Rocket Vault now
-            require(tokenContract.transfer(_withdrawalAddress, _amount) == true);
+            // Transfer the tokens from the store to the sender
+            require(vaultStore.withdrawTokens(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)), _withdrawalAddress, _amount) == true);
         }
         // Log it
         Withdrawal(msg.sender, _account, _amount, withdrawalNumber, now);
