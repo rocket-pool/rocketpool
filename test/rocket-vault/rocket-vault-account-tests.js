@@ -285,6 +285,46 @@ export default function({owner, accounts}) {
         });
 
 
+        // Allowed address cannot deposit tokens into account while vault deposits are disabled
+        it(printTitle('allowed address', 'cannot deposit tokens into account while vault deposits disabled'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Disable vault deposits
+            await rocketSettings.setVaultDepositAllowed(false);
+
+            // Deposit tokens
+            await assertThrows(scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                depositAmount: web3.toWei('0.1', 'ether'),
+            }), 'tokens were deposited while vault deposits disabled');
+
+            // Re-enable vault deposits
+            await rocketSettings.setVaultDepositAllowed(true);
+
+        });
+
+
+        // Allowed address cannot deposit tokens into account while account deposits are disabled
+        it(printTitle('allowed address', 'cannot deposit tokens into account while account deposits disabled'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Disable account deposits
+            await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.token'), false, {from: owner});
+
+            // Deposit tokens
+            await assertThrows(scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                depositAmount: web3.toWei('0.1', 'ether'),
+            }), 'tokens were deposited while account deposits disabled');
+
+            // Re-enable account deposits
+            await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.token'), true, {from: owner});
+
+        });
+
+
         // Owner can allow/disallow deposits from an address
         it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
 
