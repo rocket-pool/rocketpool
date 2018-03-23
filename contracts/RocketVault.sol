@@ -80,6 +80,8 @@ contract RocketVault is RocketBase {
             // Capture the amount of ether sent
             deposit = msg.value;
         } else {
+            // Make sure ether balance is not sent with token deposit
+            require(msg.value == 0);
             // Transfer the tokens from the users account
             tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
             // Send them to Rocket Vault now
