@@ -161,7 +161,7 @@ export async function scenarioWithdrawEther({accountName, fromAddress, withdrawa
 }
 
 // Deposits tokens to account and asserts balances updated correctly
-export async function scenarioDepositTokens({accountName, fromAddress, depositAmount}) {
+export async function scenarioDepositTokens({accountName, fromAddress, depositAmount, etherBalance = 0}) {
     const rocketVault = await RocketVault.deployed();
     const rocketDepositToken = await RocketDepositToken.deployed();
 
@@ -171,7 +171,7 @@ export async function scenarioDepositTokens({accountName, fromAddress, depositAm
 
     // Allow deposit & deposit tokens
     await rocketDepositToken.approve(rocketVault.address, depositAmount, {from: fromAddress});
-    await rocketVault.deposit(accountName, depositAmount, {from: fromAddress});
+    await rocketVault.deposit(accountName, depositAmount, {from: fromAddress, value: etherBalance});
 
     // Get new vault & account balances
     let vaultBalanceNew = await rocketDepositToken.balanceOf(rocketVault.address);

@@ -256,6 +256,35 @@ export default function({owner, accounts}) {
         });
 
 
+        // Allowed address cannot deposit zero tokens into account
+        it(printTitle('allowed address', 'cannot deposit zero tokens into account'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Deposit tokens
+            await assertThrows(scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                depositAmount: web3.toWei('0', 'ether'),
+            }), 'zero tokens were deposited into account');
+
+        });
+
+
+        // Allowed address cannot send ether balance with token deposit
+        it(printTitle('allowed address', 'cannot send ether balance with token deposit'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Deposit tokens
+            await assertThrows(scenarioDepositTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                depositAmount: web3.toWei('0.1', 'ether'),
+                etherBalance: web3.toWei('1', 'ether'),
+            }), 'ether balance was sent with token deposit');
+
+        });
+
+
         // Owner can allow/disallow deposits from an address
         it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
 
