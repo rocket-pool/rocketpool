@@ -325,6 +325,51 @@ export default function({owner, accounts}) {
         });
 
 
+        // Allowed address cannot withdraw zero tokens from account
+        it(printTitle('allowed address', 'cannot withdraw zero tokens from account'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('0', 'ether'),
+            }), 'zero tokens were withdrawn from account');
+
+        });
+
+
+        // Allowed address cannot withdraw more tokens than their account balance
+        it(printTitle('allowed address', 'cannot withdraw more tokens than account balance'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: accounts[1],
+                withdrawalAmount: web3.toWei('20', 'ether'),
+            }), 'more tokens than account balance were withdrawn');
+
+        });
+
+
+        // Allowed address cannot withdraw tokens to a null address
+        it(printTitle('allowed address', 'cannot withdraw tokens to a null address'), async () => {
+            const tokenAddress = accounts[3];
+
+            // Withdraw tokens
+            await assertThrows(scenarioWithdrawTokens({
+                accountName: soliditySha3('owner.created.token'),
+                fromAddress: tokenAddress,
+                withdrawalAddress: '0x0000000000000000000000000000000000000000',
+                withdrawalAmount: web3.toWei('0.1', 'ether'),
+            }), 'tokens were withdrawn to a null address');
+
+        });
+
+
         // Owner can allow/disallow deposits from an address
         it(printTitle('owner', 'can allow/disallow deposits from an address'), async () => {
 
