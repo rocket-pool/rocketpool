@@ -218,10 +218,10 @@ module.exports = async (deployer, network) => {
                                   console.log(rocketDepositToken.address);
 
                                   // Rocket Pool Token
-                                  // :TODO: Update to correct address after RPL token contract created
                                   await rocketStorageInstance.setAddress(
+                                    // If we are migrating to live mainnet, set the token address for the current live RPL contract
                                     config.web3.utils.soliditySha3('contract.name', 'rocketPoolToken'),
-                                    rocketDepositToken.address
+                                    network == 'live' ? '0xb4efd85c19999d84251304bda99e90b92300bd93' : rocketDepositToken.address
                                   );
                                   // Log it
                                   console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPoolToken Address');
@@ -239,7 +239,6 @@ module.exports = async (deployer, network) => {
                                   // Log it
                                   console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketVault Address');
                                   console.log(rocketVault.address);
-                                  console.log('\n');
 
                                   // Rocket Vault Store
                                   await rocketStorageInstance.setAddress(
@@ -253,7 +252,6 @@ module.exports = async (deployer, network) => {
                                   // Log it
                                   console.log('\x1b[33m%s\x1b[0m:', 'Set Storage rocketVaultStore Address');
                                   console.log(rocketVaultStore.address);
-                                  console.log('\n');
 
                                   // Rocket Settings
                                   await rocketStorageInstance.setAddress(
