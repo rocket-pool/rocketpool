@@ -5,6 +5,7 @@ export const RocketPoolMini = artifacts.require('./contract/RocketPoolMini');
 export const RocketDepositToken = artifacts.require('./contract/RocketDepositToken');
 export const RocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI');
 export const RocketVault = artifacts.require('./contract/RocketVault');
+export const RocketVaultStore = artifacts.require('./contract/RocketVaultStore');
 export const RocketRole = artifacts.require('./contract/RocketRole');
 export const RocketSettings = artifacts.require('./contract/RocketSettings');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');

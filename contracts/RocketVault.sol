@@ -3,6 +3,7 @@ pragma solidity 0.4.19;
 
 import "./RocketBase.sol";
 import "./RocketStorage.sol";
+import "./RocketVaultStore.sol";
 import "./interface/ERC20.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./lib/SafeMath.sol";
@@ -10,8 +11,7 @@ import "./lib/SafeMath.sol";
 
 /// @title Ether/Tokens held by Rocket Pool are stored here in the vault for safe keeping
 /// @author David Rugendyke
- // TODO: Add in deposits/withdrawals for RPL tokens
- // TODO: Add in an upgrade method that will allow the balance and tokens to be transferred to a new RocketVault contract, but only if it matches the current 'contract.name' == RocketVault in storage
+/// TODO: Add in deposits/withdrawals for RPL tokens
 contract RocketVault is RocketBase {
 
 
@@ -24,6 +24,7 @@ contract RocketVault is RocketBase {
 
     ERC20 tokenContract = ERC20(0);                                             // The address of an ERC20 token contract
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);        // The main settings contract most global parameters are maintained
+    RocketVaultStore vaultStore = RocketVaultStore(0);                          // The rocket vault store of ether & tokens
 
 
     /*** Events ****************/
@@ -73,19 +74,22 @@ contract RocketVault is RocketBase {
     /// @param _account The name of an existing account in RocketVault
     /// @param _amount The amount being deposited in RocketVault
     function deposit(bytes32 _account, uint256 _amount) payable external returns(uint256) {
+        vaultStore = RocketVaultStore(rocketStorage.getAddress(keccak256("contract.name", "rocketVaultStore")));
         // Actual amount to deposit
         uint256 deposit = 0;
         // Determine how much is being deposited based on the account type, can be either ether or tokens
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
             // Capture the amount of ether sent
             deposit = msg.value;
+            // Send the ether to the store
+            require(vaultStore.depositEther.value(deposit)() == true);
         } else {
             // Make sure ether balance is not sent with token deposit
             require(msg.value == 0);
             // Transfer the tokens from the users account
             tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
-            // Send them to Rocket Vault now
-            require(tokenContract.transferFrom(msg.sender, address(this), _amount) == true);
+            // Send them to the store now
+            require(tokenContract.transferFrom(msg.sender, vaultStore, _amount) == true);
             // Set the amount now
             deposit = _amount;
         }
@@ -113,6 +117,7 @@ contract RocketVault is RocketBase {
     /// @param _amount The amount being withdrawn in RocketVault
     /// @param _withdrawalAddress The address to withdraw too
     function withdraw(bytes32 _account, uint256 _amount, address _withdrawalAddress) external returns(uint256) {
+        vaultStore = RocketVaultStore(rocketStorage.getAddress(keccak256("contract.name", "rocketVaultStore")));
         // Verify withdrawal is ok based on the account type and exact values transferred to the vault, throws if not
         acceptableWithdrawal(_account, _amount, _withdrawalAddress);
         // Get how many individual withdrawals in this account we currently have  
@@ -129,13 +134,11 @@ contract RocketVault is RocketBase {
         rocketStorage.setUint(keccak256("vault.account.withdrawal.total", _account), withdrawalNumber + 1);
         // Are we transferring ether or tokens?
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
-            // Transfer the withdrawal amount to the sender
-            _withdrawalAddress.transfer(_amount);
+            // Transfer the withdrawal amount from the store to the sender
+            require(vaultStore.withdrawEther(_withdrawalAddress, _amount) == true);
         } else {
-            // Transfer the tokens from our Vault contract account
-            tokenContract = ERC20(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)));
-            // Send them from Rocket Vault now
-            require(tokenContract.transfer(_withdrawalAddress, _amount) == true);
+            // Transfer the tokens from the store to the sender
+            require(vaultStore.withdrawTokens(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)), _withdrawalAddress, _amount) == true);
         }
         // Log it
         Withdrawal(msg.sender, _account, _amount, withdrawalNumber, now);

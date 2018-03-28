@@ -11,6 +11,7 @@ const rocketPoolMiniDelegate = artifacts.require('./RocketPoolMiniDelegate.sol')
 const rocketDepositToken = artifacts.require('./RocketDepositToken.sol');
 const rocketPartnerAPI = artifacts.require('./RocketPartnerAPI.sol');
 const rocketVault = artifacts.require('./RocketVault.sol');
+const rocketVaultStore = artifacts.require('./RocketVaultStore.sol');
 const rocketSettings = artifacts.require('./RocketSettings.sol');
 const rocketFactory = artifacts.require('./RocketFactory.sol');
 const rocketUpgrade = artifacts.require('./RocketUpgrade.sol');
@@ -38,6 +39,8 @@ module.exports = async (deployer, network) => {
         });
         // Deploy Rocket Vault
         return deployer.deploy(rocketVault, rocketStorage.address).then(() => {
+        // Deploy Rocket Vault Store
+        return deployer.deploy(rocketVaultStore, rocketStorage.address).then(() => {
           // Deploy Rocket Utils
           return deployer.deploy(rocketUtils, rocketStorage.address).then(() => {
             // Deploy Rocket Upgrade
@@ -238,6 +241,20 @@ module.exports = async (deployer, network) => {
                                   console.log(rocketVault.address);
                                   console.log('\n');
 
+                                  // Rocket Vault Store
+                                  await rocketStorageInstance.setAddress(
+                                    config.web3.utils.soliditySha3('contract.address', rocketVaultStore.address),
+                                    rocketVaultStore.address
+                                  );
+                                  await rocketStorageInstance.setAddress(
+                                    config.web3.utils.soliditySha3('contract.name', 'rocketVaultStore'),
+                                    rocketVaultStore.address
+                                  );
+                                  // Log it
+                                  console.log('\x1b[33m%s\x1b[0m:', 'Set Storage rocketVaultStore Address');
+                                  console.log(rocketVaultStore.address);
+                                  console.log('\n');
+
                                   // Rocket Settings
                                   await rocketStorageInstance.setAddress(
                                     config.web3.utils.soliditySha3('contract.address', rocketSettings.address),
@@ -281,6 +298,7 @@ module.exports = async (deployer, network) => {
               });
             });
           });
+        });
         });
       });
     });
