@@ -1,7 +1,7 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, Casper, CasperValidation} from './artifacts';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketSettings, Casper, CasperValidation} from './artifacts';
 
 // Import modular tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
@@ -115,7 +115,6 @@ contract('RocketPool', accounts => {
   let rocketDeposit;
   let rocketPool;
   let rocketPartnerAPI;
-  let rocketVault;
   let casper;
 
   beforeEach(async () => {
@@ -125,7 +124,6 @@ contract('RocketPool', accounts => {
     rocketDeposit = await RocketDepositToken.deployed();
     rocketPool = await RocketPool.deployed();
     rocketPartnerAPI = await RocketPartnerAPI.deployed();
-    rocketVault = await RocketVault.deployed();
     casper = await Casper.deployed();
   });
 
