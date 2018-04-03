@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings, RocketUser } from '../artifacts';
+import { scenarioWithdrawDepositTokens } from './rocket-deposit-scenarios';
 
 
 import { RocketDepositToken } from '../artifacts';
@@ -20,51 +20,25 @@ export default function({
 
 
         // Contract dependencies
-        let rocketSettings;
-        let rocketUser;
         let rocketDeposit;
         before(async () => {
-            rocketSettings = await RocketSettings.deployed();
-            rocketUser = await RocketUser.deployed();
             rocketDeposit = await RocketDepositToken.deployed();
         });
 
 
         it(printTitle('userThird', 'withdraws 50% of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper'), async () => {
 
-            // Get the token withdrawal fee
-            const tokenWithdrawalFee = await rocketSettings.getTokenRPDWithdrawalFeePerc.call().valueOf();
-            // Get the total supply of tokens in circulation
-            const totalTokenSupplyStr = await rocketDeposit.totalSupply.call({ from: userThird }).valueOf();
-            const totalTokenSupply = parseInt(totalTokenSupplyStr);
-
             // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
-            const userDeposit = await miniPools.second.getUserDeposit.call(userThird).valueOf();
-            const withdrawHalfAmount = parseInt(userDeposit) / 2;
-            // Fee incurred on tokens
-            const tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee, 'ether') * web3.fromWei(withdrawHalfAmount, 'ether'));
+            const userDeposit = await miniPools.second.getUserDeposit.call(userThird);
+            const withdrawHalfAmount = parseInt(userDeposit.valueOf()) / 2;
 
-            // Try to withdraw tokens from that users minipool
-            await rocketUser.userWithdrawDepositTokens(miniPools.second.address, withdrawHalfAmount, {
-                from: userThird,
+            // Withdraw tokens from user's minipool
+            await scenarioWithdrawDepositTokens({
+                miniPool: miniPools.second,
+                withdrawalAmount: withdrawHalfAmount,
+                fromAddress: userThird,
                 gas: 250000,
             });
-
-            // Get the total supply of tokens in circulation
-            const tokenWeiSupplyAfter = await rocketDeposit.totalSupply({ from: userThird }).valueOf();
-            const totalTokenSupplyAfter = parseFloat(web3.fromWei(tokenWeiSupplyAfter, 'ether'));
-
-            // Now count how many tokens that user has, should match the amount withdrawn
-            const userWeiBalance = await rocketDeposit.balanceOf.call(userThird).valueOf();
-            const tokenBalance = parseFloat(web3.fromWei(userWeiBalance, 'ether'));
-
-            // Now count how many tokens that user has, should match the amount withdrawn - fees
-            const userBalance = await miniPools.second.getUserDeposit.call(userThird).valueOf();
-            const expectedTokenBalance = web3.fromWei(withdrawHalfAmount, 'ether') - tokenBalanceFeeIncurred;
-
-            assert.equal(tokenBalance, expectedTokenBalance, 'Token balance does not match');
-            assert.equal(totalTokenSupplyAfter, tokenBalance, 'Token supply does not match');
-            assert.equal(userBalance, withdrawHalfAmount, 'User balance does not match');
 
         });
 
