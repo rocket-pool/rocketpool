@@ -3,7 +3,8 @@ const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
 import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketSettings, Casper, CasperValidation} from './artifacts';
 
-// Import modular tests
+// Import modular tests & scenarios
+import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
@@ -132,35 +133,9 @@ contract('RocketPool', accounts => {
   describe('Part 1', async () => {
 
     // Simulate Caspers epoch and dynasty changing
-    it(
-      printTitle(
-        'casper',
-        'simulate Caspers epoch and dynasty changing'
-      ),
-      async () => {
-
-        // Increment epoch
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-        
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-        // Check that the first minipool contract has been attached to the node
-        const casperDynasty = await casper.get_dynasty.call().valueOf();
-        const casperEpoch = await casper.get_current_epoch.call().valueOf();
-
-        assert.equal(casperEpoch, 2, 'Casper epoch does not match');
-        assert.equal(casperDynasty, 1, 'Casper dynasty does not match');
-      }
-    );
+    it(printTitle('casper', 'simulate Caspers epoch and dynasty changing'), async () => {
+      await scenarioIncrementEpochAndDynasty({increment: ['e','e','d'], fromAddress: owner});
+    });
 
     // Register validation contract address for node
     it(printTitle('nodeFirst', 'create validation contract and set address'), async () => {
@@ -636,38 +611,9 @@ contract('RocketPool', accounts => {
     );
 
     // Simulate Caspers epoch and dynasty changing for the second deposit
-    it(
-      printTitle(
-        'casper',
-        'simulate Caspers epoch and dynasty changing for the second deposit'
-      ),
-      async () => {
-
-        // Increment epoch
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-        
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-      }
-    );
+    it(printTitle('casper', 'simulate Caspers epoch and dynasty changing for the second deposit'), async () => {
+      await scenarioIncrementEpochAndDynasty({increment: ['e','e','d','e','d'], fromAddress: owner});
+    });
 
     // Node performs second checkin, sets the launch time for minipools to 0 so that the second awaiting minipool is launched
     it(
@@ -897,29 +843,9 @@ contract('RocketPool', accounts => {
     });
 
     // Simulate Caspers epoch and dynasty changing to allow withdrawals
-    it(
-      printTitle(
-        'casper',
-        'simulate Caspers epoch and dynasty changing to allow withdrawals'
-      ),
-      async () => {
-
-        // Increment epoch
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-        
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-      }
-    );
+    it(printTitle('casper', 'simulate Caspers epoch and dynasty changing to allow withdrawals'), async () => {
+      await scenarioIncrementEpochAndDynasty({increment: ['e','e','d'], fromAddress: owner});
+    });
 
 
     // Node performs checkin
@@ -967,55 +893,9 @@ contract('RocketPool', accounts => {
   describe('Part 11', async () => {
 
     // Simulate Caspers epoch and dynasty changing for the second deposit
-    it(
-      printTitle(
-        'casper',
-        'simulate Caspers epoch and dynasty incrementing to allow first minipool validator to withdraw'
-      ),
-      async () => {
-        
-        // Increment epoch
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        // Increment dynasty 
-        await casper.set_increment_dynasty({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-        await casper.set_increment_epoch({
-          from: owner
-        });
-
-      }
-    );
+    it(printTitle('casper', 'simulate Caspers epoch and dynasty incrementing to allow first minipool validator to withdraw'), async () => {
+      await scenarioIncrementEpochAndDynasty({increment: ['e','e','d','e','d','e','d','e','e'], fromAddress: owner});
+    });
 
     // Node performs checkin
     it(
