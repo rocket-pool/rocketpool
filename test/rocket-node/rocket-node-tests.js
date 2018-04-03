@@ -1,5 +1,4 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketNode } from '../artifacts';
 import { scenarioIncrementEpochAndDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioRegisterNode } from './rocket-node-scenarios';
 
