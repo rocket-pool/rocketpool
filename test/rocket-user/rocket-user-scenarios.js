@@ -3,9 +3,9 @@ import { RocketUser } from '../artifacts';
 
 // Registers a backup withdrawal address and asserts withdrawal address was set correctly
 export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, miniPoolAddress, fromAddress, gas}) {
-	const rocketUser = await RocketUser.deployed();
+    const rocketUser = await RocketUser.deployed();
 
-	// Register withdrawal address
+    // Register withdrawal address
     let result = await rocketUser.userSetWithdrawalDepositAddress(withdrawalAddress, miniPoolAddress, {
         from: fromAddress,
         gas: gas,
