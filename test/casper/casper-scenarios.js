@@ -1,4 +1,5 @@
-import { Casper } from "../artifacts";
+import { Casper, CasperValidation } from '../artifacts';
+
 
 // Increments Casper epochs and dynasties and asserts current values are set correctly
 // Increment parameter is an array of 'e' and 'd' to increment epoch and dynasty respectively
@@ -38,3 +39,20 @@ export async function scenarioIncrementEpochAndDynasty({increment, fromAddress})
     assert.equal(casperDynastyNew.valueOf(), parseInt(casperDynastyOld.valueOf()) + dynastiesPassed, 'Updated Casper dynasty does not match');
 
 }
+
+
+// Creates validation contract and asserts contract was created successfully
+export async function scenarioCreateValidationContract({fromAddress}) {
+
+    // Create a blank contract for use in making validation address contracts
+    // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
+    const valCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: fromAddress});
+
+    // Assert that contract was created successfully
+    assert.notEqual(valCodeContract.address, 0, 'Validation contract creation failed');
+
+    // Return validation contract address
+    return valCodeContract.address;
+
+}
+
