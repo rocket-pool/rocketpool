@@ -31,7 +31,7 @@ export async function scenarioRegisterNode({
     // Get updated node count
     let nodeCountNew = await rocketNode.getNodeCount.call();
 
-    // Assert that updated node count matches
+    // Assert that updated node count is correct
     assert.equal(nodeCountNew.valueOf(), parseInt(nodeCountOld.valueOf()) + 1, 'Invalid number of nodes registered');
 
 }

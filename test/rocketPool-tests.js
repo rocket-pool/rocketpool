@@ -7,6 +7,7 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
+import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
@@ -145,65 +146,18 @@ contract('RocketPool', accounts => {
     nodeRegisterGas
   });
 
-  describe('Part 2', async () => {
-
-    // Try to register a new partner as a non rocket pool owner
-    it(printTitle('non owner', 'fail to register a partner'), async () => {
-      const result = rocketPartnerAPI.partnerAdd(partnerFirst, partnerFirstName, {
-        from: userFirst,
-        gas: partnerRegisterGas,
-      });
-      await assertThrows(result);
-    });
-
-    // Register two 3rd party partners
-    it(printTitle('owner', 'register 2 partners'), async () => {
-      await rocketPartnerAPI.partnerAdd(partnerFirst, partnerFirstName, {
-        from: web3.eth.coinbase,
-        gas: partnerRegisterGas,
-      });
-      await rocketPartnerAPI.partnerAdd(partnerSecond, partnerSecondName, {
-        from: web3.eth.coinbase,
-        gas: partnerRegisterGas,
-      });
-
-      const result = await rocketPartnerAPI.getPartnerCount.call().valueOf();
-      assert.equal(result, 2, 'Invalid number of partners registered');
-    });
-
-    // Attempt to make a deposit with an incorrect pool staking time ID
-    it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), async () => {
-      // Get the min ether required to launch a minipool
-      const minEther = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-      // Calculate just enough ether to create the pool
-      const sendAmount = minEther - web3.toWei('1', 'ether');
-
-      // Deposit on a behalf of the partner and also specify a incorrect pool staking time ID
-      const result = rocketPartnerAPI.APIpartnerDeposit(partnerFirstUserAccount, 'beer', {
-        from: partnerFirst,
-        value: sendAmount,
-        gas: rocketDepositGas,
-      });
-      await assertThrows(result);
-    });
-
-    // Attempt to make a deposit with an unregistered 3rd party partner
-    it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), async () => {
-      // Get the min ether required to launch a minipool
-      const minEther = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-      // Calculate just enough ether to create the pool
-      const sendAmount = minEther - web3.toWei('1', 'ether');
-
-      // Deposit on behalf of the partner and also specify the pool staking time ID
-      const result = rocketPartnerAPI.APIpartnerDeposit(userThird, 'short', {
-        from: userSecond,
-        value: sendAmount,
-        gas: rocketDepositGas,
-      });
-      await assertThrows(result);
-    });
-
+  rocketPartnerAPITests({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerFirstName,
+    partnerFirstUserAccount,
+    partnerSecond,
+    partnerSecondName,
+    partnerRegisterGas,
+    rocketDepositGas,
   });
+
   describe('Part 3', async () => {
 
     // Send Ether to Rocket pool with just less than the min amount required to launch a minipool with no specified 3rd party user partner
