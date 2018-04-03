@@ -20,6 +20,7 @@ export default function({
         });
 
 
+        // User can withdraw deposit tokens while minipool is staking
         it(printTitle('userThird', 'withdraws 50% of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper'), async () => {
 
             // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
@@ -37,6 +38,7 @@ export default function({
         });
 
 
+        // User can transfer deposit tokens to another user
         it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), async () => {
 
             // Get token transfer amount
@@ -54,6 +56,7 @@ export default function({
         });
 
 
+        // User cannot transfer more tokens than they own
         it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), async () => {
 
             // Get invalid token transfer amount
@@ -78,6 +81,7 @@ export default function({
         });
 
 
+        // User cannot transfer tokens from another address to their own
         it(printTitle('userThird', 'fails to transfer tokens from userFirst account to themselves on the open market'), async () => {
 
             // Get token transfer amount
@@ -102,6 +106,7 @@ export default function({
         });
 
 
+        // Use cannot burn deposit tokens for ether while there is not enough ether to cover the token amount
         it(printTitle('userThird', 'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), async () => {
 
             // Get amount of tokens to burn
