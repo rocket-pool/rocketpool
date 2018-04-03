@@ -1,9 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
-import { scenarioWithdrawDepositTokens } from './rocket-deposit-scenarios';
-
-
 import { RocketDepositToken } from '../artifacts';
-
+import { scenarioWithdrawDepositTokens, scenarioTransferDepositTokens } from './rocket-deposit-scenarios';
 
 export default function({
     owner,
@@ -45,38 +42,41 @@ export default function({
 
         it(printTitle('userThird', 'transfers half of their deposit tokens to userFirst on the open market'), async () => {
 
-            // Count how many tokens that user has
-            const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird).valueOf();
-            // Transfer half to first user on the open market
-            const tokenTransferAmount = parseInt(userThirdTokenBalance) / 2;
-            // Transfer now
-            await rocketDeposit.transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 });
-
-            // Now count how many tokens that user has
-            const userThirdTokenBalanceAfter = await rocketDeposit.balanceOf.call(userThird).valueOf();
-            // Now count first user balance
-            const userFirstTokenBalance = await rocketDeposit.balanceOf.call(userFirst).valueOf();
-
-            assert.equal(userThirdTokenBalanceAfter, userThirdTokenBalance - tokenTransferAmount, 'Third user token balance does not match');
-            assert.equal(userFirstTokenBalance, tokenTransferAmount, 'First user token balance does not match');
+            // Get token transfer amount
+            const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird);
+            const tokenTransferAmount = parseInt(userThirdTokenBalance.valueOf()) / 2;
+            
+            // Transfer deposit tokens
+            await scenarioTransferDepositTokens({
+                fromAddress: userThird,
+                toAddress: userFirst,
+                amount: tokenTransferAmount,
+                gas: 250000,
+            });
 
         });
 
 
         it(printTitle('userThird', 'fails to transfer more tokens than they own on the open market'), async () => {
 
-            // Count how many tokens that user has
-            const userThirdTokenBalance = parseInt(await rocketDeposit.balanceOf.call(userThird).valueOf());
-            // Transfer to first user on the open market
-            const tokenTransferAmount = userThirdTokenBalance + 10000;
-            // Transfer now
-            await rocketDeposit.transfer(userFirst, tokenTransferAmount, { from: userThird, gas: 250000 });
+            // Get invalid token transfer amount
+            const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird);
+            const tokenTransferAmount = parseInt(userThirdTokenBalance.valueOf()) + 10000;
 
-            // Now count how many tokens that user has
-            const userThirdTokenBalanceAfter = parseInt(await rocketDeposit.balanceOf.call(userThird).valueOf());
+            // Transfer deposit tokens
+            await scenarioTransferDepositTokens({
+                fromAddress: userThird,
+                toAddress: userFirst,
+                amount: tokenTransferAmount,
+                gas: 250000,
+                checkTransferred: false,
+            });
 
-            // check that none were sent
-            assert.equal(userThirdTokenBalanceAfter, userThirdTokenBalance, 'Users tokens were transferred');
+            // Get user token balance
+            const userThirdTokenBalanceAfter = await rocketDeposit.balanceOf.call(userThird);
+
+            // Check that no tokens were sent
+            assert.equal(userThirdTokenBalanceAfter.valueOf(), userThirdTokenBalance.valueOf(), 'Users tokens were transferred');
 
         });
 
