@@ -48,6 +48,18 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
 }
 
 
+// Burns deposit tokens for ether
+export async function scenarioBurnDepositTokens({burnAmount, fromAddress, gas}) {
+    const rocketDeposit = await RocketDepositToken.deployed();
+
+    // Burn tokens
+    await rocketDeposit.burnTokensForEther(burnAmount, {from: fromAddress, gas: gas});
+
+    // TODO: add assertions
+
+}
+
+
 // Transfers deposit tokens and asserts that tokens were transferred successfully
 export async function scenarioTransferDepositTokens({fromAddress, toAddress, amount, gas, checkTransferred = true}) {
     const rocketDeposit = await RocketDepositToken.deployed();
@@ -74,8 +86,24 @@ export async function scenarioTransferDepositTokens({fromAddress, toAddress, amo
 
 // Transfers deposit tokens using transferFrom and asserts that tokens were transferred successfully
 export async function scenarioTransferDepositTokensFrom({fromAddress, toAddress, amount, gas, checkTransferred = true}) {
-
+    const rocketDeposit = await RocketDepositToken.deployed();
     
+    // Get initial address token balances
+    let fromTokenBalanceOld = await rocketDeposit.balanceOf.call(fromAddress);
+    let toTokenBalanceOld = await rocketDeposit.balanceOf.call(toAddress);
+
+    // Transfer tokens
+    await rocketDeposit.transferFrom(fromAddress, toAddress, amount, {from: toAddress, gas: gas});
+
+    // Get updated address token balances
+    let fromTokenBalanceNew = await rocketDeposit.balanceOf.call(fromAddress);
+    let toTokenBalanceNew = await rocketDeposit.balanceOf.call(toAddress);
+
+    // Assert that token balances were updated correctly
+    if (checkTransferred) {
+        assert.equal(fromTokenBalanceNew.valueOf(), parseInt(fromTokenBalanceOld.valueOf()) - amount, 'From address token balance was not updated correctly');
+        assert.equal(toTokenBalanceNew.valueOf(), parseInt(toTokenBalanceOld.valueOf()) + amount, 'To address token balance was not updated correctly');
+    }
 
 }
 
