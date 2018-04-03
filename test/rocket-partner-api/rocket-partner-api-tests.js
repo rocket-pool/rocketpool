@@ -5,6 +5,9 @@ import { scenarioRegisterPartner, scenarioPartnerDeposit } from './rocket-partne
 export default function({
     owner,
     accounts,
+    userFirst,
+    userSecond,
+    userThird,
     partnerFirst,
     partnerFirstName,
     partnerFirstUserAccount,
@@ -29,7 +32,7 @@ export default function({
             await assertThrows(scenarioRegisterPartner({
                 partnerAddress: partnerFirst,
                 partnerName: partnerFirstName,
-                fromAddress: accounts[1],
+                fromAddress: userFirst,
                 gas: partnerRegisterGas
             }));
         });
@@ -85,9 +88,9 @@ export default function({
 
             // Deposit on behalf of an unregistered partner
             await assertThrows(scenarioPartnerDeposit({
-                userAddress: accounts[3],
+                userAddress: userThird,
                 stakingTimeID: 'short',
-                fromAddress: accounts[2],
+                fromAddress: userSecond,
                 value: sendAmount,
                 gas: rocketDepositGas,
             }));

@@ -1,19 +1,16 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketDepositToken } from '../artifacts';
-import { scenarioWithdrawDepositTokens, scenarioTransferDepositTokens } from './rocket-deposit-scenarios';
+import { scenarioWithdrawDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
 
 export default function({
     owner,
     accounts,
+    userFirst,
+    userThird,
     miniPools
 }) {
 
     describe('RocketDepositToken', async () => {
-
-
-        // Addresses
-        let userFirst = accounts[1];
-        let userThird = accounts[3];
 
 
         // Contract dependencies

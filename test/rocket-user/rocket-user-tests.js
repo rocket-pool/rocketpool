@@ -4,6 +4,7 @@ import { scenarioRegisterWithdrawalAddress } from './rocket-user-scenarios';
 export default function({
     owner,
     accounts,
+    userSecond,
     userSecondBackupAddress,
     miniPools
 }) {
@@ -16,7 +17,7 @@ export default function({
             await scenarioRegisterWithdrawalAddress({
                 withdrawalAddress: userSecondBackupAddress,
                 miniPoolAddress: miniPools.first.address,
-                fromAddress: accounts[2],
+                fromAddress: userSecond,
                 gas: 550000,
             });
         });

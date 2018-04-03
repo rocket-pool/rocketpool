@@ -152,6 +152,9 @@ contract('RocketPool', accounts => {
   rocketPartnerAPITests({
     owner,
     accounts,
+    userFirst,
+    userSecond,
+    userThird,
     partnerFirst,
     partnerFirstName,
     partnerFirstUserAccount,
@@ -288,6 +291,7 @@ contract('RocketPool', accounts => {
   rocketUserTests({
     owner,
     accounts,
+    userSecond,
     userSecondBackupAddress,
     miniPools,
   });
@@ -576,6 +580,8 @@ contract('RocketPool', accounts => {
   rocketDepositTests({
     owner,
     accounts,
+    userFirst,
+    userThird,
     miniPools,
   });
 
