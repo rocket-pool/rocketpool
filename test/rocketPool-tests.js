@@ -8,6 +8,7 @@ import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
+import rocketUserTests from './rocket-user/rocket-user-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
@@ -106,6 +107,7 @@ contract('RocketPool', accounts => {
   // TODO: the state of these minipools is shared (no test isolation)
   // should be fixed so each test has an isolated pool
   // Minipools
+  let miniPools = {};
   let miniPoolFirst;
   let miniPoolSecond;
 
@@ -143,7 +145,7 @@ contract('RocketPool', accounts => {
     nodeSecondSubnetID,
     nodeSecondInstanceID,
     nodeSecondRegionID,
-    nodeRegisterGas
+    nodeRegisterGas,
   });
 
   rocketPartnerAPITests({
@@ -182,6 +184,7 @@ contract('RocketPool', accounts => {
 
       // Get an instance of that pool and do further checks
       miniPoolFirst = RocketPoolMini.at(poolAddress);
+      miniPools.first = miniPoolFirst;
 
       const poolStatus = await miniPoolFirst.getStatus.call().valueOf();
       const poolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
@@ -280,27 +283,14 @@ contract('RocketPool', accounts => {
     );
 
   });
-  describe('Part 4', async () => {
 
-    // Second user sets a backup withdrawal address
-    it(
-      printTitle('userSecond', 'registers a backup withdrawal address on their deposit while minipool is in countdown'),
-      async () => {
-        // Set the backup address
-        const result = await rocketUser.userSetWithdrawalDepositAddress(userSecondBackupAddress, miniPoolFirst.address, {
-          from: userSecond,
-          gas: 550000,
-        });
-
-        const log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
-        assert.notEqual(log, undefined); // Check that an event was logged
-
-        const newBackupAddress = log.args._userBackupAddress;
-        assert.equal(newBackupAddress, userSecondBackupAddress, 'Backup address does not match');
-      }
-    );
-
+  rocketUserTests({
+    owner,
+    accounts,
+    userSecondBackupAddress,
+    miniPools,
   });
+
   describe('Part 5', async () => {
 
     // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
@@ -428,6 +418,7 @@ contract('RocketPool', accounts => {
 
         // Get an instance of that pool and do further checks
         miniPoolSecond = RocketPoolMini.at(poolAddress);
+        miniPools.second = miniPoolSecond;
 
         const poolStatus = await miniPoolSecond.getStatus.call();
         const poolBalance = web3.eth.getBalance(miniPoolSecond.address).valueOf();
