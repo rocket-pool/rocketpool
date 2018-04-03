@@ -1,9 +1,10 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, RocketStorage, Casper, CasperValidation} from './artifacts';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketVault, RocketSettings, Casper, CasperValidation} from './artifacts';
 
 // Import modular tests
+import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
@@ -108,7 +109,6 @@ contract('RocketPool', accounts => {
   let miniPoolSecond;
 
   // Contracts
-  let rocketStorage;
   let rocketSettings;
   let rocketUser;
   let rocketNode;
@@ -119,7 +119,6 @@ contract('RocketPool', accounts => {
   let casper;
 
   beforeEach(async () => {
-    rocketStorage = await RocketStorage.deployed();
     rocketSettings = await RocketSettings.deployed();
     rocketUser = await RocketUser.deployed();
     rocketNode = await RocketNode.deployed();
@@ -130,11 +129,7 @@ contract('RocketPool', accounts => {
     casper = await Casper.deployed();
   });
 
-  // Owners direct access to storage is removed after initialisation when deployed
-  it(printTitle('owner', 'fail to access storage directly after deployment'), async () => {
-    const result = rocketStorage.setBool(web3.sha3('test.access'), true, { from: owner, gas: 250000 });
-    await assertThrows(result);
-  });
+  rocketStorageTests({owner, accounts});
 
   // Simulate Caspers epoch and dynasty changing
   it(
