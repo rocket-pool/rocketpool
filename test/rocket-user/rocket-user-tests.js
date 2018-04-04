@@ -1,7 +1,7 @@
-import { printTitle } from '../utils';
-import { scenarioRegisterWithdrawalAddress } from './rocket-user-scenarios';
+import { printTitle, assertThrows } from '../utils';
+import { scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
-export default function({
+export function rocketUserWithdrawalAddressTests({
     owner,
     accounts,
     userSecond,
@@ -20,6 +20,32 @@ export default function({
                 fromAddress: userSecond,
                 gas: 550000,
             });
+        });
+
+
+    });
+
+}
+
+export function rocketUserWithdrawalTests({
+    owner,
+    accounts,
+    userFirst,
+    miniPools,
+    rocketWithdrawalGas
+}) {
+
+    describe('RocketUser', async () => {
+
+
+        // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
+        it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), async () => {
+            await assertThrows(scenarioWithdrawDeposit({
+                miniPoolAddress: miniPools.first.address,
+                withdrawalAmount: 0,
+                fromAddress: userFirst,
+                gas: rocketWithdrawalGas,
+            }));
         });
 
 

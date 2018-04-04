@@ -21,3 +21,18 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
 
 }
 
+
+// Withdraws staking deposit
+export async function scenarioWithdrawDeposit({miniPoolAddress, withdrawalAmount, fromAddress, gas}) {
+    const rocketUser = await RocketUser.deployed();
+
+    // Withdraw deposit
+    await rocketUser.userWithdraw(miniPoolAddress, withdrawalAmount, {
+        from: fromAddress,
+        gas: gas,
+    });
+
+    // TODO: add assertions
+
+}
+

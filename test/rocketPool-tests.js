@@ -8,7 +8,7 @@ import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
-import rocketUserTests from './rocket-user/rocket-user-tests';
+import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
@@ -288,7 +288,7 @@ contract('RocketPool', accounts => {
 
   });
 
-  rocketUserTests({
+  rocketUserWithdrawalAddressTests({
     owner,
     accounts,
     userSecond,
@@ -583,19 +583,14 @@ contract('RocketPool', accounts => {
     miniPools,
   });
 
-  describe('Part 9', async () => {
-
-    // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
-    it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), async () => {
-      // Attempt withdrawal of all our deposit now
-      const result = rocketUser.userWithdraw(miniPoolFirst.address, 0, {
-        from: userFirst,
-        gas: rocketWithdrawalGas,
-      });
-      await assertThrows(result);
-    });
-
+  rocketUserWithdrawalTests({
+    owner,
+    accounts,
+    userFirst,
+    miniPools,
+    rocketWithdrawalGas,
   });
+
   describe('Part 10', async () => {
 
     // Node performs checkin
