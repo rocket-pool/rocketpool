@@ -59,10 +59,31 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
 export async function scenarioBurnDepositTokens({burnAmount, fromAddress, gas}) {
     const rocketDeposit = await RocketDepositToken.deployed();
 
+    // Get the initial total supply of tokens in circulation
+    let totalTokenSupplyOld = await rocketDeposit.totalSupply.call({from: fromAddress});
+    totalTokenSupplyOld = parseFloat(totalTokenSupplyOld.valueOf());
+
+    // Get user's initial token & ether balances
+    let userTokenBalanceOld = await rocketDeposit.balanceOf.call(fromAddress);
+    userTokenBalanceOld = parseFloat(userTokenBalanceOld.valueOf());
+    let userEtherBalanceOld = web3.eth.getBalance(fromAddress).valueOf();
+
     // Burn tokens
     await rocketDeposit.burnTokensForEther(burnAmount, {from: fromAddress, gas: gas});
 
-    // TODO: add assertions
+    // Get the updated total supply of tokens in circulation
+    let totalTokenSupplyNew = await rocketDeposit.totalSupply.call({from: fromAddress});
+    totalTokenSupplyNew = parseFloat(totalTokenSupplyNew.valueOf());
+
+    // Get user's updated token & ether balances
+    let userTokenBalanceNew = await rocketDeposit.balanceOf.call(fromAddress);
+    userTokenBalanceNew = parseFloat(userTokenBalanceNew.valueOf());
+    let userEtherBalanceNew = web3.eth.getBalance(fromAddress).valueOf();
+
+    // Asserts
+    assert.equal(userTokenBalanceNew, 0, 'User\'s token balance should be zero');
+    assert.equal(totalTokenSupplyNew, totalTokenSupplyOld - userTokenBalanceOld, 'Updated total token supply does not match');
+    assert.notEqual(userEtherBalanceOld, userEtherBalanceNew, 'User\'s ether balance did not change');
 
 }
 

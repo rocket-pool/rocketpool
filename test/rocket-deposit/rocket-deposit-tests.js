@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketDepositToken } from '../artifacts';
+import { RocketDepositToken, RocketSettings } from '../artifacts';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
 
 export function rocketDepositTests1({
@@ -10,13 +10,6 @@ export function rocketDepositTests1({
 }) {
 
     describe('RocketDepositToken', async () => {
-
-
-        // Contract dependencies
-        let rocketDeposit;
-        before(async () => {
-            rocketDeposit = await RocketDepositToken.deployed();
-        });
 
 
         // Attempt to make a withdrawal of rocket deposit tokens too early
@@ -171,6 +164,58 @@ export function rocketDepositTests2({
 
             // Check that user is removed from pool as they don't have any deposit left
             await assertThrows(miniPools.second.getUserDeposit.call(userThird));
+
+        });
+
+
+    });
+
+}
+
+export function rocketDepositTests3({
+    owner,
+    accounts,
+    userFirst
+}) {
+
+    describe('RocketDepositToken', async () => {
+
+
+        // Contract dependencies
+        let rocketSettings;
+        let rocketDeposit;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+            rocketDeposit = await RocketDepositToken.deployed();
+        });
+
+
+        // Check test conditions
+        it(printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'), async () => {
+
+            // Get the min ether required to launch a minipool - the user sent half this amount for tokens originally
+            const etherAmountTradedSentForTokens = await rocketSettings.getMiniPoolLaunchAmount.call();
+            const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address);
+
+            // Check that withdrawn token backed ether is in the deposit token fund
+            assert.equal(depositTokenFundBalance.valueOf(), etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');
+
+        });
+
+
+        // User can burn deposit tokens for ether plus bonus when there is enough ether to cover the amount
+        it(printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'), async () => {
+
+            // Get amount of tokens to burn
+            const userFirstTokenBalance = await rocketDeposit.balanceOf.call(userFirst);
+            const tokenBurnAmount = parseInt(userFirstTokenBalance.valueOf());
+
+            // Burn deposit tokens for ether
+            await scenarioBurnDepositTokens({
+                burnAmount: tokenBurnAmount,
+                fromAddress: userFirst,
+                gas: 250000,
+            });
 
         });
 

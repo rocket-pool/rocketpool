@@ -10,7 +10,7 @@ import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
 import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests2 } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
-import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
+import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
@@ -757,53 +757,11 @@ contract('RocketPool', accounts => {
     );
 
   });
-  describe('Part 12', async () => {
 
-    it(
-      printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'),
-      async () => {
-        // Get the min ether required to launch a minipool - the user sent half this amount for tokens originally
-        const etherAmountTradedSentForTokens = parseInt(await rocketSettings.getMiniPoolLaunchAmount.call().valueOf());
-        const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address).valueOf();
-        assert.equal(
-          depositTokenFundBalance,
-          etherAmountTradedSentForTokens,
-          'Deposit token fund balance does not match'
-        );
-      }
-    );
-
-    it(
-      printTitle('userFirst', 'burns their deposit tokens received from userThird in return for ether + bonus'),
-      async () => {
-        // Get the token withdrawal fee
-        const tokenWithdrawalFeeWei = await rocketSettings.getTokenRPDWithdrawalFeePerc.call().valueOf();
-        // Token fee - this goes to the person who trades the tokens back in
-        const tokenWithdrawalFee = parseFloat(web3.fromWei(tokenWithdrawalFeeWei, 'ether'));
-        // Get the total supply of tokens in circulation
-        const fundTokenBalance = parseFloat(await rocketDeposit.totalSupply.call().valueOf());
-
-        // Now count how many tokens that user has
-        const userFirstTokenBalance = parseFloat(await rocketDeposit.balanceOf.call(userFirst).valueOf());
-        const userFirstEtherBalance = web3.eth.getBalance(userFirst).valueOf();
-        const burnGas = 250000;
-
-        // Transfer now
-        await rocketDeposit.burnTokensForEther(userFirstTokenBalance, { from: userFirst, gas: burnGas });
-
-        // Now count how many tokens that user has, should be none
-        const userFirstTokenBalanceAfter = parseFloat(await rocketDeposit.balanceOf.call(userFirst).valueOf());
-        const userFirstEtherBalanceAfter = web3.eth.getBalance(userFirst).valueOf();
-
-        const fundTokenBalanceAfter = parseFloat(await rocketDeposit.totalSupply.call().valueOf());
-        const etherAccountDiff = userFirstEtherBalanceAfter - userFirstEtherBalance;
-
-        assert.equal(userFirstTokenBalanceAfter, 0, 'User balance should be zero');
-        assert.equal(fundTokenBalanceAfter, fundTokenBalance - userFirstTokenBalance, 'Fund token balance did not match');
-        assert.notEqual(etherAccountDiff, 0, 'Account balance did not change');
-      }
-    );
-
+  rocketDepositTests3({
+    owner,
+    accounts,
+    userFirst,
   });
 
   rocketNodeRemovalTests1({
