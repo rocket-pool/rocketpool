@@ -9,7 +9,7 @@ import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
 import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests2 } from './rocket-partner-api/rocket-partner-api-tests';
-import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
+import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
@@ -110,8 +110,6 @@ contract('RocketPool', accounts => {
   // should be fixed so each test has an isolated pool
   // Minipools
   let miniPools = {};
-  let miniPoolFirst;
-  let miniPoolSecond;
 
   // Contracts
   let rocketSettings;
@@ -178,128 +176,13 @@ contract('RocketPool', accounts => {
     rocketDepositGas
   });
 
-  describe('Part 3', async () => {
-
-    // Send Ether to Rocket pool with just less than the min amount required to launch a minipool with no specified 3rd party user partner
-    it(printTitle('userFirst', 'sends ether to RP, create first minipool, registers user with pool'), async () => {
-      // Get the min ether required to launch a minipool
-      const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-
-      // Send Ether as a user, but send just enough to create the pool, but not launch it
-      const sendAmount = parseInt(minEtherRequired) - parseInt(web3.toWei('2', 'ether'));
-
-      const result = await rocketUser.userDeposit('short', {
-        from: userFirst,
-        to: rocketUser.address,
-        value: sendAmount,
-        gas: rocketDepositGas,
-      });
-
-      const log = result.logs.find(({ event }) => event == 'Transferred');
-      assert.notEqual(log, undefined); // Check that an event was logged
-
-      const poolAddress = log.args._to;
-
-      // Get an instance of that pool and do further checks
-      miniPoolFirst = RocketPoolMini.at(poolAddress);
-      miniPools.first = miniPoolFirst;
-
-      const poolStatus = await miniPoolFirst.getStatus.call().valueOf();
-      const poolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
-
-      assert.equal(poolStatus, 0, 'Invalid minipool status');
-      assert.equal(poolBalance, sendAmount, 'Invalid minipool balance');
-    });
-
-
-    // Have the same initial user send an deposit again, to trigger the pool to go into countdown
-    it(
-      printTitle(
-        'userFirst',
-        'sends ether to RP again, their balance updates, first minipool remains accepting deposits and only 1 reg user'
-      ),
-      async () => {
-        // Get the min ether required to launch a minipool
-        const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-
-        // Send Ether as a user, send enough not to trigger the pool to enter countdown status for launch
-        const sendAmount = web3.toWei('1', 'ether');
-
-        const result = await rocketUser.userDeposit('short', {
-          from: userFirst,
-          to: rocketUser.address,
-          value: sendAmount,
-          gas: rocketDepositGas,
-        });
-
-        const log = result.logs.find(({ event }) => event == 'Transferred');
-        assert.notEqual(log, undefined); // Check that an event was logged
-
-        const userSendAmount = log.args.value;
-        const userSendAddress = log.args._from;
-        const poolAddress = log.args._to;
-
-        // Get the instance the prev minipool
-        const miniPool = RocketPoolMini.at(poolAddress);
-
-        // Get the pool status
-        const poolStatus = await miniPool.getStatus.call().valueOf();
-        const poolBalance = web3.eth.getBalance(miniPool.address).valueOf();
-
-        // Now just count the users to make sure this user wasn't added twice
-        const userCount = await miniPool.getUserCount.call().valueOf();
-        const userResult = await miniPool.getUser.call(userFirst);
-        return;
-        const user = userResult.valueOf();
-        const userBalance = userResult[1].valueOf();
-
-        assert.equal(userSendAmount, sendAmount, 'Invalid user send amount');
-        assert.equal(poolStatus, 0, 'Invalid minipool status');
-        assert.isTrue(poolBalance > sendAmount, 'Invalid minipool balance');
-        assert.equal(userCount, 1, 'Invalid user count');
-        assert.equal(userBalance, minEtherRequired - web3.toWei('1', 'ether'), 'Invalid user balance');
-      }
-    );
-
-
-    // Have a new user send an deposit, to trigger the pool to go into countdown
-    it(
-      printTitle('userSecond', 'sends ether to RP, first minipool status changes to countdown and only 2 reg users'),
-      async () => {
-        // Get the min ether required to launch a minipool
-        const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-        // Send Ether as a user, send enough not to trigger the pool to enter countdown status for launch
-        const sendAmount = web3.toWei('5', 'ether');
-
-        const result = await rocketUser.userDeposit('short', {
-          from: userSecond,
-          to: rocketUser.address,
-          value: sendAmount,
-          gas: rocketDepositGas,
-        });
-
-        const log = result.logs.find(({ event }) => event == 'Transferred');
-        assert.notEqual(log, undefined); // Check that an event was logged
-
-        const userSendAmount = log.args.value;
-        const userSendAddress = log.args._from;
-        const poolAddress = log.args._to;
-
-        // Get the instance the prev minipool
-        const miniPool = RocketPoolMini.at(poolAddress);
-        const poolStatus = await miniPool.getStatus.call().valueOf();
-        const poolBalance = web3.eth.getBalance(miniPool.address).valueOf();
-
-        // Now just count the users to make sure this user wasn't added twice
-        const userCount = await miniPool.getUserCount.call().valueOf();
-
-        assert.equal(userSendAmount, sendAmount, 'Invalid user send amount');
-        assert.equal(poolStatus, 1, 'Invalid minipool status');
-        assert.equal(userCount, 2, 'Invalid user count');
-        assert.isTrue(poolBalance > sendAmount, 'Invalid minipool balance');
-      }
-    );
-
+  rocketUserDepositTests1({
+    owner,
+    accounts,
+    userFirst,
+    userSecond,
+    miniPools,
+    rocketDepositGas,
   });
 
   rocketUserWithdrawalAddressTests({
@@ -436,7 +319,7 @@ contract('RocketPool', accounts => {
         const poolAddress = log.args._to;
 
         // Get an instance of that pool and do further checks
-        miniPoolSecond = RocketPoolMini.at(poolAddress);
+        let miniPoolSecond = RocketPoolMini.at(poolAddress);
         miniPools.second = miniPoolSecond;
 
         const poolStatus = await miniPoolSecond.getStatus.call();
@@ -519,16 +402,16 @@ contract('RocketPool', accounts => {
         // Check that the first minipool contract has been attached to the node
         const minipoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeFirst).valueOf();
         // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-        const minipoolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
-        const minipoolStatus = await miniPoolFirst.getStatus.call().valueOf();
+        const minipoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
+        const minipoolStatus = await miniPools.first.getStatus.call().valueOf();
         // Check its a validator in Casper
-        const casperValidatorIndex = await casper.get_validator_indexes.call(miniPoolFirst.address).valueOf();
+        const casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.first.address).valueOf();
         const casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex).valueOf();
 
         assert.equal(nodeAddress, nodeFirst, 'Node address does not match');
         assert.equal(loadAverage, averageLoad15mins, 'Load average does not match');
         assert.equal(minipoolsAttached.length, 1, 'Invalid number of minipools');
-        assert.equal(minipoolsAttached[0], miniPoolFirst.address, 'Invalid minipool address');
+        assert.equal(minipoolsAttached[0], miniPools.first.address, 'Invalid minipool address');
         assert.equal(minipoolBalance, 0, 'Invalid minipool balance');
         assert.equal(casperValidatorIndex.valueOf(), 1, 'Invalid validator index');
         assert.equal(casperValidatorDynastyStart, 3, 'Invalid validator dynasty');
@@ -570,16 +453,16 @@ contract('RocketPool', accounts => {
 
         // Check that the first minipool contract has been attached to the node
         const minipoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeSecond).valueOf();
-        const minipoolBalance = web3.eth.getBalance(miniPoolSecond.address).valueOf();
-        const minipoolStatus = await miniPoolSecond.getStatus.call().valueOf();
+        const minipoolBalance = web3.eth.getBalance(miniPools.second.address).valueOf();
+        const minipoolStatus = await miniPools.second.getStatus.call().valueOf();
         // Check its a validator in Casper
-        const casperValidatorIndex = await casper.get_validator_indexes.call(miniPoolSecond.address).valueOf();
+        const casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.second.address).valueOf();
         const casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex).valueOf();
 
         assert.equal(nodeAddress, nodeSecond, 'Node address does not match');
         assert.equal(loadAverage, averageLoad15mins, 'Load average does not match');
         assert.equal(minipoolsAttached.length, 1, 'Invalid number of minipools');
-        assert.equal(minipoolsAttached[0], miniPoolSecond.address, 'Invalid minipool address');
+        assert.equal(minipoolsAttached[0], miniPools.second.address, 'Invalid minipool address');
         assert.equal(minipoolBalance, 0, 'Invalid minipool balance');
         assert.equal(minipoolStatus, 2, 'Invalid minipool status');
         assert.equal(casperValidatorIndex, 2, 'Invalid validator index');
@@ -618,9 +501,9 @@ contract('RocketPool', accounts => {
         await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas });
 
         // Status = 2? Still staking
-        const miniPoolStatus = await miniPoolFirst.getStatus.call().valueOf();
+        const miniPoolStatus = await miniPools.first.getStatus.call().valueOf();
         // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-        const miniPoolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
 
         assert.equal(miniPoolStatus, 2, 'Invalid minipool status');
         assert.equal(miniPoolBalance, 0, 'Invalid minipool balance');
@@ -630,14 +513,14 @@ contract('RocketPool', accounts => {
     // Update first minipool
     it(printTitle('---------', 'first minipool has staking duration set to 0'), async () => {
       // Set the minipool staking duration to 0 for testing so it will attempt to request withdrawal from Casper
-      await rocketPool.setPoolStakingDuration(miniPoolFirst.address, 0, { from: owner, gas: 150000 });
+      await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
       // TODO: check pool staking duration, dummy test for now
     });
 
     // Update second minipool
     it(printTitle('---------', 'second minipool has staking duration set to 0'), async () => {
       // Set the minipool staking duration to 0 for testing so it will attempt to request withdrawal from Casper
-      await rocketPool.setPoolStakingDuration(miniPoolSecond.address, 0, { from: owner, gas: 150000 });
+      await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, { from: owner, gas: 150000 });
       // TODO: check pool staking duration, dummy test for now
     });
 
@@ -660,8 +543,8 @@ contract('RocketPool', accounts => {
         await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas });
 
         // Status = 3? Awaiting withdrawal from Casper
-        const miniPoolStatusFirst = await miniPoolFirst.getStatus.call().valueOf();
-        const miniPoolStatusSecond = await miniPoolSecond.getStatus.call().valueOf();
+        const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
+        const miniPoolStatusSecond = await miniPools.second.getStatus.call().valueOf();
 
         assert.equal(miniPoolStatusFirst, 3, 'First minipool invalid status');
         assert.equal(miniPoolStatusSecond, 2, 'Second minipool invalid status');
@@ -680,8 +563,8 @@ contract('RocketPool', accounts => {
         // Checkin now
         await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeSecond, gas: nodeCheckinGas });
 
-        const miniPoolStatusFirst = await miniPoolFirst.getStatus.call().valueOf();
-        const miniPoolStatusSecond = await miniPoolSecond.getStatus.call().valueOf();
+        const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
+        const miniPoolStatusSecond = await miniPools.second.getStatus.call().valueOf();
 
         assert.equal(miniPoolStatusFirst, 3, 'First minipool invalid status');
         assert.equal(miniPoolStatusSecond, 3, 'Second minipool invalid status');
@@ -711,13 +594,13 @@ contract('RocketPool', accounts => {
         await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 });
 
         // Check the status of the first pool
-        const miniPoolStatusFirst = await miniPoolFirst.getStatus.call();
+        const miniPoolStatusFirst = await miniPools.first.getStatus.call();
         // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-        const miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirst.address);
+        const miniPoolBalanceFirst = web3.eth.getBalance(miniPools.first.address);
         // Check the status of the second pool
-        const miniPoolStatusSecond = await miniPoolSecond.getStatus.call();
+        const miniPoolStatusSecond = await miniPools.second.getStatus.call();
         // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-        const miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecond.address);
+        const miniPoolBalanceSecond = web3.eth.getBalance(miniPools.second.address);
 
         assert.equal(miniPoolStatusFirst.valueOf(), 4, 'Invalid first minipool status');
         assert.isTrue(miniPoolBalanceFirst.valueOf() > 0, 'Invalid first minipool balance');
@@ -742,12 +625,12 @@ contract('RocketPool', accounts => {
         await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 });
 
         // Status = 4? Received deposit from casper + rewards
-        const miniPoolStatusFirst = await miniPoolFirst.getStatus.call().valueOf();
+        const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
         // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-        const miniPoolBalanceFirst = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalanceFirst = web3.eth.getBalance(miniPools.first.address).valueOf();
 
         // Second minipool should have closed and it's balance is 0 as all users have withdrawn ether as RPD tokens
-        const miniPoolBalanceSecond = web3.eth.getBalance(miniPoolSecond.address).valueOf();
+        const miniPoolBalanceSecond = web3.eth.getBalance(miniPools.second.address).valueOf();
 
         assert.equal(miniPoolStatusFirst, 4, 'Invalid first minipool status');
         assert.isTrue(miniPoolBalanceFirst > 0, 'Invalid first minipool balance');
@@ -776,14 +659,14 @@ contract('RocketPool', accounts => {
       printTitle('userFirst', 'withdraws their deposit + Casper rewards from the minipool and pays their fee'),
       async () => {
         // Get the user deposit
-        const depositedAmount = await miniPoolFirst.getUserDeposit.call(userFirst).valueOf();
+        const depositedAmount = await miniPools.first.getUserDeposit.call(userFirst).valueOf();
         // Fee acount is Coinbase by default
         const rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
         // Get the minipool balance
-        const miniPoolBalancePrev = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalancePrev = web3.eth.getBalance(miniPools.first.address).valueOf();
 
         // Withdraw our total deposit + rewards
-        const result = await rocketUser.userWithdraw(miniPoolFirst.address, 0, {
+        const result = await rocketUser.userWithdraw(miniPools.first.address, 0, {
           from: userFirst,
           gas: rocketWithdrawalGas,
         });
@@ -796,9 +679,9 @@ contract('RocketPool', accounts => {
         // Fee acount is Coinbase by default
         const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
         // Get the minipool balance
-        const miniPoolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
         // Now just count the users to make sure this user has been removed after withdrawing their balance and paying the fee
-        const userCount = await miniPoolFirst.getUserCount.call().valueOf();
+        const userCount = await miniPools.first.getUserCount.call().valueOf();
 
         assert.isTrue(depositedAmount < amountSentToUser, 'Deposit amount did not decrease');
         assert.isTrue(rpFeeAccountBalance > rpFeeAccountBalancePrev, 'Fee account balance did not increase');
@@ -812,7 +695,7 @@ contract('RocketPool', accounts => {
       printTitle('userSecond', 'fails to withdraw using their backup address before the time limit to do so is allowed'),
       async () => {
         // Attemp tp withdraw our total deposit + rewards using our backup address
-        const result = rocketUser.userWithdraw(miniPoolFirst.address, 0, {
+        const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
           from: userSecondBackupAddress,
           gas: rocketWithdrawalGas,
         });
@@ -838,7 +721,7 @@ contract('RocketPool', accounts => {
       printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"),
       async () => {
         // Attempt to withdraw our total deposit + rewards using our backup address
-        const result = rocketUser.userWithdraw(miniPoolFirst.address, 0, {
+        const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
           from: userFirst,
           gas: rocketWithdrawalGas,
         });
@@ -854,14 +737,14 @@ contract('RocketPool', accounts => {
       ),
       async () => {
         // Get the user deposit
-        const depositedAmount = await miniPoolFirst.getUserDeposit.call(userSecond).valueOf();
+        const depositedAmount = await miniPools.first.getUserDeposit.call(userSecond).valueOf();
         // Fee account is Coinbase by default
         const rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
         // Get the minipool balance
-        const miniPoolBalancePrev = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalancePrev = web3.eth.getBalance(miniPools.first.address).valueOf();
 
         // Withdraw our total deposit + rewards
-        const result = await rocketUser.userWithdraw(miniPoolFirst.address, 0, {
+        const result = await rocketUser.userWithdraw(miniPools.first.address, 0, {
           from: userSecondBackupAddress,
           gas: rocketWithdrawalGas,
         });
@@ -874,11 +757,11 @@ contract('RocketPool', accounts => {
         // Fee acount is the coinbase by default
         const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
         // Get the minipool balance
-        const miniPoolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
+        const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
 
 
         // See if RocketStorage still recognises the pool contract after its been removed and self destructed
-        const poolExists = await rocketPool.getPoolExists.call(miniPoolFirst.address).valueOf();
+        const poolExists = await rocketPool.getPoolExists.call(miniPools.first.address).valueOf();
 
         assert.isTrue(depositedAmount < amountSentToUser, 'Deposit balance did not decrease');
         assert.isTrue(rpFeeAccountBalance > rpFeeAccountBalancePrev, 'Fee account balance did not increase');
