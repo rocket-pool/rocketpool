@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings } from '../artifacts';
-import { scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
+import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
 
 import { RocketUser, RocketPoolMini } from '../artifacts';
@@ -33,35 +33,23 @@ export function rocketUserDepositTests1({
 
 
 
-        // Send Ether to Rocket pool with just less than the min amount required to launch a minipool with no specified 3rd party user partner
+        // Send ether to Rocket pool with just less than the min amount required to launch a minipool with no specified 3rd party user partner
         it(printTitle('userFirst', 'sends ether to RP, create first minipool, registers user with pool'), async () => {
-            // Get the min ether required to launch a minipool
-            const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
 
-            // Send Ether as a user, but send just enough to create the pool, but not launch it
-            const sendAmount = parseInt(minEtherRequired) - parseInt(web3.toWei('2', 'ether'));
+            // Get the amount of ether to send - enough to create a minipool but not launch it
+            const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
+            const sendAmount = parseInt(minEtherRequired.valueOf()) - parseInt(web3.toWei('2', 'ether'));
 
-            const result = await rocketUser.userDeposit('short', {
-                from: userFirst,
-                to: rocketUser.address,
-                value: sendAmount,
+            // Deposit ether
+            let miniPool = await scenarioDeposit({
+                fromAddress: userFirst,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             });
 
-            const log = result.logs.find(({ event }) => event == 'Transferred');
-            assert.notEqual(log, undefined); // Check that an event was logged
+            // Set first minipool
+            miniPools.first = miniPool;
 
-            const poolAddress = log.args._to;
-
-            // Get an instance of that pool and do further checks
-            let miniPoolFirst = RocketPoolMini.at(poolAddress);
-            miniPools.first = miniPoolFirst;
-
-            const poolStatus = await miniPoolFirst.getStatus.call().valueOf();
-            const poolBalance = web3.eth.getBalance(miniPoolFirst.address).valueOf();
-
-            assert.equal(poolStatus, 0, 'Invalid minipool status');
-            assert.equal(poolBalance, sendAmount, 'Invalid minipool balance');
         });
 
 
