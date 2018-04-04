@@ -8,7 +8,7 @@ import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
-import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests, rocketPartnerAPIRemovalTests } from './rocket-partner-api/rocket-partner-api-tests';
+import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests2 } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -169,7 +169,7 @@ contract('RocketPool', accounts => {
     partnerRegisterGas
   });
 
-  rocketPartnerAPIDepositTests({
+  rocketPartnerAPIDepositTests1({
     owner,
     accounts,
     userSecond,
@@ -945,23 +945,12 @@ contract('RocketPool', accounts => {
     partnerSecond,
   });
 
-  describe('Part 15', async () => {
-
-    // Attempt to make a deposit with after being removed as a partner
-    it(printTitle('partnerFirst', 'attempt to make a deposit with after being removed as a partner'), async () => {
-      // Get the min ether required to launch a minipool
-      const minEther = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-      const sendAmount = minEther - web3.toWei('1', 'ether');
-
-      // Deposit on a behalf of the partner and also specify an incorrect pool staking time ID
-      const result = rocketPartnerAPI.APIpartnerDeposit(partnerFirstUserAccount, 'short', {
-        from: partnerFirst,
-        value: sendAmount,
-        gas: rocketDepositGas,
-      });
-      await assertThrows(result);
-    });
-
+  rocketPartnerAPIDepositTests2({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerFirstUserAccount,
+    rocketDepositGas
   });
 
   rocketVaultAdminTests({

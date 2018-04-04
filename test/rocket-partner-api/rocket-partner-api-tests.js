@@ -53,7 +53,7 @@ export function rocketPartnerAPIRegistrationTests({
 
 }
 
-export function rocketPartnerAPIDepositTests({
+export function rocketPartnerAPIDepositTests1({
     owner,
     accounts,
     userSecond,
@@ -133,6 +133,47 @@ export function rocketPartnerAPIRemovalTests({
                 fromAddress: owner,
                 gas: 500000,
             });
+        });
+
+
+    });
+
+}
+
+export function rocketPartnerAPIDepositTests2({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerFirstUserAccount,
+    rocketDepositGas,
+}) {
+
+    describe('RocketPartnerAPI - Deposits', async () => {
+
+
+        // Contract dependencies
+        let rocketSettings;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+        });
+
+
+        // Attempt to make a deposit after being removed as a partner
+        it(printTitle('partnerFirst', 'attempt to make a deposit after being removed as a partner'), async () => {
+
+            // Calculate just enough ether to create a minipool
+            const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+            const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+            // Attempt deposit
+            await assertThrows(scenarioPartnerDeposit({
+                userAddress: partnerFirstUserAccount,
+                stakingTimeID: 'short',
+                fromAddress: partnerFirst,
+                value: sendAmount,
+                gas: rocketDepositGas,
+            }));
+
         });
 
 
