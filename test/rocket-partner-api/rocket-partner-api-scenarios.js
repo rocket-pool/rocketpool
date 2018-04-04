@@ -24,13 +24,13 @@ export async function scenarioRegisterPartner({partnerAddress, partnerName, from
 
 
 // Makes a deposit with a partner
-export async function scenarioPartnerDeposit({userAddress, stakingTimeID, fromAddress, value, gas}) {
+export async function scenarioPartnerDeposit({userAddress, stakingTimeID, fromAddress, depositAmount, gas}) {
     const rocketPartnerAPI = await RocketPartnerAPI.deployed();
 
     // Make deposit
     await rocketPartnerAPI.APIpartnerDeposit(userAddress, stakingTimeID, {
         from: fromAddress,
-        value: value,
+        value: depositAmount,
         gas: gas,
     });
 

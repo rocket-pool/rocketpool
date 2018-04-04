@@ -85,7 +85,7 @@ export function rocketPartnerAPIDepositTests1({
                 userAddress: partnerFirstUserAccount,
                 stakingTimeID: 'beer',
                 fromAddress: partnerFirst,
-                value: sendAmount,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             }));
 
@@ -104,7 +104,7 @@ export function rocketPartnerAPIDepositTests1({
                 userAddress: userThird,
                 stakingTimeID: 'short',
                 fromAddress: userSecond,
-                value: sendAmount,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             }));
 
@@ -170,7 +170,7 @@ export function rocketPartnerAPIDepositTests2({
                 userAddress: partnerFirstUserAccount,
                 stakingTimeID: 'short',
                 fromAddress: partnerFirst,
-                value: sendAmount,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             }));
 

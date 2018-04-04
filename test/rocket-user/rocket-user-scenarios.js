@@ -2,7 +2,7 @@ import { RocketUser, RocketPool, RocketPoolMini, RocketSettings } from '../artif
 
 
 // Deposits ether with RocketPool
-export async function scenarioDeposit({fromAddress, depositAmount, gas}) {
+export async function scenarioDeposit({stakingTimeID, fromAddress, depositAmount, gas}) {
     const rocketUser = await RocketUser.deployed();
     const rocketPool = await RocketPool.deployed();
     const rocketSettings = await RocketSettings.deployed();
@@ -30,7 +30,7 @@ export async function scenarioDeposit({fromAddress, depositAmount, gas}) {
     }
 
     // Deposit ether
-    let result = await rocketUser.userDeposit('short', {
+    let result = await rocketUser.userDeposit(stakingTimeID, {
         from: fromAddress,
         to: rocketUser.address,
         value: depositAmount,

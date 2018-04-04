@@ -31,6 +31,7 @@ export function rocketUserDepositTests1({
 
             // Deposit ether
             let miniPool = await scenarioDeposit({
+                stakingTimeID: 'short',
                 fromAddress: userFirst,
                 depositAmount: sendAmount,
                 gas: rocketDepositGas,
@@ -50,6 +51,7 @@ export function rocketUserDepositTests1({
 
             // Deposit ether
             await scenarioDeposit({
+                stakingTimeID: 'short',
                 fromAddress: userFirst,
                 depositAmount: sendAmount,
                 gas: rocketDepositGas,
@@ -66,6 +68,7 @@ export function rocketUserDepositTests1({
 
             // Deposit ether
             await scenarioDeposit({
+                stakingTimeID: 'short',
                 fromAddress: userSecond,
                 depositAmount: sendAmount,
                 gas: rocketDepositGas,
