@@ -7,7 +7,7 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import { RocketNodeRegistrationTests, RocketNodeRemovalTests1, RocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
+import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
@@ -142,7 +142,7 @@ contract('RocketPool', accounts => {
     accounts,
   });
 
-  RocketNodeRegistrationTests({
+  rocketNodeRegistrationTests({
     owner,
     accounts,
     nodeFirst,
@@ -800,7 +800,7 @@ contract('RocketPool', accounts => {
 
   });
 
-  RocketNodeRemovalTests1({
+  rocketNodeRemovalTests1({
     owner,
     accounts,
     nodeFirst,
@@ -926,7 +926,7 @@ contract('RocketPool', accounts => {
 
   });
 
-  RocketNodeRemovalTests2({
+  rocketNodeRemovalTests2({
     owner,
     accounts,
     nodeFirst,

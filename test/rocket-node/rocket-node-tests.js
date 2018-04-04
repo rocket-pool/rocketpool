@@ -2,7 +2,7 @@ import { printTitle, assertThrows } from '../utils';
 import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-scenarios';
 
-export function RocketNodeRegistrationTests({
+export function rocketNodeRegistrationTests({
     owner,
     accounts,
     nodeFirst,
@@ -88,7 +88,7 @@ export function RocketNodeRegistrationTests({
 
 }
 
-export function RocketNodeRemovalTests1({
+export function rocketNodeRemovalTests1({
     owner,
     accounts,
     nodeFirst
@@ -111,7 +111,7 @@ export function RocketNodeRemovalTests1({
 
 }
 
-export function RocketNodeRemovalTests2({
+export function rocketNodeRemovalTests2({
     owner,
     accounts,
     nodeFirst
