@@ -37,14 +37,20 @@ export async function scenarioRegisterNode({
 }
 
 
-// Removes a node
+// Removes a node and asserts that node was removed successfully
 export async function scenarioRemoveNode({nodeAddress, fromAddress, gas}) {
     const rocketNode = await RocketNode.deployed();
 
     // Remove the node
-    await rocketNode.nodeRemove(nodeAddress, {from: fromAddress, gas: gas});
+    let result = await rocketNode.nodeRemove(nodeAddress, {from: fromAddress, gas: gas});
 
-    // TODO: add assertions
+    // Check that removal event was logged
+    let log = result.logs.find(({ event }) => event == 'NodeRemoved');
+    assert.notEqual(log, undefined, 'NodeRemoved event was not logged');
+
+    // Check that removed node address matches
+    let removedNodeAddress = log.args._address;
+    assert.equal(removedNodeAddress, nodeAddress, 'Removed node address does not match');
 
 }
 

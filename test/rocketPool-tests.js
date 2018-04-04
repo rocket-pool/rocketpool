@@ -7,7 +7,7 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import { RocketNodeRegistrationTests, RocketNodeRemovalTests } from './rocket-node/rocket-node-tests';
+import { RocketNodeRegistrationTests, RocketNodeRemovalTests1, RocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
@@ -800,7 +800,7 @@ contract('RocketPool', accounts => {
 
   });
 
-  RocketNodeRemovalTests({
+  RocketNodeRemovalTests1({
     owner,
     accounts,
     nodeFirst,
@@ -925,19 +925,14 @@ contract('RocketPool', accounts => {
     );
 
   });
+
+  RocketNodeRemovalTests2({
+    owner,
+    accounts,
+    nodeFirst,
+  });
+
   describe('Part 15', async () => {
-
-    // Owner removes first node
-    it(printTitle('owner', 'removes first node from the Rocket Pool network'), async () => {
-      // Remove the node now
-      const result = await rocketNode.nodeRemove(nodeFirst, { from: owner, gas: 200000 });
-
-      const log = result.logs.find(({ event }) => event == 'NodeRemoved');
-      assert.notEqual(log, undefined); // Check that an event was logged
-
-      const nodeAddress = log.args._address;
-      assert.equal(nodeAddress, nodeFirst, 'Node address does not match');
-    });
 
     // Owner removes first partner - users attached to this partner can still withdraw
     it(printTitle('owner', 'removes first partner from the Rocket Pool network'), async () => {

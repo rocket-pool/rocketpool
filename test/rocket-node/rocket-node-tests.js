@@ -18,7 +18,7 @@ export function RocketNodeRegistrationTests({
     nodeRegisterGas
 }) {
 
-    describe('RocketNode', async () => {
+    describe('RocketNode - Registration', async () => {
 
 
         // Addresses
@@ -88,13 +88,13 @@ export function RocketNodeRegistrationTests({
 
 }
 
-export function RocketNodeRemovalTests({
+export function RocketNodeRemovalTests1({
     owner,
     accounts,
     nodeFirst
 }) {
 
-    describe('RocketNode', async () => {
+    describe('RocketNode - Removal', async () => {
 
 
         // Owner attempts to remove active node
@@ -104,6 +104,29 @@ export function RocketNodeRemovalTests({
                 fromAddress: owner,
                 gas: 200000,
             }));
+        });
+
+
+    });
+
+}
+
+export function RocketNodeRemovalTests2({
+    owner,
+    accounts,
+    nodeFirst
+}) {
+
+    describe('RocketNode - Removal', async () => {
+
+
+        // Owner removes first node
+        it(printTitle('owner', 'removes first node from the Rocket Pool network'), async () => {
+            await scenarioRemoveNode({
+                nodeAddress: nodeFirst,
+                fromAddress: owner,
+                gas: 200000,
+            });
         });
 
 
