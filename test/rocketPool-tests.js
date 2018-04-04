@@ -1,7 +1,7 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketPartnerAPI, RocketSettings, Casper, CasperValidation} from './artifacts';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketPartnerAPI, RocketSettings, Casper} from './artifacts';
 
 // Import modular tests & scenarios
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
