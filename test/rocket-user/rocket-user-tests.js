@@ -9,7 +9,7 @@ export function rocketUserWithdrawalAddressTests({
     miniPools
 }) {
 
-    describe('RocketUser', async () => {
+    describe('RocketUser - Withdrawal Address', async () => {
 
 
         // Second user sets a backup withdrawal address
@@ -35,7 +35,7 @@ export function rocketUserWithdrawalTests({
     rocketWithdrawalGas
 }) {
 
-    describe('RocketUser', async () => {
+    describe('RocketUser - Withdrawal', async () => {
 
 
         // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
