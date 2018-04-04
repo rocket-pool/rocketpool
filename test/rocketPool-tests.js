@@ -1,14 +1,14 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketPartnerAPI, RocketSettings, Casper} from './artifacts';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketSettings, Casper} from './artifacts';
 
 // Import modular tests & scenarios
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
-import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests2 } from './rocket-partner-api/rocket-partner-api-tests';
+import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIDepositTests2, rocketPartnerAPIWithdrawalTests, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests3 } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -117,7 +117,6 @@ contract('RocketPool', accounts => {
   let rocketNode;
   let rocketDeposit;
   let rocketPool;
-  let rocketPartnerAPI;
   let casper;
 
   beforeEach(async () => {
@@ -125,7 +124,6 @@ contract('RocketPool', accounts => {
     rocketUser = await RocketUser.deployed();
     rocketNode = await RocketNode.deployed();
     rocketPool = await RocketPool.deployed();
-    rocketPartnerAPI = await RocketPartnerAPI.deployed();
     casper = await Casper.deployed();
   });
 
@@ -193,106 +191,22 @@ contract('RocketPool', accounts => {
     miniPools,
   });
 
-  describe('Part 5', async () => {
-
-    // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
-    it(
-      printTitle(
-        'partnerFirst',
-        'send ether to RP on behalf of their user, second minipool is created for them and is accepting deposits'
-      ),
-      async () => {
-        // Get the min ether required to launch a minipool
-        const minEther = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-        // Send Ether as a user, but send just enough to create the pool, but not launch it
-        const sendAmount = parseInt(minEther) - parseInt(web3.toWei('1', 'ether'));
-        // Deposit on a behalf of the partner and also specify the pool staking time ID
-        const result = await rocketPartnerAPI.APIpartnerDeposit(partnerFirstUserAccount, 'short', {
-          from: partnerFirst,
-          value: sendAmount,
-          gas: rocketDepositGas,
-        });
-
-        const log = result.logs.find(({ event }) => event == 'APIpartnerDepositAccepted');
-        assert.notEqual(log, undefined); // Check that an event was logged
-
-        const userPartnerAddress = log.args._partner;
-
-        // Now find the pools our users belongs too, should just be one
-        const pools = await rocketPool.getPoolsFilterWithUser
-          .call(partnerFirstUserAccount, { from: partnerFirst })
-          .valueOf();
-
-        // Get an instance of that pool and do further checks
-        const miniPool = RocketPoolMini.at(pools[0]);
-        const poolStatus = await miniPool.getStatus.call().valueOf();
-        const poolBalance = web3.eth.getBalance(miniPool.address).valueOf();
-
-        // Now just count the users to make sure this user is the only one in this new pool
-        const userCount = await miniPool.getUserCount.call().valueOf();
-
-        assert.equal(poolStatus, 0, 'Invalid pool status');
-        assert.equal(poolBalance, sendAmount, 'Pool balance and send amount does not match');
-        assert.equal(userPartnerAddress, partnerFirst, 'Partner address does not match');
-        assert.equal(pools.length, 1, 'Final number of pools does not match');
-      }
-    );
-
-    // First partner withdraws half their users previous Ether from the pool before it has launched for staking
-    it(printTitle('partnerFirst', 'withdraws half their users previous deposit from the minipool'), async () => {
-      // Get the user deposit total
-      const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
-      assert.equal(pools.length, 1);
-
-      // Get an instance of that pool and do further checks
-      const miniPool = RocketPoolMini.at(pools[0]);
-      const poolStatus = await miniPool.getStatus.call().valueOf();
-
-      // Get the user deposit
-      const depositedAmount = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-      const withdrawalAmount = depositedAmount / 2;
-
-      // Withdraw half our deposit now through the main parent contract
-      await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, partnerFirstUserAccount, {
-        from: partnerFirst,
-        gas: 4000000,
-      });
-
-      // Get our balance again
-      const depositedAmountAfter = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-
-      assert.equal(depositedAmountAfter, depositedAmount - withdrawalAmount, 'Deposited amoint does not match');
-    });
-
-    // First partner user withdraws the remaining deposit from the minipool, their user is removed from it and the minipool is destroyed as it has no users anymore
-    it(
-      printTitle(
-        'partnerFirst',
-        'withdraws their users remaining deposit from the minipool, their user is removed from it and the minipool is destroyed as it has no users anymore'
-      ),
-      async () => {
-        // Get the users deposit total
-        const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
-        assert.equal(pools.length, 1);
-
-        // Get an instance of that pool and do further checks
-        const miniPool = RocketPoolMini.at(pools[0]);
-        const depositedAmount = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-        const withdrawalAmount = depositedAmount;
-
-        // Withdraw our deposit now through the main parent contract
-        await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, partnerFirstUserAccount, {
-          from: partnerFirst,
-          gas: rocketWithdrawalGas,
-        });
-
-        // See if Rocket Pool still recognises the pool contract after its been removed and self destructed
-        const result = await rocketPool.getPoolExists.call(pools[0]).valueOf();
-        assert.isFalse(result, 'Minipool exists when it should have been destroyed');
-      }
-    );
-
+  rocketPartnerAPIDepositTests2({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerFirstUserAccount,
+    rocketDepositGas,
   });
+
+  rocketPartnerAPIWithdrawalTests({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerFirstUserAccount,
+    rocketWithdrawalGas,
+  });
+
   describe('Part 6', async () => {
 
     it(
@@ -785,7 +699,7 @@ contract('RocketPool', accounts => {
     partnerSecond,
   });
 
-  rocketPartnerAPIDepositTests2({
+  rocketPartnerAPIDepositTests3({
     owner,
     accounts,
     partnerFirst,
