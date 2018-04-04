@@ -16,7 +16,9 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
     userTokenBalanceOld = parseFloat(web3.fromWei(userTokenBalanceOld.valueOf(), 'ether'));
 
     // Get user's initial minipool ether balance
-    let userEtherBalanceOld = await miniPool.getUserDeposit.call(fromAddress);
+    let userEtherBalanceOld;
+    try { userEtherBalanceOld = await miniPool.getUserDeposit.call(fromAddress); }
+    catch (e) { userEtherBalanceOld = 0; }
 
     // Withdraw tokens from user's minipool
     await rocketUser.userWithdrawDepositTokens(miniPool.address, withdrawalAmount, {
@@ -33,17 +35,22 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
     userTokenBalanceNew = parseFloat(web3.fromWei(userTokenBalanceNew.valueOf(), 'ether'));
 
     // Get user's updated minipool ether balance
-    let userEtherBalanceNew = await miniPool.getUserDeposit.call(fromAddress);
+    let userEtherBalanceNew;
+    try { userEtherBalanceNew = await miniPool.getUserDeposit.call(fromAddress); }
+    catch (e) { userEtherBalanceNew = 0; }
+
+    // Get real withdrawal amount (0 = full balance)
+    let realWithdrawalAmount = (withdrawalAmount || userEtherBalanceOld);
 
     // Get user's expected token balance based on withdrawal amount and fees
     let tokenWithdrawalFee = await rocketSettings.getTokenRPDWithdrawalFeePerc.call();
-    let tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee.valueOf(), 'ether') * web3.fromWei(withdrawalAmount, 'ether'));
-    let expectedUserTokenBalance = userTokenBalanceOld + (web3.fromWei(withdrawalAmount, 'ether') - tokenBalanceFeeIncurred);
+    let tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee.valueOf(), 'ether') * web3.fromWei(realWithdrawalAmount, 'ether'));
+    let expectedUserTokenBalance = userTokenBalanceOld + (web3.fromWei(realWithdrawalAmount, 'ether') - tokenBalanceFeeIncurred);
 
     // Asserts
     assert.equal(userTokenBalanceNew, expectedUserTokenBalance, 'User\'s token balance is incorrect');
     assert.equal((totalTokenSupplyNew - totalTokenSupplyOld), (userTokenBalanceNew - userTokenBalanceOld), 'Token supply does not match user token balance increase');
-    assert.equal(userEtherBalanceNew.valueOf(), (parseInt(userEtherBalanceOld.valueOf()) - withdrawalAmount), 'User\'s minipool ether balance was not updated correctly');
+    assert.equal(userEtherBalanceNew.valueOf(), (parseInt(userEtherBalanceOld.valueOf()) - realWithdrawalAmount), 'User\'s minipool ether balance was not updated correctly');
 
 }
 

@@ -106,7 +106,7 @@ export default function({
         });
 
 
-        // Use cannot burn deposit tokens for ether while there is not enough ether to cover the token amount
+        // User cannot burn deposit tokens for ether while there is not enough ether to cover the token amount
         it(printTitle('userThird', 'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), async () => {
 
             // Get amount of tokens to burn
@@ -119,6 +119,23 @@ export default function({
                 fromAddress: userThird,
                 gas: 250000,
             }));
+
+        });
+
+
+        // User can withdraw all deposit tokens while minipool is staking
+        it(printTitle('userThird', 'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'), async () => {
+
+            // Withdraw all tokens from user's minipool
+            await scenarioWithdrawDepositTokens({
+                miniPool: miniPools.second,
+                withdrawalAmount: 0,
+                fromAddress: userThird,
+                gas: 250000,
+            });
+
+            // Check that user is removed from pool as they don't have any deposit left
+            await assertThrows(miniPools.second.getUserDeposit.call(userThird));
 
         });
 

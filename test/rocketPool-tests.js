@@ -585,27 +585,6 @@ contract('RocketPool', accounts => {
     miniPools,
   });
 
-  describe('Part 8', async () => {
-
-    it(
-      printTitle(
-        'userThird',
-        'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'
-      ),
-      async () => {
-        // Get the token withdrawal fee
-        const tokenWithdrawalFee = parseInt(await rocketSettings.getTokenRPDWithdrawalFeePerc.call().valueOf());
-
-        // Withdraw all by passing 0
-        await rocketUser.userWithdrawDepositTokens(miniPoolSecond.address, 0, { from: userThird, gas: 250000 });
-
-        // User should be removed from pool now as they dont have any deposit left, they traded it all for deposit tokens
-        const result = miniPoolSecond.getUserDeposit.call(userThird);
-        await assertThrows(result);
-      }
-    );
-
-  });
   describe('Part 9', async () => {
 
     // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
