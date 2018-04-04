@@ -7,7 +7,7 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import rocketNodeTests from './rocket-node/rocket-node-tests';
+import { RocketNodeRegistrationTests, RocketNodeRemovalTests } from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
@@ -142,7 +142,7 @@ contract('RocketPool', accounts => {
     accounts,
   });
 
-  rocketNodeTests({
+  RocketNodeRegistrationTests({
     owner,
     accounts,
     nodeFirst,
@@ -799,19 +799,13 @@ contract('RocketPool', accounts => {
     );
 
   });
-  describe('Part 13', async () => {
 
-    // Owner attempts to remove active node
-    it(
-      printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'),
-      async () => {
-        // Remove the node now
-        const result = rocketNode.nodeRemove(nodeFirst, { from: owner, gas: 200000 });
-        await assertThrows(result);
-      }
-    );
-
+  RocketNodeRemovalTests({
+    owner,
+    accounts,
+    nodeFirst,
   });
+
   describe('Part 14', async () => {
 
     // First user withdraws their deposit + rewards and pays Rocket Pools fee

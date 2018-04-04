@@ -1,8 +1,8 @@
 import { printTitle, assertThrows } from '../utils';
 import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode } from './rocket-node-scenarios';
+import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-scenarios';
 
-export default function({
+export function RocketNodeRegistrationTests({
     owner,
     accounts,
     nodeFirst,
@@ -86,4 +86,27 @@ export default function({
 
     });
 
-};
+}
+
+export function RocketNodeRemovalTests({
+    owner,
+    accounts,
+    nodeFirst
+}) {
+
+    describe('RocketNode', async () => {
+
+
+        // Owner attempts to remove active node
+        it(printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'), async () => {
+            await assertThrows(scenarioRemoveNode({
+                nodeAddress: nodeFirst,
+                fromAddress: owner,
+                gas: 200000,
+            }));
+        });
+
+
+    });
+
+}

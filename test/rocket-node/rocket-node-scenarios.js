@@ -36,3 +36,15 @@ export async function scenarioRegisterNode({
 
 }
 
+
+// Removes a node
+export async function scenarioRemoveNode({nodeAddress, fromAddress, gas}) {
+    const rocketNode = await RocketNode.deployed();
+
+    // Remove the node
+    await rocketNode.nodeRemove(nodeAddress, {from: fromAddress, gas: gas});
+
+    // TODO: add assertions
+
+}
+
