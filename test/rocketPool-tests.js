@@ -1,7 +1,7 @@
 // OS methods
 const os = require('os');
 import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
-import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken, RocketPartnerAPI, RocketSettings, Casper, CasperValidation} from './artifacts';
+import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketPartnerAPI, RocketSettings, Casper, CasperValidation} from './artifacts';
 
 // Import modular tests & scenarios
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
@@ -126,7 +126,6 @@ contract('RocketPool', accounts => {
     rocketSettings = await RocketSettings.deployed();
     rocketUser = await RocketUser.deployed();
     rocketNode = await RocketNode.deployed();
-    rocketDeposit = await RocketDepositToken.deployed();
     rocketPool = await RocketPool.deployed();
     rocketPartnerAPI = await RocketPartnerAPI.deployed();
     casper = await Casper.deployed();
