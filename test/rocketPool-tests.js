@@ -8,7 +8,7 @@ import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
-import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
+import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -158,19 +158,25 @@ contract('RocketPool', accounts => {
     nodeRegisterGas,
   });
 
-  rocketPartnerAPITests({
+  rocketPartnerAPIRegistrationTests({
     owner,
     accounts,
     userFirst,
+    partnerFirst,
+    partnerFirstName,
+    partnerSecond,
+    partnerSecondName,
+    partnerRegisterGas
+  });
+
+  rocketPartnerAPIDepositTests({
+    owner,
+    accounts,
     userSecond,
     userThird,
     partnerFirst,
-    partnerFirstName,
     partnerFirstUserAccount,
-    partnerSecond,
-    partnerSecondName,
-    partnerRegisterGas,
-    rocketDepositGas,
+    rocketDepositGas
   });
 
   describe('Part 3', async () => {

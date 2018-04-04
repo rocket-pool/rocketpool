@@ -2,29 +2,18 @@ import { printTitle, assertThrows } from '../utils';
 import { RocketSettings } from '../artifacts';
 import { scenarioRegisterPartner, scenarioPartnerDeposit } from './rocket-partner-api-scenarios';
 
-export default function({
+export function rocketPartnerAPIRegistrationTests({
     owner,
     accounts,
     userFirst,
-    userSecond,
-    userThird,
     partnerFirst,
     partnerFirstName,
-    partnerFirstUserAccount,
     partnerSecond,
     partnerSecondName,
-    partnerRegisterGas,
-    rocketDepositGas
+    partnerRegisterGas
 }) {
 
-    describe('RocketPartnerAPI', async () => {
-
-
-        // Contract dependencies
-        let rocketSettings;
-        before(async () => {
-            rocketSettings = await RocketSettings.deployed();
-        });
+    describe('RocketPartnerAPI - Registration', async () => {
 
 
         // Try to register a new partner as a non rocket pool owner
@@ -60,6 +49,30 @@ export default function({
         });
 
 
+    });
+
+}
+
+export function rocketPartnerAPIDepositTests({
+    owner,
+    accounts,
+    userSecond,
+    userThird,
+    partnerFirst,
+    partnerFirstUserAccount,
+    rocketDepositGas
+}) {
+
+    describe('RocketPartnerAPI - Deposits', async () => {
+
+
+        // Contract dependencies
+        let rocketSettings;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+        });
+
+
         // Attempt to make a deposit with an incorrect pool staking time ID
         it(printTitle('partnerFirst', 'fail to deposit with an incorrect pool staking time ID'), async () => {
 
@@ -80,7 +93,7 @@ export default function({
 
 
         // Attempt to make a deposit with an unregistered 3rd party partner
-        it(printTitle('userFirst', 'fail to deposit with an unregistered partner'), async () => {
+        it(printTitle('userThird', 'fail to deposit with an unregistered partner'), async () => {
             
             // Calculate just enough ether to create a minipool
             const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
