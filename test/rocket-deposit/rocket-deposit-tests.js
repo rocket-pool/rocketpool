@@ -2,7 +2,42 @@ import { printTitle, assertThrows } from '../utils';
 import { RocketDepositToken } from '../artifacts';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
 
-export default function({
+export function rocketDepositTests1({
+    owner,
+    accounts,
+    userThird,
+    miniPools
+}) {
+
+    describe('RocketDepositToken', async () => {
+
+
+        // Contract dependencies
+        let rocketDeposit;
+        before(async () => {
+            rocketDeposit = await RocketDepositToken.deployed();
+        });
+
+
+        // Attempt to make a withdrawal of rocket deposit tokens too early
+        it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), async () => {
+
+            // Try to withdraw tokens from that users' minipool
+            await assertThrows(scenarioWithdrawDepositTokens({
+                miniPool: miniPools.second,
+                withdrawalAmount: 0,
+                fromAddress: userThird,
+                gas: 250000,
+            }));
+
+        });
+
+
+    });
+
+}
+
+export function rocketDepositTests2({
     owner,
     accounts,
     userFirst,

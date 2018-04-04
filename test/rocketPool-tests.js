@@ -9,7 +9,7 @@ import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import rocketUserTests from './rocket-user/rocket-user-tests';
-import rocketDepositTests from './rocket-deposit/rocket-deposit-tests';
+import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
@@ -436,17 +436,15 @@ contract('RocketPool', accounts => {
       }
     );
 
-    // Attempt to make a withdraw of rocket deposit tokens too early
-    it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), async () => {
-      // Try to withdraw tokens from that users' minipool
-      const result = rocketUser.userWithdrawDepositTokens(miniPoolSecond.address, 0, {
-        from: userThird,
-        gas: 150000,
-      });
-      await assertThrows(result);
-    });
-
   });
+
+  rocketDepositTests1({
+    owner,
+    accounts,
+    userThird,
+    miniPools,
+  });
+
   describe('Part 7', async () => {
 
     // Node performs first checkin, no pools should be launched yet
@@ -577,7 +575,7 @@ contract('RocketPool', accounts => {
 
   });
 
-  rocketDepositTests({
+  rocketDepositTests2({
     owner,
     accounts,
     userFirst,
