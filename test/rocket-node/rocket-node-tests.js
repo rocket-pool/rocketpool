@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../utils';
-import { scenarioIncrementEpochAndDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
+import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioRegisterNode } from './rocket-node-scenarios';
 
 export default function({
@@ -24,12 +24,6 @@ export default function({
         // Addresses
         let nodeFirstValCodeAddress = 0;
         let nodeSecondValCodeAddress = 0;
-
-
-        // Simulate Caspers epoch and dynasty changing
-        it(printTitle('casper', 'simulate Caspers epoch and dynasty changing'), async () => {
-            await scenarioIncrementEpochAndDynasty({increment: ['e','e','d'], fromAddress: owner});
-        });
 
 
         // Register validation contract address for node

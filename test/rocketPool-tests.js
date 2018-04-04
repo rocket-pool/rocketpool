@@ -6,6 +6,7 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 // Import modular tests & scenarios
 import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
+import casperTests from './casper/casper-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
@@ -131,7 +132,15 @@ contract('RocketPool', accounts => {
     casper = await Casper.deployed();
   });
 
-  rocketStorageTests({owner, accounts});
+  rocketStorageTests({
+    owner,
+    accounts,
+  });
+
+  casperTests({
+    owner,
+    accounts,
+  });
 
   rocketNodeTests({
     owner,
@@ -976,10 +985,19 @@ contract('RocketPool', accounts => {
 
   });
 
-  rocketVaultAdminTests({owner, accounts});
+  rocketVaultAdminTests({
+    owner,
+    accounts,
+  });
 
-  rocketVaultAccountTests({owner, accounts});
+  rocketVaultAccountTests({
+    owner,
+    accounts,
+  });
 
-  rocketUpgradeTests({owner, accounts});
+  rocketUpgradeTests({
+    owner,
+    accounts,
+  });
 
 });
