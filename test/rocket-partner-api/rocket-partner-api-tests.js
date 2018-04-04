@@ -137,49 +137,22 @@ export function rocketPartnerAPIDepositTests2({
         });
 
 
-        let rocketPartnerAPI;
-        let rocketPool;
-        before(async () => {
-            rocketPartnerAPI = await RocketPartnerAPI.deployed();
-            rocketPool = await RocketPool.deployed();
-        });
-
-
         // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
         it(printTitle('partnerFirst', 'send ether to RP on behalf of their user, second minipool is created for them and is accepting deposits'), async () => {
-            // Get the min ether required to launch a minipool
-            const minEther = await rocketSettings.getMiniPoolLaunchAmount.call().valueOf();
-            // Send Ether as a user, but send just enough to create the pool, but not launch it
-            const sendAmount = parseInt(minEther) - parseInt(web3.toWei('1', 'ether'));
-            // Deposit on a behalf of the partner and also specify the pool staking time ID
-            const result = await rocketPartnerAPI.APIpartnerDeposit(partnerFirstUserAccount, 'short', {
-                from: partnerFirst,
-                value: sendAmount,
+
+            // Calculate just enough ether to create a minipool
+            const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+            const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+            // Deposit on behalf of of partner
+            await scenarioPartnerDeposit({
+                userAddress: partnerFirstUserAccount,
+                stakingTimeID: 'short',
+                fromAddress: partnerFirst,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             });
 
-            const log = result.logs.find(({ event }) => event == 'APIpartnerDepositAccepted');
-            assert.notEqual(log, undefined); // Check that an event was logged
-
-            const userPartnerAddress = log.args._partner;
-
-            // Now find the pools our users belongs too, should just be one
-            const pools = await rocketPool.getPoolsFilterWithUser
-            .call(partnerFirstUserAccount, { from: partnerFirst })
-            .valueOf();
-
-            // Get an instance of that pool and do further checks
-            const miniPool = RocketPoolMini.at(pools[0]);
-            const poolStatus = await miniPool.getStatus.call().valueOf();
-            const poolBalance = web3.eth.getBalance(miniPool.address).valueOf();
-
-            // Now just count the users to make sure this user is the only one in this new pool
-            const userCount = await miniPool.getUserCount.call().valueOf();
-
-            assert.equal(poolStatus, 0, 'Invalid pool status');
-            assert.equal(poolBalance, sendAmount, 'Pool balance and send amount does not match');
-            assert.equal(userPartnerAddress, partnerFirst, 'Partner address does not match');
-            assert.equal(pools.length, 1, 'Final number of pools does not match');
         });
 
 
