@@ -8,7 +8,7 @@ import { scenarioIncrementEpochAndDynasty } from './casper/casper-scenarios';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
-import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests } from './rocket-partner-api/rocket-partner-api-tests';
+import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests, rocketPartnerAPIRemovalTests } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -938,30 +938,14 @@ contract('RocketPool', accounts => {
     nodeFirst,
   });
 
+  rocketPartnerAPIRemovalTests({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerSecond,
+  });
+
   describe('Part 15', async () => {
-
-    // Owner removes first partner - users attached to this partner can still withdraw
-    it(printTitle('owner', 'removes first partner from the Rocket Pool network'), async () => {
-      // Check the second partner array index
-      const partnerSecondIndexPrev = await rocketPartnerAPI.getPartnerIndex.call(partnerSecond).valueOf();
-      // Remove the node now
-      const result = await rocketPartnerAPI.partnerRemove(partnerFirst, { from: owner, gas: 500000 });
-
-      const log = result.logs.find(({ event }) => event == 'PartnerRemoved');
-      assert.notEqual(log, undefined); // Check that an event was logged
-
-      const partnerAddress = log.args._address;
-
-      // The partner count should be one now
-      const partnerCount = await rocketPartnerAPI.getPartnerCount.call().valueOf();
-      // Now check the remaining partner array was reindexed correctly using the key/value storage
-      const partnerSecondIndex = await rocketPartnerAPI.getPartnerIndex.call(partnerSecond).valueOf();
-
-      assert.equal(partnerAddress, partnerFirst, 'Partner addresses do not match');
-      assert.equal(partnerCount, 1, 'Partner count is incorrect');
-      assert.equal(partnerSecondIndexPrev, 1, 'Initial second partner index is incorrect');
-      assert.equal(partnerSecondIndex, 0, 'New second partner index is incorrect');
-    });
 
     // Attempt to make a deposit with after being removed as a partner
     it(printTitle('partnerFirst', 'attempt to make a deposit with after being removed as a partner'), async () => {

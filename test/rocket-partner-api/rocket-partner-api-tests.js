@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings } from '../artifacts';
-import { scenarioRegisterPartner, scenarioPartnerDeposit } from './rocket-partner-api-scenarios';
+import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 
 export function rocketPartnerAPIRegistrationTests({
     owner,
@@ -108,6 +108,31 @@ export function rocketPartnerAPIDepositTests({
                 gas: rocketDepositGas,
             }));
 
+        });
+
+
+    });
+
+}
+
+export function rocketPartnerAPIRemovalTests({
+    owner,
+    accounts,
+    partnerFirst,
+    partnerSecond
+}) {
+
+    describe('RocketPartnerAPI - Removal', async () => {
+
+
+        // Owner removes first partner - users attached to this partner can still withdraw
+        it(printTitle('owner', 'removes first partner from the Rocket Pool network'), async () => {
+            await scenarioRemovePartner({
+                partnerAddress: partnerFirst,
+                newerPartnerAddress: partnerSecond,
+                fromAddress: owner,
+                gas: 500000,
+            });
         });
 
 
