@@ -196,7 +196,7 @@ export function rocketPartnerAPIWithdrawalTests({
                 withdrawalAmount: withdrawalAmount,
                 userAddress: partnerFirstUserAccount,
                 fromAddress: partnerFirst,
-                gas: 4000000,
+                gas: rocketWithdrawalGas,
             });
 
         });
@@ -204,24 +204,24 @@ export function rocketPartnerAPIWithdrawalTests({
 
         // First partner user withdraws the remaining deposit from the minipool, their user is removed from it and the minipool is destroyed as it has no users anymore
         it(printTitle('partnerFirst', 'withdraws their users remaining deposit from the minipool, their user is removed from it and the minipool is destroyed as it has no users anymore'), async () => {
-            // Get the users deposit total
-            const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
-            assert.equal(pools.length, 1);
 
-            // Get an instance of that pool and do further checks
-            const miniPool = RocketPoolMini.at(pools[0]);
-            const depositedAmount = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-            const withdrawalAmount = depositedAmount;
+            // Get user's latest minipool
+            let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+            let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
 
-            // Withdraw our deposit now through the main parent contract
-            await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, partnerFirstUserAccount, {
-                from: partnerFirst,
+            // Get amount to withdraw - entire deposit
+            let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+            let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf());
+
+            // Withdraw on behalf of partner
+            await scenarioPartnerWithdraw({
+                miniPool: userMiniPool,
+                withdrawalAmount: withdrawalAmount,
+                userAddress: partnerFirstUserAccount,
+                fromAddress: partnerFirst,
                 gas: rocketWithdrawalGas,
             });
 
-            // See if Rocket Pool still recognises the pool contract after its been removed and self destructed
-            const result = await rocketPool.getPoolExists.call(pools[0]).valueOf();
-            assert.isFalse(result, 'Minipool exists when it should have been destroyed');
         });
 
 
