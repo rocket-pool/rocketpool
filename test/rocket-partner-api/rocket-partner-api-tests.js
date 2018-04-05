@@ -115,10 +115,6 @@ export function rocketPartnerAPIDepositTests1({
 
 }
 
-
-import { RocketPartnerAPI, RocketPool, RocketPoolMini } from '../artifacts';
-
-
 export function rocketPartnerAPIDepositTests2({
     owner,
     accounts,
