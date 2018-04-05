@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings } from '../artifacts';
+import { RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 
 export function rocketPartnerAPIRegistrationTests({
@@ -167,10 +167,9 @@ export function rocketPartnerAPIWithdrawalTests({
     describe('RocketPartnerAPI - Withdrawals', async () => {
 
 
-        let rocketPartnerAPI;
+        // Contract dependencies
         let rocketPool;
         before(async () => {
-            rocketPartnerAPI = await RocketPartnerAPI.deployed();
             rocketPool = await RocketPool.deployed();
         });
 
