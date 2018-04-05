@@ -126,11 +126,12 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
 
 
 // Withdraws staking deposit and asserts that deposit was withdrawn successfully
-export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, feeAccountAddress, gas}) {
+export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, depositFromAddress = null, feeAccountAddress, gas}) {
     const rocketUser = await RocketUser.deployed();
+    const rocketPool = await RocketPool.deployed();
 
     // Get initial balances
-    let depositAmountOld = await miniPool.getUserDeposit.call(fromAddress);
+    let depositAmountOld = await miniPool.getUserDeposit.call(depositFromAddress || fromAddress);
     let feeAccountBalanceOld = web3.eth.getBalance(feeAccountAddress);
     let miniPoolBalanceOld = web3.eth.getBalance(miniPool.address);
 
@@ -147,9 +148,6 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     let feeAccountBalanceNew = web3.eth.getBalance(feeAccountAddress);
     let miniPoolBalanceNew = web3.eth.getBalance(miniPool.address);
 
-    // Get updated minipool user count
-    let miniPoolUserCountNew = await miniPool.getUserCount.call();
-
     // Assert Transferred event was logged
     let log = result.logs.find(({ event }) => event == 'Transferred');
     assert.notEqual(log, undefined, 'Transferred event was not logged');
@@ -157,14 +155,24 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     // Get withdrawn amount
     let withdrawnAmount = log.args.value;
 
-    // Get expected user count depending on withdrawal amount - if entire deposit is withdrawn, user should be removed
-    let expectedUserCount = (withdrawalAmount ? miniPoolUserCountOld.valueOf() : miniPoolUserCountOld.valueOf() - 1);
-
     // Asserts
     assert.isTrue(withdrawnAmount > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
     assert.isTrue(feeAccountBalanceNew.valueOf() > feeAccountBalanceOld.valueOf(), 'Fee account balance did not increase');
     assert.isTrue(miniPoolBalanceNew.valueOf() < miniPoolBalanceOld.valueOf(), 'Minipool balance did not decrease');
-    assert.equal(miniPoolUserCountNew.valueOf(), expectedUserCount, 'Invalid user count');
+
+    // Check that minipool contract has been destroyed if entire last deposit was withdrawn
+    if (!withdrawalAmount && miniPoolUserCountOld.valueOf() == 1) {
+        let miniPoolExists = await rocketPool.getPoolExists.call(miniPool.address);
+        assert.isFalse(miniPoolExists.valueOf(), 'Minipool exists when it should have been destroyed');
+        assert.equal(miniPoolBalanceNew.valueOf(), 0, 'Minipool balance is not zero');
+    }
+
+    // Check user count if minipool contract not destroyed - if entire deposit is withdrawn, user should be removed
+    else {
+        let miniPoolUserCountNew = await miniPool.getUserCount.call();
+        let expectedUserCount = (withdrawalAmount ? miniPoolUserCountOld.valueOf() : miniPoolUserCountOld.valueOf() - 1);
+        assert.equal(miniPoolUserCountNew.valueOf(), expectedUserCount, 'Invalid user count');
+    }
 
 }
 
