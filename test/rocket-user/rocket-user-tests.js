@@ -149,7 +149,7 @@ export function rocketUserDepositTests2({
 
 }
 
-export function rocketUserWithdrawalTests({
+export function rocketUserWithdrawalTests1({
     owner,
     accounts,
     userFirst,
@@ -168,6 +168,153 @@ export function rocketUserWithdrawalTests({
                 fromAddress: userFirst,
                 gas: rocketWithdrawalGas,
             }));
+        });
+
+
+    });
+
+}
+
+
+import { RocketUser, RocketPool } from '../artifacts';
+
+
+export function rocketUserWithdrawalTests2({
+    owner,
+    accounts,
+    userFirst,
+    userSecond,
+    userSecondBackupAddress,
+    miniPools,
+    rocketWithdrawalGas
+}) {
+
+    describe('RocketUser - Withdrawal', async () => {
+
+
+        // Contract dependencies
+        let rocketSettings;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+        });
+
+
+        let rocketUser;
+        let rocketPool;
+        before(async () => {
+            rocketUser = await RocketUser.deployed();
+            rocketPool = await RocketPool.deployed();
+        });
+
+
+        // First user withdraws their deposit + rewards and pays Rocket Pools fee
+        it(printTitle('userFirst', 'withdraws their deposit + Casper rewards from the minipool and pays their fee'), async () => {
+
+            // Get the user deposit
+            const depositedAmount = await miniPools.first.getUserDeposit.call(userFirst).valueOf();
+            // Fee acount is Coinbase by default
+            const rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
+            // Get the minipool balance
+            const miniPoolBalancePrev = web3.eth.getBalance(miniPools.first.address).valueOf();
+
+            // Withdraw our total deposit + rewards
+            const result = await rocketUser.userWithdraw(miniPools.first.address, 0, {
+                from: userFirst,
+                gas: rocketWithdrawalGas,
+            });
+
+            const log = result.logs.find(({ event }) => event == 'Transferred');
+            assert.notEqual(log, undefined); // Check that an event was logged
+
+            const amountSentToUser = log.args.value;
+
+            // Fee acount is Coinbase by default
+            const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
+            // Get the minipool balance
+            const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
+            // Now just count the users to make sure this user has been removed after withdrawing their balance and paying the fee
+            const userCount = await miniPools.first.getUserCount.call().valueOf();
+
+            assert.isTrue(depositedAmount < amountSentToUser, 'Deposit amount did not decrease');
+            assert.isTrue(rpFeeAccountBalance > rpFeeAccountBalancePrev, 'Fee account balance did not increase');
+            assert.isTrue(miniPoolBalance < miniPoolBalancePrev, 'Minipool balance did not decrease');
+            assert.equal(userCount, 1, 'User count does not match');
+
+        });
+
+
+        // Second user attempts to withdraw using their backup address before the time limit to do so is allowed (3 months by default)
+        it(printTitle('userSecond', 'fails to withdraw using their backup address before the time limit to do so is allowed'), async () => {
+
+            // Attemp tp withdraw our total deposit + rewards using our backup address
+            const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
+                from: userSecondBackupAddress,
+                gas: rocketWithdrawalGas,
+            });
+            await assertThrows(result);
+
+        });
+
+
+        // Update first minipool
+        it(printTitle('---------', 'settings BackupCollectTime changed to 0 which will allow the user to withdraw via their backup address'), async () => {
+
+            // Set the backup withdrawal period to 0 to allow the user to withdraw using their backup address
+            const result = await rocketSettings.setMiniPoolBackupCollectTime(0, { from: owner, gas: 150000 });
+
+            // TODO: check backup withdrawal period, dummy test for now
+
+        });
+
+
+        // First user attempts to withdraw again
+        it(printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"), async () => {
+
+            // Attempt to withdraw our total deposit + rewards using our backup address
+            const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
+                from: userFirst,
+                gas: rocketWithdrawalGas,
+            });
+            await assertThrows(result);
+
+        });
+
+
+        // Second user withdraws their deposit + rewards and pays Rocket Pools fee, minipool closes
+        it(printTitle('userSecond', 'withdraws their deposit + Casper rewards using their backup address from the minipool, pays their fee and the pool closes'), async () => {
+
+            // Get the user deposit
+            const depositedAmount = await miniPools.first.getUserDeposit.call(userSecond).valueOf();
+            // Fee account is Coinbase by default
+            const rpFeeAccountBalancePrev = web3.eth.getBalance(owner).valueOf();
+            // Get the minipool balance
+            const miniPoolBalancePrev = web3.eth.getBalance(miniPools.first.address).valueOf();
+
+            // Withdraw our total deposit + rewards
+            const result = await rocketUser.userWithdraw(miniPools.first.address, 0, {
+                from: userSecondBackupAddress,
+                gas: rocketWithdrawalGas,
+            });
+
+            const log = result.logs.find(({ event }) => event == 'Transferred');
+            assert.notEqual(log, undefined); // Check that an event was logged
+
+            const amountSentToUser = log.args.value;
+
+            // Fee acount is the coinbase by default
+            const rpFeeAccountBalance = web3.eth.getBalance(owner).valueOf();
+            // Get the minipool balance
+            const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
+
+
+            // See if RocketStorage still recognises the pool contract after its been removed and self destructed
+            const poolExists = await rocketPool.getPoolExists.call(miniPools.first.address).valueOf();
+
+            assert.isTrue(depositedAmount < amountSentToUser, 'Deposit balance did not decrease');
+            assert.isTrue(rpFeeAccountBalance > rpFeeAccountBalancePrev, 'Fee account balance did not increase');
+            assert.isTrue(miniPoolBalance == 0, 'Minipool balance is not equal to zero');
+            assert.isFalse(poolExists, 'Pool exists when it should have been destroyed');
+
         });
 
 
