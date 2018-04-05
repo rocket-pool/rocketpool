@@ -222,7 +222,7 @@ contract('RocketPool', accounts => {
     miniPools,
   });
 
-  describe('Part 7', async () => {
+  describe('Node Checkins', async () => {
 
     // Node performs first checkin, no pools should be launched yet
     it(
@@ -368,7 +368,7 @@ contract('RocketPool', accounts => {
     rocketWithdrawalGas,
   });
 
-  describe('Part 10', async () => {
+  describe('Node Checkins & Minipool Updates', async () => {
 
     // Node performs checkin
     it(
@@ -451,9 +451,6 @@ contract('RocketPool', accounts => {
       }
     );
 
-  });
-  describe('Part 11', async () => {
-
     // Simulate Caspers epoch and dynasty changing for the second deposit
     it(printTitle('casper', 'simulate Caspers epoch and dynasty incrementing to allow first minipool validator to withdraw'), async () => {
       await scenarioIncrementEpochAndDynasty({increment: ['e','e','d','e','d','e','d','e','e'], fromAddress: owner});
@@ -532,7 +529,7 @@ contract('RocketPool', accounts => {
     nodeFirst,
   });
 
-  describe('Part 14', async () => {
+  describe('User Withdrawals', async () => {
 
     // First user withdraws their deposit + rewards and pays Rocket Pools fee
     it(
