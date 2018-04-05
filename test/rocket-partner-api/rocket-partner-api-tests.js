@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings } from '../artifacts';
-import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioRemovePartner } from './rocket-partner-api-scenarios';
+import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 
 export function rocketPartnerAPIRegistrationTests({
     owner,
@@ -181,28 +181,24 @@ export function rocketPartnerAPIWithdrawalTests({
 
         // First partner withdraws half their users previous Ether from the pool before it has launched for staking
         it(printTitle('partnerFirst', 'withdraws half their users previous deposit from the minipool'), async () => {
-            // Get the user deposit total
-            const pools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount).valueOf();
-            assert.equal(pools.length, 1);
 
-            // Get an instance of that pool and do further checks
-            const miniPool = RocketPoolMini.at(pools[0]);
-            const poolStatus = await miniPool.getStatus.call().valueOf();
+            // Get user's latest minipool
+            let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+            let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
 
-            // Get the user deposit
-            const depositedAmount = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-            const withdrawalAmount = depositedAmount / 2;
+            // Get amount to withdraw - half of deposit
+            let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+            let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
 
-            // Withdraw half our deposit now through the main parent contract
-            await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, partnerFirstUserAccount, {
-                from: partnerFirst,
+            // Withdraw on behalf of partner
+            await scenarioPartnerWithdraw({
+                miniPool: userMiniPool,
+                withdrawalAmount: withdrawalAmount,
+                userAddress: partnerFirstUserAccount,
+                fromAddress: partnerFirst,
                 gas: 4000000,
             });
 
-            // Get our balance again
-            const depositedAmountAfter = await miniPool.getUserDeposit.call(partnerFirstUserAccount).valueOf();
-
-            assert.equal(depositedAmountAfter, depositedAmount - withdrawalAmount, 'Deposited amoint does not match');
         });
 
 

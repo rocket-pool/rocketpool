@@ -91,6 +91,28 @@ export async function scenarioPartnerDeposit({userAddress, stakingTimeID, fromAd
 }
 
 
+// Makes a withdrawal with a partner and asserts withdrawal was made successfully
+export async function scenarioPartnerWithdraw({miniPool, withdrawalAmount, userAddress, fromAddress, gas}) {
+    const rocketPartnerAPI = await RocketPartnerAPI.deployed();
+
+    // Get initial deposit amount
+    let depositedAmountOld = await miniPool.getUserDeposit.call(userAddress);
+
+    // Make withdrawal
+    await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, userAddress, {
+        from: fromAddress,
+        gas: gas,
+    });
+
+    // Get updated deposit amount
+    let depositedAmountNew = await miniPool.getUserDeposit.call(userAddress);
+
+    // Assert that deposit amount was updated successfully
+    assert.equal(depositedAmountNew.valueOf(), parseInt(depositedAmountOld.valueOf()) - withdrawalAmount, 'Minipool deposit amount was not updated correctly');
+
+}
+
+
 // Removes a partner and asserts that partner was removed successfully
 export async function scenarioRemovePartner({partnerAddress, newerPartnerAddress, fromAddress, gas}) {
     const rocketPartnerAPI = await RocketPartnerAPI.deployed();
