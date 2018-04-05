@@ -164,13 +164,15 @@ export function rocketNodeCheckinTests1({
 
             // Check node's attached minipools
             let nodeMiniPoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeFirst);
-            let nodeMiniPoolAttachedBalance = web3.eth.getBalance(nodeMiniPoolsAttached[0]).valueOf();
+            let nodeMiniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
+            let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
             assert.equal(nodeMiniPoolsAttached.length, 1, 'Invalid number of minipools attached to node');
             assert.equal(nodeMiniPoolsAttached[0], miniPools.first.address, 'Invalid address of minipool attached to node');
-            assert.equal(nodeMiniPoolAttachedBalance, 0, 'Invalid attached minipool balance');
+            assert.equal(nodeMiniPoolBalance, 0, 'Invalid attached minipool balance');
+            assert.equal(nodeMiniPoolStatus.valueOf(), 2, 'Invalid attached minipool status');
 
             // Check it's a validator in casper
-            let casperValidatorIndex = await casper.get_validator_indexes.call(nodeMiniPoolsAttached[0]);
+            let casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
             let casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex);
             assert.equal(casperValidatorIndex.valueOf(), 1, 'Invalid validator index');
             assert.equal(casperValidatorDynastyStart.valueOf(), 3, 'Invalid validator dynasty');
@@ -187,43 +189,31 @@ export function rocketNodeCheckinTests1({
         // Node performs second checkin, sets the launch time for minipools to 0 so that the second awaiting minipool is launched
         it(printTitle('nodeSecond', 'second node performs first checkin, 2 of the 2 minipools awaiting launch should be launched as countdown is set to 0 and balance sent to Casper'), async () => {
 
+            // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
-            // Also Solidity doesn't deal with decimals atm, so convert to a whole number for the load
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+            // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            await rocketSettings.setMiniPoolCountDownTime(0, { from: web3.eth.coinbase, gas: 500000 });
-
-            // Launching multiple pools at once can consume a lot of gas, estimate it first
-            const gasEstimate = await rocketNode.nodeCheckin.estimateGas(averageLoad15mins, { from: nodeSecond });
-
-            // Checkin now
-            const result = await rocketNode.nodeCheckin(averageLoad15mins, {
-                from: nodeSecond,
-                gas: parseInt(gasEstimate) + 100000,
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeSecond,
             });
 
-            const log = result.logs.find(({ event }) => event == 'NodeCheckin');
-            assert.notEqual(log, undefined); // Check that an event was logged
+            // Check node's attached minipools
+            let nodeMiniPoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeSecond);
+            let nodeMiniPoolBalance = web3.eth.getBalance(miniPools.second.address).valueOf();
+            let nodeMiniPoolStatus = await miniPools.second.getStatus.call();
+            assert.equal(nodeMiniPoolsAttached.length, 1, 'Invalid number of minipools attached to node');
+            assert.equal(nodeMiniPoolsAttached[0], miniPools.second.address, 'Invalid address of minipool attached to node');
+            assert.equal(nodeMiniPoolBalance, 0, 'Invalid attached minipool balance');
+            assert.equal(nodeMiniPoolStatus.valueOf(), 2, 'Invalid attached minipool status');
 
-            const nodeAddress = log.args._nodeAddress;
-            const loadAverage = log.args.loadAverage;
-
-            // Check that the first minipool contract has been attached to the node
-            const minipoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeSecond).valueOf();
-            const minipoolBalance = web3.eth.getBalance(miniPools.second.address).valueOf();
-            const minipoolStatus = await miniPools.second.getStatus.call().valueOf();
-            // Check its a validator in Casper
-            const casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.second.address).valueOf();
-            const casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex).valueOf();
-
-            assert.equal(nodeAddress, nodeSecond, 'Node address does not match');
-            assert.equal(loadAverage, averageLoad15mins, 'Load average does not match');
-            assert.equal(minipoolsAttached.length, 1, 'Invalid number of minipools');
-            assert.equal(minipoolsAttached[0], miniPools.second.address, 'Invalid minipool address');
-            assert.equal(minipoolBalance, 0, 'Invalid minipool balance');
-            assert.equal(minipoolStatus, 2, 'Invalid minipool status');
-            assert.equal(casperValidatorIndex, 2, 'Invalid validator index');
-            assert.equal(casperValidatorDynastyStart, 5, 'Invalid validator dynasty');
+            // Check it's a validator in casper
+            let casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.second.address);
+            let casperValidatorDynastyStart = await casper.get_validators__dynasty_start.call(casperValidatorIndex);
+            assert.equal(casperValidatorIndex.valueOf(), 2, 'Invalid validator index');
+            assert.equal(casperValidatorDynastyStart.valueOf(), 5, 'Invalid validator dynasty');
 
         });
 
