@@ -62,6 +62,12 @@ contract('RocketPool', accounts => {
   console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
   console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
+
+  /**
+   * Configuration options
+   */
+
+
   // The owner
   const owner = web3.eth.coinbase;
 
@@ -109,6 +115,11 @@ contract('RocketPool', accounts => {
   // should be fixed so each test has an isolated pool
   // Minipools
   let miniPools = {};
+
+
+  /**
+   * Tests
+   */
 
 
   rocketStorageTests({
