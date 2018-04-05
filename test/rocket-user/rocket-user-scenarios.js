@@ -105,11 +105,11 @@ export async function scenarioDeposit({stakingTimeID, fromAddress, depositAmount
 
 
 // Registers a backup withdrawal address and asserts withdrawal address was set correctly
-export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, miniPoolAddress, fromAddress, gas}) {
+export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, miniPool, fromAddress, gas}) {
     const rocketUser = await RocketUser.deployed();
 
     // Register withdrawal address
-    let result = await rocketUser.userSetWithdrawalDepositAddress(withdrawalAddress, miniPoolAddress, {
+    let result = await rocketUser.userSetWithdrawalDepositAddress(withdrawalAddress, miniPool.address, {
         from: fromAddress,
         gas: gas,
     });
@@ -125,17 +125,46 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
 }
 
 
-// Withdraws staking deposit
-export async function scenarioWithdrawDeposit({miniPoolAddress, withdrawalAmount, fromAddress, gas}) {
+// Withdraws staking deposit and asserts that deposit was withdrawn successfully
+export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, feeAccountAddress, gas}) {
     const rocketUser = await RocketUser.deployed();
 
+    // Get initial balances
+    let depositAmountOld = await miniPool.getUserDeposit.call(fromAddress);
+    let feeAccountBalanceOld = web3.eth.getBalance(feeAccountAddress);
+    let miniPoolBalanceOld = web3.eth.getBalance(miniPool.address);
+
+    // Get initial minipool user count
+    let miniPoolUserCountOld = await miniPool.getUserCount.call();
+
     // Withdraw deposit
-    await rocketUser.userWithdraw(miniPoolAddress, withdrawalAmount, {
+    let result = await rocketUser.userWithdraw(miniPool.address, withdrawalAmount, {
         from: fromAddress,
         gas: gas,
     });
 
-    // TODO: add assertions
+    // Get updated balances
+    let feeAccountBalanceNew = web3.eth.getBalance(feeAccountAddress);
+    let miniPoolBalanceNew = web3.eth.getBalance(miniPool.address);
+
+    // Get updated minipool user count
+    let miniPoolUserCountNew = await miniPool.getUserCount.call();
+
+    // Assert Transferred event was logged
+    let log = result.logs.find(({ event }) => event == 'Transferred');
+    assert.notEqual(log, undefined, 'Transferred event was not logged');
+
+    // Get withdrawn amount
+    let withdrawnAmount = log.args.value;
+
+    // Get expected user count depending on withdrawal amount - if entire deposit is withdrawn, user should be removed
+    let expectedUserCount = (withdrawalAmount ? miniPoolUserCountOld.valueOf() : miniPoolUserCountOld.valueOf() - 1);
+
+    // Asserts
+    assert.isTrue(withdrawnAmount > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
+    assert.isTrue(feeAccountBalanceNew.valueOf() > feeAccountBalanceOld.valueOf(), 'Fee account balance did not increase');
+    assert.isTrue(miniPoolBalanceNew.valueOf() < miniPoolBalanceOld.valueOf(), 'Minipool balance did not decrease');
+    assert.equal(miniPoolUserCountNew.valueOf(), expectedUserCount, 'Invalid user count');
 
 }
 
