@@ -38,11 +38,17 @@ export async function scenarioRegisterNode({
 
 
 // Performs node checkin and asserts that checkin was preformed successfully
-export async function scenarioNodeCheckin({averageLoad, fromAddress, gas}) {
+export async function scenarioNodeCheckin({averageLoad, fromAddress}) {
     const rocketNode = await RocketNode.deployed();
 
+    // Estimate gas required to launch pools
+    let gasEstimate = await rocketNode.nodeCheckin.estimateGas(averageLoad, {from: fromAddress});
+
     // Check in
-    let result = await rocketNode.nodeCheckin(averageLoad, {from: fromAddress, gas: gas});
+    let result = await rocketNode.nodeCheckin(averageLoad, {
+        from: fromAddress,
+        gas: parseInt(gasEstimate) + 100000,
+    });
 
     // Assert NodeCheckin event was logged
     let log = result.logs.find(({ event }) => event == 'NodeCheckin');
