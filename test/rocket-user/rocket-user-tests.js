@@ -107,6 +107,75 @@ export function rocketUserWithdrawalAddressTests({
 
 }
 
+
+import { RocketUser, RocketPool, RocketPoolMini } from '../artifacts';
+
+
+export function rocketUserDepositTests2({
+    owner,
+    accounts,
+    userThird,
+    miniPools,
+    rocketDepositGas
+}) {
+
+    describe('RocketUser - Deposit', async () => {
+
+
+        // Contract dependencies
+        let rocketSettings;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+        });
+
+
+        let rocketUser;
+        let rocketPool;
+        before(async () => {
+            rocketUser = await RocketUser.deployed();
+            rocketPool = await RocketPool.deployed();
+        });
+
+
+        it(printTitle('userThird', 'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'), async () => {
+
+            // Get the min ether required to launch a minipool
+            const sendAmount = parseInt(await rocketSettings.getMiniPoolLaunchAmount.call().valueOf());
+
+            const result = await rocketUser.userDeposit('short', {
+                from: userThird,
+                to: rocketPool.address,
+                value: sendAmount,
+                gas: rocketDepositGas,
+            });
+
+            const log = result.logs.find(({ event }) => event == 'Transferred');
+            assert.notEqual(log, undefined); // Check that an event was logged
+
+            const userSendAmount = parseInt(log.args.value);
+            const userSendAddress = log.args._from;
+            const poolAddress = log.args._to;
+
+            // Get an instance of that pool and do further checks
+            let miniPoolSecond = RocketPoolMini.at(poolAddress);
+            miniPools.second = miniPoolSecond;
+
+            const poolStatus = await miniPoolSecond.getStatus.call();
+            const poolBalance = web3.eth.getBalance(miniPoolSecond.address).valueOf();
+            const userPartnerAddress = await miniPoolSecond.getUserPartner.call(userThird).valueOf();
+
+            assert.equal(poolStatus, 1, 'Invalid minipool status');
+            assert.equal(userSendAmount, sendAmount, 'Invalid user send amount');
+            assert.equal(userPartnerAddress, 0, 'Invalud user partner address');
+            assert.isTrue(userSendAmount > 0, 'User send amount must be more than zero');
+
+        });
+
+
+    });
+
+}
+
 export function rocketUserWithdrawalTests({
     owner,
     accounts,

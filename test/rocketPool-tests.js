@@ -9,7 +9,7 @@ import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import { rocketNodeRegistrationTests, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
 import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIDepositTests2, rocketPartnerAPIWithdrawalTests, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests3 } from './rocket-partner-api/rocket-partner-api-tests';
-import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
+import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserDepositTests2, rocketUserWithdrawalTests } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
@@ -207,46 +207,12 @@ contract('RocketPool', accounts => {
     rocketWithdrawalGas,
   });
 
-  describe('Part 6', async () => {
-
-    it(
-      printTitle(
-        'userThird',
-        'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'
-      ),
-      async () => {
-        // Get the min ether required to launch a minipool
-        const sendAmount = parseInt(await rocketSettings.getMiniPoolLaunchAmount.call().valueOf());
-
-        const result = await rocketUser.userDeposit('short', {
-          from: userThird,
-          to: rocketPool.address,
-          value: sendAmount,
-          gas: rocketDepositGas,
-        });
-
-        const log = result.logs.find(({ event }) => event == 'Transferred');
-        assert.notEqual(log, undefined); // Check that an event was logged
-
-        const userSendAmount = parseInt(log.args.value);
-        const userSendAddress = log.args._from;
-        const poolAddress = log.args._to;
-
-        // Get an instance of that pool and do further checks
-        let miniPoolSecond = RocketPoolMini.at(poolAddress);
-        miniPools.second = miniPoolSecond;
-
-        const poolStatus = await miniPoolSecond.getStatus.call();
-        const poolBalance = web3.eth.getBalance(miniPoolSecond.address).valueOf();
-        const userPartnerAddress = await miniPoolSecond.getUserPartner.call(userThird).valueOf();
-
-        assert.equal(poolStatus, 1, 'Invalid minipool status');
-        assert.equal(userSendAmount, sendAmount, 'Invalid user send amount');
-        assert.equal(userPartnerAddress, 0, 'Invalud user partner address');
-        assert.isTrue(userSendAmount > 0, 'User send amount must be more than zero');
-      }
-    );
-
+  rocketUserDepositTests2({
+    owner,
+    accounts,
+    userThird,
+    miniPools,
+    rocketDepositGas,
   });
 
   rocketDepositTests1({
