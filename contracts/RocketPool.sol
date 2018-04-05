@@ -278,10 +278,17 @@ contract RocketPool is RocketBase {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
     }
 
+    /// @dev Return all pools that are assigned to this node and have the current status (explicit method)
+    /// @param _nodeAddress Get pools with the current node
+    /// @param _status Pool status to filter pools
+    function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
+        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);  
+    }
+
     /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
     /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress) public view returns(uint256) {
-        return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
+    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress, uint256 _status) public view returns(uint256) {
+        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
@@ -403,6 +410,24 @@ contract RocketPool is RocketBase {
         }
         return false;
     } 
+
+    /// @dev Returns the address for the Casper smart contract
+    function getCasperAddress() public view returns(address) {
+        return rocketStorage.getAddress(keccak256("contract.name", "casper"));
+    }
+
+    /// @dev Cast Casper votes via minipools 
+    /// @param _epoch The epoch number voting relates to
+    /// @param _minipool_address The address of the minipool that should cast the votes
+    /// @param _vote_message Vote message to be sent to Casper
+    function vote(uint128 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool) {
+
+        // call minipool to vote
+        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        pool.vote(_epoch, _vote_message);
+
+        return true;
+    }  
 
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types

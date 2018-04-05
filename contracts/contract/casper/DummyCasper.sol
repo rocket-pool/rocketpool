@@ -19,6 +19,7 @@ contract DummyCasper is Ownable {
     uint256 public base_interest_factor;                                    // Base interest factor
     uint128 public current_epoch = 0;                                       // Initialize the epoch counter
     uint128 public epoch_length = 5;                                        // How many blocks in an epoch
+    int128 public expected_source_epoch = 0;                                // Expected source epoch to be justified next
     uint256 public min_deposit_size = 2 ether;                              // Min deposit required
     //mapping (int128 => uint256)  public deposit_scale_factor = 1 ether;   // Value used to calculate the per-epoch fee that validators should be charged given as a % of 1 Ether = 100%, 0.5 Ether = 50%
     mapping (uint128 => uint128) public dynasty_start_epoch;                // Mapping of dynasty to start epoch of that dynasty
@@ -70,6 +71,10 @@ contract DummyCasper is Ownable {
         address addressSender,
         uint256 amount,
         uint256 created
+    );
+
+    event VoteCast (
+        bytes voteMessage
     );
     
 
@@ -133,6 +138,22 @@ contract DummyCasper is Ownable {
     function get_dynasty_start_epoch(uint128 _dynasty) public view returns (uint128) {
         return dynasty_start_epoch[_dynasty];
     }
+
+    /// @dev Get th current epoch of this dynasty
+    function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128) {
+        return dynasty_start_epoch[_dynasty];
+    }
+
+    /// @dev Gets the recommended source epoch used during voting
+    function get_recommended_source_epoch() public view returns (int128) {
+        return expected_source_epoch;
+    }
+
+    /// @dev Gets the recommended target block hash to be voted on
+    function get_recommended_target_hash() public view returns (bytes32) {
+        return block.blockhash(current_epoch * (epoch_length - 1));
+    }
+    
 
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
     function deposit(address validator_address, address withdrawal_address) public payable { 
@@ -206,6 +227,12 @@ contract DummyCasper is Ownable {
         delete_validator(validator_index);
         // Log it
         Withdrawal(validators[validator_index].withdrawal_addr, withdrawal_amount_processed, now);
+    }
+
+    /// @dev Cast a validator vote to Casper
+    function vote(bytes _vote_msg) public {
+        // Does nothing in dummy casper
+        VoteCast(_vote_msg);
     }
 
     /// @dev Delete the validator

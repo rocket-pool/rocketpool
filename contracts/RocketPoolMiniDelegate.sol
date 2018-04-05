@@ -88,6 +88,11 @@ contract RocketPoolMiniDelegate is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
+    event VoteCast (
+        uint128 epoch,
+        bytes voteMessage
+    );
+
   
 
     /*** Modifiers *************/
@@ -450,6 +455,15 @@ contract RocketPoolMiniDelegate is RocketBase {
             return; 
         }
         
+    }
+
+    /// @dev Cast Casper votes 
+    /// @param _epoch The epoch number voting relates to
+    /// @param _vote_message Vote message to be sent to Casper
+    function vote(uint128 _epoch, bytes _vote_message) public returns(bool) {
+        casper.vote(_vote_message);
+        VoteCast(_epoch, _vote_message);
+        return true;
     }
 
     /// @dev Change the status

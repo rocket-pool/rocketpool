@@ -32,4 +32,9 @@ contract RocketPoolInterface {
     function poolNodeActions() onlyLatestRocketNode external;
     /// @dev MiniPools can request the main contract to be removed
     function removePool() public poolsAllowedToBeClosed onlyMiniPool returns(bool);
+    /// @dev Cast Casper votes via minipools 
+    /// @param _epoch The epoch number voting relates to
+    /// @param _minipool_address The address of the minipool that should cast the vote
+    /// @param _vote_message Vote message to be sent to Casper
+    function vote(uint128 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool);
 }

@@ -12,4 +12,9 @@ contract RocketNodeInterface {
     /// @dev Returns the validation code address for a node
     /// @param _nodeAddress node account address.
     function getNodeValCodeAddress(address _nodeAddress) public view onlyRegisteredNode(_nodeAddress) returns(address);
+    /// @dev Cast Casper votes via minipools
+    /// @param _epoch The epoch number voting relates to
+    /// @param _minipoolAddress The addresses of the minipool that should cast the votes
+    /// @param _vote_message Vote message associated to be sent to Casper
+    function nodeVote(uint128 _epoch, address _minipoolAddress, bytes _vote_message) public onlyRegisteredNode(msg.sender) returns(bool);
 }
