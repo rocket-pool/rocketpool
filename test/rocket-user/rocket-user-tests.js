@@ -210,8 +210,6 @@ export function rocketUserWithdrawalTests2({
 
         // First user withdraws their deposit + rewards and pays Rocket Pools fee
         it(printTitle('userFirst', 'withdraws their deposit + Casper rewards from the minipool and pays their fee'), async () => {
-
-            // Withdraw deposit
             await scenarioWithdrawDeposit({
                 miniPool: miniPools.first,
                 withdrawalAmount: 0,
@@ -219,20 +217,18 @@ export function rocketUserWithdrawalTests2({
                 feeAccountAddress: owner,
                 gas: rocketWithdrawalGas,
             });
-
         });
 
 
         // Second user attempts to withdraw using their backup address before the time limit to do so is allowed (3 months by default)
         it(printTitle('userSecond', 'fails to withdraw using their backup address before the time limit to do so is allowed'), async () => {
-
-            // Attemp tp withdraw our total deposit + rewards using our backup address
-            const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
-                from: userSecondBackupAddress,
+            await assertThrows(scenarioWithdrawDeposit({
+                miniPool: miniPools.first,
+                withdrawalAmount: 0,
+                fromAddress: userSecondBackupAddress,
+                feeAccountAddress: owner,
                 gas: rocketWithdrawalGas,
-            });
-            await assertThrows(result);
-
+            }));
         });
 
 
@@ -240,7 +236,7 @@ export function rocketUserWithdrawalTests2({
         it(printTitle('---------', 'settings BackupCollectTime changed to 0 which will allow the user to withdraw via their backup address'), async () => {
 
             // Set the backup withdrawal period to 0 to allow the user to withdraw using their backup address
-            const result = await rocketSettings.setMiniPoolBackupCollectTime(0, { from: owner, gas: 150000 });
+            let result = await rocketSettings.setMiniPoolBackupCollectTime(0, {from: owner, gas: 150000});
 
             // TODO: check backup withdrawal period, dummy test for now
 
@@ -249,14 +245,13 @@ export function rocketUserWithdrawalTests2({
 
         // First user attempts to withdraw again
         it(printTitle('userFirst', "fails to withdraw again from the pool as they've already completed withdrawal"), async () => {
-
-            // Attempt to withdraw our total deposit + rewards using our backup address
-            const result = rocketUser.userWithdraw(miniPools.first.address, 0, {
-                from: userFirst,
+            await assertThrows(scenarioWithdrawDeposit({
+                miniPool: miniPools.first,
+                withdrawalAmount: 0,
+                fromAddress: userFirst,
+                feeAccountAddress: owner,
                 gas: rocketWithdrawalGas,
-            });
-            await assertThrows(result);
-
+            }));
         });
 
 
