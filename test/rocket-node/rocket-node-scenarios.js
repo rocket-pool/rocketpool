@@ -37,6 +37,28 @@ export async function scenarioRegisterNode({
 }
 
 
+// Performs node checkin and asserts that checkin was preformed successfully
+export async function scenarioNodeCheckin({averageLoad, fromAddress, gas}) {
+    const rocketNode = await RocketNode.deployed();
+
+    // Check in
+    let result = await rocketNode.nodeCheckin(averageLoad, {from: fromAddress, gas: gas});
+
+    // Assert NodeCheckin event was logged
+    let log = result.logs.find(({ event }) => event == 'NodeCheckin');
+    assert.notEqual(log, undefined, 'NodeCheckin event was not logged');
+
+    // Get checkin details
+    let checkinNodeAddress = log.args._nodeAddress.valueOf();
+    let checkinLoadAverage = log.args.loadAverage.valueOf();
+
+    // Check checkin details
+    assert.equal(checkinNodeAddress, fromAddress, 'Checked in node address does not match');
+    assert.notEqual(checkinLoadAverage, 0, 'Checked in load average is not correct');
+
+}
+
+
 // Removes a node and asserts that node was removed successfully
 export async function scenarioRemoveNode({nodeAddress, fromAddress, gas}) {
     const rocketNode = await RocketNode.deployed();

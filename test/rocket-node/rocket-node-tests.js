@@ -4,7 +4,7 @@ const os = require('os');
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings } from '../artifacts';
 import { scenarioIncrementEpochAndDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-scenarios';
+import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode } from './rocket-node-scenarios';
 
 export function rocketNodeRegistrationTests({
     owner,
@@ -126,25 +126,23 @@ export function rocketNodeCheckinTests1({
 
 
         // Node performs first checkin, no pools should be launched yet
-        it(printTitle('nodeFirst', 'first node performs checkin, no minipool awaiting launch should not be launched yet as the countdown has not passed for either'), async () => {
+        it(printTitle('nodeFirst', 'first node performs checkin, no minipool awaiting launch should be launched yet as the countdown has not passed for either'), async () => {
 
+            // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
-            // Checkin now
-            const result = await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas });
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            const log = result.logs.find(({ event }) => event == 'NodeCheckin');
-            assert.notEqual(log, undefined); // Check that an event was logged
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+                gas: nodeCheckinGas,
+            });
 
-            const nodeAddress = log.args._nodeAddress.valueOf();
-            const loadAverage = log.args.loadAverage.valueOf();
-
-            const poolCount = await rocketPool.getPoolsFilterWithNodeCount.call(nodeAddress).valueOf();
-
-            assert.equal(nodeAddress, nodeFirst, 'Node address doesn not match');
-            assert.notEqual(loadAverage, 0, 'Load average is not correct');
-            assert.equal(poolCount, 0, 'Pool count is not correct');
+            // Check node's minipool count
+            let poolCount = await rocketPool.getPoolsFilterWithNodeCount.call(nodeFirst);
+            assert.equal(poolCount.valueOf(), 0, 'Pool count is not correct');
 
         });
 
