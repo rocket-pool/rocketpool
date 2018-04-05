@@ -60,13 +60,18 @@ export async function scenarioDeposit({stakingTimeID, fromAddress, depositAmount
     let userCount = await miniPool.getUserCount.call();
     let userRecord = await miniPool.getUser.call(fromAddress);
     let userBalance = parseInt(userRecord[1].valueOf());
+    let userPartnerAddress = await miniPool.getUserPartner.call(fromAddress);
 
     // Check the deposited amount
     assert.equal(depositedAmount, depositAmount, 'Invalid deposited amount');
+    assert.isTrue(depositedAmount > 0, 'Invalid deposited amount');
 
     // Check the minipool status
     let expectedStatus = (miniPoolBalance.valueOf() < minEtherRequired.valueOf() ? 0 : 1);
     assert.equal(miniPoolStatus.valueOf(), expectedStatus, 'Invalid minipool status');
+
+    // Check the user's partner address
+    assert.equal(userPartnerAddress.valueOf(), 0, 'Invalid user partner address');
 
     // No open minipools initially existed - expect new minipool to have been created
     if (!openMiniPoolsOld.length) {

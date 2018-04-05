@@ -107,10 +107,6 @@ export function rocketUserWithdrawalAddressTests({
 
 }
 
-
-import { RocketUser, RocketPool, RocketPoolMini } from '../artifacts';
-
-
 export function rocketUserDepositTests2({
     owner,
     accounts,
@@ -129,45 +125,22 @@ export function rocketUserDepositTests2({
         });
 
 
-        let rocketUser;
-        let rocketPool;
-        before(async () => {
-            rocketUser = await RocketUser.deployed();
-            rocketPool = await RocketPool.deployed();
-        });
-
-
         it(printTitle('userThird', 'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'), async () => {
 
-            // Get the min ether required to launch a minipool
-            const sendAmount = parseInt(await rocketSettings.getMiniPoolLaunchAmount.call().valueOf());
+            // Get the amount of ether to send - enough to launch a minipool
+            const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
+            const sendAmount = parseInt(minEtherRequired.valueOf());
 
-            const result = await rocketUser.userDeposit('short', {
-                from: userThird,
-                to: rocketPool.address,
-                value: sendAmount,
+            // Deposit ether
+            let miniPool = await scenarioDeposit({
+                stakingTimeID: 'short',
+                fromAddress: userThird,
+                depositAmount: sendAmount,
                 gas: rocketDepositGas,
             });
 
-            const log = result.logs.find(({ event }) => event == 'Transferred');
-            assert.notEqual(log, undefined); // Check that an event was logged
-
-            const userSendAmount = parseInt(log.args.value);
-            const userSendAddress = log.args._from;
-            const poolAddress = log.args._to;
-
-            // Get an instance of that pool and do further checks
-            let miniPoolSecond = RocketPoolMini.at(poolAddress);
-            miniPools.second = miniPoolSecond;
-
-            const poolStatus = await miniPoolSecond.getStatus.call();
-            const poolBalance = web3.eth.getBalance(miniPoolSecond.address).valueOf();
-            const userPartnerAddress = await miniPoolSecond.getUserPartner.call(userThird).valueOf();
-
-            assert.equal(poolStatus, 1, 'Invalid minipool status');
-            assert.equal(userSendAmount, sendAmount, 'Invalid user send amount');
-            assert.equal(userPartnerAddress, 0, 'Invalud user partner address');
-            assert.isTrue(userSendAmount > 0, 'User send amount must be more than zero');
+            // Set second minipool
+            miniPools.second = miniPool;
 
         });
 
