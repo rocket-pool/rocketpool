@@ -1,4 +1,4 @@
-import { printTitle, assertThrows, printEvent, soliditySha3 } from './utils';
+import { printEvent } from './utils';
 import { RocketPool, RocketPoolMini} from './artifacts';
 
 // Import modular tests & scenarios
