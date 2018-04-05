@@ -92,10 +92,6 @@ export function rocketNodeRegistrationTests({
 
 }
 
-
-import { RocketNode } from '../artifacts';
-
-
 export function rocketNodeCheckinTests1({
     owner,
     accounts,
@@ -115,12 +111,6 @@ export function rocketNodeCheckinTests1({
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
             casper = await Casper.deployed();
-        });
-
-
-        let rocketNode;
-        before(async () => {
-            rocketNode = await RocketNode.deployed();
         });
 
 
@@ -241,25 +231,23 @@ export function rocketNodeCheckinTests2({
         });
 
 
-        let rocketNode;
-        before(async () => {
-            rocketNode = await RocketNode.deployed();
-        });
-
-
         // Node performs checkin
         it(printTitle('nodeFirst', 'first node performs another checkin, first minipool currently staking should remain staking on it'), async () => {
 
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
-            await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas });
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            // Status = 2? Still staking
-            const miniPoolStatus = await miniPools.first.getStatus.call().valueOf();
-            // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-            const miniPoolBalance = web3.eth.getBalance(miniPools.first.address).valueOf();
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+            });
 
-            assert.equal(miniPoolStatus, 2, 'Invalid minipool status');
-            assert.equal(miniPoolBalance, 0, 'Invalid minipool balance');
+            // Check attached minipool is still staking
+            let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
+            let nodeMiniPoolBalance = web3.eth.getBalance(miniPools.first.address);
+            assert.equal(nodeMiniPoolStatus.valueOf(), 2, 'Invalid attached minipool status');
+            assert.equal(nodeMiniPoolBalance.valueOf(), 0, 'Invalid attached minipool balance');
 
         });
 
@@ -295,17 +283,20 @@ export function rocketNodeCheckinTests2({
         // Node performs checkin
         it(printTitle('nodeFirst', 'first node performs another checkin after both minipools have staking duration set to 0. Only minipool attached to first node will signal logged out from Casper.'), async () => {
 
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            // Checkin now
-            await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: nodeCheckinGas });
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+            });
 
-            // Status = 3? Awaiting withdrawal from Casper
-            const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
-            const miniPoolStatusSecond = await miniPools.second.getStatus.call().valueOf();
-
-            assert.equal(miniPoolStatusFirst, 3, 'First minipool invalid status');
-            assert.equal(miniPoolStatusSecond, 2, 'Second minipool invalid status');
+            // Check attached minipool is awaiting withdrawal & other minipool is still staking
+            let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
+            let otherMiniPoolStatus = await miniPools.second.getStatus.call();
+            assert.equal(nodeMiniPoolStatus.valueOf(), 3, 'Invalid attached minipool status');
+            assert.equal(otherMiniPoolStatus.valueOf(), 2, 'Invalid other minipool status');
 
         });
 
@@ -313,16 +304,20 @@ export function rocketNodeCheckinTests2({
         // Node performs checkin
         it(printTitle('nodeSecond', 'second node performs another checkin after both minipools have staking duration set to 0. Only minipool attached to second node will signal logged out from Casper.'), async () => {
 
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            // Checkin now
-            await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeSecond, gas: nodeCheckinGas });
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeSecond,
+            });
 
-            const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
-            const miniPoolStatusSecond = await miniPools.second.getStatus.call().valueOf();
-
-            assert.equal(miniPoolStatusFirst, 3, 'First minipool invalid status');
-            assert.equal(miniPoolStatusSecond, 3, 'Second minipool invalid status');
+            // Check both minipools are awaiting withdrawal
+            let nodeMiniPoolStatus = await miniPools.second.getStatus.call();
+            let otherMiniPoolStatus = await miniPools.first.getStatus.call();
+            assert.equal(nodeMiniPoolStatus.valueOf(), 3, 'Invalid attached minipool status');
+            assert.equal(otherMiniPoolStatus.valueOf(), 3, 'Invalid other minipool status');
 
         });
 
@@ -336,26 +331,26 @@ export function rocketNodeCheckinTests2({
         // Node performs checkin
         it(printTitle('nodeFirst', 'first node performs another checkin and first minipool to change status and request actual deposit withdrawal from Casper'), async () => {
 
-            // Our average load (simplified) is determined by average load / CPU cores since it is relative to how many cores there are in a system
-            // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            // Checkin now
-            await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 });
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+            });
 
-            // Check the status of the first pool
-            const miniPoolStatusFirst = await miniPools.first.getStatus.call();
-            // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-            const miniPoolBalanceFirst = web3.eth.getBalance(miniPools.first.address);
-            // Check the status of the second pool
-            const miniPoolStatusSecond = await miniPools.second.getStatus.call();
-            // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-            const miniPoolBalanceSecond = web3.eth.getBalance(miniPools.second.address);
+            // Check attached minipool has withdrawn deposit from casper
+            let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
+            let nodeMiniPoolBalance = web3.eth.getBalance(miniPools.first.address);
+            assert.equal(nodeMiniPoolStatus.valueOf(), 4, 'Invalid attached minipool status');
+            assert.isTrue(nodeMiniPoolBalance.valueOf() > 0, 'Invalid attached minipool balance');
 
-            assert.equal(miniPoolStatusFirst.valueOf(), 4, 'Invalid first minipool status');
-            assert.isTrue(miniPoolBalanceFirst.valueOf() > 0, 'Invalid first minipool balance');
-            assert.equal(miniPoolStatusSecond.valueOf(), 3, 'Invalid second minipool status');
-            assert.equal(miniPoolBalanceSecond.valueOf(), 0, 'Invalid second minipool balance');
+            // Check other minipool is still awaiting withdrawal
+            let otherMiniPoolStatus = await miniPools.second.getStatus.call();
+            let otherMiniPoolBalance = web3.eth.getBalance(miniPools.second.address);
+            assert.equal(otherMiniPoolStatus.valueOf(), 3, 'Invalid other minipool status');
+            assert.equal(otherMiniPoolBalance.valueOf(), 0, 'Invalid other minipool balance');
 
         });
 
@@ -363,24 +358,24 @@ export function rocketNodeCheckinTests2({
         // Node performs checkin
         it(printTitle('nodeFirst', 'first node performs another checkin and second minipool requests deposit from Casper, receives it then closes the pool as all users have withdrawn deposit as tokens'), async () => {
 
-            // Our average load (simplified) is determined by average load / CPU cores since it is relative to how many cores there are in a system
-            // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
-            const averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-            // Checkin now
-            await rocketNode.nodeCheckin(averageLoad15mins, { from: nodeFirst, gas: 950000 });
+            // Perform checkin
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+            });
 
-            // Status = 4? Received deposit from casper + rewards
-            const miniPoolStatusFirst = await miniPools.first.getStatus.call().valueOf();
-            // Get the balance, should be 0 as the Ether has been sent to Casper for staking
-            const miniPoolBalanceFirst = web3.eth.getBalance(miniPools.first.address).valueOf();
+            // Check attached minipool has withdrawn deposit from casper
+            let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
+            let nodeMiniPoolBalance = web3.eth.getBalance(miniPools.first.address);
+            assert.equal(nodeMiniPoolStatus.valueOf(), 4, 'Invalid attached minipool status');
+            assert.isTrue(nodeMiniPoolBalance.valueOf() > 0, 'Invalid attached minipool balance');
 
-            // Second minipool should have closed and it's balance is 0 as all users have withdrawn ether as RPD tokens
-            const miniPoolBalanceSecond = web3.eth.getBalance(miniPools.second.address).valueOf();
-
-            assert.equal(miniPoolStatusFirst, 4, 'Invalid first minipool status');
-            assert.isTrue(miniPoolBalanceFirst > 0, 'Invalid first minipool balance');
-            assert.equal(miniPoolBalanceSecond, 0, 'Invalid second minipool balance');
+            // Check other minipool has closed
+            let otherMiniPoolBalance = web3.eth.getBalance(miniPools.second.address);
+            assert.equal(otherMiniPoolBalance.valueOf(), 0, 'Invalid other minipool balance');
 
         });
 
