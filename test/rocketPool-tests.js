@@ -5,6 +5,8 @@ import { RocketUser, RocketNode, RocketPool, RocketPoolMini, RocketDepositToken,
 
 // Import modular tests
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
+import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
+import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 
 const displayEvents = false;
 
@@ -1280,5 +1282,9 @@ contract('RocketPool', accounts => {
       owner: owner,
       accounts: accounts
     });
+
+  rocketVaultAccountTests({owner, accounts});
+
+  rocketUpgradeTests({owner, accounts});
 
 });
