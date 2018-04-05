@@ -169,16 +169,22 @@ contract RocketNode is RocketBase {
     /// @param _instanceID The instance ID of the server (eg FA3422)
     /// @param _regionID The region ID of the server (aus-east, america-north etc)
     /// @param _valCodeAddress Casper validation contract address
-    function nodeAdd(address _newNodeAddress, string _providerID, string _subnetID, string _instanceID, string _regionID, address _valCodeAddress) public onlyOwner returns (bool) {
+    /// @param _sigHash A signed hash of some data
+    /// @param _sig Signature used to sign hash
+    function nodeAdd(address _newNodeAddress, string _providerID, string _subnetID, string _instanceID, string _regionID, address _valCodeAddress, bytes32 _sigHash, bytes _sig) public onlyOwner returns (bool) {
         // Get our settings
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get our utilities
         rocketUtils = RocketUtilsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketUtils")));
-        // Check the address is ok
+        // Check the node address is ok
         require(_newNodeAddress != 0x0);
+        // Check validation address is ok
+        require(_valCodeAddress != 0x0);
 
-        // TODO: Check the nodeAddress code address is legit and has signed the message which is a hashed version of the address prepended by the string 'Ethereum Signed Message' which is added onto signing messages by web3/nodes for ethereum etc.
-        // TODO: Check the validation code address is ok, must match the node owner that created that validation contract
+        // Checks that the signature has been created by the node address
+        require(rocketUtils.sigVerifyIsSigned(_newNodeAddress, keccak256("\x19Ethereum Signed Message:\n32", _sigHash), _sig));
+
+        // TODO: Calls the validation code contract passing it the signature and confirms that it returns 1 (true)
         
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, voting etc
         require(_newNodeAddress.balance >= rocketSettings.getSmartNodeEtherMin());

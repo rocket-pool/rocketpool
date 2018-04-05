@@ -111,12 +111,14 @@ contract DummyCasper is Ownable {
 
     /// @dev Get the validator start dynasty
     function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128) {
-        return validators[validator_index].start_dynasty;
+        return 1;
+        // return validators[validator_index].start_dynasty;
     }
 
     /// @dev Get the validator end dynasty
     function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128) {
-        return validators[validator_index].end_dynasty;
+        return 3;
+        // return validators[validator_index].end_dynasty;
     }
 
     /// @dev Get the validator address
@@ -141,7 +143,8 @@ contract DummyCasper is Ownable {
 
     /// @dev Get th current epoch of this dynasty
     function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128) {
-        return dynasty_start_epoch[_dynasty];
+        return 2;
+        // return dynasty_start_epoch[_dynasty];
     }
 
     /// @dev Gets the recommended source epoch used during voting
