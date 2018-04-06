@@ -155,15 +155,9 @@ contract('Configuration', (accountList) => {
  */
 
 
-rocketStorageTests({
-  owner,
-  accounts,
-});
+rocketStorageTests({owner});
 
-casperTests({
-  owner,
-  accounts,
-});
+casperTests({owner});
 
 rocketNodeRegistrationTests({
   owner,

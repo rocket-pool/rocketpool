@@ -1,9 +1,9 @@
 import { printTitle } from '../utils';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty } from './casper-scenarios';
 
-export default function({owner, accounts}) {
+export default function({owner}) {
 
-    contract('Casper', async () => {
+    contract('Casper', async (accounts) => {
 
 
         // Simulate Caspers epoch and dynasty changing
