@@ -3,7 +3,7 @@ import { scenarioIncrementEpoch, scenarioIncrementDynasty } from './casper-scena
 
 export default function({owner, accounts}) {
 
-    describe('Casper', async () => {
+    contract('Casper', async () => {
 
 
         // Simulate Caspers epoch and dynasty changing

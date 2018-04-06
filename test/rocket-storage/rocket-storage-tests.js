@@ -3,7 +3,7 @@ import { RocketStorage } from '../artifacts';
 
 export default function({owner, accounts}) {
 
-    describe('RocketStorage', async () => {
+    contract('RocketStorage', async () => {
 
 
         // Contract dependencies

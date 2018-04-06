@@ -13,7 +13,7 @@ export function rocketPartnerAPIRegistrationTests({
     partnerRegisterGas
 }) {
 
-    describe('RocketPartnerAPI - Registration', async () => {
+    contract('RocketPartnerAPI - Registration', async () => {
 
 
         // Try to register a new partner as a non rocket pool owner
@@ -63,7 +63,7 @@ export function rocketPartnerAPIDepositTests1({
     rocketDepositGas
 }) {
 
-    describe('RocketPartnerAPI - Deposits', async () => {
+    contract('RocketPartnerAPI - Deposits', async () => {
 
 
         // Contract dependencies
@@ -123,7 +123,7 @@ export function rocketPartnerAPIDepositTests2({
     rocketDepositGas
 }) {
 
-    describe('RocketPartnerAPI - Deposits', async () => {
+    contract('RocketPartnerAPI - Deposits', async () => {
 
 
         // Contract dependencies
@@ -164,7 +164,7 @@ export function rocketPartnerAPIWithdrawalTests({
     rocketWithdrawalGas
 }) {
 
-    describe('RocketPartnerAPI - Withdrawals', async () => {
+    contract('RocketPartnerAPI - Withdrawals', async () => {
 
 
         // Contract dependencies
@@ -231,7 +231,7 @@ export function rocketPartnerAPIRemovalTests({
     partnerSecond
 }) {
 
-    describe('RocketPartnerAPI - Removal', async () => {
+    contract('RocketPartnerAPI - Removal', async () => {
 
 
         // Owner removes first partner - users attached to this partner can still withdraw
@@ -257,7 +257,7 @@ export function rocketPartnerAPIDepositTests3({
     rocketDepositGas,
 }) {
 
-    describe('RocketPartnerAPI - Deposits', async () => {
+    contract('RocketPartnerAPI - Deposits', async () => {
 
 
         // Contract dependencies

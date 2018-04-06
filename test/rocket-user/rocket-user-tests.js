@@ -12,7 +12,7 @@ export function rocketUserDepositTests1({
     rocketDepositGas
 }) {
 
-    describe('RocketUser - Deposit', async () => {
+    contract('RocketUser - Deposit', async () => {
 
 
         // Contract dependencies
@@ -89,7 +89,7 @@ export function rocketUserWithdrawalAddressTests({
     miniPools
 }) {
 
-    describe('RocketUser - Withdrawal Address', async () => {
+    contract('RocketUser - Withdrawal Address', async () => {
 
 
         // Second user sets a backup withdrawal address
@@ -115,7 +115,7 @@ export function rocketUserDepositTests2({
     rocketDepositGas
 }) {
 
-    describe('RocketUser - Deposit', async () => {
+    contract('RocketUser - Deposit', async () => {
 
 
         // Contract dependencies
@@ -157,7 +157,7 @@ export function rocketUserWithdrawalTests1({
     rocketWithdrawalGas
 }) {
 
-    describe('RocketUser - Withdrawal', async () => {
+    contract('RocketUser - Withdrawal', async () => {
 
 
         // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
@@ -186,7 +186,7 @@ export function rocketUserWithdrawalTests2({
     rocketWithdrawalGas
 }) {
 
-    describe('RocketUser - Withdrawal', async () => {
+    contract('RocketUser - Withdrawal', async () => {
 
 
         // Contract dependencies

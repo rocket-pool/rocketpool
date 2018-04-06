@@ -9,7 +9,7 @@ export function rocketDepositTests1({
     miniPools
 }) {
 
-    describe('RocketDepositToken', async () => {
+    contract('RocketDepositToken', async () => {
 
 
         // Attempt to make a withdrawal of rocket deposit tokens too early
@@ -38,7 +38,7 @@ export function rocketDepositTests2({
     miniPools
 }) {
 
-    describe('RocketDepositToken', async () => {
+    contract('RocketDepositToken', async () => {
 
 
         // Contract dependencies
@@ -178,7 +178,7 @@ export function rocketDepositTests3({
     userFirst
 }) {
 
-    describe('RocketDepositToken', async () => {
+    contract('RocketDepositToken', async () => {
 
 
         // Contract dependencies

@@ -4,7 +4,7 @@ import { scenarioAddAccount, scenarioDepositEnabling, sceanarioWithdrawalsEnabli
 
 export default function({owner, accounts}){
 
-    describe("RocketVault - Admininstration", async () => {
+    contract("RocketVault - Admininstration", async () => {
         let rocketVault;
 
         before(async () => {

@@ -4,7 +4,7 @@ import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, sc
 
 export default function({owner, accounts}) {
 
-    describe('RocketVault - Accounts', async () => {
+    contract('RocketVault - Accounts', async () => {
 
 
         // Contract dependencies

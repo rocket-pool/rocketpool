@@ -22,7 +22,7 @@ export function rocketNodeRegistrationTests({
     nodeRegisterGas
 }) {
 
-    describe('RocketNode - Registration', async () => {
+    contract('RocketNode - Registration', async () => {
 
 
         // Addresses
@@ -100,7 +100,7 @@ export function rocketNodeCheckinTests1({
     miniPools
 }) {
 
-    describe('RocketNode - Checkin', async () => {
+    contract('RocketNode - Checkin', async () => {
 
 
         // Contract dependencies
@@ -225,7 +225,7 @@ export function rocketNodeCheckinTests2({
     nodeCheckinGas
 }) {
 
-    describe('RocketNode - Checkin', async () => {
+    contract('RocketNode - Checkin', async () => {
 
 
         // Contract dependencies
@@ -404,7 +404,7 @@ export function rocketNodeRemovalTests1({
     nodeFirst
 }) {
 
-    describe('RocketNode - Removal', async () => {
+    contract('RocketNode - Removal', async () => {
 
 
         // Owner attempts to remove active node
@@ -427,7 +427,7 @@ export function rocketNodeRemovalTests2({
     nodeFirst
 }) {
 
-    describe('RocketNode - Removal', async () => {
+    contract('RocketNode - Removal', async () => {
 
 
         // Owner removes first node

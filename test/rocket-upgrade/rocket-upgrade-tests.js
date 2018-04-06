@@ -4,7 +4,7 @@ import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
 
 export default function({owner, accounts}) {
 
-    describe('RocketUpgrade', async () => {
+    contract('RocketUpgrade', async () => {
 
 
         // Contract dependencies
