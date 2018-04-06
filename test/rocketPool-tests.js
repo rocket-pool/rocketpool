@@ -5,7 +5,7 @@ import { RocketPool, RocketPoolMini} from './artifacts';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
-import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIDepositTests2, rocketPartnerAPIWithdrawalTests, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests3 } from './rocket-partner-api/rocket-partner-api-tests';
+import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserDepositTests2, rocketUserWithdrawalTests1, rocketUserWithdrawalTests2 } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
@@ -92,11 +92,6 @@ const rocketWithdrawalGas = 1450000;
 // Bytes32 - Node value provided for the casper deposit function should be the result of computing a long chain of hashes (TODO: this will need work in the future when its defined better)
 // const nodeFirstRandao = '0x9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658';
 
-// Partner details
-const partnerFirstName = 'Coinbase';
-const partnerSecondName = 'MEW';
-const partnerRegisterGas = 200000;
-
 // TODO: the state of these minipools is shared (no test isolation)
 // should be fixed so each test has an isolated pool
 // Minipools
@@ -108,27 +103,14 @@ let userFirst;
 let userSecond;
 let userSecondBackupAddress;
 let userThird;
-let partnerFirst;
-let partnerFirstUserAccount;
-let partnerSecond;
 
 // Set account options
 contract('Configuration', (accountList) => {
-
-  // Accounts
   accounts = accountList;
-
-  // User accounts
   userFirst = accounts[1];
   userSecond = accounts[2];
   userSecondBackupAddress = accounts[4];
   userThird = accounts[3];
-
-  // Mocks partner accounts
-  partnerFirst = accounts[5];
-  partnerFirstUserAccount = accounts[6];
-  partnerSecond = accounts[7];
-
 });
 
 
@@ -143,26 +125,7 @@ casperTests({owner});
 
 rocketNodeTests({owner});
 
-rocketPartnerAPIRegistrationTests({
-  owner,
-  accounts,
-  userFirst,
-  partnerFirst,
-  partnerFirstName,
-  partnerSecond,
-  partnerSecondName,
-  partnerRegisterGas
-});
-
-rocketPartnerAPIDepositTests1({
-  owner,
-  accounts,
-  userSecond,
-  userThird,
-  partnerFirst,
-  partnerFirstUserAccount,
-  rocketDepositGas
-});
+rocketPartnerAPITests({owner});
 
 rocketUserDepositTests1({
   owner,
@@ -179,22 +142,6 @@ rocketUserWithdrawalAddressTests({
   userSecond,
   userSecondBackupAddress,
   miniPools,
-});
-
-rocketPartnerAPIDepositTests2({
-  owner,
-  accounts,
-  partnerFirst,
-  partnerFirstUserAccount,
-  rocketDepositGas,
-});
-
-rocketPartnerAPIWithdrawalTests({
-  owner,
-  accounts,
-  partnerFirst,
-  partnerFirstUserAccount,
-  rocketWithdrawalGas,
 });
 
 rocketUserDepositTests2({
@@ -244,21 +191,6 @@ rocketUserWithdrawalTests2({
   rocketWithdrawalGas,
 });
 
-rocketPartnerAPIRemovalTests({
-  owner,
-  accounts,
-  partnerFirst,
-  partnerSecond,
-});
-
-rocketPartnerAPIDepositTests3({
-  owner,
-  accounts,
-  partnerFirst,
-  partnerFirstUserAccount,
-  rocketDepositGas
-});
-
 rocketVaultAdminTests({
   owner,
   accounts,
@@ -273,4 +205,3 @@ rocketUpgradeTests({
   owner,
   accounts,
 });
-
