@@ -4,7 +4,7 @@ import { RocketPool, RocketPoolMini} from './artifacts';
 // Import modular tests & scenarios
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import { rocketNodeRegistrationTests, rocketNodeCheckinTests1, rocketNodeCheckinTests2, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
+import rocketNodeTests from './rocket-node/rocket-node-tests';
 import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIDepositTests2, rocketPartnerAPIWithdrawalTests, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests3 } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserDepositTests2, rocketUserWithdrawalTests1, rocketUserWithdrawalTests2 } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
@@ -85,18 +85,6 @@ const owner = web3.eth.coinbase;
 const rocketDepositGas = 4800000;
 const rocketWithdrawalGas = 1450000;
 
-// Node details
-const nodeFirstProviderID = 'aws';
-const nodeFirstSubnetID = 'nvirginia';
-const nodeFirstInstanceID = 'i-1234567890abcdef5';
-const nodeFirstRegionID = 'usa-east';
-const nodeSecondProviderID = 'rackspace';
-const nodeSecondSubnetID = 'ohio';
-const nodeSecondInstanceID = '4325';
-const nodeSecondRegionID = 'usa-east';
-const nodeRegisterGas = 1600000;
-const nodeCheckinGas = 950000;
-
 // UPDATE: The first version of Casper wont use the validation code, just the address of the validator, will keep this in for now in case it changes in the future
 // Bytes - Set the node validation code (EVM bytecode, serving as a sort of public key that will be used to verify blocks and other consensus messages signed by it - just an example below)
 // (converted to Bytes32 until Solidity allows passing of variable length types (bytes, string) between contracts - https://github.com/ethereum/EIPs/pull/211 )
@@ -116,8 +104,6 @@ const miniPools = {};
 
 // Account options
 let accounts;
-let nodeFirst;
-let nodeSecond;
 let userFirst;
 let userSecond;
 let userSecondBackupAddress;
@@ -131,10 +117,6 @@ contract('Configuration', (accountList) => {
 
   // Accounts
   accounts = accountList;
-
-  // Node accounts
-  nodeFirst = accounts[8];
-  nodeSecond = accounts[9];
 
   // User accounts
   userFirst = accounts[1];
@@ -159,21 +141,7 @@ rocketStorageTests({owner});
 
 casperTests({owner});
 
-rocketNodeRegistrationTests({
-  owner,
-  accounts,
-  nodeFirst,
-  nodeFirstProviderID,
-  nodeFirstSubnetID,
-  nodeFirstInstanceID,
-  nodeFirstRegionID,
-  nodeSecond,
-  nodeSecondProviderID,
-  nodeSecondSubnetID,
-  nodeSecondInstanceID,
-  nodeSecondRegionID,
-  nodeRegisterGas,
-});
+rocketNodeTests({owner});
 
 rocketPartnerAPIRegistrationTests({
   owner,
@@ -244,15 +212,6 @@ rocketDepositTests1({
   miniPools,
 });
 
-rocketNodeCheckinTests1({
-  owner,
-  accounts,
-  nodeFirst,
-  nodeSecond,
-  miniPools,
-  nodeCheckinGas,
-});
-
 rocketDepositTests2({
   owner,
   accounts,
@@ -269,25 +228,10 @@ rocketUserWithdrawalTests1({
   rocketWithdrawalGas,
 });
 
-rocketNodeCheckinTests2({
-  owner,
-  accounts,
-  nodeFirst,
-  nodeSecond,
-  miniPools,
-  nodeCheckinGas,
-});
-
 rocketDepositTests3({
   owner,
   accounts,
   userFirst,
-});
-
-rocketNodeRemovalTests1({
-  owner,
-  accounts,
-  nodeFirst,
 });
 
 rocketUserWithdrawalTests2({
@@ -298,12 +242,6 @@ rocketUserWithdrawalTests2({
   userSecondBackupAddress,
   miniPools,
   rocketWithdrawalGas,
-});
-
-rocketNodeRemovalTests2({
-  owner,
-  accounts,
-  nodeFirst,
 });
 
 rocketPartnerAPIRemovalTests({
