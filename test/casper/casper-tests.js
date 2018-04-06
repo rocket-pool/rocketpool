@@ -1,17 +1,19 @@
 import { printTitle } from '../utils';
-import { scenarioIncrementEpochAndDynasty } from './casper-scenarios';
+import { scenarioIncrementEpoch, scenarioIncrementDynasty } from './casper-scenarios';
 
 export default function({owner, accounts}) {
 
-	describe('Casper', async () => {
+    describe('Casper', async () => {
 
 
-		// Simulate Caspers epoch and dynasty changing
+        // Simulate Caspers epoch and dynasty changing
         it(printTitle('casper', 'simulate Caspers epoch and dynasty changing'), async () => {
-            await scenarioIncrementEpochAndDynasty({increment: ['e','e','d'], fromAddress: owner});
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
         });
 
 
-	});
+    });
 
 }

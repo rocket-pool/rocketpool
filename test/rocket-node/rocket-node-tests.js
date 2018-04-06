@@ -3,7 +3,7 @@ const os = require('os');
 
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings, RocketPool, Casper } from '../artifacts';
-import { scenarioIncrementEpochAndDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
+import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode } from './rocket-node-scenarios';
 
 export function rocketNodeRegistrationTests({
@@ -172,7 +172,11 @@ export function rocketNodeCheckinTests1({
 
         // Simulate Caspers epoch and dynasty changing for the second deposit
         it(printTitle('casper', 'simulate Caspers epoch and dynasty changing for the second deposit'), async () => {
-            await scenarioIncrementEpochAndDynasty({increment: ['e','e','d','e','d'], fromAddress: owner});
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
         });
 
 
@@ -276,7 +280,9 @@ export function rocketNodeCheckinTests2({
 
         // Simulate Caspers epoch and dynasty changing to allow withdrawals
         it(printTitle('casper', 'simulate Caspers epoch and dynasty changing to allow withdrawals'), async () => {
-            await scenarioIncrementEpochAndDynasty({increment: ['e','e','d'], fromAddress: owner});
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
         });
 
 
@@ -324,7 +330,15 @@ export function rocketNodeCheckinTests2({
 
         // Simulate Caspers epoch and dynasty changing for the second deposit
         it(printTitle('casper', 'simulate Caspers epoch and dynasty incrementing to allow first minipool validator to withdraw'), async () => {
-            await scenarioIncrementEpochAndDynasty({increment: ['e','e','d','e','d','e','d','e','e'], fromAddress: owner});
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
         });
 
 
