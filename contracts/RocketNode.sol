@@ -3,7 +3,6 @@ pragma solidity 0.4.19;
 
 import "./RocketBase.sol";
 import "./RocketPoolMini.sol"; 
-import "./contract/casper/Validation.sol"; 
 import "./interface/RocketStorageInterface.sol";
 import "./interface/RocketSettingsInterface.sol";
 import "./interface/RocketPoolInterface.sol";
@@ -20,7 +19,6 @@ contract RocketNode is RocketBase {
 
     RocketUtilsInterface rocketUtils = RocketUtilsInterface(0);             // Utilities contract for various actions like signature verification
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained 
-    Validation caperValidation = Validation(0);                             // The contract created by a node as a validation address for Casper 
 
               
     /*** Events ****************/
@@ -47,11 +45,11 @@ contract RocketNode is RocketBase {
         uint256 created
     );
 
-    event NodeVoteCast (
-        uint128 epoch,
-        address minipool_address,
-        bytes vote_message
-    );
+    // event NodeVoteCast (
+    //     uint128 epoch,
+    //     address minipool_address,
+    //     bytes vote_message
+    // );
 
     event FlagAddress (
         address flag
@@ -182,9 +180,10 @@ contract RocketNode is RocketBase {
         require(_valCodeAddress != 0x0);
 
         // Checks that the signature has been created by the node address
-        require(rocketUtils.sigVerifyIsSigned(_newNodeAddress, keccak256("\x19Ethereum Signed Message:\n32", _sigHash), _sig));
+        require(rocketUtils.sigVerifyIsSigned(_newNodeAddress, _sigHash, _sig));
 
-        // TODO: Calls the validation code contract passing it the signature and confirms that it returns 1 (true)
+        // Calls the validation code contract passing it the signature and confirms that it returns 1 (true)
+        rocketUtils.assertValidationContractIsValid(_valCodeAddress, _newNodeAddress, _sigHash, _sig);
         
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins, voting etc
         require(_newNodeAddress.balance >= rocketSettings.getSmartNodeEtherMin());
@@ -303,7 +302,8 @@ contract RocketNode is RocketBase {
     function nodeVote(uint128 _epoch, address _minipool_address, bytes _vote_message) public onlyRegisteredNode(msg.sender) returns(bool) {
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         require(rocketPool.vote(_epoch, _minipool_address, _vote_message));
-        NodeVoteCast(_epoch, _minipool_address, _vote_message);
+        //NodeVoteCast(_epoch, _minipool_address, _vote_message);
         return true;
     }
+
 }
