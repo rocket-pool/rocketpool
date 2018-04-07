@@ -6,7 +6,7 @@ import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
-import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserDepositTests2, rocketUserWithdrawalTests1, rocketUserWithdrawalTests2 } from './rocket-user/rocket-user-tests';
+import rocketUserTests from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
@@ -127,30 +127,7 @@ rocketNodeTests({owner});
 
 rocketPartnerAPITests({owner});
 
-rocketUserDepositTests1({
-  owner,
-  accounts,
-  userFirst,
-  userSecond,
-  miniPools,
-  rocketDepositGas,
-});
-
-rocketUserWithdrawalAddressTests({
-  owner,
-  accounts,
-  userSecond,
-  userSecondBackupAddress,
-  miniPools,
-});
-
-rocketUserDepositTests2({
-  owner,
-  accounts,
-  userThird,
-  miniPools,
-  rocketDepositGas,
-});
+rocketUserTests({owner});
 
 rocketDepositTests1({
   owner,
@@ -167,28 +144,10 @@ rocketDepositTests2({
   miniPools,
 });
 
-rocketUserWithdrawalTests1({
-  owner,
-  accounts,
-  userFirst,
-  miniPools,
-  rocketWithdrawalGas,
-});
-
 rocketDepositTests3({
   owner,
   accounts,
   userFirst,
-});
-
-rocketUserWithdrawalTests2({
-  owner,
-  accounts,
-  userFirst,
-  userSecond,
-  userSecondBackupAddress,
-  miniPools,
-  rocketWithdrawalGas,
 });
 
 rocketVaultAdminTests({
