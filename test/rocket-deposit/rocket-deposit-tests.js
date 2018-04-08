@@ -2,14 +2,31 @@ import { printTitle, assertThrows } from '../utils';
 import { RocketDepositToken, RocketSettings } from '../artifacts';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
 
-export function rocketDepositTests1({
-    owner,
-    accounts,
-    userThird,
-    miniPools
-}) {
+export default function({owner}) {
 
-    contract('RocketDepositToken', async () => {
+    contract('RocketDeposit', async (accounts) => {
+
+
+        /**
+         * Config
+         */
+
+
+        // User addresses
+        const userFirst = accounts[1];
+        const userThird = accounts[3];
+
+        // Minipools
+        let miniPools = {};
+
+
+        // Contract dependencies
+        let rocketSettings;
+        let rocketDeposit;
+        before(async () => {
+            rocketSettings = await RocketSettings.deployed();
+            rocketDeposit = await RocketDepositToken.deployed();
+        });
 
 
         // Attempt to make a withdrawal of rocket deposit tokens too early
@@ -23,28 +40,6 @@ export function rocketDepositTests1({
                 gas: 250000,
             }));
 
-        });
-
-
-    });
-
-}
-
-export function rocketDepositTests2({
-    owner,
-    accounts,
-    userFirst,
-    userThird,
-    miniPools
-}) {
-
-    contract('RocketDepositToken', async () => {
-
-
-        // Contract dependencies
-        let rocketDeposit;
-        before(async () => {
-            rocketDeposit = await RocketDepositToken.deployed();
         });
 
 
@@ -165,28 +160,6 @@ export function rocketDepositTests2({
             // Check that user is removed from pool as they don't have any deposit left
             await assertThrows(miniPools.second.getUserDeposit.call(userThird));
 
-        });
-
-
-    });
-
-}
-
-export function rocketDepositTests3({
-    owner,
-    accounts,
-    userFirst
-}) {
-
-    contract('RocketDepositToken', async () => {
-
-
-        // Contract dependencies
-        let rocketSettings;
-        let rocketDeposit;
-        before(async () => {
-            rocketSettings = await RocketSettings.deployed();
-            rocketDeposit = await RocketDepositToken.deployed();
         });
 
 
