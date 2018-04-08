@@ -2,9 +2,9 @@ import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketStorage, RocketDepositToken, RocketUser } from '../artifacts';
 import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
 
-export default function({owner, accounts}) {
+export default function({owner}) {
 
-    contract('RocketUpgrade', async () => {
+    contract('RocketUpgrade', async (accounts) => {
 
 
         // Contract dependencies

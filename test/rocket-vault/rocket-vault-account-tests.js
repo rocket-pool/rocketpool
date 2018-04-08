@@ -2,9 +2,9 @@ import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketVaultStore, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
 import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens, scenarioWithdrawTokens } from './rocket-vault-scenarios';
 
-export default function({owner, accounts}) {
+export default function({owner}) {
 
-    contract('RocketVault - Accounts', async () => {
+    contract('RocketVault - Accounts', async (accounts) => {
 
 
         // Contract dependencies

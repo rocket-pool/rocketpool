@@ -1,7 +1,7 @@
 import { printEvent } from './utils';
 import { RocketPool, RocketPoolMini} from './artifacts';
 
-// Import modular tests & scenarios
+// Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
 import rocketNodeTests from './rocket-node/rocket-node-tests';
@@ -80,31 +80,14 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 // The owner
 const owner = web3.eth.coinbase;
 
-// Tests
+// Run tests
 rocketStorageTests({owner});
-
 casperTests({owner});
-
 rocketNodeTests({owner});
-
 rocketPartnerAPITests({owner});
-
 rocketUserTests({owner});
-
 rocketDepositTests({owner});
-
-rocketVaultAdminTests({
-  owner,
-  accounts,
-});
-
-rocketVaultAccountTests({
-  owner,
-  accounts,
-});
-
-rocketUpgradeTests({
-  owner,
-  accounts,
-});
+rocketVaultAdminTests({owner});
+rocketVaultAccountTests({owner});
+rocketUpgradeTests({owner});
 
