@@ -1,8 +1,7 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketDepositToken, RocketSettings, RocketPool } from '../artifacts';
-import { scenarioDeposit } from '../rocket-user/rocket-user-scenarios';
-import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioNodeCheckin } from '../rocket-node/rocket-node-scenarios';
+import { RocketDepositToken, RocketSettings } from '../artifacts';
+import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
+import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
 
 export default function({owner}) {
@@ -26,55 +25,16 @@ export default function({owner}) {
         let miniPools = {};
 
 
-        // Contract dependencies
-        let rocketSettings;
-        let rocketDeposit;
-        before(async () => {
-            rocketSettings = await RocketSettings.deployed();
-            rocketDeposit = await RocketDepositToken.deployed();
-        });
-
-
         /**
          * RPD withdrawals
          */
         describe('Withdrawals', async () => {
 
 
-            // Contract dependencies
-            let rocketSettings;
-            before(async () => {
-                rocketSettings = await RocketSettings.deployed();
-            });
-
-
             // Initialise minipools
             before(async () => {
-
-                // Get the amount of ether to deposit - enough to launch a minipool
-                const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
-                const sendAmount = parseInt(minEtherRequired.valueOf());
-
-                // Deposit ether to create first minipool
-                let miniPool1 = await scenarioDeposit({
-                    stakingTimeID: 'short',
-                    fromAddress: userFirst,
-                    depositAmount: sendAmount,
-                    gas: 4800000,
-                });
-
-                // Deposit ether to create second minipool
-                let miniPool2 = await scenarioDeposit({
-                    stakingTimeID: 'short',
-                    fromAddress: userThird,
-                    depositAmount: sendAmount,
-                    gas: 4800000,
-                });
-
-                // Set minipools
-                miniPools.first = miniPool1;
-                miniPools.second = miniPool2;
-
+                miniPools.first = await initialiseMiniPool({fromAddress: userFirst});
+                miniPools.second = await initialiseMiniPool({fromAddress: userThird});
             });
 
 
@@ -94,44 +54,11 @@ export default function({owner}) {
 
             // Initialise nodes and checkin to launch minipools
             it(printTitle('---------', 'minipools are launched'), async() => {
-
-                // Register nodes
-                let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
-                let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
-                await scenarioRegisterNode({
-                    nodeAddress: nodeFirst,
-                    valCodeAddress: nodeFirstValCodeAddress,
-                    providerID: 'aws',
-                    subnetID: 'nvirginia',
-                    instanceID: 'i-1234567890abcdef5',
-                    regionID: 'usa-east',
-                    fromAddress: owner,
-                    gas: 1600000
+                await launchMiniPools({
+                    nodeFirst: nodeFirst,
+                    nodeSecond: nodeSecond,
+                    nodeRegisterAddress: owner,
                 });
-                await scenarioRegisterNode({
-                    nodeAddress: nodeSecond,
-                    valCodeAddress: nodeSecondValCodeAddress,
-                    providerID: 'rackspace',
-                    subnetID: 'ohio',
-                    instanceID: '4325',
-                    regionID: 'usa-east',
-                    fromAddress: owner,
-                    gas: 1600000
-                });
-
-                // Set minipool countdown time
-                await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
-                });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
             });
 
 
@@ -160,6 +87,13 @@ export default function({owner}) {
          * RPD transfers
          */
         describe('Transfers', async () => {
+
+
+            // Contract dependencies
+            let rocketDeposit;
+            before(async () => {
+                rocketDeposit = await RocketDepositToken.deployed();
+            });
 
 
             // User can transfer deposit tokens to another user
@@ -281,45 +215,23 @@ export default function({owner}) {
         describe('Burning', async () => {
 
 
+            // Contract dependencies
+            let rocketSettings;
+            let rocketDeposit;
+            before(async () => {
+                rocketSettings = await RocketSettings.deployed();
+                rocketDeposit = await RocketDepositToken.deployed();
+            });
+
+
             // Log first and second minipools out from casper
             before(async () => {
-                const rocketPool = await RocketPool.deployed();
-
-                // Set minipool staking durations
-                await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
-                await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
+                await logoutMiniPools({
+                    miniPools: miniPools,
+                    nodeFirst: nodeFirst,
+                    nodeSecond: nodeSecond,
+                    fromAddress: owner,
                 });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
-                // Step casper forward
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
-                });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
             });
 
 
