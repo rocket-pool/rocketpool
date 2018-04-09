@@ -89,7 +89,7 @@ contract RocketPoolMiniDelegate is RocketBase {
     );
 
     event VoteCast (
-        uint128 epoch,
+        uint256 epoch,
         bytes voteMessage
     );
 
@@ -460,7 +460,7 @@ contract RocketPoolMiniDelegate is RocketBase {
     /// @dev Cast Casper votes 
     /// @param _epoch The epoch number voting relates to
     /// @param _vote_message Vote message to be sent to Casper
-    function vote(uint128 _epoch, bytes _vote_message) public returns(bool) {
+    function vote(uint256 _epoch, bytes _vote_message) public returns(bool) {
         casper.vote(_vote_message);
         VoteCast(_epoch, _vote_message);
         return true;

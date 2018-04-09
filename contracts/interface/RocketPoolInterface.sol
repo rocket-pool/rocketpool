@@ -36,5 +36,5 @@ contract RocketPoolInterface {
     /// @param _epoch The epoch number voting relates to
     /// @param _minipool_address The address of the minipool that should cast the vote
     /// @param _vote_message Vote message to be sent to Casper
-    function vote(uint128 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool);
+    function vote(uint256 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool);
 }

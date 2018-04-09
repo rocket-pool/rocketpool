@@ -344,8 +344,8 @@ contract RocketPoolMini is RocketBase {
     /// @dev Cast Casper votes 
     /// @param _epoch The epoch that is being voted on
     /// @param _vote_message Vote message to be sent to Casper
-    function vote(uint128 _epoch, bytes _vote_message) external onlyLatestRocketPool returns(bool) {
-        require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("vote(uint128, bytes)")), _epoch, _vote_message) == true);
+    function vote(uint256 _epoch, bytes _vote_message) external onlyLatestRocketPool returns(bool) {
+        require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("vote(uint256,bytes)")), _epoch, _vote_message) == true);
         return true;
     }
     

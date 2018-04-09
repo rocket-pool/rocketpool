@@ -422,7 +422,7 @@ contract RocketPool is RocketBase {
     /// @param _epoch The epoch number voting relates to
     /// @param _minipool_address The address of the minipool that should cast the votes
     /// @param _vote_message Vote message to be sent to Casper
-    function vote(uint128 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool) {
+    function vote(uint256 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool) {
 
         // call minipool to vote
         RocketPoolMini pool = getPoolInstance(_minipool_address);
