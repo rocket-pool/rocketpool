@@ -423,6 +423,10 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('random address', 'cannot checkin as a node'));
+
+
         });
 
 
@@ -442,6 +446,10 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('owner', 'cannot remove a nonexistent node'));
+
+
             // First user withdraws entire deposit
             it(printTitle('---------', 'first user withdraws entire deposit, leaving first minipool empty'), async () => {
                 await scenarioWithdrawDeposit({
@@ -452,6 +460,10 @@ export default function({owner}) {
                     gas: 1450000,
                 });
             });
+
+
+            // TODO: implement
+            it(printTitle('random address', 'cannot remove a node'));
 
 
             // Owner removes first node
