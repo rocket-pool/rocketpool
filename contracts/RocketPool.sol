@@ -77,7 +77,9 @@ contract RocketPool is RocketBase {
 
     /// @dev Only allow access from the latest version of the main RocketNode contract
     modifier onlyLatestRocketNode() {
-        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        bool isRocketNode = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode"));
+        bool isRocketNodeValidator = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeValidator"));
+        require(isRocketNode || isRocketNodeValidator);
         _;
     } 
 
@@ -184,7 +186,7 @@ contract RocketPool is RocketBase {
                     // Set this nodes validation code for the minipool to use
                     pool.setNodeValCodeAddress(rocketNode.getNodeValCodeAddress(nodeAddress)); 
                     // Fire the event
-                    PoolAssignedToNode(nodeAddress, poolsFound[i], now);
+                    PoolAssignedToNode(poolsFound[i], nodeAddress, now);
                     // Now set the pool to begin staking with casper by updating its status with the newly assigned node
                     pool.updateStatus();
                     // Exit the loop

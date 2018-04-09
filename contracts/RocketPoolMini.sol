@@ -87,6 +87,11 @@ contract RocketPoolMini is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
+    event VoteCast (
+        uint128 epoch,
+        bytes voteMessage
+    );
+
    
 
     /*** Modifiers *************/
