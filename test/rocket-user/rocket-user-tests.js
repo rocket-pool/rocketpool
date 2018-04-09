@@ -1,5 +1,7 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings } from '../artifacts';
+import { RocketSettings, RocketPool } from '../artifacts';
+import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
+import { scenarioRegisterNode, scenarioNodeCheckin } from '../rocket-node/rocket-node-scenarios';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
 export default function({owner}) {
@@ -17,6 +19,10 @@ export default function({owner}) {
         const userThird = accounts[3];
         const userSecondBackupAddress = accounts[4];
 
+        // Node addresses
+        const nodeFirst = accounts[8];
+        const nodeSecond = accounts[9];
+
         // Gas costs
         const rocketDepositGas = 4800000;
         const rocketWithdrawalGas = 1450000;
@@ -29,12 +35,6 @@ export default function({owner}) {
          * User deposits
          */
         describe('Deposits', async () => {
-
-
-            // :STATE:
-            // casperTests - increment epoch x2 and dynasty x1
-            // rocketNodeRegistrationTests - register first and second nodes
-            // rocketPartnerAPIRegistrationTests - register first and second partners
 
 
             // Contract dependencies
@@ -99,11 +99,6 @@ export default function({owner}) {
             });
 
 
-            // :STATE:
-            // rocketPartnerAPIDepositTests2 - first partner deposits to create temp minipool (accepting)
-            // rocketPartnerAPIWithdrawalTests - first partner withdraws entire deposit to destroy temp minipool
-
-
             // Have a new user send a deposit to create a second minipool and trigger it to go into countdown
             it(printTitle('userThird', 'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'), async () => {
 
@@ -154,15 +149,55 @@ export default function({owner}) {
         describe('Withdrawals', async () => {
 
 
-            // :STATE:
-            // rocketNodeCheckinTests1 - first and second nodes checkin to launch first and second minipools
-            // rocketDepositTests2 - third user withdraws entire deposit as RPD and transfers 25% of RPD to first user
-
-
             // Contract dependencies
             let rocketSettings;
+            let rocketPool;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
+                rocketPool = await RocketPool.deployed();
+            });
+
+
+            // Initialise nodes and checkin to launch minipools
+            before(async() => {
+
+                // Register nodes
+                let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+                let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+                await scenarioRegisterNode({
+                    nodeAddress: nodeFirst,
+                    valCodeAddress: nodeFirstValCodeAddress,
+                    providerID: 'aws',
+                    subnetID: 'nvirginia',
+                    instanceID: 'i-1234567890abcdef5',
+                    regionID: 'usa-east',
+                    fromAddress: owner,
+                    gas: 1600000
+                });
+                await scenarioRegisterNode({
+                    nodeAddress: nodeSecond,
+                    valCodeAddress: nodeSecondValCodeAddress,
+                    providerID: 'rackspace',
+                    subnetID: 'ohio',
+                    instanceID: '4325',
+                    regionID: 'usa-east',
+                    fromAddress: owner,
+                    gas: 1600000
+                });
+
+                // Set minipool countdown time
+                await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
+
+                // Perform checkins
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeFirst,
+                });
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeSecond,
+                });
+
             });
 
 
@@ -178,9 +213,45 @@ export default function({owner}) {
             });
 
 
-            // :STATE:
-            // rocketNodeCheckinTests2 - first and second nodes checkin to log first and second minipools out from Casper and request withdrawals; second minipool with no users closes
-            // rocketDepositTests3 - first user burns RPD for ether & bonus
+            // first and second minipools logged out from Casper
+            it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
+
+                // Set minipool staking durations
+                await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
+                await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
+
+                // Perform checkins
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeFirst,
+                });
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeSecond,
+                });
+
+                // Step casper forward
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementDynasty(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementDynasty(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementDynasty(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementEpoch(owner);
+
+                // Perform checkins
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeFirst,
+                });
+                await scenarioNodeCheckin({
+                    averageLoad: web3.toWei('0.5', 'ether'),
+                    fromAddress: nodeSecond,
+                });
+
+            });
 
 
             // First user withdraws their deposit + rewards and pays Rocket Pools fee
