@@ -1,10 +1,30 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketVault, RocketVaultStore, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
+import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
 import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens, scenarioWithdrawTokens } from './rocket-vault-scenarios';
 
 export default function({owner}) {
 
     contract('RocketVault - Accounts', async (accounts) => {
+
+
+        /**
+         * Config
+         */
+
+        // User addresses
+        const userFirst = accounts[1];
+        const userThird = accounts[3];
+        const randomUserFirst = accounts[4];
+        const randomUserSecond = accounts[5];
+
+        // Node addresses
+        const nodeFirst = accounts[8];
+
+
+        /**
+         * Tests
+         */
 
 
         // Contract dependencies
@@ -19,6 +39,16 @@ export default function({owner}) {
             rocketDepositToken = await RocketDepositToken.deployed();
             rocketSettings = await RocketSettings.deployed();
             rocketRole = await RocketRole.deployed();
+        });
+
+
+        // Initialise RPD balances
+        before(async () => {
+            await initialiseRPDBalance({
+                accountAddress: userThird,
+                nodeAddress: nodeFirst,
+                nodeRegisterAddress: owner,
+            });
         });
 
 
@@ -49,7 +79,7 @@ export default function({owner}) {
             await scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('1', 'ether'),
             });
 
@@ -114,7 +144,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0', 'ether'),
             }), 'zero ether was withdrawn from account');
 
@@ -128,7 +158,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('20', 'ether'),
             }), 'more ether than account balance was withdrawn');
 
@@ -159,7 +189,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('1', 'ether'),
             }), 'ether was withdrawn while vault withdrawals disabled');
 
@@ -179,7 +209,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
                 fromAddress: owner,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('1', 'ether'),
             }), 'ether was withdrawn while account withdrawals disabled');
 
@@ -192,8 +222,8 @@ export default function({owner}) {
         // Allowed address can deposit tokens into token account
         it(printTitle('allowed address', 'can deposit tokens into token account'), async () => {
 
-            // Account at index 3 has an RPD balance
-            const tokenAddress = accounts[3];
+            // Third user has an RPD balance
+            const tokenAddress = userThird;
 
             // Create token account
             await scenarioAddAccount({
@@ -218,13 +248,13 @@ export default function({owner}) {
 
         // Allowed address can withdraw tokens from token account
         it(printTitle('allowed address', 'can withdraw tokens from token account'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Withdraw tokens
             await scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0.1', 'ether'),
             });
 
@@ -233,7 +263,7 @@ export default function({owner}) {
 
         // Allowed address cannot deposit zero tokens into account
         it(printTitle('allowed address', 'cannot deposit zero tokens into account'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Deposit tokens
             await assertThrows(scenarioDepositTokens({
@@ -247,7 +277,7 @@ export default function({owner}) {
 
         // Allowed address cannot send ether balance with token deposit
         it(printTitle('allowed address', 'cannot send ether balance with token deposit'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Deposit tokens
             await assertThrows(scenarioDepositTokens({
@@ -262,7 +292,7 @@ export default function({owner}) {
 
         // Allowed address cannot deposit tokens into account while vault deposits are disabled
         it(printTitle('allowed address', 'cannot deposit tokens into account while vault deposits disabled'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Disable vault deposits
             await rocketSettings.setVaultDepositAllowed(false);
@@ -282,7 +312,7 @@ export default function({owner}) {
 
         // Allowed address cannot deposit tokens into account while account deposits are disabled
         it(printTitle('allowed address', 'cannot deposit tokens into account while account deposits disabled'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Disable account deposits
             await rocketVault.setAccountDepositsEnabled(soliditySha3('owner.created.token'), false, {from: owner});
@@ -302,13 +332,13 @@ export default function({owner}) {
 
         // Allowed address cannot withdraw zero tokens from account
         it(printTitle('allowed address', 'cannot withdraw zero tokens from account'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Withdraw tokens
             await assertThrows(scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0', 'ether'),
             }), 'zero tokens were withdrawn from account');
 
@@ -317,13 +347,13 @@ export default function({owner}) {
 
         // Allowed address cannot withdraw more tokens than their account balance
         it(printTitle('allowed address', 'cannot withdraw more tokens than account balance'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Withdraw tokens
             await assertThrows(scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('20', 'ether'),
             }), 'more tokens than account balance were withdrawn');
 
@@ -332,7 +362,7 @@ export default function({owner}) {
 
         // Allowed address cannot withdraw tokens to a null address
         it(printTitle('allowed address', 'cannot withdraw tokens to a null address'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Withdraw tokens
             await assertThrows(scenarioWithdrawTokens({
@@ -347,7 +377,7 @@ export default function({owner}) {
 
         // Allowed address cannot withdraw tokens from account while vault withdrawals are disabled
         it(printTitle('allowed address', 'cannot withdraw tokens from account while vault withdrawals disabled'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Disable vault withdrawals
             await rocketSettings.setVaultWithdrawalAllowed(false);
@@ -356,7 +386,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0.1', 'ether'),
             }), 'tokens were withdrawn while vault withdrawals disabled');
 
@@ -368,7 +398,7 @@ export default function({owner}) {
 
         // Allowed address cannot withdraw tokens from account while account withdrawals are disabled
         it(printTitle('allowed address', 'cannot withdraw tokens from account while account withdrawals disabled'), async () => {
-            const tokenAddress = accounts[3];
+            const tokenAddress = userThird;
 
             // Disable account withdrawals
             await rocketVault.setAccountWithdrawalsEnabled(soliditySha3('owner.created.token'), false, {from: owner});
@@ -377,7 +407,7 @@ export default function({owner}) {
             await assertThrows(scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: tokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0.1', 'ether'),
             }), 'tokens were withdrawn while account withdrawals disabled');
 
@@ -393,7 +423,7 @@ export default function({owner}) {
             // Deposit ether
             await assertThrows(scenarioDepositEther({
                 accountName: soliditySha3('owner.created.nontoken'),
-                fromAddress: accounts[9],
+                fromAddress: randomUserFirst,
                 depositAmount: web3.toWei('1', 'ether'),
             }), 'random address deposited ether into account');
 
@@ -406,8 +436,8 @@ export default function({owner}) {
             // Withdraw ether
             await assertThrows(scenarioWithdrawEther({
                 accountName: soliditySha3('owner.created.nontoken'),
-                fromAddress: accounts[9],
-                withdrawalAddress: accounts[1],
+                fromAddress: randomUserFirst,
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('1', 'ether'),
             }), 'random address withdrew ether from account');
 
@@ -418,8 +448,8 @@ export default function({owner}) {
         it(printTitle('random address', 'cannot deposit tokens into account'), async () => {
 
             // Send some tokens to random address
-            const tokenAddress = accounts[3];
-            const randomTokenAddress = accounts[9];
+            const tokenAddress = userThird;
+            const randomTokenAddress = randomUserFirst;
             await rocketDepositToken.transfer(randomTokenAddress, web3.toWei('0.2', 'ether'), {from: tokenAddress});
 
             // Deposit tokens
@@ -434,13 +464,13 @@ export default function({owner}) {
 
         // Random address cannot withdraw tokens from account
         it(printTitle('random address', 'cannot withdraw tokens from account'), async () => {
-            const randomTokenAddress = accounts[9];
+            const randomTokenAddress = randomUserFirst;
 
             // Withdraw tokens
             await assertThrows(scenarioWithdrawTokens({
                 accountName: soliditySha3('owner.created.token'),
                 fromAddress: randomTokenAddress,
-                withdrawalAddress: accounts[1],
+                withdrawalAddress: userFirst,
                 withdrawalAmount: web3.toWei('0.1', 'ether'),
             }), 'random address withdrew tokens from account');
 
@@ -453,7 +483,7 @@ export default function({owner}) {
             // Run allow deposits scenario
             await scenarioAllowDeposits({
                 accountName: soliditySha3('owner.created.nontoken'),
-                depositAddress: accounts[9],
+                depositAddress: randomUserFirst,
                 fromAddress: owner,
             });
 
@@ -466,8 +496,8 @@ export default function({owner}) {
             // Run allow withdrawals scenario
             await scenarioAllowWithdrawals({
                 accountName: soliditySha3('owner.created.nontoken'),
-                withdrawalAddress: accounts[9],
-                withdrawToAddress: accounts[1],
+                withdrawalAddress: randomUserFirst,
+                withdrawToAddress: userFirst,
                 fromAddress: owner,
             });
 
@@ -476,7 +506,7 @@ export default function({owner}) {
 
         // Account owner can allow/disallow deposits from an address
         it(printTitle('account owner', 'can allow/disallow deposits from an address'), async () => {
-            const accountOwner = accounts[8];
+            const accountOwner = randomUserSecond;
 
             // Create non-token account under random address
             await rocketRole.adminRoleAdd('admin', accountOwner, {from: owner});
@@ -486,7 +516,7 @@ export default function({owner}) {
             // Run allow deposits scenario
             await scenarioAllowDeposits({
                 accountName: soliditySha3('nonowner.created.nontoken'),
-                depositAddress: accounts[9],
+                depositAddress: randomUserFirst,
                 fromAddress: accountOwner,
             });
 
@@ -495,13 +525,13 @@ export default function({owner}) {
 
         // Account owner can allow/disallow withdrawals from an address
         it(printTitle('account owner', 'can allow/disallow withdrawals from an address'), async () => {
-            const accountOwner = accounts[8];
+            const accountOwner = randomUserSecond;
 
             // Run allow withdrawals scenario
             await scenarioAllowWithdrawals({
                 accountName: soliditySha3('nonowner.created.nontoken'),
-                withdrawalAddress: accounts[9],
-                withdrawToAddress: accounts[1],
+                withdrawalAddress: randomUserFirst,
+                withdrawToAddress: userFirst,
                 fromAddress: accountOwner,
             });
 
@@ -519,7 +549,7 @@ export default function({owner}) {
 
         // Random address cannot withdraw ether directly from store
         it(printTitle('random address', 'cannot withdraw ether from rocket vault store'), async () => {
-            await assertThrows(rocketVaultStore.withdrawEther(accounts[1], web3.toWei('1', 'ether'), {
+            await assertThrows(rocketVaultStore.withdrawEther(userFirst, web3.toWei('1', 'ether'), {
                 from: owner,
             }), 'random address withdrew ether directly from rocket vault store');
         });
@@ -527,7 +557,7 @@ export default function({owner}) {
 
         // Random address cannot withdraw tokens directly from store
         it(printTitle('random address', 'cannot withdraw tokens from rocket vault store'), async () => {
-            await assertThrows(rocketVaultStore.withdrawTokens(rocketDepositToken.address, accounts[1], web3.toWei('0.1', 'ether'), {
+            await assertThrows(rocketVaultStore.withdrawTokens(rocketDepositToken.address, userFirst, web3.toWei('0.1', 'ether'), {
                 from: owner,
             }), 'random address withdrew tokens directly from rocket vault store');
         });
