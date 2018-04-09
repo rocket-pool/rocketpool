@@ -11,7 +11,6 @@ export default function({owner}) {
          * Config
          */
 
-
         // User addresses
         const userFirst = accounts[1];
         const userSecond = accounts[2];

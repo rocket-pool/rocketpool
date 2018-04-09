@@ -11,7 +11,6 @@ export default function({owner}) {
          * Config
          */
 
-
         // User addresses
         const userFirst = accounts[1];
         const userThird = accounts[3];
@@ -179,9 +178,9 @@ export default function({owner}) {
 
 
         /**
-         * RPD withdrawals
+         * RPD total withdrawals
          */
-        describe('Withdrawals', async () => {
+        describe('Total withdrawals', async () => {
 
 
             // User can withdraw all deposit tokens while minipool is staking
