@@ -4,6 +4,8 @@ const os = require('os');
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings, RocketPool, Casper } from '../artifacts';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
+import { scenarioDeposit, scenarioWithdrawDeposit } from '../rocket-user/rocket-user-scenarios';
+import { scenarioWithdrawDepositTokens } from '../rocket-deposit/rocket-deposit-scenarios';
 import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode } from './rocket-node-scenarios';
 
 export default function({owner}) {
@@ -19,6 +21,10 @@ export default function({owner}) {
         const nodeFirst = accounts[8];
         const nodeSecond = accounts[9];
 
+        // User addresses
+        const userFirst = accounts[1];
+        const userSecond = accounts[2];
+
         // Node details
         const nodeFirstProviderID = 'aws';
         const nodeFirstSubnetID = 'nvirginia';
@@ -33,15 +39,14 @@ export default function({owner}) {
         const nodeRegisterGas = 1600000;
         const nodeCheckinGas = 950000;
 
+        // Minipools
+        let miniPools = {};
+
 
         /**
          * Node registration
          */
         describe('Registration', async () => {
-
-
-            // :STATE:
-            // casperTests - increment epoch x2 and dynasty x1
 
 
             // Addresses
@@ -116,19 +121,6 @@ export default function({owner}) {
         describe('Checkin', async () => {
 
 
-            // :STATE:
-            // rocketPartnerAPIRegistrationTests - register first and second partners
-            // rocketUserDepositTests1 - first and second users deposit to create first minipool (countdown)
-            // rocketUserWithdrawalAddressTests - second user registers a backup withdrawal address
-            // rocketPartnerAPIDepositTests2 - first partner deposits to create temp minipool (accepting)
-            // rocketPartnerAPIWithdrawalTests - first partner withdraws entire deposit to destroy temp minipool
-            // rocketUserDepositTests2 - third user deposits to create second minipool (countdown)
-
-
-            // Minipools
-            let miniPools = {};
-
-
             // Contract dependencies
             let rocketSettings;
             let rocketPool;
@@ -137,6 +129,44 @@ export default function({owner}) {
                 rocketSettings = await RocketSettings.deployed();
                 rocketPool = await RocketPool.deployed();
                 casper = await Casper.deployed();
+            });
+
+
+            // Initialise casper state
+            before(async() => {
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementDynasty(owner);
+            });
+
+
+            // Initialise minipools
+            before(async () => {
+
+                // Get the amount of ether to deposit - enough to launch a minipool
+                const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
+                const sendAmount = parseInt(minEtherRequired.valueOf());
+
+                // Deposit ether to create first minipool
+                let miniPool1 = await scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userFirst,
+                    depositAmount: sendAmount,
+                    gas: 4800000,
+                });
+
+                // Deposit ether to create first minipool
+                let miniPool2 = await scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userSecond,
+                    depositAmount: sendAmount,
+                    gas: 4800000,
+                });
+
+                // Set minipools
+                miniPools.first = miniPool1;
+                miniPools.second = miniPool2;
+
             });
 
 
@@ -238,8 +268,15 @@ export default function({owner}) {
             });
 
 
-            // :STATE:
-            // rocketDepositTests2 - third user withdraws entire deposit as RPD and transfers 25% of RPD to first user
+            // Second user withdraws entire deposit
+            it(printTitle('---------', 'second user withdraws entire deposit, leaving second minipool empty'), async () => {
+                await scenarioWithdrawDepositTokens({
+                    miniPool: miniPools.second,
+                    withdrawalAmount: 0,
+                    fromAddress: userSecond,
+                    gas: 500000,
+                });
+            });
 
 
             // Node performs checkin
@@ -410,10 +447,6 @@ export default function({owner}) {
         describe('Removal', async () => {
 
 
-            // :STATE:
-            // rocketDepositTests3 - first user burns RPD for ether & bonus
-
-
             // Owner attempts to remove active node
             it(printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'), async () => {
                 await assertThrows(scenarioRemoveNode({
@@ -424,8 +457,16 @@ export default function({owner}) {
             });
 
 
-            // :STATE:
-            // rocketUserWithdrawalTests2 - first and second users withdraw deposits & rewards from first minipool; first minipool with no users closes
+            // First user withdraws entire deposit
+            it(printTitle('---------', 'first user withdraws entire deposit, leaving first minipool empty'), async () => {
+                await scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: 0,
+                    fromAddress: userFirst,
+                    feeAccountAddress: owner,
+                    gas: 1450000,
+                });
+            });
 
 
             // Owner removes first node
