@@ -43,6 +43,10 @@ export default function({owner}) {
         describe('Registration', async () => {
 
 
+            // :STATE:
+            // casperTests - increment epoch x2 and dynasty x1
+
+
             // Addresses
             let nodeFirstValCodeAddress = 0;
             let nodeSecondValCodeAddress = 0;
@@ -113,6 +117,15 @@ export default function({owner}) {
          * Node checkin
          */
         describe('Checkin', async () => {
+
+
+            // :STATE:
+            // rocketPartnerAPIRegistrationTests - register first and second partners
+            // rocketUserDepositTests1 - first and second users deposit to create first minipool (countdown)
+            // rocketUserWithdrawalAddressTests - second user registers a backup withdrawal address
+            // rocketPartnerAPIDepositTests2 - first partner deposits to create temp minipool (accepting)
+            // rocketPartnerAPIWithdrawalTests - first partner withdraws entire deposit to destroy temp minipool
+            // rocketUserDepositTests2 - third user deposits to create second minipool (countdown)
 
 
             // Contract dependencies
@@ -222,6 +235,10 @@ export default function({owner}) {
                 assert.equal(casperValidatorDynastyStart.valueOf(), 5, 'Invalid validator dynasty');
 
             });
+
+
+            // :STATE:
+            // rocketDepositTests2 - third user withdraws entire deposit as RPD and transfers 25% of RPD to first user
 
 
             // Node performs checkin
@@ -392,6 +409,10 @@ export default function({owner}) {
         describe('Removal', async () => {
 
 
+            // :STATE:
+            // rocketDepositTests3 - first user burns RPD for ether & bonus
+
+
             // Owner attempts to remove active node
             it(printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'), async () => {
                 await assertThrows(scenarioRemoveNode({
@@ -400,6 +421,10 @@ export default function({owner}) {
                     gas: 200000,
                 }));
             });
+
+
+            // :STATE:
+            // rocketUserWithdrawalTests2 - first and second users withdraw deposits & rewards from first minipool; first minipool with no users closes
 
 
             // Owner removes first node

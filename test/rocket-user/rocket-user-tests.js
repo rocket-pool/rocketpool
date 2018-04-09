@@ -29,7 +29,13 @@ export default function({owner}) {
         /**
          * User deposits
          */
-        describe('Deposit', async () => {
+        describe('Deposits', async () => {
+
+
+            // :STATE:
+            // casperTests - increment epoch x2 and dynasty x1
+            // rocketNodeRegistrationTests - register first and second nodes
+            // rocketPartnerAPIRegistrationTests - register first and second partners
 
 
             // Contract dependencies
@@ -94,7 +100,12 @@ export default function({owner}) {
             });
 
 
-            //
+            // :STATE:
+            // rocketPartnerAPIDepositTests2 - first partner deposits to create temp minipool (accepting)
+            // rocketPartnerAPIWithdrawalTests - first partner withdraws entire deposit to destroy temp minipool
+
+
+            // Have a new user send a deposit to create a second minipool and trigger it to go into countdown
             it(printTitle('userThird', 'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'), async () => {
 
                 // Get the amount of ether to send - enough to launch a minipool
@@ -141,7 +152,12 @@ export default function({owner}) {
         /**
          * User withdrawals
          */
-        describe('Withdrawal', async () => {
+        describe('Withdrawals', async () => {
+
+
+            // :STATE:
+            // rocketNodeCheckinTests1 - first and second nodes checkin to launch first and second minipools
+            // rocketDepositTests2 - third user withdraws entire deposit as RPD and transfers 25% of RPD to first user
 
 
             // Contract dependencies
@@ -161,6 +177,11 @@ export default function({owner}) {
                     gas: rocketWithdrawalGas,
                 }));
             });
+
+
+            // :STATE:
+            // rocketNodeCheckinTests2 - first and second nodes checkin to log first and second minipools out from Casper and request withdrawals; second minipool with no users closes
+            // rocketDepositTests3 - first user burns RPD for ether & bonus
 
 
             // First user withdraws their deposit + rewards and pays Rocket Pools fee
