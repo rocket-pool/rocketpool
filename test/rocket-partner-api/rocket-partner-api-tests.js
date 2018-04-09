@@ -37,6 +37,9 @@ export default function({owner}) {
         describe('Registration', async () => {
 
 
+            // :STATE:
+
+
             // Try to register a new partner as a non rocket pool owner
             it(printTitle('non owner', 'fail to register a partner'), async () => {
                 await assertThrows(scenarioRegisterPartner({
@@ -122,6 +125,9 @@ export default function({owner}) {
                 }));
 
             });
+
+
+            // :STATE:
 
 
             // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
@@ -212,6 +218,9 @@ export default function({owner}) {
          * Partner removal
          */
         describe('Removal', async () => {
+
+
+            // :STATE:
 
 
             // Contract dependencies
