@@ -213,7 +213,7 @@ export default function({owner}) {
             });
 
 
-            // first and second minipools logged out from Casper
+            // First and second minipools logged out from Casper
             it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
 
                 // Set minipool staking durations
