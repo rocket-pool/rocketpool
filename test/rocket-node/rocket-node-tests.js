@@ -113,6 +113,13 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('owner', 'cannot register a node with an invalid address'));
+            it(printTitle('owner', 'cannot register a node with a balance less than the minimum smart node balance'));
+            it(printTitle('owner', 'cannot register a node with an address that already exists'));
+            it(printTitle('random address', 'cannot register a node'));
+
+
         });
 
 
