@@ -63,7 +63,7 @@ export default function({owner}) {
                     gas: 4800000,
                 });
 
-                // Deposit ether to create first minipool
+                // Deposit ether to create second minipool
                 let miniPool2 = await scenarioDeposit({
                     stakingTimeID: 'short',
                     fromAddress: userThird,
