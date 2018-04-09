@@ -7,9 +7,9 @@ import { scenarioWithdrawDepositTokens } from './rocket-deposit-scenarios';
 
 // Initialise an address with an RPD balance
 export async function initialiseRPDBalance({accountAddress, nodeAddress, nodeRegisterAddress}) {
-	const rocketSettings = await RocketSettings.deployed();
+    const rocketSettings = await RocketSettings.deployed();
 
-	// Get the amount of ether to deposit - enough to launch a minipool
+    // Get the amount of ether to deposit - enough to launch a minipool
     const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
     const sendAmount = parseInt(minEtherRequired.valueOf());
 

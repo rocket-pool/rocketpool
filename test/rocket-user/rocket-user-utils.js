@@ -4,9 +4,9 @@ import { scenarioDeposit } from './rocket-user-scenarios';
 
 // Initialise a minipool
 export async function initialiseMiniPool({fromAddress}) {
-	const rocketSettings = await RocketSettings.deployed();
+    const rocketSettings = await RocketSettings.deployed();
 
-	 // Get the amount of ether to deposit - enough to launch a minipool
+     // Get the amount of ether to deposit - enough to launch a minipool
     const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
     const sendAmount = parseInt(minEtherRequired.valueOf());
 
