@@ -1,7 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings, RocketPool } from '../artifacts';
-import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioNodeCheckin } from '../rocket-node/rocket-node-scenarios';
+import { RocketSettings } from '../artifacts';
+import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
 export default function({owner}) {
@@ -151,53 +150,18 @@ export default function({owner}) {
 
             // Contract dependencies
             let rocketSettings;
-            let rocketPool;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
-                rocketPool = await RocketPool.deployed();
             });
 
 
             // Initialise nodes and checkin to launch minipools
             before(async() => {
-
-                // Register nodes
-                let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
-                let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
-                await scenarioRegisterNode({
-                    nodeAddress: nodeFirst,
-                    valCodeAddress: nodeFirstValCodeAddress,
-                    providerID: 'aws',
-                    subnetID: 'nvirginia',
-                    instanceID: 'i-1234567890abcdef5',
-                    regionID: 'usa-east',
-                    fromAddress: owner,
-                    gas: 1600000
+                await launchMiniPools({
+                    nodeFirst: nodeFirst,
+                    nodeSecond: nodeSecond,
+                    nodeRegisterAddress: owner,
                 });
-                await scenarioRegisterNode({
-                    nodeAddress: nodeSecond,
-                    valCodeAddress: nodeSecondValCodeAddress,
-                    providerID: 'rackspace',
-                    subnetID: 'ohio',
-                    instanceID: '4325',
-                    regionID: 'usa-east',
-                    fromAddress: owner,
-                    gas: 1600000
-                });
-
-                // Set minipool countdown time
-                await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
-                });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
             });
 
 
@@ -215,42 +179,12 @@ export default function({owner}) {
 
             // First and second minipools logged out from Casper
             it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
-
-                // Set minipool staking durations
-                await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
-                await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
+                await logoutMiniPools({
+                    miniPools: miniPools,
+                    nodeFirst: nodeFirst,
+                    nodeSecond: nodeSecond,
+                    fromAddress: owner,
                 });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
-                // Step casper forward
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-
-                // Perform checkins
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeFirst,
-                });
-                await scenarioNodeCheckin({
-                    averageLoad: web3.toWei('0.5', 'ether'),
-                    fromAddress: nodeSecond,
-                });
-
             });
 
 
