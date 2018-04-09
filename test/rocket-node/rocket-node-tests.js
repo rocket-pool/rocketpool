@@ -3,8 +3,9 @@ const os = require('os');
 
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings, RocketPool, Casper } from '../artifacts';
+import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioDeposit, scenarioWithdrawDeposit } from '../rocket-user/rocket-user-scenarios';
+import { scenarioWithdrawDeposit } from '../rocket-user/rocket-user-scenarios';
 import { scenarioWithdrawDepositTokens } from '../rocket-deposit/rocket-deposit-scenarios';
 import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode } from './rocket-node-scenarios';
 
@@ -142,31 +143,8 @@ export default function({owner}) {
 
             // Initialise minipools
             before(async () => {
-
-                // Get the amount of ether to deposit - enough to launch a minipool
-                const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
-                const sendAmount = parseInt(minEtherRequired.valueOf());
-
-                // Deposit ether to create first minipool
-                let miniPool1 = await scenarioDeposit({
-                    stakingTimeID: 'short',
-                    fromAddress: userFirst,
-                    depositAmount: sendAmount,
-                    gas: 4800000,
-                });
-
-                // Deposit ether to create second minipool
-                let miniPool2 = await scenarioDeposit({
-                    stakingTimeID: 'short',
-                    fromAddress: userSecond,
-                    depositAmount: sendAmount,
-                    gas: 4800000,
-                });
-
-                // Set minipools
-                miniPools.first = miniPool1;
-                miniPools.second = miniPool2;
-
+                miniPools.first = await initialiseMiniPool({fromAddress: userFirst});
+                miniPools.second = await initialiseMiniPool({fromAddress: userSecond});
             });
 
 
