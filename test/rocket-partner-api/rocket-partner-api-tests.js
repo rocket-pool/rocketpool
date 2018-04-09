@@ -37,11 +37,6 @@ export default function({owner}) {
         describe('Registration', async () => {
 
 
-            // :STATE:
-            // casperTests - increment epoch x2 and dynasty x1
-            // rocketNodeRegistrationTests - register first and second nodes
-
-
             // Try to register a new partner as a non rocket pool owner
             it(printTitle('non owner', 'fail to register a partner'), async () => {
                 await assertThrows(scenarioRegisterPartner({
@@ -127,11 +122,6 @@ export default function({owner}) {
                 }));
 
             });
-
-
-            // :STATE:
-            // rocketUserDepositTests1 - first and second users deposit to create first minipool (countdown)
-            // rocketUserWithdrawalAddressTests - second user registers a backup withdrawal address
 
 
             // Another user (partner user) sends a deposit and has a new pool accepting deposits created for them as the previous one is now in countdown to launch mode and not accepting deposits
@@ -222,16 +212,6 @@ export default function({owner}) {
          * Partner removal
          */
         describe('Removal', async () => {
-
-
-            // :STATE:
-            // rocketUserDepositTests2 - third user deposits to create second minipool (countdown)
-            // rocketNodeCheckinTests1 - first and second nodes checkin to launch first and second minipools
-            // rocketDepositTests2 - third user withdraws entire deposit as RPD and transfers 25% of RPD to first user
-            // rocketNodeCheckinTests2 - first and second nodes checkin to log first and second minipools out from Casper and request withdrawals; second minipool with no users closes
-            // rocketDepositTests3 - first user burns RPD for ether & bonus
-            // rocketUserWithdrawalTests2 - first and second users withdraw deposits & rewards from first minipool; first minipool with no users closes
-            // rocketNodeRemovalTests2 - remove first node
 
 
             // Contract dependencies
