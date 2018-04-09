@@ -33,9 +33,6 @@ export default function({owner}) {
         const nodeRegisterGas = 1600000;
         const nodeCheckinGas = 950000;
 
-        // Minipools
-        let miniPools = {};
-
 
         /**
          * Node registration
@@ -126,6 +123,10 @@ export default function({owner}) {
             // rocketPartnerAPIDepositTests2 - first partner deposits to create temp minipool (accepting)
             // rocketPartnerAPIWithdrawalTests - first partner withdraws entire deposit to destroy temp minipool
             // rocketUserDepositTests2 - third user deposits to create second minipool (countdown)
+
+
+            // Minipools
+            let miniPools = {};
 
 
             // Contract dependencies
