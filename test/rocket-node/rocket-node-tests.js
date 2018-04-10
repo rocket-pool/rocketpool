@@ -21,6 +21,8 @@ export default function({owner}) {
         // Node addresses
         const nodeFirst = accounts[8];
         const nodeSecond = accounts[9];
+        const nodeThird = accounts[7];
+        const nodeFourth = accounts[6];
 
         // User addresses
         const userFirst = accounts[1];
@@ -48,6 +50,13 @@ export default function({owner}) {
          * Node registration
          */
         describe('Registration', async () => {
+
+
+            // Contract dependencies
+            let rocketSettings;
+            before(async () => {
+                rocketSettings = await RocketSettings.deployed();
+            });
 
 
             // Addresses
@@ -113,11 +122,84 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('owner', 'cannot register a node with an invalid address'));
-            it(printTitle('owner', 'cannot register a node with a balance less than the minimum smart node balance'));
-            it(printTitle('owner', 'cannot register a node with an address that already exists'));
-            it(printTitle('random address', 'cannot register a node'));
+            // Owner cannot register a node with an invalid (null) address
+            it(printTitle('owner', 'cannot register a node with an invalid address'), async () => {
+                let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeThird});
+                await assertThrows(scenarioRegisterNode({
+                    nodeAddress: '0x0000000000000000000000000000000000000000',
+                    signNodeAddress: nodeThird,
+                    valCodeAddress: valCodeAddress,
+                    providerID: nodeFirstProviderID,
+                    subnetID: nodeFirstSubnetID,
+                    instanceID: nodeFirstInstanceID,
+                    regionID: nodeFirstRegionID,
+                    fromAddress: owner,
+                    gas: nodeRegisterGas
+                }));
+            });
+
+
+            // Owner cannot register a node with a balance less than the minimum smart node balance
+            it(printTitle('owner', 'cannot register a node with a balance less than the minimum smart node balance'), async () => {
+
+                // Get minimum smart node balance
+                const minSmartNodeBalance = await rocketSettings.getSmartNodeEtherMin();
+
+                // Deplete third node balance
+                let nodeThirdBalanceOld = parseInt(web3.eth.getBalance(nodeThird).valueOf());
+                let sendAmount = nodeThirdBalanceOld - web3.toWei('0.1', 'ether');
+                await web3.eth.sendTransaction({from: nodeThird, to: nodeFirst, value: sendAmount});
+
+                // Check third node balance is less than minimum smart node balance
+                let nodeThirdBalanceNew = parseInt(web3.eth.getBalance(nodeThird).valueOf());
+                assert.isTrue(nodeThirdBalanceNew < parseInt(minSmartNodeBalance.valueOf()), 'Node balance is greater than minimum smart node balance');
+
+                // Attempt to register node
+                let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeThird});
+                await assertThrows(scenarioRegisterNode({
+                    nodeAddress: nodeThird,
+                    valCodeAddress: valCodeAddress,
+                    providerID: nodeFirstProviderID,
+                    subnetID: nodeFirstSubnetID,
+                    instanceID: nodeFirstInstanceID,
+                    regionID: nodeFirstRegionID,
+                    fromAddress: owner,
+                    gas: nodeRegisterGas
+                }));
+
+            });
+
+
+            // Owner cannot register a node with an address that has already been used
+            it(printTitle('owner', 'cannot register a node with an address that already exists'), async () => {
+                let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+                await assertThrows(scenarioRegisterNode({
+                    nodeAddress: nodeFirst,
+                    valCodeAddress: valCodeAddress,
+                    providerID: nodeFirstProviderID,
+                    subnetID: nodeFirstSubnetID,
+                    instanceID: nodeFirstInstanceID,
+                    regionID: nodeFirstRegionID,
+                    fromAddress: owner,
+                    gas: nodeRegisterGas
+                }));
+            });
+
+
+            // Random address cannot register a node
+            it(printTitle('random address', 'cannot register a node'), async () => {
+                let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFourth});
+                await assertThrows(scenarioRegisterNode({
+                    nodeAddress: nodeFourth,
+                    valCodeAddress: valCodeAddress,
+                    providerID: nodeFirstProviderID,
+                    subnetID: nodeFirstSubnetID,
+                    instanceID: nodeFirstInstanceID,
+                    regionID: nodeFirstRegionID,
+                    fromAddress: userFirst,
+                    gas: nodeRegisterGas
+                }));
+            });
 
 
         });
