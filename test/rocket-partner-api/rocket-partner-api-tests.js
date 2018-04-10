@@ -341,16 +341,30 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('owner', 'cannot remove a nonexistent partner'));
-            it(printTitle('random address', 'cannot remove a partner'));
+            // Owner cannot remove a nonexistent partner
+            it(printTitle('owner', 'cannot remove a nonexistent partner'), async () => {
+                await assertThrows(scenarioRemovePartner({
+                    partnerAddress: userFirst,
+                    fromAddress: owner,
+                    gas: 500000,
+                }));
+            });
+
+
+            // Random address cannot remove a partner
+            it(printTitle('random address', 'cannot remove a partner'), async () => {
+                await assertThrows(scenarioRemovePartner({
+                    partnerAddress: partnerFirst,
+                    fromAddress: userFirst,
+                    gas: 500000,
+                }));
+            });
 
 
             // Owner removes first partner - users attached to this partner can still withdraw
             it(printTitle('owner', 'removes first partner from the Rocket Pool network'), async () => {
                 await scenarioRemovePartner({
                     partnerAddress: partnerFirst,
-                    newerPartnerAddress: partnerSecond,
                     fromAddress: owner,
                     gas: 500000,
                 });
