@@ -119,11 +119,80 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('user', 'cannot deposit with an incorrect staking time ID'));
-            it(printTitle('user', 'cannot deposit while user deposits are disabled'));
-            it(printTitle('user', 'cannot deposit an amount less than the minimum user deposit'));
-            it(printTitle('user', 'cannot deposit an amount greater than the maximum user deposit'));
+            // User cannot deposit with an invalid staking time iD
+            it(printTitle('user', 'cannot deposit with an invalid staking time ID'), async() => {
+
+                // Get the amount of ether to send
+                let sendAmount = parseInt(web3.toWei('1', 'ether').valueOf());
+
+                // Deposit ether
+                await assertThrows(scenarioDeposit({
+                    stakingTimeID: 'beer',
+                    fromAddress: userFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
+
+
+            // User cannot deposit while user deposits are disabled
+            it(printTitle('user', 'cannot deposit while user deposits are disabled'), async() => {
+
+                // Disable user deposits
+                await rocketSettings.setUserDepositAllowed(false);
+
+                // Get the amount of ether to send
+                let sendAmount = parseInt(web3.toWei('1', 'ether').valueOf());
+
+                // Deposit ether
+                await assertThrows(scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+                // Enable user deposits
+                await rocketSettings.setUserDepositAllowed(true);
+
+            });
+
+
+            // User cannot deposit an amount less than the minimum user deposit
+            it(printTitle('user', 'cannot deposit an amount less than the minimum user deposit'), async () => {
+
+                // Get minimum user deposit & send amount
+                let minDepositAmount = await rocketSettings.getUserDepositMin();
+                let sendAmount = parseInt(minDepositAmount.valueOf()) - parseInt(web3.toWei('0.5', 'ether').valueOf());
+
+                // Deposit ether
+                await assertThrows(scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
+
+
+            // User cannot deposit an amount greater than the maximum user deposit
+            it(printTitle('user', 'cannot deposit an amount greater than the maximum user deposit'), async () => {
+
+                // Get maximum user deposit & send amount
+                let maxDepositAmount = await rocketSettings.getUserDepositMax();
+                let sendAmount = parseInt(maxDepositAmount.valueOf()) + parseInt(web3.toWei('0.5', 'ether').valueOf());
+
+                // Deposit ether
+                await assertThrows(scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
 
 
         });
