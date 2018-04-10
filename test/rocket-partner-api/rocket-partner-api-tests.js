@@ -70,6 +70,11 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('owner', 'cannot register a partner with an invalid address'));
+            it(printTitle('owner', 'cannot register a partner with an address that already exists'));
+
+
         });
 
 
@@ -143,6 +148,13 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('partner', 'cannot deposit while partner deposits are disabled'));
+            it(printTitle('partner', 'cannot deposit while user deposits are disabled'));
+            it(printTitle('partner', 'cannot deposit an amount less than the minimum user deposit'));
+            it(printTitle('partner', 'cannot deposit an amount greater than the maximum user deposit'));
+
+
         });
 
 
@@ -157,6 +169,17 @@ export default function({owner}) {
             before(async () => {
                 rocketPool = await RocketPool.deployed();
             });
+
+
+            // TODO: implement
+            it(printTitle('partner', 'cannot withdraw while partner withdrawals are disabled'));
+            it(printTitle('partner', 'cannot withdraw while user withdrawals are disabled'));
+            it(printTitle('partner', 'cannot withdraw an amount less than the minimum user withdrawal'));
+            it(printTitle('partner', 'cannot withdraw an amount greater than the maximum user withdrawal'));
+            it(printTitle('partner', 'cannot withdraw on behalf of an unassociated user'));
+            it(printTitle('partner', 'cannot withdraw from an unassociated minipool'));
+            it(printTitle('partner', 'cannot withdraw while minipool is staking or logged out'));
+            it(printTitle('random address', 'cannot withdraw as a partner'));
 
 
             // First partner withdraws half their users previous Ether from the pool before it has launched for staking
@@ -219,6 +242,11 @@ export default function({owner}) {
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
             });
+
+
+            // TODO: implement
+            it(printTitle('owner', 'cannot remove a nonexistent partner'));
+            it(printTitle('random address', 'cannot remove a partner'));
 
 
             // Owner removes first partner - users attached to this partner can still withdraw
