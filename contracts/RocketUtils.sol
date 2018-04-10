@@ -90,40 +90,5 @@ contract RocketUtils is RocketBase {
         }
 
     }
-
-
-    function assertValidationContractIsValid(address _val_code_address, address _node_address, bytes32 _sigHash, bytes _sig) public returns (bool) {
-            
-            var (v, r, s) = sigSplit(_sig); 
-
-            bytes32 result;
-            // bytes32 combinedHash = keccak256("\x19Ethereum Signed Message:\n32", _sigHash);
-            bytes32 combinedHash = _sigHash;
-
-            assembly {
-                let x := mload(0x40)   //Find empty storage location using "free memory pointer"
-                mstore(x, combinedHash) // Hash is first parameter 
-                mstore(add(x,0x20),v) //Place first argument directly next to signature
-                mstore(add(x,0x40),r) //Place second argument next to first, padded to 32 bytes
-                mstore(add(x,0x60),s) //Place second argument next to first, padded to 32 bytes
-
-                let success := call(      //This is the critical change (Pop the top stack value)
-                                    5000, //5k gas
-                                    _val_code_address, //To addr
-                                    0,    //No value
-                                    x,    //Inputs are stored at location x
-                                    0x80, //Inputs are 80 bytes long (32 * 4)
-                                    x,    //Store output over input (saves space)
-                                    0x20) //Outputs are 32 bytes long
-
-                result := mload(x) //Assign output value to c
-                mstore(0x40,add(x,0x80)) // Set storage pointer to empty space
-            }
-
-            require(result == 0x1);
-            return true;
-    }
-
-
    
 }
