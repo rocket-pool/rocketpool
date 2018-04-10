@@ -70,9 +70,26 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('owner', 'cannot register a partner with an invalid address'));
-            it(printTitle('owner', 'cannot register a partner with an address that already exists'));
+            // Owner cannot register a partner with an invalid (null) address
+            it(printTitle('owner', 'cannot register a partner with an invalid address'), async () => {
+                await assertThrows(scenarioRegisterPartner({
+                    partnerAddress: '0x0000000000000000000000000000000000000000',
+                    partnerName: 'Failing',
+                    fromAddress: owner,
+                    gas: partnerRegisterGas
+                }));
+            });
+
+
+            // Owner cannot register a partner with an address that has already been used
+            it(printTitle('owner', 'cannot register a partner with an address that already exists'), async () => {
+                await assertThrows(scenarioRegisterPartner({
+                    partnerAddress: partnerFirst,
+                    partnerName: partnerFirstName,
+                    fromAddress: owner,
+                    gas: partnerRegisterGas
+                }));
+            });
 
 
         });
