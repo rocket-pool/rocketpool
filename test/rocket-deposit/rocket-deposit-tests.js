@@ -62,6 +62,12 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('user', 'cannot withdraw RPD from an unassociated minipool'));
+            it(printTitle('partner', 'cannot withdraw RPD as a user'));
+            it(printTitle('random address', 'cannot withdraw RPD as a user'));
+
+
             // User can withdraw deposit tokens while minipool is staking
             it(printTitle('userThird', 'withdraws 50% of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper'), async () => {
 
@@ -164,21 +170,11 @@ export default function({owner}) {
             });
 
 
-            // User cannot burn deposit tokens for ether while there is not enough ether to cover the token amount
-            it(printTitle('userThird', 'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), async () => {
+            // TODO: implement
+            it(printTitle('userFirst', 'can approve userThird to transfer tokens from their account'));
+            it(printTitle('userThird', 'cannot transfer more than the approved amount from userFirst\'s account'));
+            it(printTitle('userThird', 'cannot transfer the approved amount from userFirst\'s account'));
 
-                // Get amount of tokens to burn
-                const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird);
-                const tokenBurnAmount = parseInt(userThirdTokenBalance.valueOf());
-
-                // Burn tokens for ether
-                await assertThrows(scenarioBurnDepositTokens({
-                    burnAmount: tokenBurnAmount,
-                    fromAddress: userThird,
-                    gas: 250000,
-                }));
-
-            });
 
         });
 
@@ -224,8 +220,25 @@ export default function({owner}) {
             });
 
 
+            // User cannot burn deposit tokens for ether while there is not enough ether to cover the token amount
+            it(printTitle('userThird', 'fails to trade their tokens for ether in the rocket deposit token fund as it does not have enough ether to cover the amount sent'), async () => {
+
+                // Get amount of tokens to burn
+                const userThirdTokenBalance = await rocketDeposit.balanceOf.call(userThird);
+                const tokenBurnAmount = parseInt(userThirdTokenBalance.valueOf());
+
+                // Burn tokens for ether
+                await assertThrows(scenarioBurnDepositTokens({
+                    burnAmount: tokenBurnAmount,
+                    fromAddress: userThird,
+                    gas: 250000,
+                }));
+
+            });
+
+
             // Log first and second minipools out from casper
-            before(async () => {
+            it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
                 await logoutMiniPools({
                     miniPools: miniPools,
                     nodeFirst: nodeFirst,
@@ -246,6 +259,10 @@ export default function({owner}) {
                 assert.equal(depositTokenFundBalance.valueOf(), etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');
 
             });
+
+
+            // TODO: implement
+            it(printTitle('user', 'cannot burn tokens they don\'t own for ether'));
 
 
             // User can burn deposit tokens for ether plus bonus when there is enough ether to cover the amount
