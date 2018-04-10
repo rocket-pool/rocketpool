@@ -1,5 +1,6 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 
 export default function({owner}) {
@@ -250,6 +251,8 @@ export default function({owner}) {
                     gas: rocketDepositGas,
                 }));
 
+                // TODO: re-enable partner deposits if possible?
+
             });
 
 
@@ -442,6 +445,29 @@ export default function({owner}) {
             });
 
 
+            // Random address cannot withdraw as a partner
+            it(printTitle('random address', 'cannot withdraw as a partner'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: userFirst,
+                    gas: rocketWithdrawalGas,
+                }));
+
+            });
+
+
             // Partner cannot withdraw while user withdrawals are disabled
             it(printTitle('partner', 'cannot withdraw while user withdrawals are disabled'), async () => {
 
@@ -494,11 +520,38 @@ export default function({owner}) {
                     gas: rocketWithdrawalGas,
                 }));
 
+                // TODO: re-enable partner withdrawals if possible?
+
             });
 
 
-            // Random address cannot withdraw as a partner
-            it(printTitle('random address', 'cannot withdraw as a partner'), async () => {
+            // Minipools are launched
+            it(printTitle('---------', 'minipools launched'), async () => {
+
+                // Calculate enough ether to launch the minipool
+                const sendAmount = parseInt(web3.toWei('2', 'ether').valueOf());
+
+                // Deposit
+                await scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                });
+
+                // Launch minipools
+                await launchMiniPools({
+                    nodeFirst: accounts[4],
+                    nodeSecond: accounts[9],
+                    nodeRegisterAddress: owner,
+                });
+
+            });
+
+
+            // Partner cannot withdraw while minipool is staking or logged out
+            it(printTitle('partner', 'cannot withdraw while minipool is staking or logged out'), async () => {
 
                 // Get user's latest minipool
                 let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
@@ -513,15 +566,11 @@ export default function({owner}) {
                     miniPool: userMiniPool,
                     withdrawalAmount: withdrawalAmount,
                     userAddress: partnerFirstUserAccount,
-                    fromAddress: userFirst,
+                    fromAddress: partnerFirst,
                     gas: rocketWithdrawalGas,
                 }));
 
             });
-
-
-            // TODO: implement
-            it(printTitle('partner', 'cannot withdraw while minipool is staking or logged out'));
 
 
         });
