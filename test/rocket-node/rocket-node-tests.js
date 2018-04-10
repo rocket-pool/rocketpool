@@ -223,7 +223,7 @@ export default function({owner}) {
 
 
             // Initialise casper state
-            before(async() => {
+            before(async () => {
                 await scenarioIncrementEpoch(owner);
                 await scenarioIncrementEpoch(owner);
                 await scenarioIncrementDynasty(owner);
@@ -505,8 +505,19 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('random address', 'cannot checkin as a node'));
+            // Random address cannot perform checkin as a node
+            it(printTitle('random address', 'cannot checkin as a node'), async () => {
+
+                // Get average CPU load
+                let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+
+                // Perform checkin
+                await assertThrows(scenarioNodeCheckin({
+                    averageLoad: averageLoad15mins,
+                    fromAddress: userFirst,
+                }));
+
+            });
 
 
         });
@@ -540,9 +551,24 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('owner', 'cannot remove a nonexistent node'));
-            it(printTitle('random address', 'cannot remove a node'));
+            // Owner cannot remove a node that doesn't exist
+            it(printTitle('owner', 'cannot remove a nonexistent node'), async () => {
+                await assertThrows(scenarioRemoveNode({
+                    nodeAddress: userFirst,
+                    fromAddress: owner,
+                    gas: 200000,
+                }));
+            });
+
+
+            // Random address cannot remove a node
+            it(printTitle('random address', 'cannot remove a node'), async () => {
+                await assertThrows(scenarioRemoveNode({
+                    nodeAddress: nodeFirst,
+                    fromAddress: userFirst,
+                    gas: 200000,
+                }));
+            });
 
 
             // Owner removes first node
