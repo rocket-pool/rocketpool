@@ -2,7 +2,7 @@ import { printTitle, assertThrows } from '../utils';
 import { RocketDepositToken, RocketSettings } from '../artifacts';
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
-import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom } from './rocket-deposit-scenarios';
+import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom, scenarioApproveDepositTokenTransferFrom } from './rocket-deposit-scenarios';
 
 export default function({owner}) {
 
@@ -15,6 +15,7 @@ export default function({owner}) {
 
         // User addresses
         const userFirst = accounts[1];
+        const userSecond = accounts[2];
         const userThird = accounts[3];
 
         // Node addresses
@@ -62,10 +63,44 @@ export default function({owner}) {
             });
 
 
+            // User cannot withdraw RPD from an unassociated minipool
+            it(printTitle('user', 'cannot withdraw RPD from an unassociated minipool'), async () => {
+
+                // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
+                const userDeposit = await miniPools.second.getUserDeposit.call(userThird);
+                const withdrawHalfAmount = parseInt(userDeposit.valueOf()) / 2;
+
+                // Withdraw tokens from user's minipool
+                await assertThrows(scenarioWithdrawDepositTokens({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: withdrawHalfAmount,
+                    fromAddress: userThird,
+                    gas: 250000,
+                }));
+
+            });
+
+
             // TODO: implement
-            it(printTitle('user', 'cannot withdraw RPD from an unassociated minipool'));
             it(printTitle('partner', 'cannot withdraw RPD as a user'));
-            it(printTitle('random address', 'cannot withdraw RPD as a user'));
+
+
+            // Random address cannot withdraw RPD as a user
+            it(printTitle('random address', 'cannot withdraw RPD as a user'), async () => {
+
+                // Third user deposited the min required to launch a pool earlier, we need this amount so we can calculate 50%
+                const userDeposit = await miniPools.second.getUserDeposit.call(userThird);
+                const withdrawHalfAmount = parseInt(userDeposit.valueOf()) / 2;
+
+                // Withdraw tokens from user's minipool
+                await assertThrows(scenarioWithdrawDepositTokens({
+                    miniPool: miniPools.second,
+                    withdrawalAmount: withdrawHalfAmount,
+                    fromAddress: userSecond,
+                    gas: 250000,
+                }));
+
+            });
 
 
             // User can withdraw deposit tokens while minipool is staking
@@ -170,10 +205,68 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('userFirst', 'can approve userThird to transfer tokens from their account'));
-            it(printTitle('userThird', 'cannot transfer more than the approved amount from userFirst\'s account'));
-            it(printTitle('userThird', 'cannot transfer the approved amount from userFirst\'s account'));
+            // First user can approve third user to transfer tokens from their account
+            it(printTitle('userFirst', 'can approve userThird to transfer tokens from their account'), async () => {
+
+                // Get token transfer amount
+                const userFirstTokenBalance = await rocketDeposit.balanceOf.call(userFirst);
+                const approvalAmount = parseInt(userFirstTokenBalance.valueOf()) / 2;
+
+                // Approve transfer
+                await scenarioApproveDepositTokenTransferFrom({
+                    fromAddress: userFirst,
+                    spenderAddress: userThird,
+                    amount: approvalAmount,
+                    gas: 250000,
+                });
+
+            });
+
+
+            // Third user cannot transfer more than the approved amount from first user's account
+            it(printTitle('userThird', 'cannot transfer more than the approved amount from userFirst\'s account'), async () => {
+
+                // Get initial user token balance
+                const userFirstTokenBalance = await rocketDeposit.balanceOf.call(userFirst);
+
+                // Get token transfer allowance and amount
+                const allowance = await rocketDeposit.allowance.call(userFirst, userThird);
+                const tokenTransferAmount = parseInt(allowance.valueOf()) + parseInt(web3.toWei('0.1', 'ether').valueOf());
+
+                // Transfer deposit tokens
+                await scenarioTransferDepositTokensFrom({
+                    fromAddress: userFirst,
+                    toAddress: userThird,
+                    amount: tokenTransferAmount,
+                    gas: 250000,
+                    checkTransferred: false,
+                });
+
+                // Get updated user token balance
+                const userFirstTokenBalanceAfter = await rocketDeposit.balanceOf.call(userFirst);
+
+                // Check that no tokens were sent
+                assert.equal(userFirstTokenBalanceAfter.valueOf(), userFirstTokenBalance.valueOf(), 'Users tokens were transferred');
+
+            });
+
+
+            // Third user can transfer the approved amount from first user's account
+            it(printTitle('userThird', 'can transfer the approved amount from userFirst\'s account'), async () => {
+
+                // Get token transfer allowance and amount
+                const allowance = await rocketDeposit.allowance.call(userFirst, userThird);
+                const tokenTransferAmount = parseInt(allowance.valueOf());
+
+                // Transfer deposit tokens
+                await scenarioTransferDepositTokensFrom({
+                    fromAddress: userFirst,
+                    toAddress: userThird,
+                    amount: tokenTransferAmount,
+                    gas: 250000,
+                });
+
+            });
 
 
         });
@@ -261,8 +354,21 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('user', 'cannot burn tokens they don\'t own for ether'));
+            // User cannot burn tokens they don't own for ether
+            it(printTitle('user', 'cannot burn tokens they don\'t own for ether'), async () => {
+
+                // Get amount of tokens to burn
+                const userFirstTokenBalance = await rocketDeposit.balanceOf.call(userFirst);
+                const tokenBurnAmount = parseInt(userFirstTokenBalance.valueOf());
+
+                // Burn deposit tokens for ether
+                await assertThrows(scenarioBurnDepositTokens({
+                    burnAmount: tokenBurnAmount,
+                    fromAddress: userSecond,
+                    gas: 250000,
+                }));
+
+            });
 
 
             // User can burn deposit tokens for ether plus bonus when there is enough ether to cover the amount
