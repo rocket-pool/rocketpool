@@ -20,6 +20,7 @@ export default function({owner}) {
         const userSecond = accounts[2];
         const userThird = accounts[3];
         const partnerFirstUserAccount = accounts[6];
+        const partnerSecondUserAccount = accounts[8];
 
         // Partner details
         const partnerFirstName = 'Coinbase';
@@ -242,7 +243,7 @@ export default function({owner}) {
 
                 // Deposit
                 await assertThrows(scenarioPartnerDeposit({
-                    userAddress: partnerFirstUserAccount,
+                    userAddress: partnerSecondUserAccount,
                     stakingTimeID: 'short',
                     fromAddress: partnerSecond,
                     depositAmount: sendAmount,
@@ -263,20 +264,13 @@ export default function({owner}) {
 
             // Contract dependencies
             let rocketPool;
+            let rocketSettings;
+            let rocketPartnerAPI;
             before(async () => {
                 rocketPool = await RocketPool.deployed();
+                rocketSettings = await RocketSettings.deployed();
+                rocketPartnerAPI = await RocketPartnerAPI.deployed();
             });
-
-
-            // TODO: implement
-            it(printTitle('partner', 'cannot withdraw while partner withdrawals are disabled'));
-            it(printTitle('partner', 'cannot withdraw while user withdrawals are disabled'));
-            it(printTitle('partner', 'cannot withdraw an amount less than the minimum user withdrawal'));
-            it(printTitle('partner', 'cannot withdraw an amount greater than the maximum user withdrawal'));
-            it(printTitle('partner', 'cannot withdraw on behalf of an unassociated user'));
-            it(printTitle('partner', 'cannot withdraw from an unassociated minipool'));
-            it(printTitle('partner', 'cannot withdraw while minipool is staking or logged out'));
-            it(printTitle('random address', 'cannot withdraw as a partner'));
 
 
             // First partner withdraws half their users previous Ether from the pool before it has launched for staking
@@ -321,6 +315,167 @@ export default function({owner}) {
                     fromAddress: partnerFirst,
                     gas: rocketWithdrawalGas,
                 });
+
+            });
+
+
+            // New deposit is made by first partner
+            it(printTitle('---------', 'new deposit made by first partner'), async () => {
+
+                // Calculate just enough ether to create a minipool
+                const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+                const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+                // Deposit on behalf of of partner
+                await scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                });
+
+            });
+
+
+            // Partner cannot withdraw an amount less than the minimum user withdrawal
+            it(printTitle('partner', 'cannot withdraw an amount less than the minimum user withdrawal'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - entire deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf());
+
+                // Set minimum user withdrawal above withdrawal amount
+                await rocketSettings.setUserWithdrawalMin(withdrawalAmount + parseInt(web3.toWei('1', 'ether')));
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: partnerFirst,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Reset minimum user withdrawal
+                await rocketSettings.setUserWithdrawalMin(0);
+
+            });
+
+
+            // Partner cannot withdraw an amount greater than the maximum user withdrawal
+            it(printTitle('partner', 'cannot withdraw an amount greater than the maximum user withdrawal'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - entire deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf());
+
+                // Set maximum user withdrawal below withdrawal amount
+                await rocketSettings.setUserWithdrawalMax(withdrawalAmount - parseInt(web3.toWei('1', 'ether')));
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: partnerFirst,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Reset maximum user withdrawal
+                await rocketSettings.setUserWithdrawalMax(web3.toWei('75', 'ether'));
+
+            });
+
+
+            // TODO: implement
+            it(printTitle('partner', 'cannot withdraw on behalf of an unassociated user'));
+            it(printTitle('partner', 'cannot withdraw from an unassociated minipool'));
+            it(printTitle('partner', 'cannot withdraw while minipool is staking or logged out'));
+
+
+            // Partner cannot withdraw while user withdrawals are disabled
+            it(printTitle('partner', 'cannot withdraw while user withdrawals are disabled'), async () => {
+
+                // Disable user withdrawals
+                await rocketSettings.setUserWithdrawalAllowed(false);
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: partnerFirst,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Enable user withdrawals
+                await rocketSettings.setUserWithdrawalAllowed(true);
+
+            });
+
+
+            // Partner cannot withdraw while partner withdrawals are disabled
+            it(printTitle('partner', 'cannot withdraw while partner withdrawals are disabled'), async () => {
+
+                // Disable partner withdrawals
+                await rocketPartnerAPI.setPartnerDisableWithdrawals(partnerFirst);
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: partnerFirst,
+                    gas: rocketWithdrawalGas,
+                }));
+
+            });
+
+
+            // Random address cannot withdraw as a partner
+            it(printTitle('random address', 'cannot withdraw as a partner'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Withdraw on behalf of partner
+                await assertThrows(scenarioPartnerWithdraw({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawalAmount,
+                    userAddress: partnerFirstUserAccount,
+                    fromAddress: userFirst,
+                    gas: rocketWithdrawalGas,
+                }));
 
             });
 
