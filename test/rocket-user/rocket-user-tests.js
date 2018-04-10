@@ -170,7 +170,7 @@ export default function({owner}) {
 
 
             // Initialise nodes and checkin to launch minipools
-            before(async() => {
+            before(async () => {
                 await launchMiniPools({
                     nodeFirst: nodeFirst,
                     nodeSecond: nodeSecond,
