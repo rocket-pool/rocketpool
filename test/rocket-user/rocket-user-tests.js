@@ -16,6 +16,7 @@ export default function({owner}) {
         const userFirst = accounts[1];
         const userSecond = accounts[2];
         const userThird = accounts[3];
+        const userFirstBackupAddress = accounts[5];
         const userSecondBackupAddress = accounts[4];
 
         // Node addresses
@@ -215,10 +216,43 @@ export default function({owner}) {
             });
 
 
+            // User cannot set a backup withdrawal address to an invalid address
+            it(printTitle('user', 'cannot set a backup withdrawal address to an invalid address'), async () => {
+
+                // Register withdrawal address
+                let result = await scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: '0x0000000000000000000000000000000000000000',
+                    miniPool: miniPools.first,
+                    fromAddress: userFirst,
+                    gas: 550000,
+                    checkLogs: false,
+                });
+
+                // Assert UserSetBackupWithdrawalAddress event was not logged
+                let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
+                assert.equal(log, undefined, 'UserSetBackupWithdrawalAddress event was logged');
+
+            });
+
+
             // TODO: implement
-            it(printTitle('user', 'cannot set a backup withdrawal address to an invalid address'));
+            // User cannot set a backup withdrawal address to the user\'s partner\'s address
             it(printTitle('user', 'cannot set a backup withdrawal address to the user\'s partner\'s address'));
-            it(printTitle('user', 'cannot set a backup withdrawal address for an unassociated minipool'));
+
+
+            // User cannot set a backup withdrawal address for an unassociated minipool
+            it(printTitle('user', 'cannot set a backup withdrawal address for an unassociated minipool'), async () => {
+                await assertThrows(scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: userFirstBackupAddress,
+                    miniPool: miniPools.second,
+                    fromAddress: userFirst,
+                    gas: 550000,
+                }));
+            });
+
+
+            // TODO: implement
+            // User cannot set a backup withdrawal address after minipool has launched
             it(printTitle('user', 'cannot set a backup withdrawal address after minipool has launched'));
 
 
