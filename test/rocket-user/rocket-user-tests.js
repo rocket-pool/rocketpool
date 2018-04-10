@@ -119,6 +119,13 @@ export default function({owner}) {
             });
 
 
+            // TODO: implement
+            it(printTitle('user', 'cannot deposit with an incorrect staking time ID'));
+            it(printTitle('user', 'cannot deposit while user deposits are disabled'));
+            it(printTitle('user', 'cannot deposit an amount less than the minimum user deposit'));
+            it(printTitle('user', 'cannot deposit an amount greater than the maximum user deposit'));
+
+
         });
 
 
@@ -137,6 +144,13 @@ export default function({owner}) {
                     gas: 550000,
                 });
             });
+
+
+            // TODO: implement
+            it(printTitle('user', 'cannot set a backup withdrawal address to an invalid address'));
+            it(printTitle('user', 'cannot set a backup withdrawal address to the user\'s partner\'s address'));
+            it(printTitle('user', 'cannot set a backup withdrawal address for an unassociated minipool'));
+            it(printTitle('user', 'cannot set a backup withdrawal address after minipool has launched'));
 
 
         });
@@ -186,6 +200,14 @@ export default function({owner}) {
                     fromAddress: owner,
                 });
             });
+
+
+            // TODO: implement
+            it(printTitle('user', 'cannot withdraw while user withdrawals are disabled'));
+            it(printTitle('user', 'cannot withdraw an amount less than the minimum user withdrawal'));
+            it(printTitle('user', 'cannot withdraw an amount greater than the maximum user withdrawal'));
+            it(printTitle('user', 'cannot withdraw from an unassociated minipool'));
+            it(printTitle('random address', 'cannot withdraw as a user'));
 
 
             // First user withdraws their deposit + rewards and pays Rocket Pools fee
