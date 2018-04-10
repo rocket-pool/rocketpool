@@ -16,6 +16,7 @@ export default function({owner}) {
         const userFirst = accounts[1];
         const userSecond = accounts[2];
         const userThird = accounts[3];
+        const userFourth = accounts[6];
         const userFirstBackupAddress = accounts[5];
         const userSecondBackupAddress = accounts[4];
 
@@ -305,12 +306,99 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('user', 'cannot withdraw while user withdrawals are disabled'));
-            it(printTitle('user', 'cannot withdraw an amount less than the minimum user withdrawal'));
-            it(printTitle('user', 'cannot withdraw an amount greater than the maximum user withdrawal'));
-            it(printTitle('user', 'cannot withdraw from an unassociated minipool'));
-            it(printTitle('random address', 'cannot withdraw as a user'));
+            // User cannot withdraw while user withdrawals are disabled
+            it(printTitle('user', 'cannot withdraw while user withdrawals are disabled'), async () => {
+
+                // Disable user withdrawals
+                await rocketSettings.setUserWithdrawalAllowed(false);
+
+                // Withdraw deposit
+                await assertThrows(scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: 0,
+                    fromAddress: userFirst,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Enable user withdrawals
+                await rocketSettings.setUserWithdrawalAllowed(true);
+
+            });
+
+
+            // User cannot withdraw an amount less than the minimum user withdrawal
+            it(printTitle('user', 'cannot withdraw an amount less than the minimum user withdrawal'), async () => {
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await miniPools.first.getUserDeposit.call(userFirst);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Set minimum user withdrawal above withdrawal amount
+                await rocketSettings.setUserWithdrawalMin(withdrawalAmount + parseInt(web3.toWei('1', 'ether')));
+
+                // Withdraw deposit
+                await assertThrows(scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: withdrawalAmount,
+                    fromAddress: userFirst,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Reset minimum user withdrawal
+                await rocketSettings.setUserWithdrawalMin(0);
+
+            });
+
+
+            // User cannot withdraw an amount greater than the maximum user withdrawal
+            it(printTitle('user', 'cannot withdraw an amount greater than the maximum user withdrawal'), async () => {
+
+                // Get amount to withdraw - half of deposit
+                let userMiniPoolDeposit = await miniPools.first.getUserDeposit.call(userFirst);
+                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+
+                // Set maximum user withdrawal below withdrawal amount
+                await rocketSettings.setUserWithdrawalMax(withdrawalAmount - parseInt(web3.toWei('1', 'ether')));
+
+                // Withdraw deposit
+                await assertThrows(scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: withdrawalAmount,
+                    fromAddress: userFirst,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                }));
+
+                // Reset maximum user withdrawal
+                await rocketSettings.setUserWithdrawalMax(web3.toWei('75', 'ether'));
+
+            });
+
+
+            // User cannot withdraw from an unassociated minipool
+            it(printTitle('user', 'cannot withdraw from an unassociated minipool'), async () => {
+                await assertThrows(scenarioWithdrawDeposit({
+                    miniPool: miniPools.second,
+                    withdrawalAmount: 0,
+                    fromAddress: userFirst,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                }));
+            });
+
+
+            // Random address cannot withdraw as a user
+            it(printTitle('random address', 'cannot withdraw as a user'), async () => {
+                await assertThrows(scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: 0,
+                    fromAddress: userFourth,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                }));
+            });
 
 
             // First user withdraws their deposit + rewards and pays Rocket Pools fee
