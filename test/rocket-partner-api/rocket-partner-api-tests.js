@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 
 export default function({owner}) {
@@ -103,8 +103,10 @@ export default function({owner}) {
 
             // Contract dependencies
             let rocketSettings;
+            let rocketPartnerAPI;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
+                rocketPartnerAPI = await RocketPartnerAPI.deployed();
             });
 
 
@@ -165,11 +167,89 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('partner', 'cannot deposit while partner deposits are disabled'));
-            it(printTitle('partner', 'cannot deposit while user deposits are disabled'));
-            it(printTitle('partner', 'cannot deposit an amount less than the minimum user deposit'));
-            it(printTitle('partner', 'cannot deposit an amount greater than the maximum user deposit'));
+            // Partner cannot deposit an amount less than the minimum user deposit
+            it(printTitle('partner', 'cannot deposit an amount less than the minimum user deposit'), async () => {
+
+                // Get minimum user deposit & send amount
+                let minDepositAmount = await rocketSettings.getUserDepositMin();
+                let sendAmount = parseInt(minDepositAmount.valueOf()) - parseInt(web3.toWei('0.5', 'ether').valueOf());
+
+                // Deposit
+                await assertThrows(scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
+
+
+            // Partner cannot deposit an amount greater than the maximum user deposit
+            it(printTitle('partner', 'cannot deposit an amount greater than the maximum user deposit'), async () => {
+
+                // Get maximum user deposit & send amount
+                let maxDepositAmount = await rocketSettings.getUserDepositMax();
+                let sendAmount = parseInt(maxDepositAmount.valueOf()) + parseInt(web3.toWei('0.5', 'ether').valueOf());
+
+                // Deposit
+                await assertThrows(scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
+
+
+            // Partner cannot deposit while user deposits are disabled
+            it(printTitle('partner', 'cannot deposit while user deposits are disabled'), async () => {
+
+                // Disable user deposits
+                await rocketSettings.setUserDepositAllowed(false);
+
+                // Calculate just enough ether to create a minipool
+                const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+                const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+                // Deposit
+                await assertThrows(scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerFirst,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+                // Enable user deposits
+                await rocketSettings.setUserDepositAllowed(true);
+
+            });
+
+
+            // Partner cannot deposit while partner deposits are disabled
+            it(printTitle('partner', 'cannot deposit while partner deposits are disabled'), async () => {
+
+                // Disable partner deposits
+                await rocketPartnerAPI.setPartnerDisableDeposits(partnerSecond);
+
+                // Calculate just enough ether to create a minipool
+                const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+                const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+                // Deposit
+                await assertThrows(scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerSecond,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                }));
+
+            });
 
 
         });
