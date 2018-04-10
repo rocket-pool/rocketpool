@@ -77,9 +77,10 @@ contract RocketPool is RocketBase {
 
     /// @dev Only allow access from the latest version of the main RocketNode contract
     modifier onlyLatestRocketNode() {
-        bool isRocketNode = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode"));
+        bool isRocketNodeAdmin = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin"));
+        bool isRocketNodeStatus = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeStatus"));
         bool isRocketNodeValidator = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeValidator"));
-        require(isRocketNode || isRocketNodeValidator);
+        require(isRocketNodeAdmin || isRocketNodeValidator || isRocketNodeStatus);
         _;
     } 
 
@@ -162,7 +163,7 @@ contract RocketPool is RocketBase {
     /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
     function poolNodeActions() external onlyLatestRocketNode {
         // Get our Rocket Node contract
-        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin")));
         // Create an empty instance of a pool contract to populate later if we find one
         RocketPoolMini pool = RocketPoolMini(0);
         // Our shared iterator 

@@ -1,16 +1,13 @@
 pragma solidity 0.4.19;
 
 
-import "./RocketBase.sol";
-import "./interface/RocketStorageInterface.sol";
-import "./interface/RocketSettingsInterface.sol";
+import "./RocketNodeBase.sol";
 import "./interface/RocketPoolInterface.sol";
-import "./interface/RocketUtilsInterface.sol";
 
 
 /// @title The RocketNodeValidator contract for Casper validator functionality.
 /// @author Rocket Pool
-contract RocketNodeValidator is RocketBase {
+contract RocketNodeValidator is RocketNodeBase {
 
     /** Events */
 
@@ -20,17 +17,8 @@ contract RocketNodeValidator is RocketBase {
         bytes vote_message
     );
 
-    /** Modifiers */
-
-    /// @dev Only registered pool node addresses can access
-    /// @param _nodeAccountAddress node account address.
-    modifier onlyRegisteredNode(address _nodeAccountAddress) {
-        require(rocketStorage.getBool(keccak256("node.exists", _nodeAccountAddress)));
-        _;
-    }
-
     /// @dev rocket node validator constructor
-    function RocketNodeValidator(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    function RocketNodeValidator(address _rocketStorageAddress) RocketNodeBase(_rocketStorageAddress) public {
         // Version
         version = 1;
     }
