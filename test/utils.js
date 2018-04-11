@@ -31,3 +31,13 @@ const web3New = require('web3');
 export function soliditySha3() {
     return web3New.utils.soliditySha3.apply(web3New, Array.prototype.slice.call(arguments));
 }
+
+const ethereumUtils = require('ethereumjs-util');
+export function hashMessage(data) {
+    var message = web3New.utils.isHexStrict(data) ? web3New.utils.hexToBytes(data) : data;
+    var messageBuffer = Buffer.from(message);
+    var preamble = "\x19Ethereum Signed Message:\n" + message.length;
+    var preambleBuffer = Buffer.from(preamble);    
+    var ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
+    return web3New.utils.bytesToHex(ethereumUtils.sha3(ethMessage));
+}

@@ -1,4 +1,5 @@
-import { Casper, CasperValidation } from '../artifacts';
+import { Casper } from '../artifacts';
+const createValidationCodeContractBytes = require('../_lib/validation-code-contract/validation-code-contract.js').createValidationCodeContractBytes;
 
 
 // Increments Casper epoch and asserts current epoch is set correctly
@@ -24,15 +25,25 @@ export async function scenarioIncrementDynasty(fromAddress) {
 // Creates validation contract and asserts contract was created successfully
 export async function scenarioCreateValidationContract({fromAddress}) {
 
-    // Create a blank contract for use in making validation address contracts
+    // create the validation code contract with baked in - signature address
+    const contractBytes = await createValidationCodeContractBytes(fromAddress);
+    // deploy contract
     // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
-    const valCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: fromAddress});
+    const txhash = await web3.eth.sendTransaction({
+        from: fromAddress,
+        data: contractBytes,
+        gas: 500000,
+        gasPrice: 10000000000
+    });
+
+    const receipt = await web3.eth.getTransactionReceipt(txhash);
+    const valCodeContractAddress = receipt.contractAddress;
 
     // Assert that contract was created successfully
-    assert.notEqual(valCodeContract.address, 0, 'Validation contract creation failed');
+    assert.notEqual(valCodeContractAddress, 0, 'Validation contract creation failed');
 
     // Return validation contract address
-    return valCodeContract.address;
+    return valCodeContractAddress;
 
 }
 

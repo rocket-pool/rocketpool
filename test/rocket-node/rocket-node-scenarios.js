@@ -1,6 +1,5 @@
-import { soliditySha3 } from '../utils';
-import { RocketNode } from '../artifacts';
-
+import { soliditySha3, hashMessage } from '../utils';
+import { RocketNodeAdmin, RocketNodeStatus } from '../artifacts';
 
 // Registers node and asserts that number of registered nodes increased
 export async function scenarioRegisterNode({
@@ -14,22 +13,24 @@ export async function scenarioRegisterNode({
     fromAddress,
     gas
 }) {
-    const rocketNode = await RocketNode.deployed();
+    const rocketNodeAdmin = await RocketNodeAdmin.deployed();
 
     // Initialise add val code address
     if (!addValCodeAddress) addValCodeAddress = valCodeAddress;
 
     // Get initial node count
-    let nodeCountOld = await rocketNode.getNodeCount.call();
+    let nodeCountOld = await rocketNodeAdmin.getNodeCount.call();
 
     // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeAddress, soliditySha3(valCodeAddress));
-
+    let message = valCodeAddress;
+    let sigHash = hashMessage(message);    
+    let signature =  web3.eth.sign(nodeAddress, message);
+    
     // Register the node
-    await rocketNode.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, addValCodeAddress, signature, {from: fromAddress, gas: gas});
+    await rocketNodeAdmin.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, addValCodeAddress, sigHash, signature, {from: fromAddress, gas: gas});
 
     // Get updated node count
-    let nodeCountNew = await rocketNode.getNodeCount.call();
+    let nodeCountNew = await rocketNodeAdmin.getNodeCount.call();
 
     // Assert that updated node count is correct
     assert.equal(nodeCountNew.valueOf(), parseInt(nodeCountOld.valueOf()) + 1, 'Invalid number of nodes registered');
@@ -39,13 +40,13 @@ export async function scenarioRegisterNode({
 
 // Performs node checkin and asserts that checkin was preformed successfully
 export async function scenarioNodeCheckin({averageLoad, fromAddress}) {
-    const rocketNode = await RocketNode.deployed();
+    const rocketNodeStatus = await RocketNodeStatus.deployed();
 
     // Estimate gas required to launch pools
-    let gasEstimate = await rocketNode.nodeCheckin.estimateGas(averageLoad, {from: fromAddress});
+    let gasEstimate = await rocketNodeStatus.nodeCheckin.estimateGas(averageLoad, {from: fromAddress});
 
     // Check in
-    let result = await rocketNode.nodeCheckin(averageLoad, {
+    let result = await rocketNodeStatus.nodeCheckin(averageLoad, {
         from: fromAddress,
         gas: parseInt(gasEstimate) + 100000,
     });
@@ -67,10 +68,10 @@ export async function scenarioNodeCheckin({averageLoad, fromAddress}) {
 
 // Removes a node and asserts that node was removed successfully
 export async function scenarioRemoveNode({nodeAddress, fromAddress, gas}) {
-    const rocketNode = await RocketNode.deployed();
+    const rocketNodeAdmin = await RocketNodeAdmin.deployed();
 
     // Remove the node
-    let result = await rocketNode.nodeRemove(nodeAddress, {from: fromAddress, gas: gas});
+    let result = await rocketNodeAdmin.nodeRemove(nodeAddress, {from: fromAddress, gas: gas});
 
     // Check that removal event was logged
     let log = result.logs.find(({ event }) => event == 'NodeRemoved');
