@@ -1,6 +1,7 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketSettings } from '../artifacts';
+import { RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
+import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
 export default function({owner}) {
@@ -16,9 +17,12 @@ export default function({owner}) {
         const userFirst = accounts[1];
         const userSecond = accounts[2];
         const userThird = accounts[3];
-        const userFourth = accounts[6];
         const userFirstBackupAddress = accounts[5];
         const userSecondBackupAddress = accounts[4];
+        const partnerFirstUserAccount = accounts[6];
+
+        // Partner addresses
+        const partnerFirst = accounts[7];
 
         // Node addresses
         const nodeFirst = accounts[8];
@@ -206,6 +210,23 @@ export default function({owner}) {
         describe('Withdrawal Address', async () => {
 
 
+            // Contract dependencies
+            let rocketPool;
+            before(async () => {
+                rocketPool = await RocketPool.deployed();
+            });
+
+
+            // Initialise user managed by partner
+            before(async () => {
+                await initialisePartnerUser({
+                    userAddress: partnerFirstUserAccount,
+                    partnerAddress: partnerFirst,
+                    partnerRegisterAddress: owner,
+                });
+            });
+
+
             // Second user sets a backup withdrawal address
             it(printTitle('userSecond', 'registers a backup withdrawal address on their deposit while minipool is in countdown'), async () => {
                 await scenarioRegisterWithdrawalAddress({
@@ -236,9 +257,27 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            // User cannot set a backup withdrawal address to the user\'s partner\'s address
-            it(printTitle('user', 'cannot set a backup withdrawal address to the user\'s partner\'s address'));
+            // User cannot set a backup withdrawal address to the user's partner's address
+            it(printTitle('user', 'cannot set a backup withdrawal address to the user\'s partner\'s address'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Register withdrawal address
+                let result = await scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: partnerFirst,
+                    miniPool: userMiniPool,
+                    fromAddress: partnerFirstUserAccount,
+                    gas: 550000,
+                    checkLogs: false,
+                });
+
+                // Assert UserSetBackupWithdrawalAddress event was not logged
+                let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
+                assert.equal(log, undefined, 'UserSetBackupWithdrawalAddress event was logged');
+
+            });
 
 
             // User cannot set a backup withdrawal address for an unassociated minipool
@@ -252,9 +291,33 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
+            // Minipools are launched
+            it(printTitle('---------', 'minipools launched'), async () => {
+                await launchMiniPools({
+                    nodeFirst: nodeFirst,
+                    nodeSecond: nodeSecond,
+                    nodeRegisterAddress: owner,
+                });
+            });
+
+
             // User cannot set a backup withdrawal address after minipool has launched
-            it(printTitle('user', 'cannot set a backup withdrawal address after minipool has launched'));
+            it(printTitle('user', 'cannot set a backup withdrawal address after minipool has launched'), async () => {
+
+                // Register withdrawal address
+                let result = await scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: userFirstBackupAddress,
+                    miniPool: miniPools.first,
+                    fromAddress: userFirst,
+                    gas: 550000,
+                    checkLogs: false,
+                });
+
+                // Assert UserSetBackupWithdrawalAddress event was not logged
+                let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
+                assert.equal(log, undefined, 'UserSetBackupWithdrawalAddress event was logged');
+
+            });
 
 
         });
@@ -270,16 +333,6 @@ export default function({owner}) {
             let rocketSettings;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
-            });
-
-
-            // Initialise nodes and checkin to launch minipools
-            before(async () => {
-                await launchMiniPools({
-                    nodeFirst: nodeFirst,
-                    nodeSecond: nodeSecond,
-                    nodeRegisterAddress: owner,
-                });
             });
 
 
@@ -394,7 +447,7 @@ export default function({owner}) {
                 await assertThrows(scenarioWithdrawDeposit({
                     miniPool: miniPools.first,
                     withdrawalAmount: 0,
-                    fromAddress: userFourth,
+                    fromAddress: nodeFirst,
                     feeAccountAddress: owner,
                     gas: rocketWithdrawalGas,
                 }));
