@@ -1,7 +1,8 @@
 import { printTitle, assertThrows } from '../utils';
-import { RocketDepositToken, RocketSettings } from '../artifacts';
+import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
+import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom, scenarioApproveDepositTokenTransferFrom } from './rocket-deposit-scenarios';
 
 export default function({owner}) {
@@ -17,6 +18,10 @@ export default function({owner}) {
         const userFirst = accounts[1];
         const userSecond = accounts[2];
         const userThird = accounts[3];
+        const partnerFirstUserAccount = accounts[4];
+
+        // Partner addresses
+        const partnerFirst = accounts[5];
 
         // Node addresses
         const nodeFirst = accounts[8];
@@ -31,11 +36,27 @@ export default function({owner}) {
          */
         describe('Withdrawals', async () => {
 
+            // Contract dependencies
+            let rocketPool;
+            before(async () => {
+                rocketPool = await RocketPool.deployed();
+            });
+
 
             // Initialise minipools
             before(async () => {
                 miniPools.first = await initialiseMiniPool({fromAddress: userFirst});
                 miniPools.second = await initialiseMiniPool({fromAddress: userThird});
+            });
+
+
+            // Initialise user managed by partner
+            before(async () => {
+                await initialisePartnerUser({
+                    userAddress: partnerFirstUserAccount,
+                    partnerAddress: partnerFirst,
+                    partnerRegisterAddress: owner,
+                });
             });
 
 
@@ -81,8 +102,26 @@ export default function({owner}) {
             });
 
 
-            // TODO: implement
-            it(printTitle('partner', 'cannot withdraw RPD as a user'));
+            // User managed by a partner cannot withdraw RPD
+            it(printTitle('managed user', 'cannot withdraw RPD'), async () => {
+
+                // Get user's latest minipool
+                let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
+                let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
+
+                // Get withdrawal amount
+                const userDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
+                const withdrawHalfAmount = parseInt(userDeposit.valueOf()) / 2;
+
+                // Withdraw tokens from user's minipool
+                await assertThrows(scenarioWithdrawDepositTokens({
+                    miniPool: userMiniPool,
+                    withdrawalAmount: withdrawHalfAmount,
+                    fromAddress: partnerFirstUserAccount,
+                    gas: 250000,
+                }));
+
+            });
 
 
             // Random address cannot withdraw RPD as a user
