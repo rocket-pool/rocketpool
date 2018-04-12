@@ -73,7 +73,7 @@ contract DummyCasper is Ownable {
         uint256 created
     );
 
-    event VoteCast (
+    event CasperVoteCast (
         bytes voteMessage
     );
     
@@ -235,7 +235,7 @@ contract DummyCasper is Ownable {
     /// @dev Cast a validator vote to Casper
     function vote(bytes _vote_msg) public {
         // Does nothing in dummy casper
-        VoteCast(_vote_msg);
+        CasperVoteCast(_vote_msg);
     }
 
     /// @dev Delete the validator

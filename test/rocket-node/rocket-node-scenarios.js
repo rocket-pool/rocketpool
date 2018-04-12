@@ -1,5 +1,5 @@
 import { soliditySha3, hashMessage } from '../utils';
-import { RocketNodeAdmin, RocketNodeStatus } from '../artifacts';
+import { RocketNodeAdmin, RocketNodeStatus, RocketNodeValidator } from '../artifacts';
 
 // Registers node and asserts that number of registered nodes increased
 export async function scenarioRegisterNode({
@@ -81,5 +81,24 @@ export async function scenarioRemoveNode({nodeAddress, fromAddress, gas}) {
     let removedNodeAddress = log.args._address;
     assert.equal(removedNodeAddress, nodeAddress, 'Removed node address does not match');
 
+}
+
+// Casts a checkpoint vote with Casper
+export async function scenarioNodeVoteCast({nodeAddress, epoch, minipoolAddress, voteMessage, gas}){
+    const rocketNodeValidator = await RocketNodeValidator.deployed();
+
+    // cast vote
+    let result = await rocketNodeValidator.nodeVote(epoch, minipoolAddress, voteMessage.toString('hex'), {from: nodeAddress, gas: gas});
+
+    let log = result.logs.find(({ event }) => event == 'NodeVoteCast');
+    assert.isDefined(log, 'NodeVoteCast event was not logged');
+
+    // check parameters were correct
+    let recordedEpoch = log.args.epoch;
+    assert.equal(recordedEpoch, epoch, 'The epoch that was voted for does not match');
+    let recordedMiniPoolAddress = log.args.minipool_address;
+    assert.equal(recordedMiniPoolAddress, minipoolAddress, 'The minipool address does not match');
+    let recordedVoteMessage = log.args.vote_message;
+    assert.equal(recordedVoteMessage, voteMessage, 'The vote message does not match');
 }
 

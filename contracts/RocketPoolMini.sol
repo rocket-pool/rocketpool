@@ -92,6 +92,11 @@ contract RocketPoolMini is RocketBase {
         bytes voteMessage
     );
 
+    event VoteCasting (
+        uint256 epoch,
+        bytes voteMessage
+    );
+
    
 
     /*** Modifiers *************/
@@ -345,7 +350,17 @@ contract RocketPoolMini is RocketBase {
     /// @param _epoch The epoch that is being voted on
     /// @param _vote_message Vote message to be sent to Casper
     function vote(uint256 _epoch, bytes _vote_message) external onlyLatestRocketPool returns(bool) {
-        require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("vote(uint256,bytes)")), _epoch, _vote_message) == true);
+        VoteCasting(_epoch, _vote_message);
+        // Extra parameters are to workaround delegatecall and dynamic types
+        // https://ethereum.stackexchange.com/questions/16144/solidity-call-function-with-array-as-input/16165#16165
+         bool voteSuccessful = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(
+                    bytes4(keccak256("vote(uint256,bytes)")),
+                    _epoch, // epoch number
+                    0x40, // pointer to vote_message length
+                    _vote_message.length, // vote message length
+                    _vote_message // vote message values
+                );
+        require(voteSuccessful);
         return true;
     }
     

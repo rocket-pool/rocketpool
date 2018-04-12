@@ -4,7 +4,7 @@ import { RocketPool, RocketPoolMini} from './artifacts';
 // Import modular tests & scenarios
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import { rocketNodeRegistrationTests, rocketNodeCheckinTests1, rocketNodeCheckinTests2, rocketNodeRemovalTests1, rocketNodeRemovalTests2 } from './rocket-node/rocket-node-tests';
+import { rocketNodeRegistrationTests, rocketNodeCheckinTests1, rocketNodeCheckinTests2, rocketNodeRemovalTests1, rocketNodeRemovalTests2, rocketNodeVoteTests } from './rocket-node/rocket-node-tests';
 import { rocketPartnerAPIRegistrationTests, rocketPartnerAPIDepositTests1, rocketPartnerAPIDepositTests2, rocketPartnerAPIWithdrawalTests, rocketPartnerAPIRemovalTests, rocketPartnerAPIDepositTests3 } from './rocket-partner-api/rocket-partner-api-tests';
 import { rocketUserDepositTests1, rocketUserWithdrawalAddressTests, rocketUserDepositTests2, rocketUserWithdrawalTests1, rocketUserWithdrawalTests2 } from './rocket-user/rocket-user-tests';
 import { rocketDepositTests1, rocketDepositTests2, rocketDepositTests3 } from './rocket-deposit/rocket-deposit-tests';
@@ -249,6 +249,15 @@ contract('RocketPool', accounts => {
     nodeSecond,
     miniPools,
     nodeCheckinGas,
+  });
+
+  rocketNodeVoteTests({
+    owner,
+    accounts,
+    nodeFirst,
+    nodeSecond,
+    miniPools,
+    nodeVotingGas: 200000
   });
 
   rocketDepositTests3({

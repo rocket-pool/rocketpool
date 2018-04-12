@@ -28,8 +28,19 @@ contract RocketNodeValidator is RocketNodeBase {
     /// @param _minipool_address The address of the minipool that should cast the votes
     /// @param _vote_message Vote message to be sent to Casper
     function nodeVote(uint256 _epoch, address _minipool_address, bytes _vote_message) public onlyRegisteredNode(msg.sender) returns(bool) {
+
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-        require(rocketPool.vote(_epoch, _minipool_address, _vote_message));
+        
+        // minipool is a defined address?
+        require(_minipool_address != 0x0);
+
+        // vote message has contents
+        require(_vote_message.length > 0);
+
+        // cast vote
+        rocketPool.vote(msg.sender, _epoch, _minipool_address, _vote_message);
+        
+        // fire event on success
         NodeVoteCast(_epoch, _minipool_address, _vote_message);
         return true;
     }

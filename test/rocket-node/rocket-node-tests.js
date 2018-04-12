@@ -4,7 +4,8 @@ const os = require('os');
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings, RocketPool, Casper } from '../artifacts';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode } from './rocket-node-scenarios';
+import { scenarioRegisterNode, scenarioNodeCheckin, scenarioRemoveNode, scenarioNodeVoteCast } from './rocket-node-scenarios';
+import { print } from 'util';
 
 export function rocketNodeRegistrationTests({
     owner,
@@ -440,6 +441,69 @@ export function rocketNodeRemovalTests2({
         });
 
 
+    });
+
+}
+
+export function rocketNodeVoteTests({
+    owner,
+    accounts,
+    nodeFirst,
+    nodeSecond,
+    miniPools,
+    nodeVotingGas
+}){
+
+    describe('RocketNodeValidator - Node Voting', async () => {
+
+        it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => {
+            let epoch = 1;
+            let voteMessage = "0x76876868768768766876";
+            await scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch,
+                minipoolAddress: miniPools.first.address,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            });
+        });
+
+        it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
+            let epoch = 1;
+            let emptyVoteMessage = "";
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch,
+                minipoolAddress: miniPools.first.address,
+                voteMessage: emptyVoteMessage,
+                gas: nodeVotingGas
+            }));
+        });
+
+        it(printTitle('registered node', 'can only cast a vote for a pool that it is attached to'), async () => {
+            let epoch = 1;
+            let voteMessage = "0x76876868768768766876";
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch,
+                minipoolAddress: miniPools.second.address, // not nodeFirst's minipool
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            }));
+        });
+
+        it(printTitle('registered node', 'must pass minipool address to vote'), async () => {
+            let epoch = 1;
+            let voteMessage = "0x76876868768768766876";
+            let nullAddress = "";
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch,
+                minipoolAddress: nullAddress,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            }));
+        });
     });
 
 }
