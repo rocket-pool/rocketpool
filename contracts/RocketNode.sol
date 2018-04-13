@@ -228,11 +228,17 @@ contract RocketNode is RocketBase {
         // Update total
         nodesTotal = nodesTotal - 1;
         rocketStorage.setUint(keccak256("nodes.total"), nodesTotal);
-        // Move last node to removed node index
-        address lastNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", nodesTotal));
-        rocketStorage.setUint(keccak256("node.index", lastNodeAddress), removedNodeIndex);
-        rocketStorage.setAddress(keccak256("nodes.index.reverse", removedNodeIndex), lastNodeAddress);
-        rocketStorage.deleteAddress(keccak256("nodes.index.reverse", nodesTotal));
+        // Removed node before end of list - move last node to removed node index
+        if (removedNodeIndex < nodesTotal) {
+            address lastNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", nodesTotal));
+            rocketStorage.setUint(keccak256("node.index", lastNodeAddress), removedNodeIndex);
+            rocketStorage.setAddress(keccak256("nodes.index.reverse", removedNodeIndex), lastNodeAddress);
+            rocketStorage.deleteAddress(keccak256("nodes.index.reverse", nodesTotal));
+        }
+        // Removed node at end of list - delete reverse lookup
+        else {
+            rocketStorage.deleteAddress(keccak256("nodes.index.reverse", removedNodeIndex));
+        }
         // Fire the event
         NodeRemoved(_nodeAddress, now);
     } 
