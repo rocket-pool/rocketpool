@@ -215,7 +215,7 @@ contract RocketNode is RocketBase {
         // Get total nodes
         uint256 nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
         // Now remove this nodes data from storage
-        uint256 nodeIndex = rocketStorage.getUint(keccak256("node.index", _nodeAddress));
+        uint256 removedNodeIndex = rocketStorage.getUint(keccak256("node.index", _nodeAddress));
         rocketStorage.deleteString(keccak256("node.providerID", _nodeAddress));
         rocketStorage.deleteString(keccak256("node.subnetID", _nodeAddress));
         rocketStorage.deleteString(keccak256("node.instanceID", _nodeAddress));
@@ -225,19 +225,14 @@ contract RocketNode is RocketBase {
         rocketStorage.deleteBool(keccak256("node.active", _nodeAddress));
         rocketStorage.deleteBool(keccak256("node.exists", _nodeAddress));
         rocketStorage.deleteUint(keccak256("node.index", _nodeAddress));
-        // Delete reverse lookup
-        rocketStorage.deleteAddress(keccak256("nodes.index.reverse", nodeIndex));
         // Update total
-        rocketStorage.setUint(keccak256("nodes.total"), nodesTotal - 1);
-        // Now reindex the remaining nodes
-        nodesTotal = rocketStorage.getUint(keccak256("nodes.total"));
-        // Loop
-        for (uint i = nodeIndex+1; i <= nodesTotal; i++) {
-            address nodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
-            uint256 newIndex = i - 1;
-            rocketStorage.setUint(keccak256("node.index", nodeAddress), newIndex);
-            rocketStorage.setAddress(keccak256("nodes.index.reverse", newIndex), nodeAddress);
-        }
+        nodesTotal = nodesTotal - 1;
+        rocketStorage.setUint(keccak256("nodes.total"), nodesTotal);
+        // Move last node to removed node index
+        address lastNodeAddress = rocketStorage.getAddress(keccak256("nodes.index.reverse", nodesTotal));
+        rocketStorage.setUint(keccak256("node.index", lastNodeAddress), removedNodeIndex);
+        rocketStorage.setAddress(keccak256("nodes.index.reverse", removedNodeIndex), lastNodeAddress);
+        rocketStorage.deleteAddress(keccak256("nodes.index.reverse", nodesTotal));
         // Fire the event
         NodeRemoved(_nodeAddress, now);
     } 
