@@ -197,24 +197,25 @@ contract RocketPartnerAPI is RocketBase {
         // Get total partners
         uint256 partnersTotal = rocketStorage.getUint(keccak256("partners.total"));
         // Now remove this partner data from storage
-        uint256 partnerIndex = rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
+        uint256 removedPartnerIndex = rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
         rocketStorage.deleteString(keccak256("partner.name", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.depositsAllowed", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.withdrawalsAllowed", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.exists", _partnerAddress));
         rocketStorage.deleteUint(keccak256("partner.index", _partnerAddress));
-        // Delete reverse lookup
-        rocketStorage.deleteAddress(keccak256("partners.index.reverse", partnerIndex));
         // Update total
-        rocketStorage.setUint(keccak256("partners.total"), partnersTotal - 1);
-        // Now reindex the remaining nodes
-        partnersTotal = rocketStorage.getUint(keccak256("partners.total"));
-        // Loop and reindex
-        for (uint i = partnerIndex+1; i <= partnersTotal; i++) {
-            address partnerAddress = rocketStorage.getAddress(keccak256("partners.index.reverse", i));
-            uint256 newIndex = i - 1;
-            rocketStorage.setUint(keccak256("partner.index", partnerAddress), newIndex);
-            rocketStorage.setAddress(keccak256("partners.index.reverse", newIndex), partnerAddress);
+        partnersTotal = partnersTotal - 1;
+        rocketStorage.setUint(keccak256("partners.total"), partnersTotal);
+        // Removed partner before end of list - move last partner to removed partner index
+        if (removedPartnerIndex < partnersTotal) {
+            address lastPartnerAddress = rocketStorage.getAddress(keccak256("partners.index.reverse", partnersTotal));
+            rocketStorage.setUint(keccak256("partner.index", lastPartnerAddress), removedPartnerIndex);
+            rocketStorage.setAddress(keccak256("partners.index.reverse", removedPartnerIndex), lastPartnerAddress);
+            rocketStorage.deleteAddress(keccak256("partners.index.reverse", partnersTotal));
+        }
+        // Removed partner at end of list - delete reverse lookup
+        else {
+            rocketStorage.deleteAddress(keccak256("partners.index.reverse", removedPartnerIndex));
         }
         // Fire the event
         PartnerRemoved(_partnerAddress, now);
