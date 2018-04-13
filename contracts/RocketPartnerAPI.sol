@@ -48,13 +48,15 @@ contract RocketPartnerAPI is RocketBase {
         uint256 created
     );
 
-    event PartnerDisableDeposits (
+    event PartnerDepositsEnabled (
         address indexed _address,
+        bool _enabled,
         uint256 created
     );
 
-    event PartnerDisableWithdrawals (
+    event PartnerWithdrawalsEnabled (
         address indexed _address,
+        bool _enabled,
         uint256 created
     );
       
@@ -148,20 +150,20 @@ contract RocketPartnerAPI is RocketBase {
 
     /// @dev Disable a partners ability to add users deposits
     /// @param _partnerAddress The address of the partner
-    function setPartnerDisableDeposits(address _partnerAddress) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
+    function setPartnerDepositsEnabled(address _partnerAddress, bool _enabled) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
         // Disable
-        rocketStorage.setBool(keccak256("partner.depositsAllowed", _partnerAddress), false);
+        rocketStorage.setBool(keccak256("partner.depositsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerDisableDeposits(_partnerAddress, now);
+        PartnerDepositsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Disable a partners ability to withdraw users deposits
     /// @param _partnerAddress The address of the partner
-    function setPartnerDisableWithdrawals(address _partnerAddress) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
+    function setPartnerWithdrawalsEnabled(address _partnerAddress, bool _enabled) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
         // Disable
-        rocketStorage.setBool(keccak256("partner.withdrawalsAllowed", _partnerAddress), false);
+        rocketStorage.setBool(keccak256("partner.withdrawalsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerDisableWithdrawals(_partnerAddress, now);
+        PartnerWithdrawalsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Register a new partner address if it doesn't exist, only the contract creator can do this
