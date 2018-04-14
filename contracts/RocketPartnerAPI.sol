@@ -109,7 +109,7 @@ contract RocketPartnerAPI is RocketBase {
     /// @dev Get the address to deposit to with Rocket Pool
     function getAPIdepositAddress() public view returns(address) { 
         // The partner address being supplied must also match the sender address
-        return this;
+        return address(this);
     }
 
     /*** Setters *************/

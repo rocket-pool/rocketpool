@@ -236,7 +236,7 @@ export default function({owner}) {
             it(printTitle('partner', 'cannot deposit while partner deposits are disabled'), async () => {
 
                 // Disable partner deposits
-                await rocketPartnerAPI.setPartnerDisableDeposits(partnerSecond);
+                await rocketPartnerAPI.setPartnerDepositsEnabled(partnerSecond, false);
 
                 // Calculate just enough ether to create a minipool
                 const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
@@ -251,9 +251,30 @@ export default function({owner}) {
                     gas: rocketDepositGas,
                 }));
 
-                // TODO: re-enable partner deposits if possible?
+            });
+
+
+            // Partner can deposit after partner deposits are renabled
+            it(printTitle('partner', 'can deposit after partner deposits are renabled'), async () => {
+
+                // Disable partner deposits
+                await rocketPartnerAPI.setPartnerDepositsEnabled(partnerSecond, true);
+
+                // Calculate just enough ether to create a minipool
+                const minEther = await rocketSettings.getMiniPoolLaunchAmount.call();
+                const sendAmount = minEther.valueOf() - web3.toWei('1', 'ether');
+
+                // Deposit
+                await scenarioPartnerDeposit({
+                    userAddress: partnerFirstUserAccount,
+                    stakingTimeID: 'short',
+                    fromAddress: partnerSecond,
+                    depositAmount: sendAmount,
+                    gas: rocketDepositGas,
+                });
 
             });
+
 
 
         });
@@ -501,7 +522,7 @@ export default function({owner}) {
             it(printTitle('partner', 'cannot withdraw while partner withdrawals are disabled'), async () => {
 
                 // Disable partner withdrawals
-                await rocketPartnerAPI.setPartnerDisableWithdrawals(partnerFirst);
+                await rocketPartnerAPI.setPartnerWithdrawalsEnabled(partnerFirst, false);
 
                 // Get user's latest minipool
                 let userMiniPools = await rocketPool.getPoolsFilterWithUserDeposit.call(partnerFirstUserAccount);
