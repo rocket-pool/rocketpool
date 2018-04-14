@@ -381,20 +381,22 @@ contract RocketPool is RocketBase {
             // Get total minipools
             uint256 minipoolsTotal = rocketStorage.getUint(keccak256("minipools.total"));
             // Now remove this minipools data from storage
-            uint256 minipoolsIndex = rocketStorage.getUint(keccak256("minipool.index", msg.sender));
+            uint256 removedMinipoolIndex = rocketStorage.getUint(keccak256("minipool.index", msg.sender));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256("minipool.exists", msg.sender));
-            // Delete reverse lookup
-            rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsIndex));
             // Update total
-            rocketStorage.setUint(keccak256("minipools.total"), minipoolsTotal - 1);
-            // Now reindex the remaining minipools
-            minipoolsTotal = rocketStorage.getUint(keccak256("minipools.total"));
-            // Loop
-            for (uint i = minipoolsIndex+1; i <= minipoolsTotal; i++) {
-                address minipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", i));
-                rocketStorage.setUint(keccak256("minipool.index", minipoolAddress), i - 1);
-                rocketStorage.setAddress(keccak256("minipools.index.reverse", i - 1), minipoolAddress);
+            minipoolsTotal = minipoolsTotal - 1;
+            rocketStorage.setUint(keccak256("minipools.total"), minipoolsTotal);
+            // Removed minipool before end of list - move last minipool to removed minipool index
+            if (removedMinipoolIndex < minipoolsTotal) {
+                address lastMinipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", minipoolsTotal));
+                rocketStorage.setUint(keccak256("minipool.index", lastMinipoolAddress), removedMinipoolIndex);
+                rocketStorage.setAddress(keccak256("minipools.index.reverse", removedMinipoolIndex), lastMinipoolAddress);
+                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsTotal));
+            }
+            // Removed minipool at end of list - delete reverse lookup
+            else {
+                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", removedMinipoolIndex));
             }
             // Fire the event
             PoolRemoved(msg.sender, now);

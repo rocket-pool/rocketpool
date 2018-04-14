@@ -273,8 +273,8 @@ contract RocketPoolMiniDelegate is RocketBase {
         for (i = 0; i < userAddresses.length; i++) {
             if (userAddresses[i] == _userAddressToRemove) {
                 found = true;
-                for (uint x = i; x < userAddresses.length-1; x++) {
-                    userAddresses[x] = userAddresses[x+1];
+                if (i < userAddresses.length-1) {
+                    userAddresses[i] = userAddresses[userAddresses.length-1];
                 }
                 delete userAddresses[userAddresses.length-1];
                 userAddresses.length--;
