@@ -1,10 +1,28 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketStorage, RocketDepositToken, RocketUser } from '../artifacts';
+import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
 import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
 
-export default function({owner, accounts}) {
+export default function({owner}) {
 
-    describe('RocketUpgrade', async () => {
+    contract('RocketUpgrade', async (accounts) => {
+
+
+        /**
+         * Config
+         */
+
+        // User addresses
+        const userFirst = accounts[1];
+        const userThird = accounts[3];
+
+        // Node addresses
+        const nodeFirst = accounts[8];
+
+
+        /**
+         * Tests
+         */
 
 
         // Contract dependencies
@@ -19,6 +37,16 @@ export default function({owner, accounts}) {
             rocketDepositTokenNew = await RocketDepositToken.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
             rocketUser = await RocketUser.deployed();
             rocketUserNew = await RocketUser.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
+        });
+
+
+        // Initialise RPD balances
+        before(async () => {
+            await initialiseRPDBalance({
+                accountAddress: userThird,
+                nodeAddress: nodeFirst,
+                nodeRegisterAddress: owner,
+            });
         });
 
 
@@ -82,7 +110,7 @@ export default function({owner, accounts}) {
 
             // Send ether to rocketDepositToken contract
             let tx = await web3.eth.sendTransaction({
-                from: accounts[1],
+                from: userFirst,
                 to: rocketDepositToken.address,
                 value: web3.toWei('1', 'ether'),
             });
@@ -134,15 +162,15 @@ export default function({owner, accounts}) {
 
 
         // TODO: create RPL system unit tests:
-        // - cannot upgrade a contract with an RPL balance
-        // - can upgrade a contract with an RPL balance by force
+        it(printTitle('owner', 'cannot upgrade a contract with an RPL balance'));
+        it(printTitle('owner', 'can upgrade a contract with an RPL balance by force'));
 
 
         // Cannot upgrade a regular contract with an RPD balance
         it(printTitle('owner', 'cannot upgrade a contract with an RPD balance'), async () => {
 
-            // Account at index 3 has an RPD balance
-            let rpdFromAccount = accounts[3];
+            // Third user has an RPD balance
+            let rpdFromAccount = userThird;
             let rpdFromBalance = await rocketDepositToken.balanceOf(rpdFromAccount);
 
             // Send 50% of RPD to rocketUser contract
@@ -204,7 +232,7 @@ export default function({owner, accounts}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUserNew.address,
-                fromAddress: accounts[1],
+                fromAddress: userFirst,
             }), 'regular contract was upgraded by non owner');
 
         });

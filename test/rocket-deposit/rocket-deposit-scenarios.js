@@ -135,3 +135,19 @@ export async function scenarioTransferDepositTokensFrom({fromAddress, toAddress,
 
 }
 
+
+// Approves deposit token transfer from an address and asserts that allowance was updated correctly
+export async function scenarioApproveDepositTokenTransferFrom({fromAddress, spenderAddress, amount, gas}) {
+    const rocketDeposit = await RocketDepositToken.deployed();
+
+    // Approve transfer
+    await rocketDeposit.approve(spenderAddress, amount, {from: fromAddress, gas: gas});
+
+    // Get updated allowance
+    let allowance = await rocketDeposit.allowance.call(fromAddress, spenderAddress);
+
+    // Assert that allowance was updated correctly
+    assert.equal(allowance.valueOf(), amount, 'Allowance was not updated correctly');
+
+}
+

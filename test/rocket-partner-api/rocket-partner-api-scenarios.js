@@ -124,12 +124,11 @@ export async function scenarioPartnerWithdraw({miniPool, withdrawalAmount, userA
 
 
 // Removes a partner and asserts that partner was removed successfully
-export async function scenarioRemovePartner({partnerAddress, newerPartnerAddress, fromAddress, gas}) {
+export async function scenarioRemovePartner({partnerAddress, fromAddress, gas}) {
     const rocketPartnerAPI = await RocketPartnerAPI.deployed();
 
-    // Get initial partner count & newer partner index
+    // Get initial partner count
     let partnerCountOld = await rocketPartnerAPI.getPartnerCount.call();
-    let newerPartnerIndexOld = await rocketPartnerAPI.getPartnerIndex.call(newerPartnerAddress);
 
     // Remove the partner
     let result = await rocketPartnerAPI.partnerRemove(partnerAddress, {from: fromAddress, gas: gas});
@@ -141,14 +140,12 @@ export async function scenarioRemovePartner({partnerAddress, newerPartnerAddress
     // Get removed partner address
     let removedPartnerAddress = log.args._address;
 
-    // Get updated partner count & newer partner index
+    // Get updated partner count
     let partnerCountNew = await rocketPartnerAPI.getPartnerCount.call();
-    let newerPartnerIndexNew = await rocketPartnerAPI.getPartnerIndex.call(newerPartnerAddress);
 
     // Asserts
     assert.equal(partnerAddress, removedPartnerAddress, 'Removed partner address does not match');
     assert.equal(partnerCountNew.valueOf(), parseInt(partnerCountOld.valueOf()) - 1, 'Partner count is incorrect');
-    assert.equal(newerPartnerIndexNew.valueOf(), parseInt(newerPartnerIndexOld.valueOf()) - 1, 'Newer partner index is incorrect');
 
 }
 

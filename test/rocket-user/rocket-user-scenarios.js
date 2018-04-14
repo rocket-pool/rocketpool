@@ -105,7 +105,7 @@ export async function scenarioDeposit({stakingTimeID, fromAddress, depositAmount
 
 
 // Registers a backup withdrawal address and asserts withdrawal address was set correctly
-export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, miniPool, fromAddress, gas}) {
+export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, miniPool, fromAddress, gas, checkLogs = true}) {
     const rocketUser = await RocketUser.deployed();
 
     // Register withdrawal address
@@ -114,13 +114,21 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
         gas: gas,
     });
 
-    // Assert UserSetBackupWithdrawalAddress event was logged
-    let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
-    assert.notEqual(log, undefined, 'UserSetBackupWithdrawalAddress event was not logged');
+    // Check logs
+    if (checkLogs) {
 
-    // Assert withdrawal address was set correctly
-    let newBackupAddress = log.args._userBackupAddress;
-    assert.equal(newBackupAddress, withdrawalAddress, 'Withdrawal address does not match');
+        // Assert UserSetBackupWithdrawalAddress event was logged
+        let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
+        assert.notEqual(log, undefined, 'UserSetBackupWithdrawalAddress event was not logged');
+
+        // Assert withdrawal address was set correctly
+        let newBackupAddress = log.args._userBackupAddress;
+        assert.equal(newBackupAddress, withdrawalAddress, 'Withdrawal address does not match');
+
+    }
+
+    // Return result
+    return result;
 
 }
 

@@ -5,6 +5,7 @@ import { RocketNode } from '../artifacts';
 // Registers node and asserts that number of registered nodes increased
 export async function scenarioRegisterNode({
     nodeAddress,
+    signNodeAddress = null,
     valCodeAddress,
     addValCodeAddress = null,
     providerID,
@@ -16,14 +17,15 @@ export async function scenarioRegisterNode({
 }) {
     const rocketNode = await RocketNode.deployed();
 
-    // Initialise add val code address
+    // Initialise addresses
     if (!addValCodeAddress) addValCodeAddress = valCodeAddress;
+    if (!signNodeAddress) signNodeAddress = nodeAddress;
 
     // Get initial node count
     let nodeCountOld = await rocketNode.getNodeCount.call();
 
     // Sign the message for the nodeAdd function to prove ownership of the address being registered
-    let signature =  web3.eth.sign(nodeAddress, soliditySha3(valCodeAddress));
+    let signature =  web3.eth.sign(signNodeAddress, soliditySha3(valCodeAddress));
 
     // Register the node
     await rocketNode.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, addValCodeAddress, signature, {from: fromAddress, gas: gas});
