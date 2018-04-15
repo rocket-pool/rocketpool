@@ -92,7 +92,6 @@ contract RocketPoolMiniDelegate is RocketBase {
         uint256 epoch,
         bytes voteMessage
     );
-
   
 
     /*** Modifiers *************/
@@ -461,8 +460,20 @@ contract RocketPoolMiniDelegate is RocketBase {
     /// @param _epoch The epoch number voting relates to
     /// @param _vote_message Vote message to be sent to Casper
     function vote(uint256 _epoch, bytes _vote_message) public returns(bool) {
+        // Cast vote with Casper
         casper.vote(_vote_message);
+        // Emit event to notify
         VoteCast(_epoch, _vote_message);
+        return true;
+    }
+
+    /// @dev Logout from Casper and wait for withdrawal
+    /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(bytes _logout_message) public returns(bool) {
+         // Request logout now, will throw if conditions not met
+        casper.logout(_logout_message);
+        // Set the mini pool status as having requested logout
+        changeStatus(3);
         return true;
     }
 

@@ -156,7 +156,7 @@ contract RocketPool is RocketBase {
             } 
             // Return the pool address that the user belongs to
             return poolAssignToAddress;
-        }    
+        } 
     }
 
     /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
@@ -436,7 +436,34 @@ contract RocketPool is RocketBase {
         pool.vote(_epoch, _vote_message);
 
         return true;
-    }  
+    }
+
+    /// @dev Gets whether a minipool is ready to logout
+    /// @param _minipool_address The address of the minipool to test whether it is ready for logout
+    function getMiniPoolReadyToLogout(address _minipool_address) public onlyLatestRocketNode returns(bool) {
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        // Get logic from minipool
+        return pool.getCanLogout();
+    }
+
+    /// @dev Log the minipool out of Casper and wait for withdrawal
+    /// @param _node_address The address of the node calling logout
+    /// @param _minipool_address The address of the minipool to logout of Casper
+    /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(address _node_address, address _minipool_address, bytes _logout_message) public onlyLatestRocketNode returns(bool) {
+
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        
+        // make sure the node is attached to the pool it is trying to logout
+        require(pool.getNodeAddress() == _node_address);
+
+        // ask the minipool send logout to Casper
+        //pool.logout(_logout_message);
+
+        return true;
+    }
 
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types
