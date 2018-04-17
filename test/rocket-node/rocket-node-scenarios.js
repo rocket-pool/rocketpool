@@ -26,7 +26,7 @@ export async function scenarioRegisterNode({
     // Sign the message for the nodeAdd function to prove ownership of the address being registered
     let message = valCodeAddress;
     let sigHash = hashMessage(message);    
-    let signature =  web3.eth.sign(nodeAddress, message);
+    let signature =  web3.eth.sign(signNodeAddress, message);
     
     // Register the node
     await rocketNodeAdmin.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, addValCodeAddress, sigHash, signature, {from: fromAddress, gas: gas});
