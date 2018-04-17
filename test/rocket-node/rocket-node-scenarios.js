@@ -4,6 +4,7 @@ import { RocketNodeAdmin, RocketNodeStatus, RocketNodeValidator } from '../artif
 // Registers node and asserts that number of registered nodes increased
 export async function scenarioRegisterNode({
     nodeAddress,
+    signNodeAddress = null,
     valCodeAddress,
     addValCodeAddress = null,
     providerID,
@@ -15,8 +16,9 @@ export async function scenarioRegisterNode({
 }) {
     const rocketNodeAdmin = await RocketNodeAdmin.deployed();
 
-    // Initialise add val code address
+    // Initialise addresses
     if (!addValCodeAddress) addValCodeAddress = valCodeAddress;
+    if (!signNodeAddress) signNodeAddress = nodeAddress;
 
     // Get initial node count
     let nodeCountOld = await rocketNodeAdmin.getNodeCount.call();

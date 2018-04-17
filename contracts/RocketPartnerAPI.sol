@@ -48,13 +48,15 @@ contract RocketPartnerAPI is RocketBase {
         uint256 created
     );
 
-    event PartnerDisableDeposits (
+    event PartnerDepositsEnabled (
         address indexed _address,
+        bool _enabled,
         uint256 created
     );
 
-    event PartnerDisableWithdrawals (
+    event PartnerWithdrawalsEnabled (
         address indexed _address,
+        bool _enabled,
         uint256 created
     );
       
@@ -107,7 +109,7 @@ contract RocketPartnerAPI is RocketBase {
     /// @dev Get the address to deposit to with Rocket Pool
     function getAPIdepositAddress() public view returns(address) { 
         // The partner address being supplied must also match the sender address
-        return this;
+        return address(this);
     }
 
     /*** Setters *************/
@@ -148,20 +150,20 @@ contract RocketPartnerAPI is RocketBase {
 
     /// @dev Disable a partners ability to add users deposits
     /// @param _partnerAddress The address of the partner
-    function setPartnerDisableDeposits(address _partnerAddress) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
+    function setPartnerDepositsEnabled(address _partnerAddress, bool _enabled) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
         // Disable
-        rocketStorage.setBool(keccak256("partner.depositsAllowed", _partnerAddress), false);
+        rocketStorage.setBool(keccak256("partner.depositsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerDisableDeposits(_partnerAddress, now);
+        PartnerDepositsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Disable a partners ability to withdraw users deposits
     /// @param _partnerAddress The address of the partner
-    function setPartnerDisableWithdrawals(address _partnerAddress) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
+    function setPartnerWithdrawalsEnabled(address _partnerAddress, bool _enabled) public onlyRegisteredPartner(_partnerAddress) onlyOwner {
         // Disable
-        rocketStorage.setBool(keccak256("partner.withdrawalsAllowed", _partnerAddress), false);
+        rocketStorage.setBool(keccak256("partner.withdrawalsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerDisableWithdrawals(_partnerAddress, now);
+        PartnerWithdrawalsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Register a new partner address if it doesn't exist, only the contract creator can do this
@@ -195,24 +197,25 @@ contract RocketPartnerAPI is RocketBase {
         // Get total partners
         uint256 partnersTotal = rocketStorage.getUint(keccak256("partners.total"));
         // Now remove this partner data from storage
-        uint256 partnerIndex = rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
+        uint256 removedPartnerIndex = rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
         rocketStorage.deleteString(keccak256("partner.name", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.depositsAllowed", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.withdrawalsAllowed", _partnerAddress));
         rocketStorage.deleteBool(keccak256("partner.exists", _partnerAddress));
         rocketStorage.deleteUint(keccak256("partner.index", _partnerAddress));
-        // Delete reverse lookup
-        rocketStorage.deleteAddress(keccak256("partners.index.reverse", partnerIndex));
         // Update total
-        rocketStorage.setUint(keccak256("partners.total"), partnersTotal - 1);
-        // Now reindex the remaining nodes
-        partnersTotal = rocketStorage.getUint(keccak256("partners.total"));
-        // Loop and reindex
-        for (uint i = partnerIndex+1; i <= partnersTotal; i++) {
-            address partnerAddress = rocketStorage.getAddress(keccak256("partners.index.reverse", i));
-            uint256 newIndex = i - 1;
-            rocketStorage.setUint(keccak256("partner.index", partnerAddress), newIndex);
-            rocketStorage.setAddress(keccak256("partners.index.reverse", newIndex), partnerAddress);
+        partnersTotal = partnersTotal - 1;
+        rocketStorage.setUint(keccak256("partners.total"), partnersTotal);
+        // Removed partner before end of list - move last partner to removed partner index
+        if (removedPartnerIndex < partnersTotal) {
+            address lastPartnerAddress = rocketStorage.getAddress(keccak256("partners.index.reverse", partnersTotal));
+            rocketStorage.setUint(keccak256("partner.index", lastPartnerAddress), removedPartnerIndex);
+            rocketStorage.setAddress(keccak256("partners.index.reverse", removedPartnerIndex), lastPartnerAddress);
+            rocketStorage.deleteAddress(keccak256("partners.index.reverse", partnersTotal));
+        }
+        // Removed partner at end of list - delete reverse lookup
+        else {
+            rocketStorage.deleteAddress(keccak256("partners.index.reverse", removedPartnerIndex));
         }
         // Fire the event
         PartnerRemoved(_partnerAddress, now);
