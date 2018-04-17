@@ -16,6 +16,8 @@ contract CasperInterface {
     function get_deposit_size(uint256 validator_index) public view returns(uint128);
     /// @dev Get the current withdrawal delay in blocks
     function get_withdrawal_delay() public view returns(uint128);
+    /// @dev Gets the number of dynasties that we need to wait before we are logged out
+    function get_dynasty_logout_delay() public view returns (uint128);
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
     function deposit(address validator_address, address withdrawal_address) public payable;
     /// @dev Start the process for a withdrawal

@@ -153,10 +153,10 @@ contract RocketPoolMiniDelegate is RocketBase {
         if (now >= statusChangeTime.add(stakingDuration)) {
             // Now check to see if we meet the Casper requirements for logging out before attempting
             // We must not have already logged out
-            if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + 2) {
+            // if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + casper.get_dynasty_logout_delay()) {
                 // Ok to logout
                 return true;
-            }
+            // }
         }
         return false;
     }
@@ -180,7 +180,6 @@ contract RocketPoolMiniDelegate is RocketBase {
         // Check the status is correct, the contract has a balance and Casper shows the validator as deleted (means its processed the withdrawal)
         return status == 4 && this.balance > 0 && stakingBalanceReceived > 0 && casper.get_deposit_size(getCasperValidatorIndex()) == 0 ? true : false;
     }
-
 
     /*** USERS ***********************************************/
 
@@ -417,18 +416,7 @@ contract RocketPoolMiniDelegate is RocketBase {
             changeStatus(2);
             // Done
             return;   
-        }
-        // Are we all set to request withdrawal of our deposit from Casper?
-        if (stakingBalance > 0 && status == 2 && getCanLogout() == true) { 
-            // TODO: Add in bytes message for validator from node
-            bytes memory logoutMsg;
-            // Request logout now, will throw if conditions not met
-            casper.logout(logoutMsg);
-            // Set the mini pool status as having requested withdrawal
-            changeStatus(3);
-            // Done
-            return; 
-        }
+        }       
         // Are we all set to actually withdraw our deposit + rewards from Casper?
         if (stakingBalance > 0 && status == 3 && getCanWithdraw() == true) {
             // Request withdrawal now 
@@ -470,7 +458,9 @@ contract RocketPoolMiniDelegate is RocketBase {
     /// @dev Logout from Casper and wait for withdrawal
     /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
     function logout(bytes _logout_message) public returns(bool) {
-         // Request logout now, will throw if conditions not met
+        // check to make sure we can logout
+        require(stakingBalance > 0 && status == 2 && getCanLogout() == true);
+        // Request logout now, will throw if conditions not met
         casper.logout(_logout_message);
         // Set the mini pool status as having requested logout
         changeStatus(3);
@@ -478,7 +468,7 @@ contract RocketPoolMiniDelegate is RocketBase {
     }
 
     /// @dev Change the status
-    /// @param _newStatus amount you want to withdraw
+    /// @param _newStatus status id to apply to the minipool
     function changeStatus(uint256 _newStatus) private {
         // Fire the event if the status has changed
         if (_newStatus != status) {

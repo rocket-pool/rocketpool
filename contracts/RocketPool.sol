@@ -195,23 +195,6 @@ contract RocketPool is RocketBase {
                 }
             }
         }
-        // See if there are any pools thats can start the withdrawal process with Casper
-        poolsFound = getPoolsFilterWithStatus(2);
-        // Do we have any pools currently staking?
-        if (poolsFound.length > 0) {
-            // Ready for re-entry?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = getPoolInstance(poolsFound[i]);
-                // Is this currently staking pool due to request withdrawal from Casper?
-                if (pool.getCanLogout() == true) {
-                    // Now set the pool to begin requesting withdrawal from casper by updating its status
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
         // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
         poolsFound = getPoolsFilterWithStatus(3);
         // Do we have any pools currently awaiting on their deposit from casper?
@@ -460,7 +443,7 @@ contract RocketPool is RocketBase {
         require(pool.getNodeAddress() == _node_address);
 
         // ask the minipool send logout to Casper
-        //pool.logout(_logout_message);
+        pool.logout(_logout_message);
 
         return true;
     }

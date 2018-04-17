@@ -23,10 +23,14 @@ contract DummyCasper is Ownable {
     uint256 public min_deposit_size = 2 ether;                              // Min deposit required
     //mapping (int128 => uint256)  public deposit_scale_factor = 1 ether;   // Value used to calculate the per-epoch fee that validators should be charged given as a % of 1 Ether = 100%, 0.5 Ether = 50%
     mapping (uint128 => uint128) public dynasty_start_epoch;                // Mapping of dynasty to start epoch of that dynasty
+    uint128 public dynasty_logout_delay = 2;                                // Logout delay in dynasties
+
     bool public simulate_penalties = false;                                 // Simulate penalties in Casper
+    uint128 public vote_count = 0;                                          // Used to simulate dynasty increases on voting
+
+    // mapping (int128 => int128[]) public vote_bitmap;                     // Records what validators have voted on an epoch (key==epoch, value==array<validator>)
 
 
-    
     /**** Contracts ********/
 
     address public sighasher;                                               //  Sighash calculator library address
@@ -111,14 +115,12 @@ contract DummyCasper is Ownable {
 
     /// @dev Get the validator start dynasty
     function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128) {
-        return 1;
-        // return validators[validator_index].start_dynasty;
+        return validators[validator_index].start_dynasty;
     }
 
     /// @dev Get the validator end dynasty
     function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128) {
-        return 3;
-        // return validators[validator_index].end_dynasty;
+        return validators[validator_index].end_dynasty;
     }
 
     /// @dev Get the validator address
@@ -143,8 +145,7 @@ contract DummyCasper is Ownable {
 
     /// @dev Get th current epoch of this dynasty
     function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128) {
-        return 2;
-        // return dynasty_start_epoch[_dynasty];
+        return dynasty_start_epoch[_dynasty];
     }
 
     /// @dev Gets the recommended source epoch used during voting
@@ -155,6 +156,11 @@ contract DummyCasper is Ownable {
     /// @dev Gets the recommended target block hash to be voted on
     function get_recommended_target_hash() public view returns (bytes32) {
         return block.blockhash(current_epoch * (epoch_length - 1));
+    }
+
+    /// @dev Gets the number of dynasties that we need to wait before we are logged out
+    function get_dynasty_logout_delay() public view returns (uint128) {
+        return dynasty_logout_delay;
     }
     
 
@@ -191,9 +197,9 @@ contract DummyCasper is Ownable {
         // We're not using signatures to identify validators via messages in this dummy casper, just use msg.sender for now
         uint256 validator_index = validator_indexes[msg.sender];
         // Make sure we haven't already withdrawn
-        assert(validators[validator_index].end_dynasty > dynasty + 2);
+        assert(validators[validator_index].end_dynasty > dynasty + dynasty_logout_delay);
         // Set the end dynasty
-        validators[validator_index].end_dynasty = dynasty + 2;
+        validators[validator_index].end_dynasty = dynasty + dynasty_logout_delay;
         second_next_dynasty_wei_delta -= validators[validator_index].deposit;
         // Fire the event
         Logout(msg.sender, now);
@@ -234,8 +240,15 @@ contract DummyCasper is Ownable {
 
     /// @dev Cast a validator vote to Casper
     function vote(bytes _vote_msg) public {
-        // Does nothing in dummy casper
         CasperVoteCast(_vote_msg);
+
+        // move epoch forward
+        set_increment_epoch();
+        vote_count += 1;        
+        // move dynasty forward after voting on 2 epochs
+        if (vote_count % 2 == 0) {
+            set_increment_dynasty();
+        }
     }
 
     /// @dev Delete the validator

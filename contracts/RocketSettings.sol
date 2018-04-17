@@ -47,7 +47,8 @@ contract RocketSettings is RocketBase {
             setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
             setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
             setMiniPoolCountDownTime(1 minutes);                                                  // The time limit to stay in countdown before staking begins
-            setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            // setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            setMiniPoolStakingTime("short", 2 minutes);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
             setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
             setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
@@ -70,7 +71,8 @@ contract RocketSettings is RocketBase {
             setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             
             /** Casper */
-            setCasperEpochBlockLength(50);                                                      // The number of blocks in a Casper epoch
+            // setCasperEpochBlockLength(50);                                                      // The number of blocks in a Casper epoch
+            setCasperEpochBlockLength(10);                                                      // The number of blocks in a Casper epoch
 
             /*** Vault ***/
             setVaultDepositAllowed(true);                                                       // Are deposits into the Rocket Vault allowed?
