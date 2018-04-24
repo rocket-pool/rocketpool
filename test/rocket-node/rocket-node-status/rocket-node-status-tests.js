@@ -329,7 +329,6 @@ export default function({owner}) {
 
             // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
             await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });            
-            //await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, { from: owner, gas: 150000 });            
 
             // Logout first minipool from Casper
             let logoutMessage = '0x8779787998798798';

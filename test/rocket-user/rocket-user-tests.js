@@ -1,10 +1,13 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
+import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';
 import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
 export default function({owner}) {
+
+    const nodeLogoutGas = 1600000;
 
     contract('RocketUser', async (accounts) => {
 
@@ -331,8 +334,10 @@ export default function({owner}) {
 
             // Contract dependencies
             let rocketSettings;
+            let rocketPool;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
+                rocketPool = await RocketPool.deployed();
             });
 
 
@@ -350,11 +355,25 @@ export default function({owner}) {
 
             // First and second minipools logged out from Casper
             it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
-                await logoutMiniPools({
-                    miniPools: miniPools,
-                    nodeFirst: nodeFirst,
-                    nodeSecond: nodeSecond,
-                    fromAddress: owner,
+                await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
+                await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
+
+                let logoutMessage = '0x8779787998798798';
+
+                await scenarioNodeLogoutForWithdrawal({
+                    owner: owner,
+                    nodeAddress: nodeFirst,
+                    minipoolAddress: miniPools.first.address,
+                    logoutMessage: logoutMessage,
+                    gas: nodeLogoutGas
+                });
+
+                await scenarioNodeLogoutForWithdrawal({
+                    owner: owner,
+                    nodeAddress: nodeSecond,
+                    minipoolAddress: miniPools.second.address,
+                    logoutMessage: logoutMessage,
+                    gas: nodeLogoutGas
                 });
             });
 
