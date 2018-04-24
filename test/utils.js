@@ -5,12 +5,17 @@ export function printTitle(user, desc) {
 }
 
 // Assert that an error is thrown
-export async function assertThrows(promise, err) {
+export async function assertThrows(promise, err, expected) {
     try {
         await promise;
         assert.isNotOk(true, err);
     } catch (e) {
-        assert.include(e.message, 'VM Exception');
+        if(!expected){
+            assert.include(e.message, 'VM Exception');
+        }
+        else{
+            assert.include(e.message, expected);
+        }
     }
 }
 
