@@ -241,14 +241,6 @@ contract DummyCasper is Ownable {
     /// @dev Cast a validator vote to Casper
     function vote(bytes _vote_msg) public {
         CasperVoteCast(_vote_msg);
-
-        // move epoch forward
-        set_increment_epoch();
-        vote_count += 1;        
-        // move dynasty forward after voting on 2 epochs
-        if (vote_count % 2 == 0) {
-            set_increment_dynasty();
-        }
     }
 
     /// @dev Delete the validator
