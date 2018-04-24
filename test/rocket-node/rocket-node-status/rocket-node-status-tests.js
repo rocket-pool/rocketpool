@@ -256,7 +256,7 @@ export default function({owner}) {
         });
     });
 
-    contract.only('RocketNodeStatus - Withdrawal', async (accounts) => {
+    contract('RocketNodeStatus - Withdrawal', async (accounts) => {
 
         /**
          * Config
