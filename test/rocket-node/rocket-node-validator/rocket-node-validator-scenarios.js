@@ -8,7 +8,7 @@ export async function scenarioNodeVoteCast({nodeAddress, epoch, minipoolAddress,
     const rocketNodeValidator = await RocketNodeValidator.deployed();
 
     // cast vote
-    let result = await rocketNodeValidator.nodeVote(epoch, minipoolAddress, voteMessage.toString('hex'), {from: nodeAddress, gas: gas});
+    let result = await rocketNodeValidator.minipoolVote(epoch, minipoolAddress, voteMessage.toString('hex'), {from: nodeAddress, gas: gas});
 
     let log = result.logs.find(({ event }) => event == 'NodeVoteCast');
     assert.isDefined(log, 'NodeVoteCast event was not logged');

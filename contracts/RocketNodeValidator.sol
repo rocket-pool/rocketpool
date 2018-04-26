@@ -32,7 +32,7 @@ contract RocketNodeValidator is RocketNodeBase {
     /// @param _epoch The epoch number voting relates to
     /// @param _minipoolAddress The address of the minipool that should cast the votes
     /// @param _voteMessage Vote message to be sent to Casper
-    function nodeVote(uint256 _epoch, address _minipoolAddress, bytes _voteMessage) public onlyRegisteredNode(msg.sender) returns(bool) {
+    function minipoolVote(uint256 _epoch, address _minipoolAddress, bytes _voteMessage) public onlyRegisteredNode(msg.sender) returns(bool) {
 
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         
