@@ -70,10 +70,6 @@ contract RocketSettings is RocketBase {
             setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
             setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             
-            /** Casper */
-            // setCasperEpochBlockLength(50);                                                      // The number of blocks in a Casper epoch
-            setCasperEpochBlockLength(10);                                                      // The number of blocks in a Casper epoch
-
             /*** Vault ***/
             setVaultDepositAllowed(true);                                                       // Are deposits into the Rocket Vault allowed?
             setVaultWithdrawalAllowed(true);                                                    // Are withdrawals from the Rocket Vault allowed?
@@ -238,11 +234,6 @@ contract RocketSettings is RocketBase {
     function getSmartNodeSetInactiveDuration() public view returns (uint256) {
         return rocketStorage.getUint(keccak256("settings.smartnode.setinactive.duration")); 
     }
-    
-    /// @dev The number of blocks in a Casper epoch
-    function getCasperEpochBlockLength() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.casper.epoch.blocks"));
-    }
 
     /*** Vault ***/
 
@@ -398,12 +389,6 @@ contract RocketSettings is RocketBase {
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function setSmartNodeSetInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.setinactive.duration"), _amount); 
-    }
-
-    /// @dev The number of blocks that make an epoch
-    function setCasperEpochBlockLength(uint256 _blocks) public onlySuperUser {
-        require(_blocks > 0);
-        rocketStorage.setUint(keccak256("settings.casper.epoch.blocks"), _blocks);
     }
 
 

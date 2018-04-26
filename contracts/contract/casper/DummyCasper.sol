@@ -166,6 +166,11 @@ contract DummyCasper is Ownable {
     function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public returns(uint256) {        
         return vote_bitmap[_epoch][_validator_index / 256];
     }
+
+    /// @dev Gets the number of blocks in a Casper epoch
+    function get_epoch_length() public view returns (uint128) {
+        return epoch_length;
+    }
     
 
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
