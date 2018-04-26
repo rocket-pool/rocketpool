@@ -153,10 +153,10 @@ contract RocketPoolMiniDelegate is RocketBase {
         if (now >= statusChangeTime.add(stakingDuration)) {
             // Now check to see if we meet the Casper requirements for logging out before attempting
             // We must not have already logged out
-            // if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + casper.get_dynasty_logout_delay()) {
+            if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + casper.get_dynasty_logout_delay()) {
                 // Ok to logout
                 return true;
-            // }
+            }
         }
         return false;
     }
