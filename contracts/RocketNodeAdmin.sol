@@ -220,7 +220,11 @@ contract RocketNodeAdmin is RocketNodeBase {
         NodeRemoved(_nodeAddress, now);
     }
 
-     function assertValidationContractAndSignatureMatch(address _val_code_address, bytes32 _sigHash, bytes _sig) private returns (bool) {
+    /// @dev Calls the validation contract ensuring the signature was created by address baked into validation code contract
+    /// @param _valCodeAddress Address of the validation contract
+    /// @param _sigHash Signed hash
+    /// @param _sig Signatue to be checked
+    function assertValidationContractAndSignatureMatch(address _valCodeAddress, bytes32 _sigHash, bytes _sig) private returns (bool) {
             
             var (v, r, s) = rocketUtils.sigSplit(_sig);
 
@@ -234,7 +238,7 @@ contract RocketNodeAdmin is RocketNodeBase {
 
                 let success := call(      //This is the critical change (Pop the top stack value)
                                     5000, //5k gas
-                                    _val_code_address, //To addr
+                                    _valCodeAddress, //To addr
                                     0,    //No value
                                     x,    //Inputs are stored at location x
                                     0x80, //Inputs are 80 bytes long (32 * 4)

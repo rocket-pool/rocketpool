@@ -341,31 +341,31 @@ contract RocketPoolMini is RocketBase {
 
     /// @dev Cast Casper votes 
     /// @param _epoch The epoch that is being voted on
-    /// @param _vote_message Vote message to be sent to Casper, RLP encoded message containing [validator_index, target_hash, target_epoch, source_epoch]
-    function vote(uint256 _epoch, bytes _vote_message) external onlyLatestRocketPool returns(bool) {
+    /// @param _voteMessage Vote message to be sent to Casper, RLP encoded message containing [validator_index, target_hash, target_epoch, source_epoch]
+    function vote(uint256 _epoch, bytes _voteMessage) external onlyLatestRocketPool returns(bool) {
         // Extra parameters are to workaround delegatecall and dynamic types
         // https://ethereum.stackexchange.com/questions/16144/solidity-call-function-with-array-as-input/16165#16165
          bool voteSuccessful = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(
                     bytes4(keccak256("vote(uint256,bytes)")),
                     _epoch, // epoch number
                     0x40, // pointer to vote_message length
-                    _vote_message.length, // vote message length
-                    _vote_message // vote message values
+                    _voteMessage.length, // vote message length
+                    _voteMessage // vote message values
                 );
         require(voteSuccessful);
         return true;
     }
 
     /// @dev Log the minipool out of Casper and wait for withdrawal
-    /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
-    function logout(bytes _logout_message) external onlyLatestRocketPool returns(bool) {
+    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(bytes _logoutMessage) external onlyLatestRocketPool returns(bool) {
         // Extra parameters are to workaround delegatecall and dynamic types
         // https://ethereum.stackexchange.com/questions/16144/solidity-call-function-with-array-as-input/16165#16165
          bool logoutSuccessful = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(
                     bytes4(keccak256("logout(bytes)")),
                     0x20, // pointer to logout_message length
-                    _logout_message.length, // logout message length
-                    _logout_message // logout message values
+                    _logoutMessage.length, // logout message length
+                    _logoutMessage // logout message values
                 );
         require(logoutSuccessful);
         return true;

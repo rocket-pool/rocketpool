@@ -405,47 +405,47 @@ contract RocketPool is RocketBase {
     }
 
     /// @dev Cast Casper votes via minipools 
-    /// @param _node_address The address of the node calling vote
+    /// @param _nodeAddress The address of the node calling vote
     /// @param _epoch The epoch number voting relates to
-    /// @param _minipool_address The address of the minipool that should cast the votes
-    /// @param _vote_message Vote message to be sent to Casper
-    function vote(address _node_address, uint256 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool) {
+    /// @param _minipoolAddress The address of the minipool that should cast the votes
+    /// @param _voteMessage Vote message to be sent to Casper
+    function vote(address _nodeAddress, uint256 _epoch, address _minipoolAddress, bytes _voteMessage) public onlyLatestRocketNode returns(bool) {
 
         // get the minipool
-        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
         
         // make sure the node is attached to the pool it is trying to vote with
-        require(pool.getNodeAddress() == _node_address);
+        require(pool.getNodeAddress() == _nodeAddress);
 
         // cast the vote
-        pool.vote(_epoch, _vote_message);
+        pool.vote(_epoch, _voteMessage);
 
         return true;
     }
 
     /// @dev Gets whether a minipool is ready to logout
-    /// @param _minipool_address The address of the minipool to test whether it is ready for logout
-    function getMiniPoolReadyToLogout(address _minipool_address) public onlyLatestRocketNode returns(bool) {
+    /// @param _minipoolAddress The address of the minipool to test whether it is ready for logout
+    function getMiniPoolReadyToLogout(address _minipoolAddress) public onlyLatestRocketNode returns(bool) {
         // get the minipool
-        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
         // Get logic from minipool
         return pool.getCanLogout();
     }
 
     /// @dev Log the minipool out of Casper and wait for withdrawal
-    /// @param _node_address The address of the node calling logout
-    /// @param _minipool_address The address of the minipool to logout of Casper
-    /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
-    function logout(address _node_address, address _minipool_address, bytes _logout_message) public onlyLatestRocketNode returns(bool) {
+    /// @param _nodeAddress The address of the node calling logout
+    /// @param _minipoolAddress The address of the minipool to logout of Casper
+    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(address _nodeAddress, address _minipoolAddress, bytes _logoutMessage) public onlyLatestRocketNode returns(bool) {
 
         // get the minipool
-        RocketPoolMini pool = getPoolInstance(_minipool_address);
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
         
         // make sure the node is attached to the pool it is trying to logout
-        require(pool.getNodeAddress() == _node_address);
+        require(pool.getNodeAddress() == _nodeAddress);
 
         // ask the minipool send logout to Casper
-        pool.logout(_logout_message);
+        pool.logout(_logoutMessage);
 
         return true;
     }
@@ -458,24 +458,24 @@ contract RocketPool is RocketBase {
     /// @dev Returns an memory array of addresses that do not equal 0, can be overloaded to support other types 
     /// @dev This is handy as memory arrays have a fixed size when initialised, this reduces the array to only valid values (so that .length works as you'd like)
     /// @dev This can be made redundant when .push is supported on dynamic memory arrays
-    /// @param addressArray An array of a fixed size of addresses
-    function utilArrayFilterValuesOnly(address[] memory addressArray) private pure returns (address[] memory) {
+    /// @param _addressArray An array of a fixed size of addresses
+    function utilArrayFilterValuesOnly(address[] memory _addressArray) private pure returns (address[] memory) {
         // The indexes for the arrays
         uint[] memory indexes = new uint[](2); 
         indexes[0] = 0;
         indexes[1] = 0;
         // Calculate the length of the non empty values
-        for (uint32 i = 0; i < addressArray.length; i++) {
-            if (addressArray[i] != 0) {
+        for (uint32 i = 0; i < _addressArray.length; i++) {
+            if (_addressArray[i] != 0) {
                 indexes[0]++;
             }
         }
         // Create a new memory array at the length of our valid values we counted
         address[] memory valueArray = new address[](indexes[0]);
         // Now populate the array
-        for (i = 0; i < addressArray.length; i++) {
-            if (addressArray[i] != 0) {
-                valueArray[indexes[1]] = addressArray[i];
+        for (i = 0; i < _addressArray.length; i++) {
+            if (_addressArray[i] != 0) {
+                valueArray[indexes[1]] = _addressArray[i];
                 indexes[1]++;
             }
         }
