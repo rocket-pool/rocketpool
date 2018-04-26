@@ -16,8 +16,10 @@ export async function scenarioNodeVoteCast({nodeAddress, epoch, minipoolAddress,
     // check parameters were correct
     let recordedEpoch = log.args.epoch;
     assert.equal(recordedEpoch, epoch, 'The epoch that was voted for does not match');
+
     let recordedMiniPoolAddress = log.args.minipool_address;
     assert.equal(recordedMiniPoolAddress, minipoolAddress, 'The minipool address does not match');
+
     let recordedVoteMessage = log.args.vote_message;
     assert.equal(recordedVoteMessage, voteMessage, 'The vote message does not match');
 }

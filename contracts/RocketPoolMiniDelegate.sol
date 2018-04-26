@@ -181,6 +181,31 @@ contract RocketPoolMiniDelegate is RocketBase {
         return status == 4 && this.balance > 0 && stakingBalanceReceived > 0 && casper.get_deposit_size(getCasperValidatorIndex()) == 0 ? true : false;
     }
 
+    /// @dev Returns true if this pool is able to cast votes with Casper
+    function getCanVote() public returns(bool) {
+        bool isStaking = status == 2;
+        bool isAssignedToNode = nodeOwner != 0;
+        bool hasSignatureVerificationContractBeenDeployed = nodeValCodeAddress != 0;
+        bool hasDepositBeenSentToCasper = this.balance == 0;
+
+        // retrieve the vote bitmap for the current epoch
+        // votes are stored as a bitmap to save on storage
+        // each bit is a boolean value representing whether a particular validator (at index number) has voted or not
+        uint256 voteBitmap = casper.votes__vote_bitmap(casper.get_current_epoch(), getCasperValidatorIndex()); 
+        // create a bit mask to retrieve the has-voted value for our validator index
+        // e.g 000000000100000000000 
+        uint256 bitMask = 0x1 * uint256(2) ** (getCasperValidatorIndex() % 256);
+        // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
+        bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
+
+        return 
+            isStaking && 
+            isAssignedToNode &&
+            hasSignatureVerificationContractBeenDeployed &&
+            hasDepositBeenSentToCasper &&
+            !hasAlreadyVoted;
+    }    
+
     /*** USERS ***********************************************/
 
     /// @dev Returns the user count for this pool
@@ -448,6 +473,8 @@ contract RocketPoolMiniDelegate is RocketBase {
     /// @param _epoch The epoch number voting relates to
     /// @param _vote_message Vote message to be sent to Casper
     function vote(uint256 _epoch, bytes _vote_message) public returns(bool) {
+        // Make sure we should be voting
+        require(getCanVote() == true);
         // Cast vote with Casper
         casper.vote(_vote_message);
         // Emit event to notify

@@ -26,13 +26,14 @@ contract CasperInterface {
     function withdraw(uint256 validator_index) public returns(bool); 
     /// @dev Get the current start epoch of this dynasty
     function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128);
-    function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128);
+    function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128);    
     /// @dev Validator data 
     function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128);
     function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128);
     function get_validators__addr(uint128 validator_index) public view returns (address);
     function get_validators__withdrawal_address(uint128 validator_index) public view returns (address);
     /// @dev Voting functions
+    function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public returns(uint256);
     function get_recommended_source_epoch() public view returns (int128);
     function get_recommended_target_hash() public view returns (bytes32);
     function vote(bytes _vote_msg) public;

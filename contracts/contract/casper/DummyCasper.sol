@@ -26,9 +26,8 @@ contract DummyCasper is Ownable {
     uint128 public dynasty_logout_delay = 2;                                // Logout delay in dynasties
 
     bool public simulate_penalties = false;                                 // Simulate penalties in Casper
-    uint128 public vote_count = 0;                                          // Used to simulate dynasty increases on voting
 
-    // mapping (int128 => int128[]) public vote_bitmap;                     // Records what validators have voted on an epoch (key==epoch, value==array<validator>)
+    mapping (uint128 => uint256[]) public vote_bitmap;                     // Records what validators have voted on an epoch (key==epoch, value==array<validator>)
 
 
     /**** Contracts ********/
@@ -162,6 +161,11 @@ contract DummyCasper is Ownable {
     function get_dynasty_logout_delay() public view returns (uint128) {
         return dynasty_logout_delay;
     }
+
+    /// @dev Gets whether a validator has voted on a particular epoch as a bitmap
+    function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public returns(uint256) {        
+        return vote_bitmap[_epoch][_validator_index / 256];
+    }
     
 
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
@@ -256,6 +260,16 @@ contract DummyCasper is Ownable {
     function set_increment_epoch() public onlyOwner { 
         // Set the current epoch
         current_epoch += 1;
+        vote_bitmap[current_epoch] = new uint256[](5);
+    }
+
+    /// @dev Simulate a validator voting
+    function set_voted(uint256 _validator_index, uint128 _epoch) public onlyOwner {
+        // create a bit mask to retrieve the has-voted value for our validator index
+        // e.g 000000000100000000000 
+        uint256 bitMask = 0x1 * uint256(2) ** (_validator_index % 256);
+        // the bitwise | operator effectively updates the bitmap with a value for the validator (true)
+        vote_bitmap[_epoch][_validator_index / 256] = vote_bitmap[_epoch][_validator_index / 256] | bitMask;
     }
 
     /// @dev Increment the dynasty to simulate Caspers blocks being finalised

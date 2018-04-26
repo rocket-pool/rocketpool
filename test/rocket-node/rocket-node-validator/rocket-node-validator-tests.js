@@ -90,12 +90,14 @@ export default function({owner}) {
 
         });
 
-        it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => {
-            let epoch = 1;
+        it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => {  
+            await scenarioIncrementEpoch(owner);
+            
+            let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch,
+                epoch: epoch.valueOf().valueOf(),
                 minipoolAddress: miniPools.first.address,
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
@@ -103,11 +105,13 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
-            let epoch = 1;
+            await scenarioIncrementEpoch(owner);
+
+            let epoch = await casper.get_current_epoch.call();
             let emptyVoteMessage = "";
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch,
+                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
                 voteMessage: emptyVoteMessage,
                 gas: nodeVotingGas
@@ -115,11 +119,13 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'can only cast a vote for a pool that it is attached to'), async () => {
-            let epoch = 1;
+            await scenarioIncrementEpoch(owner);
+
+            let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch,
+                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.second.address, // not nodeFirst's minipool
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
@@ -127,13 +133,72 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'must pass minipool address to vote'), async () => {
-            let epoch = 1;
+            await scenarioIncrementEpoch(owner);
+
+            let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             let nullAddress = "";
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch,
+                epoch: epoch.valueOf(),
                 minipoolAddress: nullAddress,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            }));
+        });
+
+        it(printTitle('registered node', 'can only cast a vote for a pool that is staking'), async () => {
+            await scenarioIncrementEpoch(owner);
+           
+            // Set our pool launch timer to 1000 setting so that it will not trigger a minipool launch
+            await rocketSettings.setMiniPoolCountDownTime(1000, {from: web3.eth.coinbase, gas: 500000});
+
+            // Get average CPU load
+            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+
+            // Perform checkin, to assign the second minipool to the node for launch
+            await scenarioNodeCheckin({
+                averageLoad: averageLoad15mins,
+                fromAddress: nodeFirst,
+            });
+
+            // precheck that the minipool is not staking
+            let miniPoolStatus = await miniPools.second.getStatus.call();
+            assert.notEqual(miniPoolStatus, 2, 'Precheck failed - minipool is staking when it should not be');
+
+            let epoch = await casper.get_current_epoch.call();
+            let voteMessage = "0x76876868768768766876";
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch.valueOf(),
+                minipoolAddress: miniPools.second.address,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            }));
+        });
+
+        it(printTitle('registered node', 'can only cast one vote per epoch'), async () => {   
+            await scenarioIncrementEpoch(owner);
+
+            let epoch = await casper.get_current_epoch.call();
+            let voteMessage = "0x76876868768768766876";
+            await scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch.valueOf(),
+                minipoolAddress: miniPools.first.address,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            });
+
+            // for testing we need to tell dummy casper that the validator has voted
+            let validatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
+            await casper.set_voted(validatorIndex, epoch, {from: owner});
+
+            // should fail because we are trying to vote twice for same epoch
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch.valueOf(),
+                minipoolAddress: miniPools.first.address,
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
