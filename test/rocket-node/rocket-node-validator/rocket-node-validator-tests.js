@@ -3,7 +3,7 @@ const os = require('os');
 import { printTitle, assertThrows } from '../../utils';
 import { RocketPool, RocketSettings, Casper } from '../../artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
-import { scenarioIncrementEpoch, scenarioCreateValidationContract } from '../../casper/casper-scenarios';
+import { scenarioIncrementEpoch, scenarioCreateValidationContract, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeVoteCast, scenarioNodeLogout } from './rocket-node-validator-scenarios';
@@ -26,7 +26,7 @@ export default function({owner}) {
     const nodeLogoutGas = 1600000;
 
 
-    contract('RocketNodeValidator - Voting', async (accounts) => {
+    contract.only('RocketNodeValidator - Voting', async (accounts) => {
 
         /**
          * Config
@@ -88,16 +88,21 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementEpoch(owner);
+            await scenarioIncrementDynasty(owner);
+
         });
 
         it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => {  
-            await scenarioIncrementEpoch(owner);
-            
             let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf().valueOf(),
+                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
@@ -105,8 +110,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
-            await scenarioIncrementEpoch(owner);
-
             let epoch = await casper.get_current_epoch.call();
             let emptyVoteMessage = "";
             await assertThrows(scenarioNodeVoteCast({
@@ -119,8 +122,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'can only cast a vote for a pool that it is attached to'), async () => {
-            await scenarioIncrementEpoch(owner);
-
             let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             await assertThrows(scenarioNodeVoteCast({
@@ -133,8 +134,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'must pass minipool address to vote'), async () => {
-            await scenarioIncrementEpoch(owner);
-
             let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             let nullAddress = "";
@@ -148,8 +147,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'can only cast a vote for a pool that is staking'), async () => {
-            await scenarioIncrementEpoch(owner);
-           
             // Set our pool launch timer to 1000 setting so that it will not trigger a minipool launch
             await rocketSettings.setMiniPoolCountDownTime(1000, {from: web3.eth.coinbase, gas: 500000});
 
@@ -178,8 +175,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'can only cast one vote per epoch'), async () => {   
-            await scenarioIncrementEpoch(owner);
-
             let epoch = await casper.get_current_epoch.call();
             let voteMessage = "0x76876868768768766876";
             await scenarioNodeVoteCast({
@@ -202,6 +197,56 @@ export default function({owner}) {
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
+        });
+
+        it(printTitle('registered node', 'can cast a during logout period but not after'), async () => {
+            let voteMessage = "0x76876868768768766876";
+
+            // move epoch forward because we voted in a previous test
+            await scenarioIncrementEpoch(owner);
+
+            // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
+            await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
+            
+            // logout the minipool 
+            let logoutMessage = '0x8779787998798798';
+            await scenarioNodeLogout({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address, 
+                logoutMessage: logoutMessage,
+                gas: nodeLogoutGas
+            });
+
+            // // move forward so we can vote again
+            // await scenarioIncrementEpoch(owner);
+
+            // // make sure we can still vote while we are waiting for logout
+            // let epoch = await casper.get_current_epoch.call();
+            // await scenarioNodeVoteCast({
+            //     nodeAddress: nodeFirst,
+            //     epoch: epoch.valueOf(),
+            //     minipoolAddress: miniPools.first.address,
+            //     voteMessage: voteMessage,
+            //     gas: nodeVotingGas
+            // });
+
+            // // Forward Casper past our logout delay so that we are actually logged out
+            // // Currently default logout delay is 2 dynasties + 1 for luck
+            // // let logoutDelayDynasties = await casper.get_dynasty_logout_delay.call({from: owner});
+            // // for (let i = 0; i < (logoutDelayDynasties + 1); i++) {
+            // //     await scenarioIncrementEpoch(owner);
+            // //     await scenarioIncrementEpoch(owner);
+            // //     await scenarioIncrementDynasty(owner);
+            // // }
+
+            // // epoch = await casper.get_current_epoch.call();            
+            // // await scenarioNodeVoteCast({
+            // //     nodeAddress: nodeFirst,
+            // //     epoch: epoch.valueOf(),
+            // //     minipoolAddress: miniPools.first.address,
+            // //     voteMessage: voteMessage,
+            // //     gas: nodeVotingGas
+            // // });
         });
 
     });

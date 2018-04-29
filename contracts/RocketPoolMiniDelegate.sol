@@ -203,7 +203,23 @@ contract RocketPoolMiniDelegate is RocketBase {
             isAssignedToNode &&
             hasSignatureVerificationContractBeenDeployed &&
             hasDepositBeenSentToCasper &&
-            !hasAlreadyVoted;
+            !hasAlreadyVoted &&
+            isLoggedIntoCasper(getCasperValidatorIndex());
+    }
+
+    /// @dev Returns true if the validator is logged into Casper
+    /// @param _validatorIndex Index of validator in Casper
+    function isLoggedIntoCasper(uint128 _validatorIndex) private view returns(bool) {
+        uint128 startDynasty = casper.get_validators__dynasty_start(_validatorIndex);
+        uint128 endDynasty = casper.get_validators__dynasty_end(_validatorIndex);
+        uint128 currentDynasty = casper.get_dynasty();
+
+        uint128 pastDynasty = currentDynasty - 1;
+        bool inCurrentDynasty = ((startDynasty <= currentDynasty) && (currentDynasty < endDynasty));
+        bool inPrevDynasty = ((startDynasty <= pastDynasty) && (pastDynasty < endDynasty));
+        if (!(inCurrentDynasty || inPrevDynasty))
+            return false;
+        return true;
     }    
 
     /*** USERS ***********************************************/
