@@ -1,11 +1,14 @@
 import { printTitle, assertThrows } from '../utils';
 import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
-import { launchMiniPools, logoutMiniPools } from '../rocket-node/rocket-node-utils';
+import { launchMiniPools } from '../rocket-node/rocket-node-utils';
+import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';
 import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom, scenarioApproveDepositTokenTransferFrom } from './rocket-deposit-scenarios';
 
 export default function({owner}) {
+
+    const nodeLogoutGas = 1600000;
 
     contract('RocketDeposit', async (accounts) => {
 
@@ -346,9 +349,11 @@ export default function({owner}) {
             // Contract dependencies
             let rocketSettings;
             let rocketDeposit;
+            let rocketPool;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
                 rocketDeposit = await RocketDepositToken.deployed();
+                rocketPool = await RocketPool.deployed();
             });
 
 
@@ -371,11 +376,25 @@ export default function({owner}) {
 
             // Log first and second minipools out from casper
             it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
-                await logoutMiniPools({
-                    miniPools: miniPools,
-                    nodeFirst: nodeFirst,
-                    nodeSecond: nodeSecond,
-                    fromAddress: owner,
+                await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
+                await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
+
+                let logoutMessage = '0x8779787998798798';
+
+                await scenarioNodeLogoutForWithdrawal({
+                    owner: owner,
+                    nodeAddress: nodeFirst,
+                    minipoolAddress: miniPools.first.address,
+                    logoutMessage: logoutMessage,
+                    gas: nodeLogoutGas
+                });
+
+                await scenarioNodeLogoutForWithdrawal({
+                    owner: owner,
+                    nodeAddress: nodeSecond,
+                    minipoolAddress: miniPools.second.address,
+                    logoutMessage: logoutMessage,
+                    gas: nodeLogoutGas
                 });
             });
 

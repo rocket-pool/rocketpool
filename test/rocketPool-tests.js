@@ -4,7 +4,9 @@ import { RocketPool, RocketPoolMini} from './artifacts';
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import casperTests from './casper/casper-tests';
-import rocketNodeTests from './rocket-node/rocket-node-tests';
+import rocketNodeAdminTests from './rocket-node/rocket-node-admin/rocket-node-admin-tests';
+import rocketNodeStatusTests from './rocket-node/rocket-node-status/rocket-node-status-tests';
+import rocketNodeValidatorTests from './rocket-node/rocket-node-validator/rocket-node-validator-tests';
 import rocketPartnerAPITests from './rocket-partner-api/rocket-partner-api-tests';
 import rocketUserTests from './rocket-user/rocket-user-tests';
 import rocketDepositTests from './rocket-deposit/rocket-deposit-tests';
@@ -71,19 +73,15 @@ console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
-
-/**
- * Tests
- */
-
-
 // The owner
 const owner = web3.eth.coinbase;
 
 // Run tests
 rocketStorageTests({owner});
 casperTests({owner});
-rocketNodeTests({owner});
+rocketNodeAdminTests({owner});
+rocketNodeStatusTests({owner});
+rocketNodeValidatorTests({owner});
 rocketPartnerAPITests({owner});
 rocketUserTests({owner});
 rocketDepositTests({owner});

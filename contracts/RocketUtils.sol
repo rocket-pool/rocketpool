@@ -40,6 +40,28 @@ contract RocketUtils is RocketBase {
         return sigRecover(_msgHash, _sig) == _address;
     }
 
+    /**
+    * @dev Splits an ec signature into its component parts v, r, s
+    * @param _sig Signature bytes to split
+     */
+    function sigSplit(bytes _sig) public pure returns (uint8, bytes32, bytes32) {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        assembly {
+            r := mload(add(_sig, 32))
+            s := mload(add(_sig, 64))
+            v := byte(0, mload(add(_sig, 96)))
+        }
+
+        // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+        if (v < 27) {
+            v += 27;
+        }
+
+        return (v, r, s);
+    }
 
     /**
    * @dev Recover signer address from a message by using his signature (borrowed from Zepplin)
@@ -58,16 +80,7 @@ contract RocketUtils is RocketBase {
         }
 
         // Divide the signature in r, s and v variables
-        assembly {
-            r := mload(add(_sig, 32))
-            s := mload(add(_sig, 64))
-            v := byte(0, mload(add(_sig, 96)))
-        }
-
-        // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
-        if (v < 27) {
-            v += 27;
-        }
+        (v, r, s) = sigSplit(_sig);
 
         // If the version is correct return the signer address
         if (v != 27 && v != 28) {
@@ -77,7 +90,5 @@ contract RocketUtils is RocketBase {
         }
 
     }
-
-
    
 }

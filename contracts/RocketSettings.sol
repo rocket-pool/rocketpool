@@ -68,7 +68,7 @@ contract RocketSettings is RocketBase {
             setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
             setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
             setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-
+            
             /*** Vault ***/
             setVaultDepositAllowed(true);                                                       // Are deposits into the Rocket Vault allowed?
             setVaultWithdrawalAllowed(true);                                                    // Are withdrawals from the Rocket Vault allowed?
@@ -231,9 +231,8 @@ contract RocketSettings is RocketBase {
 
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function getSmartNodeSetInactiveDuration() public view returns (uint256) {
-        rocketStorage.getUint(keccak256("settings.smartnode.setinactive.duration")); 
+        return rocketStorage.getUint(keccak256("settings.smartnode.setinactive.duration")); 
     }
-    
 
     /*** Vault ***/
 
@@ -390,7 +389,6 @@ contract RocketSettings is RocketBase {
     function setSmartNodeSetInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256("settings.smartnode.setinactive.duration"), _amount); 
     }
-
 
 
     /*** Vault ***/

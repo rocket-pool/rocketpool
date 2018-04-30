@@ -88,6 +88,10 @@ contract RocketPoolMiniDelegate is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
+    event VoteCast (
+        uint256 epoch,
+        bytes voteMessage
+    );
   
 
     /*** Modifiers *************/
@@ -149,7 +153,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         if (now >= statusChangeTime.add(stakingDuration)) {
             // Now check to see if we meet the Casper requirements for logging out before attempting
             // We must not have already logged out
-            if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + 2) {
+            if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + casper.get_dynasty_logout_delay()) {
                 // Ok to logout
                 return true;
             }
@@ -177,6 +181,49 @@ contract RocketPoolMiniDelegate is RocketBase {
         return status == 4 && this.balance > 0 && stakingBalanceReceived > 0 && casper.get_deposit_size(getCasperValidatorIndex()) == 0 ? true : false;
     }
 
+    /// @dev Returns true if this pool is able to cast votes with Casper
+    function getCanVote() public returns(bool) {
+        bool isStakingOrAwaitingLogout = (status == 2 || status == 3);
+        bool isAssignedToNode = nodeOwner != 0;
+        bool hasSignatureVerificationContractBeenDeployed = nodeValCodeAddress != 0;
+        bool hasDepositBeenSentToCasper = this.balance == 0;
+
+        // retrieve the vote bitmap for the current epoch
+        // votes are stored as a bitmap to save on storage
+        // each bit is a boolean value representing whether a particular validator (at index number) has voted or not
+        uint256 voteBitmap = casper.votes__vote_bitmap(casper.get_current_epoch(), getCasperValidatorIndex()); 
+        // create a bit mask to retrieve the has-voted value for our validator index
+        // e.g 000000000100000000000 
+        uint256 bitMask = 0x1 * uint256(2) ** (getCasperValidatorIndex() % 256);
+        // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
+        bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
+
+        // TODO: need !inFirstQuarterOfEpoch check - to be done when integrated real casper and block increment functionality
+        // bool inFirstQuarterOfEpoch = (block.number % casper.get_epoch_length()) <= (casper.get_epoch_length() / 4);
+
+        return 
+            isStakingOrAwaitingLogout && 
+            isAssignedToNode &&
+            hasSignatureVerificationContractBeenDeployed &&
+            hasDepositBeenSentToCasper &&
+            !hasAlreadyVoted &&
+            isLoggedIntoCasper(getCasperValidatorIndex());
+    }
+
+    /// @dev Returns true if the validator is logged into Casper
+    /// @param _validatorIndex Index of validator in Casper
+    function isLoggedIntoCasper(uint128 _validatorIndex) private view returns(bool) {
+        uint128 startDynasty = casper.get_validators__dynasty_start(_validatorIndex);
+        uint128 endDynasty = casper.get_validators__dynasty_end(_validatorIndex);
+        uint128 currentDynasty = casper.get_dynasty();
+
+        uint128 pastDynasty = currentDynasty - 1;
+        bool inCurrentDynasty = ((startDynasty <= currentDynasty) && (currentDynasty < endDynasty));
+        bool inPrevDynasty = ((startDynasty <= pastDynasty) && (pastDynasty < endDynasty));
+        if (!(inCurrentDynasty || inPrevDynasty))
+            return false;
+        return true;
+    }    
 
     /*** USERS ***********************************************/
 
@@ -413,18 +460,7 @@ contract RocketPoolMiniDelegate is RocketBase {
             changeStatus(2);
             // Done
             return;   
-        }
-        // Are we all set to request withdrawal of our deposit from Casper?
-        if (stakingBalance > 0 && status == 2 && getCanLogout() == true) { 
-            // TODO: Add in bytes message for validator from node
-            bytes memory logoutMsg;
-            // Request logout now, will throw if conditions not met
-            casper.logout(logoutMsg);
-            // Set the mini pool status as having requested withdrawal
-            changeStatus(3);
-            // Done
-            return; 
-        }
+        }       
         // Are we all set to actually withdraw our deposit + rewards from Casper?
         if (stakingBalance > 0 && status == 3 && getCanWithdraw() == true) {
             // Request withdrawal now 
@@ -452,8 +488,33 @@ contract RocketPoolMiniDelegate is RocketBase {
         
     }
 
+    /// @dev Cast Casper votes 
+    /// @param _epoch The epoch number voting relates to
+    /// @param _voteMessage Vote message to be sent to Casper
+    function vote(uint256 _epoch, bytes _voteMessage) public returns(bool) {
+        // Make sure we should be voting
+        require(getCanVote() == true);
+        // Cast vote with Casper
+        casper.vote(_voteMessage);
+        // Emit event to notify
+        VoteCast(_epoch, _voteMessage);
+        return true;
+    }
+
+    /// @dev Logout from Casper and wait for withdrawal
+    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(bytes _logoutMessage) public returns(bool) {
+        // check to make sure we can logout
+        require(stakingBalance > 0 && status == 2 && getCanLogout() == true);
+        // Request logout now, will throw if conditions not met
+        casper.logout(_logoutMessage);
+        // Set the mini pool status as having requested logout
+        changeStatus(3);
+        return true;
+    }
+
     /// @dev Change the status
-    /// @param _newStatus amount you want to withdraw
+    /// @param _newStatus status id to apply to the minipool
     function changeStatus(uint256 _newStatus) private {
         // Fire the event if the status has changed
         if (_newStatus != status) {

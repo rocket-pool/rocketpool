@@ -32,4 +32,18 @@ contract RocketPoolInterface {
     function poolNodeActions() onlyLatestRocketNode external;
     /// @dev MiniPools can request the main contract to be removed
     function removePool() public poolsAllowedToBeClosed onlyMiniPool returns(bool);
+    /// @dev Cast Casper votes via minipools 
+    /// @param _node_address The address of the node calling vote
+    /// @param _epoch The epoch number voting relates to
+    /// @param _minipool_address The address of the minipool that should cast the vote
+    /// @param _vote_message Vote message to be sent to Casper
+    function vote(address _node_address, uint256 _epoch, address _minipool_address, bytes _vote_message) public onlyLatestRocketNode returns(bool);
+    /// @dev Log the minipool out of Casper and wait for withdrawal
+    /// @param _node_address The address of the node calling logout
+    /// @param _minipool_address The address of the minipool to logout of Casper
+    /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(address _node_address, address _minipool_address, bytes _logout_message) public onlyLatestRocketNode returns(bool);  
+    /// @dev Gets whether a minipool is ready to logout
+    /// @param _minipool_address The address of the minipool to test whether it is ready for logout
+    function getMiniPoolReadyToLogout(address _minipool_address) public onlyLatestRocketNode returns(bool);
 }

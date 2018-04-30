@@ -88,7 +88,7 @@ contract RocketPartnerAPI is RocketBase {
 
     /*** Constructor *************/
    
-    /// @dev rocketNode constructor
+    /// @dev RocketPartnerAPI constructor
     function RocketPartnerAPI(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;

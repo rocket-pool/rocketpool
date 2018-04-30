@@ -77,7 +77,10 @@ contract RocketPool is RocketBase {
 
     /// @dev Only allow access from the latest version of the main RocketNode contract
     modifier onlyLatestRocketNode() {
-        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        bool isRocketNodeAdmin = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin"));
+        bool isRocketNodeStatus = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeStatus"));
+        bool isRocketNodeValidator = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeValidator"));
+        require(isRocketNodeAdmin || isRocketNodeValidator || isRocketNodeStatus);
         _;
     } 
 
@@ -153,14 +156,14 @@ contract RocketPool is RocketBase {
             } 
             // Return the pool address that the user belongs to
             return poolAssignToAddress;
-        }    
+        } 
     }
 
     /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
     /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
     function poolNodeActions() external onlyLatestRocketNode {
         // Get our Rocket Node contract
-        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNode")));
+        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin")));
         // Create an empty instance of a pool contract to populate later if we find one
         RocketPoolMini pool = RocketPoolMini(0);
         // Our shared iterator 
@@ -184,25 +187,8 @@ contract RocketPool is RocketBase {
                     // Set this nodes validation code for the minipool to use
                     pool.setNodeValCodeAddress(rocketNode.getNodeValCodeAddress(nodeAddress)); 
                     // Fire the event
-                    PoolAssignedToNode(nodeAddress, poolsFound[i], now);
+                    PoolAssignedToNode(poolsFound[i], nodeAddress, now);
                     // Now set the pool to begin staking with casper by updating its status with the newly assigned node
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-        // See if there are any pools thats can start the withdrawal process with Casper
-        poolsFound = getPoolsFilterWithStatus(2);
-        // Do we have any pools currently staking?
-        if (poolsFound.length > 0) {
-            // Ready for re-entry?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = getPoolInstance(poolsFound[i]);
-                // Is this currently staking pool due to request withdrawal from Casper?
-                if (pool.getCanLogout() == true) {
-                    // Now set the pool to begin requesting withdrawal from casper by updating its status
                     pool.updateStatus();
                     // Exit the loop
                     break;
@@ -278,10 +264,17 @@ contract RocketPool is RocketBase {
         return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
     }
 
+    /// @dev Return all pools that are assigned to this node and have the current status (explicit method)
+    /// @param _nodeAddress Get pools with the current node
+    /// @param _status Pool status to filter pools
+    function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
+        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);  
+    }
+
     /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
     /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress) public view returns(uint256) {
-        return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
+    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress, uint256 _status) public view returns(uint256) {
+        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
@@ -406,6 +399,57 @@ contract RocketPool is RocketBase {
         return false;
     } 
 
+    /// @dev Returns the address for the Casper smart contract
+    function getCasperAddress() public view returns(address) {
+        return rocketStorage.getAddress(keccak256("contract.name", "casper"));
+    }
+
+    /// @dev Cast Casper votes via minipools 
+    /// @param _nodeAddress The address of the node calling vote
+    /// @param _epoch The epoch number voting relates to
+    /// @param _minipoolAddress The address of the minipool that should cast the votes
+    /// @param _voteMessage Vote message to be sent to Casper
+    function vote(address _nodeAddress, uint256 _epoch, address _minipoolAddress, bytes _voteMessage) public onlyLatestRocketNode returns(bool) {
+
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
+        
+        // make sure the node is attached to the pool it is trying to vote with
+        require(pool.getNodeAddress() == _nodeAddress);
+
+        // cast the vote
+        pool.vote(_epoch, _voteMessage);
+
+        return true;
+    }
+
+    /// @dev Gets whether a minipool is ready to logout
+    /// @param _minipoolAddress The address of the minipool to test whether it is ready for logout
+    function getMiniPoolReadyToLogout(address _minipoolAddress) public onlyLatestRocketNode returns(bool) {
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
+        // Get logic from minipool
+        return pool.getCanLogout();
+    }
+
+    /// @dev Log the minipool out of Casper and wait for withdrawal
+    /// @param _nodeAddress The address of the node calling logout
+    /// @param _minipoolAddress The address of the minipool to logout of Casper
+    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(address _nodeAddress, address _minipoolAddress, bytes _logoutMessage) public onlyLatestRocketNode returns(bool) {
+
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
+        
+        // make sure the node is attached to the pool it is trying to logout
+        require(pool.getNodeAddress() == _nodeAddress);
+
+        // ask the minipool send logout to Casper
+        pool.logout(_logoutMessage);
+
+        return true;
+    }
+
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types
     /*** which can't currently be sent to a library contract (I'd prefer to keep these in a lib if possible, but its not atm)
@@ -414,24 +458,24 @@ contract RocketPool is RocketBase {
     /// @dev Returns an memory array of addresses that do not equal 0, can be overloaded to support other types 
     /// @dev This is handy as memory arrays have a fixed size when initialised, this reduces the array to only valid values (so that .length works as you'd like)
     /// @dev This can be made redundant when .push is supported on dynamic memory arrays
-    /// @param addressArray An array of a fixed size of addresses
-    function utilArrayFilterValuesOnly(address[] memory addressArray) private pure returns (address[] memory) {
+    /// @param _addressArray An array of a fixed size of addresses
+    function utilArrayFilterValuesOnly(address[] memory _addressArray) private pure returns (address[] memory) {
         // The indexes for the arrays
         uint[] memory indexes = new uint[](2); 
         indexes[0] = 0;
         indexes[1] = 0;
         // Calculate the length of the non empty values
-        for (uint32 i = 0; i < addressArray.length; i++) {
-            if (addressArray[i] != 0) {
+        for (uint32 i = 0; i < _addressArray.length; i++) {
+            if (_addressArray[i] != 0) {
                 indexes[0]++;
             }
         }
         // Create a new memory array at the length of our valid values we counted
         address[] memory valueArray = new address[](indexes[0]);
         // Now populate the array
-        for (i = 0; i < addressArray.length; i++) {
-            if (addressArray[i] != 0) {
-                valueArray[indexes[1]] = addressArray[i];
+        for (i = 0; i < _addressArray.length; i++) {
+            if (_addressArray[i] != 0) {
+                valueArray[indexes[1]] = _addressArray[i];
                 indexes[1]++;
             }
         }
