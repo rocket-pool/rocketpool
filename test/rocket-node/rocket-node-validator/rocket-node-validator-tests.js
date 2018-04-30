@@ -1,7 +1,7 @@
 const os = require('os');
 
 import { printTitle, assertThrows } from '../../utils';
-import { RocketPool, RocketSettings, Casper } from '../../artifacts';
+import { RocketPool, RocketSettings, Casper, RocketPoolMini } from '../../artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
 import { scenarioIncrementEpoch, scenarioCreateValidationContract, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
@@ -217,36 +217,36 @@ export default function({owner}) {
                 gas: nodeLogoutGas
             });
 
-            // // move forward so we can vote again
-            // await scenarioIncrementEpoch(owner);
+            // move forward so we can vote again
+            await scenarioIncrementEpoch(owner);
 
-            // // make sure we can still vote while we are waiting for logout
-            // let epoch = await casper.get_current_epoch.call();
-            // await scenarioNodeVoteCast({
-            //     nodeAddress: nodeFirst,
-            //     epoch: epoch.valueOf(),
-            //     minipoolAddress: miniPools.first.address,
-            //     voteMessage: voteMessage,
-            //     gas: nodeVotingGas
-            // });
+            // make sure we can still vote while we are waiting for logout
+            let epoch = await casper.get_current_epoch.call();
+            await scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch.valueOf(),
+                minipoolAddress: miniPools.first.address,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            });
 
-            // // Forward Casper past our logout delay so that we are actually logged out
-            // // Currently default logout delay is 2 dynasties + 1 for luck
-            // // let logoutDelayDynasties = await casper.get_dynasty_logout_delay.call({from: owner});
-            // // for (let i = 0; i < (logoutDelayDynasties + 1); i++) {
-            // //     await scenarioIncrementEpoch(owner);
-            // //     await scenarioIncrementEpoch(owner);
-            // //     await scenarioIncrementDynasty(owner);
-            // // }
+            // Forward Casper past our logout delay so that we are actually logged out
+            // Currently default logout delay is 2 dynasties + 1 for luck
+            let logoutDelayDynasties = await casper.get_dynasty_logout_delay.call({from: owner});
+            for (let i = 0; i < (logoutDelayDynasties + 1); i++) {
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementEpoch(owner);
+                await scenarioIncrementDynasty(owner);
+            }
 
-            // // epoch = await casper.get_current_epoch.call();            
-            // // await scenarioNodeVoteCast({
-            // //     nodeAddress: nodeFirst,
-            // //     epoch: epoch.valueOf(),
-            // //     minipoolAddress: miniPools.first.address,
-            // //     voteMessage: voteMessage,
-            // //     gas: nodeVotingGas
-            // // });
+            epoch = await casper.get_current_epoch.call();            
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                epoch: epoch.valueOf(),
+                minipoolAddress: miniPools.first.address,
+                voteMessage: voteMessage,
+                gas: nodeVotingGas
+            }));
         });
 
     });

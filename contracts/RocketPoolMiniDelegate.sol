@@ -183,7 +183,7 @@ contract RocketPoolMiniDelegate is RocketBase {
 
     /// @dev Returns true if this pool is able to cast votes with Casper
     function getCanVote() public returns(bool) {
-        bool isStaking = status == 2;
+        bool isStakingOrAwaitingLogout = (status == 2 || status == 3);
         bool isAssignedToNode = nodeOwner != 0;
         bool hasSignatureVerificationContractBeenDeployed = nodeValCodeAddress != 0;
         bool hasDepositBeenSentToCasper = this.balance == 0;
@@ -199,7 +199,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
 
         return 
-            isStaking && 
+            isStakingOrAwaitingLogout && 
             isAssignedToNode &&
             hasSignatureVerificationContractBeenDeployed &&
             hasDepositBeenSentToCasper &&
