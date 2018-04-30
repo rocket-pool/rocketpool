@@ -163,7 +163,7 @@ contract DummyCasper is Ownable {
     }
 
     /// @dev Gets whether a validator has voted on a particular epoch as a bitmap
-    function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public returns(uint256) {        
+    function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public view returns(uint256) {        
         return vote_bitmap[_epoch][_validator_index / 256];
     }
 
