@@ -146,6 +146,8 @@ export default function({owner}) {
             }));
         });
 
+        xit(printTitle('registered node', 'cannot cast a vote in the first quarter of an epoch'), async () => {});
+
         it(printTitle('registered node', 'can only cast a vote for a pool that is staking'), async () => {
             // Set our pool launch timer to 1000 setting so that it will not trigger a minipool launch
             await rocketSettings.setMiniPoolCountDownTime(1000, {from: web3.eth.coinbase, gas: 500000});
@@ -247,7 +249,7 @@ export default function({owner}) {
                 voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
-        });
+        });        
 
     });
 

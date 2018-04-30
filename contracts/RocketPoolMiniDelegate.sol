@@ -198,6 +198,9 @@ contract RocketPoolMiniDelegate is RocketBase {
         // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
         bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
 
+        // TODO: need !inFirstQuarterOfEpoch check - to be done when integrated real casper and block increment functionality
+        // bool inFirstQuarterOfEpoch = (block.number % casper.get_epoch_length()) <= (casper.get_epoch_length() / 4);
+
         return 
             isStakingOrAwaitingLogout && 
             isAssignedToNode &&
