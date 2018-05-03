@@ -88,6 +88,18 @@ contract RocketNode is RocketBase {
         return rocketStorage.getUint(keccak256("nodes.total"));
     }
 
+    /// @dev Get a list of all node addresses on the network
+    function getNodeAddresses() public view returns (address[] memory) {
+        // Create an array at the length of the current nodes
+        address[] memory nodes = new address[](rocketStorage.getUint(keccak256("nodes.total")));
+        // Populate array
+        for (uint256 i = 0; i < nodes.length; ++i) {
+            nodes[i] = rocketStorage.getAddress(keccak256("nodes.index.reverse", i));
+        }
+        // Return addresses
+        return nodes;
+    }
+
     /// @dev Returns true if this node exists, reverts if it doesn't
     /// @param _nodeAddress node account address.
     function getNodeExists(address _nodeAddress) public view onlyRegisteredNode(_nodeAddress) returns(bool) {
