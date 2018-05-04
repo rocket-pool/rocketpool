@@ -79,6 +79,8 @@ contract RocketUpgrade is RocketBase {
     /// @param _name The name of the new contract
     /// @param _contractAddress The address of the new contract
     function addContract(string _name, address _contractAddress) onlyOwner external {
+        // Check the contract address
+        require(_contractAddress != 0x0);
         // Check the name is not already in use
         address existingContractName = rocketStorage.getAddress(keccak256("contract.name", _name));
         require(existingContractName == 0x0);
