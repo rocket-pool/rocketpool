@@ -4,7 +4,7 @@ const Web3 = require('web3');
 // Artifacts
 const RocketPool = artifacts.require('./contract/RocketPool');
 
-// Register node
+// Set staking duration
 module.exports = async (done) => {
 
     // Get command-line arguments (remove args from truffle)

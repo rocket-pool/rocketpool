@@ -4,7 +4,7 @@ const Web3 = require('web3');
 // Artifacts
 const RocketSettings = artifacts.require('./contract/RocketSettings');
 
-// Register node
+// Update setting
 module.exports = async (done) => {
 
     // Get command-line arguments (remove args from truffle)
