@@ -103,7 +103,8 @@ contract DummyCasper is Ownable {
 
      /// @dev Get the current Casper dynasty
     function get_dynasty() public view returns(uint128) {
-        return dynasty;
+        return 2;
+        // return dynasty;
     }
 
     /// @dev Get the current Casper epoch
@@ -114,12 +115,14 @@ contract DummyCasper is Ownable {
 
     /// @dev Get the validator start dynasty
     function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128) {
-        return validators[validator_index].start_dynasty;
+        return 1;
+        // return validators[validator_index].start_dynasty;
     }
 
     /// @dev Get the validator end dynasty
     function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128) {
-        return validators[validator_index].end_dynasty;
+        return 3;
+        // return validators[validator_index].end_dynasty;
     }
 
     /// @dev Get the validator address

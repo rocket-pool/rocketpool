@@ -45,9 +45,11 @@ contract RocketSettings is RocketBase {
 
             /*** Minipools ***/
             setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
-            setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
-            setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
-            setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            setMiniPoolLaunchAmount(5 ether);      
+            //  setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
+            // setMiniPoolStakingTime("short", 12 weeks);                                              // The minimum Wei required for a pool to launch
+            setMiniPoolCountDownTime(15 seconds);                                                  // The time limit to stay in countdown before staking begins
+            setMiniPoolStakingTime("short", 5 minutes);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
             setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
             setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
