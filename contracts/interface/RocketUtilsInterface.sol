@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 contract RocketUtilsInterface {
@@ -17,4 +17,9 @@ contract RocketUtilsInterface {
     * @return bool
     */
     function sigVerifyIsSigned(address _address, bytes32 _msgHash, bytes _sig) public pure returns (bool);
+    /**
+    * @dev Splits an ec signature into its component parts v, r, s
+    * @param _sig Signature bytes to split
+    */
+    function sigSplit(bytes _sig) public pure returns (uint8, bytes32, bytes32);
 }

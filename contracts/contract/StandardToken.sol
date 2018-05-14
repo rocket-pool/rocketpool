@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "../interface/ERC20.sol";
@@ -19,7 +19,7 @@ contract StandardToken is ERC20 {
         if (balances[msg.sender] >= _value && _value > 0) {
             balances[msg.sender] = balances[msg.sender].sub(_value);
             balances[_to] = balances[_to].add(_value);
-            Transfer(msg.sender, _to, _value);
+            emit Transfer(msg.sender, _to, _value);
             return true;
         } else {
             return false;
@@ -31,7 +31,7 @@ contract StandardToken is ERC20 {
             balances[_to] = balances[_to].add(_value);
             balances[_from] = balances[_from].sub(_value);
             allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
-            Transfer(_from, _to, _value);
+            emit Transfer(_from, _to, _value);
             return true;
         } else {
             return false;
@@ -40,7 +40,7 @@ contract StandardToken is ERC20 {
 
     function approve(address _spender, uint256 _value) public returns (bool success) {
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 

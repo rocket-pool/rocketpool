@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -28,7 +28,7 @@ contract RocketUpgrade is RocketBase {
     /*** Constructor ***********/    
 
     /// @dev RocketUpgrade constructor
-    function RocketUpgrade(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -39,7 +39,6 @@ contract RocketUpgrade is RocketBase {
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
     /// @param _forceEther Force the upgrade even if this contract has ether in it
      /// @param _forceTokens Force the upgrade even if this contract has known tokens in it
-    // TODO: Write unit tests to verify
     function upgradeContract(string _name, address _upgradedContractAddress, bool _forceEther, bool _forceTokens) onlyOwner external {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
@@ -68,6 +67,6 @@ contract RocketUpgrade is RocketBase {
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
         // Log it
-        ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
+        emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
 }

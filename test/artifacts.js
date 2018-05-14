@@ -1,5 +1,7 @@
 export const RocketUser = artifacts.require('./contract/RocketUser');
-export const RocketNode = artifacts.require('./contract/RocketNode');
+export const RocketNodeAdmin = artifacts.require('./contract/RocketNodeAdmin');
+export const RocketNodeStatus = artifacts.require('./contract/RocketNodeStatus');
+export const RocketNodeValidator = artifacts.require('./contract/RocketNodeValidator');
 export const RocketPool = artifacts.require('./contract/RocketPool');
 export const RocketPoolMini = artifacts.require('./contract/RocketPoolMini');
 export const RocketDepositToken = artifacts.require('./contract/RocketDepositToken');
@@ -11,4 +13,3 @@ export const RocketSettings = artifacts.require('./contract/RocketSettings');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
 export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
 export const Casper = artifacts.require('./contract/Casper/DummyCasper');
-export const CasperValidation = artifacts.require('./contract/Casper/Validation');

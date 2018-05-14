@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
@@ -37,7 +37,7 @@ contract RocketRole is RocketBase {
     /*** Constructor **********/
    
     /// @dev constructor
-    function RocketRole(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -89,7 +89,7 @@ contract RocketRole is RocketBase {
         // Add it
         rocketStorage.setBool(keccak256("access.role", _role, _address), true);
         // Log it
-        RoleAdded(_role, _address);
+        emit RoleAdded(_role, _address);
     }
 
     /**
@@ -101,7 +101,7 @@ contract RocketRole is RocketBase {
         // Remove from storage
         rocketStorage.deleteBool(keccak256("access.role", _role, _address));
         // Log it
-        RoleRemoved(_role, _address);
+        emit RoleRemoved(_role, _address);
     }
     
     

@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -28,7 +28,7 @@ contract RocketVaultStore is RocketBase {
     /*** Constructor ***********/
 
     /// @dev RocketVaultStore constructor
-    function RocketVaultStore(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }

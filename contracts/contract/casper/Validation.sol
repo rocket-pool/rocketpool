@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 /// @title A shell of a contract that nodes can deploy to use as a validation contract for Casper

@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 /// @title The primary persistent storage for Rocket Pool
@@ -29,7 +29,7 @@ contract RocketStorage {
 
 
     /// @dev constructor
-    function RocketStorage() public {
+    constructor() public {
         // Set the main owner upon deployment
         boolStorage[keccak256("access.role", "owner", msg.sender)] = true;
     }

@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -59,7 +59,7 @@ contract RocketDepositToken is ERC20, RocketBase {
     /*** Methods *************/
    
     /// @dev constructor
-    function RocketDepositToken(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
     }
@@ -68,7 +68,7 @@ contract RocketDepositToken is ERC20, RocketBase {
     /// @dev Fallback function, receives ether from minipools representing outstanding deposit tokens
     function() public payable {   
         // Deposited from a minipool (most likely, anyone can seed the fund)
-        Deposit(msg.sender, msg.value, now);
+        emit Deposit(msg.sender, msg.value, now);
     }
 
     /**
@@ -82,7 +82,7 @@ contract RocketDepositToken is ERC20, RocketBase {
         if (_amount > 0) {
             totalSupply = totalSupply.add(_amount);
             balances[_to] = balances[_to].add(_amount);
-            Mint(_to, _amount);
+            emit Mint(_to, _amount);
             return true;
         }
         return false;
@@ -95,7 +95,7 @@ contract RocketDepositToken is ERC20, RocketBase {
     */
     function burnTokensForEther(uint256 _amount) public returns (bool success) {
         // Check to see if we have enough returned token withdrawal deposits from the minipools to cover this trade
-        require(this.balance >= _amount);
+        require(address(this).balance >= _amount);
         // Check to see if the sender has a sufficient token balance and is burning some tokens
         require(balances[msg.sender] >= _amount && _amount > 0);
         // Rocket settings
@@ -103,7 +103,7 @@ contract RocketDepositToken is ERC20, RocketBase {
         // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
         uint256 etherWithdrawAmountPlusBonus = _amount.add(_amount.mul(rocketSettings.getTokenRPDWithdrawalFeePerc()) / calcBase);
         // Check to see if we have enough ether to cover the full withdrawal amount
-        require(this.balance >= etherWithdrawAmountPlusBonus);
+        require(address(this).balance >= etherWithdrawAmountPlusBonus);
         // Subtract tokens from the sender's balance
         balances[msg.sender] = balances[msg.sender].sub(_amount);
         // Update total token supply
@@ -111,7 +111,7 @@ contract RocketDepositToken is ERC20, RocketBase {
         // Transfer the full withdrawal amount to the sender
         msg.sender.transfer(etherWithdrawAmountPlusBonus);
         // Fire Burn event
-        Burn(msg.sender, _amount);
+        emit Burn(msg.sender, _amount);
         // Success
         return true;
     }

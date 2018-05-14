@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
@@ -11,7 +11,7 @@ contract RocketUtils is RocketBase {
     /*** Constructor **********/
    
     /// @dev constructor
-    function RocketUtils(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -38,6 +38,30 @@ contract RocketUtils is RocketBase {
     */
     function sigVerifyIsSigned(address _address, bytes32 _msgHash, bytes _sig) public pure returns (bool) {
         return sigRecover(_msgHash, _sig) == _address;
+    }
+
+
+    /**
+    * @dev Splits an ec signature into its component parts v, r, s
+    * @param _sig Signature bytes to split
+     */
+    function sigSplit(bytes _sig) public pure returns (uint8, bytes32, bytes32) {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        assembly {
+            r := mload(add(_sig, 32))
+            s := mload(add(_sig, 64))
+            v := byte(0, mload(add(_sig, 96)))
+        }
+
+        // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+        if (v < 27) {
+            v += 27;
+        }
+
+        return (v, r, s);
     }
 
 

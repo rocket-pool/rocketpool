@@ -1,7 +1,8 @@
 import { RocketSettings } from '../artifacts';
 import { scenarioDeposit } from '../rocket-user/rocket-user-scenarios';
 import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioNodeCheckin } from '../rocket-node/rocket-node-scenarios';
+import { scenarioRegisterNode } from '../rocket-node/rocket-node-admin/rocket-node-admin-scenarios';
+import { scenarioNodeCheckin } from '../rocket-node/rocket-node-status/rocket-node-status-scenarios';
 import { scenarioWithdrawDepositTokens } from './rocket-deposit-scenarios';
 
 

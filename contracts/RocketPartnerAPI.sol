@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -14,12 +14,12 @@ import "./interface/RocketPoolInterface.sol";
 contract RocketPartnerAPI is RocketBase {
 
 
-
     /*** Contracts **************/
 
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                // The main pool contract
     RocketUserInterface rocketUser = RocketUserInterface(0);                // The main user interface methods
     RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);    // The main settings contract most global parameters are maintained
+
   
     /*** Events ****************/
 
@@ -59,6 +59,7 @@ contract RocketPartnerAPI is RocketBase {
         bool _enabled,
         uint256 created
     );
+
       
     /*** Modifiers *************/
 
@@ -89,7 +90,7 @@ contract RocketPartnerAPI is RocketBase {
     /*** Constructor *************/
    
     /// @dev rocketNode constructor
-    function RocketPartnerAPI(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
     }
@@ -127,7 +128,7 @@ contract RocketPartnerAPI is RocketBase {
         // Make the deposit now and validate it - needs a lot of gas to cover potential minipool creation for this user (if throw errors start appearing, increase/decrease gas to cover the changes in the minipool)
         if (rocketUser.userDepositFromPartner.value(msg.value).gas(rocketSettings.getMiniPoolNewGas())(_partnerUserAddress, msg.sender, _poolStakingTimeID)) {
             // Fire the event now 
-            APIpartnerDepositAccepted(msg.sender, _partnerUserAddress, _poolStakingTimeID, msg.value, now);
+            emit APIpartnerDepositAccepted(msg.sender, _partnerUserAddress, _poolStakingTimeID, msg.value, now);
         } 
     }
 
@@ -142,7 +143,7 @@ contract RocketPartnerAPI is RocketBase {
         // Forward the deposit to our main contract, call our transfer method, creates a transaction 
         if (rocketUser.userWithdrawFromPartner.gas(600000)(_miniPoolAddress, _amount, msg.sender, _partnerUserAddress)) {
             // Fire the event now 
-            APIpartnerWithdrawalAccepted(msg.sender, _partnerUserAddress, now);
+            emit APIpartnerWithdrawalAccepted(msg.sender, _partnerUserAddress, now);
         }
     }
 
@@ -154,7 +155,7 @@ contract RocketPartnerAPI is RocketBase {
         // Disable
         rocketStorage.setBool(keccak256("partner.depositsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerDepositsEnabled(_partnerAddress, _enabled, now);
+        emit PartnerDepositsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Disable a partners ability to withdraw users deposits
@@ -163,7 +164,7 @@ contract RocketPartnerAPI is RocketBase {
         // Disable
         rocketStorage.setBool(keccak256("partner.withdrawalsAllowed", _partnerAddress), _enabled);
         // Fire the event
-        PartnerWithdrawalsEnabled(_partnerAddress, _enabled, now);
+        emit PartnerWithdrawalsEnabled(_partnerAddress, _enabled, now);
     }
 
     /// @dev Register a new partner address if it doesn't exist, only the contract creator can do this
@@ -188,7 +189,7 @@ contract RocketPartnerAPI is RocketBase {
         // We also index all our partners so we can do a reverse lookup based on its array index
         rocketStorage.setAddress(keccak256("partners.index.reverse", partnerCountTotal), _newPartnerAddress);
         // Fire the event
-        PartnerRegistered(_newPartnerAddress, now);
+        emit PartnerRegistered(_newPartnerAddress, now);
     } 
 
     /// @dev Remove a partner from the Rocket Pool network, note that a partner should first have its user deposits disabled so that their users can withdraw
@@ -218,6 +219,6 @@ contract RocketPartnerAPI is RocketBase {
             rocketStorage.deleteAddress(keccak256("partners.index.reverse", removedPartnerIndex));
         }
         // Fire the event
-        PartnerRemoved(_partnerAddress, now);
+        emit PartnerRemoved(_partnerAddress, now);
     } 
 }

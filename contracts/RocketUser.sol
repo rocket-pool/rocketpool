@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -33,19 +33,6 @@ contract RocketUser is RocketBase {
 
     /*** Events ****************/
 
-    event UserDeposit (
-        address indexed _from,
-        string  poolStakingTimeID,
-        uint256 value,
-        uint256 created
-    );
-
-    event UserAddedToPool (
-        address indexed _userAddress,
-        address indexed _partnerAddress,
-        address indexed _pool,
-        uint256 created 
-    );
 
     event UserSetBackupWithdrawalAddress (
         address indexed _userAddress,
@@ -105,7 +92,7 @@ contract RocketUser is RocketBase {
     /*** Constructor *************/
    
     /// @dev rocketUser constructor
-    function RocketUser(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
     }
@@ -151,7 +138,7 @@ contract RocketUser is RocketBase {
         // Update the pools status now
         poolDepositTo.updateStatus();
         // All good? Fire the event for the new deposit
-        Transferred(_userAddress, poolUserBelongsToo, keccak256("deposit"), msg.value, now);   
+        emit Transferred(_userAddress, poolUserBelongsToo, keccak256("deposit"), msg.value, now);   
         // Done
         return true;
     }
@@ -224,7 +211,7 @@ contract RocketUser is RocketBase {
         // Ok send the deposit to the user from the mini pool now
         require(rocketPoolMini.withdraw(_userAddress, _amount) == true);
         // Successful withdrawal
-        Transferred(_miniPoolAddress, _userAddress, keccak256("withdrawal"), _amount, now);    
+        emit Transferred(_miniPoolAddress, _userAddress, keccak256("withdrawal"), _amount, now);    
         // Success
         return true; 
     }
@@ -277,7 +264,7 @@ contract RocketUser is RocketBase {
         if ((rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1) && _newUserAddressUsedForDeposit != 0 && rocketPoolMini.getUserPartner(msg.sender) != _newUserAddressUsedForDeposit) {
             if (rocketPoolMini.setUserAddressBackupWithdrawal(msg.sender, _newUserAddressUsedForDeposit)) {
                 // Fire the event
-                UserSetBackupWithdrawalAddress(msg.sender, _newUserAddressUsedForDeposit, _miniPoolAddress, now);
+                emit UserSetBackupWithdrawalAddress(msg.sender, _newUserAddressUsedForDeposit, _miniPoolAddress, now);
                 // All good
                 return true; 
             }
@@ -303,7 +290,7 @@ contract RocketUser is RocketBase {
                     // Ok we're all good, lets change the initial user deposit address to the backup one so they can call the normal withdrawal process
                     if (rocketPoolMini.setUserAddressToCurrentBackupWithdrawal(_userAddressUsedForDeposit, msg.sender)) {
                         // Fire the event
-                        UserChangedToWithdrawalAddress(_userAddressUsedForDeposit, msg.sender, _miniPoolAddress, now);
+                        emit UserChangedToWithdrawalAddress(_userAddressUsedForDeposit, msg.sender, _miniPoolAddress, now);
                         // Cool
                         return true;
                     }
@@ -342,7 +329,7 @@ contract RocketUser is RocketBase {
             // Cool, lets update the users deposit total and flag that the user has outstanding tokens
             if (rocketPoolMini.setUserDepositTokensOwedAdd(msg.sender, _amount, tokenAmount)) {
                 // Fire the event
-                UserDepositTokensWithdrawal(msg.sender, _amount, tokenAmount, now);
+                emit UserDepositTokensWithdrawal(msg.sender, _amount, tokenAmount, now);
                 // All good
                 return true;
             }
