@@ -387,7 +387,7 @@ contract RocketPoolMiniDelegate is RocketBase {
             return;
         }
         // The pool now has user(s), has been assigned a staking duration but the balance has not reached enough to begin staking yet
-        if (getUserCount() > 0 && stakingDuration > 0 && this.balance < minPoolWeiRequired && status == 0) {
+        if (getUserCount() > 0 && stakingDuration > 0 && this.balance < minPoolWeiRequired && status <= 1) {
             // Update status
             changeStatus(0);
             // Done
