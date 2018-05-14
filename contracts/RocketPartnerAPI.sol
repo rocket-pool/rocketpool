@@ -106,10 +106,10 @@ contract RocketPartnerAPI is RocketBase {
         return rocketStorage.getUint(keccak256("partner.index", _partnerAddress));
     }
 
-    /// @dev Get the address to deposit to with Rocket Pool
+    /// @dev Get the most recent address to deposit to with Rocket Pool for partners
     function getAPIdepositAddress() public view returns(address) { 
         // The partner address being supplied must also match the sender address
-        return address(this);
+        return rocketStorage.getAddress(keccak256("contract.name", "rocketPartnerAPI"));
     }
 
     /*** Setters *************/
