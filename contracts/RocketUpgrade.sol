@@ -90,7 +90,7 @@ contract RocketUpgrade is RocketBase {
         rocketStorage.setAddress(keccak256("contract.name", _name), _contractAddress);
         rocketStorage.setAddress(keccak256("contract.address", _contractAddress), _contractAddress);
         // Log it
-        ContractAdded(_contractAddress, now);
+        emit ContractAdded(_contractAddress, now);
     }
 
 }
