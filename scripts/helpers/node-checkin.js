@@ -2,7 +2,7 @@
 const Web3 = require('web3');
 
 // Artifacts
-const RocketNode = artifacts.require('./contract/RocketNode');
+const RocketNodeStatus = artifacts.require('./contract/RocketNodeStatus');
 
 // Checkin node
 module.exports = async (done) => {
@@ -18,13 +18,13 @@ module.exports = async (done) => {
     let [nodeAddress, averageLoad] = args;
 
     // Get contract dependencies
-    const rocketNode = await RocketNode.deployed();
+    const rocketNodeStatus = await RocketNodeStatus.deployed();
 
     // Estimate gas required to check in
-    let gasEstimate = await rocketNode.nodeCheckin.estimateGas(averageLoad, {from: nodeAddress});
+    let gasEstimate = await rocketNodeStatus.nodeCheckin.estimateGas(averageLoad, {from: nodeAddress});
 
     // Check in
-    let result = await rocketNode.nodeCheckin(averageLoad, {from: nodeAddress, gas: parseInt(gasEstimate) + 100000});
+    let result = await rocketNodeStatus.nodeCheckin(averageLoad, {from: nodeAddress, gas: parseInt(gasEstimate) + 100000});
 
     // Complete
     done('Node successfully checked in: ' + args.join(', '));

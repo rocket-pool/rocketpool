@@ -1,9 +1,10 @@
 // Dependencies
 const Web3 = require('web3');
+const ethereumUtils = require('ethereumjs-util');
+const createValidationCodeContractBytes = require('../../test/_lib/validation-code-contract/validation-code-contract.js').createValidationCodeContractBytes;
 
 // Artifacts
-const CasperValidation = artifacts.require('./contract/Casper/Validation');
-const RocketNode = artifacts.require('./contract/RocketNode');
+const RocketNodeAdmin = artifacts.require('./contract/RocketNodeAdmin');
 
 // Register node
 module.exports = async (done) => {
@@ -19,17 +20,38 @@ module.exports = async (done) => {
     let [nodeAddress, providerID, subnetID, instanceID, regionID] = args;
 
     // Get contract dependencies
-    const rocketNode = await RocketNode.deployed();
+    const rocketNodeAdmin = await RocketNodeAdmin.deployed();
 
-    // Create and sign validation contract for node
-    const valCodeContract = await CasperValidation.new({from: nodeAddress, gas: 500000, gasPrice: 10000000000});
-    const signature = web3.eth.sign(nodeAddress, Web3.utils.soliditySha3(valCodeContract.address));
+    // Create validation contract for node
+    const validationContractBytes = createValidationCodeContractBytes(nodeAddress);
+    const validationContractTxHash = await web3.eth.sendTransaction({
+        from: nodeAddress,
+        data: validationContractBytes,
+        gas: 500000,
+    });
+    const validationContractReceipt = await web3.eth.getTransactionReceipt(validationContractTxHash);
+    const valCodeContractAddress = validationContractReceipt.contractAddress;
+
+    // Sign validation contract
+    const signature = web3.eth.sign(nodeAddress, valCodeContractAddress);
+    const signatureHash = hashMessage(valCodeContractAddress);
 
     // Register node
-    let result = await rocketNode.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, valCodeContract.address, signature, {from: web3.eth.coinbase, gas: 1600000});
+    let result = await rocketNodeAdmin.nodeAdd(nodeAddress, providerID, subnetID, instanceID, regionID, valCodeContractAddress, signatureHash, signature, {from: web3.eth.coinbase, gas: 1600000});
 
     // Complete
     done('Node successfully registered: ' + args.join(', '));
 
 };
+
+
+// Hash a message for Casper validation
+function hashMessage(data) {
+    var message = Web3.utils.isHexStrict(data) ? Web3.utils.hexToBytes(data) : data;
+    var messageBuffer = Buffer.from(message);
+    var preamble = "\x19Ethereum Signed Message:\n" + message.length;
+    var preambleBuffer = Buffer.from(preamble);
+    var ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
+    return Web3.utils.bytesToHex(ethereumUtils.sha3(ethMessage));
+}
 
