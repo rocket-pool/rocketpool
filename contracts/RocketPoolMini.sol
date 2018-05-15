@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -87,7 +87,10 @@ contract RocketPoolMini is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
-   
+    event VoteCast (
+        uint128 epoch,
+        bytes voteMessage
+    );
 
     /*** Modifiers *************/
 
@@ -115,7 +118,7 @@ contract RocketPoolMini is RocketBase {
     /*** Methods *************/
    
     /// @dev pool constructor
-    function RocketPoolMini(address _rocketStorageAddress, uint256 _miniPoolStakingDuration) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, uint256 _miniPoolStakingDuration) RocketBase(_rocketStorageAddress) public {
         // The current version of this pool
         version = 1;
         // Set the address of the Casper contract
@@ -133,7 +136,7 @@ contract RocketPoolMini is RocketBase {
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
     function() public payable { 
         // Log the deposit received
-        DepositReceived(msg.sender, msg.value, now);       
+        emit DepositReceived(msg.sender, msg.value, now);       
     }
 
     /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
@@ -308,6 +311,7 @@ contract RocketPoolMini is RocketBase {
     /// @param _userAddressToAdd New user address
     /// @param _partnerAddressToAdd The 3rd party partner the user may belong too
     function addUser(address _userAddressToAdd, address _partnerAddressToAdd) external onlyLatestRocketPool returns(bool) {
+        // TODO: Change this to use getMiniDelegateBooleanResponse
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("addUser(address,address)")), _userAddressToAdd, _partnerAddressToAdd) == true);
         return true;
     }
@@ -333,6 +337,38 @@ contract RocketPoolMini is RocketBase {
     /// @dev Sets the status of the pool based on several parameters 
     function updateStatus() public returns(bool) {
         require(rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(bytes4(keccak256("updateStatus()"))) == true);
+        return true;
+    }
+
+    /// @dev Cast Casper votes 
+    /// @param _epoch The epoch that is being voted on
+    /// @param _voteMessage Vote message to be sent to Casper, RLP encoded message containing [validator_index, target_hash, target_epoch, source_epoch]
+    function vote(uint256 _epoch, bytes _voteMessage) external onlyLatestRocketPool returns(bool) {
+        // Extra parameters are to workaround delegatecall and dynamic types
+        // https://ethereum.stackexchange.com/questions/16144/solidity-call-function-with-array-as-input/16165#16165
+         bool voteSuccessful = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(
+                    bytes4(keccak256("vote(uint256,bytes)")),
+                    _epoch, // epoch number
+                    0x40, // pointer to vote_message length
+                    _voteMessage.length, // vote message length
+                    _voteMessage // vote message values
+                );
+        require(voteSuccessful);
+        return true;
+    }
+
+    /// @dev Log the minipool out of Casper and wait for withdrawal
+    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
+    function logout(bytes _logoutMessage) external onlyLatestRocketPool returns(bool) {
+        // Extra parameters are to workaround delegatecall and dynamic types
+        // https://ethereum.stackexchange.com/questions/16144/solidity-call-function-with-array-as-input/16165#16165
+         bool logoutSuccessful = rocketStorage.getAddress(keccak256("contract.name", "rocketPoolMiniDelegate")).delegatecall(
+                    bytes4(keccak256("logout(bytes)")),
+                    0x20, // pointer to logout_message length
+                    _logoutMessage.length, // logout message length
+                    _logoutMessage // logout message values
+                );
+        require(logoutSuccessful);
         return true;
     }
     

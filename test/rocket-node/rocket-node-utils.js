@@ -1,6 +1,7 @@
 import { RocketSettings, RocketPool } from '../artifacts';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
-import { scenarioRegisterNode, scenarioNodeCheckin } from './rocket-node-scenarios';
+import { scenarioRegisterNode } from './rocket-node-admin/rocket-node-admin-scenarios';
+import { scenarioNodeCheckin } from './rocket-node-status/rocket-node-status-scenarios';
 
 
 // Register nodes and checkin to launch minipools

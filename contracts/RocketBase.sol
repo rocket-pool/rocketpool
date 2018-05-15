@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 import "./interface/RocketStorageInterface.sol";
 
@@ -55,7 +55,7 @@ contract RocketBase {
     /*** Constructor **********/
    
     /// @dev Set the main Rocket Storage address
-    function RocketBase(address _rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) public {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }

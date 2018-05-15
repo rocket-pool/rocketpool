@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -24,11 +24,16 @@ contract RocketUpgrade is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
+    event ContractAdded (
+        address indexed _contractAddress,                       // Address of the contract added
+        uint256 created                                         // Creation timestamp
+    );
+
 
     /*** Constructor ***********/    
 
     /// @dev RocketUpgrade constructor
-    function RocketUpgrade(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -39,7 +44,6 @@ contract RocketUpgrade is RocketBase {
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
     /// @param _forceEther Force the upgrade even if this contract has ether in it
      /// @param _forceTokens Force the upgrade even if this contract has known tokens in it
-    // TODO: Write unit tests to verify
     function upgradeContract(string _name, address _upgradedContractAddress, bool _forceEther, bool _forceTokens) onlyOwner external {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
@@ -68,6 +72,25 @@ contract RocketUpgrade is RocketBase {
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
         // Log it
-        ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
+        emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
+
+    /// @param _name The name of the new contract
+    /// @param _contractAddress The address of the new contract
+    function addContract(string _name, address _contractAddress) onlyOwner external {
+        // Check the contract address
+        require(_contractAddress != 0x0);
+        // Check the name is not already in use
+        address existingContractName = rocketStorage.getAddress(keccak256("contract.name", _name));
+        require(existingContractName == 0x0);
+        // Check the address is not already in use
+        address existingContractAddress = rocketStorage.getAddress(keccak256("contract.address", _contractAddress));
+        require(existingContractAddress == 0x0);
+        // Set contract name and address in storage
+        rocketStorage.setAddress(keccak256("contract.name", _name), _contractAddress);
+        rocketStorage.setAddress(keccak256("contract.address", _contractAddress), _contractAddress);
+        // Log it
+        emit ContractAdded(_contractAddress, now);
+    }
+
 }

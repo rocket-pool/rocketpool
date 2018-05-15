@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -14,20 +14,13 @@ import "./interface/RocketStorageInterface.sol";
 /// @author David Rugendyke
 contract RocketFactory is RocketBase {
 
-	/**** Properties ***********/
+    
+    /*** Events *************/
 
-    mapping (address => Contract) public contracts;     // Our rocket factory contracts
-    address[] public contractAddresses;                 // Keep an array of all our contract addresses for iteration
-
-
-    /*** Structs ***************/
-
-    struct Contract {
-        address contractAddress;
-        bytes32 name;
-        uint256 created;
-        bool exists;
-    }
+    event ContractCreated (
+        bytes32 name, 
+        address contractAddress
+    );
 
 
     /*** Modifiers ***************/
@@ -42,7 +35,7 @@ contract RocketFactory is RocketBase {
     /*** Methods ***************/
 
     /// @dev RocketFactory constructor
-    function RocketFactory(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
     }
@@ -60,21 +53,14 @@ contract RocketFactory is RocketBase {
     } 
 
     /// @dev Add the contract to our list of contract created contracts
-    /// @param newName The type/name of this contract
-    /// @param newContractAddress The address of this contract
-    function addContract(bytes32 newName, address newContractAddress) private returns(bool) {
+    /// @param _newName The type/name of this contract
+    /// @param _newContractAddress The address of this contract
+    function addContract(bytes32 _newName, address _newContractAddress) private returns(bool) {
          // Basic error checking for the storage
-        if (newContractAddress != 0 && contracts[newContractAddress].exists == false) {
-            // Add the new contract to the mapping of Contract structs
-            contracts[newContractAddress] = Contract({
-                contractAddress: newContractAddress,
-                name: newName,
-                created: now,
-                exists: true
-            });
-            // Store our contract address so we can iterate over it if needed
-            contractAddresses.push(newContractAddress);
-            // Success
+        if (_newContractAddress != 0) {
+            // Add the event now
+            emit ContractCreated(_newName, _newContractAddress);
+            // All good
             return true;
         }
         return false;

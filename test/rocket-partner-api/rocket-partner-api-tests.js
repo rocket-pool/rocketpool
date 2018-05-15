@@ -454,9 +454,12 @@ export default function({owner}) {
                 let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
                 let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
 
+                // partnerFirstUserAccount is not a minipool so should fail
+                let anInvalidMinipool = RocketPoolMini.at(partnerFirstUserAccount); 
+
                 // Withdraw on behalf of partner
                 await assertThrows(scenarioPartnerWithdraw({
-                    miniPool: RocketPoolMini.at(partnerFirstUserAccount),
+                    miniPool: anInvalidMinipool,
                     withdrawalAmount: withdrawalAmount,
                     userAddress: partnerFirstUserAccount,
                     fromAddress: partnerFirst,

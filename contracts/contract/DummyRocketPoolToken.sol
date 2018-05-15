@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./Ownable.sol";
@@ -35,9 +35,6 @@ contract DummyRocketPoolToken is StandardToken, Ownable {
 
     /**** Methods ***********/
 
-    /// @dev RPL Token Init
-    function DummyRocketPoolToken() public {}
-
 
     // @dev Mint the Rocket Pool Tokens (RPL)
     // @param _to The address that will receive the minted tokens.
@@ -53,7 +50,7 @@ contract DummyRocketPoolToken is StandardToken, Ownable {
         // Increase the current total supply
         totalSupply = totalSupply.add(_amount);
         // Fire mint token event
-        MintToken(msg.sender, _to, _amount);
+        emit MintToken(msg.sender, _to, _amount);
         // Return success flag
         return true;
     }

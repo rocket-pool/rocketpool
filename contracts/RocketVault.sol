@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
@@ -60,7 +60,7 @@ contract RocketVault is RocketBase {
     /*** Constructor ***********/    
 
     /// @dev RocketVault constructor
-    function RocketVault(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
     }
@@ -76,13 +76,13 @@ contract RocketVault is RocketBase {
     function deposit(bytes32 _account, uint256 _amount) payable external returns(uint256) {
         vaultStore = RocketVaultStore(rocketStorage.getAddress(keccak256("contract.name", "rocketVaultStore")));
         // Actual amount to deposit
-        uint256 deposit = 0;
+        uint256 depositAmount = 0;
         // Determine how much is being deposited based on the account type, can be either ether or tokens
         if (rocketStorage.getAddress(keccak256("vault.account.token.address", _account)) == 0x0) {
             // Capture the amount of ether sent
-            deposit = msg.value;
+            depositAmount = msg.value;
             // Send the ether to the store
-            require(vaultStore.depositEther.value(deposit)() == true);
+            require(vaultStore.depositEther.value(depositAmount)() == true);
         } else {
             // Make sure ether balance is not sent with token deposit
             require(msg.value == 0);
@@ -91,16 +91,16 @@ contract RocketVault is RocketBase {
             // Send them to the store now
             require(tokenContract.transferFrom(msg.sender, vaultStore, _amount) == true);
             // Set the amount now
-            deposit = _amount;
+            depositAmount = _amount;
         }
         // Verify deposit is ok based on the account type and exact values transferred to the vault, throws if not
-        acceptableDeposit(_account, deposit);
+        acceptableDeposit(_account, depositAmount);
         // Get how many individual deposits in this account we currently have  
         uint256 depositNumber = rocketStorage.getUint(keccak256("vault.account.deposits.total", _account)); 
         // Deposit into the account and keep track of its balance
-        rocketStorage.setUint(keccak256("vault.account.balance", _account), rocketStorage.getUint(keccak256("vault.account.balance", _account)).add(deposit));
+        rocketStorage.setUint(keccak256("vault.account.balance", _account), rocketStorage.getUint(keccak256("vault.account.balance", _account)).add(depositAmount));
         // Record the deposit amount
-        rocketStorage.setUint(keccak256("vault.account.deposit.amount", _account, depositNumber), deposit);
+        rocketStorage.setUint(keccak256("vault.account.deposit.amount", _account, depositNumber), depositAmount);
         // Record who made the deposit
         rocketStorage.setAddress(keccak256("vault.account.deposit.address", _account, depositNumber), msg.sender);
         // Record the time
@@ -108,7 +108,7 @@ contract RocketVault is RocketBase {
         // Update total deposits made into this account
         rocketStorage.setUint(keccak256("vault.account.deposits.total", _account), depositNumber + 1);
         // Log it
-        Deposit(msg.sender, _account, deposit, depositNumber, now);
+        emit Deposit(msg.sender, _account, depositAmount, depositNumber, now);
         // Return the current deposit number
         return depositNumber;
     }
@@ -141,7 +141,7 @@ contract RocketVault is RocketBase {
             require(vaultStore.withdrawTokens(rocketStorage.getAddress(keccak256("vault.account.token.address", _account)), _withdrawalAddress, _amount) == true);
         }
         // Log it
-        Withdrawal(msg.sender, _account, _amount, withdrawalNumber, now);
+        emit Withdrawal(msg.sender, _account, _amount, withdrawalNumber, now);
         // Return the current withdrawal number
         return withdrawalNumber;
     }

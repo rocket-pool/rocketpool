@@ -108,16 +108,19 @@ export async function scenarioPartnerWithdraw({miniPool, withdrawalAmount, userA
         gas: gas,
     });
 
-    // Get updated deposit amount
-    let depositedAmountNew = await miniPool.getUserDeposit.call(userAddress);
-
-    // Assert that deposit amount was updated successfully
-    assert.equal(depositedAmountNew.valueOf(), parseInt(depositedAmountOld.valueOf()) - withdrawalAmount, 'Minipool deposit amount was not updated correctly');
-
     // Check that minipool contract has been destroyed if entire last deposit was withdrawn
     if (depositedAmountOld.valueOf() == withdrawalAmount && miniPoolUserCountOld.valueOf() == 1) {
         let miniPoolExists = await rocketPool.getPoolExists.call(miniPool.address);
         assert.isFalse(miniPoolExists.valueOf(), 'Minipool exists when it should have been destroyed');
+    }
+    else {
+        // Otherwise check that the deposit has been updated
+
+        // Get updated deposit amount
+        let depositedAmountNew = await miniPool.getUserDeposit.call(userAddress);
+
+        // Assert that deposit amount was updated successfully
+        assert.equal(depositedAmountNew.valueOf(), parseInt(depositedAmountOld.valueOf()) - withdrawalAmount, 'Minipool deposit amount was not updated correctly');
     }
 
 }
