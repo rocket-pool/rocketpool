@@ -1,7 +1,7 @@
 import { printTitle, assertThrows, soliditySha3 } from '../utils';
 import { RocketStorage, RocketDepositToken, RocketUser } from '../artifacts';
 import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
-import { scenarioUpgradeContract } from './rocket-upgrade-scenarios';
+import { scenarioUpgradeContract, scenarioAddContract } from './rocket-upgrade-scenarios';
 
 export default function({owner}) {
 
@@ -234,6 +234,81 @@ export default function({owner}) {
                 upgradedContractAddress: rocketUserNew.address,
                 fromAddress: userFirst,
             }), 'regular contract was upgraded by non owner');
+
+        });
+
+
+        // Owner can add a contract
+        it(printTitle('owner', 'can add a contract'), async () => {
+
+            // Old rocketUser contract address
+            let rocketTestAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
+
+            // Add rocketTest1 contract
+            await scenarioAddContract({
+                contractName: 'rocketTest1',
+                contractAddress: rocketUserNew.address,
+                fromAddress: owner,
+            });
+
+            // New rocketUser contract address
+            let rocketTestAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
+
+            // Assert contract has been added
+            assert.equal(rocketTestAddressOld, '0x0000000000000000000000000000000000000000', 'contract already existed');
+            assert.notEqual(rocketTestAddressNew, '0x0000000000000000000000000000000000000000', 'contract was not added');
+
+        });
+
+
+        // Owner cannot add a contract with a null address
+        it(printTitle('owner', 'cannot add a contract with a null address'), async () => {
+
+            // Add test contract
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketTest2',
+                contractAddress: '0x0000000000000000000000000000000000000000',
+                fromAddress: owner,
+            }), 'contract with a null address was added');
+
+        });
+
+
+        // Owner cannot add a contract with an existing name
+        it(printTitle('owner', 'cannot add a contract with an existing name'), async () => {
+
+            // Add test contract
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketTest1',
+                contractAddress: rocketDepositTokenNew.address,
+                fromAddress: owner,
+            }), 'contract with an existing name was added');
+
+        });
+
+
+        // Owner cannot add a contract with an existing address
+        it(printTitle('owner', 'cannot add a contract with an existing address'), async () => {
+
+            // Add test contract
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketTest3',
+                contractAddress: rocketUserNew.address,
+                fromAddress: owner,
+            }), 'contract with an existing address was added');
+
+        });
+
+
+        // Non-owner cannot add a contract
+        it(printTitle('non owner', 'cannot add a contract'), async () => {
+
+            // Add rocketTest1 contract
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketTest4',
+                contractAddress: rocketDepositTokenNew.address,
+                fromAddress: userFirst,
+            }), 'contract was added by non owner');
 
         });
 

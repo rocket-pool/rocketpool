@@ -24,6 +24,11 @@ contract RocketUpgrade is RocketBase {
         uint256 created                                         // Creation timestamp
     );
 
+    event ContractAdded (
+        address indexed _contractAddress,                       // Address of the contract added
+        uint256 created                                         // Creation timestamp
+    );
+
 
     /*** Constructor ***********/    
 
@@ -69,4 +74,23 @@ contract RocketUpgrade is RocketBase {
         // Log it
         emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
+
+    /// @param _name The name of the new contract
+    /// @param _contractAddress The address of the new contract
+    function addContract(string _name, address _contractAddress) onlyOwner external {
+        // Check the contract address
+        require(_contractAddress != 0x0);
+        // Check the name is not already in use
+        address existingContractName = rocketStorage.getAddress(keccak256("contract.name", _name));
+        require(existingContractName == 0x0);
+        // Check the address is not already in use
+        address existingContractAddress = rocketStorage.getAddress(keccak256("contract.address", _contractAddress));
+        require(existingContractAddress == 0x0);
+        // Set contract name and address in storage
+        rocketStorage.setAddress(keccak256("contract.name", _name), _contractAddress);
+        rocketStorage.setAddress(keccak256("contract.address", _contractAddress), _contractAddress);
+        // Log it
+        ContractAdded(_contractAddress, now);
+    }
+
 }
