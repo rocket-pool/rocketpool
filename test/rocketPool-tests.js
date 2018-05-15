@@ -1,5 +1,5 @@
-import { printEvent } from './utils';
-import { RocketPool, RocketPoolMini} from './artifacts';
+import { printEvent } from './_lib/utils/general';
+import { RocketPool, RocketPoolMini} from './_lib/artifacts';
 
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
@@ -13,50 +13,6 @@ import rocketDepositTests from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
-
-
-/**
- * Event logging
- */
-
-
-// Toggle display of events
-const displayEvents = false;
-
-// Display events triggered during the tests
-if (displayEvents) {
-  RocketPool.deployed().then(rocketPool => {
-    const eventWatch = rocketPool
-      .allEvents({
-        fromBlock: 0,
-        toBlock: 'latest',
-      })
-      .watch((error, result) => {
-        // This will catch all events, regardless of how they originated.
-        if (error == null) {
-          // Print the event
-          printEvent('rocket', result, '\x1b[33m%s\x1b[0m:');
-          // Listen for new pool events too
-          if (result.event == 'PoolCreated') {
-            // Get an instance of that pool
-            const miniPool = RocketPoolMini.at(result.args._address);
-            // Watch for events in minipools also as with the main contract
-            const poolEventWatch = miniPool
-              .allEvents({
-                fromBlock: 0,
-                toBlock: 'latest',
-              })
-              .watch((error, result) => {
-                // This will catch all pool events, regardless of how they originated.
-                if (error == null) {
-                  printEvent('minipool', result, '\x1b[32m%s\x1b[0m');
-                }
-              });
-          }
-        }
-      });
-  });
-}
 
 
 /**

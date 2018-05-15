@@ -1,4 +1,4 @@
-import { RocketStorage } from '../artifacts';
+import { RocketStorage } from '../_lib/artifacts'
 
 
 // Writes boolean data to storage and asserts that data was written

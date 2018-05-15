@@ -1,4 +1,4 @@
-import { RocketNodeStatus } from '../../artifacts';
+import { RocketNodeStatus }  from '../../_lib/artifacts';
 
 // Performs node checkin and asserts that checkin was preformed successfully
 export async function scenarioNodeCheckin({averageLoad, fromAddress}) {

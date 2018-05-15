@@ -1,5 +1,5 @@
-import { printTitle, assertThrows } from '../utils';
-import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
 

@@ -25,9 +25,9 @@ ganache_running() {
 
 start_ganache() {
   if [ "$SOLIDITY_COVERAGE" = true ]; then
-    node_modules/.bin/ganache-cli --gasLimit 6725527 --port "$ganache_port" > /dev/null &
+    node_modules/.bin/ganache-cli -l 6725527 -e 1000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" --port "$ganache_port" > /dev/null &
   else
-    node_modules/.bin/ganache-cli --gasLimit 6725527 > /dev/null &
+    node_modules/.bin/ganache-cli -l 6725527 -e 1000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" > /dev/null &
   fi
 
   ganache_pid=$!

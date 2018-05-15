@@ -1,7 +1,7 @@
 const os = require('os');
 
-import { printTitle, assertThrows } from '../../utils';
-import { RocketPool, RocketSettings, Casper, RocketPoolMini } from '../../artifacts';
+import { printTitle, assertThrows }  from '../../_lib/utils/general';
+import { RocketPool, RocketSettings, Casper, RocketPoolMini }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
 import { scenarioIncrementEpoch, scenarioCreateValidationContract, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';

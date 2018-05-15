@@ -1,4 +1,4 @@
-import { RocketSettings } from '../artifacts';
+import { RocketSettings } from '../_lib/artifacts'
 import { scenarioDeposit } from '../rocket-user/rocket-user-scenarios';
 import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioRegisterNode } from '../rocket-node/rocket-node-admin/rocket-node-admin-scenarios';

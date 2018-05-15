@@ -1,5 +1,5 @@
-import { soliditySha3, hashMessage } from '../../utils';
-import { RocketNodeAdmin } from '../../artifacts';
+import { soliditySha3, hashMessage }  from '../../_lib/utils/general';
+import { RocketNodeAdmin }  from '../../_lib/artifacts';
 
 // Registers node and asserts that number of registered nodes increased
 export async function scenarioRegisterNode({

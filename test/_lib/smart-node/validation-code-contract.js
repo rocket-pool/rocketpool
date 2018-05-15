@@ -1,31 +1,43 @@
-const Web3 = require('web3');
 let _ = require('underscore')._;
-let assemblyToEVM = require('./utils/assembly-to-evm');
+let assemblyToEVM = require('../utils/assembly-to-evm');
 
 /**
- * sendDeployTransaction
+ * sendDeployValidationContract
  * 
  * Constructs and sends a transaction to deploy the Casper signature verification contract.
  * The contract is a pure function that uses the ecrecover precompiled contract for calculating the addressed used to sign a message.
  * The signer's address is baked into the contract at time of deployment.
  * The contract does not adhere to the ABI it is purely a function that is expecting parameters (hash, v, r, s)
- * The sendDeployTransaction expects the signer address to be unlocked. 
+ * The sendDeployValidationContract expects the signer address to be unlocked. 
 */
 
+const $Web3 = require('web3');
+const $web3 = new $Web3('http://localhost:8545');
+
 module.exports = {
-    createValidationCodeContractBytes
+    sendDeployValidationContract
+}
+
+function sendDeployValidationContract(signerAddress){
+
+    return $web3.eth.sendTransaction({
+        from: signerAddress,
+        data: _createValidationCodeContractBytes(signerAddress),
+        gas: 2000000
+    });
+
 }
     
  // construct validation code contract
-function createValidationCodeContractBytes(signerAddress){
-    let addressBytes = Web3.utils.hexToBytes(signerAddress);
+function _createValidationCodeContractBytes(signerAddress){
+    let addressBytes = $web3.utils.hexToBytes(signerAddress);
 
     // inject signer address into contract template
     let contractTemplate = _getContractTemplate();
     let contractAssembly = _replacePlaceholder(contractTemplate, '<PLACEHOLDER>', [`PUSH${addressBytes.length}`, ...addressBytes]);
 
     // convert from assembly to evm bytes
-    return Web3.utils.bytesToHex(assemblyToEVM(contractAssembly))
+    return $web3.utils.bytesToHex(assemblyToEVM(contractAssembly))
 }
 
 // contract assembly template with <PLACEHOLDER for injecting the signer address

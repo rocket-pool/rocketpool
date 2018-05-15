@@ -1,5 +1,5 @@
-import { printTitle, assertThrows } from '../utils';
-import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';

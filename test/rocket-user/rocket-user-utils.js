@@ -1,4 +1,4 @@
-import { RocketSettings } from '../artifacts';
+import { RocketSettings } from '../_lib/artifacts'
 import { scenarioDeposit } from './rocket-user-scenarios';
 
 

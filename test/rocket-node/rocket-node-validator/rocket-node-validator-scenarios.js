@@ -1,5 +1,5 @@
 const os = require('os');
-import { RocketNodeValidator, Casper } from '../../artifacts';
+import { RocketNodeValidator, Casper }  from '../../_lib/artifacts';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 

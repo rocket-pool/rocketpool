@@ -1,4 +1,4 @@
-import { RocketDepositToken, RocketSettings, RocketUser } from '../artifacts';
+import { RocketDepositToken, RocketSettings, RocketUser } from '../_lib/artifacts'
 
 
 // Withdraws deposit tokens and asserts that token supply and balances are correct

@@ -1,5 +1,5 @@
-import { soliditySha3 } from '../utils';
-import { RocketNode } from '../artifacts';
+import { soliditySha3 } from '../_lib/utils/general';
+import { RocketNode } from '../_lib/artifacts'
 
 
 // Registers node and asserts that number of registered nodes increased

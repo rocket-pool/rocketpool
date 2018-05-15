@@ -1,4 +1,4 @@
-import { RocketSettings } from '../artifacts';
+import { RocketSettings } from '../_lib/artifacts'
 import { scenarioRegisterPartner, scenarioPartnerDeposit } from './rocket-partner-api-scenarios';
 
 

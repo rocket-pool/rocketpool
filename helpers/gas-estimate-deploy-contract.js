@@ -29,7 +29,7 @@ const contractJson = JSON.parse(fs.readFileSync(json, 'utf8'));
 const jsonGasFile = './helpers/gas-estimate-deploy-contract.json';
 
 // Start now
-(async () => {
+if (web3.isConnected()) {
   // See if we have a previous result for this contract to compare
   const jsonData = jsonfile.readFileSync(jsonGasFile);
   const jsonFilter = jsonQuery('**[contract=' + program.contract + ']', {
@@ -37,8 +37,8 @@ const jsonGasFile = './helpers/gas-estimate-deploy-contract.json';
   });
   const previousGas = jsonFilter.references[0].deploymentGas;
 
-  const info = await web3.eth.getBlock('latest');
-  const gasEstimate = await web3.eth.estimateGas({ data: contractJson.bytecode, gas: info.gasLimit }); // Max Gas Block Limit, cannot exceed this
+  const info = web3.eth.getBlock('latest');
+  const gasEstimate = web3.eth.estimateGas({ data: contractJson.bytecode, gas: info.gasLimit }); // Max Gas Block Limit, cannot exceed this
   console.log('Current Gas: ' + gasEstimate);
   if (previousGas) {
     const gasDiff = gasEstimate - previousGas;
@@ -57,6 +57,4 @@ const jsonGasFile = './helpers/gas-estimate-deploy-contract.json';
       console.error('Error saving gas results');
     }
   });
-})();
-
-
+}

@@ -1,0 +1,14 @@
+[{
+    "name": "check(address)",
+    "type": "function",
+    "constant": true,
+    "inputs": [{ "name": "addr", "type": "address" }],
+    "outputs": [{ "name": "out", "type": "bool" }]
+},
+{
+    "name": "submit(address)",
+    "type": "function",
+    "constant": false,
+    "inputs": [{ "name": "addr", "type": "address" }],
+    "outputs": [{ "name": "out", "type": "bool" }]
+}]

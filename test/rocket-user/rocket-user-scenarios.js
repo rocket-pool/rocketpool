@@ -1,4 +1,4 @@
-import { RocketUser, RocketPool, RocketPoolMini, RocketSettings } from '../artifacts';
+import { RocketUser, RocketPool, RocketPoolMini, RocketSettings } from '../_lib/artifacts'
 
 
 // Deposits ether with RocketPool

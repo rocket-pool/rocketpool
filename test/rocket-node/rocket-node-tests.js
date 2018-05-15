@@ -1,8 +1,8 @@
 // OS methods
 const os = require('os');
 
-import { printTitle, assertThrows } from '../utils';
-import { RocketSettings, RocketPool, Casper } from '../artifacts';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketSettings, RocketPool, Casper } from '../_lib/artifacts'
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../casper/casper-scenarios';
 import { scenarioWithdrawDeposit } from '../rocket-user/rocket-user-scenarios';
