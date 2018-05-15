@@ -150,10 +150,10 @@ contract RocketPool is RocketBase {
         // Double check the pools status is accepting deposits and user isn't in there already
         if (poolAddUserTo.getStatus() == 0) {
             // User is added if they don't exist in it already
-            if (poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
+            if(!poolAddUserTo.getUserExists(_newUserAddress) && poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
                 // Fire the event
                 emit PoolAssignedUser(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
-            } 
+            }
             // Return the pool address that the user belongs to
             return poolAssignToAddress;
         } 
