@@ -392,28 +392,39 @@ module.exports = async (deployer, network) => {
                 gasPrice: '20000000000'
           });
 
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Deploying');
+
           // Note Casper is deployed as late as possible to make sure its initial current_epoch correctly (if many transactions occur after its deployment, block number will be too far for the correct epoch to be used)
           // Precompiled - Casper
-          const casper = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/simple_casper_test.abi'), null, {
+          const casper = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/simple_casper.abi'), null, {
               from: accounts[0], 
               gasPrice: '20000000000' // 20 gwei
           });
           // Deploy Casper
-          let casperBytecode = config.fs.readFileSync('./contracts/contract/casper/compiled/simple_casper_test.bin');
+          let casperBytecode = config.fs.readFileSync('./contracts/contract/casper/compiled/simple_casper.bin');
           // Update the casper bytecode to not use the rlp_decoder address specified here https://github.com/ethereum/vyper/blob/170229494a582735dc2973eb2b6f4ef6f493f67c/vyper/utils.py#L106
           // We need it to use the one we deployed, otherwise we'd need to recompile Vyper to use this one, so do a find and replace in the bytecode
           casperBytecode = casperBytecode.toString().replace(/5185D17c44699cecC3133114F8df70753b856709/gi, 'Cb969cAAad21A78a24083164ffa81604317Ab603').trim();
           // Create the contract now
           const casperContract = await casper.deploy(
-            // Casper settings 
-            { arguments: casperInit.init(accounts[0], sigHashContract._address, purityCheckerContract._address, web3.toWei('5', 'ether')),
-              data: casperBytecode}).send({
+            // Casper deployment 
+            {               
+              data: casperBytecode
+            }).send({
                 from: accounts[0], 
-                gas: 5000000, 
+                gas: 6000000, 
                 gasPrice: '20000000000'
-          });
+            });
           // Set the Casper contract address
           casperContractAddress = casperContract._address;
+
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Initialising');
+          await casperContract.methods.init(...casperInit.init(sigHashContract._address, purityCheckerContract._address, web3.toWei('5', 'ether')))
+            .send({
+              from: accounts[0], 
+              gas: 3000000, 
+              gasPrice: '20000000000'
+            });
           // Log it
           console.log('\x1b[32m%s\x1b[0m:', 'Casper - Deployed and Initialised');
           console.log(casperContractAddress); 
