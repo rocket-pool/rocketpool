@@ -41,12 +41,15 @@ contract RocketDepositToken is ERC20, RocketBase {
 
     event Mint(
         address indexed _to, 
-        uint256 value
+        uint256 value,
+        uint256 created
     );
 
     event Burn(
         address indexed _owner, 
-        uint256 value
+        uint256 value,
+        uint256 ethValue,
+        uint256 created
     );
 
     event Deposit(
@@ -82,7 +85,7 @@ contract RocketDepositToken is ERC20, RocketBase {
         if (_amount > 0) {
             totalSupply = totalSupply.add(_amount);
             balances[_to] = balances[_to].add(_amount);
-            emit Mint(_to, _amount);
+            emit Mint(_to, _amount, now);
             return true;
         }
         return false;
@@ -111,7 +114,7 @@ contract RocketDepositToken is ERC20, RocketBase {
         // Transfer the full withdrawal amount to the sender
         msg.sender.transfer(etherWithdrawAmountPlusBonus);
         // Fire Burn event
-        emit Burn(msg.sender, _amount);
+        emit Burn(msg.sender, _amount, etherWithdrawAmountPlusBonus, now);
         // Success
         return true;
     }
