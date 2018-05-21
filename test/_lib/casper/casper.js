@@ -14,7 +14,7 @@ const casperInit = require('../../../contracts/contract/casper/compiled/simple_c
 
 // Load our precompiled casper contract now as web3.eth.contract
 async function Casper() {
-    return new $web3.eth.Contract(getABI('./contracts/contract/casper/compiled/simple_casper_test.abi'), await getContractAddressFromStorage('casper'));
+    return new $web3.eth.Contract(getABI('./contracts/contract/casper/compiled/simple_casper.abi'), await getContractAddressFromStorage('casper'));
 }
 
 // Initialise the current epoch if possible
