@@ -15,6 +15,8 @@ module.exports = async (done) => {
 
     // Parse arguments
     let [methodName, value] = args;
+    if (value == 'false') value = false;
+    else if (value == 'true') value = true;
 
     // Get contract dependencies
     const rocketSettings = await RocketSettings.deployed();
