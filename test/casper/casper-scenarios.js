@@ -180,10 +180,12 @@ export async function scenarioValidatorWithdraw({validatorAddress, validatorWith
     // Casper
     const casper = await CasperInstance();
 
+    // Precheck make sure withdrawal address has a 0 balance
     let balanceBefore = new BN(await $web3.eth.getBalance(validatorWithdrawalAddress));
+    assert.isTrue(balanceBefore == 0);
 
     let validatorIndex = parseInt(await casper.methods.validator_indexes(validatorWithdrawalAddress).call({from: validatorAddress}));
-    let validatorDeposit = await casper.methods.validators__deposit(validatorIndex).call({from: validatorAddress});
+    let validatorDeposit = new BN(await casper.methods.validators__deposit(validatorIndex).call({from: validatorAddress}));
     
     let withdrawalGas = await casper.methods.withdraw(validatorIndex).estimateGas({from: validatorAddress});
     let tx = await casper.methods.withdraw(validatorIndex)
@@ -197,5 +199,5 @@ export async function scenarioValidatorWithdraw({validatorAddress, validatorWith
     assert.isTrue(tx.status == 1, 'Withdraw transaction was not successful');
    
     let balanceAfter = new BN(await $web3.eth.getBalance(validatorWithdrawalAddress));
-    assert.isTrue(balanceAfter.gt(balanceBefore), 'Deposit + reward funds have not be sent to withdrawal address');
+    assert.isTrue(balanceAfter.gt(validatorDeposit), 'Deposit + reward funds have not be sent to withdrawal address');
 }

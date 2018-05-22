@@ -474,7 +474,7 @@ export default function({owner}) {
         });       
 
         // Successful vote
-        it(printTitle('validatorFirst', 'calls withdraw and waits for withdrawal delay'), async () => {
+        it(printTitle('validatorFirst', 'calls withdraw and receives funds + rewards'), async () => {
             await scenarioValidatorWithdraw({validatorAddress: validatorFirst, validatorWithdrawalAddress: validatorFirstWithdrawalAddress});
         });
 
