@@ -464,36 +464,9 @@ export default function({owner}) {
             await scenarioValidatorVote({
                 validatorAddress: validatorThird
             });
-        });
+        });       
 
-        //  /** Dynasty 13 */
-
-        // // Incrememnt the current Casper epoch and initalise it
-        // it(printTitle('casper', 'increment epoch by 1'), async () => {
-        //     await scenarioIncrementEpochAndInitialise(owner, 1);
-        // });       
-
-        // // Successful vote
-        // it(printTitle('validatorFirst', 'does not need to vote, it is logged out and awaiting withdrawal delay'), async () => {            
-        // });
-
-        //  // Successful vote
-        //  it(printTitle('validatorSecond', 'casts successful vote for this epoch (with reward)'), async () => {
-        //     // Perform Vote
-        //     await scenarioValidatorVote({
-        //         validatorAddress: validatorSecond
-        //     });
-        // });
-
-        //  // Successful vote
-        //  it(printTitle('validatorThird', 'casts successful vote for this epoch (with reward)'), async () => {
-        //     // Perform Vote
-        //     await scenarioValidatorVote({
-        //         validatorAddress: validatorThird
-        //     });
-        // });
-
-         /** Dynasty 14 */
+         /** Dynasty 13 */
 
         // Incrememnt the current Casper epoch and initalise it
         it(printTitle('casper', 'increment epoch by 1'), async () => {
