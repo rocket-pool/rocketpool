@@ -1,5 +1,5 @@
 const os = require('os');
-import { RocketNodeValidator, Casper }  from '../../_lib/artifacts';
+import { RocketNodeValidator, Casper, RocketPoolMini } from '../../_lib/artifacts';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
@@ -31,6 +31,11 @@ export async function scenarioNodeLogout({nodeAddress, minipoolAddress, logoutMe
 
     let log = result.logs.find(({ event }) => event == 'NodeLogout');
     assert.isDefined(log, 'NodeLogout event was not logged');
+
+    // Check minipool status
+    let miniPool = RocketPoolMini.at(minipoolAddress);
+    let miniPoolStatus = await miniPool.getStatus.call();
+    assert.equal(miniPoolStatus.valueOf(), 3, 'Invalid minipool status');
 
     // check parameters were correct
     let recordedMinipool = log.args.minipool_address;

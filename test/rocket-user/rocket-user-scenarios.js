@@ -137,14 +137,19 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
 export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, depositFromAddress = null, feeAccountAddress, gas}) {
     const rocketUser = await RocketUser.deployed();
     const rocketPool = await RocketPool.deployed();
+    const rocketSettings = await RocketSettings.deployed();
+
+    // Get minimum ether required to launch minipool
+    const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
 
     // Get initial balances
     let depositAmountOld = await miniPool.getUserDeposit.call(depositFromAddress || fromAddress);
     let feeAccountBalanceOld = web3.eth.getBalance(feeAccountAddress);
     let miniPoolBalanceOld = web3.eth.getBalance(miniPool.address);
 
-    // Get initial minipool user count
+    // Get initial minipool user count & status
     let miniPoolUserCountOld = await miniPool.getUserCount.call();
+    let miniPoolStatusOld = await miniPool.getStatus.call();
 
     // Withdraw deposit
     let result = await rocketUser.userWithdraw(miniPool.address, withdrawalAmount, {
@@ -156,6 +161,9 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     let feeAccountBalanceNew = web3.eth.getBalance(feeAccountAddress);
     let miniPoolBalanceNew = web3.eth.getBalance(miniPool.address);
 
+    // Get updated minipool status
+    let miniPoolStatusNew = await miniPool.getStatus.call();
+
     // Assert Transferred event was logged
     let log = result.logs.find(({ event }) => event == 'Transferred');
     assert.notEqual(log, undefined, 'Transferred event was not logged');
@@ -163,9 +171,17 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     // Get withdrawn amount
     let withdrawnAmount = log.args.value;
 
+    // Check new minipool status
+    if (miniPoolStatusOld.valueOf() != 4) {
+        let expectedStatus = (miniPoolBalanceNew.valueOf() < minEtherRequired.valueOf() ? 0 : 1);
+        assert.equal(miniPoolStatusNew.valueOf(), expectedStatus, 'Invalid minipool status');
+    }
+
     // Asserts
-    assert.isTrue(withdrawnAmount > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
-    assert.isTrue(feeAccountBalanceNew.valueOf() > feeAccountBalanceOld.valueOf(), 'Fee account balance did not increase');
+    if (miniPoolStatusOld.valueOf() == 4) {
+        assert.isTrue(withdrawnAmount.valueOf() > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
+        assert.isTrue(feeAccountBalanceNew.valueOf() > feeAccountBalanceOld.valueOf(), 'Fee account balance did not increase');
+    }
     assert.isTrue(miniPoolBalanceNew.valueOf() < miniPoolBalanceOld.valueOf(), 'Minipool balance did not decrease');
 
     // Check that minipool contract has been destroyed if entire last deposit was withdrawn

@@ -378,10 +378,10 @@ contract RocketPoolMiniDelegate is RocketBase {
             // Remove the user from the pool now they dont have a balance
             removeUser(userAddress);
         }
-        // Update the status of the pool
-        updateStatus();
         // Send withdrawal amount to user's address
         userAddress.transfer(withdrawAmount);
+        // Update the status of the pool
+        updateStatus();
         // Fire the event for the withdrawal
         emit PoolTransfer(this, userAddress, keccak256("withdrawal"), withdrawAmount, users[userAddress].balance, now);
         // Success

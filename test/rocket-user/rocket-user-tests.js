@@ -107,6 +107,32 @@ export default function({owner}) {
             });
 
 
+            // Second user withdraws initial deposit, to trigger the pool to revert to accepting deposits
+            it(printTitle('userSecond', 'withdraws ether from minipool, first minipool status changes to accepting deposits'), async () => {
+
+                // Get the amount of ether to withdraw - enough to revert the minipool to accepting deposits
+                let withdrawAmount = parseInt(web3.toWei('4.5', 'ether').valueOf());
+
+                // Withdraw ether
+                await scenarioWithdrawDeposit({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: withdrawAmount,
+                    fromAddress: userSecond,
+                    feeAccountAddress: owner,
+                    gas: rocketWithdrawalGas,
+                });
+
+                // Re-deposit ether
+                await scenarioDeposit({
+                    stakingTimeID: 'short',
+                    fromAddress: userSecond,
+                    depositAmount: withdrawAmount,
+                    gas: rocketDepositGas,
+                });
+
+            });
+
+
             // Have a new user send a deposit to create a second minipool and trigger it to go into countdown
             it(printTitle('userThird', 'sends a lot of ether to RP, creates second minipool, registers user with pool and sets status of minipool to countdown'), async () => {
 
