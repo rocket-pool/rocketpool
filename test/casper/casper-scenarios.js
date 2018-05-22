@@ -28,7 +28,6 @@ export async function scenarioEpochIsCurrent(fromAddress) {
     let blockCurrent = web3.eth.blockNumber;
     // This would be the current epoch we expect
     let epochExpected = Math.floor(blockCurrent/epochBlockLength);
-    //console.log(blockCurrent, epochBlockLength, epochCurrent, epochExpected);
     assert.equal(epochExpected, epochCurrent, 'Casper epoch is not current');
 }
 
@@ -41,19 +40,13 @@ export async function scenarioIncrementEpochAndInitialise(fromAddress, amount) {
     await casperEpochIncrementAmount(fromAddress, amount);
     // Get the current epoch after
     let epochCurrentAfter = await casper.methods.current_epoch().call({from: fromAddress});
-    //console.log(epochCurrent, epochCurrentAfter, parseInt(epochCurrent) + parseInt(amount));
     assert.equal(parseInt(epochCurrentAfter), parseInt(epochCurrent) + parseInt(amount), 'Updated Casper epoch does not match');
-
-    console.log(`epoch ${epochCurrent}`);
-    console.log(`dynasty ${parseInt(await casper.methods.dynasty().call({from: fromAddress}))}`);
-
 }
 
 // An address makes a deposit into Casper
 export async function scenarioValidatorDeposit(fromAddress, amountInWei, validationAddr, withdrawalAddr) {
     // Casper
     const casper = await CasperInstance();
-    //console.log(fromAddress, web3.fromWei(amountInWei, 'ether'), validationAddr, withdrawalAddr);
     let tx = await casper.methods.deposit(validationAddr, withdrawalAddr).send({
         from: fromAddress, 
         gas: 3750000, 
@@ -181,29 +174,22 @@ export async function scenarioValidatorLogout({validatorAddress, validatorWithdr
     // Check that the end dynasty of the validator has been reduced because they are logging out (dynasty + logout delay)
     let validatorEndDynastyAfter = new BN(await casper.methods.validators__end_dynasty(validatorIndex).call({from: validatorAddress}));
     assert.isTrue(validatorEndDynastyAfter.lt(validatorEndDynastyBefore), 'Validator\'s end dynasty should be lower because they have logged out');
-
-    console.log(`validatorEndDynastyAfter ${validatorEndDynastyAfter}`);    
 }
 
 export async function scenarioValidatorWithdraw({validatorAddress, validatorWithdrawalAddress = validatorAddress}){
     // Casper
     const casper = await CasperInstance();
 
-    console.log(`end start epoch ${await casper.methods.dynasty_start_epoch(9).call({from: validatorAddress})}`);
-
     let balanceBefore = new BN(await $web3.eth.getBalance(validatorWithdrawalAddress));
-    console.log(balanceBefore.toString());
 
     let validatorIndex = parseInt(await casper.methods.validator_indexes(validatorWithdrawalAddress).call({from: validatorAddress}));
-    console.log(`validator index ${validatorIndex}`);
     let validatorDeposit = await casper.methods.validators__deposit(validatorIndex).call({from: validatorAddress});
-    console.log(`validator deposit ${validatorDeposit}`);
     
     let withdrawalGas = await casper.methods.withdraw(validatorIndex).estimateGas({from: validatorAddress});
     let tx = await casper.methods.withdraw(validatorIndex)
                                 .send({
                                     from: validatorAddress, 
-                                    gas: withdrawalGas + 25000, 
+                                    gas: withdrawalGas + 60000, 
                                     gasPrice: '20000000000'
                                 });
 
@@ -211,6 +197,5 @@ export async function scenarioValidatorWithdraw({validatorAddress, validatorWith
     assert.isTrue(tx.status == 1, 'Withdraw transaction was not successful');
    
     let balanceAfter = new BN(await $web3.eth.getBalance(validatorWithdrawalAddress));
-    console.log(balanceAfter.toString());
     assert.isTrue(balanceAfter.gt(balanceBefore), 'Deposit + reward funds have not be sent to withdrawal address');
 }
