@@ -61,7 +61,7 @@ contract RocketSettings is RocketBase {
             setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
 
             /*** RPL and RPD Tokens ***/
-            setTokenRPDWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)
+            setTokenRPDWithdrawalFeePerc(0.0025 ether);                                         // The default fee given as a % of 1 Ether (eg 5%)
 
             /*** Smart Nodes ***/                                            
             setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins

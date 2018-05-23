@@ -4,7 +4,6 @@ pragma solidity 0.4.23;
 import "./RocketBase.sol";
 import "./interface/ERC20.sol";
 import "./interface/RocketStorageInterface.sol";
-import "./interface/RocketSettingsInterface.sol";
 import "./lib/SafeMath.sol";
 
 
@@ -48,7 +47,6 @@ contract RocketDepositToken is ERC20, RocketBase {
     event Burn(
         address indexed _owner, 
         uint256 value,
-        uint256 ethValue,
         uint256 created
     );
 
@@ -101,20 +99,14 @@ contract RocketDepositToken is ERC20, RocketBase {
         require(address(this).balance >= _amount);
         // Check to see if the sender has a sufficient token balance and is burning some tokens
         require(balances[msg.sender] >= _amount && _amount > 0);
-        // Rocket settings
-        RocketSettingsInterface rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Now add the fee the original seller made to withdraw back onto the ether amount for the person burning the tokens
-        uint256 etherWithdrawAmountPlusBonus = _amount.add(_amount.mul(rocketSettings.getTokenRPDWithdrawalFeePerc()) / calcBase);
-        // Check to see if we have enough ether to cover the full withdrawal amount
-        require(address(this).balance >= etherWithdrawAmountPlusBonus);
         // Subtract tokens from the sender's balance
         balances[msg.sender] = balances[msg.sender].sub(_amount);
         // Update total token supply
         totalSupply = totalSupply.sub(_amount);
         // Transfer the full withdrawal amount to the sender
-        msg.sender.transfer(etherWithdrawAmountPlusBonus);
+        msg.sender.transfer(_amount);
         // Fire Burn event
-        emit Burn(msg.sender, _amount, etherWithdrawAmountPlusBonus, now);
+        emit Burn(msg.sender, _amount, now);
         // Success
         return true;
     }
