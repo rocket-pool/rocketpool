@@ -156,7 +156,7 @@ contract RocketPoolMini is RocketBase {
 
     /// @dev Returns the current validator index in Casper of this minipool
     function getCasperValidatorIndex() public view returns(uint128) {
-        return casper.get_validator_indexes(address(this));
+        return casper.validator_indexes(address(this));
     }
 
     /// @dev Returns the status of this pool

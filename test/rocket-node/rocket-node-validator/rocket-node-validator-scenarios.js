@@ -1,5 +1,13 @@
 const os = require('os');
+const $Web3 = require('web3');
+const $web3 = new $Web3('http://localhost:8545');
+const BN = require('bn.js');
+const RLP = require('rlp');
+
+import signRaw from '../../_lib/utils/sign';
 import { RocketNodeValidator, Casper, RocketPoolMini } from '../../_lib/artifacts';
+import { getGanachePrivateKey, paddy } from '../../_lib/utils/general';
+import { CasperInstance, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 import { scenarioIncrementEpoch, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
@@ -24,15 +32,35 @@ export async function scenarioNodeVoteCast({nodeAddress, epoch, minipoolAddress,
     assert.equal(recordedVoteMessage, voteMessage, 'The vote message does not match');
 }
 
-export async function scenarioNodeLogout({nodeAddress, minipoolAddress, logoutMessage, gas}){
+export async function scenarioNodeLogout({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress}){
     const rocketNodeValidator = await RocketNodeValidator.deployed();
 
+    // Casper
+    const casper = await CasperInstance();
+
+    // get the current validator index and epoch for logout message
+    let validatorIndex = parseInt(await casper.methods.validator_indexes(minipoolAddress).call({from: nodeAddress}));
+    let currentEpoch = parseInt(await casper.methods.current_epoch().call({from: nodeAddress}));
+
+    // DEBUG
+    let currentDynasty = await casper.methods.dynasty().call({from: nodeAddress});
+    let validatorEndDynasty = await casper.methods.validators__end_dynasty(validatorIndex).call({from: nodeAddress});
+    console.log(`validatorIndex ${validatorIndex} currentDynasty ${currentDynasty} validatorEndDynasty ${validatorEndDynasty}`);
+
+    // build logout message
+    let sigHash = $web3.utils.keccak256(RLP.encode([validatorIndex, currentEpoch]));
+    let signature = signRaw(sigHash, getGanachePrivateKey(signingAddress));
+    let combinedSig = Buffer.from(paddy(signature.v, 64) + paddy(signature.r, 64) +  paddy(signature.s, 64), 'hex');
+    let logoutMessage = RLP.encode([validatorIndex, currentEpoch, combinedSig]);
+
+    // call node validator to logout
     let result = await rocketNodeValidator.minipoolLogout(minipoolAddress, logoutMessage.toString('hex'), {from: nodeAddress, gas: gas});
 
+    // did the logout event fire?
     let log = result.logs.find(({ event }) => event == 'NodeLogout');
     assert.isDefined(log, 'NodeLogout event was not logged');
 
-    // Check minipool status
+    // check minipool status
     let miniPool = RocketPoolMini.at(minipoolAddress);
     let miniPoolStatus = await miniPool.getStatus.call();
     assert.equal(miniPoolStatus.valueOf(), 3, 'Invalid minipool status');
@@ -44,13 +72,12 @@ export async function scenarioNodeLogout({nodeAddress, minipoolAddress, logoutMe
     assert.equal(recordedLogoutMessage, logoutMessage, 'The logout message does not match');
 }
 
-export async function scenarioNodeLogoutForWithdrawal({owner, nodeAddress, minipoolAddress, logoutMessage, gas}){
+export async function scenarioNodeLogoutForWithdrawal({owner, nodeAddress, minipoolAddress, gas}){
     const casper = await Casper.deployed();
 
     await scenarioNodeLogout({
         nodeAddress,
         minipoolAddress,
-        logoutMessage,
         gas
     });
 

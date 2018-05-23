@@ -119,3 +119,13 @@ export function paddy(string, padlen, padchar) {
     var pad = new Array(1 + padlen).join(pad_char);
     return (pad + string).slice(-pad.length);
 }
+
+const ethereumUtils = require('ethereumjs-util');
+export function hashMessage(data) {
+    var message = $web3.utils.isHexStrict(data) ? $web3.utils.hexToBytes(data) : data;
+    var messageBuffer = Buffer.from(message);
+    var preamble = "\x19Ethereum Signed Message:\n" + message.length;
+    var preambleBuffer = Buffer.from(preamble);    
+    var ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
+    return $web3.utils.bytesToHex(ethereumUtils.sha3(ethMessage));
+}

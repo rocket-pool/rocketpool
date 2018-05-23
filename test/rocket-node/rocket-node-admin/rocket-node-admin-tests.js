@@ -3,11 +3,11 @@ const os = require('os');
 import { printTitle, assertThrows } from '../../_lib/utils/general';
 import { RocketSettings, Casper }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
-import { scenarioCreateValidationContract } from '../../casper/casper-scenarios';
+import { sendDeployValidationContract } from '../../_lib/smart-node/validation-code-contract-compiled';
 import { scenarioWithdrawDeposit } from '../../rocket-user/rocket-user-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-admin-scenarios';
-
+import { CasperInstance, casperEpochInitialise } from '../../_lib/casper/casper';
 
 
 export default function({owner}) {
@@ -58,7 +58,8 @@ export default function({owner}) {
         // Register test node
         it(printTitle('owner', 'register first node and verify its signature and validation contract are correct'), async () => {
 
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationTx.contractAddress;
 
             await scenarioRegisterNode({
                 nodeAddress: nodeFirst,
@@ -83,8 +84,11 @@ export default function({owner}) {
         // Try to register a node with a wrong validation address
         it(printTitle('owner', 'fail to register a node with a validation contract that does not match'), async () => {
 
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
-            let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationFirstTx.contractAddress;
+            
+            let validationSecondTx = await sendDeployValidationContract(nodeSecond);
+            let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
 
             await assertThrows(scenarioRegisterNode({
                 nodeAddress: nodeSecond,
@@ -103,7 +107,8 @@ export default function({owner}) {
         // Register test node
         it(printTitle('owner', 'register second node and verify its signature and validation contract are correct'), async () => {
             
-            let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+            let validationSecondTx = await sendDeployValidationContract(nodeSecond);
+            let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
 
             await scenarioRegisterNode({
                 nodeAddress: nodeSecond,
@@ -127,7 +132,9 @@ export default function({owner}) {
 
         // Owner cannot register a node with an invalid (null) address
         it(printTitle('owner', 'cannot register a node with an invalid address'), async () => {
-            let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeThird});
+            let validationThirdTx = await sendDeployValidationContract(nodeThird);
+            let valCodeAddress = validationThirdTx.contractAddress;
+
             await assertThrows(scenarioRegisterNode({
                 nodeAddress: '0x0000000000000000000000000000000000000000',
                 signNodeAddress: nodeThird,
@@ -158,7 +165,8 @@ export default function({owner}) {
             assert.isTrue(nodeThirdBalanceNew < parseInt(minSmartNodeBalance.valueOf()), 'Node balance is less than minimum smart node balance');
 
             // Attempt to register node
-            let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeThird});
+            let validationThirdTx = await sendDeployValidationContract(nodeThird);
+            let valCodeAddress = validationThirdTx.contractAddress;
             await assertThrows(scenarioRegisterNode({
                 nodeAddress: nodeThird,
                 valCodeAddress: valCodeAddress,
@@ -175,7 +183,8 @@ export default function({owner}) {
 
         // Owner cannot register a node with an address that has already been used
         it(printTitle('owner', 'cannot register a node with an address that already exists'), async () => { 
-            let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let valCodeAddress = validationFirstTx.contractAddress;
 
             // successfully register a node
             await scenarioRegisterNode({
@@ -201,8 +210,8 @@ export default function({owner}) {
                 gas: nodeRegisterGas
             }));
 
-                // clean up
-                await scenarioRemoveNode({
+            // clean up
+            await scenarioRemoveNode({
                 nodeAddress: nodeFirst,
                 fromAddress: owner,
                 gas: 200000,
@@ -212,7 +221,8 @@ export default function({owner}) {
 
         // Random address cannot register a node
         it(printTitle('random address', 'cannot register a node'), async () => {
-            let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFourth});
+            let validationFourthTx = await sendDeployValidationContract(nodeFourth);
+            let valCodeAddress = validationFourthTx.contractAddress;
             await assertThrows(scenarioRegisterNode({
                 nodeAddress: nodeFourth,
                 valCodeAddress: valCodeAddress,
@@ -244,13 +254,23 @@ export default function({owner}) {
         
         let rocketSettings;
 
+         // Casper
+         let casper = null; 
+
         before(async () => {
             rocketSettings = await RocketSettings.deployed();
+            casper = await CasperInstance();
         });
+
+         // Since new blocks occur for each transaction, make sure to inialise any new epochs automatically between tests
+         beforeEach(async () => {
+             await casperEpochInitialise(owner);
+         });
 
         // Owner removes first node
         it(printTitle('owner', 'can remove a node from the Rocket Pool network'), async () => {
-            let valCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let valCodeAddress = validationFirstTx.contractAddress;
 
             // successfully register a node
             await scenarioRegisterNode({
@@ -274,7 +294,8 @@ export default function({owner}) {
 
         // Owner attempts to remove active node
         it(printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'), async () => {
-            let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+            let validationSecondTx = await sendDeployValidationContract(nodeSecond);
+            let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
 
             // register node
             await scenarioRegisterNode({
@@ -301,8 +322,8 @@ export default function({owner}) {
             await scenarioNodeCheckin({
                 averageLoad: averageLoad15mins,
                 fromAddress: nodeSecond,
-            });               
-
+            });           
+            
             // attempt to remove the node with the attached minipool
             await assertThrows(scenarioRemoveNode({
                 nodeAddress: nodeSecond,

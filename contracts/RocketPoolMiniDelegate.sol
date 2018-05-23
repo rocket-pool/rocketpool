@@ -134,7 +134,7 @@ contract RocketPoolMiniDelegate is RocketBase {
 
     /// @dev Returns the current validator index in Casper of this minipool
     function getCasperValidatorIndex() public view returns(uint128) {
-        return casper.get_validator_indexes(address(this));
+        return casper.validator_indexes(address(this));
     }
 
     /// @dev Returns true if this pool is able to send a deposit to Casper
@@ -153,10 +153,14 @@ contract RocketPoolMiniDelegate is RocketBase {
         if (now >= statusChangeTime.add(stakingDuration)) {
             // Now check to see if we meet the Casper requirements for logging out before attempting
             // We must not have already logged out
-            if (casper.get_validators__dynasty_end(getCasperValidatorIndex()) > casper.get_dynasty() + casper.get_dynasty_logout_delay()) {
-                // Ok to logout
-                return true;
-            }
+            // uint128 dynasty = casper.dynasty();            
+            casper.validators__end_dynasty(1);
+            // uint128 delay = casper.DYNASTY_LOGOUT_DELAY();
+            // if (casper.validators__end_dynasty(getCasperValidatorIndex()) > casper.dynasty() + casper.DYNASTY_LOGOUT_DELAY()) {
+            //     // Ok to logout
+            //     return true;
+            // }
+            return true;
         }
         return false;
     }
@@ -165,9 +169,9 @@ contract RocketPoolMiniDelegate is RocketBase {
     function getCanWithdraw() public view returns(bool) {
         // These rules below must match the ones Casper has for withdrawing
         // Verify the dynasty is correct for withdrawing 
-        if (casper.get_dynasty() >= casper.get_validators__dynasty_end(getCasperValidatorIndex()) + 1) {
+        if (casper.dynasty() >= casper.validators__end_dynasty(getCasperValidatorIndex()) + 1) {
             // Verify the end epoch is correct for withdrawing
-            uint128 endEpoch = casper.get_dynasty_start_epoch(casper.get_validators__dynasty_end(getCasperValidatorIndex()) + 1);
+            uint128 endEpoch = casper.dynasty_start_epoch(casper.validators__end_dynasty(getCasperValidatorIndex()) + 1);
             return casper.get_current_epoch() >= endEpoch + casper.get_withdrawal_delay() ? true : false;
         }
         return false;
@@ -210,9 +214,9 @@ contract RocketPoolMiniDelegate is RocketBase {
     /// @dev Returns true if the validator is logged into Casper
     /// @param _validatorIndex Index of validator in Casper
     function isLoggedIntoCasper(uint128 _validatorIndex) private view returns(bool) {
-        uint128 startDynasty = casper.get_validators__dynasty_start(_validatorIndex);
-        uint128 endDynasty = casper.get_validators__dynasty_end(_validatorIndex);
-        uint128 currentDynasty = casper.get_dynasty();
+        uint128 startDynasty = casper.validators__start_dynasty(_validatorIndex);
+        uint128 endDynasty = casper.validators__end_dynasty(_validatorIndex);
+        uint128 currentDynasty = casper.dynasty();
 
         uint128 pastDynasty = currentDynasty - 1;
         bool inCurrentDynasty = ((startDynasty <= currentDynasty) && (currentDynasty < endDynasty));
@@ -505,7 +509,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         // check to make sure we can logout
         require(stakingBalance > 0 && status == 2 && getCanLogout() == true);
         // Request logout now, will throw if conditions not met
-        casper.logout(_logoutMessage);
+        // casper.logout(_logoutMessage);
         // Set the mini pool status as having requested logout
         changeStatus(3);
         // Done

@@ -384,13 +384,10 @@ export default function({owner}) {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
                 await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
 
-                let logoutMessage = '0x8779787998798798';
-
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 });
 
@@ -398,7 +395,6 @@ export default function({owner}) {
                     owner: owner,
                     nodeAddress: nodeSecond,
                     minipoolAddress: miniPools.second.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 });
             });

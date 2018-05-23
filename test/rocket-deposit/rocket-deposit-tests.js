@@ -385,7 +385,6 @@ export default function({owner}) {
                     owner: owner,
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 });
 
@@ -393,7 +392,6 @@ export default function({owner}) {
                     owner: owner,
                     nodeAddress: nodeSecond,
                     minipoolAddress: miniPools.second.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 });
             });

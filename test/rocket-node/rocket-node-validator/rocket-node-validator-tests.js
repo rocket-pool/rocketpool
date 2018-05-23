@@ -215,11 +215,9 @@ export default function({owner}) {
             await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
             
             // logout the minipool 
-            let logoutMessage = '0x8779787998798798';
             await scenarioNodeLogout({
                 nodeAddress: nodeFirst,
-                minipoolAddress: miniPools.first.address, 
-                logoutMessage: logoutMessage,
+                minipoolAddress: miniPools.first.address,
                 gas: nodeLogoutGas
             });
 
@@ -322,12 +320,10 @@ export default function({owner}) {
 
         it(printTitle('registered node', 'must provide a minipool address to logout'), async () =>{        
             let blankMiniPool = '';
-            let logoutMessage = '0x87797879987987987';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
-                    minipoolAddress: blankMiniPool, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: blankMiniPool,
                     gas: nodeLogoutGas
                 })
             );
@@ -339,7 +335,6 @@ export default function({owner}) {
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address, 
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 })
             );
@@ -358,11 +353,9 @@ export default function({owner}) {
             await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
 
             // Logout of Casper
-            let logoutMessage = '0x8779787998798798';
             await scenarioNodeLogout({
                 nodeAddress: nodeFirst,
-                minipoolAddress: miniPools.first.address, 
-                logoutMessage: logoutMessage,
+                minipoolAddress: miniPools.first.address,
                 gas: nodeLogoutGas
             })
 
@@ -412,12 +405,10 @@ export default function({owner}) {
 
             // use that node's address to try to log out a minipool that is not assigned to it
             let notFirstNode = nodeSecond;
-            let logoutMessage = '0x8779787998798798';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeSecond,
-                    minipoolAddress: miniPools.second.address, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: miniPools.second.address,
                     gas: nodeLogoutGas
                 })
             );
@@ -444,12 +435,10 @@ export default function({owner}) {
 
             // log out of the minipool, when still staking
             let notFirstNode = nodeSecond;
-            let logoutMessage = '0x8779787998798798';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
-                    minipoolAddress: miniPools.third.address, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: miniPools.third.address,
                     gas: nodeLogoutGas
                 })
             );

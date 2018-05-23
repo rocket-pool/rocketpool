@@ -17,7 +17,7 @@ import { CasperInstance, casperEpochInitialise } from '../_lib/casper/casper';
 
 export default function({owner}) {
 
-    contract.only('Casper', async (accounts) => {
+    contract('Casper', async (accounts) => {
 
          /**
          * Config

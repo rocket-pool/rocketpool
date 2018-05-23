@@ -5,9 +5,9 @@ pragma solidity 0.4.23;
 /// @author David Rugendyke
 contract CasperInterface {
      /// @dev Get the current Casper dynasty
-    function get_dynasty() public view returns(uint128);
+    function dynasty() public view returns(uint128);
     /// @dev Get the validator index for the withdrawal address
-    function get_validator_indexes(address withdrawal_addr) public view returns(uint128);
+    function validator_indexes(address withdrawal_addr) public view returns(uint128);
      /// @dev Get the current Casper epoch
     function get_current_epoch() public view returns(uint128);
     /// @dev Get the current Casper epoch
@@ -15,7 +15,7 @@ contract CasperInterface {
     /// @dev Get the current withdrawal delay in blocks
     function get_withdrawal_delay() public view returns(uint128);
     /// @dev Gets the number of dynasties that we need to wait before we are logged out
-    function get_dynasty_logout_delay() public view returns (uint128);
+    function DYNASTY_LOGOUT_DELAY() public view returns (uint128);
     /// @dev Gets the number of blocks in a Casper epoch
     function get_epoch_length() public view returns (uint128);
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
@@ -25,11 +25,11 @@ contract CasperInterface {
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
     function withdraw(uint256 validator_index) public returns(bool); 
     /// @dev Get the current start epoch of this dynasty
-    function get_dynasty_start_epoch(uint128 dynasty) public view returns (uint128);
-    function get_dynasty_in_epoch(uint128 _dynasty) public view returns (uint128);    
+    function dynasty_start_epoch(uint128 _dynasty) public view returns (uint128);
+    function dynasty_in_epoch(uint128 _dynasty) public view returns (uint128);    
     /// @dev Validator data 
-    function get_validators__dynasty_start(uint128 validator_index) public view returns (uint128);
-    function get_validators__dynasty_end(uint128 validator_index) public view returns (uint128);
+    function validators__start_dynasty(uint128 validator_index) public view returns (uint128);
+    function validators__end_dynasty(uint128 validator_index) public view returns (uint128);
     function get_validators__addr(uint128 validator_index) public view returns (address);
     function get_validators__withdrawal_address(uint128 validator_index) public view returns (address);
     /// @dev Voting functions
