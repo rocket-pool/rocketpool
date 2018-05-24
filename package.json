@@ -12,10 +12,9 @@
     "format": "prettier --write '**/*.js'"
   },
   "devDependencies": {
-    "ganache-cli": "^6.0.3",
+    "ganache-cli": "^6.1.0",
     "prettier": "^1.10.2",
     "truffle": "4.1.8",
-    "web3-utils": "^1.0.0-beta.28",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-es2015": "^6.24.1",
