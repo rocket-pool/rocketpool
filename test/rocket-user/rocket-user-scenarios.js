@@ -161,9 +161,6 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     let feeAccountBalanceNew = web3.eth.getBalance(feeAccountAddress);
     let miniPoolBalanceNew = web3.eth.getBalance(miniPool.address);
 
-    // Get updated minipool status
-    let miniPoolStatusNew = await miniPool.getStatus.call();
-
     // Assert Transferred event was logged
     let log = result.logs.find(({ event }) => event == 'Transferred');
     assert.notEqual(log, undefined, 'Transferred event was not logged');
@@ -173,6 +170,7 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
 
     // Check new minipool status
     if (miniPoolStatusOld.valueOf() != 4) {
+        let miniPoolStatusNew = await miniPool.getStatus.call();
         let expectedStatus = (miniPoolBalanceNew.valueOf() < minEtherRequired.valueOf() ? 0 : 1);
         assert.equal(miniPoolStatusNew.valueOf(), expectedStatus, 'Invalid minipool status');
     }

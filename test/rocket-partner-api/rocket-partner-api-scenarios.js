@@ -96,11 +96,18 @@ export async function scenarioPartnerWithdraw({miniPool, withdrawalAmount, userA
     const rocketPartnerAPI = await RocketPartnerAPI.deployed();
     const rocketPool = await RocketPool.deployed();
 
-    // Get initial deposit amount
-    let depositedAmountOld = await miniPool.getUserDeposit.call(userAddress);
+    // Ignore exceptions thrown on invalid minipool test
+    let depositedAmountOld, miniPoolUserCountOld;
+    try {
 
-    // Get initial minipool user count
-    let miniPoolUserCountOld = await miniPool.getUserCount.call();
+        // Get initial deposit amount
+        depositedAmountOld = await miniPool.getUserDeposit.call(userAddress);
+
+        // Get initial minipool user count
+        miniPoolUserCountOld = await miniPool.getUserCount.call();
+
+    }
+    catch (e) {}
 
     // Make withdrawal
     await rocketPartnerAPI.APIpartnerWithdrawal(miniPool.address, withdrawalAmount, userAddress, {
