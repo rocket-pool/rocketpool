@@ -9,11 +9,10 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
 
     // Get the initial total supply of tokens in circulation
     let totalTokenSupplyOld = await rocketDeposit.totalSupply.call({from: fromAddress});
-    totalTokenSupplyOld = parseFloat(web3.fromWei(totalTokenSupplyOld.valueOf(), 'ether'));
 
     // Get user's initial token balance
     let userTokenBalanceOld = await rocketDeposit.balanceOf.call(fromAddress);
-    userTokenBalanceOld = parseFloat(web3.fromWei(userTokenBalanceOld.valueOf(), 'ether'));
+    let userTokenBalanceOldValue = parseFloat(web3.fromWei(userTokenBalanceOld.valueOf(), 'ether'));
 
     // Get user's initial minipool ether balance
     let userEtherBalanceOld;
@@ -28,11 +27,10 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
 
     // Get the updated total supply of tokens in circulation
     let totalTokenSupplyNew = await rocketDeposit.totalSupply.call({from: fromAddress});
-    totalTokenSupplyNew = parseFloat(web3.fromWei(totalTokenSupplyNew.valueOf(), 'ether'));
 
     // Get user's updated token balance
     let userTokenBalanceNew = await rocketDeposit.balanceOf.call(fromAddress);
-    userTokenBalanceNew = parseFloat(web3.fromWei(userTokenBalanceNew.valueOf(), 'ether'));
+    let userTokenBalanceNewValue = parseFloat(web3.fromWei(userTokenBalanceNew.valueOf(), 'ether'));
 
     // Get user's updated minipool ether balance
     let userEtherBalanceNew;
@@ -45,10 +43,10 @@ export async function scenarioWithdrawDepositTokens({miniPool, withdrawalAmount,
     // Get user's expected token balance based on withdrawal amount and fees
     let tokenWithdrawalFee = await rocketSettings.getTokenRPDWithdrawalFeePerc.call();
     let tokenBalanceFeeIncurred = parseFloat(web3.fromWei(tokenWithdrawalFee.valueOf(), 'ether') * web3.fromWei(realWithdrawalAmount, 'ether'));
-    let expectedUserTokenBalance = userTokenBalanceOld + (web3.fromWei(realWithdrawalAmount, 'ether') - tokenBalanceFeeIncurred);
+    let expectedUserTokenBalance = userTokenBalanceOldValue + (web3.fromWei(realWithdrawalAmount, 'ether') - tokenBalanceFeeIncurred);
 
     // Asserts
-    assert.equal(userTokenBalanceNew, expectedUserTokenBalance, 'User\'s token balance is incorrect');
+    assert.equal(userTokenBalanceNewValue, expectedUserTokenBalance, 'User\'s token balance is incorrect');
     assert.equal((totalTokenSupplyNew - totalTokenSupplyOld), (userTokenBalanceNew - userTokenBalanceOld), 'Token supply does not match user token balance increase');
     assert.equal(userEtherBalanceNew.valueOf(), (parseInt(userEtherBalanceOld.valueOf()) - realWithdrawalAmount), 'User\'s minipool ether balance was not updated correctly');
 
