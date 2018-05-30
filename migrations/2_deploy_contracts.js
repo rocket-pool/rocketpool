@@ -102,6 +102,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'casper'),
         dummyCasper.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'casper'),
+        JSON.stringify(dummyCasper.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage DummyCasper Address');
       console.log(dummyCasper.address);
@@ -117,6 +121,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketPool'),
         rocketPool.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketPool'),
+        JSON.stringify(rocketPool.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPool Address');
       console.log(rocketPool.address);
@@ -129,6 +137,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketRole'),
         rocketRole.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketRole'),
+        JSON.stringify(rocketRole.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketRole Address');
@@ -143,6 +155,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketUser'),
         rocketUser.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketUser'),
+        JSON.stringify(rocketUser.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketUser Address');
       console.log(rocketUser.address);
@@ -155,6 +171,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketNodeAdmin'),
         rocketNodeAdmin.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketNodeAdmin'),
+        JSON.stringify(rocketNodeAdmin.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketNodeAdmin Address');
@@ -169,6 +189,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketNodeValidator'),
         rocketNodeValidator.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketNodeValidator'),
+        JSON.stringify(rocketNodeValidator.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketNodeValidator Address');
       console.log(rocketNodeValidator.address);
@@ -181,6 +205,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketNodeStatus'),
         rocketNodeStatus.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketNodeStatus'),
+        JSON.stringify(rocketNodeStatus.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketNodeStatus Address');
@@ -195,18 +223,9 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketPoolMiniDelegate'),
         rocketPoolMiniDelegate.address
       );
-      // Log it
-      console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPoolMiniDelegate Address');
-      console.log(rocketPoolMiniDelegate.address);
-
-      // Rocket Pool Mini Delegate
-      await rocketStorageInstance.setAddress(
-        config.web3.utils.soliditySha3('contract.address', rocketPoolMiniDelegate.address),
-        rocketPoolMiniDelegate.address
-      );
-      await rocketStorageInstance.setAddress(
-        config.web3.utils.soliditySha3('contract.name', 'rocketPoolMiniDelegate'),
-        rocketPoolMiniDelegate.address
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketPoolMiniDelegate'),
+        JSON.stringify(rocketPoolMiniDelegate.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPoolMiniDelegate Address');
@@ -221,6 +240,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketFactory'),
         rocketFactory.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketFactory'),
+        JSON.stringify(rocketFactory.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketFactory Address');
       console.log(rocketFactory.address);
@@ -233,6 +256,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketUpgrade'),
         rocketUpgrade.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketUpgrade'),
+        JSON.stringify(rocketUpgrade.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketUpgrade Address');
@@ -247,6 +274,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketUtils'),
         rocketUtils.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketUtils'),
+        JSON.stringify(rocketUtils.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketUtils Address');
       console.log(rocketUtils.address);
@@ -260,6 +291,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketPartnerAPI'),
         rocketPartnerAPI.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketPartnerAPI'),
+        JSON.stringify(rocketPartnerAPI.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketPartnerAPI Address');
       console.log(rocketPartnerAPI.address);
@@ -272,6 +307,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketDepositToken'),
         rocketDepositToken.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketDepositToken'),
+        JSON.stringify(rocketDepositToken.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketDepositToken Address');
@@ -296,6 +335,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketVault'),
         rocketVault.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketVault'),
+        JSON.stringify(rocketVault.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketVault Address');
       console.log(rocketVault.address);
@@ -309,6 +352,10 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'rocketVaultStore'),
         rocketVaultStore.address
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketVaultStore'),
+        JSON.stringify(rocketVaultStore.abi)
+      );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage rocketVaultStore Address');
       console.log(rocketVaultStore.address);
@@ -321,6 +368,10 @@ module.exports = async (deployer, network) => {
       await rocketStorageInstance.setAddress(
         config.web3.utils.soliditySha3('contract.name', 'rocketSettings'),
         rocketSettings.address
+      );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketSettings'),
+        JSON.stringify(rocketSettings.abi)
       );
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketSettings Address');
