@@ -1,6 +1,6 @@
 import { RocketSettings } from '../_lib/artifacts'
 import { scenarioDeposit } from '../rocket-user/rocket-user-scenarios';
-import { scenarioCreateValidationContract } from '../casper/casper-scenarios';
+import { sendDeployValidationContract } from '../_lib/smart-node/validation-code-contract-compiled';
 import { scenarioRegisterNode } from '../rocket-node/rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node/rocket-node-status/rocket-node-status-scenarios';
 import { scenarioWithdrawDepositTokens } from './rocket-deposit-scenarios';
@@ -23,7 +23,8 @@ export async function initialiseRPDBalance({accountAddress, nodeAddress, nodeReg
     });
 
     // Register nodes
-    let nodeValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeAddress});
+    let validationTx = await sendDeployValidationContract(nodeAddress);
+    let nodeValCodeAddress = validationTx.contractAddress;
     await scenarioRegisterNode({
         nodeAddress: nodeAddress,
         valCodeAddress: nodeValCodeAddress,

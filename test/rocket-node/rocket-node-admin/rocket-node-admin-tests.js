@@ -7,8 +7,7 @@ import { sendDeployValidationContract } from '../../_lib/smart-node/validation-c
 import { scenarioWithdrawDeposit } from '../../rocket-user/rocket-user-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-admin-scenarios';
-import { CasperInstance, casperEpochInitialise } from '../../_lib/casper/casper';
-
+import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -294,6 +293,8 @@ export default function({owner}) {
 
         // Owner attempts to remove active node
         it(printTitle('owner', 'fails to remove first node from the Rocket Pool network as it has minipools attached to it'), async () => {
+
+            // deploy the validation contract for the second node
             let validationSecondTx = await sendDeployValidationContract(nodeSecond);
             let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
 
@@ -315,6 +316,9 @@ export default function({owner}) {
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
 
+            // Mine to a new epoch
+            await casperEpochIncrementAmount(owner, 1);
+
             // Get average CPU load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
@@ -323,7 +327,7 @@ export default function({owner}) {
                 averageLoad: averageLoad15mins,
                 fromAddress: nodeSecond,
             });           
-            
+
             // attempt to remove the node with the attached minipool
             await assertThrows(scenarioRemoveNode({
                 nodeAddress: nodeSecond,

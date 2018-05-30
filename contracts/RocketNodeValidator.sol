@@ -66,8 +66,6 @@ contract RocketNodeValidator is RocketNodeBase {
     /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
     function minipoolLogout(address _minipoolAddress, bytes _logout_message) public onlyRegisteredNode(msg.sender) returns(bool) {
 
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-
         // minipool is a defined address?
         require(_minipoolAddress != 0x0);
 
@@ -75,6 +73,7 @@ contract RocketNodeValidator is RocketNodeBase {
         require(_logout_message.length > 0);
 
         // request logout from Casper
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         rocketPool.logout(msg.sender, _minipoolAddress, _logout_message);
         
         // fire event on success

@@ -19,7 +19,6 @@ const rocketFactory = artifacts.require('./RocketFactory.sol');
 const rocketUpgrade = artifacts.require('./RocketUpgrade.sol');
 const rocketUtils = artifacts.require('./RocketUtils.sol');
 const rocketPoolTokenDummy = artifacts.require('./contract/DummyRocketPoolToken.sol');
-const dummyCasper = artifacts.require('./contract/casper/DummyCasper.sol');
 
 // Interfaces
 const rocketStorageInterface = artifacts.require('./contracts/interface/RocketStorageInterface.sol');
@@ -55,8 +54,6 @@ module.exports = async (deployer, network) => {
     // Deploy other contracts
     .then(() => {
       return deployer.deploy([
-        // Deploy casper dummy contract
-        dummyCasper,
         // Deploy Rocket Vault
         [rocketVault, rocketStorage.address],
         // Deploy Rocket Vault Store
@@ -93,15 +90,7 @@ module.exports = async (deployer, network) => {
     })
 
     // Post-deployment actions
-    .then(async () => {
-
-      // Seed Casper with some funds to cover the rewards + deposit sent back
-      await web3.eth.sendTransaction({
-        from: accounts[0],
-        to: dummyCasper.address,
-        value: web3.toWei('6', 'ether'),
-        gas: 1000000,
-      });
+    .then(async () => {      
 
       // Update the storage with the new addresses
       let rocketStorageInstance = await rocketStorage.deployed();
@@ -110,19 +99,6 @@ module.exports = async (deployer, network) => {
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Address');
       console.log(rocketStorage.address);
-
-      // Dummy Casper
-      await rocketStorageInstance.setAddress(
-        config.web3.utils.soliditySha3('contract.address', dummyCasper.address),
-        dummyCasper.address
-      );
-      await rocketStorageInstance.setAddress(
-        config.web3.utils.soliditySha3('contract.name', 'casper'),
-        dummyCasper.address
-      );
-      // Log it
-      console.log('\x1b[33m%s\x1b[0m:', 'Set Storage DummyCasper Address');
-      console.log(dummyCasper.address);
 
       // Rocket Pool
       // First register the contract address as being part of the network so we can do a validation check using just the address

@@ -26,7 +26,7 @@ contract RocketPoolMiniDelegate is RocketBase {
     address[] private userAddresses;                            // Keep an array of all our user addresses for iteration
     uint256 private status;                                     // The current status of this pool, statuses are declared via Enum in the main hub
     uint256 private statusChangeTime;                           // The timestamp the status changed
-    uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool
+    uint256 public depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool
 
 
     /*** Contracts **************/
@@ -133,7 +133,7 @@ contract RocketPoolMiniDelegate is RocketBase {
     }
 
     /// @dev Returns the current validator index in Casper of this minipool
-    function getCasperValidatorIndex() public view returns(uint128) {
+    function getCasperValidatorIndex() public view returns(int128) {
         return casper.validator_indexes(address(this));
     }
 
@@ -153,14 +153,10 @@ contract RocketPoolMiniDelegate is RocketBase {
         if (now >= statusChangeTime.add(stakingDuration)) {
             // Now check to see if we meet the Casper requirements for logging out before attempting
             // We must not have already logged out
-            // uint128 dynasty = casper.dynasty();            
-            casper.validators__end_dynasty(1);
-            // uint128 delay = casper.DYNASTY_LOGOUT_DELAY();
-            // if (casper.validators__end_dynasty(getCasperValidatorIndex()) > casper.dynasty() + casper.DYNASTY_LOGOUT_DELAY()) {
-            //     // Ok to logout
-            //     return true;
-            // }
-            return true;
+            if (casper.validators__end_dynasty(getCasperValidatorIndex()) > casper.dynasty() + casper.DYNASTY_LOGOUT_DELAY()) {
+                // Ok to logout
+                return true;
+            }
         }
         return false;
     }
@@ -171,8 +167,8 @@ contract RocketPoolMiniDelegate is RocketBase {
         // Verify the dynasty is correct for withdrawing 
         if (casper.dynasty() >= casper.validators__end_dynasty(getCasperValidatorIndex()) + 1) {
             // Verify the end epoch is correct for withdrawing
-            uint128 endEpoch = casper.dynasty_start_epoch(casper.validators__end_dynasty(getCasperValidatorIndex()) + 1);
-            return casper.get_current_epoch() >= endEpoch + casper.get_withdrawal_delay() ? true : false;
+            int128 endEpoch = casper.dynasty_start_epoch(casper.validators__end_dynasty(getCasperValidatorIndex()) + 1);
+            return casper.current_epoch() >= endEpoch + casper.WITHDRAWAL_DELAY() ? true : false;
         }
         return false;
     }
@@ -182,7 +178,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         // Verify the delay has passed and the deposit has been received
         rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Check the status is correct, the contract has a balance and Casper shows the validator as deleted (means its processed the withdrawal)
-        return status == 4 && address(this).balance > 0 && stakingBalanceReceived > 0 && casper.get_deposit_size(getCasperValidatorIndex()) == 0 ? true : false;
+        return status == 4 && address(this).balance > 0 && stakingBalanceReceived > 0 && casper.deposit_size(getCasperValidatorIndex()) == 0 ? true : false;
     }
 
     /// @dev Returns true if this pool is able to cast votes with Casper
@@ -190,15 +186,15 @@ contract RocketPoolMiniDelegate is RocketBase {
         // retrieve the vote bitmap for the current epoch
         // votes are stored as a bitmap to save on storage
         // each bit is a boolean value representing whether a particular validator (at index number) has voted or not
-        uint256 voteBitmap = casper.votes__vote_bitmap(casper.get_current_epoch(), getCasperValidatorIndex()); 
+        uint256 voteBitmap = casper.checkpoints__vote_bitmap(casper.current_epoch(), getCasperValidatorIndex()); 
         // create a bit mask to retrieve the has-voted value for our validator index
         // e.g 000000000100000000000 
-        uint256 bitMask = 0x1 * uint256(2) ** (getCasperValidatorIndex() % 256);
+        uint256 bitMask = 0x1 * uint256(2) ** uint256(getCasperValidatorIndex() % 256);
         // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
         bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
 
         // TODO: need !inFirstQuarterOfEpoch check - to be done when integrated real casper and block increment functionality
-        // bool inFirstQuarterOfEpoch = (block.number % casper.get_epoch_length()) <= (casper.get_epoch_length() / 4);
+        // bool inFirstQuarterOfEpoch = (block.number % casper.EPOCH_LENGTH()) <= (casper.EPOCH_LENGTH() / 4);
 
         bool canVote = (status == 2 || status == 3) && // isStakingOrAwaitingLogout
             nodeOwner != 0 && // is pool assigned to node
@@ -213,12 +209,12 @@ contract RocketPoolMiniDelegate is RocketBase {
 
     /// @dev Returns true if the validator is logged into Casper
     /// @param _validatorIndex Index of validator in Casper
-    function isLoggedIntoCasper(uint128 _validatorIndex) private view returns(bool) {
-        uint128 startDynasty = casper.validators__start_dynasty(_validatorIndex);
-        uint128 endDynasty = casper.validators__end_dynasty(_validatorIndex);
-        uint128 currentDynasty = casper.dynasty();
+    function isLoggedIntoCasper(int128 _validatorIndex) private view returns(bool) {
+        int128 startDynasty = casper.validators__start_dynasty(_validatorIndex);
+        int128 endDynasty = casper.validators__end_dynasty(_validatorIndex);
+        int128 currentDynasty = casper.dynasty();
 
-        uint128 pastDynasty = currentDynasty - 1;
+        int128 pastDynasty = currentDynasty - 1;
         bool inCurrentDynasty = ((startDynasty <= currentDynasty) && (currentDynasty < endDynasty));
         bool inPrevDynasty = ((startDynasty <= pastDynasty) && (pastDynasty < endDynasty));
         if (!(inCurrentDynasty || inPrevDynasty))
@@ -475,7 +471,7 @@ contract RocketPoolMiniDelegate is RocketBase {
             if (depositEtherTradedForTokensTotal > 0) {
                 // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
                 // Sender should be the node that triggered this
-                address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));
+                address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
                 if (depositTokenContract.call.value(depositEtherTradedForTokensTotal)()) {
                     // Fire the event
                     emit DepositTokenFundSent(depositTokenContract, depositEtherTradedForTokensTotal, now);
@@ -509,7 +505,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         // check to make sure we can logout
         require(stakingBalance > 0 && status == 2 && getCanLogout() == true);
         // Request logout now, will throw if conditions not met
-        // casper.logout(_logoutMessage);
+        casper.logout(_logoutMessage);
         // Set the mini pool status as having requested logout
         changeStatus(3);
         // Done

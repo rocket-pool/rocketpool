@@ -5,41 +5,36 @@ pragma solidity 0.4.23;
 /// @author David Rugendyke
 contract CasperInterface {
      /// @dev Get the current Casper dynasty
-    function dynasty() public view returns(uint128);
+    function dynasty() public view returns(int128);
     /// @dev Get the validator index for the withdrawal address
-    function validator_indexes(address withdrawal_addr) public view returns(uint128);
+    function validator_indexes(address withdrawal_addr) public view returns(int128);
      /// @dev Get the current Casper epoch
-    function get_current_epoch() public view returns(uint128);
+    function current_epoch() public view returns(int128);
     /// @dev Get the current Casper epoch
-    function get_deposit_size(uint256 validator_index) public view returns(uint128);
+    function deposit_size(int128 validator_index) public view returns(int128);
     /// @dev Get the current withdrawal delay in blocks
-    function get_withdrawal_delay() public view returns(uint128);
+    function WITHDRAWAL_DELAY() public view returns(int128);
     /// @dev Gets the number of dynasties that we need to wait before we are logged out
-    function DYNASTY_LOGOUT_DELAY() public view returns (uint128);
+    function DYNASTY_LOGOUT_DELAY() public view returns (int128);
     /// @dev Gets the number of blocks in a Casper epoch
-    function get_epoch_length() public view returns (uint128);
+    function EPOCH_LENGTH() public view returns (int128);
     /// @notice Send `msg.value ether` Casper from the account of `message.caller.address()`
     function deposit(address validator_address, address withdrawal_address) public payable;
     /// @dev Start the process for a withdrawal
     function logout(bytes logout_msg) public;
     /// @dev Allow a validator to withdraw their deposit +interest/-penalties
-    function withdraw(uint256 validator_index) public returns(bool); 
+    function withdraw(int128 validator_index) public; 
     /// @dev Get the current start epoch of this dynasty
-    function dynasty_start_epoch(uint128 _dynasty) public view returns (uint128);
-    function dynasty_in_epoch(uint128 _dynasty) public view returns (uint128);    
+    function dynasty_start_epoch(int128 _dynasty) public view returns (int128);
+    function dynasty_in_epoch(int128 _dynasty) public view returns (int128);    
     /// @dev Validator data 
-    function validators__start_dynasty(uint128 validator_index) public view returns (uint128);
-    function validators__end_dynasty(uint128 validator_index) public view returns (uint128);
-    function get_validators__addr(uint128 validator_index) public view returns (address);
-    function get_validators__withdrawal_address(uint128 validator_index) public view returns (address);
+    function validators__start_dynasty(int128 validator_index) public view returns (int128);
+    function validators__end_dynasty(int128 validator_index) public view returns (int128);
+    function validators__addr(int128 validator_index) public view returns (address);
+    function validators__withdrawal_addr(int128 validator_index) public view returns (address);
     /// @dev Voting functions
-    function votes__vote_bitmap(uint128 _epoch, uint128 _validator_index) public returns(uint256);
-    function get_recommended_source_epoch() public view returns (int128);
-    function get_recommended_target_hash() public view returns (bytes32);
+    function checkpoints__vote_bitmap(int128 _epoch, int128 _validator_index) public returns(uint256);
+    function recommended_source_epoch() public view returns (int128);
+    function recommended_target_hash() public view returns (bytes32);
     function vote(bytes _vote_msg) public;
-
-    /// @dev RP only - Increment the current epoc to simulate Caspers epochs incrementing
-    function set_increment_epoch() public;
-    /// @dev RP only - Increment the dynasty to simulate Caspers blocks being finalised
-    function set_increment_dynasty() public;
 }

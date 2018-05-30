@@ -5,7 +5,6 @@ const RLP = require('rlp');
 
 import signRaw from '../_lib/utils/sign';
 import { mineBlockAmount, rlpEncode, getGanachePrivateKey, removeTrailing0x, paddy, soliditySha3, floorDiv } from '../_lib/utils/general';
-import { CasperValidation } from '../_lib/artifacts';
 import { CasperInstance, casperEpochIncrementAmount } from '../_lib/casper/casper';
 
 
@@ -123,21 +122,6 @@ export async function scenarioValidatorVote({validatorAddress, validatorWithdraw
         let validatorDepositAfter = await casper.methods.validators__deposit(validatorIndex).call({from: validatorAddress});
         assert.isTrue(validatorDepositAfter > validatorDepositBefore);
     }
-
-}
-
-// Creates validation contract and asserts contract was created successfully
-export async function scenarioCreateValidationContract({fromAddress}) {
-
-    // Create a blank contract for use in making validation address contracts
-    // 500k gas limit @ 10 gwei TODO: Make these configurable on the smart node package by reading from RocketSettings contract so we can adjust when needed
-    const valCodeContract = await CasperValidation.new({gas: 500000, gasPrice: 10000000000, from: fromAddress});
-
-    // Assert that contract was created successfully
-    assert.notEqual(valCodeContract.address, 0, 'Validation contract creation failed');
-
-    // Return validation contract address
-    return valCodeContract.address;
 
 }
 
