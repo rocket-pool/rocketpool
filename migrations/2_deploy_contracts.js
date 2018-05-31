@@ -12,6 +12,7 @@ const rocketUser = artifacts.require('./RocketUser.sol');
 const rocketNodeAdmin = artifacts.require('./RocketNodeAdmin.sol');
 const rocketNodeValidator = artifacts.require('./contracts/RocketNodeValidator.sol');
 const rocketNodeStatus = artifacts.require('./contracts/RocketNodeStatus.sol');
+const rocketPoolMini = artifacts.require('./RocketPoolMini.sol');
 const rocketPoolMiniDelegate = artifacts.require('./RocketPoolMiniDelegate.sol');
 const rocketDepositToken = artifacts.require('./RocketDepositToken.sol');
 const rocketPartnerAPI = artifacts.require('./RocketPartnerAPI.sol');
@@ -224,6 +225,12 @@ module.exports = async (deployer, network) => {
       // Log it
       console.log('\x1b[33m%s\x1b[0m:', 'Set Storage RocketNodeStatus Address');
       console.log(rocketNodeStatus.address);
+
+      // Rocket Pool Mini
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'rocketPoolMini'),
+        compressAbi(rocketPoolMini.abi)
+      );
 
       // Rocket Pool Mini Delegate
       await rocketStorageInstance.setAddress(
