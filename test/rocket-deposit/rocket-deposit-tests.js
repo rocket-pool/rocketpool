@@ -401,9 +401,6 @@ export default function({owner}) {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
                 await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
 
-                const depositEtherTradedForTokensTotal = parseInt(await miniPools.second.depositEtherTradedForTokensTotal.call({from: owner}));
-                console.log(`depositEtherTradedForTokensTotal ${depositEtherTradedForTokensTotal}`);                
-
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
                     validators: [
@@ -429,15 +426,11 @@ export default function({owner}) {
                     nodeAddress: nodeSecond,
                     minipoolAddress: miniPools.second.address,
                     gas: nodeLogoutGas
-                });
+                });            
 
-                // Check attached minipool has withdrawn deposit from casper
-                let secondMiniPoolStatus = await miniPools.second.getStatus.call();
-                assert.equal(secondMiniPoolStatus.valueOf(), 4, 'Invalid attached second minipool status');
+                // Second minipool should be closed and have no balance.                
                 let secondMiniPoolBalance = web3.eth.getBalance(miniPools.second.address);            
-                assert.isTrue(secondMiniPoolBalance.valueOf() > 0, 'Invalid attached second minipool balance');
-
-                console.log(await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken')));
+                assert.isTrue(secondMiniPoolBalance.valueOf() == 0, 'Invalid attached second minipool balance');
             });
 
 
@@ -447,8 +440,6 @@ export default function({owner}) {
                 // Get the min ether required to launch a minipool - the user sent half this amount for tokens originally
                 const etherAmountTradedSentForTokens = await rocketSettings.getMiniPoolLaunchAmount.call();
                 const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address); 
-                console.log(depositTokenFundBalance);   
-                console.log(rocketDeposit.address);            
 
                 // Check that withdrawn token backed ether is in the deposit token fund
                 assert.equal(depositTokenFundBalance.valueOf(), etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');

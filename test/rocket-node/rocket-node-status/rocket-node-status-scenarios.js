@@ -10,7 +10,7 @@ export async function scenarioNodeCheckin({averageLoad, fromAddress}) {
     // Check in
     let result = await rocketNodeStatus.nodeCheckin(averageLoad, {
         from: fromAddress,
-        gas: parseInt(gasEstimate) + 200000,
+        gas: parseInt(gasEstimate) + 500000,
     });
 
     // Assert NodeCheckin event was logged

@@ -411,6 +411,7 @@ contract RocketPoolMiniDelegate is RocketBase {
                 }
             }
         }
+        return false;
     }
    
     /// @dev Sets the status of the pool based on several parameters 

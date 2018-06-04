@@ -88,8 +88,18 @@ export async function scenarioNodeLogout({nodeAddress, minipoolAddress, gas, sig
 export async function scenarioNodeLogoutForWithdrawal({owner, validators, nodeAddress, minipoolAddress, gas}){
     const casper = await CasperInstance();
 
-    // Mine to next epoch
-    await casperEpochIncrementAmount(owner, 1);
+    // Vote so that the epoch justifies/finalises
+    for (let index = 0; index < 6; index++) {
+        for (const validator of validators) {
+            await scenarioNodeVoteCast({
+                nodeAddress: validator.nodeAddress,
+                minipoolAddress: validator.minipoolAddress,
+                gas: gas
+            });                            
+        }
+        // Mine to next epoch
+        await casperEpochIncrementAmount(owner, 1);
+    }
 
     // log out the node
     await scenarioNodeLogout({
@@ -108,7 +118,7 @@ export async function scenarioNodeLogoutForWithdrawal({owner, validators, nodeAd
     }
 
     // Mine to the next epoch
-    await casperEpochIncrementAmount(owner, 1); 
+    await casperEpochIncrementAmount(owner, 1);   
 
     // Currently default logout delay is 2 dynasties
     let logoutDelayDynasties = parseInt(await casper.methods.DYNASTY_LOGOUT_DELAY().call({from: owner}));
@@ -124,28 +134,41 @@ export async function scenarioNodeLogoutForWithdrawal({owner, validators, nodeAd
         }
 
         // Mine to the next epoch
-        await casperEpochIncrementAmount(owner, 1);
-    }            
-
+        await casperEpochIncrementAmount(owner, 1);   
+    
+    } 
+    
     // Now we are logged out we have to wait for the withdrawal delay
     let withdrawalDelayEpochs = parseInt(await casper.methods.WITHDRAWAL_DELAY().call({from: owner}));
     for (let i = 0; i < (withdrawalDelayEpochs + 1); i++) {
+   
         // Mine to the next epoch                 
         await casperEpochIncrementAmount(owner, 1);
+
+        let validatorsExcludingLoggedOut = _.reject(validators, (v) => v.minipoolAddress == minipoolAddress);
+        for (const validator of validatorsExcludingLoggedOut) {
+            // Vote so that the epoch justifies/finalises
+            await scenarioNodeVoteCast({
+                nodeAddress: validator.nodeAddress,
+                minipoolAddress: validator.minipoolAddress,
+                gas: gas
+            });            
+        }
+    
     }
 
     // Mine next epoch
     await casperEpochIncrementAmount(owner, 1);
 
-     // Get average CPU load
-     // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
-     // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
-     let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
+    // Get average CPU load
+    // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
+    // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
+    let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
-     // Perform checkin, to withdraw funds from Casper
-     await scenarioNodeCheckin({
-         averageLoad: averageLoad15mins,
-         fromAddress: nodeAddress,
-     });         
+    //  Perform checkin, to withdraw funds from Casper
+    await scenarioNodeCheckin({
+        averageLoad: averageLoad15mins,
+        fromAddress: nodeAddress,
+    });         
 
 }
