@@ -243,6 +243,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         // This can only be set before staking begins
         require(status == 0 || status == 1);
         usersBackupAddress[_userAddressBackupWithdrawalNew] = _userAddress;
+        users[_userAddress].userAddressBackupWithdrawal = _userAddressBackupWithdrawalNew;
         return true;
     }
 

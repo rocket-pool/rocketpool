@@ -277,7 +277,12 @@ contract RocketPoolMini is RocketBase {
         );
     }
 
-    /// @dev Returns the users partner address
+    /// @dev Returns the user's backup withdrawal address
+    function getUserBackupWithdrawalAddress(address _userAddress) public view isPoolUser(_userAddress) returns(address) {
+        return users[_userAddress].userAddressBackupWithdrawal;
+    }
+
+    /// @dev Returns the user's partner address
     function getUserPartner(address _userAddress) public view isPoolUser(_userAddress) returns(address) {
         return users[_userAddress].partnerAddress;
     }
