@@ -2,6 +2,7 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';
+import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../_lib/casper/casper';
 import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
 
@@ -366,6 +367,11 @@ export default function({owner}) {
                 rocketPool = await RocketPool.deployed();
             });
 
+            beforeEach(async () => {
+                // Initialise Casper epoch to current block number
+                await casperEpochInitialise(owner);               
+            });
+
 
             // First user with deposit staking in minipool attempts to withdraw deposit before staking has finished
             it(printTitle('userFirst', 'user fails to withdraw deposit while minipool is staking'), async () => {
@@ -384,19 +390,36 @@ export default function({owner}) {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
                 await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
 
+                // Mine some epochs to make sure nodes/pools are logged into Casper
+                await casperEpochInitialise(owner);
+                await casperEpochIncrementAmount(owner, 2);
+
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
+                    validators: [
+                        {nodeAddress: nodeFirst, minipoolAddress: miniPools.first.address},
+                        {nodeAddress: nodeSecond, minipoolAddress: miniPools.second.address}
+                    ],
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address,
                     gas: nodeLogoutGas
                 });
 
+                // Mine an epoch
+                await casperEpochIncrementAmount(owner, 1);
+
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
+                    validators: [
+                        {nodeAddress: nodeSecond, minipoolAddress: miniPools.second.address}
+                    ],
                     nodeAddress: nodeSecond,
                     minipoolAddress: miniPools.second.address,
                     gas: nodeLogoutGas
                 });
+
+                // Mine an epoch
+                await casperEpochIncrementAmount(owner, 1);
             });
 
 
@@ -551,6 +574,7 @@ export default function({owner}) {
                     depositFromAddress: userSecond,
                     feeAccountAddress: owner,
                     gas: rocketWithdrawalGas,
+                    expectPoolClosed: true
                 });
             });
 

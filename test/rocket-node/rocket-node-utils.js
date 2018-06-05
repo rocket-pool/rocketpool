@@ -48,6 +48,7 @@ export async function launchMiniPools({nodeFirst, nodeSecond, nodeRegisterAddres
     await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
 
     // Mine to a new epoch
+    await casperEpochInitialise(nodeRegisterAddress);
     await casperEpochIncrementAmount(nodeRegisterAddress, 1);
 
     // Perform checkins - to launch minipools
@@ -55,6 +56,7 @@ export async function launchMiniPools({nodeFirst, nodeSecond, nodeRegisterAddres
         averageLoad: web3.toWei('0.5', 'ether'),
         fromAddress: nodeFirst,
     });
+
     await scenarioNodeCheckin({
         averageLoad: web3.toWei('0.5', 'ether'),
         fromAddress: nodeSecond,

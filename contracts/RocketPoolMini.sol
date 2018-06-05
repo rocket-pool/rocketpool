@@ -23,7 +23,7 @@ contract RocketPoolMini is RocketBase {
     address[] private userAddresses;                            // Keep an array of all our user addresses for iteration
     uint256 private status;                                     // The current status of this pool, statuses are declared via Enum in the main hub
     uint256 private statusChangeTime;                           // The timestamp the status changed
-    uint256 public depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool                                
+    uint256 private depositEtherTradedForTokensTotal;           // The total ether traded for tokens owed by the minipool                                
 
 
     /*** Contracts **************/

@@ -10,7 +10,6 @@ import signRaw from '../../_lib/utils/sign';
 import { RocketNodeValidator, Casper, RocketPoolMini } from '../../_lib/artifacts';
 import { getGanachePrivateKey, paddy, removeTrailing0x } from '../../_lib/utils/general';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
-import { scenarioIncrementEpoch, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
 // Casts a checkpoint vote with Casper
@@ -135,9 +134,9 @@ export async function scenarioNodeLogoutForWithdrawal({owner, validators, nodeAd
 
         // Mine to the next epoch
         await casperEpochIncrementAmount(owner, 1);   
-    
+
     } 
-    
+
     // Now we are logged out we have to wait for the withdrawal delay
     let withdrawalDelayEpochs = parseInt(await casper.methods.WITHDRAWAL_DELAY().call({from: owner}));
     for (let i = 0; i < (withdrawalDelayEpochs + 1); i++) {
@@ -169,6 +168,14 @@ export async function scenarioNodeLogoutForWithdrawal({owner, validators, nodeAd
     await scenarioNodeCheckin({
         averageLoad: averageLoad15mins,
         fromAddress: nodeAddress,
-    });         
+    });        
+
+    let isMinipoolClosed = (await web3.eth.getCode(minipoolAddress)) == '0x0';
+    if(!isMinipoolClosed){
+        // Check that the minipool has completed withdrawal from Casper
+        let miniPool = RocketPoolMini.at(minipoolAddress);
+        let miniPoolStatus = await miniPool.getStatus.call();
+        assert.equal(miniPoolStatus.valueOf(), 4, 'Invalid minipool status - should have completed withdrawal from Casper');
+    }    
 
 }

@@ -11,7 +11,7 @@ export default function({owner}) {
 
     const nodeLogoutGas = 1600000;
 
-    contract.only('RocketDeposit', async (accounts) => {
+    contract('RocketDeposit', async (accounts) => {
 
 
         /**
@@ -89,7 +89,7 @@ export default function({owner}) {
                     nodeFirst: nodeFirst,
                     nodeSecond: nodeSecond,
                     nodeRegisterAddress: owner,
-                });
+                });               
             });
 
 
@@ -401,6 +401,8 @@ export default function({owner}) {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
                 await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
 
+                await casperEpochIncrementAmount(owner, 2);
+
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
                     validators: [
@@ -417,6 +419,8 @@ export default function({owner}) {
                 assert.equal(firstMiniPoolStatus.valueOf(), 4, 'Invalid attached first minipool status');
                 let firstMiniPoolBalance = web3.eth.getBalance(miniPools.first.address);            
                 assert.isTrue(firstMiniPoolBalance.valueOf() > 0, 'Invalid attached first minipool balance');
+
+                await casperEpochIncrementAmount(owner, 1);
 
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,

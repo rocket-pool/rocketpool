@@ -1,8 +1,12 @@
 import { RocketNodeStatus }  from '../../_lib/artifacts';
+import { casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 // Performs node checkin and asserts that checkin was preformed successfully
 export async function scenarioNodeCheckin({averageLoad, fromAddress}) {
     const rocketNodeStatus = await RocketNodeStatus.deployed();
+
+    await casperEpochIncrementAmount(fromAddress, 1);
+    await casperEpochInitialise(fromAddress);
 
     // Estimate gas required to launch pools
     let gasEstimate = await rocketNodeStatus.nodeCheckin.estimateGas(averageLoad, {from: fromAddress});

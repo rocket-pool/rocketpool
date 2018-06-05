@@ -1,5 +1,4 @@
 const FS = require('fs');
-let assemblyToEVM = require('../utils/assembly-to-evm');
 
 /**
  * sendDeployValidationContract
