@@ -13,14 +13,13 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
     // Validate arguments
-    if (args.length != 2) done('Incorrect number of arguments. Please enter: from address, increment amount.');
-    if (!Web3.utils.isAddress(args[0])) done('From address is invalid.');
+    if (args.length != 1) done('Incorrect number of arguments. Please enter: increment amount.');
 
     // Parse arguments
-    let [fromAddress, incrementAmount] = args;
+    let [incrementAmount] = args;
 
     // Increment
-    await casperEpochIncrementAmount(fromAddress, incrementAmount);
+    await casperEpochIncrementAmount(web3.eth.coinbase, incrementAmount);
 
     // Complete
     done('Casper epochs successfully incremented: ' + args.join(', '));
