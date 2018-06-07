@@ -1,7 +1,7 @@
 // Dependencies
 const Web3 = require('web3');
 const ethereumUtils = require('ethereumjs-util');
-const createValidationCodeContractBytes = require('../../test/_lib/validation-code-contract/validation-code-contract.js').createValidationCodeContractBytes;
+const sendDeployValidationContract = require('../../test/_lib/smart-node/validation-code-contract-compiled.js').sendDeployValidationContract;
 
 // Artifacts
 const RocketNodeAdmin = artifacts.require('./contract/RocketNodeAdmin');
@@ -23,13 +23,7 @@ module.exports = async (done) => {
     const rocketNodeAdmin = await RocketNodeAdmin.deployed();
 
     // Create validation contract for node
-    const validationContractBytes = createValidationCodeContractBytes(nodeAddress);
-    const validationContractTxHash = await web3.eth.sendTransaction({
-        from: nodeAddress,
-        data: validationContractBytes,
-        gas: 500000,
-    });
-    const validationContractReceipt = await web3.eth.getTransactionReceipt(validationContractTxHash);
+    const validationContractReceipt = await sendDeployValidationContract(nodeAddress);
     const valCodeContractAddress = validationContractReceipt.contractAddress;
 
     // Sign validation contract

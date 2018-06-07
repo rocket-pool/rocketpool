@@ -1,30 +1,28 @@
+// Global injected objects
+global.artifacts = artifacts;
+global.web3 = web3;
+
 // Dependencies
 const Web3 = require('web3');
+const casperEpochIncrementAmount = require('../../test/_lib/casper/casper.js').casperEpochIncrementAmount;
 
-// Artifacts
-const Casper = artifacts.require('./contract/DummyCasper');
-
-// Increment Casper epoch / dynasty
+// Increment Casper epoch
 module.exports = async (done) => {
 
     // Get command-line arguments (remove args from truffle)
     let args = process.argv.splice(4);
 
     // Validate arguments
-    if (args.length != 1) done('Incorrect number of arguments. Please enter: "epoch" or "dynasty".');
-    if (args[0] != 'epoch' && args[0] != 'dynasty') done('Increment type is invalid.');
+    if (args.length != 1) done('Incorrect number of arguments. Please enter: increment amount.');
 
     // Parse arguments
-    let [type] = args;
-
-    // Get contract dependencies
-    const casper = await Casper.deployed();
+    let [incrementAmount] = args;
 
     // Increment
-    await casper['set_increment_' + type]({from: web3.eth.coinbase});
+    await casperEpochIncrementAmount(web3.eth.coinbase, incrementAmount);
 
     // Complete
-    done('Casper successfully incremented: ' + args.join(', '));
+    done('Casper epochs successfully incremented: ' + args.join(', '));
 
 };
 

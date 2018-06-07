@@ -32,7 +32,7 @@ function _createValidationCodeContractBytes(signerAddress){
     // Remove the 0x identifier on the address
     signerAddress = signerAddress.substr(0, 2) == '0x' ? signerAddress.slice(2) : signerAddress;
     // Get the bytecode
-    let casperBytecode = FS.readFileSync('./contracts/contract/casper/compiled/validation_code_simple.bin');
+    let casperBytecode = FS.readFileSync(__dirname + '/../../../contracts/contract/casper/compiled/validation_code_simple.bin');
     // Replace our placeholder address with the signer
     return casperBytecode.toString().replace(/00000000000000000000000000000PLACEHOLDER/gi, signerAddress.toLowerCase()).trim();
 }
