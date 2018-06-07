@@ -9,7 +9,7 @@ const casperEpochInitialise = require('../../test/_lib/casper/casper.js').casper
 module.exports = async (done) => {
 
     // Initialise on interval
-    setInterval(initialise, 3000);
+    setInterval(initialise, 1000);
     initialise();
 
 };
