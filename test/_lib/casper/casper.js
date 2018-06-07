@@ -30,9 +30,10 @@ async function epochInitialise(fromAddress) {
     // This would be the current epoch we expect
     let epochExpected = Math.floor(blockCurrent/epochBlockLength);
     // Shall we?
-    if(parseInt(epochCurrent) < parseInt(epochExpected)) {
+    while(parseInt(epochCurrent) < parseInt(epochExpected)) {
         // Initialise the new epoch now
         await casper.methods.initialize_epoch(parseInt(epochCurrent) + 1).send({from: fromAddress, gas: 1750000, gasPrice: '20000000000'});
+        epochCurrent = await casper.methods.current_epoch().call({from: fromAddress});
         // Check to see the last finalised epoch
         // let epochLastFinalised = await casper.methods.last_finalized_epoch().call({from: fromAddress});
         // console.log(epochLastFinalised, epochExpected);

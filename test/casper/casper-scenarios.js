@@ -5,7 +5,7 @@ const RLP = require('rlp');
 
 import signRaw from '../_lib/utils/sign';
 import { mineBlockAmount, rlpEncode, getGanachePrivateKey, removeTrailing0x, paddy, soliditySha3, floorDiv } from '../_lib/utils/general';
-import { CasperInstance, casperEpochIncrementAmount } from '../_lib/casper/casper';
+import { CasperInstance, casperEpochIncrementAmount, casperEpochInitialise } from '../_lib/casper/casper';
 
 
 // Retrieve BASE_PENALTY_FACTOR which is a DECIMAL10 attribute and should be greater than 0 but less than 1
@@ -44,6 +44,10 @@ export async function scenarioIncrementEpochAndInitialise(fromAddress, amount) {
 
 // An address makes a deposit into Casper
 export async function scenarioValidatorDeposit(fromAddress, amountInWei, validationAddr, withdrawalAddr) {
+    
+    // Make sure epoch is set correctly
+    await casperEpochInitialise(fromAddress)
+
     // Casper
     const casper = await CasperInstance();
     let tx = await casper.methods.deposit(validationAddr, withdrawalAddr).send({
