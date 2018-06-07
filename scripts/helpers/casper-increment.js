@@ -3,7 +3,6 @@ global.artifacts = artifacts;
 global.web3 = web3;
 
 // Dependencies
-const Web3 = require('web3');
 const casperEpochIncrementAmount = require('../../test/_lib/casper/casper.js').casperEpochIncrementAmount;
 
 // Increment Casper epoch
