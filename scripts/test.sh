@@ -25,9 +25,9 @@ ganache_running() {
 
 start_ganache() {
   if [ "$SOLIDITY_COVERAGE" = true ]; then
-    node_modules/.bin/ganache-cli --gasLimit 6725527 --port "$ganache_port" > /dev/null &
+    node_modules/.bin/ganache-cli --gasLimit 8000000 --port "$ganache_port" > /dev/null &
   else
-    node_modules/.bin/ganache-cli --gasLimit 6725527 > /dev/null &
+    node_modules/.bin/ganache-cli --gasLimit 8000000 > /dev/null &
   fi
 
   ganache_pid=$!
