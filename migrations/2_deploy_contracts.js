@@ -389,7 +389,7 @@ module.exports = async (deployer, network) => {
             }).send({
                 from: accounts[0], 
                 value: 50000000000000000000, // 50 ETH starting balance for Casper
-                gas: 6000000, 
+                gas: 8000000, 
                 gasPrice: '20000000000'
             });
           // Set the Casper contract address
@@ -416,6 +416,11 @@ module.exports = async (deployer, network) => {
         config.web3.utils.soliditySha3('contract.name', 'casper'),
         casperContractAddress
       );
+      await rocketStorageInstance.setString(
+        config.web3.utils.soliditySha3('contract.abi', 'casper'),
+        compressAbi(loadABI('./contracts/contract/casper/compiled/simple_casper.abi'))
+      );
+
       // Log it
       console.log('\x1b[32m%s\x1b[0m:', 'Casper - Address Updated');
       console.log(casperContractAddress); 
