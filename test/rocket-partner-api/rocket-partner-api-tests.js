@@ -1,7 +1,8 @@
-import { printTitle, assertThrows } from '../utils';
-import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
+import { casperEpochInitialise } from '../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -293,7 +294,7 @@ export default function({owner}) {
             before(async () => {
                 rocketPool = await RocketPool.deployed();
                 rocketSettings = await RocketSettings.deployed();
-                rocketPartnerAPI = await RocketPartnerAPI.deployed();
+                rocketPartnerAPI = await RocketPartnerAPI.deployed();                
             });
 
 
@@ -454,8 +455,9 @@ export default function({owner}) {
                 let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
                 let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
 
-                // partnerFirstUserAccount is not a minipool so should fail
-                let anInvalidMinipool = RocketPoolMini.at(partnerFirstUserAccount); 
+                // is not a minipool so should fail
+                const notAMiniPoolAddress = rocketPool.address;
+                let anInvalidMinipool = RocketPoolMini.at(notAMiniPoolAddress); 
 
                 // Withdraw on behalf of partner
                 await assertThrows(scenarioPartnerWithdraw({
@@ -562,7 +564,7 @@ export default function({owner}) {
                     fromAddress: partnerFirst,
                     depositAmount: sendAmount,
                     gas: rocketDepositGas,
-                });
+                });                
 
                 // Launch minipools
                 await launchMiniPools({

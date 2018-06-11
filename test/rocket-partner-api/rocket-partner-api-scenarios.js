@@ -1,4 +1,4 @@
-import { RocketPartnerAPI, RocketPool, RocketPoolMini, RocketSettings } from '../artifacts';
+import { RocketPartnerAPI, RocketPool, RocketPoolMini, RocketSettings } from '../_lib/artifacts'
 
 
 // Registers partner and asserts that number of registered partners increased

@@ -1,5 +1,5 @@
-import { assertThrows, soliditySha3 } from '../utils';
-import { RocketStorage, RocketVault, RocketVaultStore, RocketDepositToken } from "../artifacts";
+import { assertThrows, soliditySha3 } from '../_lib/utils/general';
+import { RocketStorage, RocketVault, RocketVaultStore, RocketDepositToken } from "../_lib/artifacts";
 
 /** SCENARIOS */
 

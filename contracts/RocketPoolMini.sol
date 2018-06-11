@@ -88,7 +88,7 @@ contract RocketPoolMini is RocketBase {
     );
 
     event VoteCast (
-        uint128 epoch,
+        int128 epoch,
         bytes voteMessage
     );
 
@@ -155,8 +155,8 @@ contract RocketPoolMini is RocketBase {
     }
 
     /// @dev Returns the current validator index in Casper of this minipool
-    function getCasperValidatorIndex() public view returns(uint128) {
-        return casper.get_validator_indexes(address(this));
+    function getCasperValidatorIndex() public view returns(int128) {
+        return casper.validator_indexes(address(this));
     }
 
     /// @dev Returns the status of this pool

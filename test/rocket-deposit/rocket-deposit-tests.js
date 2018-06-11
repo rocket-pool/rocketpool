@@ -1,10 +1,11 @@
-import { printTitle, assertThrows } from '../utils';
-import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini } from '../artifacts';
+import { printTitle, assertThrows, soliditySha3 } from '../_lib/utils/general';
+import { RocketDepositToken, RocketSettings, RocketPool, RocketPoolMini, RocketStorage } from '../_lib/artifacts'
 import { initialiseMiniPool } from '../rocket-user/rocket-user-utils';
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';
 import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioWithdrawDepositTokens, scenarioBurnDepositTokens, scenarioTransferDepositTokens, scenarioTransferDepositTokensFrom, scenarioApproveDepositTokenTransferFrom } from './rocket-deposit-scenarios';
+import { casperEpochInitialise, casperEpochIncrementAmount } from '../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -62,6 +63,11 @@ export default function({owner}) {
                 });
             });
 
+            beforeEach(async () => {
+                // Initialise Casper epoch to current block number
+                await casperEpochInitialise(owner);
+            });
+
 
             // Attempt to make a withdrawal of rocket deposit tokens too early
             it(printTitle('userThird', 'fail to withdraw Rocket Deposit Tokens before pool begins staking'), async () => {
@@ -83,7 +89,7 @@ export default function({owner}) {
                     nodeFirst: nodeFirst,
                     nodeSecond: nodeSecond,
                     nodeRegisterAddress: owner,
-                });
+                });               
             });
 
 
@@ -176,6 +182,11 @@ export default function({owner}) {
             let rocketDeposit;
             before(async () => {
                 rocketDeposit = await RocketDepositToken.deployed();
+            });
+
+            beforeEach(async () => {
+                // Initialise Casper epoch to current block number
+                await casperEpochInitialise(owner);
             });
 
 
@@ -319,6 +330,11 @@ export default function({owner}) {
          */
         describe('Total withdrawals', async () => {
 
+            beforeEach(async () => {
+                // Initialise Casper epoch to current block number
+                await casperEpochInitialise(owner);
+            });
+
 
             // User can withdraw all deposit tokens while minipool is staking
             it(printTitle('userThird', 'withdraws the remainder of their deposit as Rocket Deposit Tokens while their minipool is staking with Casper and are removed from pool'), async () => {
@@ -343,17 +359,23 @@ export default function({owner}) {
         /**
          * RPD burning
          */
-        describe('Burning', async () => {
-
+        describe('Burning', async () => {        
 
             // Contract dependencies
             let rocketSettings;
             let rocketDeposit;
             let rocketPool;
+            let rocketStorage;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
                 rocketDeposit = await RocketDepositToken.deployed();
                 rocketPool = await RocketPool.deployed();
+                rocketStorage = await RocketStorage.deployed();
+            });
+
+            beforeEach(async () => {
+                // Initialise Casper epoch to current block number
+                await casperEpochInitialise(owner);
             });
 
 
@@ -379,23 +401,40 @@ export default function({owner}) {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
                 await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, {from: owner, gas: 150000});
 
-                let logoutMessage = '0x8779787998798798';
+                await casperEpochIncrementAmount(owner, 2);
 
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
+                    validators: [
+                        {nodeAddress: nodeFirst, minipoolAddress: miniPools.first.address},
+                        {nodeAddress: nodeSecond, minipoolAddress: miniPools.second.address}
+                    ],
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 });
 
+                // Check attached minipool has withdrawn deposit from casper
+                let firstMiniPoolStatus = await miniPools.first.getStatus.call();
+                assert.equal(firstMiniPoolStatus.valueOf(), 4, 'Invalid attached first minipool status');
+                let firstMiniPoolBalance = web3.eth.getBalance(miniPools.first.address);            
+                assert.isTrue(firstMiniPoolBalance.valueOf() > 0, 'Invalid attached first minipool balance');
+
+                await casperEpochIncrementAmount(owner, 1);
+
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
+                    validators: [
+                        {nodeAddress: nodeSecond, minipoolAddress: miniPools.second.address}
+                    ],
                     nodeAddress: nodeSecond,
                     minipoolAddress: miniPools.second.address,
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
-                });
+                });            
+
+                // Second minipool should be closed and have no balance.                
+                let secondMiniPoolBalance = web3.eth.getBalance(miniPools.second.address);            
+                assert.isTrue(secondMiniPoolBalance.valueOf() == 0, 'Invalid attached second minipool balance');
             });
 
 
@@ -404,7 +443,7 @@ export default function({owner}) {
 
                 // Get the min ether required to launch a minipool - the user sent half this amount for tokens originally
                 const etherAmountTradedSentForTokens = await rocketSettings.getMiniPoolLaunchAmount.call();
-                const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address);
+                const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address); 
 
                 // Check that withdrawn token backed ether is in the deposit token fund
                 assert.equal(depositTokenFundBalance.valueOf(), etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');

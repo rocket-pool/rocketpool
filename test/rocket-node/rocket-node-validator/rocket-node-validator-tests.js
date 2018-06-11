@@ -1,12 +1,13 @@
 const os = require('os');
 
-import { printTitle, assertThrows } from '../../utils';
-import { RocketPool, RocketSettings, Casper, RocketPoolMini } from '../../artifacts';
+import { printTitle, assertThrows }  from '../../_lib/utils/general';
+import { RocketPool, RocketSettings, Casper, RocketPoolMini }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
-import { scenarioIncrementEpoch, scenarioCreateValidationContract, scenarioIncrementDynasty } from '../../casper/casper-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeVoteCast, scenarioNodeLogout } from './rocket-node-validator-scenarios';
+import { sendDeployValidationContract } from '../../_lib/smart-node/validation-code-contract-compiled';
+import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -55,7 +56,7 @@ export default function({owner}) {
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
-            casper = await Casper.deployed();
+            casper = await CasperInstance();
 
             
             // Initialise minipools
@@ -63,7 +64,8 @@ export default function({owner}) {
             miniPools.second = await initialiseMiniPool({fromAddress: userSecond});
 
             // register first node
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationFirstTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeFirst,
                 valCodeAddress: nodeFirstValCodeAddress,
@@ -78,6 +80,10 @@ export default function({owner}) {
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
 
+            // Mine to an epoch for Casper
+            await casperEpochInitialise(owner);
+            await casperEpochIncrementAmount(owner, 1);
+
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
@@ -89,71 +95,71 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
-            await scenarioIncrementEpoch(owner);
-            await scenarioIncrementEpoch(owner);
-            await scenarioIncrementDynasty(owner);
-            await scenarioIncrementEpoch(owner);
-            await scenarioIncrementEpoch(owner);
-            await scenarioIncrementDynasty(owner);
+            // Mine 2 dynasties to ensure minipool is logged into Casper - no deposits yet so these will automatically finalise (no voting required)
+            await casperEpochIncrementAmount(owner, 1);
+            await casperEpochIncrementAmount(owner, 1);
             
+            // Precheck - make sure minipool is now logged into Casper
+            let dynasty = await casper.methods.dynasty().call({from: owner});
+            let validatorIndex = parseInt(await casper.methods.validator_indexes(miniPools.first.address).call({from: owner}));
+            let startDynasty = await casper.methods.validators__start_dynasty(validatorIndex).call({from: owner});
+            assert.equal(dynasty, startDynasty, 'Dynasty should equal the start dynasty of the validator otherwise they are not logged in.')
 
         });
 
-        it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => {  
-            let epoch = await casper.get_current_epoch.call();
-            let voteMessage = "0x76876868768768766876";
+        it(printTitle('registered node', 'can cast a checkpoint vote with Casper'), async () => { 
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+            
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
             });
         });
 
 
         it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
-            let epoch = await casper.get_current_epoch.call();
-            let emptyVoteMessage = "";
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
-                voteMessage: emptyVoteMessage,
+                emptyVoteMessage: true,
                 gas: nodeVotingGas
             }));
         });
 
         it(printTitle('registered node', 'can only cast a vote for a pool that it is attached to'), async () => {
-            let epoch = await casper.get_current_epoch.call();
-            let voteMessage = "0x76876868768768766876";
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.second.address, // not nodeFirst's minipool
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
         });
 
         it(printTitle('registered node', 'must pass minipool address to vote'), async () => {
-            let epoch = await casper.get_current_epoch.call();
-            let voteMessage = "0x76876868768768766876";
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+
             let nullAddress = "";
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: nullAddress,
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
         });
 
-        xit(printTitle('registered node', 'cannot cast a vote in the first quarter of an epoch'), async () => {});
-
         it(printTitle('registered node', 'can only cast a vote for a pool that is staking'), async () => {
             // Set our pool launch timer to 1000 setting so that it will not trigger a minipool launch
             await rocketSettings.setMiniPoolCountDownTime(1000, {from: web3.eth.coinbase, gas: 500000});
+
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
@@ -168,92 +174,32 @@ export default function({owner}) {
             let miniPoolStatus = await miniPools.second.getStatus.call();
             assert.notEqual(miniPoolStatus, 2, 'Precheck failed - minipool is staking when it should not be');
 
-            let epoch = await casper.get_current_epoch.call();
-            let voteMessage = "0x76876868768768766876";
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.second.address,
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
         });
 
                 
-        xit(printTitle('registered node', 'can only cast one vote per epoch'), async () => {   
-            let epoch = await casper.get_current_epoch.call();
-            let voteMessage = "0x76876868768768766876";
+        it(printTitle('registered node', 'can only cast one vote per epoch'), async () => { 
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+            
+            // vote for epoch
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
-            });
+            });           
 
-            // for testing we need to tell dummy casper that the validator has voted
-            let validatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
-            await casper.set_voted(validatorIndex, epoch, {from: owner});
-
-            // should fail because we are trying to vote twice for same epoch
+            // vote again for same epoch - should fail because we are trying to vote twice for same epoch
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
                 minipoolAddress: miniPools.first.address,
-                voteMessage: voteMessage,
                 gas: nodeVotingGas
             }));
         });
-
-        xit(printTitle('registered node', 'can cast a during logout period but not after'), async () => {
-            let voteMessage = "0x76876868768768766876";
-
-            // move epoch forward because we voted in a previous test
-            await scenarioIncrementEpoch(owner);
-
-            // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
-            await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
-            
-            // logout the minipool 
-            let logoutMessage = '0x8779787998798798';
-            await scenarioNodeLogout({
-                nodeAddress: nodeFirst,
-                minipoolAddress: miniPools.first.address, 
-                logoutMessage: logoutMessage,
-                gas: nodeLogoutGas
-            });
-
-            // move forward so we can vote again
-            await scenarioIncrementEpoch(owner);
-
-            // make sure we can still vote while we are waiting for logout
-            let epoch = await casper.get_current_epoch.call();
-            await scenarioNodeVoteCast({
-                nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
-                minipoolAddress: miniPools.first.address,
-                voteMessage: voteMessage,
-                gas: nodeVotingGas
-            });
-
-            // Forward Casper past our logout delay so that we are actually logged out
-            // Currently default logout delay is 2 dynasties + 1 for luck
-            let logoutDelayDynasties = await casper.get_dynasty_logout_delay.call({from: owner});
-            for (let i = 0; i < (logoutDelayDynasties + 1); i++) {
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-            }
-
-            epoch = await casper.get_current_epoch.call();            
-            await assertThrows(scenarioNodeVoteCast({
-                nodeAddress: nodeFirst,
-                epoch: epoch.valueOf(),
-                minipoolAddress: miniPools.first.address,
-                voteMessage: voteMessage,
-                gas: nodeVotingGas
-            }));
-        });        
 
     });
 
@@ -286,13 +232,14 @@ export default function({owner}) {
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
-            casper = await Casper.deployed();
+            casper = await CasperInstance();
 
             // Initialise minipools
             miniPools.first = await initialiseMiniPool({fromAddress: userFirst});            
 
             // register first node
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationFirstTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeFirst,
                 valCodeAddress: nodeFirstValCodeAddress,
@@ -304,8 +251,14 @@ export default function({owner}) {
                 gas: nodeRegisterGas
             });
 
+            // Initialise Casper to current epoch
+            await casperEpochInitialise(owner);
+
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
+
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
@@ -318,28 +271,28 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+
         });
 
-        it(printTitle('registered node', 'must provide a minipool address to logout'), async () =>{        
+        it(printTitle('registered node', 'must provide a minipool address to logout'), async () =>{     
             let blankMiniPool = '';
-            let logoutMessage = '0x87797879987987987';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
-                    minipoolAddress: blankMiniPool, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: blankMiniPool,
                     gas: nodeLogoutGas
                 })
             );
         });
 
-        it(printTitle('registered node', 'must provide a logout message to logout'), async () =>{        
+        it(printTitle('registered node', 'must provide a logout message to logout'), async () =>{   
             let logoutMessage = '';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
                     minipoolAddress: miniPools.first.address, 
-                    logoutMessage: logoutMessage,
                     gas: nodeLogoutGas
                 })
             );
@@ -348,30 +301,28 @@ export default function({owner}) {
         it(printTitle('registered node', 'should be able to logout from Casper after staking period'), async () => {
 
             // Precheck minipool is a validator in Casper
-            let casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
+            let casperValidatorIndex = await casper.methods.validator_indexes(miniPools.first.address).call({from: owner});
             assert.equal(casperValidatorIndex.valueOf(), 1, 'Invalid precheck validator index');
             // And the end dynasty is pretry much infinity
-            let casperValidatorDynastyEnd = await casper.get_validators__dynasty_end.call(casperValidatorIndex);
+            let casperValidatorDynastyEnd = await casper.methods.validators__end_dynasty(casperValidatorIndex).call({from: owner});
             assert.isAbove(casperValidatorDynastyEnd.valueOf(), 10000000000000, 'Invalid precheck validator end dynasty');
 
             // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
             await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });
 
             // Logout of Casper
-            let logoutMessage = '0x8779787998798798';
             await scenarioNodeLogout({
                 nodeAddress: nodeFirst,
-                minipoolAddress: miniPools.first.address, 
-                logoutMessage: logoutMessage,
+                minipoolAddress: miniPools.first.address,
                 gas: nodeLogoutGas
             })
 
             // Should still be a validator
-            casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
+            casperValidatorIndex = await casper.methods.validator_indexes(miniPools.first.address).call({from: owner});
             assert.equal(casperValidatorIndex.valueOf(), 1, 'Invalid post check validator index');
             // But end dynasty should be set to: <current dynasty> + logout_delay_dynasty
-            casperValidatorDynastyEnd = await casper.get_validators__dynasty_end.call(casperValidatorIndex);
-            assert.isBelow(casperValidatorDynastyEnd.valueOf(), 10000000000000, 'Invalid post check validator end dynasty');
+            casperValidatorDynastyEnd = await casper.methods.validators__end_dynasty(casperValidatorIndex).call({from: owner});
+            assert.isBelow(casperValidatorDynastyEnd.valueOf(), 10000000000000, 'Invalid post check validator end dynasty not set');
 
         });
 
@@ -382,6 +333,9 @@ export default function({owner}) {
 
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
+
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
@@ -398,7 +352,8 @@ export default function({owner}) {
             await rocketPool.setPoolStakingDuration(miniPools.second.address, 0, { from: owner, gas: 150000 });
 
             // register another node
-            let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+            let validationSecondTx = await sendDeployValidationContract(nodeSecond);
+            let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeSecond,
                 valCodeAddress: nodeSecondValCodeAddress,
@@ -412,12 +367,10 @@ export default function({owner}) {
 
             // use that node's address to try to log out a minipool that is not assigned to it
             let notFirstNode = nodeSecond;
-            let logoutMessage = '0x8779787998798798';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeSecond,
-                    minipoolAddress: miniPools.second.address, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: miniPools.second.address,
                     gas: nodeLogoutGas
                 })
             );
@@ -444,12 +397,10 @@ export default function({owner}) {
 
             // log out of the minipool, when still staking
             let notFirstNode = nodeSecond;
-            let logoutMessage = '0x8779787998798798';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
-                    minipoolAddress: miniPools.third.address, 
-                    logoutMessage: logoutMessage,
+                    minipoolAddress: miniPools.third.address,
                     gas: nodeLogoutGas
                 })
             );

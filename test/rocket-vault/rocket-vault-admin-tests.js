@@ -1,5 +1,5 @@
-import { printTitle, assertThrows, soliditySha3 } from "../utils";
-import { RocketVault, RocketRole } from "../artifacts";
+import { printTitle, assertThrows, soliditySha3 } from '../_lib/utils/general';
+import { RocketVault, RocketRole } from '../_lib/artifacts';
 import { scenarioAddAccount, scenarioDepositEnabling, sceanarioWithdrawalsEnabling } from "./rocket-vault-scenarios";
 
 export default function({owner}){

@@ -1,4 +1,4 @@
-import { RocketUpgrade } from "../artifacts";
+import { RocketUpgrade } from "../_lib/artifacts";
 
 // Runs upgrade contract scenario
 export async function scenarioUpgradeContract({contractName, upgradedContractAddress, forceEther = false, forceTokens = false, fromAddress}) {

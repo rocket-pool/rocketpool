@@ -1,4 +1,4 @@
-import { printTitle, assertThrows } from '../utils';
+import { printTitle, assertThrows } from '../_lib/utils/general';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 
 export default function({owner}) {

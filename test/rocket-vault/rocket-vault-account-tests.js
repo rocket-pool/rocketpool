@@ -1,5 +1,5 @@
-import { printTitle, assertThrows, soliditySha3 } from '../utils';
-import { RocketVault, RocketVaultStore, RocketDepositToken, RocketSettings, RocketRole } from '../artifacts';
+import { printTitle, assertThrows, soliditySha3 } from '../_lib/utils/general';
+import { RocketVault, RocketVaultStore, RocketDepositToken, RocketSettings, RocketRole } from '../_lib/artifacts'
 import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
 import { scenarioAddAccount, scenarioAllowDeposits, scenarioAllowWithdrawals, scenarioDepositEther, scenarioWithdrawEther, scenarioDepositTokens, scenarioWithdrawTokens } from './rocket-vault-scenarios';
 

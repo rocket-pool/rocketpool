@@ -1,12 +1,14 @@
 const os = require('os');
 
-import { printTitle, assertThrows } from '../../utils';
-import { RocketPool, RocketSettings, Casper } from '../../artifacts';
+import { printTitle, assertThrows }  from '../../_lib/utils/general';
+import { RocketPool, RocketSettings, Casper }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
-import { scenarioIncrementEpoch, scenarioIncrementDynasty, scenarioCreateValidationContract } from '../../casper/casper-scenarios';
+import { sendDeployValidationContract } from '../../_lib/smart-node/validation-code-contract-compiled';
+import { scenarioIncrementEpochAndInitialise } from '../../casper/casper-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeCheckin } from './rocket-node-status-scenarios';
-import { scenarioNodeLogout } from '../rocket-node-validator/rocket-node-validator-scenarios';
+import { scenarioNodeVoteCast, scenarioNodeLogout, scenarioNodeLogoutForWithdrawal } from '../rocket-node-validator/rocket-node-validator-scenarios';
+import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -22,6 +24,7 @@ export default function({owner}) {
 
     // Gas costs
     const nodeRegisterGas = 1600000;
+    const nodeVotingGas = 1600000;
     const nodeLogoutGas = 1600000;
 
 
@@ -53,13 +56,14 @@ export default function({owner}) {
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
-            casper = await Casper.deployed();
+            casper = await CasperInstance();           
 
             // Initialise minipools
             miniPools.first = await initialiseMiniPool({fromAddress: userFirst});
 
             // register first node
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationFirstTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeFirst,
                 valCodeAddress: nodeFirstValCodeAddress,
@@ -69,12 +73,17 @@ export default function({owner}) {
                 regionID: nodeFirstRegionID,
                 fromAddress: owner,
                 gas: nodeRegisterGas
-            });
+            }); 
+            
+            await casperEpochInitialise(owner);
 
         });
 
         // Check to make sure countdown is enforced
         it(printTitle('registered node', 'checkin - initially minipools should not launch as the countdown has not passed'), async () => {
+
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
@@ -98,15 +107,17 @@ export default function({owner}) {
             // precheck minipool balance                
             let miniPoolBalance = web3.eth.getBalance(miniPools.first.address);
             assert.isAbove(miniPoolBalance, 0);
-
+            
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
+
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
-
             // Perform checkin, to assign the minipool to the node for launch
             await scenarioNodeCheckin({
                 averageLoad: averageLoad15mins,
@@ -120,10 +131,10 @@ export default function({owner}) {
             assert.equal(nodeMiniPoolsAttached.length, 1, 'Invalid number of minipools attached to node');
             assert.equal(nodeMiniPoolsAttached[0], miniPools.first.address, 'Invalid address of minipool attached to node');
             assert.equal(nodeMiniPoolBalance, 0, 'Invalid attached minipool balance');
-            assert.equal(nodeMiniPoolStatus.valueOf(), 2, 'Invalid attached minipool status - should be staking');                
-
+            assert.equal(nodeMiniPoolStatus.valueOf(), 2, 'Invalid attached minipool status - should be staking');           
+            
             // Check it's a validator in casper
-            let casperValidatorIndex = await casper.get_validator_indexes.call(miniPools.first.address);
+            let casperValidatorIndex = await casper.methods.validator_indexes(miniPools.first.address).call({from: owner});
             assert.equal(casperValidatorIndex.valueOf(), 1, 'Invalid validator index');
         });
         
@@ -139,16 +150,21 @@ export default function({owner}) {
             let beforeMiniPoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeFirst);
             let beforeNumberOfPools = beforeMiniPoolsAttached.length;
 
-                // Get average CPU load
+             // Mine to an epoch for Casper
+             await casperEpochIncrementAmount(owner, 1);
+
+            // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
-
             // Perform checkin, to assign the minipool to the node for launch
             await scenarioNodeCheckin({
                 averageLoad: averageLoad15mins,
                 fromAddress: nodeFirst,
             });
+
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // save number of attached pools to use for assertion later
             let afterMiniPoolsAttached = await rocketPool.getPoolsFilterWithNode.call(nodeFirst);
@@ -174,7 +190,8 @@ export default function({owner}) {
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
 
             // register another node
-            let nodeSecondValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeSecond});
+            let validationSecondTx = await sendDeployValidationContract(nodeSecond);
+            let nodeSecondValCodeAddress = validationSecondTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeSecond,
                 valCodeAddress: nodeSecondValCodeAddress,
@@ -186,6 +203,9 @@ export default function({owner}) {
                 gas: nodeRegisterGas
             });
 
+             // Mine to an epoch for Casper
+             await casperEpochIncrementAmount(owner, 1);
+
             // set load for first node
             let firstNodeLoad = 0.5; // high load
             let firstNodeLoadWei = web3.toWei(firstNodeLoad, 'ether');
@@ -193,6 +213,9 @@ export default function({owner}) {
                 averageLoad: firstNodeLoadWei,
                 fromAddress: nodeFirst,
             });
+
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // set load for second node
             let secondNodeLoad = 0.1; // low load
@@ -211,6 +234,9 @@ export default function({owner}) {
             // initialise a minipool for assignment
             miniPools.fourth = await initialiseMiniPool({fromAddress: userFirst});
 
+            // Mines to an epoch start block so that we can launch the minipool (deposit into Casper)
+            await casperEpochIncrementAmount(owner, 1);
+
             // perform checkin to launch minipool
             await scenarioNodeCheckin({
                 averageLoad: firstNodeLoadWei,
@@ -228,6 +254,9 @@ export default function({owner}) {
             firstNodeLoad = 0.01; // high load
             firstNodeLoadWei = web3.toWei(firstNodeLoad, 'ether');
 
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
+
             // perform checkin to launch minipool
             await scenarioNodeCheckin({
                 averageLoad: firstNodeLoadWei,
@@ -243,6 +272,9 @@ export default function({owner}) {
 
         // Random address cannot perform checkin as a node
         it(printTitle('random address', 'checkin - cannot checkin as a node'), async () => {
+
+            // Mine to an epoch for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // Get average CPU load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
@@ -284,14 +316,21 @@ export default function({owner}) {
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
-            casper = await Casper.deployed();
+            casper = await CasperInstance();
+
+            // Initialise Casper epoch to current block number
+            await casperEpochInitialise(owner);
+
+            // Mine to an epoch starting block for Casper
+            await casperEpochIncrementAmount(owner, 1);
 
             // Initialise minipools
             miniPools.first = await initialiseMiniPool({fromAddress: userFirst});
             miniPools.second = await initialiseMiniPool({fromAddress: userSecond});
 
             // register first node
-            let nodeFirstValCodeAddress = await scenarioCreateValidationContract({fromAddress: nodeFirst});
+            let validationFirstTx = await sendDeployValidationContract(nodeFirst);
+            let nodeFirstValCodeAddress = validationFirstTx.contractAddress;
             await scenarioRegisterNode({
                 nodeAddress: nodeFirst,
                 valCodeAddress: nodeFirstValCodeAddress,
@@ -311,6 +350,9 @@ export default function({owner}) {
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
             let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
 
+            // Mine to an epoch starting block for Casper
+            await casperEpochIncrementAmount(owner, 1);
+
             // Perform checkin, to assign the first minipool to the node for launch
             await scenarioNodeCheckin({
                 averageLoad: averageLoad15mins,
@@ -323,46 +365,36 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+            // Mine to an epoch starting block for Casper
+            await casperEpochIncrementAmount(owner, 2);        
+
         });
 
         it(printTitle('registered node', 'checkin - automatically withdraws funds from Casper (into minipool) after staking & logging out'), async () => {
 
-            // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
-            await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });            
+            // Precheck the minipool balance to make sure it has been deposited with Casper
+            let nodeMiniPoolBalanceBefore = web3.eth.getBalance(miniPools.first.address);            
+            assert.isTrue(nodeMiniPoolBalanceBefore.valueOf() == 0, 'Invalid attached minipool balance precheck');
 
-            // Logout first minipool from Casper
-            let logoutMessage = '0x8779787998798798';
-            await scenarioNodeLogout({
+            // Set the minipool staking duration to 0 for testing so it will attempt to request logout from Casper
+            await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, { from: owner, gas: 150000 });      
+
+            // Mine to an epoch starting block for Casper
+            await casperEpochInitialise(owner);
+            await casperEpochIncrementAmount(owner, 1);
+
+            await scenarioNodeLogoutForWithdrawal({
+                owner: owner,
+                validators: [
+                    {nodeAddress: nodeFirst, minipoolAddress: miniPools.first.address},
+                    {nodeAddress: nodeFirst, minipoolAddress: miniPools.second.address}
+                ],
                 nodeAddress: nodeFirst,
-                minipoolAddress: miniPools.first.address, 
-                logoutMessage: logoutMessage,
+                minipoolAddress: miniPools.first.address,
                 gas: nodeLogoutGas
             });
 
-            // Currently default logout delay is 2 dynasties + 1 for luck
-            let logoutDelayDynasties = await casper.get_dynasty_logout_delay.call({from: owner});
-            for (let i = 0; i < (logoutDelayDynasties + 1); i++) {
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementEpoch(owner);
-                await scenarioIncrementDynasty(owner);
-            }
-
-            // Now we are logged out we have to wait for the withdrawal delay
-            let withdrawalDelayEpochs = await casper.get_withdrawal_delay.call({from: owner});
-            for (let i = 0; i < withdrawalDelayEpochs; i++) {
-                await scenarioIncrementEpoch(owner);
-            }
-
-            // Get average CPU load
-            // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
-            // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
-            let averageLoad15mins = web3.toWei(os.loadavg()[2] / os.cpus().length, 'ether');
-
-            // Perform checkin, to withdraw funds from Casper
-            await scenarioNodeCheckin({
-                averageLoad: averageLoad15mins,
-                fromAddress: nodeFirst,
-            });
+            await casperEpochIncrementAmount(owner, 1);
 
             // Check attached minipool has withdrawn deposit from casper
             let nodeMiniPoolStatus = await miniPools.first.getStatus.call();
