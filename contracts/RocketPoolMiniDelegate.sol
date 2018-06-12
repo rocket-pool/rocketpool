@@ -193,15 +193,16 @@ contract RocketPoolMiniDelegate is RocketBase {
         // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
         bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
 
-        // TODO: need !inFirstQuarterOfEpoch check - to be done when integrated real casper and block increment functionality
-        // bool inFirstQuarterOfEpoch = (block.number % casper.EPOCH_LENGTH()) <= (casper.EPOCH_LENGTH() / 4);
+        // Check if current block is in first quarter of epoch
+        uint256 epochLength = uint256(casper.EPOCH_LENGTH());
+        bool inFirstQuarterOfEpoch = (block.number % epochLength) <= (epochLength / 4);
 
         bool canVote = (status == 2 || status == 3) && // isStakingOrAwaitingLogout
             nodeOwner != 0 && // is pool assigned to node
             nodeValCodeAddress != 0 && // has signature verification contract been deployed
-            address(this).balance == 0; // has deposit been sent to Casper;
-            !hasAlreadyVoted; // have we already voted for this epoch
-            //!inFirstQuarterOfEpoch && // are we after the first quarter of the epoch
+            address(this).balance == 0 && // has deposit been sent to Casper
+            !hasAlreadyVoted && // have we already voted for this epoch
+            !inFirstQuarterOfEpoch && // are we after the first quarter of the epoch
             isLoggedIntoCasper(getCasperValidatorIndex()); // is the pool logged into Casper
 
         return canVote;            

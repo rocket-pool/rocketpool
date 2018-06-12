@@ -420,6 +420,15 @@ contract RocketPool is RocketBase {
         return true;
     }
 
+    /// @dev Gets whether a minipool is able to vote
+    /// @param _minipoolAddress The address of the minipool to test whether it is able to vote
+    function getMiniPoolCanVote(address _minipoolAddress) public onlyLatestRocketNode returns(bool) {
+        // get the minipool
+        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
+        // Get logic from minipool
+        return pool.getCanVote();
+    }
+
     /// @dev Gets whether a minipool is ready to logout
     /// @param _minipoolAddress The address of the minipool to test whether it is ready for logout
     function getMiniPoolReadyToLogout(address _minipoolAddress) public onlyLatestRocketNode returns(bool) {

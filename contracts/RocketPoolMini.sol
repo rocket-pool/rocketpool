@@ -194,6 +194,11 @@ contract RocketPoolMini is RocketBase {
         return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanDeposit()")));
     }
 
+    /// @dev Returns true if this pool is able to vote
+    function getCanVote() public returns(bool) {
+        return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanVote()")));
+    }
+
     /// @dev Returns true if this pool is able to request logging out of the validator set from Casper
     function getCanLogout() public returns(bool) {
         return getMiniDelegateBooleanResponse(bytes4(keccak256("getCanLogout()")));

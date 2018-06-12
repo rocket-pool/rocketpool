@@ -28,6 +28,17 @@ contract RocketNodeValidator is RocketNodeBase {
         version = 1;
     }
 
+    /// @dev Gets whether a minipool is able to vote
+    /// @param _minipoolAddress The address of the minipool to test whether it is able to vote
+    function getMiniPoolCanVote(address _minipoolAddress) public onlyRegisteredNode(msg.sender) returns(bool) {
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+
+        // minipool is a defined address?
+        require(_minipoolAddress != 0x0);
+
+        return rocketPool.getMiniPoolCanVote(_minipoolAddress);
+    }
+
     /// @dev Cast Casper votes via minipools
     /// @param _epoch The epoch number voting relates to
     /// @param _minipoolAddress The address of the minipool that should cast the votes
