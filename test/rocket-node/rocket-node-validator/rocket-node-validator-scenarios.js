@@ -8,7 +8,7 @@ const _ = require('underscore')._;
 
 import signRaw from '../../_lib/utils/sign';
 import { RocketNodeValidator, Casper, RocketPoolMini } from '../../_lib/artifacts';
-import { getGanachePrivateKey, paddy, removeTrailing0x } from '../../_lib/utils/general';
+import { getGanachePrivateKey, paddy, removeTrailing0x, mineBlockAmount } from '../../_lib/utils/general';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
@@ -31,6 +31,14 @@ export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, s
     let combinedSig = Buffer.from(paddy(signature.v, 64) + paddy(signature.r, 64) +  paddy(signature.s, 64), 'hex');
     // RLP encode the message params now
     let voteMessage = !emptyVoteMessage ? RLP.encode([validatorIndex, targetHash, currentEpoch, sourceEpoch, combinedSig]) : '';
+
+    // Proceed to second quarter of epoch to allow voting
+    let blockNumber = parseInt(await $web3.eth.getBlockNumber());
+    let epochLength = parseInt(await casper.methods.EPOCH_LENGTH().call({from: nodeAddress}));
+    let epochBlockNumber = blockNumber % epochLength;
+    let epochFirstQuarter = Math.floor(epochLength / 4);
+    let blockAmount = (epochFirstQuarter - epochBlockNumber) + 1;
+    if (blockAmount > 0) await mineBlockAmount(blockAmount);
 
     // cast vote
     let result = await rocketNodeValidator.minipoolVote(currentEpoch, minipoolAddress, '0x'+voteMessage.toString('hex'), {from: nodeAddress, gas: gas});
