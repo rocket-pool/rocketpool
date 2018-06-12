@@ -31,10 +31,4 @@ contract RocketPoolInterface {
     /// @param _minipool_address The address of the minipool to logout of Casper
     /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
     function logout(address _node_address, address _minipool_address, bytes _logout_message) public returns(bool);  
-    /// @dev Gets whether a minipool is able to vote
-    /// @param _minipoolAddress The address of the minipool to test whether it is able to vote
-    function getMiniPoolCanVote(address _minipoolAddress) public returns(bool);
-    /// @dev Gets whether a minipool is ready to logout
-    /// @param _minipoolAddress The address of the minipool to test whether it is ready for logout
-    function getMiniPoolReadyToLogout(address _minipoolAddress) public returns(bool);
 }
