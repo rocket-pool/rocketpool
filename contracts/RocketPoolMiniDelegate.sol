@@ -200,7 +200,6 @@ contract RocketPoolMiniDelegate is RocketBase {
         bool canVote = (status == 2 || status == 3) && // isStakingOrAwaitingLogout
             nodeOwner != 0 && // is pool assigned to node
             nodeValCodeAddress != 0 && // has signature verification contract been deployed
-            address(this).balance == 0 && // has deposit been sent to Casper
             !hasAlreadyVoted && // have we already voted for this epoch
             !inFirstQuarterOfEpoch && // are we after the first quarter of the epoch
             isLoggedIntoCasper(getCasperValidatorIndex()); // is the pool logged into Casper
