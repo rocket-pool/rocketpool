@@ -95,6 +95,19 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+        });
+
+        it(printTitle('registered node', 'cannot cast a vote while not logged in to Casper'), async () => {
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address,
+                gas: nodeVotingGas,
+                expectCanVote: false,
+            }));
+        });
+
+        it(printTitle('---------', 'log minipool into Casper'), async () => {
+
             // Mine 2 dynasties to ensure minipool is logged into Casper - no deposits yet so these will automatically finalise (no voting required)
             await casperEpochIncrementAmount(owner, 1);
             await casperEpochIncrementAmount(owner, 1);
@@ -103,7 +116,7 @@ export default function({owner}) {
             let dynasty = await casper.methods.dynasty().call({from: owner});
             let validatorIndex = parseInt(await casper.methods.validator_indexes(miniPools.first.address).call({from: owner}));
             let startDynasty = await casper.methods.validators__start_dynasty(validatorIndex).call({from: owner});
-            assert.equal(dynasty, startDynasty, 'Dynasty should equal the start dynasty of the validator otherwise they are not logged in.')
+            assert.equal(dynasty, startDynasty, 'Dynasty should equal the start dynasty of the validator otherwise they are not logged in.');
 
         });
 
