@@ -7,7 +7,7 @@ import { sendDeployValidationContract } from '../../_lib/smart-node/validation-c
 import { scenarioIncrementEpochAndInitialise } from '../../casper/casper-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeCheckin } from './rocket-node-status-scenarios';
-import { scenarioNodeVoteCast, scenarioNodeLogout, scenarioNodeLogoutForWithdrawal } from '../rocket-node-validator/rocket-node-validator-scenarios';
+import { scenarioNodeLogout, scenarioNodeLogoutForWithdrawal } from '../rocket-node-validator/rocket-node-validator-scenarios';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 export default function({owner}) {

@@ -50,17 +50,6 @@ contract RocketNodeValidator is RocketNodeBase {
         return true;
     }
 
-    /// @dev Gets whether a minipool is ready to logout
-    /// @param _minipoolAddress The address of the minipool to test whether it is ready for logout
-    function getMiniPoolReadyToLogout(address _minipoolAddress) public onlyRegisteredNode(msg.sender) returns(bool) {
-        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-
-        // minipool is a defined address?
-        require(_minipoolAddress != 0x0);
-
-        return rocketPool.getMiniPoolReadyToLogout(_minipoolAddress);
-    }
-
     /// @dev Log the minipool out of Casper and wait for withdrawal
     /// @param _minipoolAddress The address of the minipool to logout of Casper
     /// @param _logout_message The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]

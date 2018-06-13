@@ -95,6 +95,19 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+        });
+
+        it(printTitle('registered node', 'cannot cast a vote while not logged in to Casper'), async () => {
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address,
+                gas: nodeVotingGas,
+                expectCanVote: false,
+            }));
+        });
+
+        it(printTitle('---------', 'log minipool into Casper'), async () => {
+
             // Mine 2 dynasties to ensure minipool is logged into Casper - no deposits yet so these will automatically finalise (no voting required)
             await casperEpochIncrementAmount(owner, 1);
             await casperEpochIncrementAmount(owner, 1);
@@ -103,7 +116,7 @@ export default function({owner}) {
             let dynasty = await casper.methods.dynasty().call({from: owner});
             let validatorIndex = parseInt(await casper.methods.validator_indexes(miniPools.first.address).call({from: owner}));
             let startDynasty = await casper.methods.validators__start_dynasty(validatorIndex).call({from: owner});
-            assert.equal(dynasty, startDynasty, 'Dynasty should equal the start dynasty of the validator otherwise they are not logged in.')
+            assert.equal(dynasty, startDynasty, 'Dynasty should equal the start dynasty of the validator otherwise they are not logged in.');
 
         });
 
@@ -114,10 +127,23 @@ export default function({owner}) {
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             });
         });
 
+        it(printTitle('registered node', 'cannot cast a vote in the first quarter of an epoch'), async () => { 
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+            
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address,
+                gas: nodeVotingGas,
+                gotoEpochSecondQuarter: false,
+                expectCanVote: false,
+            }));
+        });
 
         it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
             // Mine to next epoch
@@ -127,7 +153,8 @@ export default function({owner}) {
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
                 emptyVoteMessage: true,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             }));
         });
 
@@ -177,7 +204,8 @@ export default function({owner}) {
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.second.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: false,
             }));
         });
 
@@ -190,14 +218,16 @@ export default function({owner}) {
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             });           
 
             // vote again for same epoch - should fail because we are trying to vote twice for same epoch
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: false,
             }));
         });
 

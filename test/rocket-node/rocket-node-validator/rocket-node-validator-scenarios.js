@@ -8,12 +8,12 @@ const _ = require('underscore')._;
 
 import signRaw from '../../_lib/utils/sign';
 import { RocketNodeValidator, Casper, RocketPoolMini } from '../../_lib/artifacts';
-import { getGanachePrivateKey, paddy, removeTrailing0x } from '../../_lib/utils/general';
+import { getGanachePrivateKey, paddy, removeTrailing0x, mineBlockAmount } from '../../_lib/utils/general';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
 // Casts a checkpoint vote with Casper
-export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false}){
+export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false, gotoEpochSecondQuarter = true, expectCanVote}){
     const casper = await CasperInstance();
     const rocketNodeValidator = await RocketNodeValidator.deployed();
 
@@ -31,6 +31,23 @@ export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, s
     let combinedSig = Buffer.from(paddy(signature.v, 64) + paddy(signature.r, 64) +  paddy(signature.s, 64), 'hex');
     // RLP encode the message params now
     let voteMessage = !emptyVoteMessage ? RLP.encode([validatorIndex, targetHash, currentEpoch, sourceEpoch, combinedSig]) : '';
+
+    // Proceed to second quarter of epoch to allow voting
+    if (gotoEpochSecondQuarter) {
+        let blockNumber = parseInt(await $web3.eth.getBlockNumber());
+        let epochLength = parseInt(await casper.methods.EPOCH_LENGTH().call({from: nodeAddress}));
+        let epochBlockNumber = blockNumber % epochLength;
+        let epochFirstQuarter = Math.floor(epochLength / 4);
+        let blockAmount = (epochFirstQuarter - epochBlockNumber) + 1;
+        if (blockAmount > 0) await mineBlockAmount(blockAmount);
+    }
+
+    // Check whether minipool can vote
+    if (expectCanVote !== undefined) {
+        let miniPool = RocketPoolMini.at(minipoolAddress);
+        let canVote = await miniPool.getCanVote.call();
+        assert.equal(canVote, expectCanVote, (expectCanVote ? 'Minipool was unable to vote when expected to be able' : 'Minipool was able to vote when expected to be unable'));
+    }
 
     // cast vote
     let result = await rocketNodeValidator.minipoolVote(currentEpoch, minipoolAddress, '0x'+voteMessage.toString('hex'), {from: nodeAddress, gas: gas});

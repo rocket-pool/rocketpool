@@ -186,22 +186,22 @@ contract RocketPoolMiniDelegate is RocketBase {
         // retrieve the vote bitmap for the current epoch
         // votes are stored as a bitmap to save on storage
         // each bit is a boolean value representing whether a particular validator (at index number) has voted or not
-        uint256 voteBitmap = casper.checkpoints__vote_bitmap(casper.current_epoch(), getCasperValidatorIndex()); 
+        uint256 voteBitmap = casper.checkpoints__vote_bitmap(casper.current_epoch(), int128(getCasperValidatorIndex() / 256)); 
         // create a bit mask to retrieve the has-voted value for our validator index
         // e.g 000000000100000000000 
         uint256 bitMask = 0x1 * uint256(2) ** uint256(getCasperValidatorIndex() % 256);
         // the bitwise & operator will effectively return the bitmask if we have already voted or all zeros if we haven't        
         bool hasAlreadyVoted = (voteBitmap & bitMask) > 0;
 
-        // TODO: need !inFirstQuarterOfEpoch check - to be done when integrated real casper and block increment functionality
-        // bool inFirstQuarterOfEpoch = (block.number % casper.EPOCH_LENGTH()) <= (casper.EPOCH_LENGTH() / 4);
+        // Check if current block is in first quarter of epoch
+        uint256 epochLength = uint256(casper.EPOCH_LENGTH());
+        bool inFirstQuarterOfEpoch = (block.number % epochLength) <= (epochLength / 4);
 
         bool canVote = (status == 2 || status == 3) && // isStakingOrAwaitingLogout
             nodeOwner != 0 && // is pool assigned to node
             nodeValCodeAddress != 0 && // has signature verification contract been deployed
-            address(this).balance == 0; // has deposit been sent to Casper;
-            !hasAlreadyVoted; // have we already voted for this epoch
-            //!inFirstQuarterOfEpoch && // are we after the first quarter of the epoch
+            !hasAlreadyVoted && // have we already voted for this epoch
+            !inFirstQuarterOfEpoch && // are we after the first quarter of the epoch
             isLoggedIntoCasper(getCasperValidatorIndex()); // is the pool logged into Casper
 
         return canVote;            
