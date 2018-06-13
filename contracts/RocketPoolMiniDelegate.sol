@@ -186,7 +186,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         // retrieve the vote bitmap for the current epoch
         // votes are stored as a bitmap to save on storage
         // each bit is a boolean value representing whether a particular validator (at index number) has voted or not
-        uint256 voteBitmap = casper.checkpoints__vote_bitmap(casper.current_epoch(), getCasperValidatorIndex()); 
+        uint256 voteBitmap = casper.checkpoints__vote_bitmap(casper.current_epoch(), int128(getCasperValidatorIndex() / 256)); 
         // create a bit mask to retrieve the has-voted value for our validator index
         // e.g 000000000100000000000 
         uint256 bitMask = 0x1 * uint256(2) ** uint256(getCasperValidatorIndex() % 256);
