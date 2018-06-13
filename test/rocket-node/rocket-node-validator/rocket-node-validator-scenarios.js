@@ -13,7 +13,7 @@ import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } fro
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
 // Casts a checkpoint vote with Casper
-export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false, expectCanVote}){
+export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false, gotoEpochSecondQuarter = true, expectCanVote}){
     const casper = await CasperInstance();
     const rocketNodeValidator = await RocketNodeValidator.deployed();
 
@@ -33,12 +33,14 @@ export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, s
     let voteMessage = !emptyVoteMessage ? RLP.encode([validatorIndex, targetHash, currentEpoch, sourceEpoch, combinedSig]) : '';
 
     // Proceed to second quarter of epoch to allow voting
-    let blockNumber = parseInt(await $web3.eth.getBlockNumber());
-    let epochLength = parseInt(await casper.methods.EPOCH_LENGTH().call({from: nodeAddress}));
-    let epochBlockNumber = blockNumber % epochLength;
-    let epochFirstQuarter = Math.floor(epochLength / 4);
-    let blockAmount = (epochFirstQuarter - epochBlockNumber) + 1;
-    if (blockAmount > 0) await mineBlockAmount(blockAmount);
+    if (gotoEpochSecondQuarter) {
+        let blockNumber = parseInt(await $web3.eth.getBlockNumber());
+        let epochLength = parseInt(await casper.methods.EPOCH_LENGTH().call({from: nodeAddress}));
+        let epochBlockNumber = blockNumber % epochLength;
+        let epochFirstQuarter = Math.floor(epochLength / 4);
+        let blockAmount = (epochFirstQuarter - epochBlockNumber) + 1;
+        if (blockAmount > 0) await mineBlockAmount(blockAmount);
+    }
 
     // Check whether minipool can vote
     if (expectCanVote !== undefined) {

@@ -119,6 +119,18 @@ export default function({owner}) {
             });
         });
 
+        it(printTitle('registered node', 'cannot cast a vote in the first quarter of an epoch'), async () => { 
+            // Mine to next epoch
+            await casperEpochIncrementAmount(owner, 1);
+            
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address,
+                gas: nodeVotingGas,
+                gotoEpochSecondQuarter: false,
+                expectCanVote: false,
+            }));
+        });
 
         it(printTitle('registered node', 'cannot cast a vote with an empty vote message'), async () => {
             // Mine to next epoch
