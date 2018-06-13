@@ -114,7 +114,8 @@ export default function({owner}) {
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             });
         });
 
@@ -127,7 +128,8 @@ export default function({owner}) {
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
                 emptyVoteMessage: true,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             }));
         });
 
@@ -177,7 +179,8 @@ export default function({owner}) {
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.second.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: false,
             }));
         });
 
@@ -190,14 +193,16 @@ export default function({owner}) {
             await scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: true,
             });           
 
             // vote again for same epoch - should fail because we are trying to vote twice for same epoch
             await assertThrows(scenarioNodeVoteCast({
                 nodeAddress: nodeFirst,
                 minipoolAddress: miniPools.first.address,
-                gas: nodeVotingGas
+                gas: nodeVotingGas,
+                expectCanVote: false,
             }));
         });
 

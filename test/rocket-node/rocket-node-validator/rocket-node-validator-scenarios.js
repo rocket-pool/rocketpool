@@ -13,7 +13,7 @@ import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } fro
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 
 // Casts a checkpoint vote with Casper
-export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false}){
+export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, signingAddress = nodeAddress, emptyVoteMessage = false, expectCanVote}){
     const casper = await CasperInstance();
     const rocketNodeValidator = await RocketNodeValidator.deployed();
 
@@ -39,6 +39,13 @@ export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, s
     let epochFirstQuarter = Math.floor(epochLength / 4);
     let blockAmount = (epochFirstQuarter - epochBlockNumber) + 1;
     if (blockAmount > 0) await mineBlockAmount(blockAmount);
+
+    // Check whether minipool can vote
+    if (expectCanVote !== undefined) {
+        let miniPool = RocketPoolMini.at(minipoolAddress);
+        let canVote = await miniPool.getCanVote.call();
+        assert.equal(canVote, expectCanVote, (expectCanVote ? 'Minipool was unable to vote when expected to be able' : 'Minipool was able to vote when expected to be unable'));
+    }
 
     // cast vote
     let result = await rocketNodeValidator.minipoolVote(currentEpoch, minipoolAddress, '0x'+voteMessage.toString('hex'), {from: nodeAddress, gas: gas});
