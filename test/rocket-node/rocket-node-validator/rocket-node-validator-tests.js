@@ -80,10 +80,6 @@ export default function({owner}) {
             // Set our pool launch timer to 0 setting so that will trigger its launch now rather than waiting for it to naturally pass - only an owner operation
             await rocketSettings.setMiniPoolCountDownTime(0, {from: web3.eth.coinbase, gas: 500000});
 
-            // Mine to an epoch for Casper
-            await casperEpochInitialise(owner);
-            await casperEpochIncrementAmount(owner, 1);
-
             // Get average CPU load
             // Our average load is determined by average load / CPU cores since it is relative to how many cores there are in a system
             // Also Solidity doesn't deal with decimals atm, so convert to a whole wei number for the load
@@ -95,6 +91,31 @@ export default function({owner}) {
                 fromAddress: nodeFirst,
             });
 
+        });
+
+        it(printTitle('registered node', 'cannot cast a vote during Casper warmup period'), async () => {
+
+            // Get actual current & computed current epoch
+            let currentEpoch = parseInt(await casper.methods.current_epoch().call());
+            let epochLength = parseInt(await casper.methods.EPOCH_LENGTH().call());
+            let computedCurrentEpoch = Math.floor(web3.eth.blockNumber / epochLength);
+
+            // Check for warmup period
+            assert.isAbove(currentEpoch, computedCurrentEpoch, 'Precheck failed - Casper should be in warmup period');
+
+            // Cast vote
+            await assertThrows(scenarioNodeVoteCast({
+                nodeAddress: nodeFirst,
+                minipoolAddress: miniPools.first.address,
+                gas: nodeVotingGas,
+                expectCanVote: false,
+            }));
+
+        });
+
+        it(printTitle('---------', 'mine to an epoch for Casper'), async () => {
+            await casperEpochInitialise(owner);
+            await casperEpochIncrementAmount(owner, 1);
         });
 
         it(printTitle('registered node', 'cannot cast a vote while not logged in to Casper'), async () => {
