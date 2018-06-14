@@ -4,8 +4,8 @@ module.exports.init = function (sigHashAddress, purityAddress, minDepositSize) {
         return [
             // _epoch_length - The length of an epoch in blocks - Live Casper is 50
             8,
-            // _warm_up_period - The number of blocks to wait until initialize_epoch calls are permitted
-            2,
+            // _warm_up_period - The number of blocks to wait (from casper initialisation) until initialize_epoch calls are permitted
+            24,
             // _withdrawal_delay - The required withdrawal delay in epochs
             2,
             // _dynasty_logout_delay - The required logout delay in dynasties (at least 2 epochs)
