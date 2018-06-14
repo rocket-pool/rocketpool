@@ -2,8 +2,7 @@ const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
 import { sendDeployValidationContract } from '../_lib/smart-node/validation-code-contract-compiled';
 import { printTitle, assertThrows, getContractAddressFromStorage, mineBlockAmount } from '../_lib/utils/general';
-import { 
-    scenarioEpochIsCurrent, 
+import {
     scenarioIncrementEpochAndInitialise, 
     scenarioVerifyDecimal10, 
     scenarioValidatorDeposit, 
@@ -47,11 +46,6 @@ export default function({owner}) {
         // Simulate Caspers epoch and dynasty changing
         it(printTitle('casper', 'verify DECIMAL10 stored/read correctly using base_penalty_factor'), async () => {
             await scenarioVerifyDecimal10(owner);
-        });
-
-        // With the newly deployed Casper contract, check the epoch is current
-        it(printTitle('casper', 'epoch is current and correct'), async () => {
-            await scenarioEpochIsCurrent(owner);
         });
 
         // Incrememnt the current Casper epoch and initalise it
