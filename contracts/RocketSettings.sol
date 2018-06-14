@@ -38,7 +38,7 @@ contract RocketSettings is RocketBase {
              /*** Users ***/
             setUserDepositAllowed(true);                                                        // Are user deposits currently allowed?
             setUserDepositMin(1 ether);                                                         // Min required deposit in Wei 
-            setUserDepositMax(75 ether);                                                        // Max allowed deposit in Wei 
+            setUserDepositMax(500 ether);                                                        // Max allowed deposit in Wei 
             setUserWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setUserWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setUserWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
@@ -46,17 +46,17 @@ contract RocketSettings is RocketBase {
             /*** Minipools ***/
             setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
             setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
-            setMiniPoolCountDownTime(1 hours);                                                  // The time limit to stay in countdown before staking begins
-            setMiniPoolStakingTime("short", 12 weeks);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-            setMiniPoolStakingTime("medium", 26 weeks);                                         // 6 Months
-            setMiniPoolStakingTime("long", 52 weeks);                                           // 12 Months
+            setMiniPoolCountDownTime(1 minutes);                                                  // The time limit to stay in countdown before staking begins
+            setMiniPoolStakingTime("short", 2 minutes);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            setMiniPoolStakingTime("medium", 4 minutes);                                         // 6 Months
+            setMiniPoolStakingTime("long", 8 minutes);                                           // 12 Months
             setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
             setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
             setMiniPoolBackupCollectTime(12 weeks);                                             // The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
             setMiniPoolNewEnabled(true);                                                        // Minipools allowed to be created?
             setMiniPoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
-            setMiniPoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
+            setMiniPoolMax(15);                                                                 // Maximum amount of minipool contracts allowed
             setMiniPoolNewGas(4800000);                                                         // This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
             setMiniPoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
 
