@@ -403,10 +403,12 @@ contract RocketPoolMiniDelegate is RocketBase {
                     // Set the status now just incase self destruct fails for any reason
                     status = 5;
                     // Log any dust remaining from fractions being sent when the pool closes or 
-                    // ether left over from a users interest that have withdrawn all their ether as tokens already (thats our fee in this case)
-                    emit PoolTransfer(this, rocketSettings.getMiniPoolWithdrawalFeeDepositAddress(), keccak256("poolClosing"), address(this).balance, 0, now);
+                    // ether left over from a users interest that have withdrawn all their ether as tokens already
+                    // Send these to the RPD token contract to help increase its liquidity 
+                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
+                    emit PoolTransfer(this, depositTokenContract, keccak256("poolClosing"), address(this).balance, 0, now);
                     // Now self destruct and send any dust left over
-                    selfdestruct(rocketSettings.getMiniPoolWithdrawalFeeDepositAddress());
+                    selfdestruct(depositTokenContract);
                     // Done
                     return true;
                 }
