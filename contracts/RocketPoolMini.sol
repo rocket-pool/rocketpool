@@ -147,9 +147,8 @@ contract RocketPoolMini is RocketBase {
             let returnSize := 32
             let mem := mload(0x40)
             mstore(mem, _signature)
-            let err := delegatecall(sub(gas, 10000), minipoolDelegateAddress, mem, 0x44, mem, returnSize)
+            let err := delegatecall(sub(gas, 10000), minipoolDelegateAddress, mem, 0x04, mem, returnSize)
             response := mload(mem)
-            mstore(0x40, add(mem,0x44))
         }
         return response; 
     }
