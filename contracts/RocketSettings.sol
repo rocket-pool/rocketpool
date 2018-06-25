@@ -45,11 +45,11 @@ contract RocketSettings is RocketBase {
 
             /*** Minipools ***/
             setMiniPoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
-            setMiniPoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
-            setMiniPoolCountDownTime(1 minutes);                                                  // The time limit to stay in countdown before staking begins
-            setMiniPoolStakingTime("short", 2 minutes);                                          // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-            setMiniPoolStakingTime("medium", 4 minutes);                                         // 6 Months
-            setMiniPoolStakingTime("long", 8 minutes);                                           // 12 Months
+            setMiniPoolLaunchAmount(32 ether);                                                  // The minimum Wei required for a pool to launch
+            setMiniPoolCountDownTime(1 minutes);                                                // The time limit to stay in countdown before staking begins
+            setMiniPoolStakingTime("short", 1 days);                                            // Set the possible staking times for minipools in days, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            setMiniPoolStakingTime("medium", 2 days);                                           // 6 Months
+            setMiniPoolStakingTime("long", 3 days);                                             // 12 Months
             setMiniPoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
             setMiniPoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMiniPoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
