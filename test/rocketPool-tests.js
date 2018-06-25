@@ -13,6 +13,7 @@ import rocketDepositTests from './rocket-deposit/rocket-deposit-tests';
 import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
+import rocketPoolTests from './rocket-pool/rocket-pool-tests';
 
 
 /**
@@ -44,4 +45,5 @@ rocketDepositTests({owner});
 rocketVaultAdminTests({owner});
 rocketVaultAccountTests({owner});
 rocketUpgradeTests({owner});
+rocketPoolTests({owner});
 
