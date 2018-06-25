@@ -268,7 +268,27 @@ contract RocketPool is RocketBase {
     /// @param _nodeAddress Get pools with the current node
     /// @param _status Pool status to filter pools
     function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
-        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);  
+         // Get the mini pool count
+        uint256 miniPoolCount = getPoolsCount(); 
+        // Create an array at the length of the current pools, then populate it
+        address[] memory pools = new address[](miniPoolCount);
+        address[] memory poolsFound = new address[](miniPoolCount);
+        // Retreive each pool address now by index since we are using key/value pair storage
+        for (uint32 i = 0; i < pools.length; i++) {
+            // Get the address, match the data type for the reverse lookup
+            pools[i] = rocketStorage.getAddress(keccak256("minipools.index.reverse", uint256(i)));
+            // Get an instance of that pool contract
+            RocketPoolMini pool = getPoolInstance(pools[i]);
+            // Check the pool meets any supplied conditions
+            if (pool.getStatus() == _status && _nodeAddress == pool.getNodeAddress()) {
+                // Matched
+                poolsFound[i] = pools[i];
+            }
+        }
+        // Remove empty values from our dynamic memory array so that .length works as expected
+        poolsFound = utilArrayFilterValuesOnly(poolsFound);
+        // Return our pool address matching the status now
+        return poolsFound;
     }
 
     /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
