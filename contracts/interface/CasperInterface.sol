@@ -4,13 +4,15 @@ pragma solidity 0.4.23;
 /// @title An interface for Caspers methods that RocketPool will need (this will obviously change a bit until Casper is spec'd 100%, but allows for easier integration)
 /// @author David Rugendyke
 contract CasperInterface {
-     /// @dev Get the current Casper dynasty
+    /// @dev Get the current Casper dynasty
     function dynasty() public view returns(int128);
     /// @dev Get the validator index for the withdrawal address
     function validator_indexes(address withdrawal_addr) public view returns(int128);
-     /// @dev Get the current Casper epoch
-    function current_epoch() public view returns(int128);
     /// @dev Get the current Casper epoch
+    function current_epoch() public view returns(int128);
+    /// @dev Get the last finalised Casper epoch
+    function last_finalized_epoch() public view returns(int128);
+    /// @dev Get the current deposit size for a validator
     function deposit_size(int128 validator_index) public view returns(int128);
     /// @dev Get the current withdrawal delay in blocks
     function WITHDRAWAL_DELAY() public view returns(int128);
