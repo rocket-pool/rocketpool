@@ -452,6 +452,12 @@ module.exports = async (deployer, network) => {
           // Update the casper bytecode to not use the rlp_decoder address specified here https://github.com/ethereum/vyper/blob/170229494a582735dc2973eb2b6f4ef6f493f67c/vyper/utils.py#L106
           // We need it to use the one we deployed, otherwise we'd need to recompile Vyper to use this one, so do a find and replace in the bytecode
           casperBytecode = casperBytecode.toString().replace(/5185D17c44699cecC3133114F8df70753b856709/gi, 'Cb969cAAad21A78a24083164ffa81604317Ab603').trim();
+
+          let casperBalance = '50000000000000000000'; // 50 ETH starting balance for Casper
+          if(network == 'poa') {
+            casperBalance = '5000000000000000000000'; // 5000 ETH starting balance for Casper
+          }
+
           // Create the contract now
           const casperContract = await casper.deploy(
             // Casper deployment 
@@ -459,7 +465,7 @@ module.exports = async (deployer, network) => {
               data: casperBytecode
             }).send({
                 from: accounts[0], 
-                value: new $web3.utils.BN('5000000000000000000000'), // 5000 ETH starting balance for Casper
+                value: new $web3.utils.BN(casperBalance), // 5000 ETH starting balance for Casper
                 gas: 8000000, 
                 gasPrice: '20000000000'
             });
