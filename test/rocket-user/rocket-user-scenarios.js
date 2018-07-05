@@ -1,4 +1,7 @@
-import { RocketUser, RocketPool, RocketPoolMini, RocketSettings } from '../_lib/artifacts'
+import { RocketUser, RocketPool, RocketPoolMini, RocketSettings } from '../_lib/artifacts';
+const $Web3 = require('web3');
+const $web3 = new $Web3('http://localhost:8545');
+const BN = require('bn.js');
 
 
 // Deposits ether with RocketPool
@@ -140,12 +143,13 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     const rocketSettings = await RocketSettings.deployed();
 
     // Get minimum ether required to launch minipool
-    const minEtherRequired = await rocketSettings.getMiniPoolLaunchAmount.call();
+    const minEtherRequired = new BN((await rocketSettings.getMiniPoolLaunchAmount.call()).toString());
 
     // Get initial balances
     let depositAmountOld = await miniPool.getUserDeposit.call(depositFromAddress || fromAddress);
-    let feeAccountBalanceOld = web3.eth.getBalance(feeAccountAddress);
-    let miniPoolBalanceOld = web3.eth.getBalance(miniPool.address);
+    let feeAccountBalanceOld = new BN(await $web3.eth.getBalance(feeAccountAddress));
+    let miniPoolBalanceOld = new BN(await $web3.eth.getBalance(miniPool.address));
+    let userBalanceOld = new BN(await $web3.eth.getBalance(fromAddress));
 
     // Get initial minipool user count & status
     let miniPoolUserCountOld = await miniPool.getUserCount.call();
@@ -158,8 +162,12 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
     });
 
     // Get updated balances
-    let feeAccountBalanceNew = web3.eth.getBalance(feeAccountAddress);
-    let miniPoolBalanceNew = web3.eth.getBalance(miniPool.address);
+    let feeAccountBalanceNew = new BN(await $web3.eth.getBalance(feeAccountAddress));
+    let miniPoolBalanceNew = new BN(await $web3.eth.getBalance(miniPool.address));
+    let userBalanceNew = new BN(await $web3.eth.getBalance(fromAddress));
+
+    // Check user balance has been withdrawn
+    assert.isTrue(userBalanceNew.gt(userBalanceOld), 'User funds not returned to user account');
 
     // check if minipool has been closed
     let isMiniPoolClosed = (await web3.eth.getCode(miniPool.address)) == '0x0';
@@ -180,16 +188,16 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
 
         // Check new minipool status
         if (miniPoolStatusOld.valueOf() != 4) {
-            let expectedStatus = (miniPoolBalanceNew.valueOf() < minEtherRequired.valueOf() ? 0 : 1);
+            let expectedStatus = (miniPoolBalanceNew.lt(minEtherRequired) ? 0 : 1);
             assert.equal(miniPoolStatusNew.valueOf(), expectedStatus, 'Invalid minipool status');
         }
 
         // Asserts
         if (miniPoolStatusOld.valueOf() == 4) {
             assert.isTrue(withdrawnAmount.valueOf() > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
-            assert.isTrue(feeAccountBalanceNew.valueOf() > feeAccountBalanceOld.valueOf(), 'Fee account balance did not increase');
+            assert.isTrue(feeAccountBalanceNew.gt(feeAccountBalanceOld), 'Fee account balance did not increase');
         }
-        assert.isTrue(miniPoolBalanceNew.valueOf() < miniPoolBalanceOld.valueOf(), 'Minipool balance did not decrease');
+        assert.isTrue(miniPoolBalanceNew.lt(miniPoolBalanceOld), 'Minipool balance did not decrease');
 
         // Check that minipool contract has been destroyed if entire last deposit was withdrawn
         if (!withdrawalAmount && miniPoolUserCountOld.valueOf() == 1) {

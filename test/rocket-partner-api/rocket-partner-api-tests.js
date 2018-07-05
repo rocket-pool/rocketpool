@@ -2,7 +2,6 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketPartnerAPI, RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioRegisterPartner, scenarioPartnerDeposit, scenarioPartnerWithdraw, scenarioRemovePartner } from './rocket-partner-api-scenarios';
-import { casperEpochInitialise } from '../_lib/casper/casper';
 
 export default function({owner}) {
 
@@ -307,7 +306,11 @@ export default function({owner}) {
 
                 // Get amount to withdraw - half of deposit
                 let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
-                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf()) / 2;
+                let maxWithdrawal = await rocketSettings.getUserWithdrawalMax.call();
+                // precheck to make sure that the deposit is above the min withdrawal
+                assert.isTrue(userMiniPoolDeposit.valueOf() > maxWithdrawal.valueOf(), 'Not enough deposit for withdrawal test');
+                // set withdrawal amount to half if below max withdraw
+                let withdrawalAmount = Math.min(parseInt(userMiniPoolDeposit.valueOf()/2), maxWithdrawal);
 
                 // Withdraw on behalf of partner
                 await scenarioPartnerWithdraw({
@@ -329,17 +332,30 @@ export default function({owner}) {
                 let userMiniPool = RocketPoolMini.at(userMiniPools[userMiniPools.length - 1]);
 
                 // Get amount to withdraw - entire deposit
-                let userMiniPoolDeposit = await userMiniPool.getUserDeposit.call(partnerFirstUserAccount);
-                let withdrawalAmount = parseInt(userMiniPoolDeposit.valueOf());
+                let userMiniPoolDeposit = parseInt((await userMiniPool.getUserDeposit.call(partnerFirstUserAccount)).valueOf());
+                let maxWithdrawal = await rocketSettings.getUserWithdrawalMax.call();
 
-                // Withdraw on behalf of partner
-                await scenarioPartnerWithdraw({
-                    miniPool: userMiniPool,
-                    withdrawalAmount: withdrawalAmount,
-                    userAddress: partnerFirstUserAccount,
-                    fromAddress: partnerFirst,
-                    gas: rocketWithdrawalGas,
-                });
+                while(userMiniPoolDeposit > 0){
+                    let withdrawalAmount = Math.min(userMiniPoolDeposit, maxWithdrawal);
+                    // Withdraw on behalf of partner
+                    await scenarioPartnerWithdraw({
+                        miniPool: userMiniPool,
+                        withdrawalAmount: withdrawalAmount,
+                        userAddress: partnerFirstUserAccount,
+                        fromAddress: partnerFirst,
+                        gas: rocketWithdrawalGas,
+                    });
+
+                    // get the deposit if not closed already
+                    let miniPoolExists = await rocketPool.getPoolExists.call(userMiniPool.address);
+                    if(miniPoolExists) {
+                        userMiniPoolDeposit = parseInt((await userMiniPool.getUserDeposit.call(partnerFirstUserAccount)).valueOf());
+                    }
+                    else{
+                        userMiniPoolDeposit = 0;
+                    }
+                }                
+                
 
             });
 

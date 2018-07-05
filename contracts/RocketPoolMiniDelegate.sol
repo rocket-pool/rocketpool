@@ -274,6 +274,8 @@ contract RocketPoolMiniDelegate is RocketBase {
         // Does this user have any balance left? if not, they've withdrawn it all as tokens, remove them from the pool now
         if (users[_userAddress].balance <= 0) {
             removeUser(_userAddress);
+            // update pool status - to check if it can close
+            updateStatus();
         }
         // Sweet
         return true;
@@ -336,9 +338,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         users[_userAddressToRemove].rewards = 0;
         users[_userAddressToRemove].depositTokensWithdrawn = 0;
         users[_userAddressToRemove].fees = 0;
-        users[_userAddressToRemove].created = 0;
-        // Update the status of the pool if needed
-        updateStatus();
+        users[_userAddressToRemove].created = 0;        
         // All good
         return true;
     }
@@ -381,7 +381,7 @@ contract RocketPoolMiniDelegate is RocketBase {
         }
         // Send withdrawal amount to user's address
         userAddress.transfer(withdrawAmount);
-        // Update the status of the pool
+        // update pool status - to check if it can close
         updateStatus();
         // Fire the event for the withdrawal
         emit PoolTransfer(this, userAddress, keccak256("withdrawal"), withdrawAmount, users[userAddress].balance, now);
