@@ -439,14 +439,14 @@ export default function({owner}) {
 
 
             // Check test conditions
-            it(printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now'), async () => {
+            it(printTitle('---------', 'all of userThirds withdrawn token backed ethers should be in the deposit token fund now + interest earnt on them'), async () => {
 
                 // Get the min ether required to launch a minipool - the user sent half this amount for tokens originally
                 const etherAmountTradedSentForTokens = await rocketSettings.getMiniPoolLaunchAmount.call();
                 const depositTokenFundBalance = web3.eth.getBalance(rocketDeposit.address); 
 
                 // Check that withdrawn token backed ether is in the deposit token fund
-                assert.equal(depositTokenFundBalance.valueOf(), etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');
+                assert.isTrue(depositTokenFundBalance.valueOf() > etherAmountTradedSentForTokens.valueOf(), 'Deposit token fund balance does not match');
 
             });
 
