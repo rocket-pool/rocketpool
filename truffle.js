@@ -40,14 +40,6 @@ contract: Contract,
         network_id: "*", 
         from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
         gas: 8000000,
-    },
-     // PoA Parity Network
-    poa: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "*", 
-      from: "0x74A798E215e884DbA867c837785a9F0B99F5D3D7",
-      gas: 6725527,
-    }
+    }   
   },
 };
