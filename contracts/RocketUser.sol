@@ -220,12 +220,28 @@ contract RocketUser is RocketBase {
     /// @param _userAddress The address of the mini pool user.
     /// @param _miniPoolAddress The address of the mini pool they wish to withdraw from.
     function userUpdateDepositAndRewards(address _miniPoolAddress, address _userAddress) private returns (bool) {
-        // Get our rocket settings 
-        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+        // Get expected return information
+        uint256 userBalanceUpdated;
+        int256 userRewardsAmount;
+        uint256 userFeesAmount;
+        (userBalanceUpdated, userRewardsAmount, userFeesAmount) = getUserExpectedReturn(_miniPoolAddress, _userAddress);
+        // Update our users updated balance, rewards calculated and fees incurred 
+        if (rocketPoolMini.setUserBalanceRewardsFees(_userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
+            return true;
+        }
+        return false;
+    }
+
+    /// @dev Get user's expected return after withdrawal information (expected return, rewards amount, fees amount) - returns 0,0,0 if staking balance not sent/received
+    /// @param _userAddress The address of the mini pool user.
+    /// @param _miniPoolAddress The address of the mini pool they wish to get the expected return information for.
+    function getUserExpectedReturn(address _miniPoolAddress, address _userAddress) public view returns (uint256 expectedReturn, int256 rewards, uint256 fees) {
+        // Get our rocket settings
+        RocketSettingsInterface rocketSettingsI = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
         // Get an instance of that pool contract
-        rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
+        RocketPoolMini rocketPoolMiniI = RocketPoolMini(_miniPoolAddress);       
         // Get the current user balance
-        uint256 userBalance = rocketPoolMini.getUserDeposit(_userAddress);
+        uint256 userBalance = rocketPoolMiniI.getUserDeposit(_userAddress);
         // The total the user will be able to withdraw +/- rewards and also minus our fee if applicable
         uint256 userBalanceUpdated = 0;
         // We also store the users calculated rewards so we can see how much the original balance has changed (can be negative if penalties occured)
@@ -233,24 +249,20 @@ contract RocketUser is RocketBase {
         // If the user has earned rewards by staking, we take our fee from that amount (not the entire deposit)
         uint256 userFeesAmount = 0;
          // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
-        uint256 userDepositAmountUpdated = rocketPoolMini.getStakingBalanceReceived().mul(userBalance) / rocketPoolMini.getStakingBalance();
+        uint256 userDepositAmountUpdated = rocketPoolMiniI.getStakingBalanceReceived().mul(userBalance) / rocketPoolMiniI.getStakingBalance();
         // Calculate how much rewards the user earned
         userRewardsAmount = int256(userDepositAmountUpdated.sub(userBalance));
         // So only process fees if we've received rewards from Casper
         if (userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
-            userFeesAmount = uint256(userRewardsAmount).mul(rocketSettings.getMiniPoolWithdrawalFeePerc()) / calcBase;
+            userFeesAmount = uint256(userRewardsAmount).mul(rocketSettingsI.getMiniPoolWithdrawalFeePerc()) / calcBase;
             // The total the user will receive '(deposit + rewards) - fees'
             userBalanceUpdated = userDepositAmountUpdated.sub(userFeesAmount);
         } else {
             // Either no rewards have been given, or we've incurred penalites from Casper for some reason (node server failure etc), no fee charged in that case as we've dropped the ball for some reason   
             userBalanceUpdated = userDepositAmountUpdated;
         }
-        // Update our users updated balance, rewards calculated and fees incurred 
-        if (rocketPoolMini.setUserBalanceRewardsFees(_userAddress, userBalanceUpdated, userRewardsAmount, userFeesAmount)) {
-            return true;
-        }
-        return false;
+        return (userBalanceUpdated, userRewardsAmount, userFeesAmount);
     }
 
     /// @notice Change the users backup withdrawal address
