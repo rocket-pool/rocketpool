@@ -440,7 +440,9 @@ contract RocketPool is RocketBase {
         pool.logout(_logoutMessage);
         // Decrement active minipool count
         uint256 minipoolActiveCountTotal = getActivePoolsCount();
-        rocketStorage.setUint(keccak256("minipools.active.total"), minipoolActiveCountTotal - 1);
+        if (minipoolActiveCountTotal > 0) {
+            rocketStorage.setUint(keccak256("minipools.active.total"), minipoolActiveCountTotal - 1);
+        }
         // Done
         return true;
     }
