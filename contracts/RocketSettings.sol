@@ -139,7 +139,7 @@ contract RocketSettings is RocketBase {
     /// @dev Check to see if new pools are allowed to be created
     function getMiniPoolAllowedToBeCreated() public view returns (bool) { 
         // New pools allowed to be created?
-        if (!getMiniPoolNewEnabled() || rocketStorage.getUint(keccak256("minipools.total")) >= getMiniPoolMax()) {
+        if (!getMiniPoolNewEnabled() || rocketStorage.getUint(keccak256("minipools.active.total")) >= getMiniPoolMax()) {
             return false;
         }
         return true;
