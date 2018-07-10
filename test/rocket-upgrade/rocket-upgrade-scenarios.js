@@ -1,23 +1,23 @@
 import { RocketUpgrade } from "../_lib/artifacts";
 
 // Runs upgrade contract scenario
-export async function scenarioUpgradeContract({contractName, upgradedContractAddress, forceEther = false, forceTokens = false, fromAddress}) {
+export async function scenarioUpgradeContract({contractName, upgradedContractAddress, upgradedContractAbi, forceEther = false, forceTokens = false, fromAddress}) {
 
     // Get deployed upgrade contract
     const rocketUpgrade = await RocketUpgrade.deployed();
 
     // Upgrade a contract
-    await rocketUpgrade.upgradeContract(contractName, upgradedContractAddress, forceEther, forceTokens, {from: fromAddress});
+    await rocketUpgrade.upgradeContract(contractName, upgradedContractAddress, upgradedContractAbi, forceEther, forceTokens, {from: fromAddress});
 
 };
 
 // Runs add contract scenario
-export async function scenarioAddContract({contractName, contractAddress, fromAddress}) {
+export async function scenarioAddContract({contractName, contractAddress, contractAbi, fromAddress}) {
 
-	// Get deployed upgrade contract
+    // Get deployed upgrade contract
     const rocketUpgrade = await RocketUpgrade.deployed();
 
     // Add a contract
-    await rocketUpgrade.addContract(contractName, contractAddress, {from: fromAddress});
+    await rocketUpgrade.addContract(contractName, contractAddress, contractAbi, {from: fromAddress});
 
 }
