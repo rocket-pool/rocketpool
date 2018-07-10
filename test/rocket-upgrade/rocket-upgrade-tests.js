@@ -1,4 +1,9 @@
+// Dependencies
+const Web3 = require('web3');
+const $web3 = new Web3('http://localhost:8545');
+
 import { printTitle, assertThrows, soliditySha3 } from '../_lib/utils/general';
+import { compressAbi, decompressAbi } from '../_lib/utils/contract';
 import { RocketStorage, RocketDepositToken, RocketUser } from '../_lib/artifacts'
 import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
 import { scenarioUpgradeContract, scenarioAddContract } from './rocket-upgrade-scenarios';
@@ -56,25 +61,49 @@ export default function({owner}) {
             // Old rocketUser contract address
             let rocketUserAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
 
+            // Add test method to abi
+            let rocketUserNewAbi = rocketUserNew.abi.slice();
+            rocketUserNewAbi.push({
+                "constant": true,
+                "inputs": [],
+                "name": "testMethod",
+                "outputs": [{
+                    "name": "",
+                    "type": "uint8"
+                }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            });
+
             // Upgrade rocketUser contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUserNew.address,
+                upgradedContractAbi: compressAbi(rocketUserNewAbi),
                 fromAddress: owner,
             });
             
-            // New rocketUser contract address
+            // New rocketUser contract address and ABI
             let rocketUserAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
+            let rocketUserAbiNew = await rocketStorage.getString(soliditySha3('contract.abi', 'rocketUser'));
+
+            // Initialise new RocketUser contract from stored data
+            let rocketUserNewContract = new $web3.eth.Contract(decompressAbi(rocketUserAbiNew), rocketUserAddressNew);
 
             // Reset rocketUser contract address
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUser.address,
+                upgradedContractAbi: compressAbi(rocketUser.abi),
                 fromAddress: owner,
             });
 
             // Assert contract address has been updated
             assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'regular contract was not upgraded');
+
+            // Check that test method added to ABI exists on new contract instance
+            assert.notEqual(rocketUserNewContract.methods.testMethod, undefined, 'contract ABI was not successfully upgraded');
 
         });
 
@@ -86,6 +115,7 @@ export default function({owner}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'nonexistentContract',
                 upgradedContractAddress: rocketUser.address,
+                upgradedContractAbi: compressAbi(rocketUser.abi),
                 fromAddress: owner,
             }), 'nonexistent contract was upgraded');
 
@@ -99,6 +129,7 @@ export default function({owner}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUser.address,
+                upgradedContractAbi: compressAbi(rocketUser.abi),
                 fromAddress: owner,
             }), 'contract was upgraded to its current address');
 
@@ -122,6 +153,7 @@ export default function({owner}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
                 upgradedContractAddress: rocketDepositTokenNew.address,
+                upgradedContractAbi: compressAbi(rocketDepositTokenNew.abi),
                 fromAddress: owner,
             }), 'contract with an ether balance was upgraded');
 
@@ -141,6 +173,7 @@ export default function({owner}) {
             await scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
                 upgradedContractAddress: rocketDepositTokenNew.address,
+                upgradedContractAbi: compressAbi(rocketDepositTokenNew.abi),
                 fromAddress: owner,
                 forceEther: true,
             });
@@ -152,6 +185,7 @@ export default function({owner}) {
             await scenarioUpgradeContract({
                 contractName: 'rocketDepositToken',
                 upgradedContractAddress: rocketDepositToken.address,
+                upgradedContractAbi: compressAbi(rocketDepositToken.abi),
                 fromAddress: owner,
             });
 
@@ -185,6 +219,7 @@ export default function({owner}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUserNew.address,
+                upgradedContractAbi: compressAbi(rocketUserNew.abi),
                 fromAddress: owner,
             }), 'contract with an RPD balance was upgraded');
 
@@ -205,6 +240,7 @@ export default function({owner}) {
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUserNew.address,
+                upgradedContractAbi: compressAbi(rocketUserNew.abi),
                 fromAddress: owner,
                 forceTokens: true,
             });
@@ -216,6 +252,7 @@ export default function({owner}) {
             await scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUser.address,
+                upgradedContractAbi: compressAbi(rocketUser.abi),
                 fromAddress: owner,
             });
 
@@ -232,6 +269,7 @@ export default function({owner}) {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'rocketUser',
                 upgradedContractAddress: rocketUserNew.address,
+                upgradedContractAbi: compressAbi(rocketUserNew.abi),
                 fromAddress: userFirst,
             }), 'regular contract was upgraded by non owner');
 
@@ -244,19 +282,42 @@ export default function({owner}) {
             // Old rocketUser contract address
             let rocketTestAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
 
+            // Add test method to abi
+            let rocketUserNewAbi = rocketUserNew.abi.slice();
+            rocketUserNewAbi.push({
+                "constant": true,
+                "inputs": [],
+                "name": "testMethod",
+                "outputs": [{
+                    "name": "",
+                    "type": "uint8"
+                }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            });
+
             // Add rocketTest1 contract
             await scenarioAddContract({
                 contractName: 'rocketTest1',
                 contractAddress: rocketUserNew.address,
+                contractAbi: compressAbi(rocketUserNewAbi),
                 fromAddress: owner,
             });
 
-            // New rocketUser contract address
+            // New rocketUser contract address and ABI
             let rocketTestAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
+            let rocketTestAbiNew = await rocketStorage.getString(soliditySha3('contract.abi', 'rocketTest1'));
+
+            // Initialise new RocketUser contract from stored data
+            let rocketTestContract = new $web3.eth.Contract(decompressAbi(rocketTestAbiNew), rocketTestAddressNew);
 
             // Assert contract has been added
             assert.equal(rocketTestAddressOld, '0x0000000000000000000000000000000000000000', 'contract already existed');
             assert.notEqual(rocketTestAddressNew, '0x0000000000000000000000000000000000000000', 'contract was not added');
+
+            // Check that test method added to ABI exists on new contract instance
+            assert.notEqual(rocketTestContract.methods.testMethod, undefined, 'contract ABI was not successfully set');
 
         });
 
@@ -268,6 +329,7 @@ export default function({owner}) {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest2',
                 contractAddress: '0x0000000000000000000000000000000000000000',
+                contractAbi: compressAbi(rocketUserNew.abi),
                 fromAddress: owner,
             }), 'contract with a null address was added');
 
@@ -281,6 +343,7 @@ export default function({owner}) {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest1',
                 contractAddress: rocketDepositTokenNew.address,
+                contractAbi: compressAbi(rocketDepositTokenNew.abi),
                 fromAddress: owner,
             }), 'contract with an existing name was added');
 
@@ -294,6 +357,7 @@ export default function({owner}) {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest3',
                 contractAddress: rocketUserNew.address,
+                contractAbi: compressAbi(rocketUserNew.abi),
                 fromAddress: owner,
             }), 'contract with an existing address was added');
 
@@ -307,6 +371,7 @@ export default function({owner}) {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest4',
                 contractAddress: rocketDepositTokenNew.address,
+                contractAbi: compressAbi(rocketDepositTokenNew.abi),
                 fromAddress: userFirst,
             }), 'contract was added by non owner');
 
