@@ -2,6 +2,8 @@ pragma solidity 0.4.23;
 
 
 contract RocketPoolInterface {
+    /// @dev Returns a count of the current active minipools (accepting deposits, in countdown or staking)
+    function getActivePoolsCount() view public returns(uint256);
     /// @dev Returns a count of the current minipools attached to this node address
     /// @param _nodeAddress Address of the node
     function getPoolsFilterWithNodeCount(address _nodeAddress) view public returns(uint256);
