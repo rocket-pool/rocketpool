@@ -1,5 +1,6 @@
 // Dependencies
 const Web3 = require('web3');
+const compressAbi = require('../../test/_lib/utils/contract.js').compressAbi;
 
 // Artifacts
 const RocketStorage = artifacts.require('./contract/RocketStorage');
@@ -12,10 +13,10 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
     // Validate arguments
-    if (args.length != 1) done('Incorrect number of arguments. Please enter: contract artifact name.');
+    if (args.length != 2) done('Incorrect number of arguments. Please enter: contract artifact name, contract storage name.');
 
     // Parse arguments
-    let [artifactName] = args;
+    let [artifactName, storageName] = args;
 
     // Get contract dependencies
     const rocketStorage = await RocketStorage.deployed();
@@ -30,7 +31,7 @@ module.exports = async (done) => {
     let deployResult = await Artifact.new(rocketStorage.address);
 
     // Upgrade contract in network
-    let upgradeResult = await rocketUpgrade.upgradeContract('rocketUser', deployResult.address, false, false);
+    let upgradeResult = await rocketUpgrade.upgradeContract(storageName, deployResult.address, compressAbi(Artifact.abi), false, false);
 
     // Complete
     done('Contract successfully upgraded: ' + args.join(', '));
