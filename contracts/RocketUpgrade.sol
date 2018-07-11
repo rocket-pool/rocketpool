@@ -68,12 +68,12 @@ contract RocketUpgrade is RocketBase {
         }
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
         rocketStorage.setAddress(keccak256("contract.name", _name), _upgradedContractAddress);
+        // Replace the stored contract ABI
+        rocketStorage.setString(keccak256("contract.abi", _name), _upgradedContractAbi);
         // Add the new contract address for a direct verification using the address (used in RocketStorage to verify its a legit contract using only the msg.sender)
         rocketStorage.setAddress(keccak256("contract.address", _upgradedContractAddress), _upgradedContractAddress);
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
-        // Replace the stored contract ABI
-        rocketStorage.setString(keccak256("contract.abi", _name), _upgradedContractAbi);
         // Log it
         emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
