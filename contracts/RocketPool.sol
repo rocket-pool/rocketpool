@@ -239,6 +239,15 @@ contract RocketPool is RocketBase {
         return rocketStorage.getUint(keccak256("minipools.total"));
     }
 
+    /// @dev Returns a count of the current active minipools (accepting deposits, in countdown or staking)
+    function getActivePoolsCount() view public returns(uint256) {
+        return (
+            getPoolsFilterWithStatus(0).length +
+            getPoolsFilterWithStatus(1).length +
+            getPoolsFilterWithStatus(2).length
+        );
+    }
+
     /// @dev Get all pools that match this status (explicit method)
     /// @param _status Get pools with the current status
     function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {

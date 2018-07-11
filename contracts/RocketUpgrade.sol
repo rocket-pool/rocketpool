@@ -42,9 +42,10 @@ contract RocketUpgrade is RocketBase {
 
     /// @param _name The name of an existing contract in the network
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
+    /// @param _upgradedContractAbi The zlib compressed, base64 encoded ABI of the new contract
     /// @param _forceEther Force the upgrade even if this contract has ether in it
-     /// @param _forceTokens Force the upgrade even if this contract has known tokens in it
-    function upgradeContract(string _name, address _upgradedContractAddress, bool _forceEther, bool _forceTokens) onlyOwner external {
+    /// @param _forceTokens Force the upgrade even if this contract has known tokens in it
+    function upgradeContract(string _name, address _upgradedContractAddress, string _upgradedContractAbi, bool _forceEther, bool _forceTokens) onlyOwner external {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256("contract.name", _name));
         // Check it exists
@@ -71,13 +72,16 @@ contract RocketUpgrade is RocketBase {
         rocketStorage.setAddress(keccak256("contract.address", _upgradedContractAddress), _upgradedContractAddress);
         // Remove the old contract address verification
         rocketStorage.deleteAddress(keccak256("contract.address", oldContractAddress));
+        // Replace the stored contract ABI
+        rocketStorage.setString(keccak256("contract.abi", _name), _upgradedContractAbi);
         // Log it
         emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
     }
 
     /// @param _name The name of the new contract
     /// @param _contractAddress The address of the new contract
-    function addContract(string _name, address _contractAddress) onlyOwner external {
+    /// @param _contractAbi The zlib compressed, base64 encoded ABI of the new contract
+    function addContract(string _name, address _contractAddress, string _contractAbi) onlyOwner external {
         // Check the contract address
         require(_contractAddress != 0x0);
         // Check the name is not already in use
@@ -86,9 +90,10 @@ contract RocketUpgrade is RocketBase {
         // Check the address is not already in use
         address existingContractAddress = rocketStorage.getAddress(keccak256("contract.address", _contractAddress));
         require(existingContractAddress == 0x0);
-        // Set contract name and address in storage
+        // Set contract name, address and ABI in storage
         rocketStorage.setAddress(keccak256("contract.name", _name), _contractAddress);
         rocketStorage.setAddress(keccak256("contract.address", _contractAddress), _contractAddress);
+        rocketStorage.setString(keccak256("contract.abi", _name), _contractAbi);
         // Log it
         emit ContractAdded(_contractAddress, now);
     }
