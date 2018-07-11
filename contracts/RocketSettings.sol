@@ -2,6 +2,7 @@ pragma solidity 0.4.23;
 
 
 import "./RocketBase.sol";
+import "./interface/RocketPoolInterface.sol";
 import "./interface/RocketStorageInterface.sol";
 
 
@@ -138,8 +139,10 @@ contract RocketSettings is RocketBase {
     
     /// @dev Check to see if new pools are allowed to be created
     function getMiniPoolAllowedToBeCreated() public view returns (bool) { 
+        // Get the main Rocket Pool contract
+        RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
         // New pools allowed to be created?
-        if (!getMiniPoolNewEnabled() || rocketStorage.getUint(keccak256("minipools.active.total")) >= getMiniPoolMax()) {
+        if (!getMiniPoolNewEnabled() || rocketPool.getActivePoolsCount() >= getMiniPoolMax()) {
             return false;
         }
         return true;

@@ -241,7 +241,11 @@ contract RocketPool is RocketBase {
 
     /// @dev Returns a count of the current active minipools (accepting deposits, in countdown or staking)
     function getActivePoolsCount() view public returns(uint256) {
-        return rocketStorage.getUint(keccak256("minipools.active.total"));
+        return (
+            getPoolsFilterWithStatus(0).length +
+            getPoolsFilterWithStatus(1).length +
+            getPoolsFilterWithStatus(2).length
+        );
     }
 
     /// @dev Get all pools that match this status (explicit method)
@@ -356,14 +360,12 @@ contract RocketPool is RocketBase {
         require(!getPoolExists(newPoolAddress));
         // Get how many minipools we currently have  
         uint256 minipoolCountTotal = getPoolsCount(); 
-        uint256 minipoolActiveCountTotal = getActivePoolsCount();
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256("minipool.exists", newPoolAddress), true);
         // We store our data in an key/value array, so set its index so we can use an array to find it if needed
         rocketStorage.setUint(keccak256("minipool.index", newPoolAddress), minipoolCountTotal);
         // Update total minipools
         rocketStorage.setUint(keccak256("minipools.total"), minipoolCountTotal + 1);
-        rocketStorage.setUint(keccak256("minipools.active.total"), minipoolActiveCountTotal + 1);
         // We also index all our data so we can do a reverse lookup based on its array index
         rocketStorage.setAddress(keccak256("minipools.index.reverse", minipoolCountTotal), newPoolAddress);
         // Fire the event
@@ -438,11 +440,6 @@ contract RocketPool is RocketBase {
         require(pool.getNodeAddress() == _nodeAddress);
         // Ask the minipool send logout to Casper
         pool.logout(_logoutMessage);
-        // Decrement active minipool count
-        uint256 minipoolActiveCountTotal = getActivePoolsCount();
-        if (minipoolActiveCountTotal > 0) {
-            rocketStorage.setUint(keccak256("minipools.active.total"), minipoolActiveCountTotal - 1);
-        }
         // Done
         return true;
     }
