@@ -33,6 +33,9 @@ module.exports = async (done) => {
     // Upgrade contract in network
     let upgradeResult = await rocketUpgrade.upgradeContract(storageName, deployResult.address, compressAbi(Artifact.abi), false, false);
 
+    // Log new address
+    console.log('New contract address:', deployResult.address);
+
     // Complete
     done('Contract successfully upgraded: ' + args.join(', '));
 
