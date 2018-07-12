@@ -40,6 +40,6 @@ contract: Contract,
         network_id: "*", 
         from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
         gas: 8000000,
-    }
+    }   
   },
 };

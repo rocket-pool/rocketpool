@@ -1,10 +1,12 @@
 const os = require('os');
+const $Web3 = require('web3');
+const $web3 = new $Web3('http://localhost:8545');
+const BN = require('bn.js');
 
 import { printTitle, assertThrows } from '../../_lib/utils/general';
-import { RocketSettings, Casper }  from '../../_lib/artifacts';
+import { RocketSettings }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
 import { sendDeployValidationContract } from '../../_lib/smart-node/validation-code-contract-compiled';
-import { scenarioWithdrawDeposit } from '../../rocket-user/rocket-user-scenarios';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode, scenarioRemoveNode } from './rocket-node-admin-scenarios';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
@@ -38,14 +40,6 @@ export default function({owner}) {
 
         // User addresses
         const userFirst = accounts[1];
-        const userSecond = accounts[2];
-
-        // Minipools
-        let miniPools = {};
-
-        // Node to remove after tests
-        let registeredNodes = [];
-
 
         // Contract dependencies
         let rocketSettings;
@@ -152,16 +146,16 @@ export default function({owner}) {
         it(printTitle('owner', 'cannot register a node with a balance less than the minimum smart node balance'), async () => {
 
             // Get minimum smart node balance
-            const minSmartNodeBalance = await rocketSettings.getSmartNodeEtherMin();
+            const minSmartNodeBalance = new BN((await rocketSettings.getSmartNodeEtherMin()).toString());
 
             // Deplete third node balance
-            let nodeThirdBalanceOld = parseInt(web3.eth.getBalance(nodeThird).valueOf());
-            let sendAmount = nodeThirdBalanceOld - web3.toWei('0.1', 'ether');
+            let nodeThirdBalanceOld = new BN(await $web3.eth.getBalance(nodeThird));
+            let sendAmount = nodeThirdBalanceOld.sub(minSmartNodeBalance.sub(new BN(web3.toWei('0.1', 'ether'))));
             await web3.eth.sendTransaction({from: nodeThird, to: nodeFirst, value: sendAmount});
 
             // Check third node balance is less than minimum smart node balance
-            let nodeThirdBalanceNew = parseInt(web3.eth.getBalance(nodeThird).valueOf());
-            assert.isTrue(nodeThirdBalanceNew < parseInt(minSmartNodeBalance.valueOf()), 'Node balance is less than minimum smart node balance');
+            let nodeThirdBalanceNew = new BN(await $web3.eth.getBalance(nodeThird));
+            assert.isTrue(nodeThirdBalanceNew.lt(minSmartNodeBalance), 'Node balance is less than minimum smart node balance');
 
             // Attempt to register node
             let validationThirdTx = await sendDeployValidationContract(nodeThird);

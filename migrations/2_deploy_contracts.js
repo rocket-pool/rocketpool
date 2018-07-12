@@ -54,9 +54,11 @@ module.exports = async (deployer, network) => {
 
   // Set our web3 1.0 provider
   let $web3;
-  if ( network == 'development' || network == 'dev' ) {
-    $web3 = new config.web3('http://localhost:8545');
-  } 
+  if ( network !== 'live' ) {
+    const providerUrl = `http://${config.networks[network].host}:${config.networks[network].port}`;
+    console.log(`Web3 1.0 provider using ${providerUrl}`);
+    $web3 = new config.web3(providerUrl);
+  }
 
   return deployer
 
@@ -400,34 +402,38 @@ module.exports = async (deployer, network) => {
 
           // Seed a user account which has signed the transaction used to create the RLP decoder
           // TX for the RLP DECODER CONTRACT HERE https://github.com/ethereum/vyper/blob/master/vyper/utils.py#L110
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Seeding user account for RLP contract deploy');
           await $web3.eth.sendTransaction({
             from: accounts[0],
             to: '0xd2c560282c9C02465C2dAcdEF3E859E730848761',
             value: 6270960000000000,
             gas: 1000000,
           });
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Deploying RLP contract');
           // Send the signed transaction now - creates contract @ 0xCb969cAAad21A78a24083164ffa81604317Ab603
           let rlpTX = await $web3.eth.sendSignedTransaction('0xf90237808506fc23ac00830330888080b902246102128061000e60003961022056600060007f010000000000000000000000000000000000000000000000000000000000000060003504600060c082121515585760f882121561004d5760bf820336141558576001905061006e565b600181013560f783036020035260005160f6830301361415585760f6820390505b5b368112156101c2577f010000000000000000000000000000000000000000000000000000000000000081350483602086026040015260018501945060808112156100d55760018461044001526001828561046001376001820191506021840193506101bc565b60b881121561014357608081038461044001526080810360018301856104600137608181141561012e5760807f010000000000000000000000000000000000000000000000000000000000000060018401350412151558575b607f81038201915060608103840193506101bb565b60c08112156101b857600182013560b782036020035260005160388112157f010000000000000000000000000000000000000000000000000000000000000060018501350402155857808561044001528060b6838501038661046001378060b6830301830192506020810185019450506101ba565bfe5b5b5b5061006f565b601f841315155857602060208502016020810391505b6000821215156101fc578082604001510182826104400301526020820391506101d8565b808401610420528381018161044003f350505050505b6000f31b2d4f');
 
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Deploying Purity Checker');
           // Precompiled - Purity Checker
           const purityChecker = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/purity_checker.abi'), null, {
             from: accounts[0], 
             gasPrice: '20000000000' // 20 gwei
           });
           // Deploy Purity Checker
-          const purityCheckerContract = await purityChecker.deploy({data: config.fs.readFileSync('./contracts/contract/casper/compiled/purity_checker.bin')}).send({
+          const purityCheckerContract = await purityChecker.deploy({data: '0x'+config.fs.readFileSync('./contracts/contract/casper/compiled/purity_checker.bin')}).send({
                   from: accounts[0], 
                   gas: 1500000, 
                   gasPrice: '20000000000'
           });
 
+          console.log('\x1b[32m%s\x1b[0m', 'Casper - Deploying Sig Hasher');
           // Precompiled - Signature Hasher
           const sigHasher = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/sighash.abi'), null, {
               from: accounts[0], 
               gasPrice: '20000000000' // 20 gwei
           });
           // Deploy Signature Hasher
-          const sigHashContract = await sigHasher.deploy({data: config.fs.readFileSync('./contracts/contract/casper/compiled/sighash.bin')}).send({
+          const sigHashContract = await sigHasher.deploy({data: '0x'+config.fs.readFileSync('./contracts/contract/casper/compiled/sighash.bin')}).send({
                 from: accounts[0], 
                 gas: 1500000, 
                 gasPrice: '20000000000'
@@ -446,6 +452,12 @@ module.exports = async (deployer, network) => {
           // Update the casper bytecode to not use the rlp_decoder address specified here https://github.com/ethereum/vyper/blob/170229494a582735dc2973eb2b6f4ef6f493f67c/vyper/utils.py#L106
           // We need it to use the one we deployed, otherwise we'd need to recompile Vyper to use this one, so do a find and replace in the bytecode
           casperBytecode = casperBytecode.toString().replace(/5185D17c44699cecC3133114F8df70753b856709/gi, 'Cb969cAAad21A78a24083164ffa81604317Ab603').trim();
+
+          let casperBalance = '50000000000000000000'; // 50 ETH starting balance for Casper
+          if(network == 'poa') {
+            casperBalance = '5000000000000000000000'; // 5000 ETH starting balance for Casper
+          }
+
           // Create the contract now
           const casperContract = await casper.deploy(
             // Casper deployment 
@@ -453,7 +465,7 @@ module.exports = async (deployer, network) => {
               data: casperBytecode
             }).send({
                 from: accounts[0], 
-                value: 50000000000000000000, // 50 ETH starting balance for Casper
+                value: new $web3.utils.BN(casperBalance), // 5000 ETH starting balance for Casper
                 gas: 8000000, 
                 gasPrice: '20000000000'
             });

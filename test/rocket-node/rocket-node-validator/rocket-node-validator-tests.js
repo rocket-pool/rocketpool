@@ -1,7 +1,7 @@
 const os = require('os');
 
 import { printTitle, assertThrows }  from '../../_lib/utils/general';
-import { RocketPool, RocketSettings, Casper, RocketPoolMini }  from '../../_lib/artifacts';
+import { RocketPool, RocketSettings }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
 import { scenarioNodeCheckin } from '../rocket-node-status/rocket-node-status-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
@@ -35,9 +35,6 @@ export default function({owner}) {
 
         // Node addresses
         const nodeFirst = accounts[8];
-        const nodeSecond = accounts[9];
-        const nodeThird = accounts[7];
-        const nodeFourth = accounts[6];
 
         // User addresses
         const userFirst = accounts[1];
@@ -48,14 +45,12 @@ export default function({owner}) {
 
         // Contract dependencies
         let rocketSettings;
-        let rocketPool;
         let casper;
 
         before(async () => {
 
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
-            rocketPool = await RocketPool.deployed();
             casper = await CasperInstance();
 
             
@@ -263,8 +258,6 @@ export default function({owner}) {
         // Node addresses
         const nodeFirst = accounts[8];
         const nodeSecond = accounts[9];
-        const nodeThird = accounts[7];
-        const nodeFourth = accounts[6];
 
         // User addresses
         const userFirst = accounts[1];
@@ -339,7 +332,6 @@ export default function({owner}) {
         });
 
         it(printTitle('registered node', 'must provide a logout message to logout'), async () =>{   
-            let logoutMessage = '';
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,
@@ -420,7 +412,7 @@ export default function({owner}) {
             let notFirstNode = nodeSecond;
             await assertThrows(
                 scenarioNodeLogout({
-                    nodeAddress: nodeSecond,
+                    nodeAddress: notFirstNode,
                     minipoolAddress: miniPools.second.address,
                     gas: nodeLogoutGas
                 })
@@ -447,7 +439,6 @@ export default function({owner}) {
             });
 
             // log out of the minipool, when still staking
-            let notFirstNode = nodeSecond;
             await assertThrows(
                 scenarioNodeLogout({
                     nodeAddress: nodeFirst,

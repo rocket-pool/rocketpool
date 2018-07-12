@@ -4,10 +4,9 @@ import { printTitle, assertThrows }  from '../../_lib/utils/general';
 import { RocketPool, RocketSettings, Casper }  from '../../_lib/artifacts';
 import { initialiseMiniPool } from '../../rocket-user/rocket-user-utils';
 import { sendDeployValidationContract } from '../../_lib/smart-node/validation-code-contract-compiled';
-import { scenarioIncrementEpochAndInitialise } from '../../casper/casper-scenarios';
 import { scenarioRegisterNode } from '../rocket-node-admin/rocket-node-admin-scenarios';
 import { scenarioNodeCheckin } from './rocket-node-status-scenarios';
-import { scenarioNodeLogout, scenarioNodeLogoutForWithdrawal } from '../rocket-node-validator/rocket-node-validator-scenarios';
+import { scenarioNodeLogoutForWithdrawal } from '../rocket-node-validator/rocket-node-validator-scenarios';
 import { CasperInstance, casperEpochInitialise, casperEpochIncrementAmount } from '../../_lib/casper/casper';
 
 export default function({owner}) {
@@ -24,7 +23,6 @@ export default function({owner}) {
 
     // Gas costs
     const nodeRegisterGas = 1600000;
-    const nodeVotingGas = 1600000;
     const nodeLogoutGas = 1600000;
 
 
@@ -37,12 +35,9 @@ export default function({owner}) {
         // Node addresses
         const nodeFirst = accounts[8];
         const nodeSecond = accounts[9];
-        const nodeThird = accounts[7];
-        const nodeFourth = accounts[6];
 
         // User addresses
         const userFirst = accounts[1];
-        const userSecond = accounts[2];
 
         // Minipools
         let miniPools = {};
@@ -296,9 +291,6 @@ export default function({owner}) {
 
         // Node addresses
         const nodeFirst = accounts[8];
-        const nodeSecond = accounts[9];
-        const nodeThird = accounts[7];
-        const nodeFourth = accounts[6];
 
         // User addresses
         const userFirst = accounts[1];
@@ -310,13 +302,11 @@ export default function({owner}) {
         // Contract dependencies
         let rocketSettings;
         let rocketPool;
-        let casper;
         before(async () => {
 
             // Initalise contracts
             rocketSettings = await RocketSettings.deployed();
             rocketPool = await RocketPool.deployed();
-            casper = await CasperInstance();
 
             // Initialise Casper epoch to current block number
             await casperEpochInitialise(owner);

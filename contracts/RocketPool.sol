@@ -277,7 +277,7 @@ contract RocketPool is RocketBase {
     /// @param _nodeAddress Get pools with the current node
     /// @param _status Pool status to filter pools
     function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
-        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);  
+        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);
     }
 
     /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
@@ -323,11 +323,13 @@ contract RocketPool is RocketBase {
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
             // Check the pool meets any supplied filters
-            if ((_status < 10 && pool.getStatus() == _status && _stakingDuration == 0) || 
-               (_status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
+            if (
+               (_nodeAddress == 0 && _status < 10 && pool.getStatus() == _status && _stakingDuration == 0) || 
+               (_nodeAddress == 0 && _status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
                (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
                (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 
-               (_nodeAddress != 0 && _nodeAddress == pool.getNodeAddress()) ||
+               (_nodeAddress != 0 && _status > 10 && _nodeAddress == pool.getNodeAddress()) ||
+               (_nodeAddress != 0 && pool.getStatus() == _status && _nodeAddress == pool.getNodeAddress()) ||
                 _returnAll == true) {
                 // Matched
                 poolsFound[i] = pools[i];
