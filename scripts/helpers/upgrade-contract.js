@@ -6,7 +6,7 @@ const compressAbi = require('../../test/_lib/utils/contract.js').compressAbi;
 const RocketStorage = artifacts.require('./contract/RocketStorage');
 const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
 
-// Checkin node
+// Upgrade contract
 module.exports = async (done) => {
 
     // Get command-line arguments (remove args from truffle)
