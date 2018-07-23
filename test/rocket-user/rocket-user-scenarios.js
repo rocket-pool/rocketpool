@@ -137,7 +137,7 @@ export async function scenarioRegisterWithdrawalAddress({withdrawalAddress, mini
 
 
 // Withdraws staking deposit and asserts that deposit was withdrawn successfully
-export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, depositFromAddress = null, feeAccountAddress, gas, expectPoolClosed=false}) {
+export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromAddress, depositFromAddress = null, feeAccountAddress, gas, expectPoolClosed=false, expectPositiveRewards=true}) {
     const rocketUser = await RocketUser.deployed();
     const rocketPool = await RocketPool.deployed();
     const rocketSettings = await RocketSettings.deployed();
@@ -193,7 +193,7 @@ export async function scenarioWithdrawDeposit({miniPool, withdrawalAmount, fromA
         }
 
         // Asserts
-        if (miniPoolStatusOld.valueOf() == 4) {
+        if (expectPositiveRewards && miniPoolStatusOld.valueOf() == 4) {
             assert.isTrue(withdrawnAmount.valueOf() > depositAmountOld.valueOf(), 'Amount withdrawn was not more than initial deposit amount');
             assert.isTrue(feeAccountBalanceNew.gt(feeAccountBalanceOld), 'Fee account balance did not increase');
         }

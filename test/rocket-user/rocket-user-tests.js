@@ -394,6 +394,9 @@ export default function({owner}) {
                 await casperEpochInitialise(owner);
                 await casperEpochIncrementAmount(owner, 2);
 
+                // Mine some more epochs to simulate vote failure and negative rewards
+                await casperEpochIncrementAmount(owner, 10);
+
                 await scenarioNodeLogoutForWithdrawal({
                     owner: owner,
                     validators: [
@@ -526,6 +529,7 @@ export default function({owner}) {
                     fromAddress: userFirst,
                     feeAccountAddress: owner,
                     gas: rocketWithdrawalGas,
+                    expectPositiveRewards: false,
                 });
             });
 
