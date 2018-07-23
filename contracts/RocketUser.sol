@@ -251,7 +251,7 @@ contract RocketUser is RocketBase {
          // Calculate how much the user deposit has changed based on their original % deposited and the new post Casper balance of the pool
         uint256 userDepositAmountUpdated = rocketPoolMiniI.getStakingBalanceReceived().mul(userBalance) / rocketPoolMiniI.getStakingBalance();
         // Calculate how much rewards the user earned
-        userRewardsAmount = int256(userDepositAmountUpdated.sub(userBalance));
+        userRewardsAmount = int256(userDepositAmountUpdated) - int256(userBalance);
         // So only process fees if we've received rewards from Casper
         if (userRewardsAmount > 0) {
             // Calculate the fee we take from the rewards now to cover node server costs etc
