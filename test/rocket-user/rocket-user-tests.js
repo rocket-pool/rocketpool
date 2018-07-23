@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketSettings, RocketPool, RocketPoolMini } from '../_lib/artifacts'
+import { RocketSettings, RocketPool, RocketUser, RocketPoolMini } from '../_lib/artifacts'
 import { launchMiniPools } from '../rocket-node/rocket-node-utils';
 import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-validator/rocket-node-validator-scenarios';
 import { casperEpochInitialise, casperEpochIncrementAmount } from '../_lib/casper/casper';
@@ -362,9 +362,11 @@ export default function({owner}) {
             // Contract dependencies
             let rocketSettings;
             let rocketPool;
+            let rocketUser;
             before(async () => {
                 rocketSettings = await RocketSettings.deployed();
                 rocketPool = await RocketPool.deployed();
+                rocketUser = await RocketUser.deployed();
             });
 
             beforeEach(async () => {
@@ -523,6 +525,13 @@ export default function({owner}) {
 
             // First user withdraws their deposit + rewards and pays Rocket Pools fee
             it(printTitle('userFirst', 'withdraws their deposit + Casper rewards from the minipool and pays their fee'), async () => {
+
+                // Check for negative rewards
+                let info = await rocketUser.getUserExpectedReturn.call(miniPools.first.address, userFirst);
+                let rewards = parseInt(info[1]);
+                assert.isBelow(rewards, 0, 'Pre-check failed - user rewards should be negative');
+
+                // Withdraw
                 await scenarioWithdrawDeposit({
                     miniPool: miniPools.first,
                     withdrawalAmount: 0,
@@ -531,6 +540,7 @@ export default function({owner}) {
                     gas: rocketWithdrawalGas,
                     expectPositiveRewards: false,
                 });
+
             });
 
 
