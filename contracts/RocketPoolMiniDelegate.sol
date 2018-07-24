@@ -472,13 +472,15 @@ contract RocketPoolMiniDelegate is RocketBase {
             stakingBalanceReceived = address(this).balance;
             // Do a few landing checks now
             // See if any ether in the pool has been traded for tokens
-            if (depositEtherTradedForTokensTotal > 0) {
+            if (depositEtherTradedForTokensTotal > 0 && stakingBalanceReceived > 0) {
                 // Ok, since 1 ether = 1 token, send the balance of these outstanding  ethers to the deposit token contract so users can trade tokens for them later
+                // Weight the amount sent to the deposit token contract by the reward factor
+                uint256 depositEtherSendAmount = stakingBalanceReceived.mul(depositEtherTradedForTokensTotal) / stakingBalance;
                 // Sender should be the node that triggered this
                 address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
-                if (depositTokenContract.call.value(depositEtherTradedForTokensTotal)()) {
+                if (depositTokenContract.call.value(depositEtherSendAmount)()) {
                     // Fire the event
-                    emit DepositTokenFundSent(depositTokenContract, depositEtherTradedForTokensTotal, now);
+                    emit DepositTokenFundSent(depositTokenContract, depositEtherSendAmount, now);
                     // If all users in this pool have withdrawn their deposits as tokens, then we won't have any users in here to withdraw ether, see if we can close
                     canClosePool();
                 }
