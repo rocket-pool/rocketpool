@@ -5,6 +5,7 @@ import { scenarioNodeLogoutForWithdrawal } from '../rocket-node/rocket-node-vali
 import { casperEpochInitialise, casperEpochIncrementAmount } from '../_lib/casper/casper';
 import { initialisePartnerUser } from '../rocket-partner-api/rocket-partner-api-utils';
 import { scenarioDeposit, scenarioRegisterWithdrawalAddress, scenarioWithdrawDeposit } from './rocket-user-scenarios';
+import { scenarioWithdrawDepositTokens } from '../rocket-deposit/rocket-deposit-scenarios';
 
 export default function({owner}) {
 
@@ -387,6 +388,23 @@ export default function({owner}) {
             });
 
 
+            // RPD withdrawn from first minipool
+            it(printTitle('---------', 'RPD withdrawn from first minipool'), async () => {
+
+                // RPD withdrawal amount
+                let withdrawAmount = parseInt(web3.toWei('1', 'ether').valueOf());
+
+                // Withdraw
+                await scenarioWithdrawDepositTokens({
+                    miniPool: miniPools.first,
+                    withdrawalAmount: withdrawAmount,
+                    fromAddress: userFirst,
+                    gas: 250000,
+                });
+
+            });
+
+
             // First and second minipools logged out from Casper
             it(printTitle('---------', 'first and second minipools logged out from Casper'), async () => {
                 await rocketPool.setPoolStakingDuration(miniPools.first.address, 0, {from: owner, gas: 150000});
@@ -581,6 +599,13 @@ export default function({owner}) {
 
             // Second user withdraws their deposit + rewards and pays Rocket Pools fee, minipool closes
             it(printTitle('userSecond', 'withdraws their deposit + Casper rewards using their backup address from the minipool, pays their fee and the pool closes'), async () => {
+
+                // Check for negative rewards
+                let info = await rocketUser.getUserExpectedReturn.call(miniPools.first.address, userSecond);
+                let rewards = parseInt(info[1]);
+                assert.isBelow(rewards, 0, 'Pre-check failed - user rewards should be negative');
+
+                // Withdraw
                 await scenarioWithdrawDeposit({
                     miniPool: miniPools.first,
                     withdrawalAmount: 0,
@@ -590,6 +615,7 @@ export default function({owner}) {
                     gas: rocketWithdrawalGas,
                     expectPoolClosed: true
                 });
+
             });
 
 
