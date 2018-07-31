@@ -251,66 +251,65 @@ contract RocketPool is RocketBase {
     /// @dev Get all pools that match this status (explicit method)
     /// @param _status Get pools with the current status
     function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {
-        return getPoolsFilter(false, _status, 0, 0, 0, false);  
+        return getPoolsFilter(1, _status, 0, 0, 0);  
     }
 
     /// @dev Get all pools that match this status and set staking duration (explicit method)
     /// @param _status Get pools with the current status
     /// @param _stakingDuration Get pools with the current staking duration
     function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) public view returns(address[] memory) {
-        return getPoolsFilter(false, _status, 0, _stakingDuration, 0, false);  
+        return getPoolsFilter(2, _status, 0, _stakingDuration, 0);  
     }
 
     /// @dev Get all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
     function getPoolsFilterWithNode(address _nodeAddress) public view returns(address[] memory) {
-        return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false);  
+        return getPoolsFilter(3, 0, _nodeAddress, 0, 0);  
     }
 
     /// @dev Return count of all pools that are assigned to this node (explicit method)
     /// @param _nodeAddress Get pools with the current node
     function getPoolsFilterWithNodeCount(address _nodeAddress) public view returns(uint256) {
-        return getPoolsFilter(false, 99, _nodeAddress, 0, 0, false).length;  
+        return getPoolsFilter(3, 0, _nodeAddress, 0, 0).length;  
     }
 
     /// @dev Return all pools that are assigned to this node and have the current status (explicit method)
     /// @param _nodeAddress Get pools with the current node
     /// @param _status Pool status to filter pools
     function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
-        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false);
+        return getPoolsFilter(4, _status, _nodeAddress, 0, 0);
     }
 
     /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
     /// @param _nodeAddress Get pools with the current node
     function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress, uint256 _status) public view returns(uint256) {
-        return getPoolsFilter(false, _status, _nodeAddress, 0, 0, false).length;  
+        return getPoolsFilter(4, _status, _nodeAddress, 0, 0).length;  
     }
 
     /// @dev Get all pools that match this user belongs too (explicit method)
     /// @param _userAddress Get pools with the current user
     function getPoolsFilterWithUser(address _userAddress) public view returns(address[] memory) {
-        return getPoolsFilter(false, 99, 0, 0, _userAddress, false);
+        return getPoolsFilter(5, 0, 0, 0, _userAddress);
     }
 
     /// @dev Get all pools that match this user belongs too and has a deposit > 0 (explicit method)
     /// @param _userAddress Get pools with the current user
     function getPoolsFilterWithUserDeposit(address _userAddress) public view returns(address[] memory) {
-        return getPoolsFilter(false, 99, 0, 0, _userAddress, true);
+        return getPoolsFilter(6, 0, 0, 0, _userAddress);
     }
 
     /// @dev Returns all current mini pools (explicit method)
     function getPools() view private returns(address[] memory) {
-        return getPoolsFilter(true, 99, 0, 0, 0, false);
+        return getPoolsFilter(0, 0, 0, 0, 0);
     }
 
     /// @dev Get the address of any pools with the current set status or filter
-    /// @param _returnAll Return all mini pools 
+    /// @param _type The type of minipool filter
     /// @param _status Get pools with the current status
     /// @param _nodeAddress Filter pools that are currently assigned to this node address
     /// @param _stakingDuration The duration that the pool with stake with Casper for
     /// @param _userAddress The address of a user account in the pool
-    /// @param _userHasDeposit Filter pools on users that have a deposit > 0 in the pool
-    function getPoolsFilter(bool _returnAll, uint256 _status, address _nodeAddress, uint256 _stakingDuration, address _userAddress, bool _userHasDeposit) view private returns(address[] memory) {
+    function getPoolsFilter(uint8 _type, uint256 _status, address _nodeAddress, uint256 _stakingDuration, address _userAddress) view private returns(address[] memory) {
         // Get the mini pool count
         uint256 miniPoolCount = getPoolsCount(); 
         // Create an array at the length of the current pools, then populate it
@@ -323,15 +322,37 @@ contract RocketPool is RocketBase {
             // Get an instance of that pool contract
             RocketPoolMini pool = getPoolInstance(pools[i]);
             // Check the pool meets any supplied filters
-            if (
-               (_nodeAddress == 0 && _status < 10 && pool.getStatus() == _status && _stakingDuration == 0) || 
-               (_nodeAddress == 0 && _status < 10 && pool.getStatus() == _status && _stakingDuration > 0 && _stakingDuration == pool.getStakingDuration()) || 
-               (_userAddress != 0 && pool.getUserExists(_userAddress)) || 
-               (_userAddress != 0 && _userHasDeposit == true && pool.getUserHasDeposit(_userAddress)) || 
-               (_nodeAddress != 0 && _status > 10 && _nodeAddress == pool.getNodeAddress()) ||
-               (_nodeAddress != 0 && pool.getStatus() == _status && _nodeAddress == pool.getNodeAddress()) ||
-                _returnAll == true) {
-                // Matched
+            if(_type == 1) {
+                if(pool.getStatus() == _status) {
+                    poolsFound[i] = pools[i];
+                } 
+            }
+            if(_type == 2) {
+                if(pool.getStatus() == _status && _stakingDuration == pool.getStakingDuration()) {
+                    poolsFound[i] = pools[i];
+                }
+            }
+            if(_type == 3) {
+                if(_nodeAddress == pool.getNodeAddress()) {
+                    poolsFound[i] = pools[i];
+                }
+            }
+            if(_type == 4) {
+                if(_nodeAddress == pool.getNodeAddress() && pool.getStatus() == _status) {
+                    poolsFound[i] = pools[i];
+                }
+            }
+            if(_type == 5) {
+                if(pool.getUserExists(_userAddress)) {
+                    poolsFound[i] = pools[i];
+                }
+            }
+            if(_type == 6) {
+                if(pool.getUserHasDeposit(_userAddress)) {
+                    poolsFound[i] = pools[i];
+                }
+            }
+            if(_type == 0) {
                 poolsFound[i] = pools[i];
             }
         }
