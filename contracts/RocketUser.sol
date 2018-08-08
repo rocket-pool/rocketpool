@@ -174,7 +174,7 @@ contract RocketUser is RocketBase {
         // Get an instance of that pool contract
         rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // Got the users address, now check to see if this is a user withdrawing to their backup address, if so, we need to update the users minipool account
-        if (rocketPoolMini.getUserBackupAddressExists(_userAddress)) {
+        if (!rocketPoolMini.getUserExists(_userAddress) && rocketPoolMini.getUserBackupAddressExists(_userAddress)) {
             // Get the original deposit address now
             // This will update the users account to match the backup address, but only after many checks and balances
             // It will fail if the user can't use their backup address to withdraw at this point or its not their nominated backup address trying
