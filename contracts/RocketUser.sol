@@ -270,10 +270,13 @@ contract RocketUser is RocketBase {
     /// @param _miniPoolAddress The address of the mini pool they the supplied user account is in.
     /// @param _newUserAddressUsedForDeposit The address the user wishes to make their backup withdrawal address
     function userSetWithdrawalDepositAddress(address _newUserAddressUsedForDeposit, address _miniPoolAddress) public returns(bool) {
+        // Check backup withdrawal address is valid
+        require(_newUserAddressUsedForDeposit != 0);
+        require(_newUserAddressUsedForDeposit != msg.sender);
         // Get an instance of that pool contract
         rocketPoolMini = RocketPoolMini(_miniPoolAddress);       
         // User can only set this backup address before deployment to casper, also partners cannot set this address to their own to prevent them accessing the users funds after the set withdrawal backup period expires
-        if ((rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1) && _newUserAddressUsedForDeposit != 0 && rocketPoolMini.getUserPartner(msg.sender) != _newUserAddressUsedForDeposit) {
+        if ((rocketPoolMini.getStatus() == 0 || rocketPoolMini.getStatus() == 1) && rocketPoolMini.getUserPartner(msg.sender) != _newUserAddressUsedForDeposit) {
             if (rocketPoolMini.setUserAddressBackupWithdrawal(msg.sender, _newUserAddressUsedForDeposit)) {
                 // Fire the event
                 emit UserSetBackupWithdrawalAddress(msg.sender, _newUserAddressUsedForDeposit, _miniPoolAddress, now);
