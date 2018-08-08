@@ -271,20 +271,49 @@ export default function({owner}) {
 
             // User cannot set a backup withdrawal address to an invalid address
             it(printTitle('user', 'cannot set a backup withdrawal address to an invalid address'), async () => {
-
-                // Register withdrawal address
-                let result = await scenarioRegisterWithdrawalAddress({
+                await assertThrows(scenarioRegisterWithdrawalAddress({
                     withdrawalAddress: '0x0000000000000000000000000000000000000000',
                     miniPool: miniPools.first,
                     fromAddress: userFirst,
                     gas: 550000,
                     checkLogs: false,
-                });
+                }), 'Backup withdrawal address was set');
+            });
 
-                // Assert UserSetBackupWithdrawalAddress event was not logged
-                let log = result.logs.find(({ event }) => event == 'UserSetBackupWithdrawalAddress');
-                assert.equal(log, undefined, 'UserSetBackupWithdrawalAddress event was logged');
 
+            // User cannot set a backup withdrawal address to their deposit address
+            it(printTitle('user', 'cannot set a backup withdrawal address to their deposit address'), async () => {
+                await assertThrows(scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: userFirst,
+                    miniPool: miniPools.first,
+                    fromAddress: userFirst,
+                    gas: 550000,
+                    checkLogs: false,
+                }), 'Backup withdrawal address was set');
+            });
+
+
+            // User cannot set a backup withdrawal address to an existing deposit address
+            it(printTitle('user', 'cannot set a backup withdrawal address to an existing deposit address'), async () => {
+                await assertThrows(scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: userSecond,
+                    miniPool: miniPools.first,
+                    fromAddress: userFirst,
+                    gas: 550000,
+                    checkLogs: false,
+                }), 'Backup withdrawal address was set');
+            });
+
+
+            // Random account cannot set a backup withdrawal address
+            it(printTitle('random account', 'cannot set a backup withdrawal address'), async () => {
+                await assertThrows(scenarioRegisterWithdrawalAddress({
+                    withdrawalAddress: userFirstBackupAddress,
+                    miniPool: miniPools.first,
+                    fromAddress: accounts[9],
+                    gas: 550000,
+                    checkLogs: false,
+                }), 'Backup withdrawal address was set');
             });
 
 
