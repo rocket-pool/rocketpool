@@ -102,7 +102,6 @@ module.exports = async (deployer, network) => {
           );
         } 
       } 
-
     
       /*** Permissions ********/
       
