@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "./interface/RocketStorageInterface.sol";
 
@@ -18,6 +18,9 @@ contract RocketBase {
 
 
     /*** Modifiers ************/
+
+
+    // Permissions
 
     /**
     * @dev Throws if called by any account other than the owner.
@@ -68,7 +71,7 @@ contract RocketBase {
     * @return bool
     */
     function roleHas(string _role, address _address) internal view returns (bool) {
-        return rocketStorage.getBool(keccak256("access.role", _role, _address));
+        return rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
     }
 
      /**

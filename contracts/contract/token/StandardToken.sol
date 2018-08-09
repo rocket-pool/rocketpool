@@ -1,8 +1,8 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 
-import "../interface/ERC20.sol";
-import "../lib/SafeMath.sol";
+import "../../interface/token//ERC20.sol";
+import "../../lib/SafeMath.sol";
 
 
 /**

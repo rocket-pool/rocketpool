@@ -36,7 +36,7 @@ module.exports = async (done) => {
     let currentEpoch = parseInt(await casper.methods.current_epoch().call({from: nodeAddress}));
 
     // build logout message
-    let signatureHash = Web3.utils.keccak256(encode([validatorIndex, currentEpoch]));
+    let signatureHash = Web3.utils.keccak256(abi.encodePacked(encode([validatorIndex, currentEpoch])));
     let signature = signRaw(signatureHash, getGanachePrivateKey(nodeAddress));
     let combinedSignature = Buffer.from(paddy(signature.v, 64) + paddy(signature.r, 64) +  paddy(signature.s, 64), 'hex');
     let logoutMessage = encode([validatorIndex, currentEpoch, combinedSignature]);

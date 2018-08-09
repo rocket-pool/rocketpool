@@ -1,9 +1,9 @@
 {
   "name": "rocketpool",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A next generation decentralised Ethereum proof of stake pool",
   "repository": "git@github.com:darcius/rocketpool.git",
-  "author": "David Rugendyke <david@mail.rocketpool.net>",
+  "author": "David Rugendyke <contact@rocketpool.net>",
   "scripts": {
     "console": "truffle console",
     "compile": "truffle compile",
@@ -21,8 +21,7 @@
     "babel-preset-stage-2": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
-    "truffle-contract": "^3.0.4",
-    "web3": "github:rocket-pool/web3.js#decimal10-support"
+    "truffle-contract": "^3.0.4"
   },
   "prettier": {
     "singleQuote": true,

@@ -91,7 +91,7 @@ export async function scenarioValidatorVote({validatorAddress, validatorWithdraw
     assert.isTrue(validatorDepositBefore > 0, 'Validators deposit should be greater than 0');
 
     // RLP encode the required vote message
-    let sigHash = $web3.utils.keccak256(RLP.encode([validatorIndex,targetHash,casperCurrentEpoch,sourceEpoch]));
+    let sigHash = $web3.utils.keccak256(abi.encodePacked(RLP.encode([validatorIndex,targetHash,casperCurrentEpoch,sourceEpoch])));
     // Sign it
     let signature = signRaw(sigHash, getGanachePrivateKey(signingAddress));
     // Combine and pad to 32 int length (same as casper python code)
@@ -139,7 +139,7 @@ export async function scenarioValidatorLogout({validatorAddress, validatorWithdr
     let validatorEndDynastyBefore = new BN(await casper.methods.validators__end_dynasty(validatorIndex).call({from: validatorAddress}));
 
     // RLP encode the required logout message
-    let sigHash = $web3.utils.keccak256(RLP.encode([validatorIndex, casperCurrentEpoch]));
+    let sigHash = $web3.utils.keccak256(abi.encodePacked(RLP.encode([validatorIndex, casperCurrentEpoch])));
     // Sign it
     let signature = signRaw(sigHash, getGanachePrivateKey(signingAddress));
     // Combine and pad to 32 int length (same as casper python code)

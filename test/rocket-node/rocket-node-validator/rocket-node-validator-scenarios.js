@@ -24,7 +24,7 @@ export async function scenarioNodeVoteCast({nodeAddress, minipoolAddress, gas, s
     let sourceEpoch = parseInt(await casper.methods.recommended_source_epoch().call({from: nodeAddress}));
     
     // RLP encode the required vote message
-    let sigHash = $web3.utils.keccak256(RLP.encode([validatorIndex,targetHash,currentEpoch,sourceEpoch]));
+    let sigHash = $web3.utils.keccak256(abi.encodePacked(RLP.encode([validatorIndex,targetHash,currentEpoch,sourceEpoch])));
     // Sign it
     let signature = signRaw(sigHash, getGanachePrivateKey(signingAddress));
     // Combine and pad to 32 int length (same as casper python code)
@@ -77,7 +77,7 @@ export async function scenarioNodeLogout({nodeAddress, minipoolAddress, gas, sig
     let currentEpoch = parseInt(await casper.methods.current_epoch().call({from: nodeAddress}));
 
     // build logout message
-    let sigHash = $web3.utils.keccak256(RLP.encode([validatorIndex, currentEpoch]));
+    let sigHash = $web3.utils.keccak256(abi.encodePacked(RLP.encode([validatorIndex, currentEpoch])));
     let signature = signRaw(sigHash, getGanachePrivateKey(signingAddress));
     let combinedSig = Buffer.from(paddy(signature.v, 64) + paddy(signature.r, 64) +  paddy(signature.s, 64), 'hex');
     let logoutMessage = RLP.encode([validatorIndex, currentEpoch, combinedSig]);

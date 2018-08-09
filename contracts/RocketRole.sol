@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
@@ -30,7 +30,7 @@ contract RocketRole is RocketBase {
 
     /// @dev Only allow access from the latest version of the RocketRole contract
     modifier onlyLatestRocketRole() {
-        require(address(this) == rocketStorage.getAddress(keccak256("contract.name", "rocketRole")));
+        require(address(this) == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketRole"))));
         _;
     }
   
@@ -52,9 +52,9 @@ contract RocketRole is RocketBase {
         // Check the role exists 
         roleCheck("owner", msg.sender);
         // Remove current role
-        rocketStorage.deleteBool(keccak256("access.role", "owner", msg.sender));
+        rocketStorage.deleteBool(keccak256(abi.encodePacked("access.role", "owner", msg.sender)));
         // Add new owner
-        rocketStorage.setBool(keccak256("access.role",  "owner", _newOwner), true);
+        rocketStorage.setBool(keccak256(abi.encodePacked("access.role",  "owner", _newOwner)), true);
     }
 
 
@@ -85,9 +85,9 @@ contract RocketRole is RocketBase {
         // Legit address?
         require(_address != 0x0);
         // Only one owner to rule them all
-        require(keccak256(_role) != keccak256("owner"));
+        require(keccak256(abi.encodePacked(_role)) != keccak256(abi.encodePacked("owner")));
         // Add it
-        rocketStorage.setBool(keccak256("access.role", _role, _address), true);
+        rocketStorage.setBool(keccak256(abi.encodePacked("access.role", _role, _address)), true);
         // Log it
         emit RoleAdded(_role, _address);
     }
@@ -99,7 +99,7 @@ contract RocketRole is RocketBase {
         // Only an owner can transfer their access
         require(!roleHas("owner", _address));
         // Remove from storage
-        rocketStorage.deleteBool(keccak256("access.role", _role, _address));
+        rocketStorage.deleteBool(keccak256(abi.encodePacked("access.role", _role, _address)));
         // Log it
         emit RoleRemoved(_role, _address);
     }
