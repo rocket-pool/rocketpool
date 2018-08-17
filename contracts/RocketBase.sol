@@ -19,6 +19,15 @@ contract RocketBase {
 
     /*** Modifiers ************/
 
+    
+    /**
+    * @dev Throws if called by any sender that doesn't match one of the supplied contract
+    */
+    modifier onlyContract(string _contractName) {
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Incorrect contract access");
+        _;
+    }
+
 
     // Permissions
 
@@ -42,7 +51,7 @@ contract RocketBase {
     * @dev Modifier to scope access to admins
     */
     modifier onlySuperUser() {
-        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender));
+        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender), "User is not a super user");
         _;
     }
 
@@ -78,7 +87,7 @@ contract RocketBase {
     * @dev Check if an address has this role, reverts if it doesn't
     */
     function roleCheck(string _role, address _address) view internal {
-        require(roleHas(_role, _address) == true);
+        require(roleHas(_role, _address) == true, "User does not have correct role");
     }
 
     

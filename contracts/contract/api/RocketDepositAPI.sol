@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "../../RocketBase.sol";
-import "../../interface/api/RocketAPISettingsInterface.sol";
+import "../../interface/settings/RocketAPISettingsInterface.sol";
 
 
 /// @title RocketDepositAPI - API for deposits into the Rocket Pool network
@@ -37,19 +37,10 @@ contract RocketDepositAPI is RocketBase {
     /// @dev API deposits must be validated
     modifier acceptableDeposit {
         rocketAPISettings = RocketAPISettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketSettings"))));
-        require(rocketAPISettings.getDepositAllowed() && msg.value >= rocketAPISettings.getDepositMin() && msg.value <= rocketAPISettings.getDepositMax()); 
+        require(rocketAPISettings.getDepositAllowed() && msg.value >= rocketAPISettings.getDepositMin() && msg.value <= rocketAPISettings.getDepositMax(), "Incorrect deposit, check size is greater than min and less than max."); 
         _;
     }
   
-
-    // Contract Access
-
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
-        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
-        _;
-    }
-
 
     /*** Constructor *************/
    
