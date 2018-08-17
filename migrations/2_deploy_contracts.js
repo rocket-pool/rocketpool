@@ -11,6 +11,9 @@ const config = require('../truffle.js');
 const rocketStorage = artifacts.require('./RocketStorage.sol');
 // All other contracts
 const contracts = {};
+// Core
+contracts.rocketPool = artifacts.require('./RocketPool.sol');
+contracts.rocketRole = artifacts.require('./RocketRole.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
