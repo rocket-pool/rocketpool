@@ -77,7 +77,7 @@ contract RocketMinipoolSettings is RocketBase {
     }
     
     /// @dev Check to see if new pools are allowed to be created
-    function getMinipoolAllowedToBeCreated() public view returns (bool) { 
+    function getMinipoolCanBeCreated() public view returns (bool) { 
         // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
         // New pools allowed to be created?
@@ -113,17 +113,17 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256("settings.minipool.deposit.gas"));
     }
 
-     /// @dev Get staking time length for a given staking time ID, throw if its not a valid ID
-    function getMinipoolStakingTime(string _stakingTimeID) public view returns (uint256) {
+     /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
+    function getMinipoolStakingDuration(string _durationID) public view returns (uint256) {
         // Make sure the staking ID exists
-        uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _stakingTimeID)));
+        uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
         require(stakingTime > 0);
         return stakingTime;
     }
 
     /// @dev Get the minimum required time for staking
     function getMinipoolMinimumStakingTime() public view returns (uint256) {
-        return getMinipoolStakingTime("short");
+        return getMinipoolStakingDuration("short");
     }
 
     /// @dev The default fee given as a % of 1 Ether (eg 5%)    
@@ -141,9 +141,9 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.backupcollect.enabled")));
     }
 
-    /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
-    function getMinipoolBackupCollectTime() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.backupcollect.time")));
+    /// @dev The block count of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
+    function getMinipoolBackupCollectDuration() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.backupcollect.blocks")));
     }
 
 

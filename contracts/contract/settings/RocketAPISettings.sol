@@ -20,15 +20,14 @@ contract RocketAPISettings is RocketBase {
     function init() public onlyOwner {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.api.init")))) {
-
-             /*** API ***/
+            // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
-
+            // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.init")), true);
         }
     }
