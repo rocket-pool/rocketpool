@@ -25,6 +25,7 @@ contract RocketHelpersAPI is RocketBase {
         version = 1;
     }
 
+
      /*** Getters *************/
 
     // Deposits
@@ -34,6 +35,7 @@ contract RocketHelpersAPI is RocketBase {
         // Get the current deposit address 
         rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI")));
     }
+
 
     /// @dev Checks if the deposit parameters are correct for a successful deposit
     /// @param _value The amount being deposited
@@ -72,6 +74,7 @@ contract RocketHelpersAPI is RocketBase {
         rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketWithdrawalAPI")));
     }
 
+
     // Groups
 
     /// @dev Get the group by its ID
@@ -81,9 +84,9 @@ contract RocketHelpersAPI is RocketBase {
     }
 
     /// @dev Get a verified address for the group that's allowed to interact with RP
-    function getGroupAddress(string _groupID) public view returns(string) { 
+    function getGroupAddress(string _groupID) public view returns(address) { 
         // Get the group name
-        rocketStorage.getString(keccak256(abi.encodePacked("api.group.name", _groupID)));
+        rocketStorage.getAddress(keccak256(abi.encodePacked("api.group.address", _groupID)));
     }
 
 
