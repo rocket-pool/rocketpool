@@ -24,6 +24,15 @@ contract RocketGroup is RocketBase {
 
     /*** Events ****************/
 
+     event GroupAdd (
+        string _ID,
+        string name,
+        uint256 stakingFee,
+        uint256 created
+    );
+
+
+    // TODO: Remove Flag Events
     event FlagString (
         string flag
     );
@@ -48,9 +57,11 @@ contract RocketGroup is RocketBase {
     /// @param _name Name of the group (eg rocketpool, coinbase etc) 
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function add(string _ID, string _name, uint256 _stakingFee) public returns (bool) {
-        
         // Make the ID lower case
-        emit FlagString(_ID.lower());
+        _ID = _ID.lower();
+
+        // Log it
+        emit GroupAdd(_ID, _name, _stakingFee, now);
     }
 
 }

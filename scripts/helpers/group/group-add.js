@@ -26,11 +26,17 @@ module.exports = async (done) => {
     });
 
     // Show events
-    console.log('********************************');
+
     result.logs.forEach(event => {
-        console.log(event['event'], event['args']);
+        console.log('********************************');
+        console.log('EVENT: '+event['event'], );
+        console.log('********************************');
+        Object.keys(event['args']).forEach(arg => {
+            console.log(' - '+arg+': ', event['args'][arg].valueOf());
+        });
     });;
     console.log('********************************');
+    
 
     // Complete
     done('Group added successfully: ' + args.join(', '));
