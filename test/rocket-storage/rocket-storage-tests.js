@@ -23,7 +23,7 @@ export default function({owner}) {
 
 
     // Run list tests by type
-    function listTests(name, contractArtifact, key, testValues) {
+    function listTests(name, contractArtifact, key, testValues, indexOfTests = true) {
         contract(name, async (accounts) => {
 
 
@@ -59,6 +59,14 @@ export default function({owner}) {
                     fromAddress: owner,
                     gas: 500000,
                 });
+
+                // Test indexOf
+                if (indexOfTests) {
+                    let index1 = await contract.getListIndexOf(key, testValues[2]);
+                    let index2 = await contract.getListIndexOf(key, testValues[6]);
+                    assert.equal(index1.valueOf(), 2, 'getListIndexOf returned incorrect index');
+                    assert.equal(index2.valueOf(), -1, 'getListIndexOf returned index when value did not exist');
+                }
 
             });
 
@@ -206,7 +214,7 @@ export default function({owner}) {
         true,
         false,
         true,
-    ]);
+    ], false);
     listTests('BytesListStorage', BytesListStorage, web3.sha3('test.bytes'), [
         web3.sha3('test string 1'),
         web3.sha3('test string 2'),
