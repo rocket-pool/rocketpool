@@ -66,3 +66,27 @@ export async function scenarioSetListItem({type, key, index, value, fromAddress,
 
 }
 
+
+// Insert an item into a list
+export async function scenarioInsertListItem({type, key, index, value, fromAddress, gas}) {
+	const rocketListStorage = await RocketListStorage.deployed();
+
+	// Get initial list
+    let list1 = await getList(type, key);
+
+    // Insert list item
+    await rocketListStorage[`insert${type}ListItem`](key, index, value, {from: fromAddress, gas: gas});
+
+    // Get updated list
+    let list2 = await getList(type, key);
+
+    // Asserts
+    assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
+    assert.equal(list2[index], value, 'Value was not inserted correctly');
+    list1.forEach((item, listIndex) => {
+    	if (listIndex < index) assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
+    	else assert.equal(list1[listIndex], list2[listIndex + 1], 'List item was not moved successfully');
+    });
+
+}
+

@@ -80,7 +80,7 @@ contract RocketListStorage is RocketBase {
     function insertAddressListItem(bytes32 _key, uint _index, address _value) onlyLatestRocketNetworkContract external {
         require(_index <= rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count"))), "List index out of bounds");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
-        for (uint index = count; index > _index + 1; --index) {
+        for (uint index = count; index > _index; --index) {
             address previousItem = rocketStorage.getAddress(keccak256(abi.encodePacked(_key, "item", index - 1)));
             rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", index)), previousItem);
         }

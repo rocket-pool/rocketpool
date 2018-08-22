@@ -1,6 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketListStorage } from '../_lib/artifacts'
 import { scenarioWriteBool } from './rocket-storage-scenarios';
-import { scenarioPushListItem, scenarioSetListItem } from './rocket-list-storage-scenarios';
+import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem } from './rocket-list-storage-scenarios';
 
 export default function({owner}) {
 
@@ -23,8 +24,17 @@ export default function({owner}) {
     contract('RocketListStorage', async (accounts) => {
 
 
+        // Contract dependencies
+        let rocketListStorage;
+        before(async () => {
+            rocketListStorage = await RocketListStorage.deployed();
+        });
+
+
         // Push an item onto a list
         it(printTitle('-----', 'push an item onto a list'), async () => {
+
+            // Push items
             await scenarioPushListItem({
                 type: 'Address',
                 key: web3.sha3('test.addresses'),
@@ -46,11 +56,14 @@ export default function({owner}) {
                 fromAddress: owner,
                 gas: 500000,
             });
+
         });
 
 
-        // Set a list item by index
-        it(printTitle('-----', 'set a list item by index'), async () => {
+        // Set a list item at index
+        it(printTitle('-----', 'set a list item at index'), async () => {
+
+            // Set item
             await scenarioSetListItem({
                 type: 'Address',
                 key: web3.sha3('test.addresses'),
@@ -59,14 +72,55 @@ export default function({owner}) {
                 fromAddress: owner,
                 gas: 500000,
             });
+
+            // Set item at out of bounds index
             await assertThrows(scenarioSetListItem({
                 type: 'Address',
                 key: web3.sha3('test.addresses'),
-                index: 9,
-                value: '0x0000000000000000000000000000000000000005',
+                index: 99,
+                value: '0x0000000000000000000000000000000000000099',
                 fromAddress: owner,
                 gas: 500000,
             }), 'Set a list item with an out of bounds index');
+
+        });
+
+
+        // Insert an item into a list at index
+        it(printTitle('-----', 'insert an item into a list at index'), async () => {
+
+            // Insert item
+            await scenarioInsertListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 1,
+                value: '0x0000000000000000000000000000000000000005',
+                fromAddress: owner,
+                gas: 500000,
+            });
+
+            // Insert item at end of list
+            let key = web3.sha3('test.addresses');
+            let count = await rocketListStorage[`getAddressListCount`].call(key);
+            await scenarioInsertListItem({
+                type: 'Address',
+                key: key,
+                index: count,
+                value: '0x0000000000000000000000000000000000000006',
+                fromAddress: owner,
+                gas: 500000,
+            });
+
+            // Insert item at out of bounds index
+            await assertThrows(scenarioInsertListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 99,
+                value: '0x0000000000000000000000000000000000000099',
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Inserted a list item with an out of bounds index');
+
         });
 
 
