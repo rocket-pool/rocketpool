@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
-import { scenarioPushListItem } from './rocket-list-storage-scenarios';
+import { scenarioPushListItem, scenarioSetListItem } from './rocket-list-storage-scenarios';
 
 export default function({owner}) {
 
@@ -23,8 +23,8 @@ export default function({owner}) {
     contract('RocketListStorage', async (accounts) => {
 
 
-        // Owner can push an item onto a list
-        it(printTitle('owner', 'can push and item onto a list'), async () => {
+        // Push an item onto a list
+        it(printTitle('-----', 'push an item onto a list'), async () => {
             await scenarioPushListItem({
                 type: 'Address',
                 key: web3.sha3('test.addresses'),
@@ -32,6 +32,41 @@ export default function({owner}) {
                 fromAddress: owner,
                 gas: 500000,
             });
+            await scenarioPushListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                value: '0x0000000000000000000000000000000000000002',
+                fromAddress: owner,
+                gas: 500000,
+            });
+            await scenarioPushListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                value: '0x0000000000000000000000000000000000000003',
+                fromAddress: owner,
+                gas: 500000,
+            });
+        });
+
+
+        // Set a list item by index
+        it(printTitle('-----', 'set a list item by index'), async () => {
+            await scenarioSetListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 1,
+                value: '0x0000000000000000000000000000000000000004',
+                fromAddress: owner,
+                gas: 500000,
+            });
+            await assertThrows(scenarioSetListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 9,
+                value: '0x0000000000000000000000000000000000000005',
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Set a list item with an out of bounds index');
         });
 
 
