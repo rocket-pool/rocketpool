@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketListStorage } from '../_lib/artifacts'
 import { scenarioWriteBool } from './rocket-storage-scenarios';
-import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem } from './rocket-list-storage-scenarios';
+import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 
 export default function({owner}) {
 
@@ -100,11 +100,10 @@ export default function({owner}) {
             });
 
             // Insert item at end of list
-            let key = web3.sha3('test.addresses');
-            let count = await rocketListStorage[`getAddressListCount`].call(key);
+            let count = await rocketListStorage[`getAddressListCount`].call(web3.sha3('test.addresses'));
             await scenarioInsertListItem({
                 type: 'Address',
-                key: key,
+                key: web3.sha3('test.addresses'),
                 index: count,
                 value: '0x0000000000000000000000000000000000000006',
                 fromAddress: owner,
@@ -120,6 +119,64 @@ export default function({owner}) {
                 fromAddress: owner,
                 gas: 500000,
             }), 'Inserted a list item with an out of bounds index');
+
+        });
+
+
+        // Remove an item from an ordered list at index
+        it(printTitle('-----', 'remove an item from an ordered list at index'), async () => {
+
+            // Remove item
+            await scenarioRemoveOListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 2,
+                fromAddress: owner,
+                gas: 500000,
+            });
+
+            // Remove item at out of bounds index
+            await assertThrows(scenarioRemoveOListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 99,
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Removed a list item with an out of bounds index');
+
+        });
+
+
+        // Remove an item from an unordered list at index
+        it(printTitle('-----', 'remove an item from an unordered list at index'), async () => {
+
+            // Remove item
+            await scenarioRemoveUListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 1,
+                fromAddress: owner,
+                gas: 500000,
+            });
+
+            // Remove item at end of list
+            let count = await rocketListStorage[`getAddressListCount`].call(web3.sha3('test.addresses'));
+            await scenarioRemoveUListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: count - 1,
+                fromAddress: owner,
+                gas: 500000,
+            });
+
+            // Remove an item at out of bounds index
+            await assertThrows(scenarioRemoveUListItem({
+                type: 'Address',
+                key: web3.sha3('test.addresses'),
+                index: 99,
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Removed a list item with an out of bounds index');
 
         });
 
