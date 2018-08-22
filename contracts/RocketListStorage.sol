@@ -11,7 +11,7 @@ contract RocketListStorage is RocketBase {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        //require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
         _;
     }
 
@@ -69,7 +69,7 @@ contract RocketListStorage is RocketBase {
     /// @dev Increments list count
     function pushAddressListItem(bytes32 _key, address _value) onlyLatestRocketNetworkContract external {
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
-        rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", count + 1)), _value);
+        rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", count)), _value);
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "count")), count + 1);
     }
 

@@ -3,6 +3,7 @@ import { RocketPool, RocketPoolMini} from './_lib/artifacts';
 
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
+/*
 import casperTests from './casper/casper-tests';
 import rocketNodeAdminTests from './rocket-node/rocket-node-admin/rocket-node-admin-tests';
 import rocketNodeStatusTests from './rocket-node/rocket-node-status/rocket-node-status-tests';
@@ -14,6 +15,7 @@ import rocketVaultAdminTests from './rocket-vault/rocket-vault-admin-tests';
 import rocketVaultAccountTests from './rocket-vault/rocket-vault-account-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 import rocketPoolTests from './rocket-pool/rocket-pool-tests';
+*/
 
 
 /**
@@ -35,6 +37,7 @@ const owner = web3.eth.coinbase;
 
 // Run tests
 rocketStorageTests({owner});
+/*
 casperTests({owner});
 rocketNodeAdminTests({owner});
 rocketNodeStatusTests({owner});
@@ -46,4 +49,5 @@ rocketVaultAdminTests({owner});
 rocketVaultAccountTests({owner});
 rocketUpgradeTests({owner});
 rocketPoolTests({owner});
+*/
 
