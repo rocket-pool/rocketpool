@@ -12,6 +12,7 @@ contract RocketListStorage is RocketBase {
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        _;
     }
 
 
@@ -48,7 +49,7 @@ contract RocketListStorage is RocketBase {
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         for (uint index = 0; index < count; ++index) {
             if (rocketStorage.getAddress(keccak256(abi.encodePacked(_key, "item", index))) == _value) {
-                return index;
+                return int(index);
             }
         }
         return -1;
