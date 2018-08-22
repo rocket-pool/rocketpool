@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketListStorage } from '../_lib/artifacts'
+import { AddressListStorage, BytesListStorage, StringListStorage } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 
@@ -21,41 +21,40 @@ export default function({owner}) {
 
     });
 
-    contract('RocketListStorage', async (accounts) => {
+
+    // Run list tests by type
+    function listTests(name, contractArtifact, key, testValues) {
+        contract(name, async (accounts) => {
 
 
-        // Contract dependencies
-        let rocketListStorage;
-        before(async () => {
-            rocketListStorage = await RocketListStorage.deployed();
-        });
-
-
-        // Run list tests by type
-        function listTests(type, key, testValues) {
+            // Contract dependencies
+            let contract;
+            before(async () => {
+                contract = await contractArtifact.deployed();
+            });
 
 
             // Push an item onto a list
-            it(printTitle(type, 'push an item onto a list'), async () => {
+            it(printTitle('-----', 'push an item onto a list'), async () => {
 
                 // Push items
                 await scenarioPushListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     value: testValues[0],
                     fromAddress: owner,
                     gas: 500000,
                 });
                 await scenarioPushListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     value: testValues[1],
                     fromAddress: owner,
                     gas: 500000,
                 });
                 await scenarioPushListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     value: testValues[2],
                     fromAddress: owner,
                     gas: 500000,
@@ -65,12 +64,12 @@ export default function({owner}) {
 
 
             // Set a list item at index
-            it(printTitle(type, 'set a list item at index'), async () => {
+            it(printTitle('-----', 'set a list item at index'), async () => {
 
                 // Set item
                 await scenarioSetListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 1,
                     value: testValues[3],
                     fromAddress: owner,
@@ -79,8 +78,8 @@ export default function({owner}) {
 
                 // Set item at out of bounds index
                 await assertThrows(scenarioSetListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 99,
                     value: testValues[6],
                     fromAddress: owner,
@@ -91,12 +90,12 @@ export default function({owner}) {
 
 
             // Insert an item into a list at index
-            it(printTitle(type, 'insert an item into a list at index'), async () => {
+            it(printTitle('-----', 'insert an item into a list at index'), async () => {
 
                 // Insert item
                 await scenarioInsertListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 1,
                     value: testValues[4],
                     fromAddress: owner,
@@ -104,10 +103,10 @@ export default function({owner}) {
                 });
 
                 // Insert item at end of list
-                let count = await rocketListStorage[`get${type}ListCount`].call(key);
+                let count = await contract.getListCount.call(key);
                 await scenarioInsertListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: count,
                     value: testValues[5],
                     fromAddress: owner,
@@ -116,8 +115,8 @@ export default function({owner}) {
 
                 // Insert item at out of bounds index
                 await assertThrows(scenarioInsertListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 99,
                     value: testValues[6],
                     fromAddress: owner,
@@ -128,12 +127,12 @@ export default function({owner}) {
 
 
             // Remove an item from an ordered list at index
-            it(printTitle(type, 'remove an item from an ordered list at index'), async () => {
+            it(printTitle('-----', 'remove an item from an ordered list at index'), async () => {
 
                 // Remove item
                 await scenarioRemoveOListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 2,
                     fromAddress: owner,
                     gas: 500000,
@@ -141,8 +140,8 @@ export default function({owner}) {
 
                 // Remove item at out of bounds index
                 await assertThrows(scenarioRemoveOListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 99,
                     fromAddress: owner,
                     gas: 500000,
@@ -152,22 +151,22 @@ export default function({owner}) {
 
 
             // Remove an item from an unordered list at index
-            it(printTitle(type, 'remove an item from an unordered list at index'), async () => {
+            it(printTitle('-----', 'remove an item from an unordered list at index'), async () => {
 
                 // Remove item
                 await scenarioRemoveUListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 1,
                     fromAddress: owner,
                     gas: 500000,
                 });
 
                 // Remove item at end of list
-                let count = await rocketListStorage[`get${type}ListCount`].call(key);
+                let count = await contract.getListCount.call(key);
                 await scenarioRemoveUListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: count - 1,
                     fromAddress: owner,
                     gas: 500000,
@@ -175,8 +174,8 @@ export default function({owner}) {
 
                 // Remove an item at out of bounds index
                 await assertThrows(scenarioRemoveUListItem({
-                    type: type,
-                    key: key,
+                    contract,
+                    key,
                     index: 99,
                     fromAddress: owner,
                     gas: 500000,
@@ -185,21 +184,38 @@ export default function({owner}) {
             });
 
 
-        }
+        });
+    }
 
 
-        // Run list tests
-        listTests('Address', web3.sha3('test.addresses'), [
-            '0x0000000000000000000000000000000000000001',
-            '0x0000000000000000000000000000000000000002',
-            '0x0000000000000000000000000000000000000003',
-            '0x0000000000000000000000000000000000000004',
-            '0x0000000000000000000000000000000000000005',
-            '0x0000000000000000000000000000000000000006',
-            '0x0000000000000000000000000000000000000099',
-        ]);
+    // Run list tests
+    listTests('AddressListStorage', AddressListStorage, web3.sha3('test.addresses'), [
+        '0x0000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000002',
+        '0x0000000000000000000000000000000000000003',
+        '0x0000000000000000000000000000000000000004',
+        '0x0000000000000000000000000000000000000005',
+        '0x0000000000000000000000000000000000000006',
+        '0x0000000000000000000000000000000000000099',
+    ]);
+    listTests('BytesListStorage', BytesListStorage, web3.sha3('test.bytes'), [
+        web3.sha3('test string 1'),
+        web3.sha3('test string 2'),
+        web3.sha3('test string 3'),
+        web3.sha3('test string 4'),
+        web3.sha3('test string 5'),
+        web3.sha3('test string 6'),
+        web3.sha3('test string 99'),
+    ]);
+    listTests('StringListStorage', StringListStorage, web3.sha3('test.strings'), [
+        'test string 1',
+        'test string 2',
+        'test string 3',
+        'test string 4',
+        'test string 5',
+        'test string 6',
+        'test string 99',
+    ]);
 
-
-    });
 
 };

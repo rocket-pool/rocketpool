@@ -1,17 +1,13 @@
-import { RocketListStorage } from '../_lib/artifacts';
-
-
 // Retrieve a list from storage
-async function getList(type, key) {
-    const rocketListStorage = await RocketListStorage.deployed();
+async function getList(contract, key) {
 
     // Get list count
-    let count = await rocketListStorage[`get${type}ListCount`].call(key);
+    let count = await contract.getListCount.call(key);
 
     // Get list items
     let items = [], index;
     for (index = 0; index < count; ++index) {
-        items.push(await rocketListStorage[`get${type}ListItem`].call(key, index));
+        items.push(await contract.getListItem.call(key, index));
     }
 
     // Return list
@@ -21,17 +17,16 @@ async function getList(type, key) {
 
 
 // Push an item into a list
-export async function scenarioPushListItem({type, key, value, fromAddress, gas}) {
-    const rocketListStorage = await RocketListStorage.deployed();
+export async function scenarioPushListItem({contract, key, value, fromAddress, gas}) {
 
     // Get initial list
-    let list1 = await getList(type, key);
+    let list1 = await getList(contract, key);
 
     // Push list item
-    await rocketListStorage[`push${type}ListItem`](key, value, {from: fromAddress, gas: gas});
+    await contract.pushListItem(key, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(type, key);
+    let list2 = await getList(contract, key);
 
     // Asserts
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
@@ -44,17 +39,16 @@ export async function scenarioPushListItem({type, key, value, fromAddress, gas})
 
 
 // Set a list item
-export async function scenarioSetListItem({type, key, index, value, fromAddress, gas}) {
-    const rocketListStorage = await RocketListStorage.deployed();
+export async function scenarioSetListItem({contract, key, index, value, fromAddress, gas}) {
 
     // Get initial list
-    let list1 = await getList(type, key);
+    let list1 = await getList(contract, key);
 
     // Set list item
-    await rocketListStorage[`set${type}ListItem`](key, index, value, {from: fromAddress, gas: gas});
+    await contract.setListItem(key, index, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(type, key);
+    let list2 = await getList(contract, key);
 
     // Asserts
     assert.equal(list2.length, list1.length, 'List count was updated incorrectly');
@@ -68,17 +62,16 @@ export async function scenarioSetListItem({type, key, index, value, fromAddress,
 
 
 // Insert an item into a list
-export async function scenarioInsertListItem({type, key, index, value, fromAddress, gas}) {
-    const rocketListStorage = await RocketListStorage.deployed();
+export async function scenarioInsertListItem({contract, key, index, value, fromAddress, gas}) {
 
     // Get initial list
-    let list1 = await getList(type, key);
+    let list1 = await getList(contract, key);
 
     // Insert list item
-    await rocketListStorage[`insert${type}ListItem`](key, index, value, {from: fromAddress, gas: gas});
+    await contract.insertListItem(key, index, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(type, key);
+    let list2 = await getList(contract, key);
 
     // Asserts
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
@@ -92,17 +85,16 @@ export async function scenarioInsertListItem({type, key, index, value, fromAddre
 
 
 // Remove an item from an ordered list
-export async function scenarioRemoveOListItem({type, key, index, fromAddress, gas}) {
-    const rocketListStorage = await RocketListStorage.deployed();
+export async function scenarioRemoveOListItem({contract, key, index, fromAddress, gas}) {
 
     // Get initial list
-    let list1 = await getList(type, key);
+    let list1 = await getList(contract, key);
 
     // Insert list item
-    await rocketListStorage[`removeO${type}ListItem`](key, index, {from: fromAddress, gas: gas});
+    await contract.removeOrderedListItem(key, index, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(type, key);
+    let list2 = await getList(contract, key);
 
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');
@@ -115,17 +107,16 @@ export async function scenarioRemoveOListItem({type, key, index, fromAddress, ga
 
 
 // Remove an item from an unordered list
-export async function scenarioRemoveUListItem({type, key, index, fromAddress, gas}) {
-    const rocketListStorage = await RocketListStorage.deployed();
+export async function scenarioRemoveUListItem({contract, key, index, fromAddress, gas}) {
 
     // Get initial list
-    let list1 = await getList(type, key);
+    let list1 = await getList(contract, key);
 
     // Insert list item
-    await rocketListStorage[`removeU${type}ListItem`](key, index, {from: fromAddress, gas: gas});
+    await contract.removeUnorderedListItem(key, index, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(type, key);
+    let list2 = await getList(contract, key);
 
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');

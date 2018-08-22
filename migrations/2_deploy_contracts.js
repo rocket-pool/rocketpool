@@ -20,7 +20,9 @@ contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
 // Utilities
-contracts.rocketListStorage = artifacts.require('./RocketListStorage.sol');
+contracts.addressListStorage = artifacts.require('./AddressListStorage.sol');
+contracts.bytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.stringListStorage = artifacts.require('./StringListStorage.sol');
 
 
 /*** Utility Methods *****************/
