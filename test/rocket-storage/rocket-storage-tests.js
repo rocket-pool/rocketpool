@@ -196,6 +196,7 @@ export default function({owner}) {
     }
 
 
+    /*
     // Run list tests
     listTests('AddressListStorage', AddressListStorage, web3.sha3('test.addresses'), [
         '0x0000000000000000000000000000000000000001',
@@ -251,6 +252,7 @@ export default function({owner}) {
         6,
         99,
     ]);
+    */
 
 
 };

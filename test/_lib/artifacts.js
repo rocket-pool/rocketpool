@@ -18,9 +18,11 @@ export const RocketSettings = artifacts.require('./contract/RocketSettings');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
 export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
 
+/*
 export const AddressListStorage = artifacts.require('./contract/AddressListStorage');
 export const BoolListStorage = artifacts.require('./contract/BoolListStorage');
 export const BytesListStorage = artifacts.require('./contract/BytesListStorage');
 export const IntListStorage = artifacts.require('./contract/IntListStorage');
 export const StringListStorage = artifacts.require('./contract/StringListStorage');
 export const UintListStorage = artifacts.require('./contract/UintListStorage');
+*/
