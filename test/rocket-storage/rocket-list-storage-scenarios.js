@@ -32,7 +32,7 @@ export async function scenarioPushListItem({contract, key, value, fromAddress, g
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
     assert.equal(list2[list2.length - 1], value, 'Value was not inserted correctly');
     list1.forEach((item, listIndex) => {
-        assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
+        assert.equal(list1[listIndex].valueOf(), list2[listIndex].valueOf(), 'List items changed which should not have');
     });
 
 }
@@ -55,7 +55,7 @@ export async function scenarioSetListItem({contract, key, index, value, fromAddr
     assert.equal(list2[index], value, 'Value was not set correctly');
     assert.notEqual(list2[index], list1[index], 'Value was not updated');
     list1.forEach((item, listIndex) => {
-        if (listIndex != index) assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
+        if (listIndex != index) assert.equal(list1[listIndex].valueOf(), list2[listIndex].valueOf(), 'List items changed which should not have');
     });
 
 }
@@ -77,8 +77,8 @@ export async function scenarioInsertListItem({contract, key, index, value, fromA
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
     assert.equal(list2[index], value, 'Value was not inserted correctly');
     list1.forEach((item, listIndex) => {
-        if (listIndex < index) assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
-        else assert.equal(list1[listIndex], list2[listIndex + 1], 'List item was not moved successfully');
+        if (listIndex < index) assert.equal(list1[listIndex].valueOf(), list2[listIndex].valueOf(), 'List items changed which should not have');
+        else assert.equal(list1[listIndex].valueOf(), list2[listIndex + 1].valueOf(), 'List item was not moved successfully');
     });
 
 }
@@ -98,9 +98,9 @@ export async function scenarioRemoveOListItem({contract, key, index, fromAddress
 
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');
-    list1.forEach((item, listIndex) => {
-        if (listIndex < index) assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
-        else assert.equal(list1[listIndex + 1], list2[listIndex], 'List item was not moved successfully');
+    list2.forEach((item, listIndex) => {
+        if (listIndex < index) assert.equal(list1[listIndex].valueOf(), list2[listIndex].valueOf(), 'List items changed which should not have');
+        else assert.equal(list1[listIndex + 1].valueOf(), list2[listIndex].valueOf(), 'List item was not moved successfully');
     });
 
 }
@@ -121,8 +121,8 @@ export async function scenarioRemoveUListItem({contract, key, index, fromAddress
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');
     list2.forEach((item, listIndex) => {
-        if (listIndex == index) assert.equal(list2[listIndex], list1[list1.length - 1], 'Last item was not moved correctly');
-        else assert.equal(list1[listIndex], list2[listIndex], 'List items changed which should not have');
+        if (listIndex == index) assert.equal(list2[listIndex].valueOf(), list1[list1.length - 1].valueOf(), 'Last item was not moved correctly');
+        else assert.equal(list1[listIndex].valueOf(), list2[listIndex].valueOf(), 'List items changed which should not have');
     });
 
 }

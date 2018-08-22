@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { AddressListStorage, BytesListStorage, StringListStorage } from '../_lib/artifacts';
+import { AddressListStorage, BoolListStorage, BytesListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 
@@ -198,6 +198,15 @@ export default function({owner}) {
         '0x0000000000000000000000000000000000000006',
         '0x0000000000000000000000000000000000000099',
     ]);
+    listTests('BoolListStorage', BoolListStorage, web3.sha3('test.bools'), [
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+    ]);
     listTests('BytesListStorage', BytesListStorage, web3.sha3('test.bytes'), [
         web3.sha3('test string 1'),
         web3.sha3('test string 2'),
@@ -207,6 +216,15 @@ export default function({owner}) {
         web3.sha3('test string 6'),
         web3.sha3('test string 99'),
     ]);
+    listTests('IntListStorage', IntListStorage, web3.sha3('test.ints'), [
+        -1,
+        2,
+        -3,
+        4,
+        -5,
+        6,
+        -99,
+    ]);
     listTests('StringListStorage', StringListStorage, web3.sha3('test.strings'), [
         'test string 1',
         'test string 2',
@@ -215,6 +233,15 @@ export default function({owner}) {
         'test string 5',
         'test string 6',
         'test string 99',
+    ]);
+    listTests('UintListStorage', UintListStorage, web3.sha3('test.uints'), [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        99,
     ]);
 
 
