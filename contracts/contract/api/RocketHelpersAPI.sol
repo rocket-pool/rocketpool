@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "../../RocketBase.sol";
+import "../../interface/RocketGroupInterface.sol";
 import "../../interface/settings/RocketAPISettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
@@ -13,6 +14,7 @@ contract RocketHelpersAPI is RocketBase {
 
     /*** Contracts **************/
 
+    RocketGroupInterface rocketGroup = RocketGroupInterface(0);                                         // The group contract
     RocketAPISettingsInterface rocketAPISettings = RocketAPISettingsInterface(0);                       // The main settings contract for the API
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);        // The main settings contract for minipools
 
@@ -58,7 +60,7 @@ contract RocketHelpersAPI is RocketBase {
         require(address(_from) != address(0x0), "From address is not a correct address");
         require(address(_userID) != address(0x0), "UserID address is not a correct address");
         // Verify the groupID exists
-        require(bytes(getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
+        require(bytes(rocketGroup.getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
         // Verify the _from belongs to the groupID, only these addresses that belong to the group can interact with RP
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("api.group.address", _from))) != address(0x0), "Group ID specified does not have any address that matches the sender.");
         // All good
@@ -75,19 +77,6 @@ contract RocketHelpersAPI is RocketBase {
     }
 
 
-    // Groups
-
-    /// @dev Get the group by its ID
-    function getGroupName(string _groupID) public view returns(string) { 
-        // Get the group name
-        rocketStorage.getString(keccak256(abi.encodePacked("api.group.name", _groupID)));
-    }
-
-    /// @dev Get a verified address for the group that's allowed to interact with RP
-    function getGroupAddress(string _groupID) public view returns(address) { 
-        // Get the group name
-        rocketStorage.getAddress(keccak256(abi.encodePacked("api.group.address", _groupID)));
-    }
-
+ 
 
 }
