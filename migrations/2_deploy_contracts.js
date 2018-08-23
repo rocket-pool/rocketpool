@@ -19,6 +19,8 @@ contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
+// RPIP
+contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 
 
 /*** Utility Methods *****************/

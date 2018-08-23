@@ -1,3 +1,4 @@
+const moment = require('moment');
 import { RocketStorage } from '../artifacts'
 
 // The newer version of Web3. Waiting for them to upgrade truffles web3.
@@ -129,3 +130,40 @@ export function hashMessage(data) {
     var ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
     return $web3.utils.bytesToHex(ethereumUtils.sha3(ethMessage));
 }
+
+// EVM time controller
+export const TimeController = (() => {
+
+    let currentTime = moment();
+
+    const addSeconds = (seconds) => new Promise((resolve, reject) => {
+        
+        currentTime.add(seconds, 'seconds');
+
+        web3.currentProvider.sendAsync(
+            {
+                jsonrpc: "2.0",
+                method: "evm_increaseTime",
+                params: [seconds],
+                id: currentTime.valueOf()
+            }, 
+            (error, result) => error ? reject(error) : resolve(result.result)
+        );
+    });
+
+    const getCurrentTime = () => currentTime.clone();
+    const addDays = (days) => addSeconds(days * 24 * 60 * 60);
+    const addWeeks = (weeks) => addSeconds(weeks * 7 * 24 * 60 * 60);
+    const addMonths = (months) => addSeconds(months * 28 * 24 * 60 * 60);
+    const addYears = (years) => addSeconds(years * 365 * 24 * 60 * 60);
+
+    return {
+        getCurrentTime,
+        addSeconds,
+        addDays,
+        addWeeks,
+        addMonths,
+        addYears,
+    };
+
+})();
