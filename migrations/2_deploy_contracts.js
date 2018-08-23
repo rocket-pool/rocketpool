@@ -19,8 +19,6 @@ contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
-
-/*
 // Utilities
 contracts.addressListStorage = artifacts.require('./AddressListStorage.sol');
 contracts.boolListStorage = artifacts.require('./BoolListStorage.sol');
@@ -28,7 +26,6 @@ contracts.bytesListStorage = artifacts.require('./BytesListStorage.sol');
 contracts.intListStorage = artifacts.require('./IntListStorage.sol');
 contracts.stringListStorage = artifacts.require('./StringListStorage.sol');
 contracts.uintListStorage = artifacts.require('./UintListStorage.sol');
-*/
 
 
 /*** Utility Methods *****************/
