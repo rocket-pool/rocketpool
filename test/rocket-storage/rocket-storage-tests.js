@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { AddressListStorage, BoolListStorage, BytesListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
+//import { AddressListStorage, BoolListStorage, BytesListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 
