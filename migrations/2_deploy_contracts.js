@@ -15,6 +15,7 @@ const contracts = {};
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
 contracts.rocketGroup = artifacts.require('./RocketGroup.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
+contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
@@ -22,8 +23,15 @@ contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
-// RPIP
-contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
+// Utilities
+/* Just commenting out for now to speed up test deployments, will add back in when in use - Dave
+contracts.addressListStorage = artifacts.require('./AddressListStorage.sol');
+contracts.boolListStorage = artifacts.require('./BoolListStorage.sol');
+contracts.bytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.intListStorage = artifacts.require('./IntListStorage.sol');
+contracts.stringListStorage = artifacts.require('./StringListStorage.sol');
+contracts.uintListStorage = artifacts.require('./UintListStorage.sol');
+*/
 
 
 
