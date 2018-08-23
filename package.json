@@ -30,13 +30,15 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "ethereumjs-util": "^5.2.0",
     "eth-crypto": "^1.1.0",
+    "ethereumjs-util": "^5.2.0",
     "lerna": "^2.10.1",
+    "moment": "^2.22.2",
     "pako": "^1.0.6",
     "rlp": "^2.0.0",
     "scrypt": "^6.0.3",
     "secp256k1": "^3.5.0",
-    "underscore": "^1.9.0"
+    "underscore": "^1.9.0",
+    "web3": "^1.0.0-beta.35"
   }
 }

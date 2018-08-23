@@ -13,6 +13,7 @@ contract RocketStorage {
     mapping(bytes32 => bytes)      private bytesStorage;
     mapping(bytes32 => bool)       private boolStorage;
     mapping(bytes32 => int256)     private intStorage;
+    mapping(bytes32 => bytes32)    private bytes32Storage;
 
 
     /*** Modifiers ************/
@@ -67,6 +68,11 @@ contract RocketStorage {
         return intStorage[_key];
     }
 
+    /// @param _key The key for the record
+    function getBytes32(bytes32 _key) external view returns (bytes32) {
+        return bytes32Storage[_key];
+    }
+
     /**** Set Methods ***********/
 
     /// @param _key The key for the record
@@ -99,6 +105,11 @@ contract RocketStorage {
         intStorage[_key] = _value;
     }
 
+    /// @param _key The key for the record
+    function setBytes32(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract external {
+        bytes32Storage[_key] = _value;
+    }
+
     /**** Delete Methods ***********/
     
     /// @param _key The key for the record
@@ -129,5 +140,10 @@ contract RocketStorage {
     /// @param _key The key for the record
     function deleteInt(bytes32 _key) onlyLatestRocketNetworkContract external {
         delete intStorage[_key];
+    }
+
+    /// @param _key The key for the record
+    function deleteBytes32(bytes32 _key) onlyLatestRocketNetworkContract external {
+        delete bytes32Storage[_key];
     }
 }

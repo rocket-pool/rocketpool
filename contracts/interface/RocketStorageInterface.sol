@@ -10,6 +10,7 @@ contract RocketStorageInterface {
     function getBytes(bytes32 _key) external view returns (bytes);
     function getBool(bytes32 _key) external view returns (bool);
     function getInt(bytes32 _key) external view returns (int);
+    function getBytes32(bytes32 _key) external view returns (bytes32);
     // Setters
     function setAddress(bytes32 _key, address _value) external;
     function setUint(bytes32 _key, uint _value) external;
@@ -17,6 +18,7 @@ contract RocketStorageInterface {
     function setBytes(bytes32 _key, bytes _value) external;
     function setBool(bytes32 _key, bool _value) external;
     function setInt(bytes32 _key, int _value) external;
+    function setBytes32(bytes32 _key, bytes32 _value) external;
     // Deleters
     function deleteAddress(bytes32 _key) external;
     function deleteUint(bytes32 _key) external;
@@ -24,4 +26,5 @@ contract RocketStorageInterface {
     function deleteBytes(bytes32 _key) external;
     function deleteBool(bytes32 _key) external;
     function deleteInt(bytes32 _key) external;
+    function deleteBytes32(bytes32 _key) external;
 }
