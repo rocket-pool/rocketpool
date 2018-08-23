@@ -22,9 +22,15 @@ contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
+// Utilities
+contracts.addressListStorage = artifacts.require('./AddressListStorage.sol');
+contracts.boolListStorage = artifacts.require('./BoolListStorage.sol');
+contracts.bytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.intListStorage = artifacts.require('./IntListStorage.sol');
+contracts.stringListStorage = artifacts.require('./StringListStorage.sol');
+contracts.uintListStorage = artifacts.require('./UintListStorage.sol');
 // RPIP
 contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
-
 
 
 /*** Utility Methods *****************/
