@@ -86,14 +86,18 @@ export default function ({ owner }) {
                 gas: submitProposalGas
             });
 
+            // assert that proposal has been recorded correctly
             let proposalId = 1; // first proposal should have id 1
             let recordedProposal = Proposal(await rocketPIP.getProposal(proposalId, {
                 from: owner
             }));
-
             assert.equal(recordedProposal.commitDate, commitDate, 'Commit date not recorded correctly');
             assert.equal(recordedProposal.revealDate, revealDate, 'Reveal date not recorded correctly');
             assert.equal(recordedProposal.voteQuorum, voteQuorum, 'Vote quorum not recorded correctly');
+
+            // assert that proposal count has been incremented
+            let proposalCount = await rocketPIP.getProposalCount();
+            assert.equal(proposalCount.valueOf(), 1);
         });
 
         it(printTitle('proposer', 'cannot submit proposal with commit date after reveal date'), async () => {
