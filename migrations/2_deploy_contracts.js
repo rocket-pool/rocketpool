@@ -13,14 +13,18 @@ const rocketStorage = artifacts.require('./RocketStorage.sol');
 const contracts = {};
 // Core
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
+contracts.rocketGroup = artifacts.require('./RocketGroup.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.sol');
+contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
+contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 // RPIP
 contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
+
 
 
 /*** Utility Methods *****************/

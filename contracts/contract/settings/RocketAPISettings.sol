@@ -28,7 +28,7 @@ contract RocketAPISettings is RocketBase {
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
             // Initialise settings
-            rocketStorage.setBool(keccak256(abi.encodePacked("settings.init")), true);
+            rocketStorage.setBool(keccak256(abi.encodePacked("settings.api.init")), true);
         }
     }
 

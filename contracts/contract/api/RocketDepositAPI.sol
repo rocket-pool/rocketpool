@@ -47,7 +47,7 @@ contract RocketDepositAPI is RocketBase {
    
     /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to an account accessible only by Rocket Pool at `to.address()`.
     /// @dev Deposit to Rocket Pool, can be from a user or a partner on behalf of their user
-    /// @param _groupID The address of the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
+    /// @param _groupID The unique ID of the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     function deposit(string _groupID, address _userID, string _durationID) public payable returns(bool) { 
