@@ -10,11 +10,9 @@ import "./RocketBase.sol";
 
 contract RocketPIP is RocketBase {
     
-    using SafeMath for uint;    
+    using SafeMath for uint256;    
     
-    constructor(address _rocketStorageAddress)
-        RocketBase(_rocketStorageAddress)
-        public 
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public
     {
     }
 
@@ -22,7 +20,7 @@ contract RocketPIP is RocketBase {
      * @notice Retrieves a submitted proposal
      * @param _proposalId Identifier of proposal to vote for
     */
-    function getProposal(uint _proposalId) public view returns(uint, uint, uint)
+    function getProposal(uint256 _proposalId) public view returns(uint256, uint256, uint256)
     {
         // proposal must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.proposal.exists", _proposalId))), "Proposal does not exist");
@@ -37,7 +35,7 @@ contract RocketPIP is RocketBase {
     /**
      * @notice Retrieves the number of proposals (for iterating mostly)
     */
-    function getProposalCount() public view returns(uint)
+    function getProposalCount() public view returns(uint256)
     {
         return rocketStorage.getUint(keccak256("rpip.proposal.id"));
     }
@@ -48,7 +46,7 @@ contract RocketPIP is RocketBase {
      * @param _revealEnd Reveal end date
      * @param _voteQuorum Number of votes required for proposal to pass
     */
-    function submitProposal(uint _commitEnd, uint _revealEnd, uint _voteQuorum) public onlyRole("proposer") 
+    function submitProposal(uint256 _commitEnd, uint256 _revealEnd, uint256 _voteQuorum) public onlyRole("proposer") 
     {
         // Proposals can only be submitted by the proposer role
 
@@ -59,7 +57,7 @@ contract RocketPIP is RocketBase {
         require(_voteQuorum > 0 && _voteQuorum <= 100, "Voting quorum must be between 1 and 100");
         
         // increment the proposal id
-        uint proposalId = rocketStorage.getUint(keccak256("rpip.proposal.id"));
+        uint256 proposalId = rocketStorage.getUint(keccak256("rpip.proposal.id"));
         proposalId = proposalId.add(1);
         rocketStorage.setUint(keccak256("rpip.proposal.id"), proposalId);
         
@@ -75,7 +73,7 @@ contract RocketPIP is RocketBase {
      * @param _proposalId Identifier of proposal to vote for
      * @param _voterAddress Address of the vote who made commitment
     */
-    function getCommitment(uint _proposalId, address _voterAddress) public view returns(bytes32, uint)
+    function getCommitment(uint256 _proposalId, address _voterAddress) public view returns(bytes32, uint256)
     {
         // commitment must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.commitment.exists", _proposalId, _voterAddress))), "No commitment for voter on that proposal");
@@ -91,7 +89,7 @@ contract RocketPIP is RocketBase {
      * @param _proposalId Identifier of proposal to vote for
      * @param _secretHash Salted hash containing (proposalId, vote, salt)
     */
-    function commitVote(uint _proposalId, bytes32 _secretHash) public
+    function commitVote(uint256 _proposalId, bytes32 _secretHash) public
     {
         // only staking nodes are eligible to vote
         // TODO: amount node is staking is hardcoded for now until staking process is developed
@@ -103,7 +101,7 @@ contract RocketPIP is RocketBase {
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.proposal.exists", _proposalId))), "Proposal does not exist");
 
         // must be in the commit period
-        uint commitEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.commit.end", _proposalId)));
+        uint256 commitEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.commit.end", _proposalId)));
         require(now < commitEnd, "Cannot commit vote once reveal phase has started");
         
         // store commitment
@@ -117,7 +115,7 @@ contract RocketPIP is RocketBase {
      * @param _proposalId Identifier of proposal to vote for
      * @param _voterAddress Address of the voter who made vote
      */
-    function getVote(uint _proposalId, address _voterAddress) public view returns(bool, uint)
+    function getVote(uint256 _proposalId, address _voterAddress) public view returns(bool, uint256)
     {
         // revealed vote must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.voter.exists", _proposalId, _voterAddress))), "Voter has not revealed their vote");
@@ -134,7 +132,7 @@ contract RocketPIP is RocketBase {
      * @param _vote Boolean for or against vote
      * @param _salt Secret used to salt hash
      */
-    function revealVote(uint _proposalId, bool _vote, uint _salt) public
+    function revealVote(uint256 _proposalId, bool _vote, uint256 _salt) public
     {
         // proposal must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.proposal.exists", _proposalId))), "Proposal does not exist");
@@ -143,9 +141,9 @@ contract RocketPIP is RocketBase {
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.commitment.exists", _proposalId, msg.sender))), "Voter has not commited a vote so cannot reveal");
 
         // must be in the reveal period
-        uint commitEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.commit.end", _proposalId)));
+        uint256 commitEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.commit.end", _proposalId)));
         require(now >= commitEnd, "Cannot reveal during commit phase");
-        uint revealEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.reveal.end", _proposalId)));                
+        uint256 revealEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.reveal.end", _proposalId)));                
         require(now < revealEnd, "Cannot reveal because voting has finished");
 
         // check that the vote matches the commitment
@@ -153,7 +151,7 @@ contract RocketPIP is RocketBase {
         require(keccak256(abi.encode(_proposalId, _vote, _salt)) == commitmentHash, "Cannot reveal because vote does not match commitmented vote");
 
         // get voter's vote weight
-        uint weight = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.commitment.weight", _proposalId, msg.sender)));
+        uint256 weight = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.commitment.weight", _proposalId, msg.sender)));
 
         // record voter's vote
         rocketStorage.setBool(keccak256(abi.encodePacked("rpip.voter.exists", _proposalId, msg.sender)), true);
@@ -162,7 +160,7 @@ contract RocketPIP is RocketBase {
 
         // increment votes
         string memory voteKey = _vote ? "rpip.votes.for" : "rpip.votes.against";
-        uint votes = rocketStorage.getUint(keccak256(abi.encodePacked(voteKey, _proposalId)));
+        uint256 votes = rocketStorage.getUint(keccak256(abi.encodePacked(voteKey, _proposalId)));
         votes = votes.add(weight);
         rocketStorage.setUint(keccak256(abi.encodePacked(voteKey, _proposalId)), votes);
     }
@@ -171,7 +169,7 @@ contract RocketPIP is RocketBase {
     * @notice Retrieves the number of votes FOR a particular proposal
     * @param _proposalId Identifier of proposal
     */
-    function getVotesFor(uint _proposalId) public view returns(uint)
+    function getVotesFor(uint256 _proposalId) public view returns(uint256)
     {
         // proposal must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.proposal.exists", _proposalId))), "Proposal does not exist");
@@ -184,7 +182,7 @@ contract RocketPIP is RocketBase {
     * @notice Retrieves the number of votes AGAINST a particular proposal
     * @param _proposalId Identifier of proposal
     */
-    function getVotesAgainst(uint _proposalId) public view returns(uint)
+    function getVotesAgainst(uint256 _proposalId) public view returns(uint256)
     {
         // proposal must exist
         require(rocketStorage.getBool(keccak256(abi.encodePacked("rpip.proposal.exists", _proposalId))), "Proposal does not exist");
@@ -196,23 +194,23 @@ contract RocketPIP is RocketBase {
     * @notice Calculates whether the proposal passed or not
     * @param _proposalId Identifier of proposal
     */
-    function isPassed(uint _proposalId) public view returns(bool)
+    function isPassed(uint256 _proposalId) public view returns(bool)
     {
         // must be after reveal period, to ensure all votes are counted
-        uint revealEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.reveal.end", _proposalId)));        
+        uint256 revealEnd = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.reveal.end", _proposalId)));        
         require(now >= revealEnd, "Cannot count votes until the reveal phase has finished");
 
         // get votes (and scale to avoid division)
-        uint votesFor = (rocketStorage.getUint(keccak256(abi.encodePacked("rpip.votes.for", _proposalId))) * 100);
-        uint votesAgainst = (rocketStorage.getUint(keccak256(abi.encodePacked("rpip.votes.against", _proposalId))) * 100);
+        uint256 votesFor = (rocketStorage.getUint(keccak256(abi.encodePacked("rpip.votes.for", _proposalId))) * 100);
+        uint256 votesAgainst = (rocketStorage.getUint(keccak256(abi.encodePacked("rpip.votes.against", _proposalId))) * 100);
         // get the total ether being staked with RP
         // TODO: total staked ether is hardcoded for now until staking process is developed
         // uint totalStakedEther = rocketStorage.getUint(keccak256("staked.ether.total"));
-        uint totalStakedEther = 100;
+        uint256 totalStakedEther = 100;
         // get the minimum percentage (as integer) of total ether staked that is required for a pass
-        uint minQuorum = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.quorum", _proposalId)));
+        uint256 minQuorum = rocketStorage.getUint(keccak256(abi.encodePacked("rpip.proposal.quorum", _proposalId)));
         // calculate the minimum value that is required to pass
-        uint minPass = totalStakedEther * minQuorum;
+        uint256 minPass = totalStakedEther * minQuorum;
 
         // is passed if: votes meet the minimum quorum AND votes for are greater than against
         return votesFor > minPass && votesFor >= votesAgainst;
