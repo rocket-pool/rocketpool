@@ -17,7 +17,7 @@ contract RocketGroupContract is Ownable {
 
     uint8 public version;                                                       // Version of this contract
     uint256 private stakingFeePerc = 0;                                         // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    uint256 private rpFeePerc = 0;                                              // The fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
+                                        
         
 
     /*** Contracts ***************/
@@ -38,11 +38,16 @@ contract RocketGroupContract is Ownable {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get our rocket group settings
         RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketGroupSettings")));
-        // Get the default fee
-        rpFeePerc = rocketGroupSettings.getDefaultFee();
+    }
+
+    /*** Getters *************/
+
+    /// @dev Get the fee that Rocket Pool charges for this group
+    function getRocketPoolFee(string _groupID) public view returns(string) { 
+        // Get the group name
+        rocketStorage.getString(keccak256(abi.encodePacked("group.fee", address(this))));
     }
     
-
     /*** Methods *************/
 
     

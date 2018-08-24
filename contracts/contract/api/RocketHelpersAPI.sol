@@ -42,10 +42,10 @@ contract RocketHelpersAPI is RocketBase {
     /// @dev Checks if the deposit parameters are correct for a successful deposit
     /// @param _value The amount being deposited
     /// @param _from  The address sending the deposit
-    /// @param _groupID The identifier of the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
+    /// @param _groupID The generated conract address for the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositIsValid(uint256 _value, address _from, string _groupID, address _userID, string _durationID) public returns(bool) { 
+    function getDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string _durationID) public returns(bool) { 
         // Get the settings
         rocketAPISettings = RocketAPISettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketAPISettings"))));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));

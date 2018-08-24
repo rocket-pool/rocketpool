@@ -10,17 +10,17 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
       // Validate arguments
-    if (args.length != 3) done('Incorrect number of arguments. Please enter: group ID, name, fee.');
-    if (isNaN(args[2])) done('Fee amount (ETH) is invalid.');
+    if (args.length != 2) done('Incorrect number of arguments. Please enter: group ID, name, fee.');
+    if (isNaN(args[1])) done('Fee amount (ETH) is invalid.');
 
     // Parse arguments
-    let [groupId, name, fee] = args;
+    let [name, fee] = args;
 
     // Get contract dependencies
     const rocketGroup = await RocketGroup.deployed();
 
     // Perform add group
-    let result = await rocketGroup.add(groupId, name, Web3.utils.toWei(fee, 'ether'), {
+    let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
         from: web3.eth.coinbase,
         gas: 480000,
     });

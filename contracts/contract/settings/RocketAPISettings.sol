@@ -13,11 +13,6 @@ contract RocketAPISettings is RocketBase {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         /*** Version ***/
         version = 1;
-    }
-
-
-    /// @dev Initialise after deployment to not exceed the gas block limit
-    function init() public onlyOwner {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.api.init")))) {
             // API Settings

@@ -28,11 +28,6 @@ contract RocketMinipoolSettings is RocketBase {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         /*** Version ***/
         version = 1;
-    }
-
-
-    /// @dev Initialise after deployment to not exceed the gas block limit
-    function init() public onlyOwner {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipools.init")))) {
             /*** Minipools ***/
@@ -52,7 +47,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
             setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
-
+            // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipools.init")), true);
         }
     }
