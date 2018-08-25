@@ -25,6 +25,7 @@ library Strings {
      * @return string The resulting string from combinging the base and value
      */
     function concat(string _base, string _value)
+        pure
         internal
         returns (string) {
         bytes memory _baseBytes = bytes(_base);
@@ -64,6 +65,7 @@ library Strings {
      *             in the case of no matches found
      */
     function indexOf(string _base, string _value)
+        pure 
         internal
         returns (int) {
         return _indexOf(_base, _value, 0);
@@ -86,6 +88,7 @@ library Strings {
      *             in the case of no matches found
      */
     function _indexOf(string _base, string _value, uint _offset)
+        pure 
         internal
         returns (int) {
         bytes memory _baseBytes = bytes(_base);
@@ -112,6 +115,7 @@ library Strings {
      * @return uint The length of the passed string
      */
     function length(string _base)
+        pure 
         internal
         returns (uint) {
         bytes memory _baseBytes = bytes(_base);
@@ -129,7 +133,8 @@ library Strings {
      * @param _length The length of the sub string to be extracted from the base
      * @return string The extracted sub string
      */
-    function substring(string _base, int _length)
+    function substring(string _base, int _length) 
+        pure 
         internal
         returns (string) {
         return _substring(_base, _length, 0);
@@ -149,6 +154,7 @@ library Strings {
      * @return string The extracted sub string
      */
     function _substring(string _base, int _length, int _offset)
+        pure 
         internal
         returns (string) {
         bytes memory _baseBytes = bytes(_base);
@@ -218,6 +224,7 @@ library Strings {
      * @return bool Simply notates if the two string have an equivalent
      */
     function compareTo(string _base, string _value) 
+        pure 
         internal 
         returns (bool) {
         bytes memory _baseBytes = bytes(_base);
@@ -250,6 +257,7 @@ library Strings {
      *              discarding case
      */
     function compareToIgnoreCase(string _base, string _value)
+        pure 
         internal
         returns (bool) {
         bytes memory _baseBytes = bytes(_base);
@@ -280,6 +288,7 @@ library Strings {
      * @return string 
      */
     function upper(string _base) 
+        pure 
         internal 
         returns (string) {
         bytes memory _baseBytes = bytes(_base);
@@ -300,6 +309,7 @@ library Strings {
      * @return string 
      */
     function lower(string _base) 
+        pure 
         internal 
         returns (string) {
         bytes memory _baseBytes = bytes(_base);
@@ -320,8 +330,8 @@ library Strings {
      *                and in a lower case otherwise returns the original value
      */
     function _upper(bytes1 _b1)
+        pure 
         private
-        constant
         returns (bytes1) {
 
         if (_b1 >= 0x61 && _b1 <= 0x7A) {
@@ -343,7 +353,7 @@ library Strings {
      */
     function _lower(bytes1 _b1)
         private
-        constant
+        pure 
         returns (bytes1) {
 
         if (_b1 >= 0x41 && _b1 <= 0x5A) {

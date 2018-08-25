@@ -24,14 +24,14 @@ contracts.rocketAPISettings = artifacts.require('./settings/RocketAPISettings.so
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 // Utilities
-/* Just commenting out for now to speed up test deployments, will add back in when in use - Dave
-contracts.addressListStorage = artifacts.require('./AddressListStorage.sol');
-contracts.boolListStorage = artifacts.require('./BoolListStorage.sol');
-contracts.bytesListStorage = artifacts.require('./BytesListStorage.sol');
-contracts.intListStorage = artifacts.require('./IntListStorage.sol');
-contracts.stringListStorage = artifacts.require('./StringListStorage.sol');
-contracts.uintListStorage = artifacts.require('./UintListStorage.sol');
-*/
+contracts.utilMaths = artifacts.require('./utils/Maths.sol');
+contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
+contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
+contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
+contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
+contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
+
 
 
 
@@ -99,24 +99,27 @@ module.exports = async (deployer, network) => {
       // Register all other contracts with storage and store their abi
       for (let contract in contracts) {
         if(contracts.hasOwnProperty(contract)) {
-          // Log it
-          console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
-          console.log(contracts[contract].address);
-          // First register the contract address as being part of the network so we can do a validation check using just the address
-          await rocketStorageInstance.setAddress(
-            config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
-            contracts[contract].address
-          );
-          // Now register again that contracts name so we can retrieve it by name if needed
-          await rocketStorageInstance.setAddress(
-            config.web3.utils.soliditySha3('contract.name', contract),
-            contracts[contract].address
-          );
-          // Compress and store the ABI
-          await rocketStorageInstance.setString(
-            config.web3.utils.soliditySha3('contract.abi', contract),
-            compressABI(contracts[contract].abi)
-          );
+          // Utilities do not need write access to storage
+          if(!contract.startsWith("util")){
+              // Log it
+              console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
+              console.log(contracts[contract].address);
+              // First register the contract address as being part of the network so we can do a validation check using just the address
+              await rocketStorageInstance.setAddress(
+                config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
+                contracts[contract].address
+              );
+              // Now register again that contracts name so we can retrieve it by name if needed
+              await rocketStorageInstance.setAddress(
+                config.web3.utils.soliditySha3('contract.name', contract),
+                contracts[contract].address
+              );
+              // Compress and store the ABI
+              await rocketStorageInstance.setString(
+                config.web3.utils.soliditySha3('contract.abi', contract),
+                compressABI(contracts[contract].abi)
+              );
+          }
         } 
       } 
     

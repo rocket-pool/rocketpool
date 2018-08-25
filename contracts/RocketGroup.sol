@@ -80,21 +80,21 @@ contract RocketGroup is RocketBase {
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function add(string _name, uint256 _stakingFee) public payable returns (bool) {
         // Get the group settings
-        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketGroupSettings")));
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
          // Make the name lower case
         _name = _name.lower();
         // Check the name is ok
         require(bytes(_name).length > 2, "Group Name is to short, must be a minimum of 3 characters.");
-        // Check the staking fee is ok
-        require(_stakingFee >= 0, "Staking fee cannot be less than 0.");
         // If there is a fee required to register a group, check that it is sufficient
         require(rocketGroupSettings.getNewFee() == msg.value, "New group fee insufficient.");
         // Check the group name isn't already being used
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
         // Ok create the groups contract now, this is where the groups fees and more will reside
         RocketGroupContract newContractAddress = new RocketGroupContract(address(rocketStorage));
+        // Set their fee on the contract now
+        newContractAddress.setFeePerc(_stakingFee);
         // Add the group to storage now
-        uint256 groupCountTotal = rocketStorage.getUint(keccak256("groups.total")); 
+        uint256 groupCountTotal = rocketStorage.getUint(keccak256(abi.encodePacked("groups.total"))); 
         // Ok now set our data to key/value pair storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);

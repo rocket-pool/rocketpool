@@ -1,6 +1,5 @@
 pragma solidity 0.4.24;
 
-
 // Interfaces
 import "./../../interface/RocketStorageInterface.sol";
 import "./../../interface/settings/RocketGroupSettingsInterface.sol";
@@ -16,9 +15,9 @@ contract RocketGroupContract is Ownable {
     /**** Properties ***********/
 
     uint8 public version;                                                       // Version of this contract
-    uint256 private stakingFeePerc = 0;                                         // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-                                        
-        
+    uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
+    
+
 
     /*** Contracts ***************/
 
@@ -37,15 +36,35 @@ contract RocketGroupContract is Ownable {
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get our rocket group settings
-        RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketGroupSettings")));
+        RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
     }
 
     /*** Getters *************/
 
-    /// @dev Get the fee that Rocket Pool charges for this group
-    function getRocketPoolFee(string _groupID) public view returns(string) { 
+    /// @dev The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function geFeePerc() public view returns(string) { 
         // Get the group name
         rocketStorage.getString(keccak256(abi.encodePacked("group.fee", address(this))));
+    }
+
+    /// @dev Get the fee that Rocket Pool charges for this group
+    function getRocketPoolFee() public view returns(string) { 
+        // Get the RP fee
+        rocketStorage.getString(keccak256(abi.encodePacked("group.fee", address(this))));
+    }
+
+
+    /*** Setters *************/
+
+    /// @dev Set the fee this group charges their users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function setFeePerc(uint256 _stakingFeePerc) public onlyOwner returns(bool) { 
+        // Check its a legit amount
+        require(_stakingFeePerc >= 0, "User fee cannot be less than 0.");
+        require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
+        // Ok set it
+        feePerc = _stakingFeePerc;
+        // Done
+        return true;
     }
     
     /*** Methods *************/
