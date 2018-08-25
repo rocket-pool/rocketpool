@@ -33,8 +33,6 @@ contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
 contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
 
 
-
-
 /*** Utility Methods *****************/
 // Compress / decompress ABIs
 function compressABI(abi) {
@@ -47,19 +45,6 @@ function decompressABI(abi) {
 function loadABI(abiFilePath) {
   return JSON.parse(config.fs.readFileSync(abiFilePath));
 }
-// Build the deployment array
-function buildDeployment(obj, storageAddress) {
-  let buildArray = [];
-  for (let item in obj) {
-    if( obj.hasOwnProperty(item) ) {
-      buildArray.push([obj[item], storageAddress]);
-    } 
-  } 
-  return buildArray;     
-}
-
-// Accounts
-const accounts = web3.eth.accounts;
 
 
 // Start exporting now
@@ -73,67 +58,61 @@ module.exports = async (deployer, network) => {
     $web3 = new config.web3(providerUrl);
   }
 
-  return deployer
+  // Accounts
+  const accounts = await web3.eth.getAccounts();
 
-    // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
-    .deploy(rocketStorage)
-
-    // Deploy other contracts
-    .then(() => {
-      return deployer.deploy(
-        // Build deployment array - contracts
-        buildDeployment(contracts, rocketStorage.address)
-      );
-    })
-
-    // Post-deployment actions
-    .then(async () => {      
-
-      // Update the storage with the new addresses
-      let rocketStorageInstance = await rocketStorage.deployed();
-      console.log('\n');
-      // Log it
-      console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Address');
-      console.log(rocketStorage.address);
-
-      // Register all other contracts with storage and store their abi
-      for (let contract in contracts) {
-        if(contracts.hasOwnProperty(contract)) {
-          // Utilities do not need write access to storage
-          if(!contract.startsWith("util")){
-              // Log it
-              console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
-              console.log(contracts[contract].address);
-              // First register the contract address as being part of the network so we can do a validation check using just the address
-              await rocketStorageInstance.setAddress(
-                config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
-                contracts[contract].address
-              );
-              // Now register again that contracts name so we can retrieve it by name if needed
-              await rocketStorageInstance.setAddress(
-                config.web3.utils.soliditySha3('contract.name', contract),
-                contracts[contract].address
-              );
-              // Compress and store the ABI
-              await rocketStorageInstance.setString(
-                config.web3.utils.soliditySha3('contract.abi', contract),
-                compressABI(contracts[contract].abi)
-              );
-          }
-        } 
+  // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
+  await deployer.deploy(rocketStorage);
+  // Update the storage with the new addresses
+  let rocketStorageInstance = await rocketStorage.deployed();
+  // Deploy other contracts - have to be inside an async loop
+  const deployContracts = async function() {
+    for (let contract in contracts) {
+      await deployer.deploy(contracts[contract], rocketStorage.address);
+    }
+  };
+  // Run it
+  await deployContracts();
+  // Add them to RocketStorage
+  console.log('\n');
+  // Register all other contracts with storage and store their abi
+  const addContracts = async function() {
+    for (let contract in contracts) {
+      if(contracts.hasOwnProperty(contract)) {
+        // Utilities do not need write access to storage
+        if(!contract.startsWith("util")){
+            // Log it
+            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
+            console.log(contracts[contract].address);
+            // First register the contract address as being part of the network so we can do a validation check using just the address
+            await rocketStorageInstance.setAddress(
+              config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
+              contracts[contract].address
+            );
+            // Now register again that contracts name so we can retrieve it by name if needed
+            await rocketStorageInstance.setAddress(
+              config.web3.utils.soliditySha3('contract.name', contract),
+              contracts[contract].address
+            );
+            // Compress and store the ABI
+            await rocketStorageInstance.setString(
+              config.web3.utils.soliditySha3('contract.abi', contract),
+              compressABI(contracts[contract].abi)
+            );
+        }
       } 
-    
-      /*** Permissions ********/
-      
-      // Disable direct access to storage now
-      await rocketStorageInstance.setBool(
-        config.web3.utils.soliditySha3('contract.storage.initialised'),
-        true
-      );
-      // Log it
-      console.log('\x1b[32m%s\x1b[0m', 'Post - Storage Direct Access Removed');
-
-    });
+    }
+  };
+  // Run it
+  await addContracts();
+  // Disable direct access to storage now
+  await rocketStorageInstance.setBool(
+    config.web3.utils.soliditySha3('contract.storage.initialised'),
+    true
+  );
+  // Log it
+  console.log('\n');
+  console.log('\x1b[32m%s\x1b[0m', 'Post - Storage Direct Access Removed');
 
 };
 

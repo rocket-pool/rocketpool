@@ -6,6 +6,8 @@ const RocketGroup = artifacts.require('./contract/RocketGroup');
 
 module.exports = async (done) => {
 
+    const accounts = await web3.eth.getAccounts();
+
     // Get command-line arguments (remove args from truffle)
     let args = process.argv.splice(4);
 
@@ -19,34 +21,31 @@ module.exports = async (done) => {
     // Get contract dependencies
     const rocketGroup = await RocketGroup.deployed();
 
-     // Estimate gas required
-     let gasEstimate = await rocketGroup.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
-        from: web3.eth.coinbase
-    })
-
-    // Perform add group
-    let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
-        from: web3.eth.coinbase,
-        gas: Number(gasEstimate),
-    });
-
-    // Show events
-
-    result.logs.forEach(event => {
-        console.log('********************************');
-        console.log('EVENT: '+event['event'], );
-        console.log('********************************');
-        Object.keys(event['args']).forEach(arg => {
-            console.log(' - '+arg+': ', event['args'][arg].valueOf());
+    try {
+        let gasEstimate = await rocketGroup.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
+            from: accounts[0]
+        })
+        // Perform add group
+         let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
+            from: accounts[0],
+            gas: gasEstimate,
         });
-    });;
-    console.log('********************************');
-    
-
-    // Complete
-    console.log('Gas estimate: '+gasEstimate);
-    done('Group added successfully: ' + args.join(', '));
-   
+        // Show events
+        result.logs.forEach(event => {
+            console.log('********************************');
+            console.log('EVENT: '+event['event'], );
+            console.log('********************************');
+            Object.keys(event['args']).forEach(arg => {
+                console.log(' - '+arg+': ', event['args'][arg].valueOf());
+            });
+        });;
+        console.log('********************************');
+        // Complete
+        console.log('Gas estimate: '+gasEstimate);
+        done('Group added successfully: ' + args.join(', '));
+      } catch (err) {
+          console.log(err.message);
+      }
 
 };
 

@@ -42,15 +42,15 @@ contract RocketGroupContract is Ownable {
     /*** Getters *************/
 
     /// @dev The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function geFeePerc() public view returns(string) { 
-        // Get the group name
-        rocketStorage.getString(keccak256(abi.encodePacked("group.fee", address(this))));
+    function geFeePerc() public view returns(uint256) { 
+        // Get the fee for this groups users
+        return feePerc;
     }
 
     /// @dev Get the fee that Rocket Pool charges for this group
-    function getRocketPoolFee() public view returns(string) { 
+    function getFeePercRocketPool() public view returns(uint256) { 
         // Get the RP fee
-        rocketStorage.getString(keccak256(abi.encodePacked("group.fee", address(this))));
+        rocketStorage.getUint(keccak256(abi.encodePacked("group.fee", address(this))));
     }
 
 
