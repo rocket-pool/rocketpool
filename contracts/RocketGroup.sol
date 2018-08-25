@@ -28,10 +28,18 @@ contract RocketGroup is RocketBase {
 
     /*** Events ****************/
 
-     event GroupAdd (
+    event GroupAdd (
         address ID,
         string name,
         uint256 stakingFee,
+        uint256 created
+    );
+
+    event GroupAddFeeTransfer (
+        address ID,
+        string name,
+        uint256 amount,
+        address sentAddress,
         uint256 created
     );
 
@@ -85,14 +93,21 @@ contract RocketGroup is RocketBase {
         _name = _name.lower();
         // Check the name is ok
         require(bytes(_name).length > 2, "Group Name is to short, must be a minimum of 3 characters.");
-        // If there is a fee required to register a group, check that it is sufficient
-        require(rocketGroupSettings.getNewFee() == msg.value, "New group fee insufficient.");
         // Check the group name isn't already being used
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
-        // Ok create the groups contract now, this is where the groups fees and more will reside
+        // Ok create the groups contract now, the address is their main ID and this is where the groups fees and more will reside
         RocketGroupContract newContractAddress = new RocketGroupContract(address(rocketStorage));
         // Set their fee on the contract now
         newContractAddress.setFeePerc(_stakingFee);
+        // If there is a fee required to register a group, check that it is sufficient
+        if(rocketGroupSettings.getNewFee() > 0) {
+            // Fee correct?
+            require(rocketGroupSettings.getNewFee() == msg.value, "New group fee insufficient.");
+            // Transfer the fee amount now 
+            rocketGroupSettings.getNewFeeAddress().transfer(msg.value);
+            // Log it
+            emit GroupAddFeeTransfer(newContractAddress, _name, msg.value, rocketGroupSettings.getNewFeeAddress(), now);
+        }
         // Add the group to storage now
         uint256 groupCountTotal = rocketStorage.getUint(keccak256(abi.encodePacked("groups.total"))); 
         // Ok now set our data to key/value pair storage

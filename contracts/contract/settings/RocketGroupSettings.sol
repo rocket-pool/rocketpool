@@ -18,7 +18,8 @@ contract RocketGroupSettings is RocketBase {
             // Group Settings
             setDefaultFee(0.2 ether);                                                       // The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
             setNewAllowed(true);                                                            // Are new groups allowed to be added
-            setNewFee(0 ether);                                                             // The amount of ether required to register a new group (is free by default)
+            setNewFee(0.1 ether);                                                             // The amount of ether required to register a new group (is free by default)
+            setNewFeeAddress(msg.sender);                                                   // The address to send the new group fee too
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.groups.init")), true);
         }
@@ -44,11 +45,18 @@ contract RocketGroupSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.groups.new.fee"))); 
     }
 
+    /// @dev Address where the fee will be sent                      
+    function getNewFeeAddress() public view returns (address) {
+        return rocketStorage.getAddress(keccak256(abi.encodePacked("settings.groups.new.fee.address"))); 
+    }
+
 
     /*** Setters **********************/
 
     /// @dev The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)                                              
     function setDefaultFee(uint256 _weiAmount) public onlySuperUser {
+        require(_weiAmount >= 0, "Default fee cannot be less than 0.");
+        require(_weiAmount <= 1 ether, "Default fee cannot be greater than 100%.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.groups.fee.default")), _weiAmount); 
     }
 
@@ -62,6 +70,9 @@ contract RocketGroupSettings is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.groups.new.fee")), _weiAmount); 
     }
 
-    
+    /// @dev Address where the fee will be sent                                                    
+    function setNewFeeAddress(address _address) public onlySuperUser {
+        rocketStorage.setAddress(keccak256(abi.encodePacked("settings.groups.new.fee.address")), _address); 
+    }
 
 }

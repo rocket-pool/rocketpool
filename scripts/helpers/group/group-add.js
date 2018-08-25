@@ -3,6 +3,7 @@ const Web3 = require('web3');
 
 // Artifacts
 const RocketGroup = artifacts.require('./contract/RocketGroup');
+const RocketGroupSettings = artifacts.require('./contract/settings/RocketGroupSettings');
 
 module.exports = async (done) => {
 
@@ -20,15 +21,20 @@ module.exports = async (done) => {
 
     // Get contract dependencies
     const rocketGroup = await RocketGroup.deployed();
+    const rocketGroupSettings = await RocketGroupSettings.deployed();
 
     try {
+        // See if the group registration requires a fee?
+        let feeRequired = await rocketGroupSettings.getNewFee();
         let gasEstimate = await rocketGroup.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
-            from: accounts[0]
+            from: accounts[0],
+            value: feeRequired
         })
         // Perform add group
-         let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
+        let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
             from: accounts[0],
             gas: gasEstimate,
+            value: feeRequired
         });
         // Show events
         result.logs.forEach(event => {
@@ -44,7 +50,7 @@ module.exports = async (done) => {
         console.log('Gas estimate: '+gasEstimate);
         done('Group added successfully: ' + args.join(', '));
       } catch (err) {
-          console.log(err.message);
+        console.log(err.message);
       }
 
 };
