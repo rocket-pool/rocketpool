@@ -19,10 +19,15 @@ module.exports = async (done) => {
     // Get contract dependencies
     const rocketGroup = await RocketGroup.deployed();
 
+     // Estimate gas required
+     let gasEstimate = await rocketGroup.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
+        from: web3.eth.coinbase
+    })
+
     // Perform add group
     let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
         from: web3.eth.coinbase,
-        gas: 480000,
+        gas: Number(gasEstimate),
     });
 
     // Show events
@@ -39,6 +44,7 @@ module.exports = async (done) => {
     
 
     // Complete
+    console.log('Gas estimate: '+gasEstimate);
     done('Group added successfully: ' + args.join(', '));
    
 

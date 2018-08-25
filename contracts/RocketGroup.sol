@@ -98,7 +98,7 @@ contract RocketGroup is RocketBase {
         // Ok now set our data to key/value pair storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
-        rocketStorage.setUint(keccak256("group.fee", newContractAddress), rocketGroupSettings.getDefaultFee());
+        rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
         // We store our data in an key/value array, so set its index so we can use an array to find it if needed
         rocketStorage.setUint(keccak256(abi.encodePacked("group.index", newContractAddress)), groupCountTotal);
         // Update total partners
