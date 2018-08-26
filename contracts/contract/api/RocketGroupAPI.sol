@@ -88,7 +88,7 @@ contract RocketGroupAPI is RocketBase {
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function add(string _name, uint256 _stakingFee) public payable returns (bool) {
         // Get the group settings
-        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
+        rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
          // Make the name lower case
         _name = _name.lower();
         // Check the name is ok

@@ -53,8 +53,8 @@ contract RocketDepositAPI is RocketBase {
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     function getDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string _durationID) public returns(bool) { 
         // Get the settings
-        rocketDepositSettings = RocketDepositSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositSettings"))));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Deposits turned on?
         require(rocketDepositSettings.getDepositAllowed(), "Deposits are currently disabled.");
         // Is the deposit value acceptable?
