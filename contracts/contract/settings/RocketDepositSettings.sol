@@ -6,7 +6,7 @@ import "../../RocketBase.sol";
 
 /// @title Settings for API in Rocket Pool
 /// @author David Rugendyke
-contract RocketAPISettings is RocketBase {
+contract RocketDepositSettings is RocketBase {
 
 
     /// @dev RocketSettings constructor
@@ -14,7 +14,7 @@ contract RocketAPISettings is RocketBase {
         /*** Version ***/
         version = 1;
         // Only set defaults on deployment
-        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.api.init")))) {
+        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.init")))) {
             // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
@@ -23,7 +23,7 @@ contract RocketAPISettings is RocketBase {
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
             // Initialise settings
-            rocketStorage.setBool(keccak256(abi.encodePacked("settings.api.init")), true);
+            rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.init")), true);
         }
     }
 
@@ -35,17 +35,17 @@ contract RocketAPISettings is RocketBase {
 
     /// @dev Are deposits currently allowed?                                                 
     function getDepositAllowed() public view returns (bool) {
-        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.api.deposit.allowed"))); 
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.allowed"))); 
     }
 
     /// @dev Min required deposit in Wei 
     function getDepositMin() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.api.deposit.min"))); 
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.min"))); 
     }
 
     /// @dev Max allowed deposit in Wei 
     function getDepositMax() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.api.deposit.max"))); 
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.max"))); 
     }
 
 
@@ -53,17 +53,17 @@ contract RocketAPISettings is RocketBase {
 
     /// @dev Are withdrawals allowed?                                            
     function getWithdrawalAllowed() public view returns (bool) {
-        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.api.withdrawal.allowed"))); 
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.withdrawal.allowed"))); 
     }
 
     /// @dev Min allowed to be withdrawn in Wei, 0 = all
     function getWithdrawalMin() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.api.withdrawal.min"))); 
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.min"))); 
     }
 
     /// @dev Max allowed to be withdrawn in Wei
     function getWithdrawalMax() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.api.withdrawal.max"))); 
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.max"))); 
     }
 
 
@@ -75,17 +75,17 @@ contract RocketAPISettings is RocketBase {
 
     /// @dev Are user deposits currently allowed?                                                 
     function setDepositAllowed(bool _enabled) public onlySuperUser {
-        rocketStorage.setBool(keccak256(abi.encodePacked("settings.api.deposit.allowed")), _enabled); 
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.allowed")), _enabled); 
     }
 
     /// @dev Min required deposit in Wei 
     function setDepositMin(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.api.deposit.min")), _weiAmount); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.min")), _weiAmount); 
     }
 
     /// @dev Max allowed deposit in Wei 
     function setDepositMax(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.api.deposit.max")), _weiAmount); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.max")), _weiAmount); 
     }
 
 
@@ -93,17 +93,17 @@ contract RocketAPISettings is RocketBase {
 
     /// @dev Are withdrawals allowed?                                            
     function setWithdrawalAllowed(bool _enabled) public onlySuperUser {
-        rocketStorage.setBool(keccak256(abi.encodePacked("settings.api.withdrawal.allowed")), _enabled); 
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.withdrawal.allowed")), _enabled); 
     }
 
     /// @dev Min allowed to be withdrawn in Wei, 0 = all
     function setWithdrawalMin(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.api.withdrawal.min")), _weiAmount); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.min")), _weiAmount); 
     }
 
     /// @dev Max allowed to be withdrawn in Wei
     function setWithdrawalMax(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.api.withdrawal.max")), _weiAmount); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.max")), _weiAmount); 
     }
 
 

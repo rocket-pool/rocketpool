@@ -1,19 +1,19 @@
 pragma solidity 0.4.24;
 
 // Contracts
-import "./RocketBase.sol";
-import "./contract/group/RocketGroupContract.sol";
+import "../../RocketBase.sol";
+import "../../contract/group/RocketGroupContract.sol";
 // Interfaces
-import "./interface/settings/RocketGroupSettingsInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 // Utilities
-import "./lib/Strings.sol";
+import "../../lib/Strings.sol";
 
 
 
 /// @title A group is an entity that has users in the Rocket Pool infrastructure
 /// @author David Rugendyke
 
-contract RocketGroup is RocketBase {
+contract RocketGroupAPI is RocketBase {
 
     /*** Libs  **************/
 
@@ -124,6 +124,8 @@ contract RocketGroup is RocketBase {
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", _name)), _name);
         // Log it
         emit GroupAdd(newContractAddress, _name, _stakingFee, now);
+        // Done
+        return true;
     }
 
 }

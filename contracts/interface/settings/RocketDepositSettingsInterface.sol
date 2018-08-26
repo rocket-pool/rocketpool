@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
 
-// Our eternal storage interface
-contract RocketAPISettingsInterface {
+// Our deposit and withdrawals interface
+contract RocketDepositSettingsInterface {
     // Getters
     function getDepositAllowed() public view returns (bool);
     function getDepositMin() public view returns (uint256);

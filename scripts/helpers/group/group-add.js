@@ -2,7 +2,7 @@
 const Web3 = require('web3');
 
 // Artifacts
-const RocketGroup = artifacts.require('./contract/RocketGroup');
+const RocketGroupAPI = artifacts.require('./contract/RocketGroupAPI');
 const RocketGroupSettings = artifacts.require('./contract/settings/RocketGroupSettings');
 
 module.exports = async (done) => {
@@ -20,18 +20,18 @@ module.exports = async (done) => {
     let [name, fee] = args;
 
     // Get contract dependencies
-    const rocketGroup = await RocketGroup.deployed();
+    const rocketGroupAPI = await RocketGroupAPI.deployed();
     const rocketGroupSettings = await RocketGroupSettings.deployed();
 
     try {
         // See if the group registration requires a fee?
         let feeRequired = await rocketGroupSettings.getNewFee();
-        let gasEstimate = await rocketGroup.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
+        let gasEstimate = await rocketGroupAPI.add.estimateGas(name, Web3.utils.toWei(fee, 'ether'), {
             from: accounts[0],
             value: feeRequired
         })
         // Perform add group
-        let result = await rocketGroup.add(name, Web3.utils.toWei(fee, 'ether'), {
+        let result = await rocketGroupAPI.add(name, Web3.utils.toWei(fee, 'ether'), {
             from: accounts[0],
             gas: gasEstimate,
             value: feeRequired

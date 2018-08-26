@@ -29,7 +29,7 @@ contract RocketMinipoolSettings is RocketBase {
         /*** Version ***/
         version = 1;
         // Only set defaults on deployment
-        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipools.init")))) {
+        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
             setMinipoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
             setMinipoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
@@ -48,7 +48,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             // Set init as complete
-            rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipools.init")), true);
+            rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
     }
 
