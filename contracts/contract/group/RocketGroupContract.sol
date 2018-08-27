@@ -18,10 +18,10 @@ contract RocketGroupContract is Ownable {
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     
 
-
     /*** Contracts ***************/
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main Rocket Pool storage contract where primary persistant storage is maintained
+    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);
 
     /*** Events ******************/
  
@@ -35,8 +35,6 @@ contract RocketGroupContract is Ownable {
         version = 1;
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Get our rocket group settings
-        RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
     }
 
     /*** Getters *************/

@@ -83,7 +83,7 @@ contract RocketGroupAPI is RocketBase {
 
     /*** Methods *************/
 
-    /// @dev Register a new node address if it doesn't exist, only the contract creator can do this
+    /// @dev Register a new group address if it doesn't exist, only the contract creator can do this
     /// @param _name Name of the group (eg rocketpool, coinbase etc) - should be strictly lower case
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function add(string _name, uint256 _stakingFee) public payable returns (bool) {

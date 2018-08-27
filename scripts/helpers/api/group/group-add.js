@@ -2,7 +2,7 @@
 const Web3 = require('web3');
 
 // Artifacts
-const RocketGroupAPI = artifacts.require('./contract/RocketGroupAPI');
+const RocketGroupAPI = artifacts.require('./contract/api/RocketGroupAPI');
 const RocketGroupSettings = artifacts.require('./contract/settings/RocketGroupSettings');
 
 module.exports = async (done) => {

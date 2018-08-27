@@ -18,10 +18,12 @@ contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
+contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketDepositSettings = artifacts.require('./settings/RocketDepositSettings.sol');
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
+contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
