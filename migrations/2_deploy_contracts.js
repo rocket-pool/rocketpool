@@ -19,12 +19,13 @@ contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
-contracts.rocketHelpersAPI = artifacts.require('./api/RocketHelpersAPI.sol');
 // Settings
 contracts.rocketDepositSettings = artifacts.require('./settings/RocketDepositSettings.sol');
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
 contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
+// Dummy Contracts
+contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
@@ -58,8 +59,13 @@ module.exports = async (deployer, network) => {
     const providerUrl = `http://${config.networks[network].host}:${config.networks[network].port}`;
     console.log(`Web3 1.0 provider using ${providerUrl}`);
     $web3 = new config.web3(providerUrl);
+  }else{
+    // Live deployment
+    // Add our live RPL token address in place
+    contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
+ 
   // Accounts
   const accounts = await web3.eth.getAccounts();
 

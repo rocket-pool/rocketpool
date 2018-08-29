@@ -4,8 +4,9 @@ pragma solidity 0.4.24;
 // Our smart node interface
 contract RocketNodeSettingsInterface {
     // Getters
-    function getSmartNodeEtherMin() public view returns (uint256);
-    function getSmartNodeCheckinGas() public view returns (uint256);
-    function getSmartNodeSetInactiveAutomatic() public view returns (bool);
-    function getSmartNodeSetInactiveDuration() public view returns (uint256);
+    function getNewAllowed() public view returns (bool);
+    function getEtherMin() public view returns (uint256);
+    function getCheckinGas() public view returns (uint256);
+    function getInactiveAutomatic() public view returns (bool);
+    function getInactiveDuration() public view returns (uint256);
 }

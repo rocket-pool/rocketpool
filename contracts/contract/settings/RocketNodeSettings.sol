@@ -14,14 +14,15 @@ contract RocketNodeSettings is RocketBase {
         /*** Version ***/
         version = 1;
         // Only set defaults on deployment
-        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.smartnode.init")))) {
-            // Node Settings                                  
-            setSmartNodeEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-            setSmartNodeCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
-            setSmartNodeSetInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
-            setSmartNodeSetInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+        if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.init")))) {
+            // Node Settings            
+            setNewAllowed(true);                                                       // Are new nodes allowed to be added                      
+            setEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
+            setCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
+            setInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
+            setInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             // Initialise settings
-            rocketStorage.setBool(keccak256(abi.encodePacked("settings.smartnode.init")), true);
+            rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.init")), true);
         }
     }
 
@@ -29,48 +30,57 @@ contract RocketNodeSettings is RocketBase {
     
     /*** Getters **********************/
 
+    /// @dev Are new nodes allowed to be added                             
+    function getNewAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.new.allowed"))); 
+    }
 
     /// @dev Get the min eth needed for a node coinbase account to cover gas costs associated with checkins
-    function getSmartNodeEtherMin() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.smartnode.account.ether.min"));
+    function getEtherMin() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256("settings.node.account.ether.min"));
     }
 
     /// @dev Get the gas price for node checkins in Wei
-    function getSmartNodeCheckinGas() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.smartnode.checkin.gas"));
+    function getCheckinGas() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256("settings.node.checkin.gas"));
     }
 
     /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
-    function getSmartNodeSetInactiveAutomatic() public view returns (bool) {
-        return rocketStorage.getBool(keccak256("settings.smartnode.setinactive.automatic"));
+    function getInactiveAutomatic() public view returns (bool) {
+        return rocketStorage.getBool(keccak256("settings.node.setinactive.automatic"));
     }
 
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-    function getSmartNodeSetInactiveDuration() public view returns (uint256) {
-        rocketStorage.getUint(keccak256("settings.smartnode.setinactive.duration")); 
+    function getInactiveDuration() public view returns (uint256) {
+        rocketStorage.getUint(keccak256("settings.node.setinactive.duration")); 
     }
 
 
     /*** Setters **********************/
 
+    /// @dev Are new nodes allowed to be added                             
+    function setNewAllowed(bool _enable) public onlySuperUser { 
+        return rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.new.allowed")), _enable); 
+    }
+
      /// @dev Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-    function setSmartNodeEtherMin(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256("settings.smartnode.account.ether.min"), _weiAmount); 
+    function setEtherMin(uint256 _weiAmount) public onlySuperUser { 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.account.ether.min")), _weiAmount); 
     }
 
     /// @dev Set the gas price for node checkins in Wei
-    function setSmartNodeCheckinGas(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256("settings.smartnode.checkin.gas"), _weiAmount); 
+    function setCheckinGas(uint256 _weiAmount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.checkin.gas")), _weiAmount); 
     }
 
     /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
-    function setSmartNodeSetInactiveAutomatic(bool _enable) public onlySuperUser {
-        rocketStorage.setBool(keccak256("settings.smartnode.setinactive.automatic"), _enable); 
+    function setInactiveAutomatic(bool _enable) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.setinactive.automatic")), _enable); 
     }
 
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
-    function setSmartNodeSetInactiveDuration(uint256 _amount) public onlySuperUser {
-        rocketStorage.setUint(keccak256("settings.smartnode.setinactive.duration"), _amount); 
+    function setInactiveDuration(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.setinactive.duration")), _amount); 
     }
 
 }

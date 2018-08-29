@@ -29,7 +29,7 @@ contract RocketGroupAPI is RocketBase {
     /*** Events ****************/
 
     event GroupAdd (
-        address ID,
+        address indexed ID,
         string name,
         uint256 stakingFee,
         uint256 created
@@ -89,6 +89,8 @@ contract RocketGroupAPI is RocketBase {
     function add(string _name, uint256 _stakingFee) public payable returns (bool) {
         // Get the group settings
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
+        // Check groups are currently allowed
+        require(rocketGroupSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
          // Make the name lower case
         _name = _name.lower();
         // Check the name is ok
