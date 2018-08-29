@@ -41,6 +41,12 @@ contract RocketNodeAPI is RocketBase {
 
        
     /*** Modifiers *************/
+
+    /// @dev Only passes if the user calling it is a registered node
+    modifier onlyNode(address _nodeAddress) {
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "Node address does not exist.");
+        _;
+    }
     
        
     /*** Constructor *************/
@@ -54,10 +60,27 @@ contract RocketNodeAPI is RocketBase {
 
     /*** Getters *************/
 
+    /// @dev Returns the contract address where the nodes ether/rpl deposits will reside
+    /// @return address The address of the contract
+    function getContract(address _nodeAddress) public view returns (address) {
+        rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress)));
+    }
+
+    /// @dev Returns the timezone of the node as Country/City eg America/New_York
+    /// @return string The set timezone of this node
+    function getTimezoneLocation(address _nodeAddress) public view returns (string) {
+        rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
+    }
+
 
     /*** Setters *************/
 
 
+    /// @dev Returns the timezone of the node as Country/City eg America/New_York
+    /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
+    function setTimezoneLocation(string _timezoneLocation) public onlyNode(msg.sender) returns (string) {
+        rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
+    }
  
 
     /*** Methods *************/
