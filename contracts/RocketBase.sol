@@ -21,10 +21,10 @@ contract RocketBase {
 
     
     /**
-    * @dev Throws if called by any sender that doesn't match one of the supplied contract
+    * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
-    modifier onlyContract(string _contractName) {
-        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Incorrect contract access");
+    modifier onlyLatestContract(string _contractName, address _contractAddress) {
+        require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Incorrect or outdated contract access used.");
         _;
     }
 

@@ -53,13 +53,18 @@ contract RocketNodeAPI is RocketBase {
 
 
     /*** Getters *************/
+
+
+    /*** Setters *************/
+
+
  
 
     /*** Methods *************/
 
     /// @dev Register a new node address if it doesn't exist
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
-    function add(string _timezoneLocation) public returns (bool) {
+    function add(string _timezoneLocation) public onlyLatestContract("rocketNodeAPI", address(this)) returns (bool) {
         // Get the group settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Initial address check
