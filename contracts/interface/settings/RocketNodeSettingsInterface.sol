@@ -10,4 +10,5 @@ contract RocketNodeSettingsInterface {
     function getInactiveAutomatic() public view returns (bool);
     function getInactiveDuration() public view returns (uint256);
     function getDepositAllowed() public view returns (bool);
+    function getDepositReservationTime() public view returns (uint256);
 }

@@ -22,6 +22,7 @@ contract RocketNodeSettings is RocketBase {
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
             setInactiveDuration(1 hours);                                               // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             setDepositAllowed(true);                                                    // Are deposits allowed by nodes?
+            setDepositReservationTime(1 days);                                          // How long a deposit reservation stays valid for before the actual ether/rpl needs to be sent
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.init")), true);
         }
@@ -61,6 +62,11 @@ contract RocketNodeSettings is RocketBase {
         return rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.deposit.allowed"))); 
     }
 
+    /// @dev How long a deposit reservation stays valid for before the actual ether/rpl needs to be sent                                              
+    function getDepositReservationTime() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.deposit.reservation.time"))); 
+    }
+
 
     /*** Setters **********************/
 
@@ -92,6 +98,11 @@ contract RocketNodeSettings is RocketBase {
     /// @dev Are user deposits currently allowed?                                                 
     function setDepositAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.deposit.allowed")), _enabled); 
+    }
+
+    /// @dev Are user deposits currently allowed?                                                 
+    function setDepositReservationTime(uint256 _weiAmount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.deposit.reservation.time")), _weiAmount); 
     }
 
 }
