@@ -56,6 +56,8 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Only passes if the supplied minipool duration is valid
     /// @param _durationID The ID that determines the minipool duration
     modifier onlyValidDuration(string _durationID) {
+        // Get our minipool settings
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
         rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         _;
@@ -85,29 +87,57 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
     }
 
+    /// @dev Returns the amount of RPL required for a single ether
+    /// @param _durationID The ID that determines which pool duration
+    function getRPLRatio(string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
+        // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
+        uint256 rplRatio = 1.5 ether;
+        return rplRatio;
+    }
 
     /// @dev Returns the amount of RPL required to make an ether deposit based on the current network utilisation
     /// @param _weiAmount The amount of ether the node wishes to deposit
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRequired(uint256 _weiAmount, string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
+    function getRPLRequired(uint256 _weiAmount, string _durationID) public view onlyValidDuration(_durationID) returns(uint256) { 
         
         // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
         return _weiAmount;
     }
 
 
-    /// @dev Checks if the deposit parameters are correct for a successful ether deposit
-    /// @param _value The amount being deposited
+    /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _from  The address sending the deposit
+    /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositEtherIsValid(uint256 _value, address _from, string _durationID) public onlyNode(_from) returns(bool) { 
+    /// @param _rplRatio  The amount of RPL required per ether
+    /// @param _lastDepositReservedTime  Time of the last reserved deposit
+    function getDepositReservationIsValid(address _from, uint256 _value, string _durationID, uint256 _rplRatio, uint256 _lastDepositReservedTime) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+        // Check the ether deposit is ok - reverts if not
+        getDepositEtherIsValid(_from, _value, _durationID);
+        // Check the rpl deposit is ok  - reverts if not
+        getDepositRPLIsValid(_from, _value, _durationID);
+        // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
+        require(_lastDepositReservedTime < (_lastDepositReservedTime + 1 days), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
+        // Check the rpl ratio is valid
+        require(_rplRatio > 0, "RPL Ratio for deposit reservation cannot be less than or equal to zero.");
+        require(_rplRatio < 3 ether, "RPL Ratio is too high.");
+        // All ok
+        return true;
+    }
+
+
+    /// @dev Checks if the deposit parameters are correct for a successful ether deposit
+    /// @param _from  The address sending the deposit
+    /// @param _value The amount being deposited
+    /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
+    function getDepositEtherIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
-        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
+        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
         rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         // Check addresses are correct
@@ -118,10 +148,10 @@ contract RocketNodeAPI is RocketBase {
 
 
     /// @dev Checks if the deposit parameters are correct for a successful RPL deposit
-    /// @param _value The amount being deposited
     /// @param _from  The address sending the deposit
+    /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositRPLIsValid(uint256 _value, address _from, string _durationID) public onlyNode(_from) returns(bool) { 
+    function getDepositRPLIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));

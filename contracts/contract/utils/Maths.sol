@@ -28,7 +28,7 @@ contract Maths {
         require(_perc >= 0, "Percentage given in Maths calculation less than 0.");
         require(_perc <= 1 ether, "Percentage given in Maths calculation greater than 100%.");
         // Calculate now
-        return _amount.mul(_perc) / calcBase;
+        return (_amount.mul(_perc)).div(calcBase);
     }
     
  
