@@ -32,7 +32,7 @@ contract RocketMinipoolSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
             setMinipoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
-            setMinipoolLaunchAmount(5 ether);                                                   // The minimum Wei required for a pool to launch
+            setMinipoolLaunchAmount(32 ether);                                                  // The exact Wei required for a pool to launch
             setMinipoolCountDown(240);                                                          // The block count to stay in countdown before staking begins - Default is 240 (1hr)
             setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMinipoolStakingDuration("6m",  1052000);                                         // 6 Months
@@ -112,7 +112,7 @@ contract RocketMinipoolSettings is RocketBase {
     function getMinipoolStakingDuration(string _durationID) public view returns (uint256) {
         // Make sure the staking ID exists
         uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
-        require(stakingTime > 0);
+        require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
         return stakingTime;
     }
 
@@ -164,7 +164,7 @@ contract RocketMinipoolSettings is RocketBase {
 
     /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
     function setMinipoolStakingDuration(string _option, uint256 _blocks) public onlySuperUser {
-        require(_blocks > 0);
+        require(_blocks > 0, "Amount of blocks for staking duration not specified.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _option)), _blocks);  
     }
 

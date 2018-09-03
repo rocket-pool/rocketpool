@@ -20,10 +20,10 @@ contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 // Settings
+contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 contracts.rocketDepositSettings = artifacts.require('./settings/RocketDepositSettings.sol');
 contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSettings.sol');
 contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
-contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 // Dummy Contracts
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
 // Utilities

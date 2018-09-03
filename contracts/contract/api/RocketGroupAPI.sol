@@ -75,9 +75,9 @@ contract RocketGroupAPI is RocketBase {
     }
 
     /// @dev Get a verified address for the group that's allowed to interact with RP
-    function getGroupAccessAddress(address _ID) public view returns(address) { 
+    function getGroupDepositAddress(address _ID) public view returns(address) { 
         // Get the group name
-        rocketStorage.getAddress(keccak256(abi.encodePacked("group.address", _ID)));
+        rocketStorage.getAddress(keccak256(abi.encodePacked("group.deposit.address", _ID)));
     }
     
 
@@ -98,7 +98,7 @@ contract RocketGroupAPI is RocketBase {
         // Check the group name isn't already being used
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
         // Ok create the groups contract now, the address is their main ID and this is where the groups fees and more will reside
-        RocketGroupContract newContractAddress = new RocketGroupContract(address(rocketStorage));
+        RocketGroupContract newContractAddress = new RocketGroupContract(address(rocketStorage), msg.sender);
         // Set their fee on the contract now
         newContractAddress.setFeePerc(_stakingFee);
         // If there is a fee required to register a group, check that it is sufficient
@@ -116,6 +116,8 @@ contract RocketGroupAPI is RocketBase {
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
         rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
+        // Add msg.sender as a depositer for this group initially
+        rocketStorage.setAddress(keccak256(abi.encodePacked("group.deposit.address", msg.sender)), msg.sender);
         // We store our data in an key/value array, so set its index so we can use an array to find it if needed
         rocketStorage.setUint(keccak256(abi.encodePacked("group.index", newContractAddress)), groupCountTotal);
         // Update total partners

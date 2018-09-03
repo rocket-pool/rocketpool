@@ -3,17 +3,16 @@ pragma solidity 0.4.24;
 // Interfaces
 import "./../../interface/RocketStorageInterface.sol";
 import "./../../interface/settings/RocketGroupSettingsInterface.sol";
-// Utilities
-import "./../../contract/utils/Ownable.sol";
 
 
 /// @title The contract for a group that operates in Rocket Pool, holds the entities fees and more
 /// @author David Rugendyke
 
-contract RocketGroupContract is Ownable {
+contract RocketGroupContract {
 
     /**** Properties ***********/
 
+    address public owner;                                                       // The group owner that created the contract
     uint8 public version;                                                       // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     
@@ -26,15 +25,26 @@ contract RocketGroupContract is Ownable {
     /*** Events ******************/
  
     /*** Modifiers ***************/
+
+     /**
+    * @dev Throws if called by any account other than the owner.
+    */
+    modifier onlyGroupOwner() {
+      require(msg.sender == owner, "Only the group owner account can perform this function.");
+      _;
+    }
+
      
     /*** Constructor *************/
 
     /// @dev RocketGroupContract constructor
-    constructor(address _rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _owner) public {
         // Version
         version = 1;
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        // Set the group owner
+        owner = _owner;
     }
 
     /*** Getters *************/
@@ -55,7 +65,7 @@ contract RocketGroupContract is Ownable {
     /*** Setters *************/
 
     /// @dev Set the fee this group charges their users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function setFeePerc(uint256 _stakingFeePerc) public onlyOwner returns(bool) { 
+    function setFeePerc(uint256 _stakingFeePerc) public onlyGroupOwner returns(bool) { 
         // Check its a legit amount
         require(_stakingFeePerc >= 0, "User fee cannot be less than 0.");
         require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");

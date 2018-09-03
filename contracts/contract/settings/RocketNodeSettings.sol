@@ -16,11 +16,12 @@ contract RocketNodeSettings is RocketBase {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.init")))) {
             // Node Settings            
-            setNewAllowed(true);                                                       // Are new nodes allowed to be added                      
-            setEtherMin(5 ether);                                                      // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-            setCheckinGas(20000000000);                                                // Set the gas price for node checkins in Wei (20 gwei)
-            setInactiveAutomatic(true);                                             // Can nodes be set inactive automatically by the contract? they won't receive new users
-            setInactiveDuration(1 hours);                                           // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+            setNewAllowed(true);                                                        // Are new nodes allowed to be added                      
+            setEtherMin(5 ether);                                                       // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
+            setCheckinGas(20000000000);                                                 // Set the gas price for node checkins in Wei (20 gwei)
+            setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
+            setInactiveDuration(1 hours);                                               // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+            setDepositAllowed(true);                                                    // Are deposits allowed by nodes?
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.init")), true);
         }
@@ -55,6 +56,11 @@ contract RocketNodeSettings is RocketBase {
         rocketStorage.getUint(keccak256("settings.node.setinactive.duration")); 
     }
 
+    /// @dev Are deposits currently allowed?                                                 
+    function getDepositAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.deposit.allowed"))); 
+    }
+
 
     /*** Setters **********************/
 
@@ -81,6 +87,11 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function setInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.setinactive.duration")), _amount); 
+    }
+
+    /// @dev Are user deposits currently allowed?                                                 
+    function setDepositAllowed(bool _enabled) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.node.deposit.allowed")), _enabled); 
     }
 
 }

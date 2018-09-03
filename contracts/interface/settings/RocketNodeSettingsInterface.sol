@@ -9,4 +9,5 @@ contract RocketNodeSettingsInterface {
     function getCheckinGas() public view returns (uint256);
     function getInactiveAutomatic() public view returns (bool);
     function getInactiveDuration() public view returns (uint256);
+    function getDepositAllowed() public view returns (bool);
 }

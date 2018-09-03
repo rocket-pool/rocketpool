@@ -2,6 +2,8 @@ pragma solidity 0.4.24;
 
 
 import "../../RocketBase.sol";
+// Interfaces
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
 
 /// @title Settings for API in Rocket Pool
@@ -17,6 +19,7 @@ contract RocketDepositSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.init")))) {
             // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
+            setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
@@ -36,6 +39,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Are deposits currently allowed?                                                 
     function getDepositAllowed() public view returns (bool) {
         return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.allowed"))); 
+    }
+
+    /// @dev The size of deposit chunks
+    function getDepositChunkSize() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.chunk.size"))); 
     }
 
     /// @dev Min required deposit in Wei 
@@ -76,6 +84,13 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Are user deposits currently allowed?                                                 
     function setDepositAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.allowed")), _enabled); 
+    }
+
+    /// @dev Deposit chunk size - must be evenly divisible on the minipool size
+    function setDepositChunkSize(uint256 _weiAmount) public onlySuperUser {
+        // Is the deposit chunk evenly divisible on the minipool limit? It must be
+        require(rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.launch.wei"))) % _weiAmount == 0, "Chunk size not fully divisible in minipool launch amount.");
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.chunk.size")), _weiAmount); 
     }
 
     /// @dev Min required deposit in Wei 
