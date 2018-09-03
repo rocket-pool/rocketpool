@@ -90,7 +90,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the amount of RPL required for a single ether
     /// @param _durationID The ID that determines which pool duration
     function getRPLRatio(string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
-        // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
+        // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1.5 atm
         uint256 rplRatio = 1.5 ether;
         return rplRatio;
     }
@@ -117,7 +117,7 @@ contract RocketNodeAPI is RocketBase {
         // Check the rpl deposit is ok  - reverts if not
         getDepositRPLIsValid(_from, _value, _durationID);
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
-        require(_lastDepositReservedTime < (_lastDepositReservedTime + 1 days), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
+        require(now > (_lastDepositReservedTime + 1 days), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
         require(_rplRatio > 0, "RPL Ratio for deposit reservation cannot be less than or equal to zero.");
         require(_rplRatio < 3 ether, "RPL Ratio is too high.");
