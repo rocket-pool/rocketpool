@@ -41,6 +41,7 @@ contract RocketNodeContract {
     /*** Structs ***************/
 
     struct DepositReservation {
+        string  depositID;              // The deposit duration (eg 3m, 6m etc)
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
         uint256 rplRatio;               // Amount of RPL required per single ether deposited
@@ -132,6 +133,7 @@ contract RocketNodeContract {
             uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
             // Record the reservation now
             depositReservations[now] = DepositReservation({
+                depositID: _durationID,
                 etherAmount: _amount,
                 rplAmount: rplAmount,
                 rplRatio: rplRatio,
