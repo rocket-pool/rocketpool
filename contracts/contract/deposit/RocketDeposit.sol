@@ -68,7 +68,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Check if deposits required to match with a node are available
-    function canMatch(string _stakingDurationId, address _nodeContractAddress) public {
+    function canMatch(string _stakingDurationId, address _nodeContractAddress) public view returns (bool) {
         return matchDeposits(_stakingDurationId, _nodeContractAddress, false);
     }
 
