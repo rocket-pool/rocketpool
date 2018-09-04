@@ -36,8 +36,8 @@ contract RocketDeposit is RocketBase {
         uint256 totalAmount;
         uint256 queuedAmount;
         uint256 stakingAmount;
-        address[] stakingNodes;
-        mapping(address => uint256) stakingNodeAmounts;
+        address[] stakingPools;
+        mapping(address => uint256) stakingPoolAmounts;
     }
 
 
@@ -55,31 +55,31 @@ contract RocketDeposit is RocketBase {
 
 
     // Create a new deposit
-    function create(address _userId, address _groupId, string _stakingDurationId, uint256 _amount) public onlyLatestContract("rocketDepositAPI", msg.sender) {
+    function create(address _userID, address _groupID, string _stakingDurationID, uint256 _amount) public onlyLatestContract("rocketDepositAPI", msg.sender) {
 
         // Get settings
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
 
         // Add deposit
         deposits.push(UserDeposit({
-            userId: _userId,
-            groupId: _groupId,
-            stakingDurationId: _stakingDurationId,
+            userId: _userID,
+            groupId: _groupID,
+            stakingDurationId: _stakingDurationID,
             totalAmount: _amount,
             queuedAmount: _amount,
             stakingAmount: 0,
         }));
 
         // Update queue balance
-        stakingQueueBalances[_stakingDurationId] = stakingQueueBalances[_stakingDurationId].add(_amount);
+        stakingQueueBalances[_stakingDurationID] = stakingQueueBalances[_stakingDurationID].add(_amount);
 
         // Deposit settings
-        uint chunkSize = rocketDepositSettings.getDepositChunkSize();
-        uint maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
+        uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
+        uint256 maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
 
         // Assign chunks while able
-        uint chunkAssignments = 0;
-        while (stakingQueueBalances[_stakingDurationId] >= chunkSize && chunkAssignments++ < maxChunkAssignments) {
+        uint256 chunkAssignments = 0;
+        while (stakingQueueBalances[_stakingDurationID] >= chunkSize && chunkAssignments++ < maxChunkAssignments) {
             assignChunk();
         }
 
@@ -87,7 +87,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Assign chunk
-    function assignChunk(string _stakingDurationId) private {
+    function assignChunk(string _stakingDurationID) private {
 
         // Get settings
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
@@ -102,10 +102,10 @@ contract RocketDeposit is RocketBase {
 
         // Check queued deposits
         // Max number of iterations is (DepositChunkSize / DepositMin) + 1
-        for (uint di = 0; di < deposits.length; ++di) {
+        for (uint256 di = 0; di < deposits.length; ++di) {
 
             // Skip non-matching staking IDs & non-queued deposits
-            if (deposits[di].stakingDurationId != _stakingDurationId) { continue; }
+            if (deposits[di].stakingDurationId != _stakingDurationID) { continue; }
             if (deposits[di].queuedAmount == 0) { continue; }
 
             // Get queued deposit ether amount to match
@@ -129,7 +129,7 @@ contract RocketDeposit is RocketBase {
         }
 
         // Update queue balance
-        stakingQueueBalances[_stakingDurationId] = stakingQueueBalances[_stakingDurationId].sub(chunkSize);
+        stakingQueueBalances[_stakingDurationID] = stakingQueueBalances[_stakingDurationID].sub(chunkSize);
 
         // Transfer balance to node contract
         // TODO: implement
