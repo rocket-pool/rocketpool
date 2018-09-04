@@ -4,6 +4,7 @@ pragma solidity 0.4.24;
 import "../../RocketBase.sol";
 import "../node/RocketNodeContract.sol";
 // Interfaces
+import "../../interface/token/ERC20.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
@@ -21,6 +22,8 @@ contract RocketNodeAPI is RocketBase {
 
     /*** Contracts *************/
 
+    ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
+    RocketNodeContract rocketNodeContract = RocketNodeContract(0);                                          // The nodes contract where their ether/rpl is stored
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools 
    
@@ -115,9 +118,7 @@ contract RocketNodeAPI is RocketBase {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check the ether deposit is ok - reverts if not
-        getDepositEtherIsValid(_from, _value, _durationID);
-        // Check the rpl deposit is ok  - reverts if not
-        getDepositRPLIsValid(_from, _value, _durationID);
+        getDepositIsValid(_from, _value, _durationID);
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
@@ -132,7 +133,7 @@ contract RocketNodeAPI is RocketBase {
     /// @param _from  The address sending the deposit
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositEtherIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+    function getDepositIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -148,19 +149,6 @@ contract RocketNodeAPI is RocketBase {
         return true;
     }
 
-
-    /// @dev Checks if the deposit parameters are correct for a successful RPL deposit
-    /// @param _from  The address sending the deposit
-    /// @param _value The amount being deposited
-    /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositRPLIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
-        // Get the settings
-        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // TODO: Check owner has sufficient RPL to cover the required amount
-        // All good
-        return true;
-    }
 
 
     /*** Setters *************/
