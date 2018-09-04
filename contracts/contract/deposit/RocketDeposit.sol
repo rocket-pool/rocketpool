@@ -47,12 +47,18 @@ contract RocketDeposit is RocketBase {
     // Deposits
     UserDeposit[] private deposits;
 
+    // Deposit queue balances by staking duration
+    mapping(string => uint256) stakingQueueBalances;
+
 
     /*** Methods ****************/
 
 
     // Create a new deposit
     function create(address _userId, address _groupId, string _stakingDurationId, uint256 _amount) public onlyLatestContract("rocketDepositAPI", msg.sender) {
+
+        // Get settings
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
 
         // Add deposit
         deposits.push(UserDeposit({
@@ -64,74 +70,73 @@ contract RocketDeposit is RocketBase {
             stakingAmount: 0,
         }));
 
-    }
+        // Update queue balance
+        stakingQueueBalances[_stakingDurationId] = stakingQueueBalances[_stakingDurationId].add(_amount);
 
-
-    // Check if deposits required to match with a node are available
-    function canMatch(string _stakingDurationId, address _nodeContractAddress) public view returns (bool) {
-        return matchDeposits(_stakingDurationId, _nodeContractAddress, false);
-    }
-
-
-    // Match deposits with a node by staking duration
-    function match(string _stakingDurationId, address _nodeContractAddress) public {
-
-        // Attempt to match deposits; revert if unable
-        require(matchDeposits(_stakingDurationId, _nodeContractAddress, true));
+        // Assign chunks if able
+        uint maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
+        uint chunkAssignments = 0;
+        while (canAssignChunk() && chunkAssignments++ < maxChunkAssignments) {
+            assignChunk();
+        }
 
     }
 
 
-    // Match deposits with a node by staking duration
-    // Updates deposit queued / staking amounts and node information if _updateDeposits is set
-    // Returns a flag indicating whether deposits required to match with node are available
-    function matchDeposits(string _stakingDurationId, address _nodeContractAddress, bool _updateDeposits) private returns (bool) {
+    // Check if the deposit contract balance is high enough to assign a chunk
+    function canAssignChunk(string _stakingDurationId) private view returns (bool) {
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        return (stakingQueueBalances[_stakingDurationId] >= rocketDepositSettings.getDepositChunkSize());
+    }
+
+
+    // Assign chunk
+    function assignChunk(string _stakingDurationId) private {
 
         // Get settings
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-
-        // Chunk size
-        uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
 
         // Remaining ether amount to match
-        uint256 amountToMatch = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
+        uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
+        uint256 amountToMatch = chunkSize;
+
+        // Get random node to assign chunk to
+        // TODO: implement
+        address nodeContractAddress = 0x0;
 
         // Check queued deposits
+        // Max number of iterations is (DepositChunkSize / DepositMin) + 1
         for (uint di = 0; di < deposits.length; ++di) {
 
             // Skip non-matching staking IDs & non-queued deposits
             if (deposits[di].stakingDurationId != _stakingDurationId) { continue; }
             if (deposits[di].queuedAmount == 0) { continue; }
 
-            // Get queued deposit amount to match
+            // Get queued deposit ether amount to match
             uint256 matchAmount = deposits[di].queuedAmount;
-            if (matchAmount > chunkSize) { matchAmount = chunkSize; }
             if (matchAmount > amountToMatch) { matchAmount = amountToMatch; }
 
-            // Update remaining amount to match
+            // Update remaining ether amount to match
             amountToMatch = amountToMatch.sub(matchAmount);
 
-            // Update deposit
-            if (_updateDeposits) {
+            // Update deposit queued / staking ether amounts
+            deposits[di].queuedAmount = deposits[di].queuedAmount.sub(matchAmount);
+            deposits[di].stakingAmount = deposits[di].stakingAmount.add(matchAmount);
 
-                // Update queued / staking ether amounts
-                deposits[di].queuedAmount = deposits[di].queuedAmount.sub(matchAmount);
-                deposits[di].stakingAmount = deposits[di].stakingAmount.add(matchAmount);
+            // Add staking node details
+            if (deposits[di].stakingNodeAmounts[nodeContractAddress] == 0) { deposits[di].stakingNodes.push(nodeContractAddress); }
+            deposits[di].stakingNodeAmounts[nodeContractAddress] = deposits[di].stakingNodeAmounts[nodeContractAddress].add(matchAmount);
 
-                // Add staking node details
-                if (deposits[di].stakingNodeAmounts[_nodeContractAddress] == 0) { deposits[di].stakingNodes.push(_nodeContractAddress); }
-                deposits[di].stakingNodeAmounts[_nodeContractAddress] = deposits[di].stakingNodeAmounts[_nodeContractAddress].add(matchAmount);
-
-            }
-
-            // Stop if required amount matched
+            // Stop if required ether amount matched
             if (amountToMatch == 0) { break; }
 
         }
 
-        // Return amount matched flag
-        return (amountToMatch == 0);
+        // Update queue balance
+        stakingQueueBalances[_stakingDurationId] = stakingQueueBalances[_stakingDurationId].sub(chunkSize);
+
+        // Transfer balance to node contract
+        // TODO: implement
 
     }
 
