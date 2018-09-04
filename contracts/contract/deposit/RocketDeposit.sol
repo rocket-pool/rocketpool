@@ -48,7 +48,7 @@ contract RocketDeposit is RocketBase {
     UserDeposit[] private deposits;
 
     // Deposit queue balances by staking duration
-    mapping(string => uint256) stakingQueueBalances;
+    mapping(string => uint256) private stakingQueueBalances;
 
 
     /*** Methods ****************/
