@@ -73,20 +73,16 @@ contract RocketDeposit is RocketBase {
         // Update queue balance
         stakingQueueBalances[_stakingDurationId] = stakingQueueBalances[_stakingDurationId].add(_amount);
 
-        // Assign chunks if able
+        // Deposit settings
+        uint chunkSize = rocketDepositSettings.getDepositChunkSize();
         uint maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
+
+        // Assign chunks while able
         uint chunkAssignments = 0;
-        while (canAssignChunk() && chunkAssignments++ < maxChunkAssignments) {
+        while (stakingQueueBalances[_stakingDurationId] >= chunkSize && chunkAssignments++ < maxChunkAssignments) {
             assignChunk();
         }
 
-    }
-
-
-    // Check if the deposit contract balance is high enough to assign a chunk
-    function canAssignChunk(string _stakingDurationId) private view returns (bool) {
-        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        return (stakingQueueBalances[_stakingDurationId] >= rocketDepositSettings.getDepositChunkSize());
     }
 
 
