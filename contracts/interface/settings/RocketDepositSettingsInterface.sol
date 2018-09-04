@@ -10,11 +10,4 @@ contract RocketDepositSettingsInterface {
     function getWithdrawalAllowed() public view returns (bool);
     function getWithdrawalMin() public view returns (uint256);
     function getWithdrawalMax() public view returns (uint256);
-    // Setters
-    function setDepositAllowed(bool _enabled) public;
-    function setDepositMin(uint256 _weiAmount) public;
-    function setDepositMax(uint256 _weiAmount) public;
-    function setWithdrawalAllowed(bool _enabled) public;
-    function setWithdrawalMin(uint256 _weiAmount) public;
-    function setWithdrawalMax(uint256 _weiAmount) public;
 }

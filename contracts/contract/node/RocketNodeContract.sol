@@ -26,12 +26,12 @@ contract RocketNodeContract {
     uint8   public version;                                                         // Version of this contract
 
     mapping (uint256 => DepositReservation) private depositReservations;            // Node operators deposit reservations
-    uint256 public lastDepositReservedTime = 0;                                     // Time of the last reserved deposit
+    uint256 private lastDepositReservedTime = 0;                                    // Time of the last reserved deposit
 
     
     /*** Contracts ***************/
 
-    ERC20 rplContract = ERC20(0);                                                                   // The address of an ERC20 token contract
+    ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
@@ -41,6 +41,7 @@ contract RocketNodeContract {
     /*** Structs ***************/
 
     struct DepositReservation {
+        string  depositID;              // The deposit duration (eg 3m, 6m etc)
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
         uint256 rplRatio;               // Amount of RPL required per single ether deposited
@@ -61,7 +62,7 @@ contract RocketNodeContract {
         uint256 created                                                     // The time this reservation was made
     );
 
-    event NodeDepositEther (
+    event NodeDeposit (
         address indexed _from,                                              // Address that sent the deposit, must be registered to the GroupID
         string  durationID,                                                 // The deposits staking duration ID
         uint256 value,                                                      // Amount in wei deposited
@@ -111,7 +112,27 @@ contract RocketNodeContract {
     }
 
     /*** Getters *************/
-    
+
+    /// @dev Returns the time of the last deposit reservation
+    function getLastDepositReservedTime() public view returns(uint256) { 
+        return lastDepositReservedTime;
+    }
+
+    /// @dev Returns the current deposit reservation ether required
+    function getDepositReserveEtherRequired() public hasDepositReserved() returns(uint256) { 
+        return depositReservations[lastDepositReservedTime].etherAmount;
+    }
+
+    /// @dev Returns the current deposit reservation RPL required
+    function getDepositReserveRPLRequired() public hasDepositReserved() returns(uint256) { 
+        return depositReservations[lastDepositReservedTime].rplAmount;
+    }
+
+    /// @dev Returns the current deposit reservation duration set
+    function getDepositReserveDurationID() public hasDepositReserved() returns(string) { 
+        return depositReservations[lastDepositReservedTime].depositID;
+    }
+
     
     /*** Setters *************/
 
@@ -132,16 +153,17 @@ contract RocketNodeContract {
             uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
             // Record the reservation now
             depositReservations[now] = DepositReservation({
+                depositID: _durationID,
                 etherAmount: _amount,
                 rplAmount: rplAmount,
                 rplRatio: rplRatio,
                 created: now,
                 exists: true
             });
-            // All good? Fire the event for the new deposit
-            emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
             // Save the last deposit reservation time
             lastDepositReservedTime = now;
+            // All good? Fire the event for the new deposit
+            emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
             // Done
             return true;
         }
@@ -151,16 +173,16 @@ contract RocketNodeContract {
 
 
    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to Rocket Pool node account contract at `to.address()`.
-   /// @dev Deposit to Rocket Pool from a node to their own contract. Anyone can deposit to a nodes contract, but they must have the ether/rpl to do so.
+   /// @dev Deposit to Rocket Pool from a node to their own contract. Anyone can deposit to a nodes contract, but they must have the ether/rpl to do so. User must have a reserved deposit and the RPL required to cover the ether deposit.
    /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-   function depositEther(string _durationID) public payable hasDepositReserved() returns(bool) { 
+   function deposit(string _durationID) public payable hasDepositReserved() returns(bool) { 
        // Get the node API
        rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
        // Verify the deposit is acceptable 
-       if(rocketNodeAPI.getDepositEtherIsValid(msg.value, owner, _durationID)) {  
+       if(rocketNodeAPI.getDepositIsValid(owner, msg.value, _durationID)) {   
             // TODO: Add in new deposit chunking queue mechanics
             // All good? Fire the event for the new deposit
-            emit NodeDepositEther(msg.sender, _durationID, msg.value, now);   
+            emit NodeDeposit(msg.sender, _durationID, msg.value, now);   
             // Done
             return true;
         }
@@ -168,6 +190,7 @@ contract RocketNodeContract {
         // Safety
         return false;    
     }
+
 
     
 

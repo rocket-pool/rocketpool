@@ -2,10 +2,13 @@ pragma solidity 0.4.24;
 
 // Contracts
 import "../../RocketBase.sol";
-import "../node/RocketNodeContract.sol";
 // Interfaces
+import "../../interface/token/ERC20.sol";
+import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+// Libraries
+import "../../lib/SafeMath.sol";
 
 
 
@@ -21,6 +24,8 @@ contract RocketNodeAPI is RocketBase {
 
     /*** Contracts *************/
 
+    ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
+    RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools 
    
@@ -115,9 +120,7 @@ contract RocketNodeAPI is RocketBase {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check the ether deposit is ok - reverts if not
-        getDepositEtherIsValid(_from, _value, _durationID);
-        // Check the rpl deposit is ok  - reverts if not
-        getDepositRPLIsValid(_from, _value, _durationID);
+        getDepositIsValid(_from, _value, _durationID);
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
@@ -132,7 +135,7 @@ contract RocketNodeAPI is RocketBase {
     /// @param _from  The address sending the deposit
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositEtherIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+    function getDepositIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -148,19 +151,6 @@ contract RocketNodeAPI is RocketBase {
         return true;
     }
 
-
-    /// @dev Checks if the deposit parameters are correct for a successful RPL deposit
-    /// @param _from  The address sending the deposit
-    /// @param _value The amount being deposited
-    /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositRPLIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
-        // Get the settings
-        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // TODO: Check owner has sufficient RPL to cover the required amount
-        // All good
-        return true;
-    }
 
 
     /*** Setters *************/
@@ -178,8 +168,10 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Register a new node address if it doesn't exist
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
     function add(string _timezoneLocation) public onlyLatestContract("rocketNodeAPI", address(this)) returns (bool) {
-        // Get the group settings
+        // Get the node settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Get the node factory
+        rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
         // Initial address check
         require(address(msg.sender) != address(0x0), "An error has occurred with the sending address.");
         // Check the timezone location exists
@@ -191,7 +183,7 @@ contract RocketNodeAPI is RocketBase {
         // Check it isn't already registered
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "Node address already exists in the Rocket Pool network.");
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside
-        RocketNodeContract newContractAddress = new RocketNodeContract(address(rocketStorage), msg.sender);
+        address newContractAddress = rocketNodeFactory.createRocketNodeContract(msg.sender);
         // Get how many nodes we currently have  
         uint256 nodeCountTotal = rocketStorage.getUint(keccak256("nodes.total")); 
         // Ok now set our node data to key/value pair storage
@@ -199,6 +191,7 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), 0);
+        rocketStorage.setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
         // We store our nodes in an key/value array, so set its index so we can use an array to find it if needed
