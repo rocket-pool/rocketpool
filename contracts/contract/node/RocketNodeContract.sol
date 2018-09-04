@@ -62,7 +62,7 @@ contract RocketNodeContract {
         uint256 created                                                     // The time this reservation was made
     );
 
-    event NodeDepositEther (
+    event NodeDeposit (
         address indexed _from,                                              // Address that sent the deposit, must be registered to the GroupID
         string  durationID,                                                 // The deposits staking duration ID
         uint256 value,                                                      // Amount in wei deposited
@@ -119,17 +119,17 @@ contract RocketNodeContract {
     }
 
     /// @dev Returns the current deposit reservation ether required
-    function getDepositReserveEtherRequired() public view hasDepositReserved() returns(uint256) { 
+    function getDepositReserveEtherRequired() public hasDepositReserved() returns(uint256) { 
         return depositReservations[lastDepositReservedTime].etherAmount;
     }
 
     /// @dev Returns the current deposit reservation RPL required
-    function getDepositReserveRPLRequired() public view hasDepositReserved() returns(uint256) { 
+    function getDepositReserveRPLRequired() public hasDepositReserved() returns(uint256) { 
         return depositReservations[lastDepositReservedTime].rplAmount;
     }
 
     /// @dev Returns the current deposit reservation duration set
-    function getDepositReserveDurationID() public view hasDepositReserved() returns(string) { 
+    function getDepositReserveDurationID() public hasDepositReserved() returns(string) { 
         return depositReservations[lastDepositReservedTime].depositID;
     }
 
