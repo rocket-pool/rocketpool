@@ -5,6 +5,7 @@ import "../../RocketBase.sol";
 // Interfaces
 import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
+import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
@@ -26,6 +27,7 @@ contract RocketNodeAPI is RocketBase {
 
     ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
+    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools 
    
@@ -136,6 +138,8 @@ contract RocketNodeAPI is RocketBase {
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     function getDepositIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+        // Get the node contract
+        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _from))));
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -145,6 +149,8 @@ contract RocketNodeAPI is RocketBase {
         require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
         rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        // Check that they have a reserved deposit - will revert if one doesn't exist, double check tho
+        require(rocketNodeContract.getDepositReserveEtherRequired() > 0, "Node contract must not have a zero or less ether deposit reserve.");
         // Check addresses are correct
         require(address(_from) != address(0x0), "From address is not a correct address");
         // All good
