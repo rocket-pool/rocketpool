@@ -21,6 +21,8 @@ contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
+// Minipool
+contracts.rocketMinipoolFactory = artifacts.require('./minipool/RocketMinipoolFactory.sol');
 // Settings
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 contracts.rocketDepositSettings = artifacts.require('./settings/RocketDepositSettings.sol');
