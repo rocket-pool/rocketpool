@@ -33,7 +33,7 @@ contract BytesQueueStorage is RocketBase {
 
 
     /// @dev The number of items in a byte array queue
-    function getQueueLength(bytes32 _key) external view returns (uint) {
+    function getQueueLength(bytes32 _key) public view returns (uint) {
         uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start")));
         uint end = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
         if (end < start) { end = end.add(capacity); }
