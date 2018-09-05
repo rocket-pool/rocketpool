@@ -33,6 +33,7 @@ contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
 contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
 contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
 contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
 contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
 contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
