@@ -54,11 +54,13 @@ contract RocketNodeAPI is RocketBase {
        
     /*** Modifiers *************/
 
-    /// @dev Only passes if the user calling it is a registered node
-    modifier onlyNode(address _nodeAddress) {
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "Node address does not exist.");
+    /// @dev Only passes if the user calling it is a registered node owner
+    modifier onlyValidNodeOwner(address _nodeOwner) {
+        // Verify it
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeOwner))), "Node owner is not valid.");
         _;
     }
+
 
     /// @dev Only passes if the supplied minipool duration is valid
     /// @param _durationID The ID that determines the minipool duration
@@ -84,8 +86,8 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the contract address where the nodes ether/rpl deposits will reside
     /// @return address The address of the contract
-    function getContract(address _nodeAddress) public view returns (address) {
-        rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress)));
+    function getContract(address _nodeOwner) public view returns (address) {
+        rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
     }
 
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
@@ -105,7 +107,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the amount of RPL required to make an ether deposit based on the current network utilisation
     /// @param _weiAmount The amount of ether the node wishes to deposit
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRequired(uint256 _weiAmount, string _durationID) public view onlyValidDuration(_durationID) returns(uint256) { 
+    function getRPLRequired(uint256 _weiAmount, string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
         
         // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
         return _weiAmount;
@@ -113,16 +115,16 @@ contract RocketNodeAPI is RocketBase {
 
 
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
-    /// @param _from  The address sending the deposit
+    /// @param _nodeOwner  The address of the nodes owner
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _rplRatio  The amount of RPL required per ether
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function getDepositReservationIsValid(address _from, uint256 _value, string _durationID, uint256 _rplRatio, uint256 _lastDepositReservedTime) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+    function getDepositReservationIsValid(address _nodeOwner, uint256 _value, string _durationID, uint256 _rplRatio, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        // Check the ether deposit is ok - reverts if not
-        getDepositIsValid(_from, _value, _durationID);
+        // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
+        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
@@ -134,25 +136,21 @@ contract RocketNodeAPI is RocketBase {
 
 
     /// @dev Checks if the deposit parameters are correct for a successful ether deposit
-    /// @param _from  The address sending the deposit
-    /// @param _value The amount being deposited
-    /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function getDepositIsValid(address _from, uint256 _value, string _durationID) public onlyNode(_from) onlyValidDuration(_durationID) returns(bool) { 
+    /// @param _nodeOwner  The address of the nodes owner
+    function getDepositIsValid(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
         // Get the node contract
-        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _from))));
+        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
-        // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
-        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
-        // Check to verify the supplied mini pool staking time id is legit, it will revert if not
-        rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         // Check that they have a reserved deposit - will revert if one doesn't exist, double check tho
-        require(rocketNodeContract.getDepositReserveEtherRequired() > 0, "Node contract must not have a zero or less ether deposit reserve.");
-        // Check addresses are correct
-        require(address(_from) != address(0x0), "From address is not a correct address");
+        require(rocketNodeContract.getHasDepositReservation() == true, "Node does not have a current deposit reserved or it has been longer than 24hrs since it was created.");
+        // Does the node contract have sufficient ether to cover the reserved deposit?
+        require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
+        // Does the node contract have sufficient RPL allowance to cover the reserved deposit?
+        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.allowance(address(rocketNodeContract), address(this)), "Node contract does not have enough RPL to cover the reserved deposit.");
         // All good
         return true;
     }
@@ -164,7 +162,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
-    function setTimezoneLocation(string _timezoneLocation) public onlyNode(msg.sender) returns (string) {
+    function setTimezoneLocation(string _timezoneLocation) public onlyValidNodeOwner(msg.sender) returns (string) {
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
     }
  
@@ -192,8 +190,9 @@ contract RocketNodeAPI is RocketBase {
         address newContractAddress = rocketNodeFactory.createRocketNodeContract(msg.sender);
         // Get how many nodes we currently have  
         uint256 nodeCountTotal = rocketStorage.getUint(keccak256("nodes.total")); 
-        // Ok now set our node data to key/value pair storage
+        // Make sure we can find the node contract address via its owner
         rocketStorage.setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), newContractAddress);
+        // Ok now set our node data to key/value pair storage
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), 0);

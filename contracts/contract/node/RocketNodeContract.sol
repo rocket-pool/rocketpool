@@ -22,7 +22,7 @@ contract RocketNodeContract {
 
     /**** Properties ***********/
 
-    address public owner;                                                           // The node that created the contract
+    address private owner;                                                          // The node that created the contract
     uint8   public version;                                                         // Version of this contract
 
     mapping (uint256 => DepositReservation) private depositReservations;            // Node operators deposit reservations
@@ -111,7 +111,18 @@ contract RocketNodeContract {
         owner = _owner;
     }
 
+
     /*** Getters *************/
+
+    /// @dev Returns the nodes owner - its coinbase account
+    function getOwner() public view returns(address) { 
+        return owner;
+    }
+
+    /// @dev Returns true if there is a current deposit reservation
+    function getHasDepositReservation() public hasDepositReserved() returns(bool) { 
+        return true;
+    }
 
     /// @dev Returns the time of the last deposit reservation
     function getLastDepositReservedTime() public view returns(uint256) { 
@@ -174,15 +185,18 @@ contract RocketNodeContract {
 
    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to Rocket Pool node account contract at `to.address()`.
    /// @dev Deposit to Rocket Pool from a node to their own contract. Anyone can deposit to a nodes contract, but they must have the ether/rpl to do so. User must have a reserved deposit and the RPL required to cover the ether deposit.
-   /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-   function deposit(string _durationID) public payable hasDepositReserved() returns(bool) { 
+   function deposit() public payable hasDepositReserved() returns(bool) { 
        // Get the node API
        rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
-       // Verify the deposit is acceptable 
-       if(rocketNodeAPI.getDepositIsValid(owner, msg.value, _durationID)) {   
+       // Check the contract has sufficient RPL balance for the reserved deposit
+       require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
+       // It does, lets make the amount reserved for the nodeAPI ok to move
+       require(rplContract.approve(address(rocketNodeAPI), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract");
+       // Verify the deposit is acceptable  
+       if(rocketNodeAPI.getDepositIsValid(owner)) {   
             // TODO: Add in new deposit chunking queue mechanics
             // All good? Fire the event for the new deposit
-            emit NodeDeposit(msg.sender, _durationID, msg.value, now);   
+            emit NodeDeposit(msg.sender, getDepositReserveDurationID(), msg.value, now);   
             // Done
             return true;
         }
