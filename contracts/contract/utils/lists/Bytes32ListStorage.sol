@@ -22,13 +22,13 @@ contract Bytes32ListStorage is RocketBase {
     }
 
 
-    /// @dev The number of items in an bytes32 list
+    /// @dev The number of items in a bytes32 list
     function getListCount(bytes32 _key) external view returns (uint) {
         return rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
     }
 
 
-    /// @dev The item in an bytes32 list by index
+    /// @dev The item in a bytes32 list by index
     function getListItem(bytes32 _key, uint _index) external view returns (bytes32) {
         return rocketStorage.getBytes32(keccak256(abi.encodePacked(_key, "item", _index)));
     }
@@ -48,7 +48,7 @@ contract Bytes32ListStorage is RocketBase {
     }
 
 
-    /// @dev Set the item in an bytes32 list by index
+    /// @dev Set the item in a bytes32 list by index
     /// @dev Overrides any existing data at the index; other list elements and count are not modified
     /// @dev Requires that the index is within the list's bounds
     function setListItem(bytes32 _key, uint _index, bytes32 _value) onlyLatestRocketNetworkContract external {
@@ -57,7 +57,7 @@ contract Bytes32ListStorage is RocketBase {
     }
 
 
-    /// @dev Push an item onto an bytes32 list
+    /// @dev Push an item onto a bytes32 list
     /// @dev Increments list count
     function pushListItem(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract external {
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
@@ -66,7 +66,7 @@ contract Bytes32ListStorage is RocketBase {
     }
 
 
-    /// @dev Insert an item into an bytes32 list at index
+    /// @dev Insert an item into a bytes32 list at index
     /// @dev Moves all items at _index and after and increments list count; computationally expensive
     /// @dev Requires that the index is no higher than the current list length
     function insertListItem(bytes32 _key, uint _index, bytes32 _value) onlyLatestRocketNetworkContract external {
