@@ -1,7 +1,8 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-//import { AddressListStorage, BoolListStorage, BytesListStorage, Bytes32ListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
+//import { AddressListStorage, BoolListStorage, BytesListStorage, Bytes32ListStorage, Bytes32QueueStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
+import { scenarioEnqueueItem, scenarioDequeueItem } from './rocket-queue-storage-scenarios';
 
 export default function() {
 
@@ -196,9 +197,90 @@ export default function() {
     }
 
 
+    // Run queue tests by type
+    function queueTests(name, contractArtifact, key, testValues) {
+        contract(name, async (accounts) => {
+
+
+            // Contract dependencies
+            let contract;
+            before(async () => {
+                contract = await contractArtifact.deployed();
+            });
+
+
+            // Perform multiple test runs to test queue wrapping
+            for (let ri = 0; ri < 3; ++ri) {
+                let runTestValues = testValues[ri];
+
+
+                // Enqueue items
+                it(printTitle('-----', 'enqueue items'), async () => {
+
+                    // Check queue capacity
+                    let capacity = parseInt(await contract.capacity.call()) - 1;
+                    assert.isTrue(runTestValues.length > capacity, 'Pre-check failed - more queue capacity than test values'); // Set contract queue capacity to 4 for testing
+
+                    // Enqueue until full
+                    let i;
+                    for (i = 0; i < capacity; ++i) {
+                        await scenarioEnqueueItem({
+                            contract,
+                            key,
+                            value: runTestValues[i],
+                            fromAddress: accounts[0],
+                            gas: 500000,
+                        });
+                    }
+
+                    // Attempt enqueue
+                    await assertThrows(scenarioEnqueueItem({
+                        contract,
+                        key,
+                        value: runTestValues[i],
+                        fromAddress: accounts[0],
+                        gas: 500000,
+                    }), 'Enqueued an item while queue is at capacity');
+
+                });
+
+
+                // Dequeue items
+                it(printTitle('-----', 'dequeue items'), async () => {
+
+                    // Get queue length
+                    let length = parseInt(await contract.getQueueLength.call(key));
+
+                    // Dequeue until empty
+                    for (let i = 0; i < length; ++i) {
+                        await scenarioDequeueItem({
+                            contract,
+                            key,
+                            fromAddress: accounts[0],
+                            gas: 500000,
+                        });
+                    }
+
+                    // Attempt dequeue
+                    await assertThrows(scenarioDequeueItem({
+                        contract,
+                        key,
+                        fromAddress: accounts[0],
+                        gas: 500000,
+                    }), 'Dequeued an item while queue is empty');
+
+                });
+
+            }
+
+
+        });
+    }
+
+
     /*
     // Run list tests
-    listTests('AddressListStorage', AddressListStorage, web3.utils.soliditySha3('test.addresses'), [
+    listTests('AddressListStorage', AddressListStorage, web3.utils.soliditySha3('list.addresses'), [
         '0x0000000000000000000000000000000000000001',
         '0x0000000000000000000000000000000000000002',
         '0x0000000000000000000000000000000000000003',
@@ -207,7 +289,7 @@ export default function() {
         '0x0000000000000000000000000000000000000006',
         '0x0000000000000000000000000000000000000099',
     ]);
-    listTests('BoolListStorage', BoolListStorage, web3.utils.soliditySha3('test.bools'), [
+    listTests('BoolListStorage', BoolListStorage, web3.utils.soliditySha3('list.bools'), [
         true,
         false,
         true,
@@ -216,7 +298,7 @@ export default function() {
         false,
         true,
     ], false);
-    listTests('BytesListStorage', BytesListStorage, web3.utils.soliditySha3('test.bytes'), [
+    listTests('BytesListStorage', BytesListStorage, web3.utils.soliditySha3('list.bytes'), [
         web3.utils.soliditySha3('test string 1'),
         web3.utils.soliditySha3('test string 2'),
         web3.utils.soliditySha3('test string 3'),
@@ -225,7 +307,7 @@ export default function() {
         web3.utils.soliditySha3('test string 6'),
         web3.utils.soliditySha3('test string 99'),
     ]);
-    listTests('Bytes32ListStorage', Bytes32ListStorage, web3.utils.soliditySha3('test.bytes32'), [
+    listTests('Bytes32ListStorage', Bytes32ListStorage, web3.utils.soliditySha3('list.bytes32'), [
         '0x0000000000000000000000000000000000000000000000000000000000000001',
         '0x0000000000000000000000000000000000000000000000000000000000000002',
         '0x0000000000000000000000000000000000000000000000000000000000000003',
@@ -234,7 +316,7 @@ export default function() {
         '0x0000000000000000000000000000000000000000000000000000000000000006',
         '0x0000000000000000000000000000000000000000000000000000000000000099',
     ]);
-    listTests('IntListStorage', IntListStorage, web3.utils.soliditySha3('test.ints'), [
+    listTests('IntListStorage', IntListStorage, web3.utils.soliditySha3('list.ints'), [
         -1,
         2,
         -3,
@@ -243,7 +325,7 @@ export default function() {
         6,
         -99,
     ]);
-    listTests('StringListStorage', StringListStorage, web3.utils.soliditySha3('test.strings'), [
+    listTests('StringListStorage', StringListStorage, web3.utils.soliditySha3('list.strings'), [
         'test string 1',
         'test string 2',
         'test string 3',
@@ -252,7 +334,7 @@ export default function() {
         'test string 6',
         'test string 99',
     ]);
-    listTests('UintListStorage', UintListStorage, web3.utils.soliditySha3('test.uints'), [
+    listTests('UintListStorage', UintListStorage, web3.utils.soliditySha3('list.uints'), [
         1,
         2,
         3,
@@ -260,6 +342,28 @@ export default function() {
         5,
         6,
         99,
+    ]);
+
+    // Run queue tests
+    queueTests('Bytes32QueueStorage', Bytes32QueueStorage, web3.utils.soliditySha3('queue.bytes32'), [
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000001',
+            '0x0000000000000000000000000000000000000000000000000000000000000002',
+            '0x0000000000000000000000000000000000000000000000000000000000000003',
+            '0x0000000000000000000000000000000000000000000000000000000000000004',
+        ],
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000005',
+            '0x0000000000000000000000000000000000000000000000000000000000000006',
+            '0x0000000000000000000000000000000000000000000000000000000000000007',
+            '0x0000000000000000000000000000000000000000000000000000000000000008',
+        ],
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000009',
+            '0x0000000000000000000000000000000000000000000000000000000000000010',
+            '0x0000000000000000000000000000000000000000000000000000000000000011',
+            '0x0000000000000000000000000000000000000000000000000000000000000012',
+        ],
     ]);
     */
 

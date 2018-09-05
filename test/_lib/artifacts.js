@@ -11,6 +11,7 @@ export const AddressListStorage = artifacts.require('./contract/AddressListStora
 export const BoolListStorage = artifacts.require('./contract/BoolListStorage');
 export const BytesListStorage = artifacts.require('./contract/BytesListStorage');
 export const Bytes32ListStorage = artifacts.require('./contract/Bytes32ListStorage');
+export const Bytes32QueueStorage = artifacts.require('./contract/Bytes32QueueStorage');
 export const IntListStorage = artifacts.require('./contract/IntListStorage');
 export const StringListStorage = artifacts.require('./contract/StringListStorage');
 export const UintListStorage = artifacts.require('./contract/UintListStorage');

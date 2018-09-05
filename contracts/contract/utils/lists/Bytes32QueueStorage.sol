@@ -16,14 +16,14 @@ contract Bytes32QueueStorage is RocketBase {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        //require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
         _;
     }
 
 
     /// Settings
-    //uint256 public constant capacity = 2 ** 255; // max uint256 / 2
-    uint256 public constant capacity = 8;
+    uint256 public constant capacity = 2 ** 255; // max uint256 / 2
+    //uint256 public constant capacity = 4;
 
 
     /// @dev RocketQueueStorage constructor
