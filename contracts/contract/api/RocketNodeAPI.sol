@@ -43,6 +43,10 @@ contract RocketNodeAPI is RocketBase {
 
 
     // TODO: Remove Flag Events
+    event FlagAddress (
+        address flag
+    );
+
     event FlagString (
         string flag
     );
@@ -57,7 +61,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Only passes if the user calling it is a registered node owner
     modifier onlyValidNodeOwner(address _nodeOwner) {
         // Verify it
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeOwner))), "Node owner is not valid.");
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeOwner))) == true, "Node owner is not valid.");
         _;
     }
 
@@ -110,7 +114,7 @@ contract RocketNodeAPI is RocketBase {
     function getRPLRequired(uint256 _weiAmount, string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
         
         // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
-        return _weiAmount;
+        return _weiAmount; 
     }
 
 
@@ -123,6 +127,8 @@ contract RocketNodeAPI is RocketBase {
     function getDepositReservationIsValid(address _nodeOwner, uint256 _value, string _durationID, uint256 _rplRatio, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) returns(bool) { 
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Deposits turned on? 
+        require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
         require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
@@ -138,11 +144,12 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Checks if the deposit parameters are correct for a successful ether deposit
     /// @param _nodeOwner  The address of the nodes owner
     function getDepositIsValid(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
+        // Get the RPL contract 
+        rplContract = ERC20(getContractAddress("rocketPoolToken"));
         // Get the node contract
         rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Check that they have a reserved deposit - will revert if one doesn't exist, double check tho
@@ -150,7 +157,7 @@ contract RocketNodeAPI is RocketBase {
         // Does the node contract have sufficient ether to cover the reserved deposit?
         require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
         // Does the node contract have sufficient RPL allowance to cover the reserved deposit?
-        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.allowance(address(rocketNodeContract), address(this)), "Node contract does not have enough RPL to cover the reserved deposit.");
+        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
         // All good
         return true;
     }
