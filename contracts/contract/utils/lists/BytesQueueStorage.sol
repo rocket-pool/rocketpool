@@ -52,7 +52,7 @@ contract BytesQueueStorage is RocketBase {
     /// @dev Add an item to the end of a byte array queue
     /// @dev Requires that the queue is not at capacity
     function enqueueItem(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
-        require(getQueueLength(_key) < capacity - 1);
+        require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
         rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", index)), _value);
         index = index.add(1);
@@ -64,7 +64,7 @@ contract BytesQueueStorage is RocketBase {
     /// @dev Remove an item from the start of a byte array queue
     /// @dev Requires that the queue is not empty
     function dequeueItem(bytes32 _key) onlyLatestRocketNetworkContract external {
-        require(getQueueLength(_key) > 0);
+        require(getQueueLength(_key) > 0, "Queue is empty");
         uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(1);
         if (start >= capacity) { start = start.sub(capacity); }
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "start")), start);
