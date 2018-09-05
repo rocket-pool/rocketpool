@@ -18,10 +18,7 @@ contract AddressListStorage is RocketBase {
 
     /// @dev RocketListStorage constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
-
-        // Set version
         version = 1;
-
     }
 
 
