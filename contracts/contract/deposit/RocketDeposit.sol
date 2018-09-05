@@ -4,7 +4,7 @@ pragma solidity 0.4.24;
 import "../../RocketBase.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressListStorageInterface.sol";
-import "../../interface/utils/lists/Bytes32ListStorageInterface.sol";
+import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
 
@@ -25,7 +25,7 @@ contract RocketDeposit is RocketBase {
 
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);
-    Bytes32ListStorageInterface bytes32ListStorage = Bytes32ListStorageInterface(0);
+    Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
     /*** Methods ****************/
@@ -66,7 +66,7 @@ contract RocketDeposit is RocketBase {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         addressListStorage = AddressListStorageInterface(getContractAddress("addressListStorage"));
-        bytes32ListStorage = Bytes32ListStorageInterface(getContractAddress("bytes32ListStorage"));
+        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("bytes32QueueStorage"));
 
         // Remaining ether amount to match
         uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
@@ -78,10 +78,10 @@ contract RocketDeposit is RocketBase {
 
         // Check queued deposits
         // Max number of iterations is (DepositChunkSize / DepositMin) + 1
-        for (uint256 di = 0; di < bytes32ListStorage.getListCount(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID))); ++di) {
+        while (bytes32QueueStorage.getQueueLength(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID))) > 0) {
 
             // Get deposit details
-            bytes32 depositID = bytes32ListStorage.getListItem(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID)), di);
+            bytes32 depositID = bytes32QueueStorage.getQueueItem(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID)), 0);
             uint256 queuedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)));
             uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", depositID)));
 
@@ -104,16 +104,15 @@ contract RocketDeposit is RocketBase {
             rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, poolContractAddress)), stakingPoolAmount.add(matchAmount));
 
             // Remove deposit from queue if queued amount depleted
-            // TODO: implement; fix deposit queue structure to meet criteria:
-            //   - deposits must be processed in FIFO order
-            //   - removing a deposit from the queue must not be computationally expensive
-            //   - removing a deposit from the queue must not alter the queue order
-            if (queuedAmount == 0) {  }
+            if (queuedAmount == 0) { bytes32QueueStorage.dequeueItem(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID))); }
 
             // Stop if required ether amount matched
             if (amountToMatch == 0) { break; }
 
         }
+
+        // Double-check required ether amount has been matched
+        require(amountToMatch == 0, "Required ether amount was not matched");
 
         // Update queue balance
         uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID))).sub(chunkSize);
@@ -130,7 +129,7 @@ contract RocketDeposit is RocketBase {
     function add(address _userID, address _groupID, string _stakingDurationID, uint256 _amount) private returns (bytes32) {
 
         // Get contracts
-        bytes32ListStorage = Bytes32ListStorageInterface(getContractAddress("bytes32ListStorage"));
+        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("bytes32QueueStorage"));
 
         // Get deposit ID
         bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, _stakingDurationID, _amount, now));
@@ -148,7 +147,7 @@ contract RocketDeposit is RocketBase {
         // + stakingPoolAmount
 
         // Update deposit indexes
-        bytes32ListStorage.pushListItem(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID)), depositID);
+        bytes32QueueStorage.enqueueItem(keccak256(abi.encodePacked("deposits.queue", _stakingDurationID)), depositID);
 
         // Return ID
         return depositID;
