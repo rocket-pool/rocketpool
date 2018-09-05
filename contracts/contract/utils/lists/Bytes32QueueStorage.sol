@@ -5,9 +5,9 @@ import "../../../RocketBase.sol";
 import "../../../lib/SafeMath.sol";
 
 
-/// @title Bytes queue storage helper for RocketStorage data (ring buffer implementation)
+/// @title Bytes32 queue storage helper for RocketStorage data (ring buffer implementation)
 /// @author Jake Pospischil
-contract BytesQueueStorage is RocketBase {
+contract Bytes32QueueStorage is RocketBase {
 
 
     /// Libs
@@ -32,7 +32,7 @@ contract BytesQueueStorage is RocketBase {
     }
 
 
-    /// @dev The number of items in a byte array queue
+    /// @dev The number of items in a bytes32 queue
     function getQueueLength(bytes32 _key) public view returns (uint) {
         uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start")));
         uint end = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
@@ -41,17 +41,17 @@ contract BytesQueueStorage is RocketBase {
     }
 
 
-    /// @dev The item in a byte array queue by index
-    function getQueueItem(bytes32 _key, uint _index) external view returns (bytes) {
+    /// @dev The item in a bytes32 queue by index
+    function getQueueItem(bytes32 _key, uint _index) external view returns (bytes32) {
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(_index);
         if (index >= capacity) { index = index.sub(capacity); }
         return rocketStorage.getBytes(keccak256(abi.encodePacked(_key, "item", index)));
     }
 
 
-    /// @dev Add an item to the end of a byte array queue
+    /// @dev Add an item to the end of a bytes32 queue
     /// @dev Requires that the queue is not at capacity
-    function enqueueItem(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
+    function enqueueItem(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
         rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", index)), _value);
@@ -61,7 +61,7 @@ contract BytesQueueStorage is RocketBase {
     }
 
 
-    /// @dev Remove an item from the start of a byte array queue
+    /// @dev Remove an item from the start of a bytes32 queue
     /// @dev Requires that the queue is not empty
     function dequeueItem(bytes32 _key) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) > 0, "Queue is empty");
