@@ -4,7 +4,7 @@ pragma solidity 0.4.24;
 import "../../../RocketBase.sol";
 
 
-/// @title Address list storage helper for RocketStorage data
+/// @title Bool list storage helper for RocketStorage data
 /// @author Jake Pospischil
 contract BoolListStorage is RocketBase {
 
