@@ -1,5 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-//import { AddressListStorage, BoolListStorage, BytesListStorage, Bytes32ListStorage, Bytes32QueueStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
+//import { AddressListStorage, BoolListStorage, BytesListStorage, Bytes32ListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
+//import { AddressQueueStorage, BoolQueueStorage, BytesQueueStorage, Bytes32QueueStorage, IntQueueStorage, StringQueueStorage, UintQueueStorage } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 import { scenarioEnqueueItem, scenarioDequeueItem } from './rocket-queue-storage-scenarios';
@@ -345,6 +346,66 @@ export default function() {
     ]);
 
     // Run queue tests
+    queueTests('AddressQueueStorage', AddressQueueStorage, web3.utils.soliditySha3('queue.addresses'), [
+        [
+            '0x0000000000000000000000000000000000000001',
+            '0x0000000000000000000000000000000000000002',
+            '0x0000000000000000000000000000000000000003',
+            '0x0000000000000000000000000000000000000004',
+        ],
+        [
+            '0x0000000000000000000000000000000000000005',
+            '0x0000000000000000000000000000000000000006',
+            '0x0000000000000000000000000000000000000007',
+            '0x0000000000000000000000000000000000000008',
+        ],
+        [
+            '0x0000000000000000000000000000000000000009',
+            '0x0000000000000000000000000000000000000010',
+            '0x0000000000000000000000000000000000000011',
+            '0x0000000000000000000000000000000000000012',
+        ],
+    ]);
+    queueTests('BoolQueueStorage', BoolQueueStorage, web3.utils.soliditySha3('queue.bools'), [
+        [
+            true,
+            false,
+            true,
+            false,
+        ],
+        [
+            true,
+            false,
+            true,
+            false,
+        ],
+        [
+            true,
+            false,
+            true,
+            false,
+        ],
+    ]);
+    queueTests('BytesQueueStorage', BytesQueueStorage, web3.utils.soliditySha3('queue.bytes'), [
+        [
+            web3.utils.soliditySha3('test string 1'),
+            web3.utils.soliditySha3('test string 2'),
+            web3.utils.soliditySha3('test string 3'),
+            web3.utils.soliditySha3('test string 4'),
+        ],
+        [
+            web3.utils.soliditySha3('test string 5'),
+            web3.utils.soliditySha3('test string 6'),
+            web3.utils.soliditySha3('test string 7'),
+            web3.utils.soliditySha3('test string 8'),
+        ],
+        [
+            web3.utils.soliditySha3('test string 9'),
+            web3.utils.soliditySha3('test string 10'),
+            web3.utils.soliditySha3('test string 11'),
+            web3.utils.soliditySha3('test string 12'),
+        ],
+    ]);
     queueTests('Bytes32QueueStorage', Bytes32QueueStorage, web3.utils.soliditySha3('queue.bytes32'), [
         [
             '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -363,6 +424,66 @@ export default function() {
             '0x0000000000000000000000000000000000000000000000000000000000000010',
             '0x0000000000000000000000000000000000000000000000000000000000000011',
             '0x0000000000000000000000000000000000000000000000000000000000000012',
+        ],
+    ]);
+    queueTests('IntQueueStorage', IntQueueStorage, web3.utils.soliditySha3('queue.ints'), [
+        [
+            -1,
+            2,
+            -3,
+            4,
+        ],
+        [
+            -5,
+            6,
+            -7,
+            8,
+        ],
+        [
+            -9,
+            10,
+            -11,
+            12,
+        ],
+    ]);
+    queueTests('StringQueueStorage', StringQueueStorage, web3.utils.soliditySha3('queue.strings'), [
+        [
+            'test string 1',
+            'test string 2',
+            'test string 3',
+            'test string 4',
+        ],
+        [
+            'test string 5',
+            'test string 6',
+            'test string 7',
+            'test string 8',
+        ],
+        [
+            'test string 9',
+            'test string 10',
+            'test string 11',
+            'test string 12',
+        ],
+    ]);
+    queueTests('UintQueueStorage', UintQueueStorage, web3.utils.soliditySha3('queue.uints'), [
+        [
+            1,
+            2,
+            3,
+            4,
+        ],
+        [
+            5,
+            6,
+            7,
+            8,
+        ],
+        [
+            9,
+            10,
+            11,
+            12,
         ],
     ]);
     */

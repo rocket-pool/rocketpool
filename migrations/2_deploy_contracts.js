@@ -34,10 +34,16 @@ contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol')
 contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
 contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
 contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
-contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
 contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
 contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
+contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
+contracts.utilBoolQueueStorage = artifacts.require('./BoolQueueStorage.sol');
+contracts.utilBytesQueueStorage = artifacts.require('./BytesQueueStorage.sol');
+contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
+contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
+contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
+contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
 
 
 /*** Utility Methods *****************/
