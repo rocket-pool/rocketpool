@@ -7,6 +7,7 @@ import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
@@ -29,16 +30,26 @@ contract RocketNodeAPI is RocketBase {
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
-    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools 
-   
+    RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
 
 
     /*** Events ****************/
 
     event NodeAdd (
-        address indexed ID,
-        address indexed contractAddress,
-        uint256 created
+        address indexed ID,                                                 // Node ID
+        address indexed contractAddress,                                    // Nodes Rocket Pool contract
+        uint256 created                                                     // The time this deposit was made
+    );
+
+    event NodeDeposit (
+        address indexed ID,                                                 // Node ID that sent the deposit
+        uint256 etherAmount,                                                // Amount of ether required
+        uint256 rplAmount,                                                  // Amount of RPL required
+        uint256 rplRatio,                                                   // Amount of RPL required per single ether deposited
+        string  durationID,                                                 // Duration of the stake
+        address minipool,                                                   // Address of the minipool created by the deposit
+        uint256 created                                                     // The time this deposit was made
     );
 
 
@@ -94,11 +105,13 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
     }
 
+
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @return string The set timezone of this node
     function getTimezoneLocation(address _nodeAddress) public view returns (string) {
         rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
     }
+
 
     /// @dev Returns the amount of RPL required for a single ether
     /// @param _durationID The ID that determines which pool duration
@@ -107,6 +120,7 @@ contract RocketNodeAPI is RocketBase {
         uint256 rplRatio = 1.5 ether;
         return rplRatio;
     }
+
 
     /// @dev Returns the amount of RPL required to make an ether deposit based on the current network utilisation
     /// @param _weiAmount The amount of ether the node wishes to deposit
@@ -216,6 +230,28 @@ contract RocketNodeAPI is RocketBase {
         emit NodeAdd(msg.sender, newContractAddress, now);
         // Done
         return true;
+    }
+
+
+    /// @dev Process a deposit into a nodes contract
+    /// @param _nodeOwner  The address of the nodes owner
+    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
+        // Check the deposit is ready to go first
+        if(getDepositIsValid(_nodeOwner)) {
+            // Get the minipool settings contract
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            // Get the node contract
+            rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
+            // Get the deposit duration in blocks by using its ID
+            uint256 duration = rocketMinipoolSettings.getMinipoolStakingDuration(rocketNodeContract.getDepositReserveDurationID());
+            // Ok awesome, lets make a minipool for it - this will revert if minipool creation is disabled
+            rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+            // Build that bad boy
+            address nodeMinipool = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, duration);
+            emit FlagAddress(nodeMinipool);
+        }
+        // Safety
+        return false;
     }
 
 }

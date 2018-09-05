@@ -34,12 +34,13 @@ module.exports = async (done) => {
         let gasEstimate = await rocketNodeContract.deposit.estimateGas({
             from: accounts[0],
             value: depositAmount
-        })
+        });
+
         // Perform add group
         let result = await rocketNodeContract.deposit({
             from: accounts[0],
             value: depositAmount,
-            gas: gasEstimate
+            gas: (gasEstimate + 100000)
         });
         // Show events
         result.logs.forEach(event => {
@@ -52,7 +53,7 @@ module.exports = async (done) => {
         });;
         console.log('********************************');
         // Complete
-        console.log('Gas estimate: '+gasEstimate);
+        console.log('Gas estimate: '+(gasEstimate + 100000));
         done('Node contract deposit successfull: ' + args.join(', '));
       } catch (err) {
         console.log(err.message);
