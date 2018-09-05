@@ -45,7 +45,7 @@ contract Bytes32QueueStorage is RocketBase {
     function getQueueItem(bytes32 _key, uint _index) external view returns (bytes32) {
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(_index);
         if (index >= capacity) { index = index.sub(capacity); }
-        return rocketStorage.getBytes(keccak256(abi.encodePacked(_key, "item", index)));
+        return rocketStorage.getBytes32(keccak256(abi.encodePacked(_key, "item", index)));
     }
 
 
@@ -54,7 +54,7 @@ contract Bytes32QueueStorage is RocketBase {
     function enqueueItem(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
-        rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", index)), _value);
+        rocketStorage.setBytes32(keccak256(abi.encodePacked(_key, "item", index)), _value);
         index = index.add(1);
         if (index >= capacity) { index = index.sub(capacity); }
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "end")), index);
