@@ -144,7 +144,9 @@ contract RocketNodeAPI is RocketBase {
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
-        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be multiples of half required for a deposit with Casper eg 16, 32, 64 ether.");
+        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be half required for a deposit with Casper eg 16, 32, 64 ether.");
+        // Only so many minipools can be created at once
+        require(_value.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2))) <= rocketMinipoolSettings.getMinipoolNewMaxAtOnce(), "Ether deposit exceeds the amount of minipools it can create at once, please reduce deposit size.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
@@ -204,7 +206,7 @@ contract RocketNodeAPI is RocketBase {
         // Check registrations are allowed
         require(rocketNodeSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins etc
-        require(msg.sender.balance >= rocketNodeSettings.getEtherMin());
+        require(msg.sender.balance >= rocketNodeSettings.getEtherMin(), "Node account requires a minimum amount of ether in it for registration.");
         // Check it isn't already registered
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "Node address already exists in the Rocket Pool network.");
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside
@@ -244,11 +246,24 @@ contract RocketNodeAPI is RocketBase {
             rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
             // Get the deposit duration in blocks by using its ID
             uint256 duration = rocketMinipoolSettings.getMinipoolStakingDuration(rocketNodeContract.getDepositReserveDurationID());
+            // Ether deposited
+            uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
+            // RPL deposited
+            uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
+            // How many minipools are we making? each should have half the casper amount from the node
+            uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
+            // Store our minipool addresses
+            address[] memory minipools = new address[](minipoolAmount);
             // Ok awesome, lets make a minipool for it - this will revert if minipool creation is disabled
             rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
-            // Build that bad boy
-            address nodeMinipool = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, duration);
-            emit FlagAddress(nodeMinipool);
+            // Lets begin
+            for(uint8 i = 0; i < minipoolAmount; i++) {
+                // Build that bad boy  
+                minipools[i] = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, duration, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
+                // Check
+                emit FlagAddress(minipools[i]);
+            }
+            
         }
         // Safety
         return false;
