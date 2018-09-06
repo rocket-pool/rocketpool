@@ -9,6 +9,7 @@ contract RocketMinipoolSettingsInterface {
     function getMinipoolCountDownTime() public view returns (uint256);
     function getMinipoolCanBeCreated() public view returns (bool);
     function getMinipoolNewEnabled() public view returns (bool);
+    function getMinipoolNewMaxAtOnce() public view returns (uint256);
     function getMinipoolClosingEnabled() public view returns (bool);
     function getMinipoolMax() public view returns (uint256);
     function getMinipoolNewGas() public view returns (uint256);

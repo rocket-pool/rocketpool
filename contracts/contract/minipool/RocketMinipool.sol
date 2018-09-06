@@ -6,12 +6,19 @@ import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
 import "../../interface/token/ERC20.sol";
+// Libraries
+import "../../lib/SafeMath.sol";
 
 
 /// @title A minipool under the main RocketPool, all major logic is contained within the RocketPoolMiniDelegate contract which is upgradable when minipools are deployed
 /// @author David Rugendyke
 
 contract RocketMinipool {
+
+    /*** Libs  *****************/
+
+    using SafeMath for uint;
+
 
     /**** Properties ***********/
 
@@ -27,10 +34,10 @@ contract RocketMinipool {
 
     /*** Contracts **************/
 
-    ERC20 rplContract = ERC20(0);                                                           // The address of our RPL ERC20 token contract
-    CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                     // Interface of the Casper deposit contract
-    RocketMinipoolSettingsInterface rocketSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);                       // The main Rocket Pool storage contract where primary persistant storage is maintained
+    ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
+    CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
 
     
     /*** Structs ***************/
@@ -38,6 +45,9 @@ contract RocketMinipool {
     struct Node {
         address owner;                                          // Etherbase address of the node which owns this minipool
         address contractAddress;                                // The nodes Rocket Pool contract
+        uint256 depositEther;                                   // The nodes ether contribution
+        uint256 depositRPL;                                     // The nodes RPL contribution
+        bool    trusted;                                        // Is this a trusted node?
     }
 
     struct Staking {
@@ -59,6 +69,15 @@ contract RocketMinipool {
 
       
     /*** Events ****************/
+
+    event NodeDeposit (
+        address indexed _from,                                  // Transferred from 
+        address indexed _to,                                    // Transferred to
+        bytes32 indexed _typeOf,                                // Cant have strings indexed due to unknown size, must use a fixed type size and convert string to keccak256
+        uint256 value,                                          // Value of the transfer
+        uint256 balance,                                        // Balance of the transfer
+        uint256 created                                         // Creation timestamp
+    );
 
     event PoolCreated (
         address indexed _address,                               // Address of the pool
@@ -100,6 +119,14 @@ contract RocketMinipool {
 
     /*** Modifiers *************/
 
+
+    /// @dev Only the node owner which this minipool belongs too
+    /// @param _nodeOwner The node owner address.
+    modifier isNodeOwner(address _nodeOwner) {
+        require(_nodeOwner != address(0x0) && _nodeOwner == node.owner, "Incorrect node owner address passed.");
+        _;
+    }
+
     /// @dev Only registered users with this pool
     /// @param _userAddress The users address.
     modifier isPoolUser(address _userAddress) {
@@ -114,7 +141,10 @@ contract RocketMinipool {
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
     /// @param _duration Staking duration in blocks 
-    constructor(address _rocketStorageAddress, address _nodeOwner, uint256 _duration) public {
+    /// @param _depositEther Ether amount deposited by the node owner
+    /// @param _depositRPL RPL amount deposited by the node owner
+    /// @param _trusted Is this node owner trusted?
+    constructor(address _rocketStorageAddress, address _nodeOwner, uint256 _duration, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
         // The current version of this pool
         version = 1;
         // Update the storage contract address
@@ -125,6 +155,9 @@ contract RocketMinipool {
         rplContract = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPoolToken"))));
         // Set the node owner and contract address
         node.owner = _nodeOwner;
+        node.depositEther = _depositEther;
+        node.depositRPL = _depositRPL;
+        node.trusted = _trusted;
         node.contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
         // Set the initial staking properties
         staking.duration = _duration;
@@ -162,6 +195,22 @@ contract RocketMinipool {
         //return statusChangeTime;
     }
     */
+
+    /*** NODE ***********************************************/
+
+    /// @dev Set the ether deposit and check it
+    function setNodeDeposit() public payable returns(bool) {
+        // Get minipool settings
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
+        // Check no deposit has been made already
+        require(node.depositEther == 0, "Node owner has already made their ether deposit.");
+        // Check it is half of what is required by Casper
+        require(msg.value == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
+        // Check it is the correct amount passed when the minipool was created
+        require(msg.value == node.depositEther, "Ether deposit size does not match the minipool amount set when it was created.");
+        // All good
+        return true;
+    }
 
     /*** USERS ***********************************************/
 

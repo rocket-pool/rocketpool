@@ -206,6 +206,8 @@ contract RocketNodeContract {
         require(rplContract.approve(address(rocketNodeAPI), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
         // Verify the deposit is acceptable and create a minipool for it 
         if(rocketNodeAPI.deposit(owner)) {    
+            // Reset the last reserved time   
+            lastDepositReservedTime = 0;
             // Done
             return true;
         }

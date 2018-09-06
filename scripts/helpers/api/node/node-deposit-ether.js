@@ -28,7 +28,7 @@ module.exports = async (done) => {
         const rocketNodeContract = await RocketNodeContract.at(nodeContract);
         const rocketNodeSettings = await RocketNodeSettings.deployed();
 
-        let depositAmount = Web3.utils.toWei('16', 'ether');
+        let depositAmount = Web3.utils.toWei('32', 'ether');
 
         // See if the group registration requires a fee?
         let gasEstimate = await rocketNodeContract.deposit.estimateGas({
