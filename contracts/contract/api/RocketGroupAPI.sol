@@ -71,13 +71,13 @@ contract RocketGroupAPI is RocketBase {
     /// @dev Get the group by its ID
     function getGroupName(address _ID) public view returns(string) { 
         // Get the group name
-        rocketStorage.getString(keccak256(abi.encodePacked("group.name", _ID)));
+        return rocketStorage.getString(keccak256(abi.encodePacked("group.name", _ID)));
     }
 
     /// @dev Get a verified address for the group that's allowed to interact with RP
     function getGroupDepositAddress(address _ID) public view returns(address) { 
-        // Get the group name
-        rocketStorage.getAddress(keccak256(abi.encodePacked("group.deposit.address", _ID)));
+        // Get the deposit address
+        return rocketStorage.getAddress(keccak256(abi.encodePacked("group.deposit.address", _ID)));
     }
     
 
