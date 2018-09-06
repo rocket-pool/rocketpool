@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "../../RocketBase.sol";
+import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressListStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
@@ -23,6 +24,7 @@ contract RocketDeposit is RocketBase {
     /*** Contracts **************/
 
 
+    RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
@@ -32,14 +34,21 @@ contract RocketDeposit is RocketBase {
 
 
     // Create a new deposit
-    function create(address _userID, address _groupID, string _stakingDurationID, uint256 _amount) public onlyLatestContract("rocketDepositAPI", msg.sender) {
+    function create(address _userID, address _groupID, string _stakingDurationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) {
+
+        // Check deposit amount
+        require(msg.value > 0, "Invalid deposit amount sent");
 
         // Add deposit
-        add(_userID, _groupID, _stakingDurationID, _amount);
+        add(_userID, _groupID, _stakingDurationID, msg.value);
 
         // Update queue balance
-        uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID))).add(_amount);
+        uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID))).add(msg.value);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID)), queueBalance);
+
+        // Transfer deposit amount to vault
+        rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
+        require(rocketDepositVault.depositEther.value(msg.value)(), "Deposit could not be transferred to vault");
 
         // Assign chunks
         assignChunks(_stakingDurationID);
@@ -50,10 +59,8 @@ contract RocketDeposit is RocketBase {
     // Assign chunks while able
     function assignChunks(string _stakingDurationID) public {
 
-        // Get contracts
-        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-
         // Deposit settings
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
         uint256 maxChunkAssignments = 1; //rocketDepositSettings.getChunkAssignMax();
 
@@ -73,6 +80,7 @@ contract RocketDeposit is RocketBase {
     function assignChunk(string _stakingDurationID) private {
 
         // Get contracts
+        rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         addressListStorage = AddressListStorageInterface(getContractAddress("addressListStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("bytes32QueueStorage"));
@@ -81,7 +89,7 @@ contract RocketDeposit is RocketBase {
         uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
         uint256 amountToMatch = chunkSize;
 
-        // Get random node's pool to assign chunk to
+        // Get random node's minipool to assign chunk to
         // TODO: implement
         address poolContractAddress = 0x0;
 
@@ -127,8 +135,8 @@ contract RocketDeposit is RocketBase {
         uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID))).sub(chunkSize);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID)), queueBalance);
 
-        // Transfer balance to node contract
-        // TODO: implement
+        // Transfer balance from vault to minipool contract
+        require(rocketDepositVault.withdrawEther(poolContractAddress, chunkSize), "Deposit coult not be transferred to minipool contract");
 
     }
 
