@@ -1,4 +1,4 @@
-# Rocket Pool - Your new Casper-friendly Ethereum PoS pool
+# Rocket Pool - Your new Casper-friendly Ethereum PoS pool  [![Build Status](https://travis-ci.org/rocket-pool/rocketpool.svg?branch=rocket-two)](https://travis-ci.org/rocket-pool/rocketpool)
 
 *NOTE: The current alpha of Rocket Pool requires the latest [ganache-cli@v6.1](https://github.com/trufflesuite/ganache-cli), [truffle@4.1.8](https://github.com/trufflesuite/truffle), and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
