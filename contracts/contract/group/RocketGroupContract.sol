@@ -26,7 +26,7 @@ contract RocketGroupContract {
  
     /*** Modifiers ***************/
 
-     /**
+    /**
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyGroupOwner() {
@@ -34,17 +34,29 @@ contract RocketGroupContract {
       _;
     }
 
+    /**
+    * @dev Throws if fee percentage is invalid.
+    */
+    modifier onlyValidFeePerc(uint256 _stakingFeePerc) {
+        // Check its a legit amount
+        require(_stakingFeePerc >= 0, "User fee cannot be less than 0.");
+        require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
+        _;
+    }
+
      
     /*** Constructor *************/
 
     /// @dev RocketGroupContract constructor
-    constructor(address _rocketStorageAddress, address _owner) public {
+    constructor(address _rocketStorageAddress, address _owner, uint256 _stakingFeePerc) public onlyValidFeePerc(_stakingFeePerc) {
         // Version
         version = 1;
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Set the group owner
         owner = _owner;
+        // Set the staking fee percent
+        feePerc = _stakingFeePerc;
     }
 
     /*** Getters *************/
@@ -65,10 +77,7 @@ contract RocketGroupContract {
     /*** Setters *************/
 
     /// @dev Set the fee this group charges their users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function setFeePerc(uint256 _stakingFeePerc) public onlyGroupOwner returns(bool) { 
-        // Check its a legit amount
-        require(_stakingFeePerc >= 0, "User fee cannot be less than 0.");
-        require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
+    function setFeePerc(uint256 _stakingFeePerc) public onlyGroupOwner onlyValidFeePerc(_stakingFeePerc) returns(bool) {
         // Ok set it
         feePerc = _stakingFeePerc;
         // Done
