@@ -11,26 +11,41 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
     // Validate arguments
-    if (args.length != 3) done('Incorrect number of arguments. Please enter: user address, deposit amount (ETH), staking time ID.');
-    if (!Web3.utils.isAddress(args[0])) done('User address is invalid.');
-    if (isNaN(args[1])) done('Deposit amount (ETH) is invalid.');
-    if (args[2] != '3m' && args[2] != '6m' && args[2] != '9m' && args[2] != '12m') done('Staking time ID is invalid.');
+    if (args.length != 4) done('Incorrect number of arguments. Please enter: group address, user address, deposit amount (ETH), staking time ID.');
+    if (!Web3.utils.isAddress(args[0])) done('Group address is invalid.');
+    if (!Web3.utils.isAddress(args[1])) done('User address is invalid.');
+    if (isNaN(args[2])) done('Deposit amount (ETH) is invalid.');
+    if (args[3] != '3m' && args[3] != '6m' && args[3] != '12m') done('Staking time ID is invalid.');
 
     // Parse arguments
-    let [userAddress, depositAmountEth, stakingTimeID] = args;
+    let [groupAddress, userAddress, depositAmountEth, stakingTimeID] = args;
 
     // Get contract dependencies
-    const rocketUser = await RocketUser.deployed();
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
 
-    // Perform user deposit
-    let result = await rocketUser.userDeposit(stakingTimeID, {
-        from: userAddress,
-        value: Web3.utils.toWei(depositAmountEth, 'ether'),
-        gas: 4800000,
-    });
+    // Perform deposit
+    try {
 
-    // Complete
-    done('User deposit made successfully: ' + args.join(', '));
+        // Deposit
+        let gasEstimate = await rocketDepositAPI.deposit.estimateGas(groupAddress, userAddress, stakingTimeID, {
+            from: userAddress,
+            value: Web3.utils.toWei(depositAmountEth, 'ether'),
+        });
+        let result = await rocketDepositAPI.deposit(groupAddress, userAddress, stakingTimeID, {
+            from: userAddress,
+            value: Web3.utils.toWei(depositAmountEth, 'ether'),
+            gas: gasEstimate + 20000,
+        });
+
+        // Complete
+        done('Deposit made successfully: ' + args.join(', '));
+
+    }
+
+    // Log errors
+    catch (err) {
+        console.log(err.message);
+    }
 
 };
 

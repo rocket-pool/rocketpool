@@ -91,8 +91,8 @@ contract RocketDeposit is RocketBase {
         // Get contracts
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        addressListStorage = AddressListStorageInterface(getContractAddress("addressListStorage"));
-        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("bytes32QueueStorage"));
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Remaining ether amount to match
         uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
@@ -155,7 +155,7 @@ contract RocketDeposit is RocketBase {
     function add(address _userID, address _groupID, string _stakingDurationID, uint256 _amount) private returns (bytes32) {
 
         // Get contracts
-        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("bytes32QueueStorage"));
+        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Get deposit ID
         bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, _stakingDurationID, _amount, now));

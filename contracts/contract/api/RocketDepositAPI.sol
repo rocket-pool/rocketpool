@@ -28,6 +28,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _durationID The ID that determines the minipool duration
     modifier onlyValidDuration(string _durationID) {
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         _;
     }
@@ -65,9 +66,9 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     function getDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string _durationID) public onlyValidDuration(_durationID) returns(bool) { 
-        // Get the settings
+        // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
         // Deposits turned on?
         require(rocketDepositSettings.getDepositAllowed(), "Deposits are currently disabled.");
         // Is the deposit value acceptable?

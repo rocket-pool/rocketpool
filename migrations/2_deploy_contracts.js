@@ -19,6 +19,9 @@ contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
+// Deposit
+contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
+contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
 // Minipool
