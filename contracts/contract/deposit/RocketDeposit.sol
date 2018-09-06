@@ -70,8 +70,8 @@ contract RocketDeposit is RocketBase {
 
         // Deposit settings
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
-        uint256 maxChunkAssignments = 1; //rocketDepositSettings.getChunkAssignMax();
+        uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
+        uint256 maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
 
         // Assign chunks while able
         uint256 chunkAssignments = 0;
@@ -95,7 +95,7 @@ contract RocketDeposit is RocketBase {
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Remaining ether amount to match
-        uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
+        uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
         uint256 amountToMatch = chunkSize;
 
         // Get random node's minipool to assign chunk to
