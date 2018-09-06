@@ -34,15 +34,24 @@ contract RocketDeposit is RocketBase {
     // Create a new deposit
     function create(address _userID, address _groupID, string _stakingDurationID, uint256 _amount) public onlyLatestContract("rocketDepositAPI", msg.sender) {
 
-        // Get contracts
-        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-
         // Add deposit
         add(_userID, _groupID, _stakingDurationID, _amount);
 
         // Update queue balance
         uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID))).add(_amount);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _stakingDurationID)), queueBalance);
+
+        // Assign chunks
+        assignChunks(_stakingDurationID);
+
+    }
+
+
+    // Assign chunks while able
+    function assignChunks(string _stakingDurationID) private {
+
+        // Get contracts
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
 
         // Deposit settings
         uint256 chunkSize = 4 ether; //rocketDepositSettings.getDepositChunkSize();
