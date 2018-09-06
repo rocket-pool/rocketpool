@@ -33,8 +33,14 @@ contract RocketDeposit is RocketBase {
     /*** Methods ****************/
 
 
+    // Constructor
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
+
+
     // Create a new deposit
-    function create(address _userID, address _groupID, string _stakingDurationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) {
+    function create(address _userID, address _groupID, string _stakingDurationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
 
         // Check deposit amount
         require(msg.value > 0, "Invalid deposit amount sent");
@@ -52,6 +58,9 @@ contract RocketDeposit is RocketBase {
 
         // Assign chunks
         assignChunks(_stakingDurationID);
+
+        // Return success flag
+        return true;
 
     }
 

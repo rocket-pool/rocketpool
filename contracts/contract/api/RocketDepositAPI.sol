@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 
 import "../../RocketBase.sol";
 import "../../interface/api/RocketGroupAPIInterface.sol";
+import "../../interface/deposit/RocketDepositInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
@@ -16,6 +17,7 @@ contract RocketDepositAPI is RocketBase {
     /*** Contracts **************/
 
     RocketGroupAPIInterface rocketGroupAPI = RocketGroupAPIInterface(0);                                            // The group contract for the API
+    RocketDepositInterface rocketDeposit = RocketDepositInterface(0);                                               // Rocket Pool deposits contract
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);                       // The main settings contract for the API
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);                    // The main settings contract for minipools
 
@@ -94,7 +96,9 @@ contract RocketDepositAPI is RocketBase {
     function deposit(address _groupID, address _userID, string _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(bool) { 
         // Verify the deposit is acceptable
         if(getDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID)) {  
-            // TODO: Add in new deposit chunking queue mechanics
+            // Send and create deposit
+            rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
+            require(rocketDeposit.create.value(msg.value)(_userID, _groupID, _durationID), "Deposit could not be created");
             // All good? Fire the event for the new deposit
             emit Deposit(msg.sender, _userID, _groupID, _durationID, msg.value, now);   
             // Done
