@@ -1,7 +1,9 @@
 pragma solidity 0.4.24;
 
 import "./RocketBase.sol";
-import "./interface/RocketStorageInterface.sol";
+import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "./interface/settings/RocketMinipoolSettingsInterface.sol";
+import "./interface/utils/lists/AddressListStorageInterface.sol";
 
 
 
@@ -10,6 +12,11 @@ import "./interface/RocketStorageInterface.sol";
 contract RocketPool is RocketBase {
 
     /*** Contracts **************/
+
+
+    RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
+    AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);                        // Address list utility
 
   
     /*** Events ****************/
@@ -29,8 +36,28 @@ contract RocketPool is RocketBase {
 
     /*** Methods *************/
 
-   
 
+    /// @dev Create a minipool
+    function createMinipool(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+
+        // Get contracts
+        rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+
+        // Create minipool contract
+        uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
+
+        // Update minipool indexes
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", 0)), minipoolAddress);
+
+        // Return minipool address
+        return minipoolAddress;
+
+    }
 
 
     /*** UTILITIES ***********************************************/

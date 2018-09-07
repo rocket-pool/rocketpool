@@ -3,11 +3,11 @@ pragma solidity 0.4.24;
 // Contracts
 import "../../RocketBase.sol";
 // Interfaces
+import "../../interface/RocketPoolInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
-import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
@@ -26,11 +26,11 @@ contract RocketNodeAPI is RocketBase {
 
     /*** Contracts *************/
 
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);
     ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
-    RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
 
 
@@ -244,24 +244,22 @@ contract RocketNodeAPI is RocketBase {
             rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
             // Get the node contract
             rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
+            // Get Rocket Pool contract
+            rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
             // Get the deposit duration in blocks by using its ID
-            uint256 duration = rocketMinipoolSettings.getMinipoolStakingDuration(rocketNodeContract.getDepositReserveDurationID());
+            string memory durationID = rocketNodeContract.getDepositReserveDurationID();
             // Ether deposited
             uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
             // RPL deposited
             uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
             // How many minipools are we making? each should have half the casper amount from the node
             uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
-            // Store our minipool addresses
-            address[] memory minipools = new address[](minipoolAmount);
-            // Ok awesome, lets make a minipool for it - this will revert if minipool creation is disabled
-            rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
-            // Lets begin
+            // Create minipools
             for(uint8 i = 0; i < minipoolAmount; i++) {
-                // Build that bad boy  
-                minipools[i] = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, duration, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
+                // Create minipool
+                address minipoolAddress = rocketPool.createMinipool(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
                 // Check
-                emit FlagAddress(minipools[i]);
+                emit FlagAddress(minipoolAddress);
             }
             
         }
