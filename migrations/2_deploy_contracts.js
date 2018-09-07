@@ -49,6 +49,9 @@ contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol
 contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
 contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
 contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
+// Test interface contracts
+contracts.testLists = artifacts.require('./test/TestLists.sol');
+contracts.testQueues = artifacts.require('./test/TestQueues.sol');
 
 
 /*** Utility Methods *****************/

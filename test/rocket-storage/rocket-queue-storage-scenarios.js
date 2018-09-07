@@ -1,13 +1,18 @@
+// Dependencies
+import { TestQueues } from '../_lib/artifacts';
+
+
 // Retrieve a queue from storage
-async function getQueue(contract, key) {
+async function getQueue(prefix, key) {
+    const testQueues = await TestQueues.deployed();
 
     // Get queue length
-    let length = await contract.getQueueLength.call(key);
+    let length = await testQueues[`${prefix}_getQueueLength`].call(key);
 
     // Get queue items
     let items = [], item, index;
     for (index = 0; index < length; ++index) {
-        item = await contract.getQueueItem.call(key, index);
+        item = await testQueues[`${prefix}_getQueueItem`].call(key, index);
         if (item.constructor.name == 'BN') item = parseInt(item);
         items.push(item);
     }
@@ -19,16 +24,17 @@ async function getQueue(contract, key) {
 
 
 // Enqueue an item
-export async function scenarioEnqueueItem({contract, key, value, fromAddress, gas}) {
+export async function scenarioEnqueueItem({prefix, key, value, fromAddress, gas}) {
+    const testQueues = await TestQueues.deployed();
 
     // Get initial queue
-    let queue1 = await getQueue(contract, key);
+    let queue1 = await getQueue(prefix, key);
 
     // Enqueue item
-    await contract.enqueueItem(key, value, {from: fromAddress, gas: gas});
+    await testQueues[`${prefix}_enqueueItem`](key, value, {from: fromAddress, gas: gas});
 
     // Get updated queue
-    let queue2 = await getQueue(contract, key);
+    let queue2 = await getQueue(prefix, key);
 
     // Asserts
     assert.equal(queue2.length, queue1.length + 1, 'Queue length was not updated correctly');
@@ -41,16 +47,17 @@ export async function scenarioEnqueueItem({contract, key, value, fromAddress, ga
 
 
 // Dequeue an item
-export async function scenarioDequeueItem({contract, key, fromAddress, gas}) {
+export async function scenarioDequeueItem({prefix, key, fromAddress, gas}) {
+    const testQueues = await TestQueues.deployed();
 
     // Get initial queue
-    let queue1 = await getQueue(contract, key);
+    let queue1 = await getQueue(prefix, key);
 
     // Dequeue item
-    await contract.dequeueItem(key, {from: fromAddress, gas: gas});
+    await testQueues[`${prefix}_dequeueItem`](key, {from: fromAddress, gas: gas});
 
     // Get updated queue
-    let queue2 = await getQueue(contract, key);
+    let queue2 = await getQueue(prefix, key);
 
     // Asserts
     assert.equal(queue2.length, queue1.length - 1, 'Queue length was not updated correctly');
