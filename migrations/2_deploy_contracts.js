@@ -49,9 +49,6 @@ contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol
 contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
 contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
 contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
-// Test interface contracts
-contracts.testLists = artifacts.require('./test/TestLists.sol');
-contracts.testQueues = artifacts.require('./test/TestQueues.sol');
 
 
 /*** Utility Methods *****************/
@@ -83,6 +80,12 @@ module.exports = async (deployer, network) => {
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
+
+  // Only deploy test interface contracts on test networks
+  if ( network !== 'live' ) {
+    contracts.testLists = artifacts.require('./test/TestLists.sol');
+    contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+  }
  
   // Accounts
   const accounts = await web3.eth.getAccounts();
