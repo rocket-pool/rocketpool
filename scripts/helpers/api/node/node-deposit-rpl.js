@@ -16,7 +16,7 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
     // Validate arguments
-    if (args.length != 2) done('Incorrect number of arguments. Please enter: node contract address.');
+    if (args.length != 2) done('Incorrect number of arguments. Please enter: node contract address, rpl amount.');
     if (!Web3.utils.isAddress(args[0])) done('Node contract address is invalid.');
     if (isNaN(args[1])) done('Deposit amount (RPL) is invalid. Check event logs from deposit reservation for amount required.');
 

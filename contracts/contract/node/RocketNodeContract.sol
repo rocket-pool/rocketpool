@@ -25,10 +25,9 @@ contract RocketNodeContract {
     address private owner;                                                          // The node that created the contract
     uint8   public version;                                                         // Version of this contract
 
-    mapping (uint256 => DepositReservation) private depositReservations;            // Node operators deposit reservations
-    uint256 private lastDepositReservedTime = 0;                                    // Time of the last reserved deposit
+    DepositReservation private depositReservation;                                  // Node operator's deposit reservation
 
-    
+
     /*** Contracts ***************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
@@ -41,10 +40,10 @@ contract RocketNodeContract {
     /*** Structs ***************/
 
     struct DepositReservation {
-        string  depositID;              // The deposit duration (eg 3m, 6m etc)
+        string  durationID;             // The deposit duration (eg 3m, 6m etc)
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
-        uint256 rplRatio;               // Amount of RPL required per single ether deposited
+        uint256 rplRatio;               // Amount of RPL required per ether deposited
         uint256 created;                // The time this reservation was made
         bool exists;
     }
@@ -64,7 +63,7 @@ contract RocketNodeContract {
 
     event NodeDepositReservationCancelled (
         address indexed _from,                                              // Address that sent the deposit
-        uint256 lastDepositReservedTime,                                    // The time the reservation was made
+        uint256 reservedTime,                                               // The time the reservation was made
         uint256 created                                                     // The time this reservation was canned
     );
 
@@ -91,7 +90,7 @@ contract RocketNodeContract {
     modifier hasDepositReserved() {
         // Get the node settings
         rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
-        require(depositReservations[lastDepositReservedTime].exists == true && now < (lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Node does not have a current deposit reservation, please make one first before sending ether/rpl.");
+        require(depositReservation.exists && now < (depositReservation.created + rocketNodeSettings.getDepositReservationTime()), "Node does not have a current deposit reservation, please make one first before sending ether/rpl.");
         _;
     }
 
@@ -123,24 +122,24 @@ contract RocketNodeContract {
         return true;
     }
 
-    /// @dev Returns the time of the last deposit reservation
-    function getLastDepositReservedTime() public view returns(uint256) { 
-        return lastDepositReservedTime;
+    /// @dev Returns the time of the deposit reservation
+    function getDepositReservedTime() public hasDepositReserved() returns(uint256) { 
+        return depositReservation.created;
     }
 
     /// @dev Returns the current deposit reservation ether required
     function getDepositReserveEtherRequired() public hasDepositReserved() returns(uint256) { 
-        return depositReservations[lastDepositReservedTime].etherAmount;
+        return depositReservation.etherAmount;
     }
 
     /// @dev Returns the current deposit reservation RPL required
     function getDepositReserveRPLRequired() public hasDepositReserved() returns(uint256) { 
-        return depositReservations[lastDepositReservedTime].rplAmount;
+        return depositReservation.rplAmount;
     }
 
     /// @dev Returns the current deposit reservation duration set
     function getDepositReserveDurationID() public hasDepositReserved() returns(string) { 
-        return depositReservations[lastDepositReservedTime].depositID;
+        return depositReservation.durationID;
     }
 
     
@@ -158,20 +157,18 @@ contract RocketNodeContract {
        // Returns the amount of RPL required for a single ether
        uint256 rplRatio = rocketNodeAPI.getRPLRatio(_durationID); 
        // Verify the deposit is acceptable 
-       if(rocketNodeAPI.getDepositReservationIsValid(msg.sender, _amount, _durationID, rplRatio, lastDepositReservedTime)) {  
+       if(rocketNodeAPI.getDepositReservationIsValid(msg.sender, _amount, _durationID, rplRatio, depositReservation.created)) {  
             // How much RPL do we need for this deposit?
             uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
             // Record the reservation now
-            depositReservations[now] = DepositReservation({
-                depositID: _durationID,
+            depositReservation = DepositReservation({
+                durationID: _durationID,
                 etherAmount: _amount,
                 rplAmount: rplAmount,
                 rplRatio: rplRatio,
                 created: now,
                 exists: true
             });
-            // Save the last deposit reservation time
-            lastDepositReservedTime = now;
             // All good? Fire the event for the new deposit
             emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
             // Done
@@ -184,12 +181,12 @@ contract RocketNodeContract {
 
    /// @dev Cancel a deposit reservation that was made - only node owner
    function depositReserveCancel() public onlyNodeOwner() hasDepositReserved() returns(bool) { 
-        // Delete the struct
-        delete depositReservations[lastDepositReservedTime];  
+        // Get reservation time
+        uint256 reservationTime = depositReservation.created;
+        // Delete the reservation
+        delete depositReservation;
         // Log it
-        emit NodeDepositReservationCancelled(msg.sender, lastDepositReservedTime, now);
-        // Reset the last reserved time   
-        lastDepositReservedTime = 0;
+        emit NodeDepositReservationCancelled(msg.sender, reservationTime, now);
         // Done
         return true;
     }
@@ -206,8 +203,8 @@ contract RocketNodeContract {
         require(rplContract.approve(address(rocketNodeAPI), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
         // Verify the deposit is acceptable and create a minipool for it 
         if(rocketNodeAPI.deposit(owner)) {    
-            // Reset the last reserved time   
-            lastDepositReservedTime = 0;
+            // Delete the reservation
+            delete depositReservation;
             // Done
             return true;
         }
