@@ -16,10 +16,7 @@ console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
-// The owner
-const owner = web3.eth.coinbase;
-
 // Run tests
-rocketStorageTests({owner});
-rocketRPIP({owner});
+rocketStorageTests();
+rocketRPIP();
 

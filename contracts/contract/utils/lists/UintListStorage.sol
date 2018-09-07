@@ -4,7 +4,7 @@ pragma solidity 0.4.24;
 import "../../../RocketBase.sol";
 
 
-/// @title Address list storage helper for RocketStorage data
+/// @title Uint list storage helper for RocketStorage data
 /// @author Jake Pospischil
 contract UintListStorage is RocketBase {
 
@@ -18,10 +18,7 @@ contract UintListStorage is RocketBase {
 
     /// @dev RocketListStorage constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
-
-        // Set version
         version = 1;
-
     }
 
 

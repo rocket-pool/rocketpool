@@ -22,6 +22,7 @@ contract RocketDepositSettings is RocketBase {
             setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
+            setChunkAssignMax(1);                                                           // Max chunk assignments per transaction
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
@@ -54,6 +55,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max allowed deposit in Wei 
     function getDepositMax() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.max"))); 
+    }
+
+    /// @dev Max number of chunk assignments per transaction
+    function getChunkAssignMax() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax"))); 
     }
 
 
@@ -101,6 +107,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max allowed deposit in Wei 
     function setDepositMax(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.max")), _weiAmount); 
+    }
+
+    /// @dev Max number of chunk assignments per transaction
+    function setChunkAssignMax(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax")), _amount); 
     }
 
 

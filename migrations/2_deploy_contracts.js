@@ -19,6 +19,9 @@ contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
+// Deposit
+contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
+contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
 // Minipool
@@ -35,9 +38,17 @@ contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
 contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
 contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
+contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
 contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
 contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
 contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
+contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
+contracts.utilBoolQueueStorage = artifacts.require('./BoolQueueStorage.sol');
+contracts.utilBytesQueueStorage = artifacts.require('./BytesQueueStorage.sol');
+contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
+contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
+contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
+contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
 
 
 /*** Utility Methods *****************/
@@ -91,27 +102,24 @@ module.exports = async (deployer, network) => {
   const addContracts = async function() {
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
-        // Utilities do not need write access to storage
-        if(!contract.startsWith("util")){
-            // Log it
-            console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
-            console.log(contracts[contract].address);
-            // First register the contract address as being part of the network so we can do a validation check using just the address
-            await rocketStorageInstance.setAddress(
-              config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
-              contracts[contract].address
-            );
-            // Now register again that contracts name so we can retrieve it by name if needed
-            await rocketStorageInstance.setAddress(
-              config.web3.utils.soliditySha3('contract.name', contract),
-              contracts[contract].address
-            );
-            // Compress and store the ABI
-            await rocketStorageInstance.setString(
-              config.web3.utils.soliditySha3('contract.abi', contract),
-              compressABI(contracts[contract].abi)
-            );
-        }
+        // Log it
+        console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
+        console.log(contracts[contract].address);
+        // First register the contract address as being part of the network so we can do a validation check using just the address
+        await rocketStorageInstance.setAddress(
+          config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
+          contracts[contract].address
+        );
+        // Now register again that contracts name so we can retrieve it by name if needed
+        await rocketStorageInstance.setAddress(
+          config.web3.utils.soliditySha3('contract.name', contract),
+          contracts[contract].address
+        );
+        // Compress and store the ABI
+        await rocketStorageInstance.setString(
+          config.web3.utils.soliditySha3('contract.abi', contract),
+          compressABI(contracts[contract].abi)
+        );
       } 
     }
   };
