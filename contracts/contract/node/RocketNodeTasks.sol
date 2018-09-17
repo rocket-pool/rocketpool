@@ -63,6 +63,20 @@ contract RocketNodeTasks is RocketBase {
     }
 
 
+    /// @dev Get the total number of tasks
+    function getTaskCount() external returns (uint256) {
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        return addressListStorage.getListCount(keccak256("node.tasks"));
+    }
+
+
+    /// @dev Get a task contract address by index
+    function getTaskAt(uint256 _index) returns (address) {
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        return addressListStorage.getListItem(keccak256("node.tasks"), _index);
+    }
+
+
     /// @dev Add a new task to be performed on checkin
     /// @param _taskAddress The address of the task contract to be run
     /// @param _index The index to insert the task at; negative numbers denote the end of the queue
