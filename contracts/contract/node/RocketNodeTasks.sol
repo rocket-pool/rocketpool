@@ -76,7 +76,7 @@ contract RocketNodeTasks is RocketBase {
     /// @param _taskAddress The address of the task contract to be run
     function add(address _taskAddress) external onlySuperUser() returns (bool) {
         // Check task contract address
-        require(_taskAddress != 0x0);
+        require(_taskAddress != 0x0, "Invalid task contract address");
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Insert task contract address
@@ -103,7 +103,7 @@ contract RocketNodeTasks is RocketBase {
     /// @param _index The index of the checkin task to be updated
     function update(address _taskAddress, uint _index) external onlySuperUser() returns (bool) {
         // Check task contract address
-        require(_taskAddress != 0x0);
+        require(_taskAddress != 0x0, "Invalid task contract address");
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Update task contract address
