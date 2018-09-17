@@ -24,6 +24,7 @@ contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
 contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
+contracts.RocketNodeTasks = artifacts.require('./node/RocketNodeTasks.sol');
 // Minipool
 contracts.rocketMinipoolFactory = artifacts.require('./minipool/RocketMinipoolFactory.sol');
 // Settings

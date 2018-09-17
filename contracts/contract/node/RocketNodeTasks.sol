@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 
+import "../../RocketBase.sol";
 import "../../interface/node/RocketNodeTaskInterface.sol";
 import "../../interface/utils/lists/AddressListStorageInterface.sol";
 
@@ -44,7 +45,7 @@ contract RocketNodeTasks is RocketBase {
         uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
         for (uint256 i = 0; i < count; ++i) {
             RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
-            task.before(msg.sender);
+            task.beforeCheckin(msg.sender);
         }
     }
 
@@ -57,7 +58,7 @@ contract RocketNodeTasks is RocketBase {
         uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
         for (uint256 i = 0; i < count; ++i) {
             RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
-            task.after(msg.sender);
+            task.afterCheckin(msg.sender);
         }
     }
 
@@ -72,7 +73,7 @@ contract RocketNodeTasks is RocketBase {
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Get insertion index
         uint256 index;
-        if (_index > 0) { index = _index; }
+        if (_index > 0) { index = uint(_index); }
         else { index = addressListStorage.getListCount(keccak256("node.tasks")); }
         // Insert task contract address
         addressListStorage.insertListItem(keccak256("node.tasks"), index, _taskAddress);
