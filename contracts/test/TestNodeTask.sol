@@ -8,18 +8,18 @@ contract TestNodeTask is RocketBase {
 
 
     // Task name
-    string private name;
+    string private taskName;
 
     // Counter of times run per node
     mapping(address => uint256) public timesRun;
 
 
     // Constructor
-    constructor(string _name) public { name = _name; }
+    constructor(string _taskName) public { taskName = _taskName; }
 
 
     // Task name
-    function name() public returns (string) { return name; }
+    function name() public view returns (string) { return taskName; }
 
 
     // Run task
