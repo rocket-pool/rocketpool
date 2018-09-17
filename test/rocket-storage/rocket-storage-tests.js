@@ -1,6 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-//import { AddressListStorage, BoolListStorage, BytesListStorage, Bytes32ListStorage, IntListStorage, StringListStorage, UintListStorage } from '../_lib/artifacts';
-//import { AddressQueueStorage, BoolQueueStorage, BytesQueueStorage, Bytes32QueueStorage, IntQueueStorage, StringQueueStorage, UintQueueStorage } from '../_lib/artifacts';
+import { TestLists, TestQueues } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 import { scenarioEnqueueItem, scenarioDequeueItem } from './rocket-queue-storage-scenarios';
@@ -25,14 +24,15 @@ export default function() {
 
 
     // Run list tests by type
-    function listTests(name, contractArtifact, key, testValues, indexOfTests = true) {
+    function listTests(name, prefix, key, testValues, indexOfTests = true) {
         contract(name, async (accounts) => {
 
 
             // Contract dependencies
-            let contract;
+            let testLists;
             before(async () => {
-                contract = await contractArtifact.deployed();
+                testLists = await TestLists.deployed();
+                testLists.init();
             });
 
 
@@ -41,21 +41,21 @@ export default function() {
 
                 // Push items
                 await scenarioPushListItem({
-                    contract,
+                    prefix,
                     key,
                     value: testValues[0],
                     fromAddress: accounts[0],
                     gas: 500000,
                 });
                 await scenarioPushListItem({
-                    contract,
+                    prefix,
                     key,
                     value: testValues[1],
                     fromAddress: accounts[0],
                     gas: 500000,
                 });
                 await scenarioPushListItem({
-                    contract,
+                    prefix,
                     key,
                     value: testValues[2],
                     fromAddress: accounts[0],
@@ -64,8 +64,8 @@ export default function() {
 
                 // Test indexOf
                 if (indexOfTests) {
-                    let index1 = await contract.getListIndexOf(key, testValues[2]);
-                    let index2 = await contract.getListIndexOf(key, testValues[6]);
+                    let index1 = await testLists[`${prefix}_getListIndexOf`].call(key, testValues[2]);
+                    let index2 = await testLists[`${prefix}_getListIndexOf`].call(key, testValues[6]);
                     assert.equal(index1.valueOf(), 2, 'getListIndexOf returned incorrect index');
                     assert.equal(index2.valueOf(), -1, 'getListIndexOf returned index when value did not exist');
                 }
@@ -78,7 +78,7 @@ export default function() {
 
                 // Set item
                 await scenarioSetListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 1,
                     value: testValues[3],
@@ -88,7 +88,7 @@ export default function() {
 
                 // Set item at out of bounds index
                 await assertThrows(scenarioSetListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 99,
                     value: testValues[6],
@@ -104,7 +104,7 @@ export default function() {
 
                 // Insert item
                 await scenarioInsertListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 1,
                     value: testValues[4],
@@ -113,9 +113,9 @@ export default function() {
                 });
 
                 // Insert item at end of list
-                let count = await contract.getListCount.call(key);
+                let count = await testLists[`${prefix}_getListCount`].call(key);
                 await scenarioInsertListItem({
-                    contract,
+                    prefix,
                     key,
                     index: count,
                     value: testValues[5],
@@ -125,7 +125,7 @@ export default function() {
 
                 // Insert item at out of bounds index
                 await assertThrows(scenarioInsertListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 99,
                     value: testValues[6],
@@ -141,7 +141,7 @@ export default function() {
 
                 // Remove item
                 await scenarioRemoveOListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 2,
                     fromAddress: accounts[0],
@@ -150,7 +150,7 @@ export default function() {
 
                 // Remove item at out of bounds index
                 await assertThrows(scenarioRemoveOListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 99,
                     fromAddress: accounts[0],
@@ -165,7 +165,7 @@ export default function() {
 
                 // Remove item
                 await scenarioRemoveUListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 1,
                     fromAddress: accounts[0],
@@ -173,9 +173,9 @@ export default function() {
                 });
 
                 // Remove item at end of list
-                let count = await contract.getListCount.call(key);
+                let count = await testLists[`${prefix}_getListCount`].call(key);
                 await scenarioRemoveUListItem({
-                    contract,
+                    prefix,
                     key,
                     index: count - 1,
                     fromAddress: accounts[0],
@@ -184,7 +184,7 @@ export default function() {
 
                 // Remove an item at out of bounds index
                 await assertThrows(scenarioRemoveUListItem({
-                    contract,
+                    prefix,
                     key,
                     index: 99,
                     fromAddress: accounts[0],
@@ -199,14 +199,15 @@ export default function() {
 
 
     // Run queue tests by type
-    function queueTests(name, contractArtifact, key, testValues) {
+    function queueTests(name, prefix, key, testValues) {
         contract(name, async (accounts) => {
 
 
             // Contract dependencies
-            let contract;
+            let testQueues;
             before(async () => {
-                contract = await contractArtifact.deployed();
+                testQueues = await TestQueues.deployed();
+                testQueues.init();
             });
 
 
@@ -219,14 +220,14 @@ export default function() {
                 it(printTitle('-----', 'enqueue items'), async () => {
 
                     // Check queue capacity
-                    let capacity = parseInt(await contract.capacity.call()) - 1;
+                    let capacity = parseInt(await testQueues[`${prefix}_capacity`].call()) - 1;
                     assert.isTrue(runTestValues.length > capacity, 'Pre-check failed - more queue capacity than test values'); // Set contract queue capacity to 4 for testing
 
                     // Enqueue until full
                     let i;
                     for (i = 0; i < capacity; ++i) {
                         await scenarioEnqueueItem({
-                            contract,
+                            prefix,
                             key,
                             value: runTestValues[i],
                             fromAddress: accounts[0],
@@ -236,7 +237,7 @@ export default function() {
 
                     // Attempt enqueue
                     await assertThrows(scenarioEnqueueItem({
-                        contract,
+                        prefix,
                         key,
                         value: runTestValues[i],
                         fromAddress: accounts[0],
@@ -250,12 +251,12 @@ export default function() {
                 it(printTitle('-----', 'dequeue items'), async () => {
 
                     // Get queue length
-                    let length = parseInt(await contract.getQueueLength.call(key));
+                    let length = parseInt(await testQueues[`${prefix}_getQueueLength`].call(key));
 
                     // Dequeue until empty
                     for (let i = 0; i < length; ++i) {
                         await scenarioDequeueItem({
-                            contract,
+                            prefix,
                             key,
                             fromAddress: accounts[0],
                             gas: 500000,
@@ -264,7 +265,7 @@ export default function() {
 
                     // Attempt dequeue
                     await assertThrows(scenarioDequeueItem({
-                        contract,
+                        prefix,
                         key,
                         fromAddress: accounts[0],
                         gas: 500000,
@@ -279,9 +280,8 @@ export default function() {
     }
 
 
-    /*
     // Run list tests
-    listTests('AddressListStorage', AddressListStorage, web3.utils.soliditySha3('list.addresses'), [
+    listTests('AddressListStorage', 'address', web3.utils.soliditySha3('list.addresses'), [
         '0x0000000000000000000000000000000000000001',
         '0x0000000000000000000000000000000000000002',
         '0x0000000000000000000000000000000000000003',
@@ -290,7 +290,7 @@ export default function() {
         '0x0000000000000000000000000000000000000006',
         '0x0000000000000000000000000000000000000099',
     ]);
-    listTests('BoolListStorage', BoolListStorage, web3.utils.soliditySha3('list.bools'), [
+    listTests('BoolListStorage', 'bool', web3.utils.soliditySha3('list.bools'), [
         true,
         false,
         true,
@@ -299,7 +299,7 @@ export default function() {
         false,
         true,
     ], false);
-    listTests('BytesListStorage', BytesListStorage, web3.utils.soliditySha3('list.bytes'), [
+    listTests('BytesListStorage', 'bytes', web3.utils.soliditySha3('list.bytes'), [
         web3.utils.soliditySha3('test string 1'),
         web3.utils.soliditySha3('test string 2'),
         web3.utils.soliditySha3('test string 3'),
@@ -308,7 +308,7 @@ export default function() {
         web3.utils.soliditySha3('test string 6'),
         web3.utils.soliditySha3('test string 99'),
     ]);
-    listTests('Bytes32ListStorage', Bytes32ListStorage, web3.utils.soliditySha3('list.bytes32'), [
+    listTests('Bytes32ListStorage', 'bytes32', web3.utils.soliditySha3('list.bytes32'), [
         '0x0000000000000000000000000000000000000000000000000000000000000001',
         '0x0000000000000000000000000000000000000000000000000000000000000002',
         '0x0000000000000000000000000000000000000000000000000000000000000003',
@@ -317,7 +317,7 @@ export default function() {
         '0x0000000000000000000000000000000000000000000000000000000000000006',
         '0x0000000000000000000000000000000000000000000000000000000000000099',
     ]);
-    listTests('IntListStorage', IntListStorage, web3.utils.soliditySha3('list.ints'), [
+    listTests('IntListStorage', 'int', web3.utils.soliditySha3('list.ints'), [
         -1,
         2,
         -3,
@@ -326,7 +326,7 @@ export default function() {
         6,
         -99,
     ]);
-    listTests('StringListStorage', StringListStorage, web3.utils.soliditySha3('list.strings'), [
+    listTests('StringListStorage', 'string', web3.utils.soliditySha3('list.strings'), [
         'test string 1',
         'test string 2',
         'test string 3',
@@ -335,7 +335,7 @@ export default function() {
         'test string 6',
         'test string 99',
     ]);
-    listTests('UintListStorage', UintListStorage, web3.utils.soliditySha3('list.uints'), [
+    listTests('UintListStorage', 'uint', web3.utils.soliditySha3('list.uints'), [
         1,
         2,
         3,
@@ -346,7 +346,7 @@ export default function() {
     ]);
 
     // Run queue tests
-    queueTests('AddressQueueStorage', AddressQueueStorage, web3.utils.soliditySha3('queue.addresses'), [
+    queueTests('AddressQueueStorage', 'address', web3.utils.soliditySha3('queue.addresses'), [
         [
             '0x0000000000000000000000000000000000000001',
             '0x0000000000000000000000000000000000000002',
@@ -366,7 +366,7 @@ export default function() {
             '0x0000000000000000000000000000000000000012',
         ],
     ]);
-    queueTests('BoolQueueStorage', BoolQueueStorage, web3.utils.soliditySha3('queue.bools'), [
+    queueTests('BoolQueueStorage', 'bool', web3.utils.soliditySha3('queue.bools'), [
         [
             true,
             false,
@@ -386,7 +386,7 @@ export default function() {
             false,
         ],
     ]);
-    queueTests('BytesQueueStorage', BytesQueueStorage, web3.utils.soliditySha3('queue.bytes'), [
+    queueTests('BytesQueueStorage', 'bytes', web3.utils.soliditySha3('queue.bytes'), [
         [
             web3.utils.soliditySha3('test string 1'),
             web3.utils.soliditySha3('test string 2'),
@@ -406,7 +406,7 @@ export default function() {
             web3.utils.soliditySha3('test string 12'),
         ],
     ]);
-    queueTests('Bytes32QueueStorage', Bytes32QueueStorage, web3.utils.soliditySha3('queue.bytes32'), [
+    queueTests('Bytes32QueueStorage', 'bytes32', web3.utils.soliditySha3('queue.bytes32'), [
         [
             '0x0000000000000000000000000000000000000000000000000000000000000001',
             '0x0000000000000000000000000000000000000000000000000000000000000002',
@@ -426,7 +426,7 @@ export default function() {
             '0x0000000000000000000000000000000000000000000000000000000000000012',
         ],
     ]);
-    queueTests('IntQueueStorage', IntQueueStorage, web3.utils.soliditySha3('queue.ints'), [
+    queueTests('IntQueueStorage', 'int', web3.utils.soliditySha3('queue.ints'), [
         [
             -1,
             2,
@@ -446,7 +446,7 @@ export default function() {
             12,
         ],
     ]);
-    queueTests('StringQueueStorage', StringQueueStorage, web3.utils.soliditySha3('queue.strings'), [
+    queueTests('StringQueueStorage', 'string', web3.utils.soliditySha3('queue.strings'), [
         [
             'test string 1',
             'test string 2',
@@ -466,7 +466,7 @@ export default function() {
             'test string 12',
         ],
     ]);
-    queueTests('UintQueueStorage', UintQueueStorage, web3.utils.soliditySha3('queue.uints'), [
+    queueTests('UintQueueStorage', 'uint', web3.utils.soliditySha3('queue.uints'), [
         [
             1,
             2,
@@ -486,7 +486,6 @@ export default function() {
             12,
         ],
     ]);
-    */
 
 
 };

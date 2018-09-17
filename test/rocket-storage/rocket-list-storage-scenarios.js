@@ -1,13 +1,18 @@
+// Dependencies
+import { TestLists } from '../_lib/artifacts';
+
+
 // Retrieve a list from storage
-async function getList(contract, key) {
+async function getList(prefix, key) {
+    const testLists = await TestLists.deployed();
 
     // Get list count
-    let count = await contract.getListCount.call(key);
+    let count = await testLists[`${prefix}_getListCount`].call(key);
 
     // Get list items
     let items = [], item, index;
     for (index = 0; index < count; ++index) {
-        item = await contract.getListItem.call(key, index);
+        item = await testLists[`${prefix}_getListItem`].call(key, index);
         if (item.constructor.name == 'BN') item = parseInt(item);
         items.push(item);
     }
@@ -19,16 +24,17 @@ async function getList(contract, key) {
 
 
 // Push an item into a list
-export async function scenarioPushListItem({contract, key, value, fromAddress, gas}) {
+export async function scenarioPushListItem({prefix, key, value, fromAddress, gas}) {
+    const testLists = await TestLists.deployed();
 
     // Get initial list
-    let list1 = await getList(contract, key);
+    let list1 = await getList(prefix, key);
 
     // Push list item
-    await contract.pushListItem(key, value, {from: fromAddress, gas: gas});
+    await testLists[`${prefix}_pushListItem`](key, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(contract, key);
+    let list2 = await getList(prefix, key);
 
     // Asserts
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
@@ -41,16 +47,17 @@ export async function scenarioPushListItem({contract, key, value, fromAddress, g
 
 
 // Set a list item
-export async function scenarioSetListItem({contract, key, index, value, fromAddress, gas}) {
+export async function scenarioSetListItem({prefix, key, index, value, fromAddress, gas}) {
+    const testLists = await TestLists.deployed();
 
     // Get initial list
-    let list1 = await getList(contract, key);
+    let list1 = await getList(prefix, key);
 
     // Set list item
-    await contract.setListItem(key, index, value, {from: fromAddress, gas: gas});
+    await testLists[`${prefix}_setListItem`](key, index, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(contract, key);
+    let list2 = await getList(prefix, key);
 
     // Asserts
     assert.equal(list2.length, list1.length, 'List count was updated incorrectly');
@@ -64,16 +71,17 @@ export async function scenarioSetListItem({contract, key, index, value, fromAddr
 
 
 // Insert an item into a list
-export async function scenarioInsertListItem({contract, key, index, value, fromAddress, gas}) {
+export async function scenarioInsertListItem({prefix, key, index, value, fromAddress, gas}) {
+    const testLists = await TestLists.deployed();
 
     // Get initial list
-    let list1 = await getList(contract, key);
+    let list1 = await getList(prefix, key);
 
     // Insert list item
-    await contract.insertListItem(key, index, value, {from: fromAddress, gas: gas});
+    await testLists[`${prefix}_insertListItem`](key, index, value, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(contract, key);
+    let list2 = await getList(prefix, key);
 
     // Asserts
     assert.equal(list2.length, list1.length + 1, 'List count was not updated correctly');
@@ -87,16 +95,17 @@ export async function scenarioInsertListItem({contract, key, index, value, fromA
 
 
 // Remove an item from an ordered list
-export async function scenarioRemoveOListItem({contract, key, index, fromAddress, gas}) {
+export async function scenarioRemoveOListItem({prefix, key, index, fromAddress, gas}) {
+    const testLists = await TestLists.deployed();
 
     // Get initial list
-    let list1 = await getList(contract, key);
+    let list1 = await getList(prefix, key);
 
     // Insert list item
-    await contract.removeOrderedListItem(key, index, {from: fromAddress, gas: gas});
+    await testLists[`${prefix}_removeOrderedListItem`](key, index, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(contract, key);
+    let list2 = await getList(prefix, key);
 
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');
@@ -109,16 +118,17 @@ export async function scenarioRemoveOListItem({contract, key, index, fromAddress
 
 
 // Remove an item from an unordered list
-export async function scenarioRemoveUListItem({contract, key, index, fromAddress, gas}) {
+export async function scenarioRemoveUListItem({prefix, key, index, fromAddress, gas}) {
+    const testLists = await TestLists.deployed();
 
     // Get initial list
-    let list1 = await getList(contract, key);
+    let list1 = await getList(prefix, key);
 
     // Insert list item
-    await contract.removeUnorderedListItem(key, index, {from: fromAddress, gas: gas});
+    await testLists[`${prefix}_removeUnorderedListItem`](key, index, {from: fromAddress, gas: gas});
 
     // Get updated list
-    let list2 = await getList(contract, key);
+    let list2 = await getList(prefix, key);
 
     // Asserts
     assert.equal(list2.length, list1.length - 1, 'List count was not updated correctly');

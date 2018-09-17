@@ -22,8 +22,7 @@ contract StringQueueStorage is RocketBase {
 
 
     /// Settings
-    uint256 public constant capacity = 2 ** 255; // max uint256 / 2
-    //uint256 public constant capacity = 4;
+    uint256 public capacity = 2 ** 255; // max uint256 / 2
 
 
     /// @dev RocketQueueStorage constructor
@@ -68,6 +67,13 @@ contract StringQueueStorage is RocketBase {
         uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(1);
         if (start >= capacity) { start = start.sub(capacity); }
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "start")), start);
+    }
+
+
+    /// @dev Set storage capacity
+    /// @dev Accessible by test interface contracts only - capacity remains constant in production
+    function setCapacity(uint256 _value) onlyLatestContract("testQueues", msg.sender) external {
+        capacity = _value;
     }
 
 

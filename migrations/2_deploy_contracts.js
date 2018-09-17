@@ -80,6 +80,12 @@ module.exports = async (deployer, network) => {
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
+
+  // Only deploy test interface contracts on test networks
+  if ( network !== 'live' ) {
+    contracts.testLists = artifacts.require('./test/TestLists.sol');
+    contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+  }
  
   // Accounts
   const accounts = await web3.eth.getAccounts();
