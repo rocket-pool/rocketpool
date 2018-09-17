@@ -11,5 +11,5 @@ contract RocketNodeAPIInterface {
     function getRPLRequired(uint256 _weiAmount, string _durationID) public view returns(uint256);
     // Methods
     function add(string _timezoneLocation) public returns (bool);
-    function deposit(address _nodeOwner) public returns(bool);
+    function deposit(address _nodeOwner) public returns(address[]);
 }

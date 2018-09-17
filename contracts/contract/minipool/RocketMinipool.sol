@@ -71,11 +71,8 @@ contract RocketMinipool {
     /*** Events ****************/
 
     event NodeDeposit (
-        address indexed _from,                                  // Transferred from 
-        address indexed _to,                                    // Transferred to
-        bytes32 indexed _typeOf,                                // Cant have strings indexed due to unknown size, must use a fixed type size and convert string to keccak256
+        address indexed _from,                                  // Transferred from
         uint256 value,                                          // Value of the transfer
-        uint256 balance,                                        // Balance of the transfer
         uint256 created                                         // Creation timestamp
     );
 
@@ -208,6 +205,10 @@ contract RocketMinipool {
         require(msg.value == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
         // Check it is the correct amount passed when the minipool was created
         require(msg.value == node.depositEther, "Ether deposit size does not match the minipool amount set when it was created.");
+        // Set it now
+        node.depositEther = msg.value;
+        // Fire it
+        emit NodeDeposit(msg.sender, msg.value, now);
         // All good
         return true;
     }

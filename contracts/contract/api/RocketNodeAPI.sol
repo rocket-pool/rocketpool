@@ -237,7 +237,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Process a deposit into a nodes contract
     /// @param _nodeOwner  The address of the nodes owner
-    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
+    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(address[]) { 
         // Check the deposit is ready to go first
         if(getDepositIsValid(_nodeOwner)) {
             // Get the minipool settings contract
@@ -254,17 +254,16 @@ contract RocketNodeAPI is RocketBase {
             uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
             // How many minipools are we making? each should have half the casper amount from the node
             uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
+            // Store our minipool addresses
+            address[] memory minipools = new address[](minipoolAmount);
             // Create minipools
             for(uint8 i = 0; i < minipoolAmount; i++) {
-                // Create minipool
-                address minipoolAddress = rocketPool.createMinipool(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
-                // Check
-                emit FlagAddress(minipoolAddress);
+                // Build that bad boy
+                minipools[i] = rocketPool.createMinipool(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
             }
-            
+             // Return the minipool addresses
+            return minipools;
         }
-        // Safety
-        return false;
     }
 
 }

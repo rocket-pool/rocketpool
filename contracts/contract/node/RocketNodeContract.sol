@@ -4,6 +4,7 @@ pragma solidity 0.4.24;
 import "./../../interface/token/ERC20.sol";
 import "./../../interface/RocketStorageInterface.sol";
 import "./../../interface/api/RocketNodeAPIInterface.sol";
+import "./../../interface/minipool/RocketMinipoolInterface.sol";
 import "./../../interface/settings/RocketNodeSettingsInterface.sol";
 import "./../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
@@ -33,6 +34,7 @@ contract RocketNodeContract {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
+    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Minipool contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main minipool settings
 
@@ -201,8 +203,14 @@ contract RocketNodeContract {
         require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
         // It does, lets make the amount reserved for the nodeAPI ok to move
         require(rplContract.approve(address(rocketNodeAPI), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
-        // Verify the deposit is acceptable and create a minipool for it 
-        if(rocketNodeAPI.deposit(owner)) {    
+        // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
+        address[] memory minipools = rocketNodeAPI.deposit(owner);
+        // Did we make any?
+        if(minipools.length > 0) {   
+            // Transfer balances for each minipool
+            for(uint8 i = 0; i < minipools.length; i++) {
+                emit FlagAddress(minipools[i]);
+            }
             // Delete the reservation
             delete depositReservation;
             // Done
