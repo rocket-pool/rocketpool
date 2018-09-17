@@ -195,16 +195,25 @@ contract RocketMinipool {
 
     /*** NODE ***********************************************/
 
+
+    /// @dev Gets the amount of ether the node owner must deposit
+    function getNodeDepositEther() public view returns(uint256) {
+        return node.depositEther;
+    }
+    
+    /// @dev Gets the amount of RPL the node owner must deposit
+    function getNodeDepositRPL() public view returns(uint256) {
+        return node.depositRPL;
+    }
+
     /// @dev Set the ether deposit and check it
     function setNodeDeposit() public payable returns(bool) {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
-        // Check no deposit has been made already
-        require(node.depositEther == 0, "Node owner has already made their ether deposit.");
-        // Check it is half of what is required by Casper
-        require(msg.value == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
         // Check it is the correct amount passed when the minipool was created
         require(msg.value == node.depositEther, "Ether deposit size does not match the minipool amount set when it was created.");
+        // Check it is the correct amount passed when the minipool was created
+        require(address(this).balance >= node.depositEther, "Node owner has already made ether deposit for this minipool.");
         // Set it now
         node.depositEther = msg.value;
         // Fire it

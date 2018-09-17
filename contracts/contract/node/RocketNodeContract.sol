@@ -34,7 +34,7 @@ contract RocketNodeContract {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
-    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Minipool contract 
+    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                            // Minipool contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main minipool settings
 
@@ -202,14 +202,21 @@ contract RocketNodeContract {
         // Check the contract has sufficient RPL balance for the reserved deposit
         require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
         // It does, lets make the amount reserved for the nodeAPI ok to move
-        require(rplContract.approve(address(rocketNodeAPI), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
+        // require(rplContract.approve(address(this), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
         // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
         address[] memory minipools = rocketNodeAPI.deposit(owner);
         // Did we make any?
         if(minipools.length > 0) {   
             // Transfer balances for each minipool
             for(uint8 i = 0; i < minipools.length; i++) {
-                emit FlagAddress(minipools[i]);
+                // Get the minipool
+                rocketMinipool = RocketMinipoolInterface(minipools[i]);
+                // Transfer the ether to the minipool now
+                // TODO: Make this gas amount configurable in RocketNodeSettings
+                if (rocketMinipool.setNodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(50000)()) {
+                    emit FlagAddress(minipools[i]);
+                    emit FlagUint(rocketMinipool.getNodeDepositEther());
+                }
             }
             // Delete the reservation
             delete depositReservation;
