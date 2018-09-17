@@ -37,28 +37,15 @@ contract RocketNodeTasks is RocketBase {
     }
 
 
-    /// @dev Perform "before" checkin tasks
-    function runBefore() external onlyValidRocketNode(msg.sender) {
+    /// @dev Run all tasks
+    function run() external onlyValidRocketNode(msg.sender) {
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Run tasks
         uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
         for (uint256 i = 0; i < count; ++i) {
             RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
-            task.beforeCheckin(msg.sender);
-        }
-    }
-
-
-    /// @dev Perform "after" checkin tasks
-    function runAfter() external onlyValidRocketNode(msg.sender) {
-        // Get list storage
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        // Run tasks
-        uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
-        for (uint256 i = 0; i < count; ++i) {
-            RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
-            task.afterCheckin(msg.sender);
+            task.run(msg.sender);
         }
     }
 
@@ -71,7 +58,7 @@ contract RocketNodeTasks is RocketBase {
 
 
     /// @dev Get a task contract address by index
-    function getTaskAt(uint256 _index) returns (address) {
+    function getTaskAddressAt(uint256 _index) returns (address) {
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         return addressListStorage.getListItem(keccak256("node.tasks"), _index);
     }
@@ -79,18 +66,13 @@ contract RocketNodeTasks is RocketBase {
 
     /// @dev Add a new task to be performed on checkin
     /// @param _taskAddress The address of the task contract to be run
-    /// @param _index The index to insert the task at; negative numbers denote the end of the queue
-    function add(address _taskAddress, int _index) external onlySuperUser() returns (bool) {
+    function add(address _taskAddress) external onlySuperUser() returns (bool) {
         // Check task contract address
         require(_taskAddress != 0x0);
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        // Get insertion index
-        uint256 index;
-        if (_index > 0) { index = uint(_index); }
-        else { index = addressListStorage.getListCount(keccak256("node.tasks")); }
         // Insert task contract address
-        addressListStorage.insertListItem(keccak256("node.tasks"), index, _taskAddress);
+        addressListStorage.pushListItem(keccak256("node.tasks"), _taskAddress);
         // Return success flag
         return true;
     }
@@ -102,7 +84,7 @@ contract RocketNodeTasks is RocketBase {
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Remove checkin task
-        addressListStorage.removeOrderedListItem(keccak256("node.tasks"), _index);
+        addressListStorage.removeUnorderedListItem(keccak256("node.tasks"), _index);
         // Return success flag
         return true;
     }
