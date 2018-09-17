@@ -1,3 +1,4 @@
+import { printTitle, assertThrows } from '../_lib/utils/general';
 import { TestNodeTask } from '../_lib/artifacts';
 import { scenarioAddNodeTask } from './rocket-node-task-scenarios';
 
@@ -26,7 +27,7 @@ export default function() {
         // Owner can add a node task
         it(printTitle('owner', 'can add a node task'), async () => {
             await scenarioAddNodeTask({
-                taskAddress: testNodeTask1,
+                taskAddress: testNodeTask1.address,
                 fromAddress: owner,
                 gas: 500000,
             });
