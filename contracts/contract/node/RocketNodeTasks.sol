@@ -58,9 +58,17 @@ contract RocketNodeTasks is RocketBase {
 
 
     /// @dev Get a task contract address by index
-    function getTaskAddressAt(uint256 _index) returns (address) {
+    function getTaskAddressAt(uint256 _index) external returns (address) {
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         return addressListStorage.getListItem(keccak256("node.tasks"), _index);
+    }
+
+
+    /// @dev Get a task contract name by index
+    function getTaskNameAt(uint256 _index) external returns (string) {
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), _index));
+        return task.name();
     }
 
 
