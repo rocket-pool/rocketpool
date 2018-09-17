@@ -17,12 +17,48 @@ contract RocketNodeTasks is RocketBase {
     AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);
 
 
+    /*** Modifiers *************/
+
+
+    /// @dev requires that the _node address is a valid node in the Rocket Pool network
+    modifier onlyValidRocketNode(address _node) {
+        // TODO: implement
+        _;
+    }
+
+
     /*** Methods ****************/
 
 
     /// @dev Constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
+    }
+
+
+    /// @dev Perform "before" checkin tasks
+    function runBefore() external onlyValidRocketNode(msg.sender) {
+        // Get list storage
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        // Run tasks
+        uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
+        for (uint256 i = 0; i < count; ++i) {
+            RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
+            task.before(msg.sender);
+        }
+    }
+
+
+    /// @dev Perform "after" checkin tasks
+    function runAfter() external onlyValidRocketNode(msg.sender) {
+        // Get list storage
+        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        // Run tasks
+        uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
+        for (uint256 i = 0; i < count; ++i) {
+            RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
+            task.after(msg.sender);
+        }
     }
 
 

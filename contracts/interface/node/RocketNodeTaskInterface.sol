@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
 contract RocketNodeTaskInterface {
-    function before() public returns (bool);
-    function after() public returns (bool);
+    function before(address _nodeAddress) public returns (bool);
+    function after(address _nodeAddress) public returns (bool);
 }
