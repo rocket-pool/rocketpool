@@ -68,6 +68,14 @@ contract RocketNodeContract {
         uint256 reservedTime,                                               // The time the reservation was made
         uint256 created                                                     // The time this reservation was canned
     );
+    
+
+    event NodeDepositMinipool (
+        address indexed _minipool,                                          // Address of the minipool
+         string tokenType,                                                  // The type of deposit eg ETH / RPL
+        uint256 amount,                                                     // Amount deposit
+        uint256 created                                                     // The time of the deposit
+    );
 
     
     // TODO: Remove Flag Events
@@ -199,10 +207,10 @@ contract RocketNodeContract {
    function deposit() public payable hasDepositReserved() returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
+        // Get the node Settings
+        rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
         // Check the contract has sufficient RPL balance for the reserved deposit
         require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
-        // It does, lets make the amount reserved for the nodeAPI ok to move
-        // require(rplContract.approve(address(this), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
         // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
         address[] memory minipools = rocketNodeAPI.deposit(owner);
         // Did we make any?
@@ -211,11 +219,13 @@ contract RocketNodeContract {
             for(uint8 i = 0; i < minipools.length; i++) {
                 // Get the minipool
                 rocketMinipool = RocketMinipoolInterface(minipools[i]);
+                // Transfer the RPL to the minipool now - note: May have to look at manually setting gas here via a call
+                if (rplContract.transfer(minipools[i], rocketMinipool.getNodeDepositRPL())) {
+                    emit NodeDepositMinipool(minipools[i], "RPL", rocketMinipool.getNodeDepositRPL(), now);
+                } 
                 // Transfer the ether to the minipool now
-                // TODO: Make this gas amount configurable in RocketNodeSettings
-                if (rocketMinipool.setNodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(50000)()) {
-                    emit FlagAddress(minipools[i]);
-                    emit FlagUint(rocketMinipool.getNodeDepositEther());
+                if (rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(rocketNodeSettings.getDepositEtherGasLimit())()) {
+                    emit NodeDepositMinipool(minipools[i], "ETH", rocketMinipool.getNodeDepositEther(), now);
                 }
             }
             // Delete the reservation
