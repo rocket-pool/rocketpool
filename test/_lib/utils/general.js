@@ -140,7 +140,7 @@ export const TimeController = (() => {
         
         currentTime.add(seconds, 'seconds');
 
-        web3.currentProvider.sendAsync(
+        web3.currentProvider.send(
             {
                 jsonrpc: "2.0",
                 method: "evm_increaseTime",
@@ -152,6 +152,7 @@ export const TimeController = (() => {
     });
 
     const getCurrentTime = () => currentTime.clone();
+    const reset = () => { currentTime = moment(); };
     const addDays = (days) => addSeconds(days * 24 * 60 * 60);
     const addWeeks = (weeks) => addSeconds(weeks * 7 * 24 * 60 * 60);
     const addMonths = (months) => addSeconds(months * 28 * 24 * 60 * 60);
@@ -159,6 +160,7 @@ export const TimeController = (() => {
 
     return {
         getCurrentTime,
+        reset,
         addSeconds,
         addDays,
         addWeeks,
