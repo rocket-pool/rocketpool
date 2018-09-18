@@ -22,5 +22,5 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 rocketStorageTests();
 rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
-//rocketRPIP();
+rocketRPIP();
 
