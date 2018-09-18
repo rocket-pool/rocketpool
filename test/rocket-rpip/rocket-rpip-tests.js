@@ -7,7 +7,7 @@ import { RocketPIP } from '../_lib/artifacts';
 import { setupProposerRole } from './rocket-rpip-setup';
 import { scenarioCommitVotes, scenarioRevealVotes } from './rocket-rpip-scenarios';
 
-export default function ({ owner }) {
+export default function () {
 
     let rocketPIP;
 
@@ -51,6 +51,9 @@ export default function ({ owner }) {
     let voteQuorum = 10; // min 10% of total ether staked to pass    
 
     contract('RocketPIP - submit proposals', async (accounts) => {
+
+        // Owner address
+        const owner = accounts[0];
 
         // setup accounts
         let proposerAddress = accounts[1];
@@ -137,6 +140,10 @@ export default function ({ owner }) {
     });
 
     contract('RocketPIP - commit votes', async (accounts) => {
+
+        // Owner address
+        const owner = accounts[0];
+
         let proposalId = 1;
         let proposerAddress = accounts[1];
         let voter1Address = accounts[2];
@@ -192,6 +199,10 @@ export default function ({ owner }) {
     });
 
     contract('RocketPIP - reveal votes', async (accounts) => {
+
+        // Owner address
+        const owner = accounts[0];
+
         let proposalId = 1;
 
         let proposerAddress = accounts[1];
@@ -200,6 +211,8 @@ export default function ({ owner }) {
 
         before(async () => {
             rocketPIP = await RocketPIP.deployed();
+
+            TimeController.reset();
 
             await setupProposerRole({
                 fromAddress: owner,
@@ -341,6 +354,9 @@ export default function ({ owner }) {
 
     contract('RocketPIP - vote outcomes', async (accounts) => {
 
+        // Owner address
+        const owner = accounts[0];
+
         let proposalId = 1;
 
         let proposerAddress = accounts[1];
@@ -350,6 +366,8 @@ export default function ({ owner }) {
 
         before(async () => {
             rocketPIP = await RocketPIP.deployed();
+
+            TimeController.reset();
 
             await setupProposerRole({
                 fromAddress: owner,
