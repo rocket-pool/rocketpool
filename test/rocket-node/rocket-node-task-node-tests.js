@@ -15,6 +15,7 @@ export default function() {
         // TODO: use valid rocket pool nodes only
         const node1 = accounts[1];
         const node2 = accounts[2];
+        const node3 = accounts[3];
 
 
         // Deploy test node tasks
@@ -53,10 +54,64 @@ export default function() {
 
 
         // Run tasks
-        // TODO: initiate calls from valid rocket pool nodes only
-        it(printTitle('node', 'can run tasks'), async () => {
+        it(printTitle('node', 'running tasks'), async () => {
             await scenarioRunTasks({
                 fromAddress: node1,
+                gas: 500000,
+            });
+            await scenarioRunTasks({
+                fromAddress: node2,
+                gas: 500000,
+            });
+        });
+
+
+        // Remove node tasks
+        it(printTitle('-----', 'remove node tasks'), async () => {
+            await scenarioRemoveNodeTask({
+                taskIndex: 1,
+                fromAddress: owner,
+                gas: 500000,
+            });
+        });
+
+
+        // Run tasks
+        it(printTitle('node', 'running tasks'), async () => {
+            await scenarioRunTasks({
+                fromAddress: node2,
+                gas: 500000,
+            });
+            await scenarioRunTasks({
+                fromAddress: node3,
+                gas: 500000,
+            });
+        });
+
+
+        // Update node tasks
+        it(printTitle('-----', 'update node tasks'), async () => {
+            await scenarioUpdateNodeTask({
+                taskAddress: testNodeTask1v2.address,
+                taskIndex: 0,
+                fromAddress: owner,
+                gas: 500000,
+            });
+        });
+
+
+        // Run tasks
+        it(printTitle('node', 'running tasks'), async () => {
+            await scenarioRunTasks({
+                fromAddress: node1,
+                gas: 500000,
+            });
+            await scenarioRunTasks({
+                fromAddress: node2,
+                gas: 500000,
+            });
+            await scenarioRunTasks({
+                fromAddress: node3,
                 gas: 500000,
             });
         });
