@@ -1,10 +1,10 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { TestNodeTask } from '../_lib/artifacts';
-import { scenarioAddNodeTask, scenarioRemoveNodeTask, scenarioUpdateNodeTask } from './rocket-node-task-scenarios';
+import { RocketStorage, TestNodeTask } from '../_lib/artifacts';
+import { scenarioAddNodeTask, scenarioRemoveNodeTask, scenarioUpdateNodeTask } from './rocket-node-task-admin-scenarios';
 
 export default function() {
 
-    contract('RocketNodeTasks', async (accounts) => {
+    contract('RocketNodeTasks - Admin', async (accounts) => {
 
 
         // Owner account
@@ -12,6 +12,7 @@ export default function() {
 
 
         // Deploy test node tasks
+        let rocketStorage;
         let testNodeTask1;
         let testNodeTask2;
         let testNodeTask3;
@@ -19,12 +20,13 @@ export default function() {
         let testNodeTask1v2;
         let testNodeTask1v3;
         before(async () => {
-            testNodeTask1 = await TestNodeTask.new('NodeTask1', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask2 = await TestNodeTask.new('NodeTask2', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask3 = await TestNodeTask.new('NodeTask3', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask4 = await TestNodeTask.new('NodeTask4', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask1v2 = await TestNodeTask.new('NodeTask1v2', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask1v3 = await TestNodeTask.new('NodeTask1v3', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            rocketStorage = await RocketStorage.deployed();
+            testNodeTask1 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask2 = await TestNodeTask.new(rocketStorage.address, 'NodeTask2', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask3 = await TestNodeTask.new(rocketStorage.address, 'NodeTask3', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask4 = await TestNodeTask.new(rocketStorage.address, 'NodeTask4', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask1v2 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1v2', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask1v3 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1v3', {gas: 5000000, gasPrice: 10000000000, from: owner});
         });
 
 
