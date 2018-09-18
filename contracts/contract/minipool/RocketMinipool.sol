@@ -23,7 +23,8 @@ contract RocketMinipool {
     /**** Properties ***********/
 
     // General
-    uint8   public version;                                     // Version of this contract
+    uint8   public version = 1;                                     // Version of this contract
+    uint256 private status = 0;                                 // The current status of this pool, statuses are declared via Enum in the minipool settings
     Node    private node;                                       // Node this minipool is attached to, its creator 
     Staking private staking;                                    // Staking properties of the minipool to track
 
@@ -72,11 +73,13 @@ contract RocketMinipool {
 
     event NodeDeposit (
         address indexed _from,                                  // Transferred from
-        uint256 value,                                          // Value of the transfer
+        uint256 etherAmount,                                    // Amount of ETH
+        uint256 rplAmount,                                      // Amount of RPL
         uint256 created                                         // Creation timestamp
     );
 
-    event PoolCreated (
+    event PoolDestroyed (
+        address indexed _user,                                  // User that triggered the close
         address indexed _address,                               // Address of the pool
         uint256 created                                         // Creation timestamp
     );
@@ -142,8 +145,6 @@ contract RocketMinipool {
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is this node owner trusted?
     constructor(address _rocketStorageAddress, address _nodeOwner, uint256 _duration, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
-        // The current version of this pool
-        version = 1;
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Set the address of the Casper contract
@@ -195,6 +196,12 @@ contract RocketMinipool {
 
     /*** NODE ***********************************************/
 
+    // Getters
+
+    /// @dev Gets the node contract address
+    function getNodeContract() public view returns(address) {
+        return node.contractAddress;
+    }
 
     /// @dev Gets the amount of ether the node owner must deposit
     function getNodeDepositEther() public view returns(uint256) {
@@ -206,8 +213,10 @@ contract RocketMinipool {
         return node.depositRPL;
     }
 
-    /// @dev Set the ether deposit and check it
-    function setNodeDeposit() public payable returns(bool) {
+    // Methods
+
+    /// @dev Set the ether / rpl deposit and check it
+    function nodeDeposit() public payable returns(bool) {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
         // Check the RPL exists in the minipool now, should have been sent before the ether
@@ -218,18 +227,41 @@ contract RocketMinipool {
         require(address(this).balance >= node.depositEther, "Node owner has already made ether deposit for this minipool.");
         // Set it now
         node.depositEther = msg.value;
+        node.depositRPL = rplContract.balanceOf(address(this));
         // Fire it
-        emit NodeDeposit(msg.sender, msg.value, now);
+        emit NodeDeposit(msg.sender, msg.value,  rplContract.balanceOf(address(this)), now);
         // All good
         return true;
     }
 
+    /// @dev Node owner can close their minipool if the conditions are right
+    function nodeCloseMinipool() isNodeOwner(msg.sender) public {
+        // If there are users in this minipool, it cannot be closed, only empty ones can
+        require(userAddresses.length == 0, "Node cannot close minipool as it has users in it.");
+        // Only if its in its initial status - this probably shouldn't ever happen if its passed the first check, but check again
+        require(status == 0, "Minipool has an advanced status, cannot close.");
+        // Send back the RPL
+        require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer errror");
+        // Log it
+        emit PoolDestroyed(msg.sender, address(this), now);
+        // Close now and send the ether back
+        selfdestruct(node.contractAddress);
+    }
+
+
     /*** USERS ***********************************************/
+
+    // Getters
 
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
         return userAddresses.length;
     }
+
+
+    /*** MINIPOOL  ******************************************/
+
+  
 
    
 

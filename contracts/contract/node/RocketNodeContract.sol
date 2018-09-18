@@ -211,8 +211,6 @@ contract RocketNodeContract {
         rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
         // Check the contract has sufficient RPL balance for the reserved deposit
         require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
-        // It does, lets make the amount reserved for the nodeAPI ok to move
-        // require(rplContract.approve(address(this), getDepositReserveRPLRequired()), "Error approving the RPL transfer for this nodes contract.");
         // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
         address[] memory minipools = rocketNodeAPI.deposit(owner);
         // Did we make any?
@@ -224,9 +222,9 @@ contract RocketNodeContract {
                 // Transfer the RPL to the minipool now - note: May have to look at manually setting gas here via a call
                 if (rplContract.transfer(minipools[i], rocketMinipool.getNodeDepositRPL())) {
                     emit NodeDepositMinipool(minipools[i], "RPL", rocketMinipool.getNodeDepositRPL(), now);
-                }
+                } 
                 // Transfer the ether to the minipool now
-                if (rocketMinipool.setNodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(rocketNodeSettings.getDepositEtherGasLimit())()) {
+                if (rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(rocketNodeSettings.getDepositEtherGasLimit())()) {
                     emit NodeDepositMinipool(minipools[i], "ETH", rocketMinipool.getNodeDepositEther(), now);
                 }
             }
