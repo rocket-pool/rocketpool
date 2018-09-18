@@ -258,8 +258,8 @@ contract RocketNodeAPI is RocketBase {
             address[] memory minipools = new address[](minipoolAmount);
             // Create minipools
             for(uint8 i = 0; i < minipoolAmount; i++) {
-                // Build that bad boy
-                minipools[i] = rocketPool.createMinipool(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
+                // Build that bad boy 
+                minipools[i] = rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
             }
              // Return the minipool addresses
             return minipools;
