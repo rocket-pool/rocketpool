@@ -26,7 +26,7 @@ contract TestNodeTask is RocketBase {
 
 
     // Run task
-    function run(address _nodeAddress) public returns (bool) {
+    function run(address _nodeAddress) public onlyLatestContract("rocketNodeTasks", msg.sender) returns (bool) {
         timesRun[_nodeAddress] = timesRun[_nodeAddress] + 1;
     }
 
