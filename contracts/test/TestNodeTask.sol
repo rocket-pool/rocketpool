@@ -15,7 +15,10 @@ contract TestNodeTask is RocketBase {
 
 
     // Constructor
-    constructor(string _taskName) public { taskName = _taskName; }
+    constructor(address _rocketStorageAddress, string _taskName) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+        taskName = _taskName;
+    }
 
 
     // Task name
