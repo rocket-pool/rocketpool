@@ -50,7 +50,7 @@ contract RocketPool is RocketBase {
         // Update minipool indexes
         addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", 0)), minipoolAddress);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", uint256(0))), minipoolAddress);
         // Return minipool address
         return minipoolAddress;
     }
