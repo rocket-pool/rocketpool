@@ -1,6 +1,6 @@
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
-import rocketRPIP from './rocket-rpip/rocket-rpip-tests';
+import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 
 /**
  * Header
@@ -18,5 +18,5 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
 rocketStorageTests();
-rocketRPIP();
+rocketRPIPTests();
 
