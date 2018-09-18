@@ -75,10 +75,11 @@ contract RocketNodeTasks is RocketBase {
     /// @dev Add a new task to be performed on checkin
     /// @param _taskAddress The address of the task contract to be run
     function add(address _taskAddress) external onlySuperUser() returns (bool) {
-        // Check task contract address
-        require(_taskAddress != 0x0, "Invalid task contract address");
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        // Check task contract address
+        require(_taskAddress != 0x0, "Invalid task contract address");
+        require(addressListStorage.getListIndexOf(keccak256("node.tasks"), _taskAddress) == -1, "Task contract already in use");
         // Insert task contract address
         addressListStorage.pushListItem(keccak256("node.tasks"), _taskAddress);
         // Return success flag
@@ -102,10 +103,11 @@ contract RocketNodeTasks is RocketBase {
     /// @param _taskAddress The new address of the task contract to be run
     /// @param _index The index of the checkin task to be updated
     function update(address _taskAddress, uint _index) external onlySuperUser() returns (bool) {
-        // Check task contract address
-        require(_taskAddress != 0x0, "Invalid task contract address");
         // Get list storage
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        // Check task contract address
+        require(_taskAddress != 0x0, "Invalid task contract address");
+        require(addressListStorage.getListIndexOf(keccak256("node.tasks"), _taskAddress) == -1, "Task contract already in use");
         // Update task contract address
         addressListStorage.setListItem(keccak256("node.tasks"), _index, _taskAddress);
         // Return success flag

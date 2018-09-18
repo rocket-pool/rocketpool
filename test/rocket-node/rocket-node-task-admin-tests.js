@@ -60,6 +60,16 @@ export default function() {
         });
 
 
+        // Owner cannot add a node task that already exists
+        it(printTitle('owner', 'cannot add a node task with an existing address'), async () => {
+            await assertThrows(scenarioAddNodeTask({
+                taskAddress: testNodeTask1.address,
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Added a node task with an existing address');
+        });
+
+
         // Owner can remove a node task
         it(printTitle('owner', 'can remove a node task'), async () => {
             await scenarioRemoveNodeTask({
@@ -99,6 +109,17 @@ export default function() {
                 fromAddress: owner,
                 gas: 500000,
             }), 'Updated a node task with an invalid address');
+        });
+
+
+        // Owner cannot update a node task with an existing address
+        it(printTitle('owner', 'cannot update a node task with an existing address'), async () => {
+            await assertThrows(scenarioUpdateNodeTask({
+                taskAddress: testNodeTask3.address,
+                taskIndex: 0,
+                fromAddress: owner,
+                gas: 500000,
+            }), 'Updated a node task with an existing address');
         });
 
 
