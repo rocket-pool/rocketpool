@@ -210,6 +210,8 @@ contract RocketMinipool {
     function setNodeDeposit() public payable returns(bool) {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
+        // Check the RPL exists in the minipool now, should have been sent before the ether
+        require(rplContract.balanceOf(address(this)) >= node.depositRPL, "RPL deposit size does not match the minipool amount set when it was created.");
         // Check it is the correct amount passed when the minipool was created
         require(msg.value == node.depositEther, "Ether deposit size does not match the minipool amount set when it was created.");
         // Check it is the correct amount passed when the minipool was created
