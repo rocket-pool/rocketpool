@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./RocketBase.sol";
+import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressListStorageInterface.sol";
@@ -13,7 +14,7 @@ contract RocketPool is RocketBase {
 
     /*** Contracts **************/
 
-
+    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);                        // Address list utility
@@ -38,25 +39,71 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Create a minipool
-    function createMinipool(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
-
+    function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-
         // Create minipool contract
         uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
-
         // Update minipool indexes
         addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", 0)), minipoolAddress);
-
         // Return minipool address
         return minipoolAddress;
+    }
 
+    
+    /// @dev Destroy a minipool
+    function minipoolDestroy(address _minipool) public returns (bool) {
+        // Can we destroy it?
+        if(minipoolDestroyCheck(msg.sender, _minipool)) {
+            // Get contracts
+            /*
+            rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+            // Create minipool contract
+            uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+            address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
+            // Update minipool indexes
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", 0)), minipoolAddress);
+            */
+            // Return minipool address
+            return true;
+        }
+        // Safety
+        return false;
+    }
+
+
+    /// @dev Can we destroy this minipool? 
+    /// @param _sender The user requesting this check
+    /// @param _minipool The minipool to check
+    function minipoolDestroyCheck(address _sender, address _minipool) public returns (bool) {
+        // Get contracts
+        rocketMinipool = RocketMinipoolInterface(_minipool);
+        // Do some common global checks
+        // If there are users in this minipool, it cannot be closed, only empty ones can
+        require(rocketMinipool.getUserCount() == 0, "Cannot close minipool as it has users in it.");
+        // Get some common attributes
+        uint8 status = rocketMinipool.getStatus();
+        // Firstly we need to check if this is the node owner that created the minipool
+        if(_sender == rocketMinipool.getNodeOwner()) {
+            // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first check, but check again
+            require(status == 0, "Minipool has an advanced status, cannot close.");
+            // Ok that's the main checks
+            return true;
+        }else{
+            // Perform non-owner checks
+            // TODO: This will be built on more as we add user functionality to the new minipools, just checks for node owners if they can destroy atm
+        }
+        // Safety
+        return false;
     }
 
 

@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 
 // Interfaces
+import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
@@ -24,7 +25,7 @@ contract RocketMinipool {
 
     // General
     uint8   public version = 1;                                     // Version of this contract
-    uint256 private status = 0;                                 // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Status  private status;                                      // The current status of this pool, statuses are declared via Enum in the minipool settings
     Node    private node;                                       // Node this minipool is attached to, its creator 
     Staking private staking;                                    // Staking properties of the minipool to track
 
@@ -37,11 +38,18 @@ contract RocketMinipool {
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
 
     
     /*** Structs ***************/
+
+    struct Status {
+        uint8   current;                                        // The current status code, see RocketMinipoolSettings for more information
+        uint8   previous;                                       // The previous status code
+        uint256 changed;                                        // The time the status last changed
+    }
 
     struct Node {
         address owner;                                          // Etherbase address of the node which owns this minipool
@@ -130,7 +138,13 @@ contract RocketMinipool {
     /// @dev Only registered users with this pool
     /// @param _userAddress The users address.
     modifier isPoolUser(address _userAddress) {
-        //require(_userAddress != 0 && users[_userAddress].exists != false);
+        require(_userAddress != 0 && users[_userAddress].exists != false);
+        _;
+    }
+
+    /// @dev Only allow access from the latest version of the RocketPool contract
+    modifier onlyLatestRocketPool() {
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))), "Only the latest Rocket Pool contract can access this method.");
         _;
     }
 
@@ -182,21 +196,19 @@ contract RocketMinipool {
         return response; 
     }
 
-
-    /// @dev Returns the status of this pool
-    function getStatus() public view returns(uint256) {
-        //return status;
-    }
-
-    /// @dev Returns the time the status last changed to its current status
-    function getStatusChangeTime() public view returns(uint256) {
-        //return statusChangeTime;
-    }
     */
+
+   
+    
 
     /*** NODE ***********************************************/
 
     // Getters
+
+    /// @dev Gets the node contract address
+    function getNodeOwner() public view returns(address) {
+        return node.owner;
+    }
 
     /// @dev Gets the node contract address
     function getNodeContract() public view returns(address) {
@@ -235,17 +247,18 @@ contract RocketMinipool {
     }
 
     /// @dev Node owner can close their minipool if the conditions are right
-    function nodeCloseMinipool() isNodeOwner(msg.sender) public {
-        // If there are users in this minipool, it cannot be closed, only empty ones can
-        require(userAddresses.length == 0, "Node cannot close minipool as it has users in it.");
-        // Only if its in its initial status - this probably shouldn't ever happen if its passed the first check, but check again
-        require(status == 0, "Minipool has an advanced status, cannot close.");
-        // Send back the RPL
-        require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer errror");
-        // Log it
-        emit PoolDestroyed(msg.sender, address(this), now);
-        // Close now and send the ether back
-        selfdestruct(node.contractAddress);
+    function nodeCloseMinipool() public isNodeOwner(msg.sender) {
+        // Get the RP interfacce
+        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
+        // Check to see if the node owner can close 
+        if(rocketPool.minipoolDestroyCheck(msg.sender, address(this))) {
+            // Send back the RPL
+            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer errror");
+            // Log it
+            emit PoolDestroyed(msg.sender, address(this), now);
+            // Close now and send the ether back
+            selfdestruct(node.contractAddress);
+        }
     }
 
 
@@ -261,7 +274,51 @@ contract RocketMinipool {
 
     /*** MINIPOOL  ******************************************/
 
-  
+    // Getters
+
+    /// @dev Gets the current status of the minipool
+    function getStatus() public view returns(uint8) {
+        return status.current;
+    }
+
+     /// @dev Returns the time the status last changed to its current status
+    function getStatusChanged() public view returns(uint256) {
+        return status.changed;
+    }
+
+
+    // Methods
+
+    /*
+    /// @dev Closes the pool if the conditions are right
+    function canClosePool() public returns(bool) {
+        // TODO: Build on these conditions later as we integr
+        // Can only close pool when not staking or awaiting for stake to be returned from Casper
+        if (status != 2 && status != 3) {
+            // Set our status now - see RocketSettings.sol for pool statuses and keys
+            rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
+            // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
+            if (getUserCount() == 0) {
+                // Remove the pool from RocketHub via the latest RocketPool contract
+                RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
+                if (rocketPool.removePool()) {
+                    // Set the status now just incase self destruct fails for any reason
+                    status = 5;
+                    // Log any dust remaining from fractions being sent when the pool closes or 
+                    // ether left over from a users interest that have withdrawn all their ether as tokens already
+                    // Send these to the RPD token contract to help increase its liquidity 
+                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
+                    emit PoolTransfer(this, depositTokenContract, keccak256("poolClosing"), address(this).balance, 0, now);
+                    // Now self destruct and send any dust left over
+                    selfdestruct(depositTokenContract);
+                    // Done
+                    return true;
+                }
+            }
+        }
+        return false;
+    }*/
+
 
    
 

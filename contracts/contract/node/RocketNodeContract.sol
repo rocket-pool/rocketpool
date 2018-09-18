@@ -77,6 +77,12 @@ contract RocketNodeContract {
         uint256 created                                                     // The time of the deposit
     );
 
+    event NodeWithdraw (
+         string tokenType,                                                  // The type of deposit eg ETH / RPL
+        uint256 amount,                                                     // Amount to withdraw
+        uint256 created                                                     // The time of the withdrawal
+    );
+
     
     // TODO: Remove Flag Events
     event FlagAddress (
@@ -238,6 +244,11 @@ contract RocketNodeContract {
     }
 
 
+    /// @dev Withdraw ether from the contract
+    function withdrawEther() public onlyNodeOwner()  returns(bool) {
+
+
+    }
     
 
 }
