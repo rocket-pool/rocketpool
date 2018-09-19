@@ -22,27 +22,8 @@ contract RocketPool is RocketBase {
   
     /*** Events ****************/
 
-    event PoolCreated (
-        address indexed _address,
-        string  indexed _durationID,
-        uint256 created
-    );
-
-    event PoolRemoved (
-        address indexed _address,
-        uint256 created
-    );
-
-
        
     /*** Modifiers *************/
-
-    /// @dev Only registered minipool addresses can access
-    /// @param _minipoolAddress pool account address.
-    modifier onlyMiniPool(address _minipoolAddress) {
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))));
-        _;
-    }
     
        
     /*** Constructor *************/
@@ -51,21 +32,6 @@ contract RocketPool is RocketBase {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
-    }
-
-
-    /*** Getters *************/
-
-    /// @dev Check if this minipool exists in the network
-    /// @param _miniPoolAddress The address of the minipool to check exists
-    function getPoolExists(address _miniPoolAddress) view public returns(bool) {
-        return rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _miniPoolAddress)));
-    }
-
-    /// @dev Returns a count of the current minipools
-    function getPoolsCount() view public returns(uint256) {
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        return addressListStorage.getListCount(keccak256(abi.encodePacked("minipools.list")));
     }
     
 
@@ -81,55 +47,32 @@ contract RocketPool is RocketBase {
         // Create minipool contract
         uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
-        // Ok now set our data to key/value pair storage
-        rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), minipoolAddress);
-        // Fire the event
-        emit PoolCreated(minipoolAddress, _durationID, now);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
+        addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", uint256(0))), minipoolAddress);
         // Return minipool address
         return minipoolAddress;
     }
 
     
-    /// @dev Remove a minipool from storage - can only be called by minipools
-    function minipoolRemove(address _minipool) external onlyMiniPool(msg.sender) returns (bool) {
+    /// @dev Destroy a minipool
+    function minipoolDestroy(address _minipool) public returns (bool) {
         // Can we destroy it?
         if(minipoolDestroyCheck(msg.sender, _minipool)) {
             // Get contracts
             /*
-            rocketMinipool = RocketMinipoolInterface(_minipool);
+            rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
             addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-            // Get total minipools
-            uint256 minipoolsTotal = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.total")));
-            // Now remove this minipools data from storage
-            uint256 removedMinipoolIndex = rocketStorage.getUint(keccak256(abi.encodePacked("minipool.index", msg.sender)));
-            // Remove the existance flag
-            rocketStorage.deleteBool(keccak256("minipool.exists", msg.sender));
-            // Update total
-            minipoolsTotal = minipoolsTotal - 1;
-            rocketStorage.setUint(keccak256("minipools.total"), minipoolsTotal);
-            // Removed minipool before end of list - move last minipool to removed minipool index
-            if (removedMinipoolIndex < minipoolsTotal) {
-                address lastMinipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-                rocketStorage.setUint(keccak256("minipool.index", lastMinipoolAddress), removedMinipoolIndex);
-                rocketStorage.setAddress(keccak256("minipools.index.reverse", removedMinipoolIndex), lastMinipoolAddress);
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-            }
-            // Removed minipool at end of list - delete reverse lookup
-            else {
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", removedMinipoolIndex));
-            }
+            // Create minipool contract
+            uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+            address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
             // Update minipool indexes
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), _minipool);
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), _minipool);
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), _minipool); 
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
+            addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", 0)), minipoolAddress);
             */
-             // Fire the event
-            emit PoolRemoved(msg.sender, now);
             // Return minipool address
             return true;
         }
@@ -144,9 +87,7 @@ contract RocketPool is RocketBase {
     function minipoolDestroyCheck(address _sender, address _minipool) public returns (bool) {
         // Get contracts
         rocketMinipool = RocketMinipoolInterface(_minipool);
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Do some common global checks
-        require(rocketMinipoolSettings.getMinipoolClosingEnabled(), "Minipools are not currently allowed to be closed.");
         // If there are users in this minipool, it cannot be closed, only empty ones can
         require(rocketMinipool.getUserCount() == 0, "Cannot close minipool as it has users in it.");
         // Get some common attributes
@@ -155,12 +96,14 @@ contract RocketPool is RocketBase {
         if(_sender == rocketMinipool.getNodeOwner()) {
             // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first check, but check again
             require(status == 0, "Minipool has an advanced status, cannot close.");
+            // Ok that's the main checks
+            return true;
         }else{
             // Perform non-owner checks
             // TODO: This will be built on more as we add user functionality to the new minipools, just checks for node owners if they can destroy atm
         }
-        // If it passes all these checks and doesn't revert, it can close
-        return true;
+        // Safety
+        return false;
     }
 
 
