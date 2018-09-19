@@ -133,6 +133,16 @@ contract RocketNodeContract {
         return owner;
     }
 
+    /// @dev Returns the current ETH balance on the contract
+    function getBalanceETH() public view returns(uint256) { 
+        return address(this).balance;
+    }
+
+    /// @dev Returns the current RPL balance on the contract
+    function getBalanceRPL() public view returns(uint256) { 
+        return rplContract.balanceOf(address(this));
+    }
+
     /// @dev Returns true if there is a current deposit reservation
     function getHasDepositReservation() public hasDepositReserved() returns(bool) { 
         return true;
@@ -216,7 +226,7 @@ contract RocketNodeContract {
         // Get the node Settings
         rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
         // Check the contract has sufficient RPL balance for the reserved deposit
-        require(getDepositReserveRPLRequired() <= rplContract.balanceOf(address(this)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
+        require(getDepositReserveRPLRequired() <= getBalanceRPL(), "Node contract does not have enough RPL to cover the reserved ether deposit.");
         // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
         address[] memory minipools = rocketNodeAPI.deposit(owner);
         // Did we make any?
@@ -248,7 +258,7 @@ contract RocketNodeContract {
     /// @param _amount Amount of ether in wei they wish to withdraw
     function withdrawEther(uint256 _amount) public onlyNodeOwner() returns(bool) {
         // Check if they have enough
-        require(address(this).balance >= _amount, "Not enough ether in node contract for withdrawal size requested.");
+        require(getBalanceETH() >= _amount, "Not enough ether in node contract for withdrawal size requested.");
         // Lets send it back
         owner.transfer(_amount);
         // Done
@@ -259,7 +269,7 @@ contract RocketNodeContract {
     /// @param _amount Amount of RPL in wei they wish to withdraw
     function withdrawRPL(uint256 _amount) public onlyNodeOwner() returns(bool) {
         // Check if they have enough
-        require(rplContract.balanceOf(address(this)) >= _amount, "Not enough RPL in node contract for withdrawal size requested.");
+        require(getBalanceRPL() >= _amount, "Not enough RPL in node contract for withdrawal size requested.");
         // Lets send it back
         rplContract.transfer(owner, _amount);
         // Done
