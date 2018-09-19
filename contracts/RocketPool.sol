@@ -84,18 +84,12 @@ contract RocketPool is RocketBase {
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes
-<<<<<<< HEAD
         addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
         addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), minipoolAddress);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
-=======
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("node.minipools", _nodeOwner)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("duration.minipools", _durationID)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("status.minipools", uint256(0))), minipoolAddress);
->>>>>>> 87563c6bbeea743a8e8fb7c5217eb85be33d9406
         // Return minipool address
         return minipoolAddress;
     }
