@@ -623,6 +623,46 @@ export default function() {
         '0x0000000000000000000000000000000000000005',
         '0x0000000000000000000000000000000000000099',
     ]);
+    setTests('BytesSetStorage', 'bytes', web3.utils.soliditySha3('set.bytes'), [
+        web3.utils.soliditySha3('test string 1'),
+        web3.utils.soliditySha3('test string 2'),
+        web3.utils.soliditySha3('test string 3'),
+        web3.utils.soliditySha3('test string 4'),
+        web3.utils.soliditySha3('test string 5'),
+        web3.utils.soliditySha3('test string 99'),
+    ]);
+    setTests('Bytes32SetStorage', 'bytes32', web3.utils.soliditySha3('set.bytes32'), [
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000000000000000000000000000002',
+        '0x0000000000000000000000000000000000000000000000000000000000000003',
+        '0x0000000000000000000000000000000000000000000000000000000000000004',
+        '0x0000000000000000000000000000000000000000000000000000000000000005',
+        '0x0000000000000000000000000000000000000000000000000000000000000099',
+    ]);
+    setTests('IntSetStorage', 'int', web3.utils.soliditySha3('set.ints'), [
+        -1,
+        2,
+        -3,
+        4,
+        -5,
+        99,
+    ]);
+    setTests('StringSetStorage', 'string', web3.utils.soliditySha3('set.strings'), [
+        'test string 1',
+        'test string 2',
+        'test string 3',
+        'test string 4',
+        'test string 5',
+        'test string 99',
+    ]);
+    setTests('UintSetStorage', 'uint', web3.utils.soliditySha3('set.uints'), [
+        1,
+        2,
+        3,
+        4,
+        5,
+        99,
+    ]);
 
 
 };

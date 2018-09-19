@@ -51,6 +51,12 @@ contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
 contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
 contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
+contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
+contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
+contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
+contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
+contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
+contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
 
 
 /*** Utility Methods *****************/
