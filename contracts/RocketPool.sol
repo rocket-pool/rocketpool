@@ -63,9 +63,10 @@ contract RocketPool is RocketBase {
     }
 
     /// @dev Returns a count of the current minipools
-    function getPoolsCount() view public returns(uint256) {
+    /// @param _miniPoolList They key of a minipool list to return the count of eg minipools.list.node or minipools.list.duration
+    function getPoolsCount(string _miniPoolList) public returns(uint256) {
         addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        return addressListStorage.getListCount(keccak256(abi.encodePacked("minipools.list")));
+        return addressListStorage.getListCount(keccak256(abi.encodePacked(_miniPoolList)));
     }
     
 
@@ -103,27 +104,10 @@ contract RocketPool is RocketBase {
             /*
             rocketMinipool = RocketMinipoolInterface(_minipool);
             addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-            // Get total minipools
-            uint256 minipoolsTotal = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.total")));
-            // Now remove this minipools data from storage
-            uint256 removedMinipoolIndex = rocketStorage.getUint(keccak256(abi.encodePacked("minipool.index", msg.sender)));
             // Remove the existance flag
-            rocketStorage.deleteBool(keccak256("minipool.exists", msg.sender));
-            // Update total
-            minipoolsTotal = minipoolsTotal - 1;
-            rocketStorage.setUint(keccak256("minipools.total"), minipoolsTotal);
-            // Removed minipool before end of list - move last minipool to removed minipool index
-            if (removedMinipoolIndex < minipoolsTotal) {
-                address lastMinipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-                rocketStorage.setUint(keccak256("minipool.index", lastMinipoolAddress), removedMinipoolIndex);
-                rocketStorage.setAddress(keccak256("minipools.index.reverse", removedMinipoolIndex), lastMinipoolAddress);
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-            }
-            // Removed minipool at end of list - delete reverse lookup
-            else {
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", removedMinipoolIndex));
-            }
+            rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
             // Update minipool indexes
+            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.node", _minipool)));
             addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), _minipool);
             addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), _minipool);
             addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), _minipool); 

@@ -245,9 +245,25 @@ contract RocketNodeContract {
 
 
     /// @dev Withdraw ether from the contract
-    function withdrawEther() public onlyNodeOwner()  returns(bool) {
+    /// @param _amount Amount of ether in wei they wish to withdraw
+    function withdrawEther(uint256 _amount) public onlyNodeOwner() returns(bool) {
+        // Check if they have enough
+        require(address(this).balance >= _amount, "Not enough ether in node contract for withdrawal size requested.");
+        // Lets send it back
+        owner.transfer(_amount);
+        // Done
+        return true;
+    }
 
-
+    /// @dev Withdraw RPL from the contract
+    /// @param _amount Amount of RPL in wei they wish to withdraw
+    function withdrawRPL(uint256 _amount) public onlyNodeOwner() returns(bool) {
+        // Check if they have enough
+        require(rplContract.balanceOf(address(this)) >= _amount, "Not enough RPL in node contract for withdrawal size requested.");
+        // Lets send it back
+        rplContract.transfer(owner, _amount);
+        // Done
+        return true;
     }
     
 
