@@ -64,6 +64,7 @@ contract AddressSetStorage is RocketBase {
             rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", index)), lastItem);
             rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", lastItem)), index + 1);
         }
+        rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", _value)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "count")), count - 1);
     }
 

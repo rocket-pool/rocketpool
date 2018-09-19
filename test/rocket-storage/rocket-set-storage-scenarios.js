@@ -37,7 +37,11 @@ export async function scenarioAddItem({prefix, key, value, fromAddress, gas}) {
     let set2 = await getSet(prefix, key);
 
     // Asserts
-    
+    assert.equal(set2.length, set1.length + 1, 'Set count was not updated correctly');
+    assert.equal(set2[set2.length - 1], value, 'Value was not added correctly');
+    set1.forEach((item, index) => {
+        assert.equal(set1[index], set2[index], 'Set items changed which should not have');
+    });
 
 }
 
@@ -56,7 +60,12 @@ export async function scenarioRemoveItem({prefix, key, value, fromAddress, gas})
     let set2 = await getSet(prefix, key);
 
     // Asserts
-    
+    assert.equal(set2.length, set1.length - 1, 'Set count was not updated correctly');
+    assert.equal(set2.indexOf(value), -1, 'Value was not removed correctly');
+    set1.forEach((item, index) => {
+        if (item == value) return;
+        assert.notEqual(set2.indexOf(item), -1, 'Set items were removed and should not have been');
+    });
 
 }
 

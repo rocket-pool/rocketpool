@@ -384,6 +384,25 @@ export default function() {
             });
 
 
+            // Add removed items to a set
+            it(printTitle('-----', 'add removed items to a set'), async () => {
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[0],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[2],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+            });
+
+
         });
     }
 
