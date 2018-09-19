@@ -50,6 +50,13 @@ contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol
 contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
 contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
 contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
+contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
+contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
+contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
+contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
+contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
+contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
+contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
 
 
 /*** Utility Methods *****************/
@@ -86,6 +93,7 @@ module.exports = async (deployer, network) => {
   if ( network !== 'live' ) {
     contracts.testLists = artifacts.require('./test/TestLists.sol');
     contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+    contracts.testSets = artifacts.require('./test/TestSets.sol');
   }
  
   // Accounts
