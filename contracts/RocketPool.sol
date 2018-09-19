@@ -4,7 +4,7 @@ import "./RocketBase.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
-import "./interface/utils/lists/AddressListStorageInterface.sol";
+import "./interface/utils/lists/AddressSetStorageInterface.sol";
 
 
 
@@ -17,7 +17,7 @@ contract RocketPool is RocketBase {
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
-    AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);                        // Address list utility
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
 
   
     /*** Events ****************/
@@ -31,6 +31,16 @@ contract RocketPool is RocketBase {
     event PoolRemoved (
         address indexed _address,
         uint256 created
+    );
+
+
+    // TODO: Remove Flag Events
+    event FlagAddress (
+        address flag
+    );
+
+    event FlagUint (
+        uint256 flag
     );
 
 
@@ -65,8 +75,8 @@ contract RocketPool is RocketBase {
     /// @dev Returns a count of the current minipools
     /// @param _miniPoolList They key of a minipool list to return the count of eg minipools.list.node or minipools.list.duration
     function getPoolsCount(string _miniPoolList) public returns(uint256) {
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        return addressListStorage.getListCount(keccak256(abi.encodePacked(_miniPoolList)));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked(_miniPoolList)));
     }
     
 
@@ -78,17 +88,17 @@ contract RocketPool is RocketBase {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Create minipool contract
         uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
-        // Update minipool indexes
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
-        addressListStorage.pushListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), minipoolAddress);
+        // Update minipool indexes 
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress); 
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), minipoolAddress);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
