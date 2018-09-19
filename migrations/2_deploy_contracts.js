@@ -50,6 +50,7 @@ contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol
 contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
 contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
 contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
+contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
 
 
 /*** Utility Methods *****************/
@@ -86,6 +87,7 @@ module.exports = async (deployer, network) => {
   if ( network !== 'live' ) {
     contracts.testLists = artifacts.require('./test/TestLists.sol');
     contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+    contracts.testSets = artifacts.require('./test/TestSets.sol');
   }
  
   // Accounts

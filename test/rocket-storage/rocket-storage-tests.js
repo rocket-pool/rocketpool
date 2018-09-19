@@ -1,8 +1,9 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { TestLists, TestQueues } from '../_lib/artifacts';
+import { TestLists, TestQueues, TestSets } from '../_lib/artifacts';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
 import { scenarioEnqueueItem, scenarioDequeueItem } from './rocket-queue-storage-scenarios';
+import { scenarioAddItem, scenarioRemoveItem } from './rocket-set-storage-scenarios';
 
 export default function() {
 
@@ -280,6 +281,113 @@ export default function() {
     }
 
 
+    // Run set tests by type
+    function setTests(name, prefix, key, testValues) {
+        contract(name, async (accounts) => {
+
+
+            // Contract dependencies
+            let testSets;
+            before(async () => {
+                testSets = await TestSets.deployed();
+                testSets.init();
+            });
+
+
+            // Add items to a set
+            it(printTitle('-----', 'add items to a set'), async () => {
+
+                // Add items
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[0],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[1],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[2],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[3],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[4],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+
+                // Add an existing item
+                await assertThrows(scenarioAddItem({
+                    prefix,
+                    key,
+                    value: testValues[0],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                }), 'Added an existing item to a set');
+
+            });
+
+
+            // Remove items from a set
+            it(printTitle('-----', 'remove items from a set'), async () => {
+
+                // Remove items
+                await scenarioRemoveItem({
+                    prefix,
+                    key,
+                    value: testValues[2],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioRemoveItem({
+                    prefix,
+                    key,
+                    value: testValues[0],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+                await scenarioRemoveItem({
+                    prefix,
+                    key,
+                    value: testValues[4],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                });
+
+                // Remove a nonexistent item
+                await assertThrows(scenarioRemoveItem({
+                    prefix,
+                    key,
+                    value: testValues[5],
+                    fromAddress: accounts[0],
+                    gas: 500000,
+                }), 'Removed a nonexistent item from a set');
+
+            });
+
+
+        });
+    }
+
+
     // Run list tests
     listTests('AddressListStorage', 'address', web3.utils.soliditySha3('list.addresses'), [
         '0x0000000000000000000000000000000000000001',
@@ -485,6 +593,16 @@ export default function() {
             11,
             12,
         ],
+    ]);
+
+    // Run set tests
+    setTests('AddressSetStorage', 'address', web3.utils.soliditySha3('set.addresses'), [
+        '0x0000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000002',
+        '0x0000000000000000000000000000000000000003',
+        '0x0000000000000000000000000000000000000004',
+        '0x0000000000000000000000000000000000000005',
+        '0x0000000000000000000000000000000000000099',
     ]);
 
 

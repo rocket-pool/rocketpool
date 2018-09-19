@@ -9,4 +9,5 @@ export const RocketPIP = artifacts.require('./contract/RocketPIP');
 
 export const TestLists = artifacts.require('./test/TestLists');
 export const TestQueues = artifacts.require('./test/TestQueues');
+export const TestSets = artifacts.require('./test/TestSets');
 export const TestNodeTask = artifacts.require('./test/TestNodeTask');
