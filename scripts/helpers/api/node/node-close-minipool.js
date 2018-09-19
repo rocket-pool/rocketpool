@@ -38,11 +38,11 @@ module.exports = async (done) => {
         console.log("Node Contract RPL Balance Before: "+nodeContractRPLBalanceBefore);
 
         // close it
-        let gasEstimate = await rocketMinipool.nodeCloseMinipool.estimateGas({
+        let gasEstimate = await rocketMinipool.closePool.estimateGas({
             from: accounts[0]
         })
         // Perform RPL miniting
-        let result = await rocketMinipool.nodeCloseMinipool({
+        let result = await rocketMinipool.closePool({
             from: accounts[0],
             gas: gasEstimate
         });

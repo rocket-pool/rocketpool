@@ -9,6 +9,8 @@ contract RocketMinipoolInterface {
     function getNodeDepositRPL() public view returns(uint256);
     function getUserCount() public view returns(uint256);
     function getStatus() public view returns(uint8);
+    function getStakingDuration() public view returns(uint256);
     // Methods
     function nodeDeposit() public payable returns(bool);
+    function closePool() public returns(bool);
 }

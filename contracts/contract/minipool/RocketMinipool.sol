@@ -246,21 +246,6 @@ contract RocketMinipool {
         return true;
     }
 
-    /// @dev Node owner can close their minipool if the conditions are right
-    function nodeCloseMinipool() public isNodeOwner(msg.sender) {
-        // Get the RP interfacce
-        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
-        // Check to see if the node owner can close 
-        if(rocketPool.minipoolDestroyCheck(msg.sender, address(this))) {
-            // Send back the RPL
-            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer errror");
-            // Log it
-            emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send the ether back
-            selfdestruct(node.contractAddress);
-        }
-    }
-
 
     /*** USERS ***********************************************/
 
@@ -281,13 +266,38 @@ contract RocketMinipool {
         return status.current;
     }
 
-     /// @dev Returns the time the status last changed to its current status
+    /// @dev Returns the time the status last changed to its current status
     function getStatusChanged() public view returns(uint256) {
         return status.changed;
     }
 
+    /// @dev Returns the current staking duration in blocks
+    function getStakingDuration() public view returns(uint256) {
+        return staking.duration;
+    }
 
     // Methods
+    /// @dev All kids outta the pool
+    function closePool() public returns(bool) {
+        // Get the RP interface
+        rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
+        // Only the node owner or the RocketPool contract addresses can access this
+        // require(msg.sender != address(0x0) && (msg.sender == address(rocketPool) || msg.sender == node.owner), "Not authorised to close.");
+        // Check to see we're allowed to close this pool
+        if(rocketPool.minipoolDestroyCheck(msg.sender, address(this))) {
+            // Send back the RPL to the node owner
+            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
+            // Remove the minipool from storage
+            rocketPool.minipoolRemove(address(this));
+            // Log it
+            emit PoolDestroyed(msg.sender, address(this), now);
+            // Close now and send the ether back
+            selfdestruct(node.contractAddress); 
+        }
+        // Nope
+        return false;
+    }
+
 
     /*
     /// @dev Closes the pool if the conditions are right
