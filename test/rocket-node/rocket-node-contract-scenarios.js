@@ -32,3 +32,12 @@ export async function scenarioDepositReserveCancel({nodeContract, fromAddress, g
     assert.isTrue(reservationExists === false, 'Reservation was not cancelled successfully');
 
 }
+
+
+// Perform a deposit
+export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
+
+    // Deposit
+    await nodeContract.deposit({from: fromAddress, gas: gas, value: value});
+
+}

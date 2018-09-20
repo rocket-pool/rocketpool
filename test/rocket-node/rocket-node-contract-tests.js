@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketNodeSettings } from '../_lib/artifacts';
-import { scenarioDepositReserve, scenarioDepositReserveCancel } from './rocket-node-contract-scenarios';
+import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketNodeSettings, RocketPoolToken } from '../_lib/artifacts';
+import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit } from './rocket-node-contract-scenarios';
 
 export default function() {
 
@@ -14,13 +14,15 @@ export default function() {
 
         // Setup
         let rocketNodeSettings;
+        let rocketPoolToken;
         let nodeContract;
         let minDepositAmount;
         let maxDepositAmount;
         before(async () => {
 
-            // Initialise node settings
+            // Initialise contracts
             rocketNodeSettings = await RocketNodeSettings.deployed();
+            rocketPoolToken = await RocketPoolToken.deployed();
 
             // Create node contract
             let rocketNodeAPI = await RocketNodeAPI.deployed();
@@ -160,6 +162,89 @@ export default function() {
                 fromAddress: operator,
                 gas: 500000,
             }), 'Cancelled a nonexistant deposit reservation');
+        });
+
+
+        // Node operator cannot deposit without a reservation
+        it(printTitle('node operator', 'cannot deposit without a reservation'), async () => {
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: minDepositAmount,
+                fromAddress: operator,
+                gas: 7500000,
+            }), 'Deposited without a reservation');
+
+            // Reserve deposit
+            await scenarioDepositReserve({
+                nodeContract,
+                amount: minDepositAmount,
+                durationID: '3m',
+                fromAddress: operator,
+                gas: 500000,
+            });
+
+        });
+
+
+        // Node operator cannot deposit without depositing required RPL
+        it(printTitle('node operator', 'cannot deposit without required RPL'), async () => {
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: minDepositAmount,
+                fromAddress: operator,
+                gas: 7500000,
+            }), 'Deposited without paying required RPL');
+
+            // Deposit required RPL
+            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+            await rocketPoolToken.mint(nodeContract.address, rplRequired, {from: owner, gas: 500000});
+
+        });
+
+
+        // Node operator cannot deposit with insufficient ether
+        it(printTitle('node operator', 'cannot deposit with insufficient ether'), async () => {
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: Math.floor(minDepositAmount / 2),
+                fromAddress: operator,
+                gas: 7500000,
+            }), 'Deposited with insufficient ether');
+        });
+
+
+        // Node operator cannot deposit while deposits are disabled
+        it(printTitle('node operator', 'cannot deposit while deposits are disabled'), async () => {
+
+            // Disable deposits
+            await rocketNodeSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: minDepositAmount,
+                fromAddress: operator,
+                gas: 7500000,
+            }), 'Deposited while deposits are disabled');
+
+            // Re-enable deposits
+            await rocketNodeSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+
+        });
+
+
+        // Node operator can deposit
+        it(printTitle('node operator', 'can deposit'), async () => {
+            await scenarioDeposit({
+                nodeContract,
+                value: minDepositAmount,
+                fromAddress: accounts[2], // Allowed from any address
+                gas: 7500000,
+            });
         });
 
 
