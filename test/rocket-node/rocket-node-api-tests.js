@@ -4,7 +4,7 @@ import { scenarioAddNode } from './rocket-node-api-scenarios';
 
 export default function() {
 
-    contract('RocketNodeAPI - Creation', async (accounts) => {
+    contract('RocketNodeAPI', async (accounts) => {
 
 
         // Accounts
