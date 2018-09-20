@@ -13,6 +13,7 @@ export default function() {
 
 
         // Setup
+        let rocketNodeAPI;
         let rocketNodeSettings;
         let rocketPoolToken;
         let nodeContract;
@@ -21,11 +22,11 @@ export default function() {
         before(async () => {
 
             // Initialise contracts
+            rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
             rocketPoolToken = await RocketPoolToken.deployed();
 
             // Create node contract
-            let rocketNodeAPI = await RocketNodeAPI.deployed();
             let result = await rocketNodeAPI.add('Australia/Brisbane', {from: operator, gas: 7500000});
 
             // Get node contract instance
@@ -35,9 +36,9 @@ export default function() {
             // Get minipool launch & min deposit amounts
             let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
-            let miniPoolMaxLaunchCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
+            let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
             minDepositAmount = Math.floor(miniPoolLaunchAmount / 2);
-            maxDepositAmount = (minDepositAmount * miniPoolMaxLaunchCount);
+            maxDepositAmount = (minDepositAmount * miniPoolMaxCreateCount);
 
         });
 
@@ -171,7 +172,7 @@ export default function() {
             // Attempt deposit
             await assertThrows(scenarioDeposit({
                 nodeContract,
-                value: minDepositAmount,
+                value: maxDepositAmount,
                 fromAddress: operator,
                 gas: 7500000,
             }), 'Deposited without a reservation');
@@ -179,7 +180,7 @@ export default function() {
             // Reserve deposit
             await scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
                 gas: 500000,
@@ -194,7 +195,7 @@ export default function() {
             // Attempt deposit
             await assertThrows(scenarioDeposit({
                 nodeContract,
-                value: minDepositAmount,
+                value: maxDepositAmount,
                 fromAddress: operator,
                 gas: 7500000,
             }), 'Deposited without paying required RPL');
@@ -210,7 +211,7 @@ export default function() {
         it(printTitle('node operator', 'cannot deposit with insufficient ether'), async () => {
             await assertThrows(scenarioDeposit({
                 nodeContract,
-                value: Math.floor(minDepositAmount / 2),
+                value: Math.floor(maxDepositAmount / 2),
                 fromAddress: operator,
                 gas: 7500000,
             }), 'Deposited with insufficient ether');
@@ -226,7 +227,7 @@ export default function() {
             // Deposit
             await assertThrows(scenarioDeposit({
                 nodeContract,
-                value: minDepositAmount,
+                value: maxDepositAmount,
                 fromAddress: operator,
                 gas: 7500000,
             }), 'Deposited while deposits are disabled');
@@ -237,11 +238,20 @@ export default function() {
         });
 
 
+        // Node operator cannot call API deposit method directly
+        it(printTitle('node operator', 'cannot call API deposit method directly'), async () => {
+            await assertThrows(rocketNodeAPI.deposit(operator, {
+                from: operator,
+                gas: 7500000,
+            }), 'Called API deposit method directly');
+        });
+
+
         // Node operator can deposit
         it(printTitle('node operator', 'can deposit'), async () => {
             await scenarioDeposit({
                 nodeContract,
-                value: minDepositAmount,
+                value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
                 gas: 7500000,
             });
