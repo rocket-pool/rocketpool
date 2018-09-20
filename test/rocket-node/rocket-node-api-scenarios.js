@@ -10,10 +10,8 @@ export async function scenarioAddNode({timezone, fromAddress, gas}) {
     let result = await rocketNodeAPI.add(timezone, {from: fromAddress, gas: gas});
 
     // Asserts
-    assert.isTrue(
-        result.logs.length > 0 &&
-        result.logs[0].event == 'NodeAdd' &&
-        result.logs[0].args.ID.toLowerCase() == fromAddress.toLowerCase(),
+    assert.equal(
+        result.logs.filter(log => (log.event == 'NodeAdd' && log.args.ID.toLowerCase() == fromAddress.toLowerCase())).length, 1,
         'Node was not created successfully'
     );
 
