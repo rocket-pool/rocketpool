@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketNodeSettings } from '../_lib/artifacts';
-import { scenarioDepositReserve } from './rocket-node-contract-scenarios';
+import { scenarioDepositReserve, scenarioDepositReserveCancel } from './rocket-node-contract-scenarios';
 
 export default function() {
 
@@ -130,6 +130,36 @@ export default function() {
                 fromAddress: operator,
                 gas: 500000,
             }), 'Reserved multiple simultaneous deposits');
+        });
+
+
+        // Random account cannot cancel a deposit reservation
+        it(printTitle('random account', 'cannot cancel a deposit reservation'), async () => {
+            await assertThrows(scenarioDepositReserveCancel({
+                nodeContract,
+                fromAddress: accounts[2],
+                gas: 500000,
+            }), 'Random account cancelled a deposit reservation');
+        });
+
+
+        // Node operator can cancel a deposit reservation
+        it(printTitle('node operator', 'can cancel a deposit reservation'), async () => {
+            await scenarioDepositReserveCancel({
+                nodeContract,
+                fromAddress: operator,
+                gas: 500000,
+            });
+        });
+
+
+        // Node operator cannot cancel a nonexistant deposit reservation
+        it(printTitle('node operator', 'cannot cancel a nonexistant deposit reservation'), async () => {
+            await assertThrows(scenarioDepositReserveCancel({
+                nodeContract,
+                fromAddress: operator,
+                gas: 500000,
+            }), 'Cancelled a nonexistant deposit reservation');
         });
 
 

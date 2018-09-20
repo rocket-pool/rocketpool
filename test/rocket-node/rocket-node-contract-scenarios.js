@@ -15,3 +15,20 @@ export async function scenarioDepositReserve({nodeContract, amount, durationID, 
     assert.equal(reservationDurationID, durationID, 'Reservation duration ID is incorrect');
 
 }
+
+
+// Cancel a deposit reservation
+export async function scenarioDepositReserveCancel({nodeContract, fromAddress, gas}) {
+
+    // Cancel deposit reservation
+    await nodeContract.depositReserveCancel({from: fromAddress, gas: gas});
+
+    // Check deposit
+    let reservationExists;
+    try { await nodeContract.getHasDepositReservation.call(); }
+    catch (e) { reservationExists = false; }
+
+    // Asserts 
+    assert.isTrue(reservationExists === false, 'Reservation was not cancelled successfully');
+
+}
