@@ -76,7 +76,7 @@ contract RocketPool is RocketBase {
     /// @param _miniPoolList They key of a minipool list to return the count of eg minipools.list.node or minipools.list.duration
     function getPoolsCount(string _miniPoolList) public returns(uint256) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked(_miniPoolList)));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", _miniPoolList)));
     }
     
 
@@ -95,10 +95,10 @@ contract RocketPool is RocketBase {
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes 
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress); 
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.status", uint8(0))), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", stakingDuration)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
@@ -110,17 +110,17 @@ contract RocketPool is RocketBase {
     /// @param _from The address that requested the minipool removal on the minipool contract
     function minipoolRemove(address _from) external onlyMiniPool(msg.sender) returns (bool) {
         // Can we destroy it?
-        if(minipoolDestroyCheck(_from, msg.sender)) {
+        if(minipoolRemoveCheck(_from, msg.sender)) {
             // Get contracts
             rocketMinipool = RocketMinipoolInterface(msg.sender);
             addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
             // Update minipool indexes
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list")), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.status", rocketMinipool.getStatus())), msg.sender); 
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDuration())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender); 
              // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address
@@ -134,7 +134,7 @@ contract RocketPool is RocketBase {
     /// @dev Can we destroy this minipool? 
     /// @param _sender The user requesting this check
     /// @param _minipool The minipool to check
-    function minipoolDestroyCheck(address _sender, address _minipool) public returns (bool) {
+    function minipoolRemoveCheck(address _sender, address _minipool) public returns (bool) {
         // Get contracts
         rocketMinipool = RocketMinipoolInterface(_minipool);
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
