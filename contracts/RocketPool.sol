@@ -107,21 +107,20 @@ contract RocketPool is RocketBase {
 
     
     /// @dev Remove a minipool from storage - can only be called by minipools
-    function minipoolRemove(address _minipool) external onlyMiniPool(msg.sender) returns (bool) {
+    /// @param _from The address that requested the minipool removal on the minipool contract
+    function minipoolRemove(address _from) external onlyMiniPool(msg.sender) returns (bool) {
         // Can we destroy it?
-        if(minipoolDestroyCheck(msg.sender, _minipool)) {
+        if(minipoolDestroyCheck(_from, msg.sender)) {
             // Get contracts
-            /*
-            rocketMinipool = RocketMinipoolInterface(_minipool);
-            addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+            rocketMinipool = RocketMinipoolInterface(msg.sender);
+            addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
             // Update minipool indexes
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.node", _minipool)));
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), _minipool);
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), _minipool);
-            addressListStorage.removeUnorderedListItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), _minipool); 
-            */
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list")), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.status", uint256(rocketMinipool.getStatus()))), msg.sender); 
              // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address

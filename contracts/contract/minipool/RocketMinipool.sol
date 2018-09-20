@@ -281,8 +281,6 @@ contract RocketMinipool {
     function closePool() public returns(bool) {
         // Get the RP interface
         rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
-        // Only the node owner or the RocketPool contract addresses can access this
-        // require(msg.sender != address(0x0) && (msg.sender == address(rocketPool) || msg.sender == node.owner), "Not authorised to close.");
         // Check to see we're allowed to close this pool
         if(rocketPool.minipoolDestroyCheck(msg.sender, address(this))) {
             // Send back the RPL to the node owner
