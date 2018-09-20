@@ -98,7 +98,7 @@ contract RocketPool is RocketBase {
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list")), minipoolAddress); 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.node", _nodeOwner)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.duration", stakingDuration)), minipoolAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.status", uint256(0))), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.list.status", uint8(0))), minipoolAddress);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
@@ -120,7 +120,7 @@ contract RocketPool is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list")), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.node", rocketMinipool.getNodeOwner())), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.duration", rocketMinipool.getStakingDuration())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.status", uint256(rocketMinipool.getStatus()))), msg.sender); 
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.list.status", rocketMinipool.getStatus())), msg.sender); 
              // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address

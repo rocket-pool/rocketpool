@@ -13,10 +13,10 @@ contract RocketMinipoolSettings is RocketBase {
     /*** Enums ***************/
 
     // Pool statuses are defined here and converted to uint when setting, their corresponding uint value is commented below
-    enum PoolMiniStatuses { 
-        PreLaunchAcceptingDeposits, // 0 - Accepting deposits for the pool, users can deposit multiple times and it will update their balance
-        PreLaunchCountdown,         // 1 - The minimum required for this pool to start staking has been met and the countdown to start staking has started, users can withdraw their deposit if they change their mind during this time but cannot deposit more
-        Staking,                    // 2 - The countdown has passed and the pool is now staking, users cannot deposit or withdraw until the minimum staking period has passed for their pool
+    enum MinipoolStatuses { 
+        Initialised,                // 0 - A new minipool instance created by a node with their ether/rpl on it, has not been assigned any users yet and can be removed by the node owner if desired.
+        PreLaunch,                  // 1 - Minipool has been assigned user(s) ether but not enough to begin staking yet. Users can withdraw their ether at this point if they change their mind. Node owners cannot withdraw their ether/rpl.
+        Staking,                    // 2 - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration.
         LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
         Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
         Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
@@ -31,7 +31,7 @@ contract RocketMinipoolSettings is RocketBase {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
-            setMinipoolDefaultStatus(uint256(PoolMiniStatuses.PreLaunchAcceptingDeposits));     // The default status for newly created mini pools
+            setMinipoolDefaultStatus(uint256(MinipoolStatuses.Initialised));                    // The default status for newly created mini pools
             setMinipoolLaunchAmount(32 ether);                                                  // The exact Wei required for a pool to launch
             setMinipoolCountDown(240);                                                          // The block count to stay in countdown before staking begins - Default is 240 (1hr)
             setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
