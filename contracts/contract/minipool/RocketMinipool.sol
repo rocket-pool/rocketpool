@@ -5,8 +5,10 @@ pragma solidity 0.4.24;
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/api/RocketDepositAPIInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
+import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
@@ -42,6 +44,8 @@ contract RocketMinipool {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
     RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);                      // The Rocket Pool deposit API
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
+    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
@@ -77,10 +81,12 @@ contract RocketMinipool {
         uint256 balance;                                        // Chunk balance deposited
          int256 rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
-        uint256 fees;                                           // TODO: Add separate fees for RP/Group
+        uint256 feeRP;                                          // Rocket Pools fee
+        uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
     }
+
 
       
     /*** Events ****************/
@@ -148,15 +154,9 @@ contract RocketMinipool {
         _;
     }
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
-        require(msg.sender == getContractAddress("rocketPool"), "Only the latest Rocket Pool contract can access this method.");
-        _;
-    }
-
-    /// @dev Only allow access from the latest version of the RocketDeposit contract
-    modifier onlyLatestRocketDeposit() {
-        require(msg.sender == getContractAddress("rocketDeposit"), "Only the latest Rocket Deposit contract can access this method.");
+    /// @dev Only allow access from the latest version of the specified Rocket Pool contract
+    modifier onlyLatestContract(string _contract) {
+        require(msg.sender == getContractAddress(_contract), "Only the latest specified Rocket Pool contract can access this method.");
         _;
     }
 
@@ -321,12 +321,18 @@ contract RocketMinipool {
     /// @param _user New user address
     /// @param _groupID The 3rd party group the user belongs too
     /// @param _groupDepositor The 3rd party group address that is making this deposit
-    function deposit(address _user, address _groupID, address _groupDepositor) public payable returns(bool) {
+    function deposit(address _user, address _groupID, address _groupDepositor) public payable onlyLatestContract("rocketDeposit") returns(bool) {
         // Add this user if they are not currently in this minipool
-        // Load contract
+        addUser(_user, _groupID);
+        // Load contracts
         rocketDepositAPI = RocketDepositAPIInterface(getContractAddress("rocketDepositAPI"));
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Verify deposit is ok
         if(rocketDepositAPI.getDepositIsValid(msg.value, _groupDepositor, users[_user].groupID, _user, staking.id)) {
+            // Make sure we are accepting deposits
+            require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
+            // Make sure this deposit won't put us over the amount needed by casper, this shouldn't happen if chunking is working correctly, but double check
+            require(address(this).balance <= rocketMinipoolSettings.getMinipoolLaunchAmount(), "Deposit will overload minipools ether requirement for Casper.");
             // Add to their balance
             users[_user].balance = users[_user].balance.add(msg.value);
             // All good? Fire the event for the new deposit
@@ -340,10 +346,14 @@ contract RocketMinipool {
 
     /// @dev Register a new user in the minipool
     /// @param _user New user address
-    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupID The 3rd party group address the user belongs too
     function addUser(address _user, address _groupID) private returns(bool) {
         // Address exists?
         require(_user != address(0x0), "User address invalid.");
+        // Get the users group contract 
+        rocketGroupContract = RocketGroupContractInterface(_groupID);
+        // Get the group settings
+        rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -354,7 +364,8 @@ contract RocketMinipool {
                 balance: 0,
                 rewards: 0,
                 depositTokens: 0,
-                fees: 0,
+                feeRP: rocketGroupSettings.getDefaultFee(),
+                feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now
             });
@@ -362,6 +373,8 @@ contract RocketMinipool {
             userAddresses.push(_user);
             // Fire the event
             emit UserAdded(_user, now);
+            // Update the status of the pool
+            updateStatus();
             // Success
             return true;
         }
@@ -390,11 +403,23 @@ contract RocketMinipool {
         return staking.duration;
     }
 
+
+    // Setters
+
+    /// @dev Change the status
+    /// @param _newStatus status id to apply to the minipool
+    function setStatus(uint8 _newStatus) private {
+        // Fire the event if the status has changed
+        if (_newStatus != status.current) {
+            status.previous = status.current;
+            status.current = _newStatus;
+            status.changed = now;
+            emit StatusChange(status.current, status.previous, status.changed);
+        }
+    }
+    
     
     // Methods
-
-    
-
 
     /// @dev All kids outta the pool
     function closePool() public returns(bool) {
@@ -416,35 +441,33 @@ contract RocketMinipool {
     }
 
 
-    /*
-    /// @dev Closes the pool if the conditions are right
-    function canClosePool() public returns(bool) {
-        // TODO: Build on these conditions later as we integr
-        // Can only close pool when not staking or awaiting for stake to be returned from Casper
-        if (status != 2 && status != 3) {
-            // Set our status now - see RocketSettings.sol for pool statuses and keys
-            rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-            // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
-            if (getUserCount() == 0) {
-                // Remove the pool from RocketHub via the latest RocketPool contract
-                RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-                if (rocketPool.removePool()) {
-                    // Set the status now just incase self destruct fails for any reason
-                    status = 5;
-                    // Log any dust remaining from fractions being sent when the pool closes or 
-                    // ether left over from a users interest that have withdrawn all their ether as tokens already
-                    // Send these to the RPD token contract to help increase its liquidity 
-                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
-                    emit PoolTransfer(this, depositTokenContract, keccak256("poolClosing"), address(this).balance, 0, now);
-                    // Now self destruct and send any dust left over
-                    selfdestruct(depositTokenContract);
-                    // Done
-                    return true;
-                }
-            }
+    /// @dev Sets the status of the pool based on its current parameters 
+    function updateStatus() public returns(bool) {
+        // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Check to see if we can close the pool
+        if (closePool()) {
+            return true;
         }
-        return false;
-    }*/
+        // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
+        if (getUserCount() == 0 && status.current <= 1) {
+            // No users, reset the status to awaiting deposits
+            setStatus(0);
+            // Done
+            return;
+        }
+        // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Users can withdraw their ether at this point if they change their mind. Node owners cannot withdraw their ether/rpl.
+        if (getUserCount() == 1 && status.current == 0) {
+            // Prelaunch
+            setStatus(1);
+            // Done
+            return;
+        }
+        // Done
+        return; 
+    }
+
+    
 
 
    

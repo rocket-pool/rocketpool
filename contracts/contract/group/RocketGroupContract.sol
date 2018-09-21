@@ -13,7 +13,7 @@ contract RocketGroupContract {
     /**** Properties ***********/
 
     address public owner;                                                       // The group owner that created the contract
-    uint8 public version;                                                       // Version of this contract
+    uint8   public version;                                                     // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     
 
@@ -67,10 +67,12 @@ contract RocketGroupContract {
         return feePerc;
     }
 
-    /// @dev Get the fee that Rocket Pool charges for this group
-    function getFeePercRocketPool() public view returns(uint256) { 
+    /// @dev Get the fee that Rocket Pool charges for this group given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function getFeePercRocketPool() public returns(uint256) { 
+        // Get the settings
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
         // Get the RP fee
-        rocketStorage.getUint(keccak256(abi.encodePacked("group.fee", address(this))));
+        return rocketGroupSettings.getDefaultFee();
     }
 
 

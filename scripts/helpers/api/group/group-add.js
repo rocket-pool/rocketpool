@@ -13,7 +13,7 @@ module.exports = async (done) => {
     let args = process.argv.splice(4);
 
       // Validate arguments
-    if (args.length != 2) done('Incorrect number of arguments. Please enter: group ID, name, fee.');
+    if (args.length != 2) done('Incorrect number of arguments. Please enter: name, fee.');
     if (isNaN(args[1])) done('Fee amount (ETH) is invalid.');
 
     // Parse arguments
@@ -42,7 +42,7 @@ module.exports = async (done) => {
             console.log('EVENT: '+event['event'], );
             console.log('********************************');
             Object.keys(event['args']).forEach(arg => {
-                console.log(' - '+arg+': ', event['args'][arg].valueOf());
+                console.log(' - '+arg+': ', BN.isBN(event['args'][arg].valueOf()) ? new BN(event['args'][arg].valueOf(), 18).toString() : event['args'][arg].valueOf());
             });
         });;
         console.log('********************************');
