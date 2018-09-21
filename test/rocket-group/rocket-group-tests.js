@@ -62,6 +62,18 @@ export default function() {
         });
 
 
+        // Group owner cannot add a group with an invalid staking fee
+        it(printTitle('group owner', 'cannot add a group with an invalid staking fee'), async () => {
+            await assertThrows(scenarioAddGroup({
+                name: 'Group 2',
+                stakingFee: web3.utils.toWei('1.05', 'ether'),
+                value: newGroupFee,
+                fromAddress: groupOwner,
+                gas: 7500000,
+            }), 'Added a group with an invalid staking fee');
+        });
+
+
         // Group owner cannot add a group with an invalid registration fee
         it(printTitle('group owner', 'cannot add a group with an invalid registration fee'), async () => {
 
