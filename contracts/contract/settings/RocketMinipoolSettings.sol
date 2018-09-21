@@ -42,7 +42,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
             setMinipoolBackupCollectDuration(526000);                                           // The block count limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit - 3months default
             setMinipoolNewEnabled(true);                                                        // Minipools allowed to be created?
-            setMinipoolNewMaxAtOnce(3);                                                         // How many minipools are allowed to be created at once? keep gas block limit in mind
+            setMinipoolNewMaxAtOnce(2);                                                         // How many minipools are allowed to be created at once? keep gas block limit in mind
             setMinipoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
             setMinipoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
