@@ -5,8 +5,10 @@ pragma solidity 0.4.24;
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/api/RocketDepositAPIInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
+import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
@@ -42,6 +44,8 @@ contract RocketMinipool {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
     RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);                      // The Rocket Pool deposit API
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
+    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
@@ -77,10 +81,12 @@ contract RocketMinipool {
         uint256 balance;                                        // Chunk balance deposited
          int256 rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
-        uint256 fees;                                           // TODO: Add separate fees for RP/Group
+        uint256 feeRP;                                          // Rocket Pools fee
+        uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
     }
+
 
       
     /*** Events ****************/
@@ -323,6 +329,7 @@ contract RocketMinipool {
     /// @param _groupDepositor The 3rd party group address that is making this deposit
     function deposit(address _user, address _groupID, address _groupDepositor) public payable returns(bool) {
         // Add this user if they are not currently in this minipool
+        addUser(_user, _groupID);
         // Load contract
         rocketDepositAPI = RocketDepositAPIInterface(getContractAddress("rocketDepositAPI"));
         // Verify deposit is ok
@@ -340,10 +347,14 @@ contract RocketMinipool {
 
     /// @dev Register a new user in the minipool
     /// @param _user New user address
-    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupID The 3rd party group address the user belongs too
     function addUser(address _user, address _groupID) private returns(bool) {
         // Address exists?
         require(_user != address(0x0), "User address invalid.");
+        // Get the users group contract 
+        rocketGroupContract = RocketGroupContractInterface(_groupID);
+        // Get the group settings
+        rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -354,7 +365,8 @@ contract RocketMinipool {
                 balance: 0,
                 rewards: 0,
                 depositTokens: 0,
-                fees: 0,
+                feeRP: rocketGroupSettings.getDefaultFee(),
+                feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now
             });
