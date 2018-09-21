@@ -1,6 +1,8 @@
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketGroupTests from './rocket-group/rocket-group-tests';
+import rocketNodeAPITests from './rocket-node/rocket-node-api-tests';
+import rocketNodeContractTests from './rocket-node/rocket-node-contract-tests';
 import rocketNodeTaskAdminTests from './rocket-node/rocket-node-task-admin-tests';
 import rocketNodeTaskNodeTests from './rocket-node/rocket-node-task-node-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
@@ -21,6 +23,8 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 // Run tests
 rocketStorageTests();
 rocketGroupTests();
+rocketNodeAPITests();
+rocketNodeContractTests();
 rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
 rocketRPIPTests();

@@ -4,6 +4,7 @@ pragma solidity 0.4.24;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/api/RocketDepositAPIInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
 import "../../interface/token/ERC20.sol";
@@ -24,8 +25,8 @@ contract RocketMinipool {
     /**** Properties ***********/
 
     // General
-    uint8   public version = 1;                                     // Version of this contract
-    Status  private status;                                      // The current status of this pool, statuses are declared via Enum in the minipool settings
+    uint8   public version = 1;                                 // Version of this contract
+    Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
     Node    private node;                                       // Node this minipool is attached to, its creator 
     Staking private staking;                                    // Staking properties of the minipool to track
 
@@ -40,6 +41,7 @@ contract RocketMinipool {
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
+    RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);                      // The Rocket Pool deposit API
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
@@ -62,18 +64,20 @@ contract RocketMinipool {
     }
 
     struct Staking {
+         string id;                                             // Duration ID
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
     }
 
     struct User {
-        address userAddress;                                    // Address of the user
-        address userAddressBackup;                              // Users backup withdrawal address
+        address user;                                           // Address of the user
+        address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
-        uint256 balance;                                        // Balance deposited
+        uint256 balance;                                        // Chunk balance deposited
          int256 rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
+        uint256 fees;                                           // TODO: Add separate fees for RP/Group
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
     }
@@ -104,7 +108,7 @@ contract RocketMinipool {
     );
     
     event UserAdded (
-        address indexed _userAddress,                           // Users address
+        address indexed _user,                           // Users address
         uint256 created                                         // Creation timestamp
     );
 
@@ -138,9 +142,9 @@ contract RocketMinipool {
     }
 
     /// @dev Only registered users with this pool
-    /// @param _userAddress The users address.
-    modifier isPoolUser(address _userAddress) {
-        require(_userAddress != 0 && users[_userAddress].exists != false);
+    /// @param _user The users address.
+    modifier isPoolUser(address _user) {
+        require(_user != 0 && users[_user].exists != false);
         _;
     }
 
@@ -150,14 +154,12 @@ contract RocketMinipool {
         _;
     }
 
-    /// @dev Deposits are verified by the main pool, but must also be verified here to meet this pools conditions
-    modifier isAcceptableDeposit {
-        // Get the hub contract instance
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Only allow a users account to be incremented if the pool is in the default status which is PreLaunchAcceptingDeposits
-        // require(status == rocketMinipoolSettings.getMiniPoolDefaultStatus() && msg.value > 0, "");
+    /// @dev Only allow access from the latest version of the RocketDeposit contract
+    modifier onlyLatestRocketDeposit() {
+        require(msg.sender == getContractAddress("rocketDeposit"), "Only the latest Rocket Deposit contract can access this method.");
         _;
     }
+
 
 
     /*** Methods *************/
@@ -165,13 +167,15 @@ contract RocketMinipool {
     /// @dev minipool constructor
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
-    /// @param _duration Staking duration in blocks 
+    /// @param _durationID Staking duration ID (eg 3m, 6m etc)
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is this node owner trusted?
-    constructor(address _rocketStorageAddress, address _nodeOwner, uint256 _duration, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string _durationID, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        // Get minipool settings
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the address of the Casper contract
         casperDeposit = CasperDepositInterface(getContractAddress("casperDeposit"));
         // Add the RPL contract address
@@ -183,7 +187,8 @@ contract RocketMinipool {
         node.trusted = _trusted;
         node.contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
         // Set the initial staking properties
-        staking.duration = _duration;
+        staking.id = _durationID;
+        staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
     }
     
     /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
@@ -275,8 +280,8 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _userAddress) public view returns(bool) {
-        return users[_userAddress].exists;
+    function getUserExists(address _user) public view returns(bool) {
+        return users[_user].exists;
     }
 
     /// @dev Returns the users original address specified for withdrawals
@@ -290,24 +295,79 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
-    function getUserBackupAddressOK(address _userAddress, address _userBackupAddress) public view isPoolUser(_userAddress) returns(bool) {
-        return usersBackupAddress[_userBackupAddress] == _userAddress ? true : false;
+    function getUserBackupAddressOK(address _user, address _userBackupAddress) public view isPoolUser(_user) returns(bool) {
+        return usersBackupAddress[_userBackupAddress] == _user ? true : false;
     }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
-    function getUserHasDeposit(address _userAddress) public view returns(bool) {
-        return users[_userAddress].exists && users[_userAddress].balance > 0 ? true : false;
+    function getUserHasDeposit(address _user) public view returns(bool) {
+        return users[_user].exists && users[_user].balance > 0 ? true : false;
     }
 
     /// @dev Returns the amount of the users deposit
-    function getUserDeposit(address _userAddress) public view isPoolUser(_userAddress) returns(uint256) {
-        return users[_userAddress].balance;
+    function getUserDeposit(address _user) public view isPoolUser(_user) returns(uint256) {
+        return users[_user].balance;
     }
 
     /// @dev Returns the amount of the deposit tokens the user has taken out
-    function getUserDepositTokens(address _userAddress) public view isPoolUser(_userAddress) returns(uint256) {
-        return users[_userAddress].depositTokens;
+    function getUserDepositTokens(address _user) public view isPoolUser(_user) returns(uint256) {
+        return users[_user].depositTokens;
     }
+
+
+    // Methods
+
+    /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
+    /// @param _user New user address
+    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupDepositor The 3rd party group address that is making this deposit
+    function deposit(address _user, address _groupID, address _groupDepositor) public payable returns(bool) {
+        // Add this user if they are not currently in this minipool
+        // Load contract
+        rocketDepositAPI = RocketDepositAPIInterface(getContractAddress("rocketDepositAPI"));
+        // Verify deposit is ok
+        if(rocketDepositAPI.getDepositIsValid(msg.value, _groupDepositor, users[_user].groupID, _user, staking.id)) {
+            // Add to their balance
+            users[_user].balance = users[_user].balance.add(msg.value);
+            // All good? Fire the event for the new deposit
+            emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
+            // If all went well
+            return true;
+        }
+        return false;
+        
+    }
+
+    /// @dev Register a new user in the minipool
+    /// @param _user New user address
+    /// @param _groupID The 3rd party group the user belongs too
+    function addUser(address _user, address _groupID) private returns(bool) {
+        // Address exists?
+        require(_user != address(0x0), "User address invalid.");
+        // Check the user isn't already registered
+        if (users[_user].exists == false) {
+            // Add the new user to the mapping of User structs
+            users[_user] = User({
+                user: _user,
+                backup: 0,
+                groupID: _groupID,
+                balance: 0,
+                rewards: 0,
+                depositTokens: 0,
+                fees: 0,
+                exists: true,
+                created: now
+            });
+            // Store our node address so we can iterate over it if needed
+            userAddresses.push(_user);
+            // Fire the event
+            emit UserAdded(_user, now);
+            // Success
+            return true;
+        }
+        return false;
+    }
+
 
 
     /*** MINIPOOL  ******************************************/
@@ -333,6 +393,7 @@ contract RocketMinipool {
     
     // Methods
 
+    
 
 
     /// @dev All kids outta the pool
@@ -340,7 +401,7 @@ contract RocketMinipool {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Check to see we're allowed to close this pool
-        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) {
+        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) { 
             // Send back the RPL to the node owner
             require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
             // Remove the minipool from storage
