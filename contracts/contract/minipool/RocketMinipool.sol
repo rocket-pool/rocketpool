@@ -337,6 +337,8 @@ contract RocketMinipool {
             users[_user].balance = users[_user].balance.add(msg.value);
             // All good? Fire the event for the new deposit
             emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
+            // Update the status
+            updateStatus();
             // If all went well
             return true;
         }
@@ -460,6 +462,18 @@ contract RocketMinipool {
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
             setStatus(1);
+            // Done
+            return;
+        }
+        // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration.
+        if (getUserCount() > 0 && status.current == 1 && rocketMinipoolSettings.getMinipoolLaunchAmount() == address(this).balance) {
+            // If the node is not trusted, double check to make sure it has the correct RPL balance
+            if(!node.trusted ) {
+                require(rplContract.balanceOf(address(this)) == node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
+            }
+            // TODO: send deposit to Casper contract
+            // Prelaunch
+            setStatus(2);
             // Done
             return;
         }
