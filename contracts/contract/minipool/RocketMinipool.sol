@@ -368,6 +368,8 @@ contract RocketMinipool {
             userAddresses.push(_user);
             // Fire the event
             emit UserAdded(_user, now);
+            // Update the status of the pool
+            updateStatus();
             // Success
             return true;
         }
@@ -396,11 +398,23 @@ contract RocketMinipool {
         return staking.duration;
     }
 
+
+    // Setters
+
+    /// @dev Change the status
+    /// @param _newStatus status id to apply to the minipool
+    function setStatus(uint8 _newStatus) private {
+        // Fire the event if the status has changed
+        if (_newStatus != status.current) {
+            status.previous = status.current;
+            status.current = _newStatus;
+            status.changed = now;
+            emit StatusChange(status.current, status.previous, status.changed);
+        }
+    }
+    
     
     // Methods
-
-    
-
 
     /// @dev All kids outta the pool
     function closePool() public returns(bool) {
@@ -422,35 +436,33 @@ contract RocketMinipool {
     }
 
 
-    /*
-    /// @dev Closes the pool if the conditions are right
-    function canClosePool() public returns(bool) {
-        // TODO: Build on these conditions later as we integr
-        // Can only close pool when not staking or awaiting for stake to be returned from Casper
-        if (status != 2 && status != 3) {
-            // Set our status now - see RocketSettings.sol for pool statuses and keys
-            rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-            // If the pool has no users, it means all users have withdrawn deposits remove this pool and we can exit now
-            if (getUserCount() == 0) {
-                // Remove the pool from RocketHub via the latest RocketPool contract
-                RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-                if (rocketPool.removePool()) {
-                    // Set the status now just incase self destruct fails for any reason
-                    status = 5;
-                    // Log any dust remaining from fractions being sent when the pool closes or 
-                    // ether left over from a users interest that have withdrawn all their ether as tokens already
-                    // Send these to the RPD token contract to help increase its liquidity 
-                    address depositTokenContract = rocketStorage.getAddress(keccak256("contract.name", "rocketDepositToken"));               
-                    emit PoolTransfer(this, depositTokenContract, keccak256("poolClosing"), address(this).balance, 0, now);
-                    // Now self destruct and send any dust left over
-                    selfdestruct(depositTokenContract);
-                    // Done
-                    return true;
-                }
-            }
+    /// @dev Sets the status of the pool based on its current parameters 
+    function updateStatus() public returns(bool) {
+        // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Check to see if we can close the pool
+        if (closePool()) {
+            return true;
         }
-        return false;
-    }*/
+        // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
+        if (getUserCount() == 0 && status.current <= 1) {
+            // No users, reset the status to awaiting deposits
+            setStatus(0);
+            // Done
+            return;
+        }
+        // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Users can withdraw their ether at this point if they change their mind. Node owners cannot withdraw their ether/rpl.
+        if (getUserCount() == 1 && status.current == 0) {
+            // Prelaunch
+            setStatus(1);
+            // Done
+            return;
+        }
+        // Done
+        return; 
+    }
+
+    
 
 
    
