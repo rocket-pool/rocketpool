@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketGroupAPI, RocketGroupSettings } from '../_lib/artifacts';
-import { scenarioAddGroup } from './rocket-group-scenarios';
+import { RocketGroupSettings } from '../_lib/artifacts';
+import { scenarioAddGroup } from './rocket-group-api-scenarios';
 
 export default function() {
 
