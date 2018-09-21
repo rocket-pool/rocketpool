@@ -154,15 +154,9 @@ contract RocketMinipool {
         _;
     }
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
-        require(msg.sender == getContractAddress("rocketPool"), "Only the latest Rocket Pool contract can access this method.");
-        _;
-    }
-
-    /// @dev Only allow access from the latest version of the RocketDeposit contract
-    modifier onlyLatestRocketDeposit() {
-        require(msg.sender == getContractAddress("rocketDeposit"), "Only the latest Rocket Deposit contract can access this method.");
+    /// @dev Only allow access from the latest version of the specified Rocket Pool contract
+    modifier onlyLatestContract(string _contract) {
+        require(msg.sender == getContractAddress(_contract), "Only the latest specified Rocket Pool contract can access this method.");
         _;
     }
 
@@ -327,7 +321,7 @@ contract RocketMinipool {
     /// @param _user New user address
     /// @param _groupID The 3rd party group the user belongs too
     /// @param _groupDepositor The 3rd party group address that is making this deposit
-    function deposit(address _user, address _groupID, address _groupDepositor) public payable returns(bool) {
+    function deposit(address _user, address _groupID, address _groupDepositor) public payable onlyLatestContract("rocketDeposit") returns(bool) {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
         // Load contract
