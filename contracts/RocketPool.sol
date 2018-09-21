@@ -91,7 +91,7 @@ contract RocketPool is RocketBase {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Create minipool contract
         uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
-        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, stakingDuration, _etherAmount, _rplAmount, _isTrustedNode);
+        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _etherAmount, _rplAmount, _isTrustedNode);
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes 
@@ -146,7 +146,7 @@ contract RocketPool is RocketBase {
         uint8 status = rocketMinipool.getStatus();
         // Firstly we need to check if this is the node owner that created the minipool
         if(_sender == rocketMinipool.getNodeOwner()) {
-            // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first check, but check again
+            // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first few initial checks, but check again
             require(status == 0, "Minipool has an advanced status, cannot close.");
         }else{
             // Perform non-owner checks

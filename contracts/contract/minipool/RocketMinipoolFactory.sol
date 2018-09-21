@@ -47,11 +47,11 @@ contract RocketMinipoolFactory is RocketBase {
     /// @dev Create a new RocketMinipool contract, deploy to the etherverse and return the address to the caller
     /// @dev Note that the validation and logic for creation should be done in the calling contract
     /// @param _nodeOwner The node owner of the minipool contract
-    /// @param _duration Staking duration in blocks of the minipool contract
+    /// @param _durationID Staking duration ID
     /// @param _etherDeposited Ether amount deposited by the node owner
     /// @param _rplDeposited RPL amount deposited by the node owner
     /// @param _trusted Is this node trusted?
-    function createRocketMinipool(address _nodeOwner, uint256 _duration, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
+    function createRocketMinipool(address _nodeOwner, string _durationID, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
         // Do some initial checks
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
@@ -63,7 +63,7 @@ contract RocketMinipoolFactory is RocketBase {
             require(_etherDeposited == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
         }
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside 
-        RocketMinipool newContractAddress = new RocketMinipool(address(rocketStorage), _nodeOwner, _duration, _etherDeposited, _rplDeposited, _trusted);
+        RocketMinipool newContractAddress = new RocketMinipool(address(rocketStorage), _nodeOwner, _durationID, _etherDeposited, _rplDeposited, _trusted);
         // Store it now after a few checks
         if (addContract(keccak256(abi.encodePacked("rocketMinipool")), newContractAddress)) {
             return newContractAddress;
