@@ -30,7 +30,7 @@ export default function() {
             let result = await rocketNodeAPI.add('Australia/Brisbane', {from: operator, gas: 7500000});
 
             // Get node contract instance
-            let nodeContractAddress = result.logs[0].args.contractAddress;
+            let nodeContractAddress = result.logs.filter(log => (log.event == 'NodeAdd'))[0].args.contractAddress;
             nodeContract = await RocketNodeContract.at(nodeContractAddress);
 
             // Get minipool launch & min deposit amounts

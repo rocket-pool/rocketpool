@@ -91,7 +91,7 @@ contract RocketGroupAPI is RocketBase {
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
         // Check groups are currently allowed
         require(rocketGroupSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
-         // Make the name lower case
+        // Make the name lower case
         _name = _name.lower();
         // Check the name is ok
         require(bytes(_name).length > 2, "Group Name is to short, must be a minimum of 3 characters.");
