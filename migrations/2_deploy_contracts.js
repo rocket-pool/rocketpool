@@ -6,6 +6,11 @@ const pako = require('pako');
 const config = require('../truffle.js');
 
 
+// Check if testing utility contracts
+const testScript = process.argv[process.argv.length - 1];
+const testUtils = !!testScript.match(/util/i);
+
+
 /*** Contracts ***********************/
 // Storage
 const rocketStorage = artifacts.require('./RocketStorage.sol');
@@ -37,26 +42,29 @@ contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol'
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
-contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
-contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
-contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
-contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
-contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
-contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
-contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
-contracts.utilBoolQueueStorage = artifacts.require('./BoolQueueStorage.sol');
-contracts.utilBytesQueueStorage = artifacts.require('./BytesQueueStorage.sol');
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
-contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
-contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
-contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
-contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
-contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
-contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
-contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
-contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
-contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
+// Extra utilities
+if (testUtils) {
+  contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
+  contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
+  contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
+  contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
+  contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
+  contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
+  contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
+  contracts.utilBoolQueueStorage = artifacts.require('./BoolQueueStorage.sol');
+  contracts.utilBytesQueueStorage = artifacts.require('./BytesQueueStorage.sol');
+  contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
+  contracts.utilStringQueueStorage = artifacts.require('./StringQueueStorage.sol');
+  contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
+  contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
+  contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
+  contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
+  contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
+  contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
+  contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
+}
 
 
 /*** Utility Methods *****************/
@@ -90,7 +98,7 @@ module.exports = async (deployer, network) => {
 
 
   // Only deploy test interface contracts on test networks
-  if ( network !== 'live' ) {
+  if ( network !== 'live' && testUtils) {
     contracts.testLists = artifacts.require('./test/TestLists.sol');
     contracts.testQueues = artifacts.require('./test/TestQueues.sol');
     contracts.testSets = artifacts.require('./test/TestSets.sol');
