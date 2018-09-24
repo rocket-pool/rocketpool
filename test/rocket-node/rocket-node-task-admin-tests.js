@@ -73,28 +73,28 @@ export default function() {
         // Owner can remove a node task
         it(printTitle('owner', 'can remove a node task'), async () => {
             await scenarioRemoveNodeTask({
-                taskIndex: 1,
+                taskAddress: testNodeTask2.address,
                 fromAddress: owner,
                 gas: 500000,
             });
         });
 
 
-        // Owner cannot remove a node task at an out of range index
-        it(printTitle('owner', 'cannot remove a node task at an out of range index'), async () => {
+        // Owner cannot remove a nonexistant node task
+        it(printTitle('owner', 'cannot remove a nonexistant node task'), async () => {
             await assertThrows(scenarioRemoveNodeTask({
-                taskIndex: 99,
+                taskAddress: testNodeTask4.address,
                 fromAddress: owner,
                 gas: 500000,
-            }), 'Removed a node task at an out of range index');
+            }), 'Removed a nonexistant node task');
         });
 
 
         // Owner can update a node task
         it(printTitle('owner', 'can update a node task'), async () => {
             await scenarioUpdateNodeTask({
-                taskAddress: testNodeTask1v2.address,
-                taskIndex: 0,
+                oldAddress: testNodeTask1.address,
+                newAddress: testNodeTask1v2.address,
                 fromAddress: owner,
                 gas: 500000,
             });
@@ -104,8 +104,8 @@ export default function() {
         // Owner cannot update a node task with an invalid address
         it(printTitle('owner', 'cannot update a node task with an invalid address'), async () => {
             await assertThrows(scenarioUpdateNodeTask({
-                taskAddress: '0x0000000000000000000000000000000000000000',
-                taskIndex: 0,
+                oldAddress: testNodeTask1v2.address,
+                newAddress: '0x0000000000000000000000000000000000000000',
                 fromAddress: owner,
                 gas: 500000,
             }), 'Updated a node task with an invalid address');
@@ -115,22 +115,22 @@ export default function() {
         // Owner cannot update a node task with an existing address
         it(printTitle('owner', 'cannot update a node task with an existing address'), async () => {
             await assertThrows(scenarioUpdateNodeTask({
-                taskAddress: testNodeTask3.address,
-                taskIndex: 0,
+                oldAddress: testNodeTask1v2.address,
+                newAddress: testNodeTask3.address,
                 fromAddress: owner,
                 gas: 500000,
             }), 'Updated a node task with an existing address');
         });
 
 
-        // Owner cannot update a node task at an out of range index
-        it(printTitle('owner', 'cannot update a node task at an out of range index'), async () => {
+        // Owner cannot update a nonexistant node task
+        it(printTitle('owner', 'cannot update a nonexistant node task'), async () => {
             await assertThrows(scenarioUpdateNodeTask({
-                taskAddress: testNodeTask1v3.address,
-                taskIndex: 99,
+                oldAddress: testNodeTask4.address,
+                newAddress: testNodeTask1v3.address,
                 fromAddress: owner,
                 gas: 500000,
-            }), 'Updated a node task at an out of range index');
+            }), 'Updated a nonexistant node task');
         });
 
 
@@ -147,7 +147,7 @@ export default function() {
         // Random account cannot remove a node task
         it(printTitle('random account', 'cannot remove a node task'), async () => {
             await assertThrows(scenarioRemoveNodeTask({
-                taskIndex: 0,
+                taskAddress: testNodeTask1v2.address,
                 fromAddress: accounts[1],
                 gas: 500000,
             }), 'Random account removed a node task');
@@ -157,8 +157,8 @@ export default function() {
         // Random account cannot update a node task
         it(printTitle('random account', 'cannot update a node task'), async () => {
             await assertThrows(scenarioUpdateNodeTask({
-                taskAddress: testNodeTask1v3.address,
-                taskIndex: 0,
+                oldAddress: testNodeTask1v2.address,
+                newAddress: testNodeTask1v3.address,
                 fromAddress: accounts[1],
                 gas: 500000,
             }), 'Random account updated a node task');

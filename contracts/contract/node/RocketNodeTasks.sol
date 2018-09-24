@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 
 import "../../RocketBase.sol";
 import "../../interface/node/RocketNodeTaskInterface.sol";
-import "../../interface/utils/lists/AddressListStorageInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 
 
 /// @title RocketNodeTasks - manages tasks to be performed on node checkin
@@ -15,7 +15,7 @@ contract RocketNodeTasks is RocketBase {
     /*** Contracts **************/
 
 
-    AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
 
     /*** Modifiers *************/
@@ -39,12 +39,12 @@ contract RocketNodeTasks is RocketBase {
 
     /// @dev Run all tasks
     function run() external onlyValidRocketNode(msg.sender) {
-        // Get list storage
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        // Get set storage
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Run tasks
-        uint256 count = addressListStorage.getListCount(keccak256("node.tasks"));
+        uint256 count = addressSetStorage.getCount(keccak256("node.tasks"));
         for (uint256 i = 0; i < count; ++i) {
-            RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), i));
+            RocketNodeTaskInterface task = RocketNodeTaskInterface(addressSetStorage.getItem(keccak256("node.tasks"), i));
             task.run(msg.sender);
         }
     }
@@ -52,64 +52,63 @@ contract RocketNodeTasks is RocketBase {
 
     /// @dev Get the total number of tasks
     function getTaskCount() external returns (uint256) {
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        return addressListStorage.getListCount(keccak256("node.tasks"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getCount(keccak256("node.tasks"));
     }
 
 
     /// @dev Get a task contract address by index
     function getTaskAddressAt(uint256 _index) external returns (address) {
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        return addressListStorage.getListItem(keccak256("node.tasks"), _index);
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getItem(keccak256("node.tasks"), _index);
     }
 
 
     /// @dev Get a task contract name by index
     function getTaskNameAt(uint256 _index) external returns (string) {
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
-        RocketNodeTaskInterface task = RocketNodeTaskInterface(addressListStorage.getListItem(keccak256("node.tasks"), _index));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        RocketNodeTaskInterface task = RocketNodeTaskInterface(addressSetStorage.getItem(keccak256("node.tasks"), _index));
         return task.name();
     }
 
 
     /// @dev Add a new task to be performed on checkin
-    /// @param _taskAddress The address of the task contract to be run
+    /// @param _taskAddress The address of the task contract to be added
     function add(address _taskAddress) external onlySuperUser() returns (bool) {
-        // Get list storage
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
         // Check task contract address
         require(_taskAddress != 0x0, "Invalid task contract address");
-        require(addressListStorage.getListIndexOf(keccak256("node.tasks"), _taskAddress) == -1, "Task contract already in use");
+        // Get set storage
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Insert task contract address
-        addressListStorage.pushListItem(keccak256("node.tasks"), _taskAddress);
+        addressSetStorage.addItem(keccak256("node.tasks"), _taskAddress);
         // Return success flag
         return true;
     }
 
 
     /// @dev Remove a checkin task
-    /// @param _index The index of the checkin task to be removed
-    function remove(uint _index) external onlySuperUser() returns (bool) {
-        // Get list storage
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+    /// @param _taskAddress The address of the task contract to be removed
+    function remove(address _taskAddress) external onlySuperUser() returns (bool) {
+        // Get set storage
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Remove checkin task
-        addressListStorage.removeUnorderedListItem(keccak256("node.tasks"), _index);
+        addressSetStorage.removeItem(keccak256("node.tasks"), _taskAddress);
         // Return success flag
         return true;
     }
 
 
     /// @dev Update a checkin task
-    /// @param _taskAddress The new address of the task contract to be run
-    /// @param _index The index of the checkin task to be updated
-    function update(address _taskAddress, uint _index) external onlySuperUser() returns (bool) {
-        // Get list storage
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+    /// @param _oldAddress The old address of the task contract
+    /// @param _newAddress The new address of the task contract
+    function update(address _oldAddress, address _newAddress) external onlySuperUser() returns (bool) {
         // Check task contract address
-        require(_taskAddress != 0x0, "Invalid task contract address");
-        require(addressListStorage.getListIndexOf(keccak256("node.tasks"), _taskAddress) == -1, "Task contract already in use");
+        require(_newAddress != 0x0, "Invalid task contract address");
+        // Get set storage
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Update task contract address
-        addressListStorage.setListItem(keccak256("node.tasks"), _index, _taskAddress);
+        addressSetStorage.addItem(keccak256("node.tasks"), _newAddress);
+        addressSetStorage.removeItem(keccak256("node.tasks"), _oldAddress);
         // Return success flag
         return true;
     }
