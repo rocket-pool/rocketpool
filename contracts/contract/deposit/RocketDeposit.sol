@@ -4,7 +4,7 @@ pragma solidity 0.4.24;
 import "../../RocketBase.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
-import "../../interface/utils/lists/AddressListStorageInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
@@ -26,7 +26,7 @@ contract RocketDeposit is RocketBase {
 
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
-    AddressListStorageInterface addressListStorage = AddressListStorageInterface(0);
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
@@ -91,7 +91,7 @@ contract RocketDeposit is RocketBase {
         // Get contracts
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        addressListStorage = AddressListStorageInterface(getContractAddress("utilAddressListStorage"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Remaining ether amount to match
@@ -126,7 +126,7 @@ contract RocketDeposit is RocketBase {
 
             // Add deposit staking pool details
             uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, poolContractAddress)));
-            if (stakingPoolAmount == 0) { addressListStorage.pushListItem(keccak256(abi.encodePacked("deposit.stakingPools", depositID)), poolContractAddress); }
+            if (stakingPoolAmount == 0) { addressSetStorage.addItem(keccak256(abi.encodePacked("deposit.stakingPools", depositID)), poolContractAddress); }
             rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, poolContractAddress)), stakingPoolAmount.add(matchAmount));
 
             // Remove deposit from queue if queued amount depleted
