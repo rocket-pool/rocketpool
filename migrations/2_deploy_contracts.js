@@ -41,11 +41,11 @@ contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
-contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
 // Extra utilities
 if (testUtils) {
+  contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
   contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
   contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
   contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
