@@ -69,7 +69,7 @@ export default function() {
         // Remove node tasks
         it(printTitle('-----', 'remove node tasks'), async () => {
             await scenarioRemoveNodeTask({
-                taskIndex: 1,
+                taskAddress: testNodeTask2.address,
                 fromAddress: owner,
                 gas: 500000,
             });
@@ -92,8 +92,8 @@ export default function() {
         // Update node tasks
         it(printTitle('-----', 'update node tasks'), async () => {
             await scenarioUpdateNodeTask({
-                taskAddress: testNodeTask1v2.address,
-                taskIndex: 0,
+                oldAddress: testNodeTask1.address,
+                newAddress: testNodeTask1v2.address,
                 fromAddress: owner,
                 gas: 500000,
             });

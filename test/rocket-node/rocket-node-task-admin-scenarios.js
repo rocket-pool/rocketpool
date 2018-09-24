@@ -46,17 +46,14 @@ export async function scenarioAddNodeTask({taskAddress, fromAddress, gas}) {
 
 
 // Remove a node task
-export async function scenarioRemoveNodeTask({taskIndex, fromAddress, gas}) {
+export async function scenarioRemoveNodeTask({taskAddress, fromAddress, gas}) {
     const rocketNodeTasks = await RocketNodeTasks.deployed();
-
-    // Get task address at index
-    let taskAddress = await rocketNodeTasks.getTaskAddressAt.call(taskIndex);
 
     // Get initial task address list
     let taskAddresses1 = await getTaskAddresses();
 
     // Remove task
-    await rocketNodeTasks.remove(taskIndex, {from: fromAddress, gas: gas});
+    await rocketNodeTasks.remove(taskAddress, {from: fromAddress, gas: gas});
 
     // Get updated task address list
     let taskAddresses2 = await getTaskAddresses();
@@ -73,25 +70,25 @@ export async function scenarioRemoveNodeTask({taskIndex, fromAddress, gas}) {
 
 
 // Update a node task
-export async function scenarioUpdateNodeTask({taskAddress, taskIndex, fromAddress, gas}) {
+export async function scenarioUpdateNodeTask({oldAddress, newAddress, fromAddress, gas}) {
     const rocketNodeTasks = await RocketNodeTasks.deployed();
-
-    // Get task address at index
-    let oldTaskAddress = await rocketNodeTasks.getTaskAddressAt.call(taskIndex);
 
     // Get initial task address list
     let taskAddresses1 = await getTaskAddresses();
 
+    // Get task index
+    let taskIndex = taskAddresses1.map(address => address.toLowerCase()).indexOf(oldAddress.toLowerCase());
+
     // Update task
-    await rocketNodeTasks.update(taskAddress, taskIndex, {from: fromAddress, gas: gas});
+    await rocketNodeTasks.update(oldAddress, newAddress, {from: fromAddress, gas: gas});
 
     // Get updated task address list
     let taskAddresses2 = await getTaskAddresses();
 
     // Asserts
     assert.equal(taskAddresses2.length, taskAddresses1.length, 'Task list count changed and should not have');
-    assert.equal(taskAddresses1[taskIndex], oldTaskAddress, 'Old task address not found in initial list');
-    assert.equal(taskAddresses2[taskIndex], taskAddress, 'Task was not updated correctly');
+    assert.equal(taskAddresses1[taskIndex], oldAddress, 'Old task address not found in initial list');
+    assert.equal(taskAddresses2[taskIndex], newAddress, 'Task was not updated correctly');
     taskAddresses1.forEach((address, index) => {
         if (index == taskIndex) return;
         assert.equal(taskAddresses1[index], taskAddresses2[index], 'Task was changed which should not have been');
