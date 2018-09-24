@@ -6,6 +6,11 @@ const pako = require('pako');
 const config = require('../truffle.js');
 
 
+// Check if testing utility contracts
+const testScript = process.argv[process.argv.length - 1];
+const testUtils = !!testScript.match(/util/i);
+
+
 /*** Contracts ***********************/
 // Storage
 const rocketStorage = artifacts.require('./RocketStorage.sol');
@@ -40,7 +45,7 @@ contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol')
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
 // Extra utilities
-if (false) {
+if (testUtils) {
   contracts.utilBoolListStorage = artifacts.require('./BoolListStorage.sol');
   contracts.utilBytesListStorage = artifacts.require('./BytesListStorage.sol');
   contracts.utilBytes32ListStorage = artifacts.require('./Bytes32ListStorage.sol');
@@ -93,7 +98,7 @@ module.exports = async (deployer, network) => {
 
 
   // Only deploy test interface contracts on test networks
-  if ( network !== 'live' ) {
+  if ( network !== 'live' && testUtils) {
     contracts.testLists = artifacts.require('./test/TestLists.sol');
     contracts.testQueues = artifacts.require('./test/TestQueues.sol');
     contracts.testSets = artifacts.require('./test/TestSets.sol');
