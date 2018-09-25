@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "../../RocketBase.sol";
+import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -24,6 +25,7 @@ contract RocketDeposit is RocketBase {
     /*** Contracts **************/
 
 
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
@@ -75,32 +77,36 @@ contract RocketDeposit is RocketBase {
 
         // Assign chunks while able
         uint256 chunkAssignments = 0;
+        bool assigned = true;
         while (
             rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID))) >= chunkSize && // Duration queue balance high enough to assign chunk
-            chunkAssignments++ < maxChunkAssignments // Only assign up to maximum number of chunks
+            chunkAssignments++ < maxChunkAssignments && // Only assign up to maximum number of chunks
+            assigned // Only continue if previous chunk was successfully assigned
         ) {
-            assignChunk(_durationID);
+            assigned = assignChunk(_durationID);
         }
 
     }
 
 
     // Assign chunk
-    function assignChunk(string _durationID) private {
+    function assignChunk(string _durationID) private returns (bool) {
 
         // Get contracts
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
+        // Get random node's minipool to assign chunk to
+        address nodeAddress = rocketPool.getRandomAvailableNode(msg.value);
+        address miniPoolAddress = addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node", nodeAddress)), 0);
+        if (nodeAddress == 0x0 || miniPoolAddress == 0x0) { return false; }
+
         // Remaining ether amount to match
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
         uint256 amountToMatch = chunkSize;
-
-        // Get random node's minipool to assign chunk to
-        // TODO: implement
-        address poolContractAddress = 0x0;
 
         // Check queued deposits
         // Max number of iterations is (DepositChunkSize / DepositMin) + 1
@@ -125,9 +131,9 @@ contract RocketDeposit is RocketBase {
             rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", depositID)), stakingAmount);
 
             // Add deposit staking pool details
-            uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, poolContractAddress)));
-            if (stakingPoolAmount == 0) { addressSetStorage.addItem(keccak256(abi.encodePacked("deposit.stakingPools", depositID)), poolContractAddress); }
-            rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, poolContractAddress)), stakingPoolAmount.add(matchAmount));
+            uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, miniPoolAddress)));
+            if (stakingPoolAmount == 0) { addressSetStorage.addItem(keccak256(abi.encodePacked("deposit.stakingPools", depositID)), miniPoolAddress); }
+            rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, miniPoolAddress)), stakingPoolAmount.add(matchAmount));
 
             // Remove deposit from queue if queued amount depleted
             if (queuedAmount == 0) { bytes32QueueStorage.dequeueItem(keccak256(abi.encodePacked("deposits.queue", _durationID))); }
@@ -145,7 +151,10 @@ contract RocketDeposit is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)), queueBalance);
 
         // Transfer balance from vault to minipool contract
-        require(rocketDepositVault.withdrawEther(poolContractAddress, chunkSize), "Deposit coult not be transferred to minipool contract");
+        require(rocketDepositVault.withdrawEther(miniPoolAddress, chunkSize), "Deposit coult not be transferred to minipool contract");
+
+        // Return success flag
+        return true;
 
     }
 

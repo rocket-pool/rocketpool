@@ -78,7 +78,23 @@ contract RocketPool is RocketBase {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", _miniPoolList)));
     }
-    
+
+
+    /// @dev Get the address of a pseudorandom available node
+    function getRandomAvailableNode(uint256 _nonce) public view returns (address) {
+        // Get contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        // Get node set key
+        bytes32 key;
+        if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", false))) > 0) { key = keccak256(abi.encodePacked("nodes.available", "trusted", false)); } // Use non-trusted nodes if available
+        else if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", true))) > 0) { key = keccak256(abi.encodePacked("nodes.available", "trusted", true)); } // Use trusted nodes if available
+        else { return 0x0; } // No nodes available
+        // Get random node from set
+        uint256 nodeCount = addressSetStorage.getCount(key);
+        uint256 index = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _nonce))) % nodeCount;
+        return addressSetStorage.getItem(key, index);
+    }
+
 
     /*** Methods *************/
 
@@ -99,6 +115,11 @@ contract RocketPool is RocketBase {
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", stakingDuration)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
+        // Add node to available set
+        // TODO: check for removal from available set when minipools progress to staking status
+        if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("nodes.available", "trusted", _isTrustedNode)), _nodeOwner) == -1) {
+            addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.available", "trusted", _isTrustedNode)), _nodeOwner);
+        }
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
