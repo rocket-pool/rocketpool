@@ -151,6 +151,7 @@ contract RocketDeposit is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)), queueBalance);
 
         // Transfer balance from vault to minipool contract
+        // TODO: transfer using deposit method instead of default payable function
         require(rocketDepositVault.withdrawEther(miniPoolAddress, chunkSize), "Deposit coult not be transferred to minipool contract");
 
         // Return success flag
