@@ -137,12 +137,21 @@ contract RocketPool is RocketBase {
             addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
+            // Get minipool & node properties
+            address nodeOwner = rocketMinipool.getNodeOwner();
+            bool trusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", nodeOwner)));
             // Update minipool indexes
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", nodeOwner)), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDuration())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender); 
-             // Fire the event
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
+            // Remove node from available set if out of minipools
+            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node", nodeOwner))) == 0) {
+                if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("nodes.available", "trusted", trusted)), nodeOwner) != -1) {
+                    addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.available", "trusted", trusted)), nodeOwner);
+                }
+            }
+            // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address
             return true;
