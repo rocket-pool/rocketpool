@@ -56,7 +56,7 @@ contract RocketMinipool {
         address contractAddress;                                // The nodes Rocket Pool contract
         uint256 depositEther;                                   // The nodes ether contribution
         uint256 depositRPL;                                     // The nodes RPL contribution
-        bool    trusted;                                        // Is this a trusted node?
+        bool    trusted;                                        // Was the node trusted at the time of minipool creation?
     }
 
     struct Staking {
@@ -124,7 +124,7 @@ contract RocketMinipool {
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
-    /// @param _trusted Is this node owner trusted?
+    /// @param _trusted Is the node trusted at the time of minipool creation?
     constructor(address _rocketStorageAddress, address _nodeOwner, string _durationID, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
@@ -209,6 +209,11 @@ contract RocketMinipool {
     /// @dev Gets the amount of RPL the node owner must deposit
     function getNodeDepositRPL() public view returns(uint256) {
         return node.depositRPL;
+    }
+
+    /// @dev Gets the node's trusted status (at the time of minipool creation)
+    function getNodeTrusted() public view returns(bool) {
+        return node.trusted;
     }
 
     // Methods
