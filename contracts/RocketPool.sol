@@ -81,20 +81,26 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Get the address of a pseudorandom available node
-    function getRandomAvailableNode(uint256 _nonce) public view returns (address) {
+    function getRandomAvailableNode(uint256 _nonce) public view returns (address, bool) {
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        // Get node set key
-        bytes32 untrustedKey = keccak256(abi.encodePacked("nodes.available", "trusted", false));
-        bytes32 trustedKey = keccak256(abi.encodePacked("nodes.available", "trusted", true));
-        bytes32 key;
-        if (addressSetStorage.getCount(untrustedKey) > 0) { key = untrustedKey; } // Use untrusted nodes if available
-        else if (addressSetStorage.getCount(trustedKey) > 0) { key = trustedKey; } // Use trusted nodes if available
-        else { return 0x0; } // No nodes available
+        // Get node set type
+        bool trusted;
+        if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", false))) > 0) { trusted = false; } // Use untrusted nodes if available
+        else if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", true))) > 0) { trusted = true; } // Use trusted nodes if available
+        else { return (0x0, false); } // No nodes available
         // Get random node from set
+        bytes32 key = keccak256(abi.encodePacked("nodes.available", "trusted", trusted));
         uint256 nodeCount = addressSetStorage.getCount(key);
         uint256 randIndex = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _nonce))) % nodeCount;
-        return addressSetStorage.getItem(key, randIndex);
+        return (addressSetStorage.getItem(key, randIndex), trusted);
+    }
+
+
+    /// @dev Get the address of a pseudorandom available node's first minipool
+    function getRandomAvailableMinipool(uint256 _nonce) public view returns (address) {
+        (address nodeAddress, bool nodeTrusted) = getRandomAvailableNode(_nonce);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, nodeTrusted)), 0);
     }
 
 

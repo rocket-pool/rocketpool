@@ -99,10 +99,9 @@ contract RocketDeposit is RocketBase {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
-        // Get random node's minipool to assign chunk to
-        address nodeAddress = rocketPool.getRandomAvailableNode(msg.value);
-        address miniPoolAddress = addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node", nodeAddress)), 0);
-        if (nodeAddress == 0x0 || miniPoolAddress == 0x0) { return false; }
+        // Get random available minipool to assign chunk to
+        address miniPoolAddress = rocketPool.getRandomAvailableMinipool(msg.value);
+        if (miniPoolAddress == 0x0) { return false; }
 
         // Remaining ether amount to match
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
