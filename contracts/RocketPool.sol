@@ -85,14 +85,16 @@ contract RocketPool is RocketBase {
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Get node set key
+        bytes32 untrustedKey = keccak256(abi.encodePacked("nodes.available", "trusted", false));
+        bytes32 trustedKey = keccak256(abi.encodePacked("nodes.available", "trusted", true));
         bytes32 key;
-        if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", false))) > 0) { key = keccak256(abi.encodePacked("nodes.available", "trusted", false)); } // Use non-trusted nodes if available
-        else if (addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", true))) > 0) { key = keccak256(abi.encodePacked("nodes.available", "trusted", true)); } // Use trusted nodes if available
+        if (addressSetStorage.getCount(untrustedKey) > 0) { key = untrustedKey; } // Use untrusted nodes if available
+        else if (addressSetStorage.getCount(trustedKey) > 0) { key = trustedKey; } // Use trusted nodes if available
         else { return 0x0; } // No nodes available
         // Get random node from set
         uint256 nodeCount = addressSetStorage.getCount(key);
-        uint256 index = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _nonce))) % nodeCount;
-        return addressSetStorage.getItem(key, index);
+        uint256 randIndex = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _nonce))) % nodeCount;
+        return addressSetStorage.getItem(key, randIndex);
     }
 
 
@@ -113,6 +115,7 @@ contract RocketPool is RocketBase {
         // Update minipool indexes 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", _nodeOwner, _isTrustedNode)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", stakingDuration)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Add node to available set
@@ -139,14 +142,15 @@ contract RocketPool is RocketBase {
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
             // Get minipool & node properties
             address nodeOwner = rocketMinipool.getNodeOwner();
-            bool trusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", nodeOwner)));
+            bool trusted = rocketMinipool.getNodeTrusted();
             // Update minipool indexes
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", nodeOwner)), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted)), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDuration())), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Remove node from available set if out of minipools
-            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node", nodeOwner))) == 0) {
+            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted))) == 0) {
                 if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("nodes.available", "trusted", trusted)), nodeOwner) != -1) {
                     addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.available", "trusted", trusted)), nodeOwner);
                 }
