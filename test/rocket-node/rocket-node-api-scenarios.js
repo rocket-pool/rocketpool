@@ -1,4 +1,5 @@
 // Dependencies
+import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketNodeAPI } from '../_lib/artifacts';
 
 
@@ -8,6 +9,7 @@ export async function scenarioAddNode({timezone, fromAddress, gas}) {
 
     // Add node
     let result = await rocketNodeAPI.add(timezone, {from: fromAddress, gas: gas});
+    profileGasUsage('RocketNodeAPI.add', result);
 
     // Asserts
     assert.equal(
