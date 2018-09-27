@@ -56,7 +56,7 @@ contract RocketMinipool {
         address contractAddress;                                // The nodes Rocket Pool contract
         uint256 depositEther;                                   // The nodes ether contribution
         uint256 depositRPL;                                     // The nodes RPL contribution
-        bool    trusted;                                        // Is this a trusted node?
+        bool    trusted;                                        // Is this a trusted node at time of minipool creation?
     }
 
     struct Staking {
@@ -296,6 +296,11 @@ contract RocketMinipool {
     /// @dev Gets the current status of the minipool
     function getStatus() public view returns(uint8) {
         return status.current;
+    }
+
+    // @dev Get the last time the status changed
+    function getStatusChanged() public view returns(uint256) {
+        return status.changed;
     }
 
     /// @dev Returns the current staking duration in blocks

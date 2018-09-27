@@ -15,7 +15,7 @@ contract RocketMinipoolSettings is RocketBase {
     // Pool statuses are defined here and converted to uint when setting, their corresponding uint value is commented below
     enum MinipoolStatuses { 
         Initialised,                // 0 - A new minipool instance created by a node with their ether/rpl on it, has not been assigned any users yet and can be removed by the node owner if desired.
-        PreLaunch,                  // 1 - Minipool has been assigned user(s) ether but not enough to begin staking yet. Users can withdraw their ether at this point if they change their mind. Node owners cannot withdraw their ether/rpl.
+        PreLaunch,                  // 1 - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         Staking,                    // 2 - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration.
         LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
         Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
@@ -48,6 +48,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
             setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
+            setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
             // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
@@ -147,6 +148,11 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.backupcollect.blocks")));
     }
 
+    /// @dev If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
+    function getMinipoolTimeout() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")));
+    }
+
 
 
 
@@ -229,6 +235,10 @@ contract RocketMinipoolSettings is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.deposit.gas")), _gas); 
     }
 
+    /// @dev If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
+    function setMinipoolTimeout(uint256 _time) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")), _time); 
+    }
 
 
 }

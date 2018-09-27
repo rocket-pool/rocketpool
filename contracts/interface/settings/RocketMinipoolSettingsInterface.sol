@@ -20,4 +20,6 @@ contract RocketMinipoolSettingsInterface {
     function getMinipoolWithdrawalFeeDepositAddress() public view returns (address);
     function getMinipoolBackupCollectEnabled() public view returns (bool);
     function getMinipoolBackupCollectDuration() public view returns (uint256);
+    function getMinipoolTimeout() public view returns (uint256);
+    
 }
