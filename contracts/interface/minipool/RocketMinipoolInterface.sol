@@ -7,6 +7,7 @@ contract RocketMinipoolInterface {
     function getNodeContract() public view returns(address);
     function getNodeDepositEther() public view returns(uint256);
     function getNodeDepositRPL() public view returns(uint256);
+    function getNodeTrusted() public view returns(bool);
     function getUserCount() public view returns(uint256);
     function getStatus() public view returns(uint8);
     function getStatusChanged() public view returns(uint256);

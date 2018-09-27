@@ -19,6 +19,7 @@ const contracts = {};
 // Core
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
+contracts.rocketNode = artifacts.require('./RocketNode.sol');
 contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');

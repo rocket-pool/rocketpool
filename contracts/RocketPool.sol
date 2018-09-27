@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./RocketBase.sol";
+import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -14,6 +15,7 @@ contract RocketPool is RocketBase {
 
     /*** Contracts **************/
 
+    RocketNodeInterface rocketNode = RocketNodeInterface(0);                                                // Interface for node methods
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
@@ -78,7 +80,15 @@ contract RocketPool is RocketBase {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", _miniPoolList)));
     }
-    
+
+
+    /// @dev Get the address of a pseudorandom available node's first minipool
+    function getRandomAvailableMinipool(uint256 _nonce) public returns (address) {
+        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        (address nodeAddress, bool nodeTrusted) = rocketNode.getRandomAvailableNode(_nonce);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, nodeTrusted)), 0);
+    }
+
 
     /*** Methods *************/
 
@@ -86,6 +96,7 @@ contract RocketPool is RocketBase {
     /// @dev Create a minipool
     function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
+        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
@@ -97,8 +108,12 @@ contract RocketPool is RocketBase {
         // Update minipool indexes 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", _nodeOwner, _isTrustedNode)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", stakingDuration)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
+        // Add node to available set
+        // TODO: check for removal from available set when minipools progress to staking status
+        rocketNode.setNodeAvailable(_nodeOwner, _isTrustedNode);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
@@ -116,12 +131,21 @@ contract RocketPool is RocketBase {
             addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
+            // Get minipool & node properties
+            address nodeOwner = rocketMinipool.getNodeOwner();
+            bool trusted = rocketMinipool.getNodeTrusted();
             // Update minipool indexes
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", nodeOwner)), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted)), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDuration())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender); 
-             // Fire the event
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
+            // Remove node from available set if out of minipools
+            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted))) == 0) {
+                rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+                rocketNode.setNodeUnavailable(nodeOwner, trusted);
+            }
+            // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address
             return true;
