@@ -56,11 +56,7 @@ contract RocketMinipool {
         address contractAddress;                                // The nodes Rocket Pool contract
         uint256 depositEther;                                   // The nodes ether contribution
         uint256 depositRPL;                                     // The nodes RPL contribution
-<<<<<<< HEAD
-        bool    trusted;                                        // Is this a trusted node at time of minipool creation?
-=======
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
->>>>>>> f492f8dde75dca7180995392aaa4c4a888ef3556
     }
 
     struct Staking {
