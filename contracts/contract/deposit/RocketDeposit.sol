@@ -68,7 +68,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Assign chunks while able
-    function assignChunks(string _durationID) public {
+    function assignChunks(string _durationID) public onlySuperUser() {
 
         // Deposit settings
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
