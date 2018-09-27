@@ -73,12 +73,6 @@ contract RocketGroupAPI is RocketBase {
         // Get the group name
         return rocketStorage.getString(keccak256(abi.encodePacked("group.name", _ID)));
     }
-
-    /// @dev Get a verified address for the group that's allowed to interact with RP
-    function getGroupDepositAddress(address _ID) public view returns(address) { 
-        // Get the deposit address
-        return rocketStorage.getAddress(keccak256(abi.encodePacked("group.deposit.address", _ID)));
-    }
     
 
     /*** Methods *************/
@@ -114,8 +108,6 @@ contract RocketGroupAPI is RocketBase {
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
         rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
-        // Add msg.sender as a depositer for this group initially
-        rocketStorage.setAddress(keccak256(abi.encodePacked("group.deposit.address", msg.sender)), msg.sender);
         // We store our data in an key/value array, so set its index so we can use an array to find it if needed
         rocketStorage.setUint(keccak256(abi.encodePacked("group.index", newContractAddress)), groupCountTotal);
         // Update total partners
