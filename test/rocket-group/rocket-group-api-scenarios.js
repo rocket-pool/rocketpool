@@ -1,4 +1,5 @@
 // Dependencies
+import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketGroupAPI, RocketGroupSettings } from '../_lib/artifacts';
 
 
@@ -15,6 +16,7 @@ export async function scenarioAddGroup({name, stakingFee, value, fromAddress, ga
 
     // Add group
     let result = await rocketGroupAPI.add(name, stakingFee, {from: fromAddress, gas: gas, value: value});
+    profileGasUsage('RocketGroupAPI.add', result);
 
     // Get updated group creation fee address balance
     let feeBalance2 = parseInt(await web3.eth.getBalance(feeAddress));

@@ -1,4 +1,5 @@
 // Dependencies
+import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketMinipoolInterface, RocketMinipoolSettings, RocketPoolToken } from '../_lib/artifacts';
 
 
@@ -50,6 +51,7 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 
     // Deposit
     let result = await nodeContract.deposit({from: fromAddress, gas: gas, value: value});
+    profileGasUsage('RocketNodeContract.deposit', result);
 
     // Check deposited minipool count
     let depositMiniPoolRPLLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'RPL'));

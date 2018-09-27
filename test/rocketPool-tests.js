@@ -1,3 +1,6 @@
+// Import utils
+import { displayProfiling } from './_lib/utils/profiling';
+
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketGroupAPITests from './rocket-group/rocket-group-api-tests';
@@ -30,3 +33,6 @@ rocketNodeContractTests();
 rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
 rocketRPIPTests();
+
+// Profiling
+displayProfiling();
