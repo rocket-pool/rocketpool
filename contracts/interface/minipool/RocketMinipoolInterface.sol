@@ -13,5 +13,6 @@ contract RocketMinipoolInterface {
     function getStakingDuration() public view returns(uint256);
     // Methods
     function nodeDeposit() public payable returns(bool);
+    function deposit(address _user, address _groupID) public payable returns(bool);
     function closePool() public returns(bool);
 }

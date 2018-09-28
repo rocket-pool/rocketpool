@@ -275,8 +275,7 @@ contract RocketMinipool {
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
     /// @param _groupID The 3rd party group the user belongs too
-    /// @param _groupDepositor The 3rd party group address that is making this deposit
-    function deposit(address _user, address _groupID, address _groupDepositor) public payable onlyLatestContract("rocketDeposit") returns(bool) {
+    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("deposit(address,address,address)"), _user, _groupID, _groupDepositor), "Delegate call failed.");
     }
