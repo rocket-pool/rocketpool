@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketGroupSettings } from '../_lib/artifacts';
-import { scenarioAddGroup } from './rocket-group-api-scenarios';
+import { scenarioAddGroup, scenarioCreateDefaultGroupAccessor } from './rocket-group-api-scenarios';
 
 export default function() {
 
@@ -10,6 +10,11 @@ export default function() {
         // Accounts
         const owner = accounts[0];
         const groupOwner = accounts[1];
+        const groupAdmin = accounts[2];
+
+
+        // Group
+        let groupID;
 
 
         // Setup
@@ -28,7 +33,7 @@ export default function() {
 
         // Group owner can add a group
         it(printTitle('group owner', 'can add a group'), async () => {
-            await scenarioAddGroup({
+            groupID = await scenarioAddGroup({
                 name: 'Group 1',
                 stakingFee: web3.utils.toWei('0.05', 'ether'),
                 value: newGroupFee,
@@ -116,6 +121,26 @@ export default function() {
             // Re-enable registrations
             rocketGroupSettings.setNewAllowed(true, {from: owner, gas: 500000});
 
+        });
+
+
+        // Random account can create a default group accessor
+        it(printTitle('random account', 'can create a default group accessor'), async () => {
+            await scenarioCreateDefaultGroupAccessor({
+                groupID,
+                fromAddress: groupAdmin,
+                gas: 7500000,
+            });
+        });
+
+
+        // Random account cannot create a default group accessor with an invalid group ID
+        it(printTitle('random account', 'cannot create a default group accessor with an invalid group ID'), async () => {
+            await assertThrows(scenarioCreateDefaultGroupAccessor({
+                groupID: accounts[9],
+                fromAddress: groupAdmin,
+                gas: 7500000,
+            }));
         });
 
 
