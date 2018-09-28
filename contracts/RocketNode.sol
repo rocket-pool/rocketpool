@@ -27,6 +27,15 @@ contract RocketNode is RocketBase {
     /*** Getters *************/
 
 
+    /// @dev Get the total number of available nodes (must have one or more available minipools)
+    function getAvailableNodeCount() public returns (uint256) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return
+            addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", false))) +
+            addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", "trusted", true)));
+    }
+
+
     /// @dev Get the address of a pseudorandom available node
     /// @return The node address and trusted status
     function getRandomAvailableNode(uint256 _nonce) public returns (address, bool) {
