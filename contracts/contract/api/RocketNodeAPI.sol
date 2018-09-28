@@ -222,8 +222,6 @@ contract RocketNodeAPI is RocketBase {
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "Node address already exists in the Rocket Pool network.");
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside
         address newContractAddress = rocketNodeFactory.createRocketNodeContract(msg.sender);
-        // Get how many nodes we currently have  
-        uint256 nodeCountTotal = rocketStorage.getUint(keccak256("nodes.total")); 
         // Make sure we can find the node contract address via its owner
         rocketStorage.setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), newContractAddress);
         // Ok now set our node data to key/value pair storage
