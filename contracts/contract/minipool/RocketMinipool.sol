@@ -307,6 +307,11 @@ contract RocketMinipool {
         return status.changed;
     }
 
+    /// @dev Returns the current staking duration ID
+    function getStakingDurationID() public view returns(string) {
+        return staking.id;
+    }
+
     /// @dev Returns the current staking duration in blocks
     function getStakingDuration() public view returns(uint256) {
         return staking.duration;

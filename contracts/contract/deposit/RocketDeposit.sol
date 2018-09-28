@@ -85,7 +85,7 @@ contract RocketDeposit is RocketBase {
         uint256 chunkAssignments = 0;
         while (
             rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID))) >= chunkSize && // Duration queue balance high enough to assign chunk
-            rocketNode.getAvailableNodeCount() > 0 && // Nodes (and minipools) are available for assignment
+            rocketNode.getAvailableNodeCount(_durationID) > 0 && // Nodes (and minipools) with duration are available for assignment
             chunkAssignments++ < maxChunkAssignments // Only assign up to maximum number of chunks
         ) {
             assignChunk(_durationID);
@@ -105,8 +105,7 @@ contract RocketDeposit is RocketBase {
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Get random available minipool to assign chunk to
-        // TODO: ensure minipool has matching staking duration
-        address miniPoolAddress = rocketPool.getRandomAvailableMinipool(msg.value);
+        address miniPoolAddress = rocketPool.getRandomAvailableMinipool(_durationID, msg.value);
         RocketMinipoolInterface miniPool = RocketMinipoolInterface(miniPoolAddress);
 
         // Check available minipool address
