@@ -31,7 +31,7 @@ contract RocketGroupAccessorContract {
 
 
     /// @dev RocketGroupAccessorContract Constructor
-    constructor(address _rocketStorageAddress, address _groupID) {
+    constructor(address _rocketStorageAddress, address _groupID) public {
         // Initialise properties
         version = 1;
         groupID = _groupID;
