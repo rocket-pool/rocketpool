@@ -347,7 +347,7 @@ contract RocketMinipoolDelegate {
     
     // Methods
 
-    /// @dev All kids outta the pool
+    /// @dev All kids outta the pool - 
     function closePool() public returns(bool) {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
@@ -359,12 +359,33 @@ contract RocketMinipoolDelegate {
             rocketPool.minipoolRemove(address(this));
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send the ether back
+            // Close now and send the ether (+ rewards if it completed) back
             selfdestruct(node.contractAddress); 
         }
         // Nope
         return false;
     }
+
+
+    /// @dev This pool has timeout - It has been stuck in status 1 for too long and has not begun staking yet, or it has completed staking and not all users have withdrawn their ether for a long time.
+    function cancelPool() public returns(bool) {
+        // Get the RP interface
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        // Check to see we're allowed to close this pool
+        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) { 
+            // Send back the RPL to the node owner
+            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
+            // Remove the minipool from storage
+            rocketPool.minipoolRemove(address(this));
+            // Log it
+            emit PoolDestroyed(msg.sender, address(this), now);
+            // Close now and send the ether (+ rewards if it completed) back
+            selfdestruct(node.contractAddress); 
+        }
+        // Nope
+        return false;
+    }
+
 
 
     /// @dev Sets the status of the pool based on its current parameters 
@@ -382,7 +403,7 @@ contract RocketMinipoolDelegate {
             // Done
             return;
         }
-        // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Users can withdraw their ether at this point if they change their mind. Node owners cannot withdraw their ether/rpl.
+        // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
             setStatus(1);

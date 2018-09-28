@@ -5,6 +5,7 @@ import "../../RocketBase.sol";
 import "../../contract/group/RocketGroupContract.sol";
 // Interfaces
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 // Utilities
 import "../../lib/Strings.sol";
 
@@ -23,6 +24,7 @@ contract RocketGroupAPI is RocketBase {
     /*** Contracts *************/
 
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);           // Settings for the groups
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                 // Address list utility
    
 
 
@@ -81,8 +83,9 @@ contract RocketGroupAPI is RocketBase {
     /// @param _name Name of the group (eg rocketpool, coinbase etc) - should be strictly lower case
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function add(string _name, uint256 _stakingFee) public payable onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
-        // Get the group settings
+        // Get the contracts
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Check groups are currently allowed
         require(rocketGroupSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
         // Make the name lower case
@@ -102,20 +105,14 @@ contract RocketGroupAPI is RocketBase {
             // Log it
             emit GroupAddFeeTransfer(newContractAddress, _name, msg.value, rocketGroupSettings.getNewFeeAddress(), now);
         }
-        // Add the group to storage now
-        uint256 groupCountTotal = rocketStorage.getUint(keccak256(abi.encodePacked("groups.total"))); 
         // Ok now set our data to key/value pair storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
         rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
-        // We store our data in an key/value array, so set its index so we can use an array to find it if needed
-        rocketStorage.setUint(keccak256(abi.encodePacked("group.index", newContractAddress)), groupCountTotal);
-        // Update total partners
-        rocketStorage.setUint(keccak256(abi.encodePacked("groups.total")), groupCountTotal + 1);
-        // We also index all our groups so we can do a reverse lookup based on its array index
-        rocketStorage.setAddress(keccak256(abi.encodePacked("groups.index.reverse", groupCountTotal)), newContractAddress);
         // Set the name as being used now
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", _name)), _name);
+        // Store our group address as an index set
+        addressSetStorage.addItem(keccak256(abi.encodePacked("groups", "list")), newContractAddress); 
         // Log it
         emit GroupAdd(newContractAddress, _name, _stakingFee, now);
         // Done

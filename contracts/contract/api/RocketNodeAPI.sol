@@ -9,6 +9,7 @@ import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
@@ -32,6 +33,7 @@ contract RocketNodeAPI is RocketBase {
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
 
 
     /*** Events ****************/
@@ -206,6 +208,8 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Get the node factory
         rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
+        // Get the list utility
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Initial address check
         require(address(msg.sender) != address(0x0), "An error has occurred with the sending address.");
         // Check the timezone location exists
@@ -229,12 +233,8 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
-        // We store our nodes in an key/value array, so set its index so we can use an array to find it if needed
-        rocketStorage.setUint(keccak256(abi.encodePacked("node.index", msg.sender)), nodeCountTotal);
-        // Update total nodes
-        rocketStorage.setUint(keccak256(abi.encodePacked("nodes.total")), nodeCountTotal + 1);
-        // We also index all our nodes so we can do a reverse lookup based on its array index
-        rocketStorage.setAddress(keccak256(abi.encodePacked("nodes.index.reverse", nodeCountTotal)), msg.sender);
+        // Store our node address as an index set
+        addressSetStorage.addItem(keccak256(abi.encodePacked("nodes", "list")), msg.sender); 
         // Log it
         emit NodeAdd(msg.sender, newContractAddress, now);
         // Done

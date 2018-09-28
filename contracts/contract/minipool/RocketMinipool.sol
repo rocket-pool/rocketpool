@@ -302,6 +302,11 @@ contract RocketMinipool {
         return status.current;
     }
 
+    // @dev Get the last time the status changed
+    function getStatusChanged() public view returns(uint256) {
+        return status.changed;
+    }
+
     /// @dev Returns the current staking duration in blocks
     function getStakingDuration() public view returns(uint256) {
         return staking.duration;
