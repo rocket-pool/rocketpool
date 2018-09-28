@@ -15,7 +15,12 @@ contract RocketGroupContract {
     address public owner;                                                       // The group owner that created the contract
     uint8   public version;                                                     // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    
+
+    mapping(address => bool) private depositors;                                // Valid depositor contracts for the group
+    uint256 private depositorCount = 0;
+    mapping(address => bool) private withdrawers;                               // Valid withdrawer contracts for the group
+    uint256 private withdrawerCount = 0;
+
 
     /*** Contracts ***************/
 
@@ -23,7 +28,29 @@ contract RocketGroupContract {
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);
 
     /*** Events ******************/
- 
+
+
+    event DepositorAdd (
+        address indexed _depositor,
+        uint256 added
+    );
+
+    event DepositorRemove (
+        address indexed _depositor,
+        uint256 removed
+    );
+
+    event WithdrawerAdd (
+        address indexed _withdrawer,
+        uint256 added
+    );
+
+    event WithdrawerRemove (
+        address indexed _withdrawer,
+        uint256 removed
+    );
+
+
     /*** Modifiers ***************/
 
     /**
@@ -75,6 +102,16 @@ contract RocketGroupContract {
         return rocketGroupSettings.getDefaultFee();
     }
 
+    /// @dev Check that a depositor exists in the group
+    function hasDepositor(address _depositorAddress) public view returns (bool) {
+        return depositors[_depositorAddress];
+    }
+
+    /// @dev Check that a withdrawer exists in the group
+    function hasWithdrawer(address _withdrawerAddress) public view returns (bool) {
+        return withdrawers[_withdrawerAddress];
+    }
+
 
     /*** Setters *************/
 
@@ -85,9 +122,47 @@ contract RocketGroupContract {
         // Done
         return true;
     }
-    
+
+
     /*** Methods *************/
 
-    
+
+    /// @dev Add a depositor contract
+    function addDepositor(address _depositorAddress) public onlyGroupOwner {
+        require(!depositors[_depositorAddress], "Depositor already exists in the group");
+        depositors[_depositorAddress] = true;
+        ++depositorCount;
+        emit DepositorAdd(_depositorAddress, now);
+    }
+
+
+    /// @dev Remove a depositor contract
+    function removeDepositor(address _depositorAddress) public onlyGroupOwner {
+        require(depositors[_depositorAddress], "Depositor does not exist in the group");
+        depositors[_depositorAddress] = false;
+        --depositorCount;
+        emit DepositorRemove(_depositorAddress, now);
+    }
+
+
+    /// @dev Add a withdrawer contract
+    function addWithdrawer(address _withdrawerAddress) public onlyGroupOwner {
+        require(!withdrawers[_withdrawerAddress], "Withdrawer already exists in the group");
+        withdrawers[_withdrawerAddress] = true;
+        ++withdrawerCount;
+        emit WithdrawerAdd(_withdrawerAddress, now);
+    }
+
+
+    /// @dev Remove a withdrawer contract
+    /// @dev The last withdrawer contract cannot be removed - at least one must always remain
+    function removeWithdrawer(address _withdrawerAddress) public onlyGroupOwner {
+        require(withdrawers[_withdrawerAddress], "Withdrawer does not exist in the group");
+        require(withdrawerCount > 1, "The last withdrawer in the group cannot be removed");
+        withdrawers[_withdrawerAddress] = false;
+        --withdrawerCount;
+        emit WithdrawerRemove(_withdrawerAddress, now);
+    }
+
 
 }
