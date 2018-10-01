@@ -4,6 +4,7 @@ pragma solidity 0.4.24;
 import "../../RocketBase.sol";
 import "../../interface/api/RocketGroupAPIInterface.sol";
 import "../../interface/deposit/RocketDepositInterface.sol";
+import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
@@ -79,8 +80,9 @@ contract RocketDepositAPI is RocketBase {
         require(address(_userID) != address(0x0), "UserID address is not a correct address");
         // Verify the groupID exists
         require(bytes(rocketGroupAPI.getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
-        // Verify the _from belongs to the groupID, only these addresses that belong to the group can interact with RP
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.address", _from))) != address(0x0), "Group ID specified does not have any address that matches the sender.");
+        // Verify that _from is a depositor of the group
+        RocketGroupContractInterface rocketGroup = RocketGroupContractInterface(_groupID);
+        require(rocketGroup.hasDepositor(_from), "Group ID specified does not have a depositor matching the sender.");
         // All good
         return true;
     }

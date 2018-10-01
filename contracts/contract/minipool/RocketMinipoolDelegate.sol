@@ -4,7 +4,6 @@ pragma solidity 0.4.24;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
-import "../../interface/api/RocketDepositAPIInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
@@ -43,7 +42,6 @@ contract RocketMinipoolDelegate {
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
-    RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);                      // The Rocket Pool deposit API
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
@@ -253,30 +251,23 @@ contract RocketMinipoolDelegate {
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
     /// @param _groupID The 3rd party group the user belongs too
-    /// @param _groupDepositor The 3rd party group address that is making this deposit
-    function deposit(address _user, address _groupID, address _groupDepositor) public payable onlyLatestContract("rocketDeposit") returns(bool) {
+    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDeposit") returns(bool) {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
         // Load contracts
-        rocketDepositAPI = RocketDepositAPIInterface(getContractAddress("rocketDepositAPI"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Verify deposit is ok
-        if(rocketDepositAPI.getDepositIsValid(msg.value, _groupDepositor, users[_user].groupID, _user, staking.id)) {
-            // Make sure we are accepting deposits
-            require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
-            // Make sure this deposit won't put us over the amount needed by casper, this shouldn't happen if chunking is working correctly, but double check
-            require(address(this).balance <= rocketMinipoolSettings.getMinipoolLaunchAmount(), "Deposit will overload minipools ether requirement for Casper.");
-            // Add to their balance
-            users[_user].balance = users[_user].balance.add(msg.value);
-            // All good? Fire the event for the new deposit
-            emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
-            // Update the status
-            updateStatus();
-            // If all went well
-            return true;
-        }
-        return false;
-        
+        // Make sure we are accepting deposits
+        require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
+        // Make sure this deposit won't put us over the amount needed by casper, this shouldn't happen if chunking is working correctly, but double check
+        require(address(this).balance <= rocketMinipoolSettings.getMinipoolLaunchAmount(), "Deposit will overload minipools ether requirement for Casper.");
+        // Add to their balance
+        users[_user].balance = users[_user].balance.add(msg.value);
+        // All good? Fire the event for the new deposit
+        emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
+        // Update the status
+        updateStatus();
+        // Success
+        return true;
     }
 
     /// @dev Register a new user in the minipool

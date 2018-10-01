@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 // Contracts
 import "../../RocketBase.sol";
 import "../../contract/group/RocketGroupContract.sol";
+import "../../contract/group/RocketGroupAccessorContract.sol";
 // Interfaces
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -24,7 +25,7 @@ contract RocketGroupAPI is RocketBase {
     /*** Contracts *************/
 
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);           // Settings for the groups
-    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                 // Address list utility
    
 
 
@@ -42,6 +43,12 @@ contract RocketGroupAPI is RocketBase {
         string name,
         uint256 amount,
         address sentAddress,
+        uint256 created
+    );
+
+    event GroupCreateDefaultAccessor (
+        address indexed ID,
+        address accessorAddress,
         uint256 created
     );
 
@@ -74,12 +81,6 @@ contract RocketGroupAPI is RocketBase {
     function getGroupName(address _ID) public view returns(string) { 
         // Get the group name
         return rocketStorage.getString(keccak256(abi.encodePacked("group.name", _ID)));
-    }
-
-    /// @dev Get a verified address for the group that's allowed to interact with RP
-    function getGroupDepositAddress(address _ID) public view returns(address) { 
-        // Get the deposit address
-        return rocketStorage.getAddress(keccak256(abi.encodePacked("group.deposit.address", _ID)));
     }
     
 
@@ -115,16 +116,28 @@ contract RocketGroupAPI is RocketBase {
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
         rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
-        // Add msg.sender as a depositer for this group initially
-        rocketStorage.setAddress(keccak256(abi.encodePacked("group.deposit.address", msg.sender)), msg.sender);
         // Set the name as being used now
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", _name)), _name);
         // Store our group address as an index set
-        addressSetStorage.addItem(keccak256(abi.encodePacked("groups", "list")), newContractAddress); 
+        addressSetStorage.addItem(keccak256("groups.list"), newContractAddress); 
         // Log it
         emit GroupAdd(newContractAddress, _name, _stakingFee, now);
         // Done
         return true;
     }
+
+
+    /// @dev Create a new default group accessor contract
+    function createDefaultAccessor(address _ID) public onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
+        // Check that the group exists
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != 0x0);
+        // Create accessor contract
+        RocketGroupAccessorContract newAccessorAddress = new RocketGroupAccessorContract(address(rocketStorage), _ID);
+        // Emit creation event
+        emit GroupCreateDefaultAccessor(_ID, newAccessorAddress, now);
+        // Success
+        return true;
+    }
+
 
 }

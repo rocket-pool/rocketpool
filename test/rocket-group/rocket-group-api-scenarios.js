@@ -22,7 +22,30 @@ export async function scenarioAddGroup({name, stakingFee, value, fromAddress, ga
     let feeBalance2 = parseInt(await web3.eth.getBalance(feeAddress));
 
     // Asserts
-    assert.equal(result.logs.filter(log => (log.event == 'GroupAdd')).length, 1, 'Group was not created successfully');
+    let groupAddEvents = result.logs.filter(log => (log.event == 'GroupAdd'));
+    assert.equal(groupAddEvents.length, 1, 'Group was not created successfully');
     assert.isTrue(feeBalance2 > feeBalance1, 'Creation fee balance was not transferred successfully');
 
+    // Return group ID
+    return groupAddEvents[0].args.ID;
+
 }
+
+
+// Create a default group accessor
+export async function scenarioCreateDefaultGroupAccessor({groupID, fromAddress, gas}) {
+    const rocketGroupAPI = await RocketGroupAPI.deployed();
+
+    // Create accessor
+    let result = await rocketGroupAPI.createDefaultAccessor(groupID, {from: fromAddress, gas: gas});
+    profileGasUsage('RocketGroupAPI.createDefaultAccessor', result);
+
+    // Asserts
+    let groupCreateAccessorEvents = result.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'));
+    assert.equal(groupCreateAccessorEvents.length, 1, 'Accessor was not created successfully');
+
+    // Return accessor address
+    return groupCreateAccessorEvents[0].args.accessorAddress;
+
+}
+
