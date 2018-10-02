@@ -31,9 +31,6 @@ export default function() {
             // Get deposit settings contract
             rocketDepositSettings = await RocketDepositSettings.deployed();
 
-            // Set max chunk assignments
-            await rocketDepositSettings.setChunkAssignMax(3, {from: owner, gas: 500000});
-
             // Get deposit settings
             let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
             minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
@@ -131,7 +128,7 @@ export default function() {
             });
 
             // Make minimum deposits
-            for (let di = 0; di < numMinDeposits; ++di) {
+            for (let di = 0; di < numMinDeposits + 1; ++di) {
                 await scenarioDeposit({
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
