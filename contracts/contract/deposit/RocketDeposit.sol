@@ -35,6 +35,20 @@ contract RocketDeposit is RocketBase {
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
+    /*** Modifiers ************/
+
+
+    // Sender must be a super user or the RocketDeposit API
+    modifier onlySuperUserOrDepositAPI() {
+        require(
+            (roleHas("owner", msg.sender) || roleHas("admin", msg.sender)) ||
+            msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))),
+            "User is not a super user or RocketDeposit API"
+        );
+        _;
+    }
+
+
     /*** Methods ****************/
 
 
@@ -71,7 +85,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Assign chunks while able
-    function assignChunks(string _durationID) public onlySuperUser() {
+    function assignChunks(string _durationID) public onlySuperUserOrDepositAPI() {
 
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
