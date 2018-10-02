@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
+import { RocketDepositSettings, RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
 import { scenarioDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
@@ -15,9 +15,17 @@ export default function() {
 
 
         // Setup
+        let rocketDepositSettings;
         let groupContractAddress;
         let groupAccessorContract;
         before(async () => {
+
+            //
+            // Deposit
+            //
+
+            // Get deposit settings contract
+            rocketDepositSettings = await RocketDepositSettings.deployed();
 
             //
             // Group
@@ -92,8 +100,105 @@ export default function() {
         });
 
 
+        // Random account cannot deposit with an invalid staking duration ID
+        it(printTitle('random account', 'cannot deposit with an invalid staking duration ID'), async () => {
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: 'beer',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited with an invalid staking duration ID');
+        });
+
+
+        // Random account cannot deposit while deposits are disabled
+        it(printTitle('random account', 'cannot deposit while deposits are disabled'), async () => {
+
+            // Disable deposits
+            await rocketDepositSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited while deposits were disabled');
+
+            // Reenable deposits
+            await rocketDepositSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+
+        });
+
+
+        // Random account cannot deposit under the minimum deposit amount
+        it(printTitle('random account', 'cannot deposit under the minimum deposit amount'), async () => {
+
+            // Set minimum deposit
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('1000', 'ether'), {from: owner, gas: 500000});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited under the minimum deposit amount');
+
+            // Reset minimum deposit
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+
+        });
+
+
+        // Random account cannot deposit over the maximum deposit amount
+        it(printTitle('random account', 'cannot deposit over the maximum deposit amount'), async () => {
+
+            // Set maximum deposit
+            await rocketDepositSettings.setDepositMax(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited over the maximum deposit amount');
+
+            // Reset maximum deposit
+            await rocketDepositSettings.setDepositMax(web3.utils.toWei('1000', 'ether'), {from: owner, gas: 500000});
+
+        });
+
+
         // Random account cannot deposit via deposit API
         it(printTitle('random account', 'cannot deposit via deposit API'), async () => {
+
+            // Invalid user ID
+            await assertThrows(scenarioAPIDeposit({
+                groupID: groupContractAddress,
+                userID: '0x0000000000000000000000000000000000000000',
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited with an invalid user ID');
+
+            // Invalid group ID
+            await assertThrows(scenarioAPIDeposit({
+                groupID: accounts[9],
+                userID: user1,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited with an invalid group ID');
+
+            // Valid parameters; invalid depositor
             await assertThrows(scenarioAPIDeposit({
                 groupID: groupContractAddress,
                 userID: user1,
@@ -102,6 +207,7 @@ export default function() {
                 value: web3.utils.toWei('16', 'ether'),
                 gas: 7500000,
             }), 'Deposited directly via RocketDepositAPI');
+
         });
 
 

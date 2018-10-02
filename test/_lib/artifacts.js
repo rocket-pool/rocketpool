@@ -2,6 +2,7 @@ const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
 
 export const RocketDepositAPI = artifacts.require('./contract/RocketDepositAPI');
+export const RocketDepositSettings = artifacts.require('./contract/RocketDepositSettings');
 export const RocketGroupAPI = artifacts.require('./contract/RocketGroupAPI');
 export const RocketGroupAccessorContract = artifacts.require('./contract/RocketGroupAccessorContract');
 export const RocketGroupContract = artifacts.require('./contract/RocketGroupContract');
