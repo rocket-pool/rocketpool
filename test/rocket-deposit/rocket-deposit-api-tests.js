@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
-import { scenarioDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
@@ -15,6 +15,7 @@ export default function() {
 
 
         // Setup
+        let groupContractAddress;
         let groupAccessorContract;
         before(async () => {
 
@@ -31,7 +32,7 @@ export default function() {
             let groupResult = await rocketGroupAPI.add('Group 1', web3.utils.toWei('0.05', 'ether'), {from: groupOwner, gas: 7500000, value: newGroupFee});
 
             // Get group contract
-            let groupContractAddress = groupResult.logs.filter(log => (log.event == 'GroupAdd'))[0].args.ID;
+            groupContractAddress = groupResult.logs.filter(log => (log.event == 'GroupAdd'))[0].args.ID;
             let groupContract = await RocketGroupContract.at(groupContractAddress);
 
             // Create default group accessor
@@ -79,8 +80,8 @@ export default function() {
         });
 
 
-        // Random account can deposit via accessor
-        it(printTitle('random account', 'can deposit'), async () => {
+        // Random account can deposit via group depositor
+        it(printTitle('random account', 'can deposit via group depositor'), async () => {
             await scenarioDeposit({
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
@@ -88,6 +89,19 @@ export default function() {
                 value: web3.utils.toWei('16', 'ether'),
                 gas: 7500000,
             });
+        });
+
+
+        // Random account cannot deposit via deposit API
+        it(printTitle('random account', 'cannot deposit via deposit API'), async () => {
+            await assertThrows(scenarioAPIDeposit({
+                groupID: groupContractAddress,
+                userID: user1,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('16', 'ether'),
+                gas: 7500000,
+            }), 'Deposited directly via RocketDepositAPI');
         });
 
 
