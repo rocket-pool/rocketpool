@@ -16,9 +16,13 @@ export default function() {
 
         // Setup
         let rocketDepositSettings;
+        let minDepositSize;
+        let numMinDeposits;
+        let initialDepositSize;
         let groupContractAddress;
         let groupAccessorContract;
         before(async () => {
+
 
             //
             // Deposit
@@ -26,6 +30,20 @@ export default function() {
 
             // Get deposit settings contract
             rocketDepositSettings = await RocketDepositSettings.deployed();
+
+            // Set max chunk assignments
+            await rocketDepositSettings.setChunkAssignMax(3, {from: owner, gas: 500000});
+
+            // Get deposit settings
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+            minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
+            let chunksPerDeposit = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+
+            // Get deposit scenario parameters
+            numMinDeposits = Math.ceil(chunkSize / minDepositSize) * chunksPerDeposit;
+            initialDepositSize = chunkSize * chunksPerDeposit * numMinDeposits;
+            let minDepositsTotalSize = numMinDeposits * minDepositSize;
+
 
             //
             // Group
@@ -55,6 +73,7 @@ export default function() {
             await groupContract.addDepositor(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
             await groupContract.addWithdrawer(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
 
+
             //
             // Node
             //
@@ -73,30 +92,55 @@ export default function() {
             let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
             let nodeDepositAmount = Math.floor(miniPoolLaunchAmount / 2) * miniPoolMaxCreateCount;
 
-            // Reserve node deposit
-            await nodeContract.depositReserve(nodeDepositAmount, '3m', {from: nodeOperator, gas: 500000});
-
-            // Deposit required RPL
-            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+            // Get RPL token contract
             let rocketPoolToken = await RocketPoolToken.deployed();
-            await rocketPoolToken.mint(nodeContract.address, rplRequired, {from: owner, gas: 500000});
 
-            // Deposit
-            // Creates minipools ready for user deposit assignment
-            await nodeContract.deposit({from: nodeOperator, gas: 7500000, value: nodeDepositAmount});
+            // Get deposit scenario parameters
+            let minipoolsRequired = Math.ceil((initialDepositSize + minDepositsTotalSize) / Math.floor(miniPoolLaunchAmount / 2)) + 1;
+
+            // Create minipools
+            for (let mi = 0; mi < minipoolsRequired; mi += miniPoolMaxCreateCount) {
+
+                // Reserve node deposit
+                await nodeContract.depositReserve(nodeDepositAmount, '3m', {from: nodeOperator, gas: 500000});
+
+                // Deposit required RPL
+                let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+                await rocketPoolToken.mint(nodeContract.address, rplRequired, {from: owner, gas: 500000});
+
+                // Deposit
+                // Creates minipools ready for user deposit assignment
+                await nodeContract.deposit({from: nodeOperator, gas: 7500000, value: nodeDepositAmount});
+
+            }
+
 
         });
 
 
         // Random account can deposit via group depositor
         it(printTitle('random account', 'can deposit via group depositor'), async () => {
+
+            // Make initial large deposit
             await scenarioDeposit({
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
-                value: web3.utils.toWei('16', 'ether'),
+                value: initialDepositSize + 1,
                 gas: 7500000,
             });
+
+            // Make minimum deposits
+            for (let di = 0; di < numMinDeposits; ++di) {
+                await scenarioDeposit({
+                    depositorContract: groupAccessorContract,
+                    durationID: '3m',
+                    fromAddress: user1,
+                    value: minDepositSize,
+                    gas: 7500000,
+                });
+            }
+
         });
 
 
