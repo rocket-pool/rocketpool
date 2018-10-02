@@ -58,6 +58,10 @@ contract RocketDeposit is RocketBase {
     }
 
 
+    // Default payable function - for deposit vault withdrawals
+    function() payable public onlyLatestContract("rocketDepositVault", msg.sender) {}
+
+
     // Create a new deposit
     function create(address _userID, address _groupID, string _durationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
 

@@ -33,7 +33,7 @@ contract RocketDepositVault is RocketBase {
     /// @param _withdrawalAddress The address to withdraw ether to
     /// @param _amount The amount of ether to withdraw
     function withdrawEther(address _withdrawalAddress, uint256 _amount) external onlyLatestContract("rocketDeposit", msg.sender) returns (bool) {
-        _withdrawalAddress.transfer(_amount);
+        require(_withdrawalAddress.call.value(_amount)(), "Withdrawal amount could not be transferred to withdrawal address");
         return true;
     }
 
