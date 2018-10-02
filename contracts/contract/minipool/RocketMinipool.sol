@@ -277,7 +277,9 @@ contract RocketMinipool {
     /// @param _groupID The 3rd party group the user belongs too
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("deposit(address,address,address)"), _user, _groupID), "Delegate call failed.");
+        require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("deposit(address,address)"), _user, _groupID), "Delegate call failed.");
+        // Success
+        return true;
     }
 
     
@@ -288,6 +290,8 @@ contract RocketMinipool {
     function addUser(address _user, address _groupID) private returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
+        // Success
+        return true;
     }
 
 
