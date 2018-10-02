@@ -175,6 +175,27 @@ export default function() {
         });
 
 
+        // Random account cannot make empty deposit
+        it(printTitle('random account', 'cannot make empty deposit'), async () => {
+
+            // Set minimum deposit
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0', 'ether'), {from: owner, gas: 500000});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: 0,
+                gas: 7500000,
+            }), 'Made an empty deposit');
+
+            // Reset minimum deposit
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+
+        });
+
+
         // Random account cannot deposit via deposit API
         it(printTitle('random account', 'cannot deposit via deposit API'), async () => {
 
