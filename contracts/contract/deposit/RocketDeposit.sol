@@ -195,7 +195,9 @@ contract RocketDeposit is RocketBase {
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Get deposit ID
-        bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, _durationID, _amount, now));
+        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.user.nonce", _userID, _groupID))).add(1);
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.user.nonce", _userID, _groupID)), depositIDNonce);
+        bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, depositIDNonce));
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", depositID))), "Deposit ID already in use");
 
         // Set deposit details
