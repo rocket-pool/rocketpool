@@ -67,3 +67,29 @@ export async function scenarioDequeueItem({prefix, key, fromAddress, gas}) {
 
 }
 
+
+// Remove an item
+export async function scenarioRemoveQueueItem({prefix, key, value, fromAddress, gas}) {
+    const testQueues = await TestQueues.deployed();
+
+    // Get initial queue
+    let queue1 = await getQueue(prefix, key);
+
+    // Get item index
+    let itemIndex = parseInt(await testQueues[`${prefix}_getQueueIndexOf`].call(key, value));
+
+    // Remove item
+    await testQueues[`${prefix}_removeItem`](key, value, {from: fromAddress, gas: gas});
+
+    // Get updated queue
+    let queue2 = await getQueue(prefix, key);
+
+    // Asserts
+    assert.equal(queue2.length, queue1.length - 1, 'Queue length was not updated correctly');
+    queue2.forEach((item, queueIndex) => {
+        if (queueIndex == itemIndex) assert.equal(queue2[queueIndex], queue1[queue1.length - 1], 'Last item was not moved correctly');
+        else assert.equal(queue1[queueIndex], queue2[queueIndex], 'Queue items changed which should not have');
+    });
+
+}
+

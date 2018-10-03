@@ -48,12 +48,27 @@ contract AddressQueueStorage is RocketBase {
     }
 
 
+    /// @dev The index of an item in an address queue
+    /// @dev Returns -1 if the value is not found
+    function getQueueIndexOf(bytes32 _key, address _value) external view returns (int) {
+        int index = int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
+        if (index != -1) {
+            index -= int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))));
+            if (index < 0) { index += int(capacity); }
+        }
+        return index;
+    }
+
+
     /// @dev Add an item to the end of an address queue
     /// @dev Requires that the queue is not at capacity
+    /// @dev Requires that the item does not exist in the queue
     function enqueueItem(bytes32 _key, address _value) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
+        require(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value))) == 0, "Item already exists in queue");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
         rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", index)), _value);
+        rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", _value)), index + 1);
         index = index.add(1);
         if (index >= capacity) { index = index.sub(capacity); }
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "end")), index);
@@ -64,9 +79,31 @@ contract AddressQueueStorage is RocketBase {
     /// @dev Requires that the queue is not empty
     function dequeueItem(bytes32 _key) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) > 0, "Queue is empty");
-        uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(1);
+        uint start = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start")));
+        address item = rocketStorage.getAddress(keccak256(abi.encodePacked(_key, "item", start)));
+        start = start.add(1);
         if (start >= capacity) { start = start.sub(capacity); }
+        rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", item)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "start")), start);
+    }
+
+
+    /// @dev Remove an item from an address queue
+    /// @dev Swaps the item with the last item in the queue and truncates it; computationally cheap
+    /// @dev Requires that the item exists in the queue
+    function removeItem(bytes32 _key, address _value) onlyLatestRocketNetworkContract external {
+        uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)));
+        require(index-- > 0, "Item does not exist in queue");
+        uint lastIndex = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
+        if (lastIndex == 0) lastIndex = capacity;
+        lastIndex = lastIndex.sub(1);
+        if (index != lastIndex) {
+            address lastItem = rocketStorage.getAddress(keccak256(abi.encodePacked(_key, "item", lastIndex)));
+            rocketStorage.setAddress(keccak256(abi.encodePacked(_key, "item", index)), lastItem);
+            rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", lastItem)), index + 1);
+        }
+        rocketStorage.setUint(keccak256(abi.encodePacked(_key, "index", _value)), 0);
+        rocketStorage.setUint(keccak256(abi.encodePacked(_key, "end")), lastIndex);
     }
 
 
