@@ -100,11 +100,17 @@ contract TestQueues is RocketBase {
     function bytes32_getQueueItem(bytes32 _key, uint _index) external view returns (bytes32) {
         return bytes32QueueStorage.getQueueItem(_key, _index);
     }
+    function bytes32_getQueueIndexOf(bytes32 _key, bytes32 _value) external view returns (int) {
+        return bytes32QueueStorage.getQueueIndexOf(_key, _value);
+    }
     function bytes32_enqueueItem(bytes32 _key, bytes32 _value) external {
         bytes32QueueStorage.enqueueItem(_key, _value);
     }
     function bytes32_dequeueItem(bytes32 _key) external {
         bytes32QueueStorage.dequeueItem(_key);
+    }
+    function bytes32_removeItem(bytes32 _key, bytes32 _value) external {
+        bytes32QueueStorage.removeItem(_key, _value);
     }
 
 

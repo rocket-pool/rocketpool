@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { TestLists, TestQueues, TestSets } from '../_lib/artifacts';
 import { scenarioPushListItem, scenarioSetListItem, scenarioInsertListItem, scenarioRemoveOListItem, scenarioRemoveUListItem } from './rocket-list-storage-scenarios';
-import { scenarioEnqueueItem, scenarioDequeueItem } from './rocket-queue-storage-scenarios';
+import { scenarioEnqueueItem, scenarioDequeueItem, scenarioRemoveQueueItem } from './rocket-queue-storage-scenarios';
 import { scenarioAddItem, scenarioRemoveItem } from './rocket-set-storage-scenarios';
 
 export default function() {
@@ -196,7 +196,7 @@ export default function() {
 
 
             // Perform multiple test runs to test queue wrapping
-            for (let ri = 0; ri < 3; ++ri) {
+            for (let ri = 0; ri < 6; ++ri) {
                 let runTestValues = testValues[ri];
 
 
@@ -231,7 +231,8 @@ export default function() {
                 });
 
 
-                // Dequeue items
+                // Dequeue items (first 3 runs)
+                if (ri < 3) {
                 it(printTitle('-----', 'dequeue items'), async () => {
 
                     // Get queue length
@@ -256,6 +257,40 @@ export default function() {
                     }), 'Dequeued an item while queue is empty');
 
                 });
+                }
+
+                // Remove items (last 3 runs)
+                else {
+                it(printTitle('-----', 'remove items'), async () => {
+
+                    // Check queue length
+                    let length = parseInt(await testQueues[`${prefix}_getQueueLength`].call(key));
+                    assert.equal(length, 3, 'Pre-check failed - longer queue than removal index list length');
+
+                    // Remove items
+                    let removeItemsAt = [1, 2, 0];
+                    for (let i = 0; i < length; ++i) {
+                        let item = runTestValues[removeItemsAt[i]];
+                        await scenarioRemoveQueueItem({
+                            prefix,
+                            key,
+                            value: item,
+                            fromAddress: accounts[0],
+                            gas: 500000,
+                        });
+                    }
+
+                    // Attempt removal
+                    await assertThrows(scenarioRemoveQueueItem({
+                        prefix,
+                        key,
+                        value: runTestValues[3],
+                        fromAddress: accounts[0],
+                        gas: 500000,
+                    }), 'Removed a nonexistent item from queue');
+
+                });
+                }
 
             }
 
@@ -476,26 +511,6 @@ export default function() {
             '0x0000000000000000000000000000000000000012',
         ],
     ]);
-    queueTests('BoolQueueStorage', 'bool', web3.utils.soliditySha3('queue.bools'), [
-        [
-            true,
-            false,
-            true,
-            false,
-        ],
-        [
-            true,
-            false,
-            true,
-            false,
-        ],
-        [
-            true,
-            false,
-            true,
-            false,
-        ],
-    ]);
     queueTests('BytesQueueStorage', 'bytes', web3.utils.soliditySha3('queue.bytes'), [
         [
             web3.utils.soliditySha3('test string 1'),
@@ -534,6 +549,24 @@ export default function() {
             '0x0000000000000000000000000000000000000000000000000000000000000010',
             '0x0000000000000000000000000000000000000000000000000000000000000011',
             '0x0000000000000000000000000000000000000000000000000000000000000012',
+        ],
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000013',
+            '0x0000000000000000000000000000000000000000000000000000000000000014',
+            '0x0000000000000000000000000000000000000000000000000000000000000015',
+            '0x0000000000000000000000000000000000000000000000000000000000000016',
+        ],
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000017',
+            '0x0000000000000000000000000000000000000000000000000000000000000018',
+            '0x0000000000000000000000000000000000000000000000000000000000000019',
+            '0x0000000000000000000000000000000000000000000000000000000000000020',
+        ],
+        [
+            '0x0000000000000000000000000000000000000000000000000000000000000021',
+            '0x0000000000000000000000000000000000000000000000000000000000000022',
+            '0x0000000000000000000000000000000000000000000000000000000000000023',
+            '0x0000000000000000000000000000000000000000000000000000000000000024',
         ],
     ]);
     queueTests('IntQueueStorage', 'int', web3.utils.soliditySha3('queue.ints'), [
