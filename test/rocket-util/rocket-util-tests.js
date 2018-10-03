@@ -510,6 +510,24 @@ export default function() {
             '0x0000000000000000000000000000000000000011',
             '0x0000000000000000000000000000000000000012',
         ],
+        [
+            '0x0000000000000000000000000000000000000013',
+            '0x0000000000000000000000000000000000000014',
+            '0x0000000000000000000000000000000000000015',
+            '0x0000000000000000000000000000000000000016',
+        ],
+        [
+            '0x0000000000000000000000000000000000000017',
+            '0x0000000000000000000000000000000000000018',
+            '0x0000000000000000000000000000000000000019',
+            '0x0000000000000000000000000000000000000020',
+        ],
+        [
+            '0x0000000000000000000000000000000000000021',
+            '0x0000000000000000000000000000000000000022',
+            '0x0000000000000000000000000000000000000023',
+            '0x0000000000000000000000000000000000000024',
+        ],
     ]);
     queueTests('BytesQueueStorage', 'bytes', web3.utils.soliditySha3('queue.bytes'), [
         [
@@ -529,6 +547,24 @@ export default function() {
             web3.utils.soliditySha3('test string 10'),
             web3.utils.soliditySha3('test string 11'),
             web3.utils.soliditySha3('test string 12'),
+        ],
+        [
+            web3.utils.soliditySha3('test string 13'),
+            web3.utils.soliditySha3('test string 14'),
+            web3.utils.soliditySha3('test string 15'),
+            web3.utils.soliditySha3('test string 16'),
+        ],
+        [
+            web3.utils.soliditySha3('test string 17'),
+            web3.utils.soliditySha3('test string 18'),
+            web3.utils.soliditySha3('test string 19'),
+            web3.utils.soliditySha3('test string 20'),
+        ],
+        [
+            web3.utils.soliditySha3('test string 21'),
+            web3.utils.soliditySha3('test string 22'),
+            web3.utils.soliditySha3('test string 23'),
+            web3.utils.soliditySha3('test string 24'),
         ],
     ]);
     queueTests('Bytes32QueueStorage', 'bytes32', web3.utils.soliditySha3('queue.bytes32'), [
@@ -588,6 +624,24 @@ export default function() {
             -11,
             12,
         ],
+        [
+            -13,
+            14,
+            -15,
+            16,
+        ],
+        [
+            -17,
+            18,
+            -19,
+            20,
+        ],
+        [
+            -21,
+            22,
+            -23,
+            24,
+        ],
     ]);
     queueTests('StringQueueStorage', 'string', web3.utils.soliditySha3('queue.strings'), [
         [
@@ -608,6 +662,24 @@ export default function() {
             'test string 11',
             'test string 12',
         ],
+        [
+            'test string 13',
+            'test string 14',
+            'test string 15',
+            'test string 16',
+        ],
+        [
+            'test string 17',
+            'test string 18',
+            'test string 19',
+            'test string 20',
+        ],
+        [
+            'test string 21',
+            'test string 22',
+            'test string 23',
+            'test string 24',
+        ],
     ]);
     queueTests('UintQueueStorage', 'uint', web3.utils.soliditySha3('queue.uints'), [
         [
@@ -627,6 +699,24 @@ export default function() {
             10,
             11,
             12,
+        ],
+        [
+            13,
+            14,
+            15,
+            16,
+        ],
+        [
+            17,
+            18,
+            19,
+            20,
+        ],
+        [
+            21,
+            22,
+            23,
+            24,
         ],
     ]);
 
