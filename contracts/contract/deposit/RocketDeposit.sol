@@ -8,6 +8,7 @@ import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
+import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
@@ -32,6 +33,7 @@ contract RocketDeposit is RocketBase {
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
+    Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
@@ -72,8 +74,8 @@ contract RocketDeposit is RocketBase {
         add(_userID, _groupID, _durationID, msg.value);
 
         // Update queue balance
-        uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID))).add(msg.value);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)), queueBalance);
+        bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
+        rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).add(msg.value));
 
         // Transfer deposit amount to vault
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
@@ -144,6 +146,8 @@ contract RocketDeposit is RocketBase {
             bytes32 depositID = bytes32QueueStorage.getQueueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), 0);
             uint256 queuedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)));
             uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", depositID)));
+            address userID = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", depositID)));
+            address groupID = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", depositID)));
 
             // Get queued deposit ether amount to match
             uint256 matchAmount = queuedAmount;
@@ -164,13 +168,14 @@ contract RocketDeposit is RocketBase {
             rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, miniPoolAddress)), stakingPoolAmount.add(matchAmount));
 
             // Transfer matched amount to minipool contract
-            require(miniPool.deposit.value(matchAmount)(
-                rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", depositID))),
-                rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", depositID)))
-            ), "Deposit could not be transferred to minipool");
+            require(miniPool.deposit.value(matchAmount)(userID, groupID), "Deposit could not be transferred to minipool");
 
             // Remove deposit from queue if queued amount depleted
-            if (queuedAmount == 0) { bytes32QueueStorage.dequeueItem(keccak256(abi.encodePacked("deposits.queue", _durationID))); }
+            if (queuedAmount == 0) {
+                bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+                bytes32SetStorage.removeItem(keccak256(abi.encodePacked("user.deposits.queued", userID, groupID)), depositID);
+                bytes32QueueStorage.dequeueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)));
+            }
 
             // Stop if required ether amount matched
             if (amountToMatch == 0) { break; }
@@ -181,8 +186,8 @@ contract RocketDeposit is RocketBase {
         require(amountToMatch == 0, "Required ether amount was not matched");
 
         // Update queue balance
-        uint256 queueBalance = rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID))).sub(chunkSize);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)), queueBalance);
+        bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
+        rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).sub(chunkSize));
 
     }
 
@@ -192,11 +197,14 @@ contract RocketDeposit is RocketBase {
     function add(address _userID, address _groupID, string _durationID, uint256 _amount) private returns (bytes32) {
 
         // Get contracts
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
+        // Get user deposit nonce
+        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID))).add(1);
+        rocketStorage.setUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID)), depositIDNonce);
+
         // Get deposit ID
-        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.user.nonce", _userID, _groupID))).add(1);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.user.nonce", _userID, _groupID)), depositIDNonce);
         bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, depositIDNonce));
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", depositID))), "Deposit ID already in use");
 
@@ -212,6 +220,8 @@ contract RocketDeposit is RocketBase {
         // + stakingPoolAmount
 
         // Update deposit indexes
+        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID)), depositID);
+        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID)), depositID);
         bytes32QueueStorage.enqueueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), depositID);
 
         // Return ID
