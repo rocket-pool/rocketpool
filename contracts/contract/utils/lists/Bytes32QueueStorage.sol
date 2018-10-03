@@ -54,7 +54,7 @@ contract Bytes32QueueStorage is RocketBase {
         int index = int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
         if (index != -1) {
             index -= int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))));
-            if (index < 0) { index += capacity; }
+            if (index < 0) { index += int(capacity); }
         }
         return index;
     }
