@@ -64,11 +64,17 @@ contract TestQueues is RocketBase {
     function address_getQueueItem(bytes32 _key, uint _index) external view returns (address) {
         return addressQueueStorage.getQueueItem(_key, _index);
     }
+    function address_getQueueIndexOf(bytes32 _key, address _value) external view returns (int) {
+        return addressQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function address_enqueueItem(bytes32 _key, address _value) external {
         addressQueueStorage.enqueueItem(_key, _value);
     }
     function address_dequeueItem(bytes32 _key) external {
         addressQueueStorage.dequeueItem(_key);
+    }
+    function address_removeItem(bytes32 _key, address _value) external {
+        addressQueueStorage.removeItem(_key, _value);
     }
 
 
@@ -82,12 +88,19 @@ contract TestQueues is RocketBase {
     function bool_getQueueItem(bytes32 _key, uint _index) external view returns (bool) {
         return boolQueueStorage.getQueueItem(_key, _index);
     }
+    function bool_getQueueIndexOf(bytes32 _key, bool _value) external view returns (int) {
+        return boolQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function bool_enqueueItem(bytes32 _key, bool _value) external {
         boolQueueStorage.enqueueItem(_key, _value);
     }
     function bool_dequeueItem(bytes32 _key) external {
         boolQueueStorage.dequeueItem(_key);
     }
+    function bool_removeItem(bytes32 _key, bool _value) external {
+        boolQueueStorage.removeItem(_key, _value);
+    }
+
 
 
     // Bytes32 queue tests
@@ -100,11 +113,17 @@ contract TestQueues is RocketBase {
     function bytes32_getQueueItem(bytes32 _key, uint _index) external view returns (bytes32) {
         return bytes32QueueStorage.getQueueItem(_key, _index);
     }
+    function bytes32_getQueueIndexOf(bytes32 _key, bytes32 _value) external view returns (int) {
+        return bytes32QueueStorage.getQueueIndexOf(_key, _value);
+    }
     function bytes32_enqueueItem(bytes32 _key, bytes32 _value) external {
         bytes32QueueStorage.enqueueItem(_key, _value);
     }
     function bytes32_dequeueItem(bytes32 _key) external {
         bytes32QueueStorage.dequeueItem(_key);
+    }
+    function bytes32_removeItem(bytes32 _key, bytes32 _value) external {
+        bytes32QueueStorage.removeItem(_key, _value);
     }
 
 
@@ -118,11 +137,17 @@ contract TestQueues is RocketBase {
     function bytes_getQueueItem(bytes32 _key, uint _index) external view returns (bytes) {
         return bytesQueueStorage.getQueueItem(_key, _index);
     }
+    function bytes_getQueueIndexOf(bytes32 _key, bytes _value) external view returns (int) {
+        return bytesQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function bytes_enqueueItem(bytes32 _key, bytes _value) external {
         bytesQueueStorage.enqueueItem(_key, _value);
     }
     function bytes_dequeueItem(bytes32 _key) external {
         bytesQueueStorage.dequeueItem(_key);
+    }
+    function bytes_removeItem(bytes32 _key, bytes _value) external {
+        bytesQueueStorage.removeItem(_key, _value);
     }
 
 
@@ -136,11 +161,17 @@ contract TestQueues is RocketBase {
     function int_getQueueItem(bytes32 _key, uint _index) external view returns (int) {
         return intQueueStorage.getQueueItem(_key, _index);
     }
+    function int_getQueueIndexOf(bytes32 _key, int _value) external view returns (int) {
+        return intQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function int_enqueueItem(bytes32 _key, int _value) external {
         intQueueStorage.enqueueItem(_key, _value);
     }
     function int_dequeueItem(bytes32 _key) external {
         intQueueStorage.dequeueItem(_key);
+    }
+    function int_removeItem(bytes32 _key, int _value) external {
+        intQueueStorage.removeItem(_key, _value);
     }
 
 
@@ -154,11 +185,17 @@ contract TestQueues is RocketBase {
     function string_getQueueItem(bytes32 _key, uint _index) external view returns (string) {
         return stringQueueStorage.getQueueItem(_key, _index);
     }
+    function string_getQueueIndexOf(bytes32 _key, string _value) external view returns (int) {
+        return stringQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function string_enqueueItem(bytes32 _key, string _value) external {
         stringQueueStorage.enqueueItem(_key, _value);
     }
     function string_dequeueItem(bytes32 _key) external {
         stringQueueStorage.dequeueItem(_key);
+    }
+    function string_removeItem(bytes32 _key, string _value) external {
+        stringQueueStorage.removeItem(_key, _value);
     }
 
 
@@ -172,11 +209,17 @@ contract TestQueues is RocketBase {
     function uint_getQueueItem(bytes32 _key, uint _index) external view returns (uint) {
         return uintQueueStorage.getQueueItem(_key, _index);
     }
+    function uint_getQueueIndexOf(bytes32 _key, uint _value) external view returns (int) {
+        return uintQueueStorage.getQueueIndexOf(_key, _value);
+    }
     function uint_enqueueItem(bytes32 _key, uint _value) external {
         uintQueueStorage.enqueueItem(_key, _value);
     }
     function uint_dequeueItem(bytes32 _key) external {
         uintQueueStorage.dequeueItem(_key);
+    }
+    function uint_removeItem(bytes32 _key, uint _value) external {
+        uintQueueStorage.removeItem(_key, _value);
     }
 
 
