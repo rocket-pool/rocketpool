@@ -22,7 +22,7 @@ contract RocketDepositSettings is RocketBase {
             setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
-            setChunkAssignMax(3);                                                           // Max chunk assignments per transaction
+            setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
