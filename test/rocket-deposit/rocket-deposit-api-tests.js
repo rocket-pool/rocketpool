@@ -1,14 +1,14 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDeposit, RocketDepositSettings, RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
+import { RocketDepositAPI, RocketDepositSettings, RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
 import { scenarioDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 
 // Get user's queued deposit IDs
 async function getQueuedDepositIDs(userID, groupID, durationID) {
-    const rocketDeposit = await RocketDeposit.deployed();
-    let depositCount = parseInt(await rocketDeposit.getQueuedDepositCount.call(userID, groupID, durationID));
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+    let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(userID, groupID, durationID));
     let depositIDs = [], di;
-    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDeposit.getQueuedDepositAt.call(userID, groupID, durationID, di));
+    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDepositAPI.getUserQueuedDepositAt.call(userID, groupID, durationID, di));
     return depositIDs;
 }
 

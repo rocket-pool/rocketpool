@@ -82,23 +82,6 @@ contract RocketDeposit is RocketBase {
     );
 
 
-    /*** Getters ****************/
-
-
-    // Get the number of queued deposits a user has
-    function getQueuedDepositCount(address _userID, address _groupID, string _durationID) public returns (uint256) {
-        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-        return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)));
-    }
-
-
-    // Get a user's queued deposit ID by index
-    function getQueuedDepositAt(address _userID, address _groupID, string _durationID, uint256 _index) public returns (bytes32) {
-        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-        return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _index);
-    }
-
-
     /*** Methods ****************/
 
 
