@@ -262,11 +262,11 @@ contract RocketDeposit is RocketBase {
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Get user deposit nonce
-        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID))).add(1);
-        rocketStorage.setUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID)), depositIDNonce);
+        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID, _durationID))).add(1);
+        rocketStorage.setUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID, _durationID)), depositIDNonce);
 
         // Get deposit ID
-        bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, depositIDNonce));
+        bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, _durationID, depositIDNonce));
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", depositID))), "Deposit ID already in use");
 
         // Set deposit details
@@ -281,7 +281,7 @@ contract RocketDeposit is RocketBase {
         // + stakingPoolAmount
 
         // Update deposit indexes
-        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID)), depositID);
+        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)), depositID);
         bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), depositID);
         bytes32QueueStorage.enqueueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), depositID);
 
