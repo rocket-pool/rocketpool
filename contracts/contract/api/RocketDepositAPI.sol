@@ -163,20 +163,20 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _durationID The ID of the deposit's staking duration
     /// @param _depositID The ID of the deposit to refund
-    function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
+    function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the refund is acceptable
         if (getDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID)) {
             // Refund deposit
             rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-            uint256 refundedAmount = rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender);
-            require(refundedAmount > 0, "Deposit could not be refunded");
+            uint256 amountRefunded = rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender);
+            require(amountRefunded > 0, "Deposit could not be refunded");
             // All good? Fire the event for the refund
-            emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, refundedAmount, now);
-            // Done
-            return true;
+            emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, amountRefunded, now);
+            // Return refunded amount
+            return amountRefunded;
         }
         // Safety
-        return false;  
+        return 0;  
     }
 
 

@@ -56,13 +56,17 @@ contract RocketGroupAccessorContract {
 
 
     /// @dev Refund a queued deposit through the Rocket Pool Deposit API
+    /// @dev Refunded ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
     /// @param _durationID The ID of the staking duration of the deposit to refund
     /// @param _depositID The ID of the deposit to refund
     function refundDeposit(string _durationID, bytes32 _depositID) public returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
         // Perform refund
-        require(rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID), "The deposit was not refunded successfully");
+        uint256 amountRefunded = rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID);
+        require(amountRefunded > 0, "The deposit was not refunded successfully");
+        // Transfer ether to user
+        require(msg.sender.call.value(amountRefunded)(), "Unable to send refunded ether to user");
         // Return success flag
         return true;
     }
@@ -76,16 +80,9 @@ contract RocketGroupAccessorContract {
 
 
     /// @dev Receive a deposit refund from Rocket Pool
-    function receiveRocketpoolDepositRefund(address _groupID, address _userID, string _durationID, bytes32 _depositID) external payable returns (bool) {
+    function rocketpoolEtherDeposit() external payable returns (bool) {
         // Only callable by Rocket Pool deposit contract
         require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))), "Deposit refunds can only be sent by Rocket Pool Deposit contract");
-        // Check parameters
-        require(_groupID == groupID);
-        require(_userID != 0x0);
-        require(bytes(_durationID).length > 0);
-        require(_depositID != 0x0);
-        // Transfer ether to user
-        require(_userID.call.value(msg.value)(), "Unable to send refunded ether to user");
         // Return success flag
         return true;
     }

@@ -5,7 +5,7 @@ import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
-import "../../interface/group/RocketGroupDepositorInterface.sol";
+import "../../interface/group/RocketGroupAccessorContractInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -148,8 +148,8 @@ contract RocketDeposit is RocketBase {
         require(rocketDepositVault.withdrawEther(address(this), refundAmount), "Queued deposit amount could not be transferred from vault");
 
         // Transfer queued amount to depositor
-        RocketGroupDepositorInterface depositor = RocketGroupDepositorInterface(_depositorAddress);
-        require(depositor.receiveRocketpoolDepositRefund.value(refundAmount)(_groupID, _userID, _durationID, _depositID), "Deposit refund could not be sent to group depositor");
+        RocketGroupAccessorContractInterface depositor = RocketGroupAccessorContractInterface(_depositorAddress);
+        require(depositor.rocketpoolEtherDeposit.value(refundAmount)(), "Deposit refund could not be sent to group depositor");
 
         // Return refunded amount
         return refundAmount;
