@@ -13,7 +13,7 @@ import "../../interface/api/RocketDepositAPIInterface.sol";
 contract RocketGroupAccessorContract {
 
 
-    /**** Properties ***********/
+    /**** Properties *************/
 
 
     uint8 public version;                                                       // Version of this contract
@@ -40,7 +40,7 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /*** Methods *************/
+    /*** Public Methods **********/
 
 
     /// @dev Make a deposit through the Rocket Pool Deposit API
@@ -55,8 +55,37 @@ contract RocketGroupAccessorContract {
     }
 
 
+    /// @dev Refund a queued deposit through the Rocket Pool Deposit API
+    /// @param _durationID The ID of the staking duration of the deposit to refund
+    /// @param _depositID The ID of the deposit to refund
+    function refundDeposit(string _durationID, bytes32 _depositID) public returns (bool) {
+        // Get deposit API
+        rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        // Perform refund
+        require(rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID), "The deposit was not refunded successfully");
+        // Return success flag
+        return true;
+    }
+
+
     /// @dev Make a withdrawal through the Rocket Pool Withdrawal API
     /// TODO: implement
+
+
+    /*** Rocket Pool Methods *****/
+
+
+    /// @dev Receive a deposit refund from Rocket Pool
+    function receiveRocketpoolDepositRefund(address _groupID, address _userID, string _durationID, bytes32 _depositID) external payable returns (bool) {
+        // Only callable by Rocket Pool deposit contract
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))), "Deposit refunds can only be sent by Rocket Pool Deposit contract");
+        // Check group ID
+        require(_groupID == groupID);
+        // Transfer ether to user
+        require(_userID.call.value(msg.value)(), "Unable to send refunded ether to user");
+        // Return success flag
+        return true;
+    }
 
 
 }

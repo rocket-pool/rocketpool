@@ -23,6 +23,7 @@ contract RocketDepositSettings is RocketBase {
             setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
             setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
+            setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
@@ -60,6 +61,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max number of chunk assignments per transaction
     function getChunkAssignMax() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax"))); 
+    }
+
+    /// @dev Are user deposit refunds currently allowed?
+    function getRefundDepositAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.refund.allowed")));
     }
 
 
@@ -112,6 +118,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max number of chunk assignments per transaction
     function setChunkAssignMax(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax")), _amount); 
+    }
+
+    /// @dev Are user deposit refunds currently allowed?
+    function setRefundDepositAllowed(bool _enabled) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.refund.allowed")), _enabled);
     }
 
 

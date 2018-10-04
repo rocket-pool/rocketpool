@@ -46,6 +46,15 @@ contract RocketDepositAPI is RocketBase {
         uint256 created                                                     // Timestamp of the deposit
     );
 
+    event DepositRefund (
+        address indexed _from,
+        address indexed _userID,
+        address indexed _groupID,
+        string  durationID,
+        bytes32 depositID,
+        uint256 created
+    );
+
 
 
     /*** Constructor *************/
@@ -87,7 +96,27 @@ contract RocketDepositAPI is RocketBase {
         return true;
     }
 
-    
+
+    /// @dev Checks if the refund parameters are correct for a successful refund
+    function getDepositRefundIsValid(address _from, address _groupID, address _userID, string _durationID) public onlyValidDuration(_durationID) returns(bool) {
+        // Get contracts
+        rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
+        // Refunds turned on?
+        require(rocketDepositSettings.getRefundDepositAllowed(), "Deposit refunds are currently disabled.");
+        // Check addresses are correct
+        require(address(_from) != address(0x0), "From address is not a correct address");
+        require(address(_userID) != address(0x0), "UserID address is not a correct address");
+        // Verify the groupID exists
+        require(bytes(rocketGroupAPI.getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
+        // Verify that _from is a depositor of the group
+        RocketGroupContractInterface rocketGroup = RocketGroupContractInterface(_groupID);
+        require(rocketGroup.hasDepositor(_from), "Group ID specified does not have a depositor matching the sender.");
+        // All good
+        return true;
+    }
+
+
     /*** Methods *************/
 
    
@@ -109,6 +138,27 @@ contract RocketDepositAPI is RocketBase {
         }
         // Safety
         return false;    
+    }
+
+
+    /// @dev Refund a queued deposit to Rocket Pool
+    /// @param _groupID The ID of the group in control of the deposit
+    /// @param _userID The address of the user who the deposit belongs to
+    /// @param _durationID The ID of the deposit's staking duration
+    /// @param _depositID The ID of the deposit to refund
+    function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
+        // Verify the refund is acceptable
+        if (getDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID)) {
+            // Refund deposit
+            rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
+            require(rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender), "Deposit could not be refunded");
+            // All good? Fire the event for the refund
+            emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, now);
+            // Done
+            return true;
+        }
+        // Safety
+        return false;  
     }
 
 

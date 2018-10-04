@@ -9,6 +9,7 @@ contract RocketDepositSettingsInterface {
     function getDepositMin() public view returns (uint256);
     function getDepositMax() public view returns (uint256);
     function getChunkAssignMax() public view returns (uint256);
+    function getRefundDepositAllowed() public view returns (bool);
     function getWithdrawalAllowed() public view returns (bool);
     function getWithdrawalMin() public view returns (uint256);
     function getWithdrawalMax() public view returns (uint256);

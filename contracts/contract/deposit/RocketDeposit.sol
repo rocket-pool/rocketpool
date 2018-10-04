@@ -5,6 +5,7 @@ import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
+import "../../interface/group/RocketGroupDepositorInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -80,6 +81,16 @@ contract RocketDeposit is RocketBase {
         uint256 created
     );
 
+    event DepositRefund (
+        bytes32 indexed _depositID,
+        address indexed _userID,
+        address indexed _groupID,
+        address depositorID,
+        string  durationID,
+        uint256 value,
+        uint256 created
+    );
+
 
     /*** Getters ****************/
 
@@ -137,6 +148,45 @@ contract RocketDeposit is RocketBase {
     }
 
 
+    // Refund a deposit
+    function refund(address _userID, address _groupID, string _durationID, bytes32 _depositID, address _depositorAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+
+        // Get contracts
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
+
+        // Remove deposit from queue and queued user deposit lists; reverts if not found
+        bytes32SetStorage.removeItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _depositID);
+        bytes32QueueStorage.removeItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), _depositID);
+
+        // Get remaining queued amount to refund
+        uint256 refundAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
+
+        // Update deposit details
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)), 0);
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)), refundAmount);
+
+        // Update queue balance
+        bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
+        rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).sub(refundAmount));
+
+        // Withdraw queued amount from vault
+        rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
+        require(rocketDepositVault.withdrawEther(address(this), refundAmount), "Queued deposit amount could not be transferred from vault");
+
+        // Transfer queued amount to depositor
+        RocketGroupDepositorInterface depositor = RocketGroupDepositorInterface(_depositorAddress);
+        require(depositor.receiveRocketpoolDepositRefund.value(refundAmount)(_groupID, _userID, _durationID, _depositID), "Deposit refund could not be sent to group depositor");
+
+        // Emit refund event
+        emit DepositRefund(_depositID, _userID, _groupID, _depositorAddress, _durationID, refundAmount, now);
+
+        // Return success flag
+        return true;
+
+    }
+
+
     // Assign chunks while able
     function assignChunks(string _durationID) public onlySuperUserOrDepositAPI() {
 
@@ -179,7 +229,7 @@ contract RocketDeposit is RocketBase {
         uint256 amountToMatch = chunkSize;
 
         // Withdraw chunk ether from vault
-        require(rocketDepositVault.withdrawEther(address(this), chunkSize), "Deposit could not be transferred from vault");
+        require(rocketDepositVault.withdrawEther(address(this), chunkSize), "Chunk could not be transferred from vault");
 
         // Check queued deposits
         // Max number of iterations is (DepositChunkSize / DepositMin) + 1
@@ -279,6 +329,7 @@ contract RocketDeposit is RocketBase {
         // + stakingAmount
         // + stakingPools
         // + stakingPoolAmount
+        // + refundedAmount
 
         // Update deposit indexes
         bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)), depositID);
