@@ -81,6 +81,23 @@ contract RocketDeposit is RocketBase {
     );
 
 
+    /*** Getters ****************/
+
+
+    // Get the number of queued deposits a user has
+    function getQueuedDepositCount(address _userID, address _groupID, string _durationID) public returns (uint256) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)));
+    }
+
+
+    // Get a user's queued deposit ID by index
+    function getQueuedDepositAt(address _userID, address _groupID, string _durationID, uint256 _index) public returns (bytes32) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _index);
+    }
+
+
     /*** Methods ****************/
 
 
@@ -222,7 +239,7 @@ contract RocketDeposit is RocketBase {
 
             // Remove deposit from queue indexes
             bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-            bytes32SetStorage.removeItem(keccak256(abi.encodePacked("user.deposits.queued", userID, groupID)), depositID);
+            bytes32SetStorage.removeItem(keccak256(abi.encodePacked("user.deposits.queued", userID, groupID, _durationID)), depositID);
             bytes32QueueStorage.dequeueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)));
 
             // Emit dequeue event
@@ -265,7 +282,7 @@ contract RocketDeposit is RocketBase {
 
         // Update deposit indexes
         bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID)), depositID);
-        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID)), depositID);
+        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), depositID);
         bytes32QueueStorage.enqueueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), depositID);
 
         // Emit queue event
