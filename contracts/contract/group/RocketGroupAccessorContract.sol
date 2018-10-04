@@ -62,9 +62,12 @@ contract RocketGroupAccessorContract {
     function refundDeposit(string _durationID, bytes32 _depositID) public returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        // Get balance before refund
+        uint256 initialBalance = address(this).balance;
         // Perform refund
         uint256 amountRefunded = rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID);
         require(amountRefunded > 0, "The deposit was not refunded successfully");
+        require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
         // Transfer ether to user
         require(msg.sender.call.value(amountRefunded)(), "Unable to send refunded ether to user");
         // Return success flag
