@@ -81,16 +81,6 @@ contract RocketDeposit is RocketBase {
         uint256 created
     );
 
-    event DepositRefund (
-        bytes32 indexed _depositID,
-        address indexed _userID,
-        address indexed _groupID,
-        address depositorID,
-        string  durationID,
-        uint256 value,
-        uint256 created
-    );
-
 
     /*** Getters ****************/
 
@@ -149,7 +139,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Refund a deposit
-    function refund(address _userID, address _groupID, string _durationID, bytes32 _depositID, address _depositorAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+    function refund(address _userID, address _groupID, string _durationID, bytes32 _depositID, address _depositorAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
         // Get contracts
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -178,11 +168,8 @@ contract RocketDeposit is RocketBase {
         RocketGroupDepositorInterface depositor = RocketGroupDepositorInterface(_depositorAddress);
         require(depositor.receiveRocketpoolDepositRefund.value(refundAmount)(_groupID, _userID, _durationID, _depositID), "Deposit refund could not be sent to group depositor");
 
-        // Emit refund event
-        emit DepositRefund(_depositID, _userID, _groupID, _depositorAddress, _durationID, refundAmount, now);
-
-        // Return success flag
-        return true;
+        // Return refunded amount
+        return refundAmount;
 
     }
 

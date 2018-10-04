@@ -47,11 +47,12 @@ contract RocketDepositAPI is RocketBase {
     );
 
     event DepositRefund (
-        address indexed _from,
+        address indexed _to,
         address indexed _userID,
         address indexed _groupID,
         string  durationID,
         bytes32 depositID,
+        uint256 value,
         uint256 created
     );
 
@@ -151,9 +152,10 @@ contract RocketDepositAPI is RocketBase {
         if (getDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID)) {
             // Refund deposit
             rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-            require(rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender), "Deposit could not be refunded");
+            uint256 refundedAmount = rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender);
+            require(refundedAmount > 0, "Deposit could not be refunded");
             // All good? Fire the event for the refund
-            emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, now);
+            emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, refundedAmount, now);
             // Done
             return true;
         }
