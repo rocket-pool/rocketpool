@@ -79,8 +79,11 @@ contract RocketGroupAccessorContract {
     function receiveRocketpoolDepositRefund(address _groupID, address _userID, string _durationID, bytes32 _depositID) external payable returns (bool) {
         // Only callable by Rocket Pool deposit contract
         require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))), "Deposit refunds can only be sent by Rocket Pool Deposit contract");
-        // Check group ID
+        // Check parameters
         require(_groupID == groupID);
+        require(_userID != 0x0);
+        require(bytes(_durationID).length > 0);
+        require(_depositID != 0x0);
         // Transfer ether to user
         require(_userID.call.value(msg.value)(), "Unable to send refunded ether to user");
         // Return success flag
