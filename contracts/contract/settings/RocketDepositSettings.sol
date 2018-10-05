@@ -87,7 +87,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     /// @dev Get the current max allowed deposit in Wei (based on queue size and node availability)
-    function getCurrentDepositMax(string _durationID) public view returns (uint256) {
+    function getCurrentDepositMax(string _durationID) public returns (uint256) {
 
         // Max size deposits allowed if deposit queue is under max size
         rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));

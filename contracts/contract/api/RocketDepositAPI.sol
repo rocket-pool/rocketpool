@@ -86,7 +86,7 @@ contract RocketDepositAPI is RocketBase {
         require(rocketDepositSettings.getDepositAllowed(), "Deposits are currently disabled.");
         // Is the deposit value acceptable?
         require(_value >= rocketDepositSettings.getDepositMin(), "Deposit value is less than the minimum allowed.");
-        require(_value <= rocketDepositSettings.getCurrentDepositMax(), "Deposit value is more than the maximum allowed.");
+        require(_value <= rocketDepositSettings.getCurrentDepositMax(_durationID), "Deposit value is more than the maximum allowed.");
         // Check addresses are correct
         require(address(_from) != address(0x0), "From address is not a correct address");
         require(address(_userID) != address(0x0), "UserID address is not a correct address");
