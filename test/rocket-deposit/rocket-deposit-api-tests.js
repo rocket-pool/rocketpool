@@ -1,14 +1,14 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositAPI, RocketDepositSettings, RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
-import { scenarioDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit, scenarioAPIRefundDeposit } from './rocket-deposit-api-scenarios';
 
 
 // Get user's queued deposit IDs
-async function getQueuedDepositIDs(userID, groupID, durationID) {
+async function getQueuedDepositIDs(groupID, userID, durationID) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
-    let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(userID, groupID, durationID));
+    let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, userID, durationID));
     let depositIDs = [], di;
-    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDepositAPI.getUserQueuedDepositAt.call(userID, groupID, durationID, di));
+    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDepositAPI.getUserQueuedDepositAt.call(groupID, userID, durationID, di));
     return depositIDs;
 }
 
@@ -23,9 +23,11 @@ export default function() {
         const groupOwner = accounts[1];
         const nodeOperator = accounts[2];
         const user1 = accounts[3];
+        const user2 = accounts[4];
 
 
         // Setup
+        let rocketDepositAPI;
         let rocketDepositSettings;
         let minDepositSize;
         let numMinDeposits;
@@ -39,7 +41,8 @@ export default function() {
             // Deposit
             //
 
-            // Get deposit settings contract
+            // Get deposit contracts
+            rocketDepositAPI =  await RocketDepositAPI.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
 
             // Get deposit settings
@@ -126,8 +129,8 @@ export default function() {
         });
 
 
-        // Random account can deposit via group depositor
-        it(printTitle('random account', 'can deposit via group depositor'), async () => {
+        // Staker can deposit via group depositor
+        it(printTitle('staker', 'can deposit via group depositor'), async () => {
 
             // Make initial large deposit
             await scenarioDeposit({
@@ -152,8 +155,8 @@ export default function() {
         });
 
 
-        // Random account cannot deposit with an invalid staking duration ID
-        it(printTitle('random account', 'cannot deposit with an invalid staking duration ID'), async () => {
+        // Staker cannot deposit with an invalid staking duration ID
+        it(printTitle('staker', 'cannot deposit with an invalid staking duration ID'), async () => {
             await assertThrows(scenarioDeposit({
                 depositorContract: groupAccessorContract,
                 durationID: 'beer',
@@ -164,8 +167,8 @@ export default function() {
         });
 
 
-        // Random account cannot deposit while deposits are disabled
-        it(printTitle('random account', 'cannot deposit while deposits are disabled'), async () => {
+        // Staker cannot deposit while deposits are disabled
+        it(printTitle('staker', 'cannot deposit while deposits are disabled'), async () => {
 
             // Disable deposits
             await rocketDepositSettings.setDepositAllowed(false, {from: owner, gas: 500000});
@@ -185,8 +188,8 @@ export default function() {
         });
 
 
-        // Random account cannot deposit under the minimum deposit amount
-        it(printTitle('random account', 'cannot deposit under the minimum deposit amount'), async () => {
+        // Staker cannot deposit under the minimum deposit amount
+        it(printTitle('staker', 'cannot deposit under the minimum deposit amount'), async () => {
 
             // Set minimum deposit
             await rocketDepositSettings.setDepositMin(web3.utils.toWei('1000', 'ether'), {from: owner, gas: 500000});
@@ -206,8 +209,8 @@ export default function() {
         });
 
 
-        // Random account cannot deposit over the maximum deposit amount
-        it(printTitle('random account', 'cannot deposit over the maximum deposit amount'), async () => {
+        // Staker cannot deposit over the maximum deposit amount
+        it(printTitle('staker', 'cannot deposit over the maximum deposit amount'), async () => {
 
             // Set maximum deposit
             await rocketDepositSettings.setDepositMax(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
@@ -227,8 +230,8 @@ export default function() {
         });
 
 
-        // Random account cannot make empty deposit
-        it(printTitle('random account', 'cannot make empty deposit'), async () => {
+        // Staker cannot make empty deposit
+        it(printTitle('staker', 'cannot make empty deposit'), async () => {
 
             // Set minimum deposit
             await rocketDepositSettings.setDepositMin(web3.utils.toWei('0', 'ether'), {from: owner, gas: 500000});
@@ -248,8 +251,8 @@ export default function() {
         });
 
 
-        // Random account cannot deposit via deposit API
-        it(printTitle('random account', 'cannot deposit via deposit API'), async () => {
+        // Staker cannot deposit via deposit API
+        it(printTitle('staker', 'cannot deposit via deposit API'), async () => {
 
             // Invalid user ID
             await assertThrows(scenarioAPIDeposit({
@@ -280,6 +283,157 @@ export default function() {
                 value: web3.utils.toWei('16', 'ether'),
                 gas: 7500000,
             }), 'Deposited directly via RocketDepositAPI');
+
+        });
+
+
+        // Deposit ID for refunds
+        let depositID;
+
+
+        // Staker can refund a deposit
+        it(printTitle('staker', 'can refund a deposit'), async () => {
+
+            // Make deposit
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('500', 'ether'),
+                gas: 7500000,
+            });
+
+            // Get deposit ID
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContractAddress, user1, '3m', 0);
+
+            // Request refund
+            await scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            });
+
+        });
+
+
+        // Staker cannot refund a deposit with an invalid staking duration ID
+        it(printTitle('staker', 'cannot refund a deposit with an invalid staking duration ID'), async () => {
+
+            // Make deposit
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: web3.utils.toWei('500', 'ether'),
+                gas: 7500000,
+            });
+
+            // Get deposit ID
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContractAddress, user1, '3m', 0);
+
+            // Request refund
+            await assertThrows(scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: 'beer',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit with an invalid staking duration ID');
+
+        });
+
+
+        // Staker cannot refund a deposit with an invalid ID
+        it(printTitle('staker', 'cannot refund a deposit with an invalid ID'), async () => {
+            await assertThrows(scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit with an invalid ID');
+        });
+
+
+        // Staker cannot refund a deposit while refunds are disabled
+        it(printTitle('staker', 'cannot refund a deposit while refunds are disabled'), async () => {
+
+            // Disable refunds
+            await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner, gas: 500000});
+
+            // Request refund
+            await assertThrows(scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit while refunds were disabled');
+
+            // Reenable refunds
+            await rocketDepositSettings.setRefundDepositAllowed(true, {from: owner, gas: 500000});
+
+        });
+
+
+        // Staker cannot refund a nonexistant deposit
+        it(printTitle('staker', 'cannot refund a nonexistant deposit'), async () => {
+
+            // Nonexistant deposit ID
+            await assertThrows(scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a nonexistant deposit');
+
+            // Nonexistant user
+            await assertThrows(scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                depositID,
+                fromAddress: user2,
+                gas: 500000,
+            }), 'Refunded a nonexistant deposit');
+
+        });
+
+
+        // Staker cannot refund a deposit via deposit API
+        it(printTitle('staker', 'cannot refund a deposit via deposit API'), async () => {
+
+            // Invalid user ID
+            await assertThrows(scenarioAPIRefundDeposit({
+                groupID: groupContractAddress,
+                userID: '0x0000000000000000000000000000000000000000',
+                durationID: '3m',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit with an invalid user ID');
+
+            // Invalid group ID
+            await assertThrows(scenarioAPIRefundDeposit({
+                groupID: accounts[9],
+                userID: user1,
+                durationID: '3m',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit with an invalid group ID');
+
+            // Valid parameters; invalid depositor
+            await assertThrows(scenarioAPIRefundDeposit({
+                groupID: groupContractAddress,
+                userID: user1,
+                durationID: '3m',
+                depositID,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Refunded a deposit directly via RocketDepositAPI');
 
         });
 
