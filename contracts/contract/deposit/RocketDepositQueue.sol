@@ -103,6 +103,12 @@ contract RocketDepositQueue is RocketBase {
     function() payable public onlyLatestContract("rocketDepositVault", msg.sender) {}
 
 
+    // Get the balance of the deposit queue by duration
+    function getBalance(string _durationID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)));
+    }
+
+
     // Enqueue a deposit
     function enqueueDeposit(address _userID, address _groupID, string _durationID, bytes32 _depositID, uint256 _amount) public onlyLatestContract("rocketDeposit", msg.sender) {
 
