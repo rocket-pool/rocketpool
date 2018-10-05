@@ -101,7 +101,7 @@ contract RocketDepositAPI is RocketBase {
 
 
     /// @dev Checks if the refund parameters are correct for a successful refund
-    function getDepositRefundIsValid(address _from, address _groupID, address _userID, string _durationID) public onlyValidDuration(_durationID) returns(bool) {
+    function getDepositRefundIsValid(address _from, address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyValidDuration(_durationID) returns(bool) {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -110,6 +110,7 @@ contract RocketDepositAPI is RocketBase {
         // Check addresses are correct
         require(address(_from) != address(0x0), "From address is not a correct address");
         require(address(_userID) != address(0x0), "UserID address is not a correct address");
+        require(_depositID != 0x0, "Deposit ID is invalid");
         // Verify the groupID exists
         require(bytes(rocketGroupAPI.getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
         // Verify that _from is a depositor of the group
@@ -165,7 +166,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _depositID The ID of the deposit to refund
     function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the refund is acceptable
-        if (getDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID)) {
+        if (getDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID, _depositID)) {
             // Refund deposit
             rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
             uint256 amountRefunded = rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender);
