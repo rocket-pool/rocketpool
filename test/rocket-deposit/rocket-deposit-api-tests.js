@@ -155,6 +155,12 @@ export default function() {
         });
 
 
+        // TODO:
+        // - add tests for dynamic maximum deposit size
+        // - test deposits while queue is full and minipools are available (succeed if under current deposit maximum)
+        // - test deposits while queue is full and minipools are unavailable (fail only)
+
+
         // Staker cannot deposit with an invalid staking duration ID
         it(printTitle('staker', 'cannot deposit with an invalid staking duration ID'), async () => {
             await assertThrows(scenarioDeposit({
