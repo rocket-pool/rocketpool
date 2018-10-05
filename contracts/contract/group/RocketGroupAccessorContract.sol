@@ -82,9 +82,9 @@ contract RocketGroupAccessorContract {
     /*** Rocket Pool Methods *****/
 
 
-    /// @dev Receive a deposit refund from Rocket Pool
+    /// @dev Receive an ether deposit from Rocket Pool
     function rocketpoolEtherDeposit() external payable returns (bool) {
-        // Only callable by Rocket Pool deposit contract
+        // Only callable by Rocket Pool contracts
         require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))), "Ether deposits can only be sent by Rocket Pool contracts");
         // Return success flag
         return true;
