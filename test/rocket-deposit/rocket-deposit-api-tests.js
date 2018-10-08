@@ -4,17 +4,6 @@ import { createGroupContract, createGroupAccessorContract, addGroupAccessor } fr
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit, scenarioAPIRefundDeposit } from './rocket-deposit-api-scenarios';
 
-
-// Get user's queued deposit IDs
-async function getQueuedDepositIDs(groupID, userID, durationID) {
-    const rocketDepositAPI = await RocketDepositAPI.deployed();
-    let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, userID, durationID));
-    let depositIDs = [], di;
-    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDepositAPI.getUserQueuedDepositAt.call(groupID, userID, durationID, di));
-    return depositIDs;
-}
-
-
 export default function() {
 
     contract('RocketDepositAPI', async (accounts) => {
