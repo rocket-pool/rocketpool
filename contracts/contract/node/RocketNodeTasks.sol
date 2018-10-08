@@ -50,6 +50,13 @@ contract RocketNodeTasks is RocketBase {
     }
 
 
+    /// @dev Run a single task by address
+    function runOne(address _taskAddress) external onlyValidRocketNode(msg.sender) {
+        RocketNodeTaskInterface task = RocketNodeTaskInterface(_taskAddress);
+        task.run(msg.sender);
+    }
+
+
     /// @dev Get the total number of tasks
     function getTaskCount() external returns (uint256) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
@@ -69,6 +76,13 @@ contract RocketNodeTasks is RocketBase {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         RocketNodeTaskInterface task = RocketNodeTaskInterface(addressSetStorage.getItem(keccak256("node.tasks"), _index));
         return task.name();
+    }
+
+
+    /// @dev Get the index of a task contract in the task list
+    function getTaskIndexOf(address _taskAddress) external returns (int) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getIndexOf(keccak256("node.tasks"), _taskAddress);
     }
 
 
