@@ -32,7 +32,7 @@ contract RocketDepositSettings is RocketBase {
             // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
             setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
-            setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
+            setDepositMin(1 ether);                                                         // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
             setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
             setDepositQueueSizeMax(320 ether);                                              // Maximum deposit queue size in Wei
