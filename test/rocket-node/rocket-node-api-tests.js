@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketNodeAPI, RocketNodeSettings } from '../_lib/artifacts';
+import { RocketNodeSettings } from '../_lib/artifacts';
 import { scenarioAddNode } from './rocket-node-api-scenarios';
 
 export default function() {
