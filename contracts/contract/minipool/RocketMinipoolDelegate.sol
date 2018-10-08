@@ -251,7 +251,7 @@ contract RocketMinipoolDelegate {
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
     /// @param _groupID The 3rd party group the user belongs too
-    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDeposit") returns(bool) {
+    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
         // Load contracts

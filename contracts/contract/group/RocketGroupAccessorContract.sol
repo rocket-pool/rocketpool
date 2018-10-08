@@ -13,7 +13,7 @@ import "../../interface/api/RocketDepositAPIInterface.sol";
 contract RocketGroupAccessorContract {
 
 
-    /**** Properties ***********/
+    /**** Properties *************/
 
 
     uint8 public version;                                                       // Version of this contract
@@ -40,7 +40,7 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /*** Methods *************/
+    /*** Public Methods **********/
 
 
     /// @dev Make a deposit through the Rocket Pool Deposit API
@@ -55,8 +55,40 @@ contract RocketGroupAccessorContract {
     }
 
 
+    /// @dev Refund a queued deposit through the Rocket Pool Deposit API
+    /// @dev Refunded ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
+    /// @param _durationID The ID of the staking duration of the deposit to refund
+    /// @param _depositID The ID of the deposit to refund
+    function refundDeposit(string _durationID, bytes32 _depositID) public returns (bool) {
+        // Get deposit API
+        rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        // Get balance before refund
+        uint256 initialBalance = address(this).balance;
+        // Perform refund
+        uint256 amountRefunded = rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID);
+        require(amountRefunded > 0, "The deposit was not refunded successfully");
+        require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
+        // Transfer ether to user
+        require(msg.sender.call.value(amountRefunded)(), "Unable to send refunded ether to user");
+        // Return success flag
+        return true;
+    }
+
+
     /// @dev Make a withdrawal through the Rocket Pool Withdrawal API
     /// TODO: implement
+
+
+    /*** Rocket Pool Methods *****/
+
+
+    /// @dev Receive an ether deposit from Rocket Pool
+    function rocketpoolEtherDeposit() external payable returns (bool) {
+        // Only callable by Rocket Pool contracts
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))), "Ether deposits can only be sent by Rocket Pool contracts");
+        // Return success flag
+        return true;
+    }
 
 
 }
