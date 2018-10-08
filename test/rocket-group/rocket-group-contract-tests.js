@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketGroupAPI, RocketGroupContract, RocketGroupSettings } from '../_lib/artifacts';
+import { createGroupContract, createGroupAccessorContract } from '../_helpers/rocket-group';
 import { scenarioSetFeePerc, scenarioAddDepositor, scenarioRemoveDepositor, scenarioAddWithdrawer, scenarioRemoveWithdrawer } from './rocket-group-contract-scenarios';
 
 export default function() {
@@ -19,27 +19,13 @@ export default function() {
         let accessor3Address;
         before(async () => {
 
-            // Get new group fee
-            let rocketGroupSettings = await RocketGroupSettings.deployed();
-            let newGroupFee = parseInt(await rocketGroupSettings.getNewFee());
-
-            // Create group
-            let rocketGroupAPI = await RocketGroupAPI.deployed();
-            let groupResult = await rocketGroupAPI.add('Group 1', web3.utils.toWei('0', 'ether'), {from: groupOwner, gas: 7500000, value: newGroupFee});
-
-            // Get group contract
-            let groupContractAddress = groupResult.logs.filter(log => (log.event == 'GroupAdd'))[0].args.ID;
-            groupContract = await RocketGroupContract.at(groupContractAddress);
+            // Create group contract
+            groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0', 'ether'), groupOwner});
 
             // Create default accessor contracts
-            let accessorResult1 = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
-            let accessorResult2 = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
-            let accessorResult3 = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
-
-            // Get accessor contract addresses
-            accessor1Address = accessorResult1.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
-            accessor2Address = accessorResult2.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
-            accessor3Address = accessorResult3.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
+            accessor1Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            accessor2Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            accessor3Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
 
         });
 
