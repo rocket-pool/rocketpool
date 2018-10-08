@@ -27,6 +27,7 @@ contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 // Deposit
 contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
+contracts.rocketDepositQueue = artifacts.require('./deposit/RocketDepositQueue.sol');
 contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
@@ -45,6 +46,7 @@ contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol'
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
+contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
 // Extra utilities
 if (testUtils) {
   contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
@@ -62,7 +64,6 @@ if (testUtils) {
   contracts.utilUintQueueStorage = artifacts.require('./UintQueueStorage.sol');
   contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
   contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
-  contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
   contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
   contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
   contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');

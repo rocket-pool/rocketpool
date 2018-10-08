@@ -3,12 +3,24 @@ pragma solidity 0.4.24;
 
 import "../../RocketBase.sol";
 // Interfaces
+import "../../interface/RocketNodeInterface.sol";
+import "../../interface/deposit/RocketDepositQueueInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 
 
 /// @title Settings for API in Rocket Pool
 /// @author David Rugendyke
 contract RocketDepositSettings is RocketBase {
+
+
+    /*** Contracts **************/
+
+
+    RocketDepositQueueInterface rocketDepositQueue = RocketDepositQueueInterface(0);
+    RocketNodeInterface rocketNode = RocketNodeInterface(0);
+
+
+    /*** Constructor ************/
 
 
     /// @dev RocketSettings constructor
@@ -20,9 +32,11 @@ contract RocketDepositSettings is RocketBase {
             // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
             setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
-            setDepositMin(0.5 ether);                                                       // Min required deposit in Wei 
+            setDepositMin(1 ether);                                                         // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
-            setChunkAssignMax(1);                                                           // Max chunk assignments per transaction
+            setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
+            setDepositQueueSizeMax(320 ether);                                              // Maximum deposit queue size in Wei
+            setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
             setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
@@ -32,7 +46,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     
-    /*** Getters **********************/
+    /*** Getters ****************/
 
 
     // Deposits
@@ -62,6 +76,32 @@ contract RocketDepositSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax"))); 
     }
 
+    /// @dev Maximum deposit queue size in Wei
+    function getDepositQueueSizeMax() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.deposit.queue.max")));
+    }
+
+    /// @dev Are user deposit refunds currently allowed?
+    function getRefundDepositAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.refund.allowed")));
+    }
+
+    /// @dev Get the current max allowed deposit in Wei (based on queue size and node availability)
+    function getCurrentDepositMax(string _durationID) public returns (uint256) {
+
+        // Max size deposits allowed if deposit queue is under max size
+        rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));
+        if (rocketDepositQueue.getBalance(_durationID) < getDepositQueueSizeMax()) { return getDepositMax(); }
+
+        // Deposits up to ( (max chunk assignments - 1) * chunk size ) allowed if nodes are available
+        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        if (rocketNode.getAvailableNodeCount(_durationID) > 0) { return ((getChunkAssignMax() - 1) * getDepositChunkSize()); }
+
+        // Deposits disabled if no nodes are available
+        return 0;
+
+    }
+
 
     // Withdrawals
 
@@ -82,7 +122,7 @@ contract RocketDepositSettings is RocketBase {
 
 
 
-    /*** Setters **********************/
+    /*** Setters ****************/
 
 
     // Deposits
@@ -112,6 +152,16 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max number of chunk assignments per transaction
     function setChunkAssignMax(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.chunk.assignMax")), _amount); 
+    }
+
+    /// @dev Maximum deposit queue size in Wei
+    function setDepositQueueSizeMax(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.deposit.queue.max")), _amount); 
+    }
+
+    /// @dev Are user deposit refunds currently allowed?
+    function setRefundDepositAllowed(bool _enabled) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.refund.allowed")), _enabled);
     }
 
 
