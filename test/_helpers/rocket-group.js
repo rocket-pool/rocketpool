@@ -33,3 +33,10 @@ export async function createGroupAccessorContract({groupContractAddress, groupOw
 
 }
 
+
+// Add an accessor to a group
+export async function addGroupAccessor({groupContract, groupAccessorContractAddress, groupOwner}) {
+    await groupContract.addDepositor(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
+    await groupContract.addWithdrawer(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
+}
+
