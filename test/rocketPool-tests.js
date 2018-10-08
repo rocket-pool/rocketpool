@@ -9,6 +9,7 @@ import rocketNodeAPITests from './rocket-node/rocket-node-api-tests';
 import rocketNodeContractTests from './rocket-node/rocket-node-contract-tests';
 import rocketNodeTaskAdminTests from './rocket-node/rocket-node-task-admin-tests';
 import rocketNodeTaskNodeTests from './rocket-node/rocket-node-task-node-tests';
+import rocketDepositAPITests from './rocket-deposit/rocket-deposit-api-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 
 /**
@@ -32,6 +33,7 @@ rocketNodeAPITests();
 rocketNodeContractTests();
 rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
+rocketDepositAPITests();
 rocketRPIPTests();
 
 // Profiling
