@@ -1,5 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketNodeSettings, RocketPoolToken } from '../_lib/artifacts';
+import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings } from '../_lib/artifacts';
+import { createNodeContract } from '../_helpers/rocket-node';
+import { mintRpl } from '../_helpers/rocket-pool-token';
 import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit } from './rocket-node-contract-scenarios';
 
 export default function() {
@@ -15,7 +17,6 @@ export default function() {
         // Setup
         let rocketNodeAPI;
         let rocketNodeSettings;
-        let rocketPoolToken;
         let nodeContract;
         let minDepositAmount;
         let maxDepositAmount;
@@ -24,14 +25,9 @@ export default function() {
             // Initialise contracts
             rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
-            rocketPoolToken = await RocketPoolToken.deployed();
 
             // Create node contract
-            let result = await rocketNodeAPI.add('Australia/Brisbane', {from: operator, gas: 7500000});
-
-            // Get node contract instance
-            let nodeContractAddress = result.logs.filter(log => (log.event == 'NodeAdd'))[0].args.contractAddress;
-            nodeContract = await RocketNodeContract.at(nodeContractAddress);
+            nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
 
             // Get minipool launch & min deposit amounts
             let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
@@ -202,7 +198,7 @@ export default function() {
 
             // Deposit required RPL
             let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
-            await rocketPoolToken.mint(nodeContract.address, rplRequired, {from: owner, gas: 500000});
+            await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
 
         });
 

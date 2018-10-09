@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketStorage, TestNodeTask } from '../_lib/artifacts';
 import { scenarioAddNodeTask, scenarioRemoveNodeTask, scenarioUpdateNodeTask } from './rocket-node-task-admin-scenarios';
-import { scenarioRunTasks } from './rocket-node-task-node-scenarios';
+import { scenarioRunTasks, scenarioRunOneTask } from './rocket-node-task-node-scenarios';
 
 export default function() {
 
@@ -63,6 +63,11 @@ export default function() {
                 fromAddress: node2,
                 gas: 500000,
             });
+            await scenarioRunOneTask({
+                taskAddress: testNodeTask1.address,
+                fromAddress: node1,
+                gas: 500000,
+            });
         });
 
 
@@ -84,6 +89,11 @@ export default function() {
             });
             await scenarioRunTasks({
                 fromAddress: node3,
+                gas: 500000,
+            });
+            await scenarioRunOneTask({
+                taskAddress: testNodeTask1.address,
+                fromAddress: node1,
                 gas: 500000,
             });
         });
@@ -112,6 +122,11 @@ export default function() {
             });
             await scenarioRunTasks({
                 fromAddress: node3,
+                gas: 500000,
+            });
+            await scenarioRunOneTask({
+                taskAddress: testNodeTask1v2.address,
+                fromAddress: node1,
                 gas: 500000,
             });
         });

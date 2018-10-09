@@ -1,3 +1,7 @@
+// Config
+const gasLimit = 8000000;
+
+
 // Profiling information
 let gasUsed = {};
 
@@ -39,7 +43,8 @@ export function displayProfiling() {
 
                 // Print costs
                 costs.forEach((cost, index) => {
-                    console.log(indent(4, '#' + (index + 1) + ' - ' + cost));
+                    let costPercent = Math.round((cost / gasLimit) * 100);
+                    console.log(indent(4, '#' + (index + 1) + ' - ' + cost + ' (' + costPercent + '% gas limit)'));
                 });
 
             }
