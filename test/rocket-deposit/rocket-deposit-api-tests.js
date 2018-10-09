@@ -322,6 +322,7 @@ export default function() {
             // Request refund
             await scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
@@ -349,6 +350,7 @@ export default function() {
             // Request refund
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: 'beer',
                 depositID,
                 fromAddress: user1,
@@ -362,6 +364,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a deposit with an invalid ID'), async () => {
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 fromAddress: user1,
@@ -379,6 +382,7 @@ export default function() {
             // Request refund
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
@@ -397,6 +401,7 @@ export default function() {
             // Nonexistant deposit ID
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 fromAddress: user1,
@@ -406,6 +411,7 @@ export default function() {
             // Nonexistant user
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
                 fromAddress: user3,

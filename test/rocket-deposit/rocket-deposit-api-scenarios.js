@@ -124,15 +124,34 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
 
 
 // Request a deposit refund
-export async function scenarioRefundDeposit({depositorContract, durationID, depositID, fromAddress, gas}) {
+export async function scenarioRefundDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+    const rocketDepositQueue = await RocketDepositQueue.deployed();
+
+    // Get initial from address balance
+    let fromBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Get initial queue status
+    let depositCount1 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance1 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
 	// Request refund
 	let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
 
-	// TODO:
-	// - check balance of deposit queue
-	// - check length of deposit queue
-	// - check balance of fromAddress
+    // Get updated from address balance
+    let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Get updated queue status
+    let depositCount2 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance2 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let queueBalance2 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
+
+    // Asserts
+    assert.isTrue(fromBalance2 > fromBalance1, 'From address balance was not increased');
+    assert.equal(depositCount2, depositCount1 - 1, 'User deposit count was not decremented');
+    assert.equal(depositBalance2, 0, 'Queued deposit balance was not set to 0');
+    assert.equal(queueBalance2, queueBalance1 - depositBalance1, 'Deposit queue balance was not decreased by deposit amount');
 
 }
 
