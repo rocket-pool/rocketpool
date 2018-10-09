@@ -74,11 +74,18 @@ contract RocketPool is RocketBase {
         return rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _miniPoolAddress)));
     }
 
+
     /// @dev Returns a count of the current minipools
-    /// @param _miniPoolList They key of a minipool list to return the count of eg minipools.list.node or minipools.list.duration
-    function getPoolsCount(string _miniPoolList) public returns(uint256) {
+    function getPoolsCount() public returns(uint256) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", _miniPoolList)));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list")));
+    }
+
+
+    /// @dev Return a current minipool by index
+    function getPoolAt(uint256 _index) public returns (address) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list")), _index);
     }
 
 
