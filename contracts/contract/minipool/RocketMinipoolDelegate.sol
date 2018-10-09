@@ -62,7 +62,7 @@ contract RocketMinipoolDelegate {
         address contractAddress;                                // The nodes Rocket Pool contract
         uint256 depositEther;                                   // The nodes ether contribution
         uint256 depositRPL;                                     // The nodes RPL contribution
-        bool    trusted;                                        // Is this a trusted node?
+        bool    trusted;                                        // Was the node trusted at the time of minipool creation?
     }
 
     struct Staking {
@@ -394,10 +394,13 @@ contract RocketMinipoolDelegate {
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        /*
         // Check to see if we can close the pool
+        // TODO: Fix minipool removal check and uncomment
         if (closePool()) {
             return true;
         }
+        */
         // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
         if (getUserCount() == 0 && status.current <= 1) {
             // No users, reset the status to awaiting deposits
