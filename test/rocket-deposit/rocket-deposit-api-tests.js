@@ -15,6 +15,7 @@ export default function() {
         const nodeOperator = accounts[2];
         const user1 = accounts[3];
         const user2 = accounts[4];
+        const user3 = accounts[5];
 
 
         // Setup
@@ -93,22 +94,82 @@ export default function() {
             // Create minipools to assign minimum deposits to
             await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: minipoolsPerAssignTx, nodeOperator, owner});
 
-            // Make final minimum deposit to process queue
-            await scenarioDeposit({
-                depositorContract: groupAccessorContract,
-                durationID: '3m',
-                fromAddress: user1,
-                value: minDepositSize,
-                gas: 7500000,
-            });
+            // Make final deposits to process queue and fill minipool
+            for (let di = 0; di < selfAssignableDepositsPerMinipool - 1; ++di) {
+                await scenarioDeposit({
+                    depositorContract: groupAccessorContract,
+                    durationID: '3m',
+                    fromAddress: user1,
+                    value: selfAssignableDepositSize,
+                    gas: 7500000,
+                });
+            }
 
         });
 
 
-        // TODO:
-        // - add tests for dynamic maximum deposit size
-        // - test deposits while queue is full and minipools are available (succeed if under current deposit maximum)
-        // - test deposits while queue is full and minipools are unavailable (fail only)
+        // Staker can only deposit up to the current maximum deposit size
+        it(printTitle('staker', 'can only deposit up to the current maximum deposit size'), async () => {
+
+            // Get deposit settings
+            let maxQueueSize = parseInt(await rocketDepositSettings.getDepositQueueSizeMax.call());
+            let maxDepositSizeLimit = parseInt(await rocketDepositSettings.getDepositMax.call());
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+            let chunksPerDepositTx = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+            let maxDepositSize;
+
+            // Check current max deposit size is equal to maximum limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, maxDepositSizeLimit, 'Pre-check failed: current max deposit size is not the maximum limit');
+
+            // Make deposit to fill queue
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxQueueSize,
+                gas: 7500000,
+            });
+
+            // Check current max deposit size is equal to locked limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, 0, 'Pre-check failed: current max deposit size is not the "locked" limit');
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 7500000,
+            }), 'Deposited while the deposit queue was locked');
+
+            // Create minipool to allow deposits up to "backlog" limit
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
+
+            // Check current max deposit size is equal to backlog limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, chunkSize * (chunksPerDepositTx - 1), 'Pre-check failed: current max deposit size is not the "backlog" limit');
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxDepositSize + parseInt(web3.utils.toWei('1', 'ether')),
+                gas: 7500000,
+            }), 'Deposited an amount over the current maximum deposit size');
+
+            // Make deposit
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxDepositSize,
+                gas: 7500000,
+            });
+
+        });
 
 
         // Staker cannot deposit with an invalid staking duration ID
@@ -347,7 +408,7 @@ export default function() {
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 depositID,
-                fromAddress: user2,
+                fromAddress: user3,
                 gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
