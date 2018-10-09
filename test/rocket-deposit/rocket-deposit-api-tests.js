@@ -20,36 +20,17 @@ export default function() {
         // Setup
         let rocketDepositAPI;
         let rocketDepositSettings;
-        let minDepositSize;
-        let numMinDeposits;
-        let initialDepositSize;
+        let rocketMinipoolSettings;
         let groupContract;
         let groupAccessorContract;
+        let nodeContract;
+        let depositID;
         before(async () => {
 
-
-            //
-            // Deposit
-            //
-
-            // Get deposit contracts
-            rocketDepositAPI =  await RocketDepositAPI.deployed();
+            // Get contracts
+            rocketDepositAPI = await RocketDepositAPI.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
-
-            // Get deposit settings
-            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
-            minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
-            let chunksPerDeposit = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
-
-            // Get deposit scenario parameters
-            numMinDeposits = Math.ceil(chunkSize / minDepositSize) * chunksPerDeposit;
-            initialDepositSize = chunkSize * chunksPerDeposit * numMinDeposits;
-            let minDepositsTotalSize = numMinDeposits * minDepositSize;
-
-
-            //
-            // Group
-            //
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -58,30 +39,8 @@ export default function() {
             groupAccessorContract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
             await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
-
-            //
-            // Node
-            //
-
             // Create node contract
-            let nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
-
-            // Get node deposit amount
-            let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
-            let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
-
-            // Get deposit scenario parameters
-            let minipoolsRequired = Math.ceil((initialDepositSize + minDepositsTotalSize) / Math.floor(miniPoolLaunchAmount / 2)) + 1;
-
-            // Create minipools
-            await createNodeMinipools({
-                nodeContract,
-                stakingDurationID: '3m',
-                minipoolCount: minipoolsRequired,
-                nodeOperator,
-                owner
-            });
-
+            nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
 
         });
 
@@ -89,17 +48,39 @@ export default function() {
         // Staker can deposit via group depositor
         it(printTitle('staker', 'can deposit via group depositor'), async () => {
 
-            // Make initial large deposit
-            await scenarioDeposit({
-                depositorContract: groupAccessorContract,
-                durationID: '3m',
-                fromAddress: user1,
-                value: initialDepositSize + 1,
-                gas: 7500000,
-            });
+            // Get deposit settings
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+            let minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
+            let chunksPerDepositTx = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+
+            // Get minipool settings
+            let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
+            let miniPoolAssignAmount = Math.floor(miniPoolLaunchAmount / 2);
+
+            // Parameters to fill initial minipool and leave change in deposit queue
+            let selfAssignableDepositSize = chunkSize * chunksPerDepositTx;
+            let selfAssignableDepositsPerMinipool = Math.floor(miniPoolAssignAmount / selfAssignableDepositSize);
+
+            // Parameters to set up maximum number of minimum deposits to be processed in one tx
+            let maxMinDepositsPerAssignTx = Math.ceil(chunkSize / minDepositSize) * chunksPerDepositTx;
+            let minipoolsPerAssignTx = Math.ceil(selfAssignableDepositSize / miniPoolAssignAmount);
+
+            // Create single minipool to fill
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
+
+            // Fill minipool and leave change from last deposit in queue
+            for (let di = 0; di < selfAssignableDepositsPerMinipool; ++di) {
+                await scenarioDeposit({
+                    depositorContract: groupAccessorContract,
+                    durationID: '3m',
+                    fromAddress: user1,
+                    value: selfAssignableDepositSize + parseInt(web3.utils.toWei('0.01', 'ether')),
+                    gas: 7500000,
+                });
+            }
 
             // Make minimum deposits
-            for (let di = 0; di < numMinDeposits + 1; ++di) {
+            for (let di = 0; di < maxMinDepositsPerAssignTx; ++di) {
                 await scenarioDeposit({
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
@@ -108,6 +89,18 @@ export default function() {
                     gas: 7500000,
                 });
             }
+
+            // Create minipools to assign minimum deposits to
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: minipoolsPerAssignTx, nodeOperator, owner});
+
+            // Make final minimum deposit to process queue
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: minDepositSize,
+                gas: 7500000,
+            });
 
         });
 
@@ -248,10 +241,6 @@ export default function() {
             }), 'Deposited directly via RocketDepositAPI');
 
         });
-
-
-        // Deposit ID for refunds
-        let depositID;
 
 
         // Staker can refund a deposit
