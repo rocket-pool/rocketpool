@@ -170,7 +170,6 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Checks if the deposit parameters are correct for a successful ether deposit
     /// @param _nodeOwner  The address of the nodes owner
-    /// @param _pubkey  The pubkey of a new account on the node
     function getDepositIsValid(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
         // Get the RPL contract 
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
@@ -274,6 +273,7 @@ contract RocketNodeAPI is RocketBase {
         }
     }
 
+    /*
     /// @dev Save a public key for this node from a newly generated account
     /// @param _account  The address of an account controlled by the node owner
     /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
@@ -306,5 +306,6 @@ contract RocketNodeAPI is RocketBase {
         // Done
         return true;
     }
+    */
 
 }
