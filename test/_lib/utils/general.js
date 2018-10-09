@@ -180,6 +180,6 @@ export function getTransactionContractEvents(txResult, contractAddress, eventNam
     return txResult.receipt.logs
         .filter(log => (log.address.toLowerCase() == contractAddress.toLowerCase()))
         .filter(log => (log.topics[0] == web3.utils.soliditySha3(eventName + '(' + eventParams.map(param => param.type).join(',') + ')')))
-        .map(log => web3.eth.abi.decodeLog(eventParams, log.data, log.topics));
+        .map(log => web3.eth.abi.decodeLog(eventParams, log.data, log.topics.slice(1)));
 }
 
