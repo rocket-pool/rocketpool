@@ -258,8 +258,6 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
-        // Make sure this deposit won't put us over the amount needed by casper, this shouldn't happen if chunking is working correctly, but double check
-        require(address(this).balance <= rocketMinipoolSettings.getMinipoolLaunchAmount(), "Deposit will overload minipools ether requirement for Casper.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
         // All good? Fire the event for the new deposit
