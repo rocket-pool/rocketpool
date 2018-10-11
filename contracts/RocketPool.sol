@@ -1,17 +1,25 @@
 pragma solidity 0.4.24;
 
+// Contracts
 import "./RocketBase.sol";
+// Interfaces
 import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
+// Libraries
+import "../../lib/SafeMath.sol";
 
 
 
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is main pool management contract
 /// @author David Rugendyke
 contract RocketPool is RocketBase {
+
+    /*** Libs  ******************/
+
+    using SafeMath for uint;
 
     /*** Contracts **************/
 
@@ -214,6 +222,33 @@ contract RocketPool is RocketBase {
         }
         // Success
         return true;
+    }
+
+
+    /// @dev Get the total ether value of the network by key
+    /// @param _type The type of total ether value to retrieve (e.g. "capacity")
+    function getTotalEther(string _type) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type)));
+    }
+
+
+    /// @dev Increase the total ether value of the network by key
+    /// @param _type The type of total ether value to increase (e.g. "capacity")
+    /// @param _value The amount to increase the total ether value by
+    function increaseTotalEther(string _type, uint256 _value) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type))).add(_value)
+        );
+    }
+
+
+    /// @dev Decrease the total ether value of the network by key
+    /// @param _type The type of total ether value to decrease (e.g. "capacity")
+    /// @param _value The amount to decrease the total ether value by
+    function decreaseTotalEther(string _type, uint256 _value) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type))).sub(_value)
+        );
     }
 
 
