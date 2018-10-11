@@ -1,17 +1,25 @@
 pragma solidity 0.4.24;
 
+// Contracts
 import "./RocketBase.sol";
+// Interfaces
 import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
+// Libraries
+import "./lib/SafeMath.sol";
 
 
 
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is main pool management contract
 /// @author David Rugendyke
 contract RocketPool is RocketBase {
+
+    /*** Libs  ******************/
+
+    using SafeMath for uint;
 
     /*** Contracts **************/
 
@@ -98,6 +106,16 @@ contract RocketPool is RocketBase {
     }
 
 
+    /// @dev Get the current network utilisation (assigned ether / ether capacity) as a fraction of 1 ether
+    /// @param _durationID The staking duration
+    function getNetworkUtilisation(string _durationID) public view returns (uint256) {
+        uint256 etherCapacity = getTotalEther("capacity", _durationID);
+        if (etherCapacity == 0) { return 1 ether; }
+        uint256 base = 1 ether;
+        return base.mul(getTotalEther("assigned", _durationID)).div(etherCapacity);
+    }
+
+
     /*** Methods *************/
 
 
@@ -119,6 +137,8 @@ contract RocketPool is RocketBase {
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Set minipool available
         doMinipoolSetAvailable(minipoolAddress, true);
+        // Increase total network ether capacity
+        doIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount() - _etherAmount);
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
@@ -133,6 +153,7 @@ contract RocketPool is RocketBase {
         if(minipoolRemoveCheck(_from, msg.sender)) {
             // Get contracts
             rocketMinipool = RocketMinipoolInterface(msg.sender);
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
             addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
             // Remove the existance flag
             rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
@@ -143,6 +164,8 @@ contract RocketPool is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Set minipool unavailable
             doMinipoolSetAvailable(msg.sender, false);
+            // Decrease total network ether capacity
+            doDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipoolSettings.getMinipoolLaunchAmount() - rocketMinipool.getNodeDepositEther());
             // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address
@@ -214,6 +237,43 @@ contract RocketPool is RocketBase {
         }
         // Success
         return true;
+    }
+
+
+    /// @dev Get the total ether value of the network by key
+    /// @param _type The type of total ether value to retrieve (e.g. "capacity")
+    /// @param _durationID The staking duration
+    function getTotalEther(string _type, string _durationID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)));
+    }
+
+
+    /// @dev Increase the total ether value of the network by key
+    /// @param _type The type of total ether value to increase (e.g. "capacity")
+    /// @param _value The amount to increase the total ether value by
+    /// @param _durationID The staking duration
+    function increaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMiniPool(msg.sender) {
+        doIncreaseTotalEther(_type, _durationID, _value);
+    }
+    function doIncreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID))).add(_value)
+        );
+    }
+
+
+    // TODO: decrease total network ether "capacity" & "assigned" when minipool withdraws from Casper
+    /// @dev Decrease the total ether value of the network by key
+    /// @param _type The type of total ether value to decrease (e.g. "capacity")
+    /// @param _value The amount to decrease the total ether value by
+    /// @param _durationID The staking duration
+    function decreaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMiniPool(msg.sender) {
+        doDecreaseTotalEther(_type, _durationID, _value);
+    }
+    function doDecreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID))).sub(_value)
+        );
     }
 
 

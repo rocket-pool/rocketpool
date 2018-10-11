@@ -255,11 +255,14 @@ contract RocketMinipoolDelegate {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
         // Load contracts
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
+        // Increase total network assigned ether
+        rocketPool.increaseTotalEther("assigned", staking.id, msg.value);
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
