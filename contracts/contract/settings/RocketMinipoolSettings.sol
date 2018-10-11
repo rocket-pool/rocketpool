@@ -74,14 +74,13 @@ contract RocketMinipoolSettings is RocketBase {
     }
     
     /// @dev Check to see if new pools are allowed to be created
-    function getMinipoolCanBeCreated() public view returns (bool) { 
+    function getMinipoolCanBeCreated() public returns (bool) { 
         // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
         // New pools allowed to be created?
-        // TODO: Renable when methods added to new RP contract
-        //if (!getMinipoolNewEnabled() || rocketPool.getActivePoolsCount() >= getMinipoolMax()) {
-       //     return false;
-        //}
+        if (!getMinipoolNewEnabled() || rocketPool.getPoolsCount() >= getMinipoolMax()) {
+            return false;
+        }
         return true;
     }
 
