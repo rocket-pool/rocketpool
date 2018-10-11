@@ -110,7 +110,8 @@ contract RocketPool is RocketBase {
     function getNetworkUtilisation() public returns (uint256) {
         uint256 etherCapacity = getTotalEther("capacity");
         if (etherCapacity == 0) { return 1 ether; }
-        return (1 ether).mul(getTotalEther("assigned")).div(etherCapacity);
+        uint256 base = 1 ether;
+        return base.mul(getTotalEther("assigned")).div(etherCapacity);
     }
 
 
