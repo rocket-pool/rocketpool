@@ -1,6 +1,6 @@
 // Dependencies
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketMinipoolInterface, RocketMinipoolSettings, RocketPoolToken } from '../_lib/artifacts';
+import { RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeAPI, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
@@ -107,3 +107,14 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     }
 
 }
+
+
+// Attempt a deposit via the node API
+export async function scenarioAPIDeposit({nodeOperator}) {
+    const rocketNodeAPI = await RocketNodeAPI.deployed();
+
+    // Deposit
+    await rocketNodeAPI.deposit(nodeOperator, {from: nodeOperator, gas: 7500000});
+
+}
+

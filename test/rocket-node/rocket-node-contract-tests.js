@@ -1,8 +1,8 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings } from '../_lib/artifacts';
+import { RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
 import { createNodeContract } from '../_helpers/rocket-node';
 import { mintRpl } from '../_helpers/rocket-pool-token';
-import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit } from './rocket-node-contract-scenarios';
+import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
 
 export default function() {
 
@@ -15,7 +15,6 @@ export default function() {
 
 
         // Setup
-        let rocketNodeAPI;
         let rocketNodeSettings;
         let nodeContract;
         let minDepositAmount;
@@ -23,7 +22,6 @@ export default function() {
         before(async () => {
 
             // Initialise contracts
-            rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
 
             // Create node contract
@@ -218,9 +216,8 @@ export default function() {
 
         // Node operator cannot call API deposit method directly
         it(printTitle('node operator', 'cannot call API deposit method directly'), async () => {
-            await assertThrows(rocketNodeAPI.deposit(operator, {
-                from: operator,
-                gas: 7500000,
+            await assertThrows(scenarioAPIDeposit({
+                nodeOperator: operator,
             }), 'Called API deposit method directly');
         });
 
