@@ -1,5 +1,5 @@
 // Dependencies
-import { RocketGroupAPI, RocketGroupContract, RocketGroupSettings } from '../_lib/artifacts';
+import { RocketGroupAPI, RocketGroupContract, RocketGroupAccessorContract, RocketGroupSettings } from '../_lib/artifacts';
 
 
 // Create a new group contract
@@ -28,8 +28,10 @@ export async function createGroupAccessorContract({groupContractAddress, groupOw
     let rocketGroupAPI = await RocketGroupAPI.deployed();
     let accessorCreateResult = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
 
-    // Return accessor address
-    return accessorCreateResult.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
+    // Get & return accessor contract
+    let accessorContractAddress = accessorCreateResult.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
+    let accessorContract = await RocketGroupAccessorContract.at(accessorContractAddress);
+    return accessorContract;
 
 }
 

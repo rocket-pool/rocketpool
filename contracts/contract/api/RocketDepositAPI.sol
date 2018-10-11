@@ -135,6 +135,12 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
+    /// @dev Get the queued balance of a user deposit
+    function getUserQueuedDepositBalance(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
+    }
+
+
     /*** Methods *************/
 
    

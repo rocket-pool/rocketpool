@@ -1,17 +1,8 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings, RocketGroupAPI, RocketGroupAccessorContract, RocketGroupContract, RocketGroupSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPoolToken } from '../_lib/artifacts';
+import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
+import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
+import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit, scenarioAPIRefundDeposit } from './rocket-deposit-api-scenarios';
-
-
-// Get user's queued deposit IDs
-async function getQueuedDepositIDs(groupID, userID, durationID) {
-    const rocketDepositAPI = await RocketDepositAPI.deployed();
-    let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, userID, durationID));
-    let depositIDs = [], di;
-    for (di = 0; di < depositCount; ++di) depositIDs.push(await rocketDepositAPI.getUserQueuedDepositAt.call(groupID, userID, durationID, di));
-    return depositIDs;
-}
-
 
 export default function() {
 
@@ -24,107 +15,33 @@ export default function() {
         const nodeOperator = accounts[2];
         const user1 = accounts[3];
         const user2 = accounts[4];
+        const user3 = accounts[5];
 
 
         // Setup
         let rocketDepositAPI;
         let rocketDepositSettings;
-        let minDepositSize;
-        let numMinDeposits;
-        let initialDepositSize;
-        let groupContractAddress;
+        let rocketMinipoolSettings;
+        let groupContract;
         let groupAccessorContract;
+        let nodeContract;
+        let depositID;
         before(async () => {
 
-
-            //
-            // Deposit
-            //
-
-            // Get deposit contracts
-            rocketDepositAPI =  await RocketDepositAPI.deployed();
+            // Get contracts
+            rocketDepositAPI = await RocketDepositAPI.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
-            // Get deposit settings
-            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
-            minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
-            let chunksPerDeposit = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+            // Create group contract
+            groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
 
-            // Get deposit scenario parameters
-            numMinDeposits = Math.ceil(chunkSize / minDepositSize) * chunksPerDeposit;
-            initialDepositSize = chunkSize * chunksPerDeposit * numMinDeposits;
-            let minDepositsTotalSize = numMinDeposits * minDepositSize;
+            // Create and add group accessor contract
+            groupAccessorContract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
-
-            //
-            // Group
-            //
-
-            // Get new group fee
-            let rocketGroupSettings = await RocketGroupSettings.deployed();
-            let newGroupFee = parseInt(await rocketGroupSettings.getNewFee());
-
-            // Create group
-            let rocketGroupAPI = await RocketGroupAPI.deployed();
-            let groupResult = await rocketGroupAPI.add('Group 1', web3.utils.toWei('0.05', 'ether'), {from: groupOwner, gas: 7500000, value: newGroupFee});
-
-            // Get group contract
-            groupContractAddress = groupResult.logs.filter(log => (log.event == 'GroupAdd'))[0].args.ID;
-            let groupContract = await RocketGroupContract.at(groupContractAddress);
-
-            // Create default group accessor
-            let groupAccessorResult = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
-
-            // Get group accessor contract
-            let groupAccessorContractAddress = groupAccessorResult.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
-            groupAccessorContract = await RocketGroupAccessorContract.at(groupAccessorContractAddress);
-
-            // Add accessor to group depositor / withdrawer list
-            // Deposits to RocketDepositAPI can now be made through accessor contract
-            await groupContract.addDepositor(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
-            await groupContract.addWithdrawer(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
-
-
-            //
-            // Node
-            //
-
-            // Create node
-            let rocketNodeAPI = await RocketNodeAPI.deployed();
-            let nodeResult = await rocketNodeAPI.add('Australia/Brisbane', {from: nodeOperator, gas: 7500000});
-
-            // Get node contract
-            let nodeContractAddress = nodeResult.logs.filter(log => (log.event == 'NodeAdd'))[0].args.contractAddress;
-            let nodeContract = await RocketNodeContract.at(nodeContractAddress);
-
-            // Get node deposit amount
-            let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
-            let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
-            let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
-            let nodeDepositAmount = Math.floor(miniPoolLaunchAmount / 2) * miniPoolMaxCreateCount;
-
-            // Get RPL token contract
-            let rocketPoolToken = await RocketPoolToken.deployed();
-
-            // Get deposit scenario parameters
-            let minipoolsRequired = Math.ceil((initialDepositSize + minDepositsTotalSize) / Math.floor(miniPoolLaunchAmount / 2)) + 1;
-
-            // Create minipools
-            for (let mi = 0; mi < minipoolsRequired; mi += miniPoolMaxCreateCount) {
-
-                // Reserve node deposit
-                await nodeContract.depositReserve(nodeDepositAmount, '3m', {from: nodeOperator, gas: 500000});
-
-                // Deposit required RPL
-                let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
-                await rocketPoolToken.mint(nodeContract.address, rplRequired, {from: owner, gas: 500000});
-
-                // Deposit
-                // Creates minipools ready for user deposit assignment
-                await nodeContract.deposit({from: nodeOperator, gas: 7500000, value: nodeDepositAmount});
-
-            }
-
+            // Create node contract
+            nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
 
         });
 
@@ -132,17 +49,39 @@ export default function() {
         // Staker can deposit via group depositor
         it(printTitle('staker', 'can deposit via group depositor'), async () => {
 
-            // Make initial large deposit
-            await scenarioDeposit({
-                depositorContract: groupAccessorContract,
-                durationID: '3m',
-                fromAddress: user1,
-                value: initialDepositSize + 1,
-                gas: 7500000,
-            });
+            // Get deposit settings
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+            let minDepositSize = parseInt(await rocketDepositSettings.getDepositMin.call());
+            let chunksPerDepositTx = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+
+            // Get minipool settings
+            let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
+            let miniPoolAssignAmount = Math.floor(miniPoolLaunchAmount / 2);
+
+            // Parameters to fill initial minipool and leave change in deposit queue
+            let selfAssignableDepositSize = chunkSize * chunksPerDepositTx;
+            let selfAssignableDepositsPerMinipool = Math.floor(miniPoolAssignAmount / selfAssignableDepositSize);
+
+            // Parameters to set up maximum number of minimum deposits to be processed in one tx
+            let maxMinDepositsPerAssignTx = Math.ceil(chunkSize / minDepositSize) * chunksPerDepositTx;
+            let minipoolsPerAssignTx = Math.ceil(selfAssignableDepositSize / miniPoolAssignAmount);
+
+            // Create single minipool to fill
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
+
+            // Fill minipool and leave change from last deposit in queue
+            for (let di = 0; di < selfAssignableDepositsPerMinipool; ++di) {
+                await scenarioDeposit({
+                    depositorContract: groupAccessorContract,
+                    durationID: '3m',
+                    fromAddress: user1,
+                    value: selfAssignableDepositSize + parseInt(web3.utils.toWei('0.01', 'ether')),
+                    gas: 7500000,
+                });
+            }
 
             // Make minimum deposits
-            for (let di = 0; di < numMinDeposits + 1; ++di) {
+            for (let di = 0; di < maxMinDepositsPerAssignTx; ++di) {
                 await scenarioDeposit({
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
@@ -152,13 +91,85 @@ export default function() {
                 });
             }
 
+            // Create minipools to assign minimum deposits to
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: minipoolsPerAssignTx, nodeOperator, owner});
+
+            // Make final deposits to process queue and fill minipool
+            for (let di = 0; di < selfAssignableDepositsPerMinipool - 1; ++di) {
+                await scenarioDeposit({
+                    depositorContract: groupAccessorContract,
+                    durationID: '3m',
+                    fromAddress: user1,
+                    value: selfAssignableDepositSize,
+                    gas: 7500000,
+                });
+            }
+
         });
 
 
-        // TODO:
-        // - add tests for dynamic maximum deposit size
-        // - test deposits while queue is full and minipools are available (succeed if under current deposit maximum)
-        // - test deposits while queue is full and minipools are unavailable (fail only)
+        // Staker can only deposit up to the current maximum deposit size
+        it(printTitle('staker', 'can only deposit up to the current maximum deposit size'), async () => {
+
+            // Get deposit settings
+            let maxQueueSize = parseInt(await rocketDepositSettings.getDepositQueueSizeMax.call());
+            let maxDepositSizeLimit = parseInt(await rocketDepositSettings.getDepositMax.call());
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+            let chunksPerDepositTx = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+            let maxDepositSize;
+
+            // Check current max deposit size is equal to maximum limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, maxDepositSizeLimit, 'Pre-check failed: current max deposit size is not the maximum limit');
+
+            // Make deposit to fill queue
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxQueueSize,
+                gas: 7500000,
+            });
+
+            // Check current max deposit size is equal to locked limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, 0, 'Pre-check failed: current max deposit size is not the "locked" limit');
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 7500000,
+            }), 'Deposited while the deposit queue was locked');
+
+            // Create minipool to allow deposits up to "backlog" limit
+            await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
+
+            // Check current max deposit size is equal to backlog limit
+            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
+            assert.equal(maxDepositSize, chunkSize * (chunksPerDepositTx - 1), 'Pre-check failed: current max deposit size is not the "backlog" limit');
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxDepositSize + parseInt(web3.utils.toWei('1', 'ether')),
+                gas: 7500000,
+            }), 'Deposited an amount over the current maximum deposit size');
+
+            // Make deposit
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxDepositSize,
+                gas: 7500000,
+            });
+
+        });
 
 
         // Staker cannot deposit with an invalid staking duration ID
@@ -262,7 +273,7 @@ export default function() {
 
             // Invalid user ID
             await assertThrows(scenarioAPIDeposit({
-                groupID: groupContractAddress,
+                groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
                 durationID: '3m',
                 fromAddress: user1,
@@ -282,7 +293,7 @@ export default function() {
 
             // Valid parameters; invalid depositor
             await assertThrows(scenarioAPIDeposit({
-                groupID: groupContractAddress,
+                groupID: groupContract.address,
                 userID: user1,
                 durationID: '3m',
                 fromAddress: user1,
@@ -291,10 +302,6 @@ export default function() {
             }), 'Deposited directly via RocketDepositAPI');
 
         });
-
-
-        // Deposit ID for refunds
-        let depositID;
 
 
         // Staker can refund a deposit
@@ -310,11 +317,12 @@ export default function() {
             });
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContractAddress, user1, '3m', 0);
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
             await scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
@@ -337,11 +345,12 @@ export default function() {
             });
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContractAddress, user1, '3m', 0);
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: 'beer',
                 depositID,
                 fromAddress: user1,
@@ -355,6 +364,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a deposit with an invalid ID'), async () => {
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 fromAddress: user1,
@@ -372,6 +382,7 @@ export default function() {
             // Request refund
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
@@ -390,6 +401,7 @@ export default function() {
             // Nonexistant deposit ID
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 fromAddress: user1,
@@ -399,9 +411,10 @@ export default function() {
             // Nonexistant user
             await assertThrows(scenarioRefundDeposit({
                 depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
                 durationID: '3m',
                 depositID,
-                fromAddress: user2,
+                fromAddress: user3,
                 gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
@@ -413,7 +426,7 @@ export default function() {
 
             // Invalid user ID
             await assertThrows(scenarioAPIRefundDeposit({
-                groupID: groupContractAddress,
+                groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
                 durationID: '3m',
                 depositID,
@@ -433,7 +446,7 @@ export default function() {
 
             // Valid parameters; invalid depositor
             await assertThrows(scenarioAPIRefundDeposit({
-                groupID: groupContractAddress,
+                groupID: groupContract.address,
                 userID: user1,
                 durationID: '3m',
                 depositID,

@@ -14,18 +14,18 @@ export default function() {
 
         // Setup
         let groupContract;
-        let accessor1Address;
-        let accessor2Address;
-        let accessor3Address;
+        let accessor1Contract;
+        let accessor2Contract;
+        let accessor3Contract;
         before(async () => {
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0', 'ether'), groupOwner});
 
             // Create default accessor contracts
-            accessor1Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
-            accessor2Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
-            accessor3Address = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            accessor1Contract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            accessor2Contract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            accessor3Contract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
 
         });
 
@@ -67,13 +67,13 @@ export default function() {
         it(printTitle('group owner', 'can add a depositor to the group'), async () => {
             await scenarioAddDepositor({
                 groupContract,
-                depositorAddress: accessor1Address,
+                depositorAddress: accessor1Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
             await scenarioAddDepositor({
                 groupContract,
-                depositorAddress: accessor2Address,
+                depositorAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
@@ -84,7 +84,7 @@ export default function() {
         it(printTitle('group owner', 'cannot add an existing depositor to the group'), async () => {
             await assertThrows(scenarioAddDepositor({
                 groupContract,
-                depositorAddress: accessor1Address,
+                depositorAddress: accessor1Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             }), 'Added an existing depositor to the group');
@@ -95,7 +95,7 @@ export default function() {
         it(printTitle('random account', 'cannot add a depositor to the group'), async () => {
             await assertThrows(scenarioAddDepositor({
                 groupContract,
-                depositorAddress: accessor3Address,
+                depositorAddress: accessor3Contract.address,
                 fromAddress: accounts[9],
                 gas: 500000,
             }), 'Random account added a depositor to the group');
@@ -106,7 +106,7 @@ export default function() {
         it(printTitle('group owner', 'can remove a depositor from the group'), async () => {
             await scenarioRemoveDepositor({
                 groupContract,
-                depositorAddress: accessor2Address,
+                depositorAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
@@ -117,7 +117,7 @@ export default function() {
         it(printTitle('group owner', 'cannot remove a nonexistant depositor from the group'), async () => {
             await assertThrows(scenarioRemoveDepositor({
                 groupContract,
-                depositorAddress: accessor2Address,
+                depositorAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             }), 'Removed a nonexistant depositor from the group');
@@ -128,7 +128,7 @@ export default function() {
         it(printTitle('random account', 'cannot remove a depositor from the group'), async () => {
             await assertThrows(scenarioRemoveDepositor({
                 groupContract,
-                depositorAddress: accessor1Address,
+                depositorAddress: accessor1Contract.address,
                 fromAddress: accounts[9],
                 gas: 500000,
             }), 'Random account removed a depositor from the group');
@@ -139,13 +139,13 @@ export default function() {
         it(printTitle('group owner', 'can add a withdrawer to the group'), async () => {
             await scenarioAddWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor1Address,
+                withdrawerAddress: accessor1Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
             await scenarioAddWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor2Address,
+                withdrawerAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
@@ -156,7 +156,7 @@ export default function() {
         it(printTitle('group owner', 'cannot add an existing withdrawer to the group'), async () => {
             await assertThrows(scenarioAddWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor1Address,
+                withdrawerAddress: accessor1Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             }), 'Added an existing withdrawer to the group');
@@ -167,7 +167,7 @@ export default function() {
         it(printTitle('random account', 'cannot add a withdrawer to the group'), async () => {
             await assertThrows(scenarioAddWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor3Address,
+                withdrawerAddress: accessor3Contract.address,
                 fromAddress: accounts[9],
                 gas: 500000,
             }), 'Random account added a withdrawer to the group');
@@ -178,7 +178,7 @@ export default function() {
         it(printTitle('group owner', 'can remove a withdrawer from the group'), async () => {
             await scenarioRemoveWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor2Address,
+                withdrawerAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
@@ -191,7 +191,7 @@ export default function() {
             // Attempt removal
             await assertThrows(scenarioRemoveWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor1Address,
+                withdrawerAddress: accessor1Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             }), 'Removed the last withdrawer from the group');
@@ -199,7 +199,7 @@ export default function() {
             // Add withdrawer
             await scenarioAddWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor3Address,
+                withdrawerAddress: accessor3Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             });
@@ -211,7 +211,7 @@ export default function() {
         it(printTitle('group owner', 'cannot remove a nonexistant withdrawer from the group'), async () => {
             await assertThrows(scenarioRemoveWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor2Address,
+                withdrawerAddress: accessor2Contract.address,
                 fromAddress: groupOwner,
                 gas: 500000,
             }), 'Removed a nonexistant withdrawer from the group');
@@ -222,7 +222,7 @@ export default function() {
         it(printTitle('random account', 'cannot remove a withdrawer from the group'), async () => {
             await assertThrows(scenarioRemoveWithdrawer({
                 groupContract,
-                withdrawerAddress: accessor1Address,
+                withdrawerAddress: accessor1Contract.address,
                 fromAddress: accounts[9],
                 gas: 500000,
             }), 'Random account removed a withdrawer from the group');
