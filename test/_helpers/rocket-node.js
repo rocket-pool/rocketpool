@@ -34,7 +34,7 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
-        await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
+        if (rplRequired > 0) await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
 
         // Complete deposit to create minipool
         await nodeContract.deposit({from: nodeOperator, gas: 7500000, value: nodeDepositAmount});
