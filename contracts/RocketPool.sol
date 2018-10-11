@@ -9,7 +9,7 @@ import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
 // Libraries
-import "../../lib/SafeMath.sol";
+import "./lib/SafeMath.sol";
 
 
 
