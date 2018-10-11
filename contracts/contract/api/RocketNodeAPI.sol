@@ -169,7 +169,7 @@ contract RocketNodeAPI is RocketBase {
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the rpl ratio is valid
-        require(_rplRatio < 3 ether, "RPL Ratio is too high.");
+        require(_rplRatio < 5 ether, "RPL Ratio is too high.");
         // All ok
         return true;
     }
