@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketStorage, TestNodeTask } from '../_lib/artifacts';
+import { createTestNodeTaskContract } from '../_helpers/rocket-node-task';
 import { scenarioAddNodeTask, scenarioRemoveNodeTask, scenarioUpdateNodeTask } from './rocket-node-task-admin-scenarios';
 
 export default function() {
@@ -12,7 +12,6 @@ export default function() {
 
 
         // Deploy test node tasks
-        let rocketStorage;
         let testNodeTask1;
         let testNodeTask2;
         let testNodeTask3;
@@ -20,13 +19,12 @@ export default function() {
         let testNodeTask1v2;
         let testNodeTask1v3;
         before(async () => {
-            rocketStorage = await RocketStorage.deployed();
-            testNodeTask1 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask2 = await TestNodeTask.new(rocketStorage.address, 'NodeTask2', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask3 = await TestNodeTask.new(rocketStorage.address, 'NodeTask3', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask4 = await TestNodeTask.new(rocketStorage.address, 'NodeTask4', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask1v2 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1v2', {gas: 5000000, gasPrice: 10000000000, from: owner});
-            testNodeTask1v3 = await TestNodeTask.new(rocketStorage.address, 'NodeTask1v3', {gas: 5000000, gasPrice: 10000000000, from: owner});
+            testNodeTask1 = await createTestNodeTaskContract({name: 'NodeTask1', owner});
+            testNodeTask2 = await createTestNodeTaskContract({name: 'NodeTask2', owner});
+            testNodeTask3 = await createTestNodeTaskContract({name: 'NodeTask3', owner});
+            testNodeTask4 = await createTestNodeTaskContract({name: 'NodeTask4', owner});
+            testNodeTask1v2 = await createTestNodeTaskContract({name: 'NodeTask1v2', owner});
+            testNodeTask1v3 = await createTestNodeTaskContract({name: 'NodeTask1v3', owner});
         });
 
 

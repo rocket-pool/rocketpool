@@ -62,7 +62,7 @@ contract RocketMinipoolDelegate {
         address contractAddress;                                // The nodes Rocket Pool contract
         uint256 depositEther;                                   // The nodes ether contribution
         uint256 depositRPL;                                     // The nodes RPL contribution
-        bool    trusted;                                        // Is this a trusted node?
+        bool    trusted;                                        // Was the node trusted at the time of minipool creation?
     }
 
     struct Staking {
@@ -258,8 +258,6 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
-        // Make sure this deposit won't put us over the amount needed by casper, this shouldn't happen if chunking is working correctly, but double check
-        require(address(this).balance <= rocketMinipoolSettings.getMinipoolLaunchAmount(), "Deposit will overload minipools ether requirement for Casper.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
         // All good? Fire the event for the new deposit
@@ -390,12 +388,17 @@ contract RocketMinipoolDelegate {
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
+        // Get the RP interface
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        /*
         // Check to see if we can close the pool
+        // TODO: Fix minipool removal check and uncomment
         if (closePool()) {
             return true;
         }
+        */
         // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
         if (getUserCount() == 0 && status.current <= 1) {
             // No users, reset the status to awaiting deposits
@@ -411,13 +414,15 @@ contract RocketMinipoolDelegate {
             return;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        if (getUserCount() > 0 && status.current == 1 && rocketMinipoolSettings.getMinipoolLaunchAmount() >= address(this).balance) {
+        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= rocketMinipoolSettings.getMinipoolLaunchAmount()) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
             if(!node.trusted ) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
             // TODO: send deposit to Casper contract
-            // Prelaunch
+            // Set minipool availability status
+            rocketPool.minipoolSetAvailable(false);
+            // Staking
             setStatus(2);
             // Done
             return;

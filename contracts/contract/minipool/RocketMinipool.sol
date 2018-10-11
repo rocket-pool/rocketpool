@@ -2,15 +2,18 @@ pragma solidity 0.4.24;
 
 
 // Interfaces
+import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
+import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
 
-/// @title A minipool under the main RocketPool, all major logic is contained within the RocketPoolMiniDelegate contract which is upgradable when minipools are deployed
+/// @title A minipool under the main RocketPool, all major logic is contained within the RocketMinipoolDelegate contract which is upgradable when minipools are deployed
 /// @author David Rugendyke
 
 contract RocketMinipool {
@@ -39,6 +42,9 @@ contract RocketMinipool {
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
+    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
 
@@ -134,6 +140,9 @@ contract RocketMinipool {
         casperDeposit = CasperDepositInterface(getContractAddress("casperDeposit"));
         // Add the RPL contract address
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
+        // Set the initial status
+        status.current = 0;
+        status.changed = now;
         // Set the node owner and contract address
         node.owner = _nodeOwner;
         node.depositEther = _depositEther;
@@ -277,7 +286,7 @@ contract RocketMinipool {
     /// @param _groupID The 3rd party group the user belongs too
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("deposit(address,address)"), _user, _groupID), "Delegate call failed.");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("deposit(address,address)"), _user, _groupID), "Delegate call failed.");
         // Success
         return true;
     }
@@ -289,7 +298,7 @@ contract RocketMinipool {
     /// @param _groupID The 3rd party group address the user belongs too
     function addUser(address _user, address _groupID) private returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
         // Success
         return true;
     }
@@ -328,7 +337,7 @@ contract RocketMinipool {
     /// @param _newStatus status id to apply to the minipool
     function setStatus(uint8 _newStatus) private {
         // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketPoolMiniDelegate").delegatecall(getDelegateSignature("setStatus(uint8)"), _newStatus), "Delegate call failed.");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("setStatus(uint8)"), _newStatus), "Delegate call failed.");
     }
     
     
