@@ -185,24 +185,6 @@ export default function() {
         });
 
 
-        // Node operator cannot deposit without depositing required RPL
-        it(printTitle('node operator', 'cannot deposit without required RPL'), async () => {
-
-            // Attempt deposit
-            await assertThrows(scenarioDeposit({
-                nodeContract,
-                value: maxDepositAmount,
-                fromAddress: operator,
-                gas: 7500000,
-            }), 'Deposited without paying required RPL');
-
-            // Deposit required RPL
-            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
-            await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
-
-        });
-
-
         // Node operator cannot deposit with insufficient ether
         it(printTitle('node operator', 'cannot deposit with insufficient ether'), async () => {
             await assertThrows(scenarioDeposit({
@@ -251,6 +233,50 @@ export default function() {
                 fromAddress: accounts[2], // Allowed from any address
                 gas: 7500000,
             });
+        });
+
+
+        // Node operator cannot deposit without depositing required RPL
+        it(printTitle('node operator', 'cannot deposit without required RPL'), async () => {
+
+            // Reserve deposit
+            await scenarioDepositReserve({
+                nodeContract,
+                amount: maxDepositAmount,
+                durationID: '3m',
+                fromAddress: operator,
+                gas: 500000,
+            });
+
+            // Attempt deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: maxDepositAmount,
+                fromAddress: operator,
+                gas: 7500000,
+            }), 'Deposited without paying required RPL');
+
+        });
+
+
+        // Node operator can deposit after depositing required RPL
+        it(printTitle('node operator', 'can deposit with required RPL'), async () => {
+
+            // Get required RPL amount
+            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+            assert.isTrue(rplRequired > 0, 'Pre-check failed: required RPL amount is 0');
+
+            // Deposit required RPL
+            await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
+
+            // Deposit
+            await scenarioDeposit({
+                nodeContract,
+                value: maxDepositAmount,
+                fromAddress: accounts[2], // Allowed from any address
+                gas: 7500000,
+            });
+
         });
 
 
