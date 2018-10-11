@@ -56,8 +56,6 @@ contract RocketMinipoolFactory is RocketBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
         require(rocketMinipoolSettings.getMinipoolCanBeCreated() == true, "Minipool creation is currently disabled.");
-        // Always requires RPL
-        require(_rplDeposited > 0, "Invalide RPL amount given for new minipool creation");
         // Always requires some ether if not trusted
         if(!_trusted) {
             require(_etherDeposited == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
