@@ -1,5 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
+import { RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
+import { userDeposit } from '../_helpers/rocket-deposit';
+import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract } from '../_helpers/rocket-node';
 import { mintRpl } from '../_helpers/rocket-pool-token';
 import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
@@ -12,20 +14,36 @@ export default function() {
         // Accounts
         const owner = accounts[0];
         const operator = accounts[1];
+        const groupOwner = accounts[2];
+        const staker = accounts[3];
 
 
         // Setup
+        let rocketNodeAPI;
         let rocketNodeSettings;
+        let rocketPool;
         let nodeContract;
+        let groupContract;
+        let groupAccessorContract;
         let minDepositAmount;
         let maxDepositAmount;
+        let chunkSize;
         before(async () => {
 
             // Initialise contracts
+            rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
+            rocketPool = await RocketPool.deployed();
 
             // Create node contract
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
+
+            // Create group contract
+            groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
+
+            // Create and add group accessor contract
+            groupAccessorContract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
             // Get minipool launch & min deposit amounts
             let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
@@ -33,6 +51,10 @@ export default function() {
             let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
             minDepositAmount = Math.floor(miniPoolLaunchAmount / 2);
             maxDepositAmount = (minDepositAmount * miniPoolMaxCreateCount);
+
+            // Get deposit settings
+            let rocketDepositSettings = await RocketDepositSettings.deployed();
+            chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
 
         });
 
@@ -222,14 +244,69 @@ export default function() {
         });
 
 
-        // Node operator can deposit
-        it(printTitle('node operator', 'can deposit'), async () => {
+        // Node operator can deposit with no RPL required
+        it(printTitle('node operator', 'can deposit with no RPL required'), async () => {
+
+            // Get required RPL amount
+            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+            assert.equal(rplRequired, 0, 'Pre-check failed: required RPL amount for initial minipools is not 0');
+
+            // Deposit to create initial minipools
             await scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
                 gas: 7500000,
             });
+
+            // Perform user deposits to assign ether & lower RPL ratio from maximum to 0
+            let chunksToAssign = maxDepositAmount / chunkSize;
+            for (let di = 0; di <= chunksToAssign; ++di) {
+
+                // Get network utilisation & RPL ratio
+                let networkUtilisation = web3.utils.fromWei(await rocketPool.getNetworkUtilisation.call(), 'ether');
+                let rplRatio = web3.utils.fromWei(await rocketNodeAPI.getRPLRatio.call('3m'), 'ether');
+
+                // Check RPL ratio based on network utilisation
+                switch (networkUtilisation) {
+                    case 0.000: assert.isTrue(rplRatio > 4.9 && rplRatio < 5.0, 'Incorrect RPL ratio'); break;
+                    case 0.125: assert.isTrue(rplRatio > 1.9 && rplRatio < 2.0, 'Incorrect RPL ratio'); break;
+                    case 0.250: assert.isTrue(rplRatio > 1.1 && rplRatio < 1.2, 'Incorrect RPL ratio'); break;
+                    case 0.375: assert.isTrue(rplRatio > 1.0 && rplRatio < 1.1, 'Incorrect RPL ratio'); break;
+                    case 0.500: assert.isTrue(rplRatio == 1,                    'Incorrect RPL ratio'); break;
+                    case 0.625: assert.isTrue(rplRatio > 0.9 && rplRatio < 1.0, 'Incorrect RPL ratio'); break;
+                    case 0.750: assert.isTrue(rplRatio > 0.8 && rplRatio < 0.9, 'Incorrect RPL ratio'); break;
+                    case 0.875: assert.isTrue(rplRatio > 0.5 && rplRatio < 0.6, 'Incorrect RPL ratio'); break;
+                    case 1.000: assert.isTrue(rplRatio == 0,                    'Incorrect RPL ratio'); break;
+                }
+
+                // Perform user deposit
+                if (di < chunksToAssign) {
+                    await userDeposit({
+                        depositorContract: groupAccessorContract,
+                        durationID: '3m',
+                        fromAddress: staker,
+                        value: chunkSize,
+                    });
+                }
+
+            }
+
+            // Make node deposit to create more minipools and raise RPL ratio above 0
+            await scenarioDepositReserve({
+                nodeContract,
+                amount: maxDepositAmount,
+                durationID: '3m',
+                fromAddress: operator,
+                gas: 500000,
+            });
+            await scenarioDeposit({
+                nodeContract,
+                value: maxDepositAmount,
+                fromAddress: accounts[2], // Allowed from any address
+                gas: 7500000,
+            });
+
         });
 
 
@@ -244,6 +321,10 @@ export default function() {
                 fromAddress: operator,
                 gas: 500000,
             });
+
+            // Get required RPL amount
+            let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
+            assert.isTrue(rplRequired > 0, 'Pre-check failed: required RPL amount is 0');
 
             // Attempt deposit
             await assertThrows(scenarioDeposit({
