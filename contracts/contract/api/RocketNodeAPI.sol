@@ -126,12 +126,13 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the amount of RPL required for a single ether
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRatio(string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
+    function getRPLRatio(string _durationID, uint256 _utilisation) public onlyValidDuration(_durationID) returns(uint256) { 
         // Network utilisation as a fraction of 1 ether
-        uint256 utilisation = 0.5 ether;
+        //uint256 utilisation = 0.5 ether;
+        uint256 utilisation = _utilisation;
         // Calculate RPL ratio based on utilisation rate of 0 - 50%; yields a maximum ratio of 5:1
         if (utilisation < 0.5 ether) {
-            return -(utilisation / 314981000000 - 1587397) ** 3 + 1 ether;
+            return -(utilisation / 95200000000000 - 5252) ** 5 + 1 ether;
         }
         // Calculate RPL ratio based on utilisation rate of 50 - 100%; yields a minimum ratio of 0:1
         else {
