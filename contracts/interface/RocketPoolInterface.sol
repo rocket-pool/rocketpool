@@ -7,4 +7,7 @@ contract RocketPoolInterface {
     function minipoolRemove(address _minipool) public returns (bool);
     function minipoolRemoveCheck(address _sender, address _minipool) public returns (bool);
     function minipoolSetAvailable(bool _available) external returns (bool);
+    function getTotalEther(string _type) public view returns (uint256);
+    function increaseTotalEther(string _type, uint256 _value) external;
+    function decreaseTotalEther(string _type, uint256 _value) external;
 }
