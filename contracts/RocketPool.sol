@@ -106,6 +106,14 @@ contract RocketPool is RocketBase {
     }
 
 
+    /// @dev Get the current network utilisation (assigned ether / ether capacity) as a fraction of 1 ether
+    function getNetworkUtilisation() public returns (uint256) {
+        uint256 etherCapacity = getTotalEther("capacity");
+        if (etherCapacity == 0) { return 1 ether; }
+        return (1 ether).mul(getTotalEther("assigned")).div(etherCapacity);
+    }
+
+
     /*** Methods *************/
 
 
