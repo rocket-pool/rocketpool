@@ -262,7 +262,7 @@ contract RocketMinipoolDelegate {
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
         // Increase total network assigned ether
-        rocketPool.increaseTotalEther("assigned", msg.value);
+        rocketPool.increaseTotalEther("assigned", staking.id, msg.value);
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status

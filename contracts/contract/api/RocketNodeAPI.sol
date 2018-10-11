@@ -129,7 +129,7 @@ contract RocketNodeAPI is RocketBase {
     function getRPLRatio(string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
         // Get network utilisation as a fraction of 1 ether
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        uint256 utilisation = rocketPool.getNetworkUtilisation();
+        uint256 utilisation = rocketPool.getNetworkUtilisation(_durationID);
         // Calculate RPL ratio based on utilisation rate of 0 - 50%; yields a maximum ratio of 5:1
         if (utilisation < 0.5 ether) {
             return -(utilisation / 95200000000000 - 5252) ** 5 + 1 ether;

@@ -264,7 +264,7 @@ export default function() {
             for (let di = 0; di <= chunksToAssign; ++di) {
 
                 // Get network utilisation & RPL ratio
-                let networkUtilisation = web3.utils.fromWei(await rocketPool.getNetworkUtilisation.call(), 'ether');
+                let networkUtilisation = web3.utils.fromWei(await rocketPool.getNetworkUtilisation.call('3m'), 'ether');
                 let rplRatio = web3.utils.fromWei(await rocketNodeAPI.getRPLRatio.call('3m'), 'ether');
 
                 // Check RPL ratio based on network utilisation
