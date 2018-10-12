@@ -209,7 +209,7 @@ contract RocketPool is RocketBase {
         // Get some common attributes
         uint8 status = rocketMinipool.getStatus();
         // A priority initial check - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it), it can be closed by anyone so users get their funds back
-        if(status == 1 && rocketMinipool.getStatusChanged() <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
+        if(status == 1 && rocketMinipool.getStatusChangedTime() <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
             return true;
         }
         // Do some common global checks
