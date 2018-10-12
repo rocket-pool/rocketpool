@@ -2,13 +2,19 @@ pragma solidity 0.4.24;
 
 
 import "../../../RocketBase.sol";
-import "../../../interface/utils/lists/AddressSetStorage.sol";
+import "../../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../../interface/utils/pubsub/SubscriberInterface.sol";
 
 
 /// @title PubSub system event publisher
 /// @author Jake Pospischil
-contract Publisher {
+contract Publisher is RocketBase {
+
+
+    /*** Contracts **************/
+
+
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
 
     /*** Modifiers **************/
