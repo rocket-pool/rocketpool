@@ -42,41 +42,24 @@ contract Publisher is RocketBase {
 
 
     /// @dev Publish event
-    /// @dev Overloaded by _value parameter type
+    /// @dev Overloaded by _value parameters
     /// @param _event The key of the event to publish
-    /*
-    function publish(bytes32 _event) external onlyLatestRocketNetwork() {
-
-    }
-    */
-    function publish(bytes32 _event, address _value) external onlyLatestRocketNetwork() {
+    function publish(bytes32 _event, address _value1, uint8 _value2) external onlyLatestRocketNetwork() {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         uint256 count = addressSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
         for (uint256 i = 0; i < count; ++i) {
             SubscriberInterface subscriber = SubscriberInterface(addressSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i));
-            subscriber.notify(_event, _value);
+            subscriber.notify(_event, _value1, _value2);
         }
     }
-    /*
-    function publish(bytes32 _event, bool _value) external onlyLatestRocketNetwork() {
-
+    function publish(bytes32 _event, string _value1, uint256 _value2) external onlyLatestRocketNetwork() {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        uint256 count = addressSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
+        for (uint256 i = 0; i < count; ++i) {
+            SubscriberInterface subscriber = SubscriberInterface(addressSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i));
+            subscriber.notify(_event, _value1, _value2);
+        }
     }
-    function publish(bytes32 _event, bytes32 _value) external onlyLatestRocketNetwork() {
-
-    }
-    function publish(bytes32 _event, bytes _value) external onlyLatestRocketNetwork() {
-
-    }
-    function publish(bytes32 _event, int _value) external onlyLatestRocketNetwork() {
-
-    }
-    function publish(bytes32 _event, string _value) external onlyLatestRocketNetwork() {
-
-    }
-    function publish(bytes32 _event, uint _value) external onlyLatestRocketNetwork() {
-
-    }
-    */
 
 
     /// @dev Add a subscriber to an event

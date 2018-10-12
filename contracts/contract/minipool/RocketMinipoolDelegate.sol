@@ -9,6 +9,7 @@ import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/CasperDepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
+import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
@@ -47,6 +48,7 @@ contract RocketMinipoolDelegate {
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
+    PublisherInterface publisher = PublisherInterface(0);                                           // main pubsub system event publisher
 
     
     /*** Structs ***************/
@@ -255,14 +257,14 @@ contract RocketMinipoolDelegate {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
         // Load contracts
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
-        // Increase total network assigned ether
-        rocketPool.increaseTotalEther("assigned", staking.id, msg.value);
+        // Publish deposit event
+        publisher.publish(keccak256("minipool.user.deposit"), staking.id, msg.value);
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
@@ -342,6 +344,9 @@ contract RocketMinipoolDelegate {
             status.current = _newStatus;
             status.changed = now;
             emit StatusChange(status.current, status.previous, status.changed);
+            // Publish status change event
+            publisher = PublisherInterface(getContractAddress("utilPublisher"));
+            publisher.publish(keccak256("minipool.status.change"), address(this), _newStatus);
         }
     }
     
@@ -391,8 +396,6 @@ contract RocketMinipoolDelegate {
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
-        // Get the RP interface
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         /*
@@ -423,8 +426,6 @@ contract RocketMinipoolDelegate {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
             // TODO: send deposit to Casper contract
-            // Set minipool availability status
-            rocketPool.minipoolSetAvailable(false);
             // Staking
             setStatus(2);
             // Done
