@@ -54,7 +54,8 @@ contract RocketMinipoolDelegate {
     struct Status {
         uint8   current;                                        // The current status code, see RocketMinipoolSettings for more information
         uint8   previous;                                       // The previous status code
-        uint256 changed;                                        // The time the status last changed
+        uint256 time;                                           // The time the status last changed
+        uint256 block;                                          // The block number the status last changed
     }
 
     struct Node {
@@ -125,7 +126,8 @@ contract RocketMinipoolDelegate {
     event StatusChange (
         uint256 indexed _statusCodeNew,                         // Pools status code - new
         uint256 indexed _statusCodeOld,                         // Pools status code - old
-        uint256 created                                         // Creation timestamp
+        uint256 time,                                           // The last time the status changed
+        uint256 block                                           // The last block number the status changed
     );
 
     event DepositTokenFundSent (
@@ -322,7 +324,7 @@ contract RocketMinipoolDelegate {
 
     /// @dev Returns the time the status last changed to its current status
     function getStatusChanged() public view returns(uint256) {
-        return status.changed;
+        return status.time;
     }
 
     /// @dev Returns the current staking duration in blocks
@@ -340,8 +342,9 @@ contract RocketMinipoolDelegate {
         if (_newStatus != status.current) {
             status.previous = status.current;
             status.current = _newStatus;
-            status.changed = now;
-            emit StatusChange(status.current, status.previous, status.changed);
+            status.time = now;
+            status.block = block.number;
+            emit StatusChange(status.current, status.previous, status.time, status.block);
         }
     }
     

@@ -54,7 +54,8 @@ contract RocketMinipool {
     struct Status {
         uint8   current;                                        // The current status code, see RocketMinipoolSettings for more information
         uint8   previous;                                       // The previous status code
-        uint256 changed;                                        // The time the status last changed
+        uint256 time;                                           // The time the status last changed
+        uint256 block;                                          // The block number the status last changed
     }
 
     struct Node {
@@ -142,7 +143,8 @@ contract RocketMinipool {
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
         // Set the initial status
         status.current = 0;
-        status.changed = now;
+        status.time = now;
+        status.block = block.number;
         // Set the node owner and contract address
         node.owner = _nodeOwner;
         node.depositEther = _depositEther;
@@ -316,8 +318,13 @@ contract RocketMinipool {
     }
 
     // @dev Get the last time the status changed
-    function getStatusChanged() public view returns(uint256) {
-        return status.changed;
+    function getStatusChangedTime() public view returns(uint256) {
+        return status.time;
+    }
+
+    // @dev Get the last block no where the status changed
+    function getStatusChangedBlock() public view returns(uint256) {
+        return status.block;
     }
 
     /// @dev Returns the current staking duration ID

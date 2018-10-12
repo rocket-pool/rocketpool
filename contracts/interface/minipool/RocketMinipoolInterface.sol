@@ -10,7 +10,8 @@ contract RocketMinipoolInterface {
     function getNodeTrusted() public view returns(bool);
     function getUserCount() public view returns(uint256);
     function getStatus() public view returns(uint8);
-    function getStatusChanged() public view returns(uint256);
+    function getStatusChangedTime() public view returns(uint256);
+    function getStatusChangedBlock() public view returns(uint256);
     function getStakingDurationID() public view returns(string);
     function getStakingDuration() public view returns(uint256);
     // Methods
