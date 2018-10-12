@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "../../../RocketBase.sol";
-import "../../../interface/utils/lists/AddressSetStorageInterface.sol";
+import "../../../interface/utils/lists/StringSetStorageInterface.sol";
 import "../../../interface/utils/pubsub/SubscriberInterface.sol";
 
 
@@ -14,7 +14,7 @@ contract Publisher is RocketBase {
     /*** Contracts **************/
 
 
-    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
+    StringSetStorageInterface stringSetStorage = StringSetStorageInterface(0);
 
 
     /*** Modifiers **************/
@@ -45,18 +45,18 @@ contract Publisher is RocketBase {
     /// @dev Overloaded by _value parameters
     /// @param _event The key of the event to publish
     function publish(bytes32 _event, address _value1, uint8 _value2) external onlyLatestRocketNetwork() {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        uint256 count = addressSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
+        stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        uint256 count = stringSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
         for (uint256 i = 0; i < count; ++i) {
-            SubscriberInterface subscriber = SubscriberInterface(addressSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i));
+            SubscriberInterface subscriber = SubscriberInterface(getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)));
             subscriber.notify(_event, _value1, _value2);
         }
     }
     function publish(bytes32 _event, string _value1, uint256 _value2) external onlyLatestRocketNetwork() {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        uint256 count = addressSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
+        stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        uint256 count = stringSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
         for (uint256 i = 0; i < count; ++i) {
-            SubscriberInterface subscriber = SubscriberInterface(addressSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i));
+            SubscriberInterface subscriber = SubscriberInterface(getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)));
             subscriber.notify(_event, _value1, _value2);
         }
     }
@@ -64,19 +64,19 @@ contract Publisher is RocketBase {
 
     /// @dev Add a subscriber to an event
     /// @param _event The key of the event to subscribe to
-    /// @param _subscriber The address of the subscriber to add
-    function addSubscriber(bytes32 _event, address _subscriber) external onlyLatestRocketNetwork() {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        addressSetStorage.addItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
+    /// @param _subscriber The name of the subscriber to add
+    function addSubscriber(bytes32 _event, string _subscriber) external onlyLatestRocketNetwork() {
+        stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        stringSetStorage.addItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
     }
 
 
     /// @dev Remove a subscriber from an event
     /// @param _event The key of the event to unsubscribe from
-    /// @param _subscriber The address of the subscriber to remove
-    function removeSubscriber(bytes32 _event, address _subscriber) external onlyLatestRocketNetwork() {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        addressSetStorage.removeItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
+    /// @param _subscriber The name of the subscriber to remove
+    function removeSubscriber(bytes32 _event, string _subscriber) external onlyLatestRocketNetwork() {
+        stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        stringSetStorage.removeItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
     }
 
 

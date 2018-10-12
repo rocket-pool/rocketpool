@@ -44,9 +44,11 @@ contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
+contracts.utilPublisher = artifacts.require('./Publisher.sol');
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
 contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
+contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
 // Extra utilities
 if (testUtils) {
   contracts.utilAddressListStorage = artifacts.require('./AddressListStorage.sol');
@@ -65,9 +67,14 @@ if (testUtils) {
   contracts.utilBoolSetStorage = artifacts.require('./BoolSetStorage.sol');
   contracts.utilBytesSetStorage = artifacts.require('./BytesSetStorage.sol');
   contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
-  contracts.utilStringSetStorage = artifacts.require('./StringSetStorage.sol');
   contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
 }
+
+// Pubsub event subscriptions
+const subscriptions = {
+  'minipool.status.change': ['rocketPool'],
+  'minipool.user.deposit': ['rocketPool'],
+};
 
 
 /*** Utility Methods *****************/
@@ -149,8 +156,22 @@ module.exports = async (deployer, network) => {
       } 
     }
   };
+  // Register event subscriptions
+  const registerSubscriptions = async function() {
+    let publisherInstance = await contracts.utilPublisher.deployed();
+    for (let event in subscriptions) {
+      // Log it
+      console.log('\x1b[33m%s\x1b[0m:', 'Add event '+event+' subscriptions');
+      for (let si = 0; si < subscriptions[event].length; ++si) {
+        console.log(subscriptions[event][si]);
+        // Regsiter the subscription
+        await publisherInstance.addSubscriber(web3.utils.soliditySha3(event), subscriptions[event][si]);
+      }
+    }
+  }
   // Run it
   await addContracts();
+  await registerSubscriptions();
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(
     config.web3.utils.soliditySha3('contract.storage.initialised'),
