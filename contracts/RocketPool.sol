@@ -126,14 +126,13 @@ contract RocketPool is RocketBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Create minipool contract
-        uint256 stakingDuration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _etherAmount, _rplAmount, _isTrustedNode);
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", stakingDuration)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", _durationID)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Set minipool available
         doMinipoolSetAvailable(minipoolAddress, true);
@@ -160,7 +159,7 @@ contract RocketPool is RocketBase {
             // Update minipool indexes
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDuration())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDurationID())), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Set minipool unavailable
             doMinipoolSetAvailable(msg.sender, false);
