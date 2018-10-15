@@ -19,7 +19,7 @@ Rocket Pool isn't just a whitepaper, it's actual code. Be sure to read the [Rock
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-casper-pos-beacon-chain-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/rocket-two/images/rocket-pool-casper-pos-beacon-chain-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
 </p>
 
 To see Rocket Pool in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
