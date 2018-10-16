@@ -1,23 +1,41 @@
 pragma solidity 0.4.24;
 
 contract ValidatorRegistration {
+    event ValidatorRegistered(
+        bytes32 indexed pubKey,
+        uint256 withdrawalShardID,
+        address indexed withdrawalAddressbytes32,
+        bytes32 indexed randaoCommitment
+    );
 
-  event Deposit(bytes32 _pubkey, uint256 _withdrawal_shard_id, address _withdrawal_address, bytes32 _randao_commitment);
+    mapping (bytes32 => bool) public usedPubkey;
 
-  mapping(bytes32 => bool) public used_pubkeys;
+    uint public constant VALIDATOR_DEPOSIT = 32 ether;
 
-  function deposit(
-    bytes32 _pubkey,
-    uint256 _withdrawal_shard_id,
-    address _withdrawal_address,
-    bytes32 _randao_commitment
-    ) public payable {
-      require(msg.value == 32 ether);
-      require(!used_pubkeys[_pubkey]);
+    // Validator registers by sending a transaction of 32ETH to
+    // the following deposit function. The deposit function takes in
+    // validator's public key, withdrawal shard ID (which shard
+    // to send the deposit back to), withdrawal address (which address
+    // to send the deposit back to) and randao commitment.
+    function deposit(
+        bytes32 _pubkey,
+        uint _withdrawalShardID,
+        address _withdrawalAddressbytes32,
+        bytes32 _randaoCommitment
+        )
+        public payable
+        {
+        require(
+            msg.value == VALIDATOR_DEPOSIT,
+            "Incorrect validator deposit"
+        );
+        require(
+            !usedPubkey[_pubkey],
+            "Public key already used"
+        );
 
-      used_pubkeys[_pubkey] = true;
+        usedPubkey[_pubkey] = true;
 
-      emit Deposit(_pubkey, _withdrawal_shard_id, _withdrawal_address, _randao_commitment);
-  }
-
+        emit ValidatorRegistered(_pubkey, _withdrawalShardID, _withdrawalAddressbytes32, _randaoCommitment);
+    }
 }
