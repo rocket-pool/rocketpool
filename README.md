@@ -1,26 +1,28 @@
-# Rocket Pool - Your new Casper-friendly Ethereum PoS pool
+# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool [![Build Status](https://travis-ci.org/rocket-pool/rocketpool.svg?branch=rocket-two)](https://travis-ci.org/rocket-pool/rocketpool)
 
-*NOTE: The current alpha of Rocket Pool requires the latest [ganache-cli@v6.1](https://github.com/trufflesuite/ganache-cli), [truffle@4.1.8](https://github.com/trufflesuite/truffle), and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
+*NOTE: The current version of Rocket Pool requires the latest [ganache-cli@v6.1.8](https://github.com/trufflesuite/ganache-cli), [truffle@5.0](https://github.com/trufflesuite/truffle), and [NodeJS@8.0](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Pool"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/rocket-two/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
 </p>
 
 ---
 
-`Rocket Pool` is a next-generation decentralised Ethereum proof-of-stake (PoS) pool currently in alpha. Features include Casper compatibility, smart nodes, and decentralised infrastructure with automatic smart contract load balancing.
+`Rocket Pool 2.0` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Casper 2.0, the new consensus protocol that Ethereum will transition to in late 2019.
 
-Unlike traditional centralised proof-of-work (PoW) pools, Rocket Pool utilises the power of smart contracts to create a self-regulating decentralised network of smart nodes that allows users with any amount of ether to earn interest on their deposits and help secure the Ethereum network at the same time.
+We offer any user, business, corporation, pool, wallet provider, exchange, hedge fund; just about any service, the ability to provide their users the option to earn interest on their ether holdings for a fixed term without worrying about maintaining an extensive staking infrastructure, just plug and play. For a high level overview, please read our 2.0 announcement article.
 
-Contracts are written in `solidity` and built with the Ethereum framework `truffle`. This project is currently in alpha and undergoing heavy work.
+Rocket Pool has a long history in Ethereum and work on it originally began in late 2016 after the Mauve paper was released by Vitalik Buterin. This provided an early functional spec for Ethereum's new consensus protocol called Casper which would allow users to earn interest on a deposit of Ethereum. Since then Rocket Pool has grown and evolved into a next generation staking network, aiming to allow businesses and their users to earn interest on their ether and to empower users who wish to stake on their own node by providing them with additional income on top of Casper's interest. 
+
+Rocket Pool isn't just a whitepaper, it's actual code. Be sure to read the [Rocket Pool 101 - FAQ for more information](https://medium.com/rocket-pool/rocket-pool-101-faq-ee683af10da9).
 
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-casper-pos-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Pool"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/rocket-two/images/rocket-pool-casper-pos-beacon-chain-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
 </p>
 
-To see Rocket Pool alpha in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
+To see Rocket Pool in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
 ```bash
 $ npm install && npm test
 ```

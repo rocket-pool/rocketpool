@@ -1,10 +1,8 @@
-pragma solidity 0.4.23;
-
+pragma solidity 0.4.24;
 
 contract RocketNodeInterface {
-    /// @dev Get an available node for a pool to be assigned too, is requested by the main Rocket Pool contract
-    function getNodeAvailableForPool() external view returns(address);
-    /// @dev Returns the validation code address for a node
-    /// @param _nodeAddress node account address.
-    function getNodeValCodeAddress(address _nodeAddress) public view returns(address);
+	function getAvailableNodeCount(string _durationID) public returns (uint256);
+    function getRandomAvailableNode(string _durationID, uint256 _nonce) public returns (address, bool);
+    function setNodeAvailable(address _nodeOwner, bool _trusted, string _durationID) public;
+    function setNodeUnavailable(address _nodeOwner, bool _trusted, string _durationID) public;
 }

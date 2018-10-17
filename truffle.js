@@ -1,8 +1,8 @@
 /**
   Rocket Pool
   @author David Rugendyke
-  @email david@mail.rocketpool.net
-  @version 0.1 
+  @email david@rocketpool.net
+  @version 0.2 
 */
 
 const Web3 = require('web3');

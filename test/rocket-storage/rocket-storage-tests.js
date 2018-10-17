@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { scenarioWriteBool } from './rocket-storage-scenarios';
 
-export default function({owner}) {
+export default function() {
 
     contract('RocketStorage', async (accounts) => {
 
@@ -9,9 +9,9 @@ export default function({owner}) {
         // Owners direct access to storage is removed after initialisation when deployed
         it(printTitle('owner', 'fail to access storage directly after deployment'), async () => {
             await assertThrows(scenarioWriteBool({
-                key: web3.sha3('test.access'),
+                key: web3.utils.soliditySha3('test.access'),
                 value: true,
-                fromAddress: owner,
+                fromAddress: accounts[0],
                 gas: 250000,
             }));
         });

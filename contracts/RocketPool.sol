@@ -1,35 +1,40 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
+// Contracts
 import "./RocketBase.sol";
-import "./RocketPoolMini.sol"; 
-import "./interface/RocketUserInterface.sol";
-import "./interface/RocketFactoryInterface.sol";
+// Interfaces
 import "./interface/RocketNodeInterface.sol";
-import "./interface/RocketStorageInterface.sol";
-import "./interface/RocketSettingsInterface.sol";
+import "./interface/minipool/RocketMinipoolInterface.sol";
+import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "./interface/settings/RocketMinipoolSettingsInterface.sol";
+import "./interface/utils/lists/AddressSetStorageInterface.sol";
+// Libraries
+import "./lib/SafeMath.sol";
+
 
 
 /// @title First alpha of an Ethereum POS pool - Rocket Pool! - This is main pool management contract
 /// @author David Rugendyke
 contract RocketPool is RocketBase {
 
+    /*** Libs  ******************/
+
+    using SafeMath for uint;
+
     /*** Contracts **************/
 
-    RocketUserInterface rocketUser = RocketUserInterface(0);              // The main user interface methods
-    RocketSettingsInterface rocketSettings = RocketSettingsInterface(0);  // The main settings contract most global parameters are maintained
+    RocketNodeInterface rocketNode = RocketNodeInterface(0);                                                // Interface for node methods
+    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
+    RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
+
   
     /*** Events ****************/
 
-    event PoolAssignedUser (
-        address indexed _userAddress,
-        address indexed _partnerAddress,
-        address indexed _pool,
-        uint256 created 
-    );
-
     event PoolCreated (
         address indexed _address,
-        uint256 indexed _stakingDurationInSeconds,
+        string  indexed _durationID,
         uint256 created
     );
 
@@ -38,18 +43,8 @@ contract RocketPool is RocketBase {
         uint256 created
     );
 
-    event PoolsGetWithStatus (
-        uint256 indexed _status,
-        uint256 poolsFound,
-        uint256 created
-    );
 
-    event PoolAssignedToNode (
-        address indexed _miniPoolAddress,
-        address indexed _nodeAddress,
-        uint256 created
-    );
-
+    // TODO: Remove Flag Events
     event FlagAddress (
         address flag
     );
@@ -57,47 +52,19 @@ contract RocketPool is RocketBase {
     event FlagUint (
         uint256 flag
     );
-    
+
+
+       
     /*** Modifiers *************/
-    
-    /// @dev New pools are allowed to be created
-    modifier poolsAllowedToBeCreated() {
-        // Get the mini pool count
-        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // New pools allowed to be created?
-        require(rocketSettings.getMiniPoolAllowedToBeCreated() == true);
-        _;
-    }
 
-    /// @dev Only allow access from the latest version of the RocketPool contract
-    modifier onlyLatestRocketPool() {
-        require(this == rocketStorage.getAddress(keccak256("contract.name", "rocketPool")));
-        _;
-    }
-
-    /// @dev Only allow access from the latest version of the main RocketNode contract
-    modifier onlyLatestRocketNode() {
-        bool isRocketNodeAdmin = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin"));
-        bool isRocketNodeStatus = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeStatus"));
-        bool isRocketNodeValidator = msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketNodeValidator"));
-        require(isRocketNodeAdmin || isRocketNodeValidator || isRocketNodeStatus);
-        _;
-    } 
-
-    /// @dev Only allow access from the latest version of the main RocketUser contract
-    modifier onlyLatestRocketUser() {
-        require(msg.sender == rocketStorage.getAddress(keccak256("contract.name", "rocketUser")));
-        _;
-    } 
-
-    /// @dev Only registered pool node addresses can access
+    /// @dev Only registered minipool addresses can access
     /// @param _minipoolAddress pool account address.
     modifier onlyMiniPool(address _minipoolAddress) {
-        require(rocketStorage.getBool(keccak256("minipool.exists", _minipoolAddress)));
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))));
         _;
     }
-
     
+       
     /*** Constructor *************/
 
     /// @dev rocketPool constructor
@@ -105,367 +72,209 @@ contract RocketPool is RocketBase {
         // Version
         version = 1;
     }
-    
 
-    /*** External functions *************/
 
-    /// @dev Get an available minipool for a user to be assigned too
-    /// @param _newUserAddress New user account
-    /// @param _partnerAddress The address of the Rocket Pool partner
-    /// @param _poolStakingDuration The duration that the user wishes to stake for
-    function addUserToAvailablePool(address _newUserAddress, address _partnerAddress, uint256 _poolStakingDuration) external onlyLatestRocketUser() returns(address) {
-        // The desired pool address to asign the user too
-        address poolAssignToAddress = 0;
-        // The contract of the desired pool address
-        RocketPoolMini poolAddUserTo = RocketPoolMini(0);
-        // Check to see if this user is already in the next pool to launch that has the same staking duration period (ie 3 months, 6 months etc)
-        address[] memory poolsFound = getPoolsFilterWithStatusAndDuration(0, _poolStakingDuration);
-        // No pools awaiting? lets make one
-        if (poolsFound.length == 0) {
-            // Create new pool contract
-            poolAssignToAddress = createPool(_poolStakingDuration);
-        } else {
-            // Check to see if there's a pool this user doesn't already have a deposit in, 1 user address per pool
-            for (uint32 i = 0; i < poolsFound.length; i++) {
-                // Have we found one already?
-                if (poolAssignToAddress == 0) {
-                    // Get the contract instance 
-                    poolAddUserTo = getPoolInstance(poolsFound[i]);
-                    // Does this exist in this pool? If so, select this pool so their deposit gets incremented
-                    if (poolAddUserTo.getUserExists(_newUserAddress)) {
-                        // Add them to a minipool acceptind deposits that they already belong too
-                        poolAssignToAddress = poolsFound[i];
-                    }
-                }
-            }
-            // They don't already have any deposits in a minipool, add them to the first pool we found that matches their desired staking time
-            if (poolAssignToAddress == 0) {
-                poolAssignToAddress = poolsFound[0];
-            }
-        }  
-        // Do we have a valid pool and they are added ok? If not, now available pools and new pool creation has failed, send funds back;
-        assert(poolAssignToAddress != 0);
-        // Get the contract instance
-        poolAddUserTo = getPoolInstance(poolAssignToAddress);
-        // Double check the pools status is accepting deposits and user isn't in there already
-        if (poolAddUserTo.getStatus() == 0) {
-            // User is added if they don't exist in it already
-            if(!poolAddUserTo.getUserExists(_newUserAddress) && poolAddUserTo.addUser(_newUserAddress, _partnerAddress)) {
-                // Fire the event
-                emit PoolAssignedUser(_newUserAddress, _partnerAddress, poolAssignToAddress, now);
-            }
-            // Return the pool address that the user belongs to
-            return poolAssignToAddress;
-        } 
-    }
-
-    /// @dev See if there are any pools thats launch countdown has expired that need to be launched for staking
-    /// @dev This method is designed to only process one minipool status type from each node checkin every 15 mins to prevent the gas block limit from being exceeded and make load balancing more accurate
-    function poolNodeActions() external onlyLatestRocketNode {
-        // Get our Rocket Node contract
-        RocketNodeInterface rocketNode = RocketNodeInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketNodeAdmin")));
-        // Create an empty instance of a pool contract to populate later if we find one
-        RocketPoolMini pool = RocketPoolMini(0);
-        // Our shared iterator 
-        uint32 i = 0;
-        // Find the pools requested with the status
-        address[] memory poolsFound = getPoolsFilterWithStatus(1);
-        // Do we have any pools awaiting launch?
-        if (poolsFound.length > 0) {
-            // Ready to launch?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = RocketPoolMini(poolsFound[i]);
-                // Check its ok
-                require(address(pool) != 0x0);
-                // In order to begin staking, a node must be assigned to the pool and the timer for the launch must be past
-                if (pool.getNodeAddress() == 0 && pool.getCanDeposit() == true) {
-                    // Get a node for this pool to be assigned too
-                    address nodeAddress = rocketNode.getNodeAvailableForPool();
-                    // Assign the pool to our node with the least average work load to help load balance the nodes and the the casper registration details
-                    pool.setNodeOwner(nodeAddress); 
-                    // Set this nodes validation code for the minipool to use
-                    pool.setNodeValCodeAddress(rocketNode.getNodeValCodeAddress(nodeAddress)); 
-                    // Fire the event
-                    emit PoolAssignedToNode(poolsFound[i], nodeAddress, now);
-                    // Now set the pool to begin staking with casper by updating its status with the newly assigned node
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-        // Check to see if there are any pools that are awaiting their deposit to be returned from Casper
-        poolsFound = getPoolsFilterWithStatus(3);
-        // Do we have any pools currently awaiting on their deposit from casper?
-        if (poolsFound.length > 0) {
-            // Ready for re-entry?
-            for (i = 0; i < poolsFound.length; i++) {
-                // Get an instance of that pool contract
-                pool = getPoolInstance(poolsFound[i]);
-                // If the time has passed, we can now request the deposit to be sent
-                if (pool.getCanWithdraw() == true) {
-                    // Now set the pool to begin withdrawal from casper by updating its status
-                    pool.updateStatus();
-                    // Exit the loop
-                    break;
-                }
-            }
-        }
-
-    } 
-
-    /*** Mini Pools ***********************************************/
-
-    /// @dev Get an instance of the pool contract
-    /// @param _miniPoolAddress The address of the mini pool to get the contract instance of
-    function getPoolInstance(address _miniPoolAddress) onlyMiniPool(_miniPoolAddress) private view returns(RocketPoolMini) {
-        // Get the pool contract instance
-        RocketPoolMini pool = RocketPoolMini(_miniPoolAddress);
-        // Double check the contract exists at the given address
-        assert(address(pool) != 0x0);
-        // It exists
-        return pool;
-    }
+    /*** Getters *************/
 
     /// @dev Check if this minipool exists in the network
-    /// @param _miniPoolAddress The address of the mini pool to check exists
+    /// @param _miniPoolAddress The address of the minipool to check exists
     function getPoolExists(address _miniPoolAddress) view public returns(bool) {
-        return rocketStorage.getBool(keccak256("minipool.exists", _miniPoolAddress));
+        return rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _miniPoolAddress)));
     }
+
 
     /// @dev Returns a count of the current minipools
-    function getPoolsCount() view public returns(uint256) {
-        return rocketStorage.getUint(keccak256("minipools.total"));
+    function getPoolsCount() public returns(uint256) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list")));
     }
 
-    /// @dev Returns a count of the current active minipools (accepting deposits, in countdown or staking)
-    function getActivePoolsCount() view public returns(uint256) {
-        return (
-            getPoolsFilterWithStatus(0).length +
-            getPoolsFilterWithStatus(1).length +
-            getPoolsFilterWithStatus(2).length
+
+    /// @dev Return a current minipool by index
+    function getPoolAt(uint256 _index) public returns (address) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list")), _index);
+    }
+
+
+    /// @dev Get the address of a pseudorandom available node's first minipool
+    function getRandomAvailableMinipool(string _durationID, uint256 _nonce) public returns (address) {
+        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        (address nodeAddress, bool nodeTrusted) = rocketNode.getRandomAvailableNode(_durationID, _nonce);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, nodeTrusted, _durationID)), 0);
+    }
+
+
+    /// @dev Get the current network utilisation (assigned ether / ether capacity) as a fraction of 1 ether
+    /// @param _durationID The staking duration
+    function getNetworkUtilisation(string _durationID) public view returns (uint256) {
+        uint256 etherCapacity = getTotalEther("capacity", _durationID);
+        if (etherCapacity == 0) { return 1 ether; }
+        uint256 base = 1 ether;
+        return base.mul(getTotalEther("assigned", _durationID)).div(etherCapacity);
+    }
+
+
+    /*** Methods *************/
+
+
+    /// @dev Create a minipool
+    function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+        // Get contracts
+        rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        // Create minipool contract
+        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _etherAmount, _rplAmount, _isTrustedNode);
+        // Ok now set our data to key/value pair storage
+        rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
+        // Update minipool indexes 
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", _durationID)), minipoolAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
+        // Set minipool available
+        doMinipoolSetAvailable(minipoolAddress, true);
+        // Increase total network ether capacity
+        doIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount() - _etherAmount);
+        // Fire the event
+        emit PoolCreated(minipoolAddress, _durationID, now);
+        // Return minipool address
+        return minipoolAddress;
+    }
+
+    
+    /// @dev Remove a minipool from storage - can only be called by minipools
+    /// @param _from The address that requested the minipool removal on the minipool contract
+    function minipoolRemove(address _from) external onlyMiniPool(msg.sender) returns (bool) {
+        // Can we destroy it?
+        if(minipoolRemoveCheck(_from, msg.sender)) {
+            // Get contracts
+            rocketMinipool = RocketMinipoolInterface(msg.sender);
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+            // Remove the existance flag
+            rocketStorage.deleteBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)));
+            // Update minipool indexes
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDurationID())), msg.sender);
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
+            // Set minipool unavailable
+            doMinipoolSetAvailable(msg.sender, false);
+            // Decrease total network ether capacity
+            doDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipoolSettings.getMinipoolLaunchAmount() - rocketMinipool.getNodeDepositEther());
+            // Fire the event
+            emit PoolRemoved(msg.sender, now);
+            // Return minipool address
+            return true;
+        }
+        // Safety
+        return false;
+    }
+
+
+    /// @dev Can we destroy this minipool? 
+    /// @param _sender The user requesting this check
+    /// @param _minipool The minipool to check
+    function minipoolRemoveCheck(address _sender, address _minipool) public returns (bool) {
+        // Get contracts
+        rocketMinipool = RocketMinipoolInterface(_minipool);
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get some common attributes
+        uint8 status = rocketMinipool.getStatus();
+        // A priority initial check - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it), it can be closed by anyone so users get their funds back
+        if(status == 1 && rocketMinipool.getStatusChangedTime() <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
+            return true;
+        }
+        // Do some common global checks
+        require(rocketMinipoolSettings.getMinipoolClosingEnabled(), "Minipools are not currently allowed to be closed.");
+        // If there are users in this minipool, it cannot be closed, only empty ones can
+        require(rocketMinipool.getUserCount() == 0, "Cannot close minipool as it has users in it.");
+        // Firstly we need to check if this is the node owner that created the minipool
+        if(_sender == rocketMinipool.getNodeOwner()) {
+            // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first few initial checks, but check again
+            require(status == 0, "Minipool has an advanced status, cannot close.");
+        }else{
+            // Perform non-owner checks
+            // TODO: This will be built on more as we add user functionality to the new minipools, just checks for node owners if they can destroy atm
+        }
+        // If it passes all these checks and doesn't revert, it can close
+        return true;
+    }
+
+
+    /// @dev Set a minipool's available status
+    function minipoolSetAvailable(bool _available) external onlyMiniPool(msg.sender) returns (bool) {
+        return doMinipoolSetAvailable(msg.sender, _available);
+    }
+    function doMinipoolSetAvailable(address _minipool, bool _available) private returns (bool) {
+        // Get contracts
+        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        rocketMinipool = RocketMinipoolInterface(_minipool);
+        // Get minipool properties
+        address nodeOwner = rocketMinipool.getNodeOwner();
+        bool trusted = rocketMinipool.getNodeTrusted();
+        string memory durationID = rocketMinipool.getStakingDurationID();
+        // Set available
+        if (_available) {
+            // Add minipool to node's available set
+            addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
+            // Add node to available set
+            rocketNode.setNodeAvailable(nodeOwner, trusted, durationID);
+        }
+        // Set unavailable
+        else {
+            // Remove minipool from node's available set
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
+            // Remove node from available set if out of minipools
+            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID))) == 0) {
+                rocketNode.setNodeUnavailable(nodeOwner, trusted, durationID);
+            }
+        }
+        // Success
+        return true;
+    }
+
+
+    /// @dev Get the total ether value of the network by key
+    /// @param _type The type of total ether value to retrieve (e.g. "capacity")
+    /// @param _durationID The staking duration
+    function getTotalEther(string _type, string _durationID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)));
+    }
+
+
+    /// @dev Increase the total ether value of the network by key
+    /// @param _type The type of total ether value to increase (e.g. "capacity")
+    /// @param _value The amount to increase the total ether value by
+    /// @param _durationID The staking duration
+    function increaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMiniPool(msg.sender) {
+        doIncreaseTotalEther(_type, _durationID, _value);
+    }
+    function doIncreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID))).add(_value)
         );
     }
 
-    /// @dev Get all pools that match this status (explicit method)
-    /// @param _status Get pools with the current status
-    function getPoolsFilterWithStatus(uint256 _status) public view returns(address[] memory) {
-        return getPoolsFilter(1, _status, 0, 0, 0);  
+
+    // TODO: decrease total network ether "capacity" & "assigned" when minipool withdraws from Casper
+    /// @dev Decrease the total ether value of the network by key
+    /// @param _type The type of total ether value to decrease (e.g. "capacity")
+    /// @param _value The amount to decrease the total ether value by
+    /// @param _durationID The staking duration
+    function decreaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMiniPool(msg.sender) {
+        doDecreaseTotalEther(_type, _durationID, _value);
+    }
+    function doDecreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+        rocketStorage.setUint(keccak256(abi.encodePacked("ether.total", _type, _durationID)),
+            rocketStorage.getUint(keccak256(abi.encodePacked("ether.total", _type, _durationID))).sub(_value)
+        );
     }
 
-    /// @dev Get all pools that match this status and set staking duration (explicit method)
-    /// @param _status Get pools with the current status
-    /// @param _stakingDuration Get pools with the current staking duration
-    function getPoolsFilterWithStatusAndDuration(uint256 _status, uint256 _stakingDuration) public view returns(address[] memory) {
-        return getPoolsFilter(2, _status, 0, _stakingDuration, 0);  
-    }
-
-    /// @dev Get all pools that are assigned to this node (explicit method)
-    /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNode(address _nodeAddress) public view returns(address[] memory) {
-        return getPoolsFilter(3, 0, _nodeAddress, 0, 0);  
-    }
-
-    /// @dev Return count of all pools that are assigned to this node (explicit method)
-    /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNodeCount(address _nodeAddress) public view returns(uint256) {
-        return getPoolsFilter(3, 0, _nodeAddress, 0, 0).length;  
-    }
-
-    /// @dev Return all pools that are assigned to this node and have the current status (explicit method)
-    /// @param _nodeAddress Get pools with the current node
-    /// @param _status Pool status to filter pools
-    function getPoolsFilterWithNodeWithStatus(address _nodeAddress, uint256 _status) public view returns(address[]) {
-        return getPoolsFilter(4, _status, _nodeAddress, 0, 0);
-    }
-
-    /// @dev Return count of all pools that are assigned to this node and have the current status (explicit method)
-    /// @param _nodeAddress Get pools with the current node
-    function getPoolsFilterWithNodeWithStatusCount(address _nodeAddress, uint256 _status) public view returns(uint256) {
-        return getPoolsFilter(4, _status, _nodeAddress, 0, 0).length;  
-    }
-
-    /// @dev Get all pools that match this user belongs too (explicit method)
-    /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUser(address _userAddress) public view returns(address[] memory) {
-        return getPoolsFilter(5, 0, 0, 0, _userAddress);
-    }
-
-    /// @dev Get all pools that match this user belongs too and has a deposit > 0 (explicit method)
-    /// @param _userAddress Get pools with the current user
-    function getPoolsFilterWithUserDeposit(address _userAddress) public view returns(address[] memory) {
-        return getPoolsFilter(6, 0, 0, 0, _userAddress);
-    }
-
-    /// @dev Returns all current mini pools (explicit method)
-    function getPools() view private returns(address[] memory) {
-        return getPoolsFilter(0, 0, 0, 0, 0);
-    }
-
-    /// @dev Get the address of any pools with the current set status or filter
-    /// @param _type The type of minipool filter
-    /// @param _status Get pools with the current status
-    /// @param _nodeAddress Filter pools that are currently assigned to this node address
-    /// @param _stakingDuration The duration that the pool with stake with Casper for
-    /// @param _userAddress The address of a user account in the pool
-    function getPoolsFilter(uint8 _type, uint256 _status, address _nodeAddress, uint256 _stakingDuration, address _userAddress) view private returns(address[] memory) {
-        // Get the mini pool count
-        uint256 miniPoolCount = getPoolsCount(); 
-        // Create an array at the length of the current pools, then populate it
-        address[] memory pools = new address[](miniPoolCount);
-        address[] memory poolsFound = new address[](miniPoolCount);
-        // Retreive each pool address now by index since we are using key/value pair storage
-        for (uint32 i = 0; i < pools.length; i++) {
-            // Get the address, match the data type for the reverse lookup
-            pools[i] = rocketStorage.getAddress(keccak256("minipools.index.reverse", uint256(i)));
-            // Get an instance of that pool contract
-            RocketPoolMini pool = getPoolInstance(pools[i]);
-            // Check the pool meets any supplied filters
-            if(_type == 1) {
-                if(pool.getStatus() == _status) {
-                    poolsFound[i] = pools[i];
-                } 
-            }
-            if(_type == 2) {
-                if(pool.getStatus() == _status && _stakingDuration == pool.getStakingDuration()) {
-                    poolsFound[i] = pools[i];
-                }
-            }
-            if(_type == 3) {
-                if(_nodeAddress == pool.getNodeAddress()) {
-                    poolsFound[i] = pools[i];
-                }
-            }
-            if(_type == 4) {
-                if(_nodeAddress == pool.getNodeAddress() && pool.getStatus() == _status) {
-                    poolsFound[i] = pools[i];
-                }
-            }
-            if(_type == 5) {
-                if(pool.getUserExists(_userAddress)) {
-                    poolsFound[i] = pools[i];
-                }
-            }
-            if(_type == 6) {
-                if(pool.getUserHasDeposit(_userAddress)) {
-                    poolsFound[i] = pools[i];
-                }
-            }
-            if(_type == 0) {
-                poolsFound[i] = pools[i];
-            }
-        }
-        // Remove empty values from our dynamic memory array so that .length works as expected
-        poolsFound = utilArrayFilterValuesOnly(poolsFound);
-        // Return our pool address matching the status now
-        return poolsFound;
-    }
-
-    /// @dev Manually update the staking duration of a mini pool if needed, only the owner
-    /// @param _miniPoolAddress Address of the minipool.
-    /// @param _poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
-    function setPoolStakingDuration(address _miniPoolAddress, uint256 _poolStakingDuration) public onlyOwner {
-        // Get an instance of that pool contract
-        RocketPoolMini pool = getPoolInstance(_miniPoolAddress);
-        pool.setStakingDuration(_poolStakingDuration);
-    } 
-  
-    /// @dev Create a new pool 
-    /// @param _poolStakingDuration The staking duration of this pool in seconds. Various pools can exist with different durations depending on the users needs.
-    function createPool(uint256 _poolStakingDuration) private poolsAllowedToBeCreated onlyLatestRocketPool returns(address) {
-        // Create the new pool and add it to our list
-        RocketFactoryInterface rocketFactory = RocketFactoryInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketFactory")));
-        // Ok make the minipool contract now
-        address newPoolAddress = rocketFactory.createRocketPoolMini(_poolStakingDuration);
-        // Add the mini pool to the primary persistent storage so any contract upgrades won't effect the current stored mini pools
-        // Check it doesn't already exist
-        require(!getPoolExists(newPoolAddress));
-        // Get how many minipools we currently have  
-        uint256 minipoolCountTotal = getPoolsCount(); 
-        // Ok now set our data to key/value pair storage
-        rocketStorage.setBool(keccak256("minipool.exists", newPoolAddress), true);
-        // We store our data in an key/value array, so set its index so we can use an array to find it if needed
-        rocketStorage.setUint(keccak256("minipool.index", newPoolAddress), minipoolCountTotal);
-        // Update total minipools
-        rocketStorage.setUint(keccak256("minipools.total"), minipoolCountTotal + 1);
-        // We also index all our data so we can do a reverse lookup based on its array index
-        rocketStorage.setAddress(keccak256("minipools.index.reverse", minipoolCountTotal), newPoolAddress);
-        // Fire the event
-        emit PoolCreated(newPoolAddress, _poolStakingDuration, now);
-        // Return the new pool address
-        return newPoolAddress; 
-    } 
-
-    /// @dev Remove a mini pool, only mini pools themselves can call this 
-    function removePool() public onlyMiniPool(msg.sender) returns(bool) {
-        // Remove the pool from our hub storage
-        rocketSettings = RocketSettingsInterface(rocketStorage.getAddress(keccak256("contract.name", "rocketSettings")));
-        // Existing mini pools are allowed to be closed and selfdestruct when finished, so check they are allowed
-        if (rocketSettings.getMiniPoolClosingEnabled()) {
-            // Get total minipools
-            uint256 minipoolsTotal = rocketStorage.getUint(keccak256("minipools.total"));
-            // Now remove this minipools data from storage
-            uint256 removedMinipoolIndex = rocketStorage.getUint(keccak256("minipool.index", msg.sender));
-            // Remove the existance flag
-            rocketStorage.deleteBool(keccak256("minipool.exists", msg.sender));
-            // Update total
-            minipoolsTotal = minipoolsTotal - 1;
-            rocketStorage.setUint(keccak256("minipools.total"), minipoolsTotal);
-            // Removed minipool before end of list - move last minipool to removed minipool index
-            if (removedMinipoolIndex < minipoolsTotal) {
-                address lastMinipoolAddress = rocketStorage.getAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-                rocketStorage.setUint(keccak256("minipool.index", lastMinipoolAddress), removedMinipoolIndex);
-                rocketStorage.setAddress(keccak256("minipools.index.reverse", removedMinipoolIndex), lastMinipoolAddress);
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", minipoolsTotal));
-            }
-            // Removed minipool at end of list - delete reverse lookup
-            else {
-                rocketStorage.deleteAddress(keccak256("minipools.index.reverse", removedMinipoolIndex));
-            }
-            // Fire the event
-            emit PoolRemoved(msg.sender, now);
-            // Success
-            return true;   
-        }
-        return false;
-    } 
-
-    /// @dev Returns the address for the Casper smart contract
-    function getCasperAddress() public view returns(address) {
-        return rocketStorage.getAddress(keccak256("contract.name", "casper"));
-    }
-
-    /// @dev Cast Casper votes via minipools 
-    /// @param _nodeAddress The address of the node calling vote
-    /// @param _epoch The epoch number voting relates to
-    /// @param _minipoolAddress The address of the minipool that should cast the votes
-    /// @param _voteMessage Vote message to be sent to Casper
-    function vote(address _nodeAddress, uint256 _epoch, address _minipoolAddress, bytes _voteMessage) public onlyLatestRocketNode returns(bool) {
-        // Get the minipool
-        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
-        // Make sure the node is attached to the pool it is trying to vote with
-        require(pool.getNodeAddress() == _nodeAddress);
-        // Cast the vote
-        require(pool.vote(_epoch, _voteMessage));
-        // Done
-        return true;
-    }
-
-    /// @dev Log the minipool out of Casper and wait for withdrawal
-    /// @param _nodeAddress The address of the node calling logout
-    /// @param _minipoolAddress The address of the minipool to logout of Casper
-    /// @param _logoutMessage The constructed logout message from the node containing RLP encoded: [validator_index, epoch, node signature]
-    function logout(address _nodeAddress, address _minipoolAddress, bytes _logoutMessage) public onlyLatestRocketNode returns(bool) {
-        // Get the minipool
-        RocketPoolMini pool = getPoolInstance(_minipoolAddress);
-        // Make sure the node is attached to the pool it is trying to logout
-        require(pool.getNodeAddress() == _nodeAddress);
-        // Ask the minipool send logout to Casper
-        pool.logout(_logoutMessage);
-        // Done
-        return true;
-    }
 
     /*** UTILITIES ***********************************************/
     /*** Note: Methods here require passing dynamic memory types

@@ -1,3 +1,4 @@
+const moment = require('moment');
 import { RocketStorage } from '../artifacts'
 
 // The newer version of Web3. Waiting for them to upgrade truffles web3.
@@ -129,3 +130,56 @@ export function hashMessage(data) {
     var ethMessage = Buffer.concat([preambleBuffer, messageBuffer]);
     return $web3.utils.bytesToHex(ethereumUtils.sha3(ethMessage));
 }
+
+// EVM time controller
+export const TimeController = (() => {
+
+    let currentTime = moment();
+
+    const addSeconds = (seconds) => new Promise((resolve, reject) => {
+        
+        currentTime.add(seconds, 'seconds');
+
+        web3.currentProvider.send(
+            {
+                jsonrpc: "2.0",
+                method: "evm_increaseTime",
+                params: [seconds],
+                id: currentTime.valueOf()
+            }, 
+            (error, result) => error ? reject(error) : resolve(result.result)
+        );
+    });
+
+    const getCurrentTime = () => currentTime.clone();
+    const reset = () => { currentTime = moment(); };
+    const addDays = (days) => addSeconds(days * 24 * 60 * 60);
+    const addWeeks = (weeks) => addSeconds(weeks * 7 * 24 * 60 * 60);
+    const addMonths = (months) => addSeconds(months * 28 * 24 * 60 * 60);
+    const addYears = (years) => addSeconds(years * 365 * 24 * 60 * 60);
+
+    return {
+        getCurrentTime,
+        reset,
+        addSeconds,
+        addDays,
+        addWeeks,
+        addMonths,
+        addYears,
+    };
+
+})();
+
+
+// Get arbitrary contract events from a transaction result
+// txResult is the result returned from the transaction call
+// contractAddress is the address of the contract to retrieve events for
+// eventName is the name of the event to retrieve
+// eventParams is an array of objects with string 'type' and 'name' keys and an optional boolean 'indexed' key
+export function getTransactionContractEvents(txResult, contractAddress, eventName, eventParams) {
+    return txResult.receipt.logs
+        .filter(log => (log.address.toLowerCase() == contractAddress.toLowerCase()))
+        .filter(log => (log.topics[0] == web3.utils.soliditySha3(eventName + '(' + eventParams.map(param => param.type).join(',') + ')')))
+        .map(log => web3.eth.abi.decodeLog(eventParams, log.data, log.topics.slice(1)));
+}
+

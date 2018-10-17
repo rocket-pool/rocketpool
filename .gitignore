@@ -2,6 +2,6 @@ app
 bin
 build
 app/config
-node/
 node_modules
 .vscode
+1.0
