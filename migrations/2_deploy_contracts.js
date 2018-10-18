@@ -100,11 +100,19 @@ module.exports = async (deployer, network) => {
   }
 
 
-  // Only deploy test interface contracts on test networks
-  if ( network !== 'live' && testUtils) {
-    contracts.testLists = artifacts.require('./test/TestLists.sol');
-    contracts.testQueues = artifacts.require('./test/TestQueues.sol');
-    contracts.testSets = artifacts.require('./test/TestSets.sol');
+  // Only deploy on test networks
+  if ( network !== 'live') {
+
+    // Casper validator registration contract
+    contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
+
+    // Test interface contracts
+    if (testUtils) {
+      contracts.testLists = artifacts.require('./test/TestLists.sol');
+      contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+      contracts.testSets = artifacts.require('./test/TestSets.sol');
+    }
+
   }
  
   // Accounts
