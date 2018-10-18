@@ -3,12 +3,14 @@ const ValidatorRegistration = artifacts.require('./ValidatorRegistration');
 
 
 // Validator statuses
-export const PENDING_ACTIVATION = 0;
-export const ACTIVE = 1;
-export const PENDING_EXIT = 2;
-export const PENDING_WITHDRAW = 3;
-export const WITHDRAWN = 4;
-export const PENALIZED = 127;
+export const ValidatorStatus = {
+    PENDING_ACTIVATION: 0,
+    ACTIVE: 1,
+    PENDING_EXIT: 2,
+    PENDING_WITHDRAW: 3,
+    WITHDRAWN: 4,
+    PENALIZED: 127,
+};
 
 
 /**
@@ -42,8 +44,9 @@ export class DummyBeaconChain {
         // Subscribe to validator registered events
         validatorRegistration.events.ValidatorRegistered({fromBlock: 0}).on('data', (event) => {
 
-            // Add validator to set
+            // Add validator to active set
             let validatorIndex = this.addValidator(event.returnValues.pubKey, event.returnValues.withdrawalAddressbytes32);
+            this.setValidatorStatus(validatorIndex, ValidatorStatus.ACTIVE);
 
         });
 
@@ -55,7 +58,7 @@ export class DummyBeaconChain {
         return this.validators.push({
             pubKey,
             withdrawalAddress,
-            status: PENDING_ACTIVATION,
+            status: ValidatorStatus.PENDING_ACTIVATION,
         }) - 1;
     }
 
@@ -85,8 +88,14 @@ export class DummyBeaconChain {
 
 
     // Get validator index by pubKey
-    getValidatorIndex(pubKey) {
+    getValidatorIndexByPubKey(pubKey) {
         return this.validators.findIndex(validator => (validator.pubKey == pubKey));
+    }
+
+
+    // Get validator index by withdrawal address
+    getValidatorIndexByWithdrawalAddress(withdrawalAddress) {
+        return this.validators.findIndex(validator => (validator.withdrawalAddress.toLowerCase() == withdrawalAddress.toLowerCase()));
     }
 
 
