@@ -398,6 +398,8 @@ contract RocketMinipoolDelegate {
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get minipool settings
+        uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         /*
         // Check to see if we can close the pool
         // TODO: Fix minipool removal check and uncomment
@@ -420,12 +422,19 @@ contract RocketMinipoolDelegate {
             return;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= rocketMinipoolSettings.getMinipoolLaunchAmount()) {
+        
+        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
             if(!node.trusted ) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
-            // TODO: send deposit to validator registration contract
+            // Send deposit to validator registration contract
+            // TODO: implement real validator registration arguments
+            bytes32 pubkey = 0x0000000000000000000000000000000000000000000000000000000000000001;
+            uint256 withdrawalShardID = 1;
+            address withdrawalAddress = address(this);
+            bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
+            validatorRegistration.deposit.value(launchAmount)(pubkey, withdrawalShardID, withdrawalAddress, randaoCommitment);
             // Set minipool availability status
             rocketPool.minipoolSetAvailable(false);
             // Staking
