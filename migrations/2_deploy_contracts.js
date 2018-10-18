@@ -87,21 +87,14 @@ function loadABI(abiFilePath) {
 // Start exporting now
 module.exports = async (deployer, network) => {
 
-  // Set our web3 1.0 provider
-  let $web3;
-  if ( network !== 'live' ) {
-    const providerUrl = `http://${config.networks[network].host}:${config.networks[network].port}`;
-    console.log(`Web3 1.0 provider using ${providerUrl}`);
-    $web3 = new config.web3(providerUrl);
-  }else{
-    // Live deployment
+  // Live deployment
+  if ( network == 'live' ) {
     // Add our live RPL token address in place
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
-
-  // Only deploy on test networks
-  if ( network !== 'live') {
+  // Test network deployment
+  else {
 
     // Casper validator registration contract
     contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
