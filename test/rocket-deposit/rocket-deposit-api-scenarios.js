@@ -66,10 +66,12 @@ async function getMinipoolBalances(minipools) {
 export async function scenarioDeposit({depositorContract, durationID, fromAddress, value, gas}) {
     const rocketDepositQueue = await RocketDepositQueue.deployed();
     const rocketDepositSettings = await RocketDepositSettings.deployed();
+    const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
-    // Get deposit settings
+    // Get deposit & minipool settings
     let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
     let maxChunkAssignments = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
+    let launchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
 
     // Get current and expected queue balance
     let queueBalance = parseInt(await rocketDepositQueue.getBalance(durationID));
@@ -117,7 +119,8 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
     // Check assigned minipool balances
     for (let address in minipoolEtherAssigned) {
         let amount = minipoolEtherAssigned[address];
-        assert.equal(minipoolBalances2[address], minipoolBalances1[address] + amount, 'Assigned minipool balance was not updated correctly');
+        let expectedBalance = (minipoolBalances1[address] + amount) % launchAmount;
+        assert.equal(minipoolBalances2[address], expectedBalance, 'Assigned minipool balance was not updated correctly');
     }
 
 }
