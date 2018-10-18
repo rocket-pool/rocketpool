@@ -430,7 +430,9 @@ contract RocketMinipoolDelegate {
             }
             // Send deposit to validator registration contract
             // TODO: implement real validator registration arguments
-            bytes32 pubkey = 0x0000000000000000000000000000000000000000000000000000000000000001;
+            uint256 pubkeyVal = 1;
+            while (validatorRegistration.usedPubkey(bytes32(pubkeyVal))) { ++pubkeyVal; }
+            bytes32 pubkey = bytes32(pubkeyVal);
             uint256 withdrawalShardID = 1;
             address withdrawalAddress = address(this);
             bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
