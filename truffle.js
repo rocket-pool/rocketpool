@@ -28,8 +28,7 @@ module.exports = {
 contract: Contract,
   networks: {
     development: {
-      host: 'localhost',
-      port: 8545,
+      provider: new Web3.providers.WebsocketProvider('ws://127.0.0.1:8545'),
       network_id: '*', // Match any network id
       gas: 8000000,
     },
