@@ -150,7 +150,7 @@ contract RocketMinipoolDelegate {
     /// @dev Only registered users with this pool
     /// @param _user The users address.
     modifier isPoolUser(address _user) {
-        require(_user != 0 && users[_user].exists != false);
+        require(_user != 0 && users[_user].exists != false, "Is not a pool user.");
         _;
     }
 
@@ -264,7 +264,7 @@ contract RocketMinipoolDelegate {
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
         // Increase total network assigned ether
-        rocketPool.increaseTotalEther("assigned", staking.id, msg.value);
+        rocketPool.setNetworkIncreaseTotalEther("assigned", staking.id, msg.value);
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
@@ -351,7 +351,7 @@ contract RocketMinipoolDelegate {
     
     // Methods
 
-    /// @dev All kids outta the pool - 
+    /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
     function closePool() public returns(bool) {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
@@ -369,27 +369,6 @@ contract RocketMinipoolDelegate {
         // Nope
         return false;
     }
-
-
-    /// @dev This pool has timeout - It has been stuck in status 1 for too long and has not begun staking yet, or it has completed staking and not all users have withdrawn their ether for a long time.
-    function cancelPool() public returns(bool) {
-        // Get the RP interface
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        // Check to see we're allowed to close this pool
-        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) { 
-            // Send back the RPL to the node owner
-            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
-            // Remove the minipool from storage
-            rocketPool.minipoolRemove(address(this));
-            // Log it
-            emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send the ether (+ rewards if it completed) back
-            selfdestruct(node.contractAddress); 
-        }
-        // Nope
-        return false;
-    }
-
 
 
     /// @dev Sets the status of the pool based on its current parameters 
@@ -422,7 +401,6 @@ contract RocketMinipoolDelegate {
             return;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        
         if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
             if(!node.trusted ) {
@@ -438,7 +416,7 @@ contract RocketMinipoolDelegate {
             bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
             validatorRegistration.deposit.value(launchAmount)(pubkey, withdrawalShardID, withdrawalAddress, randaoCommitment);
             // Set minipool availability status
-            rocketPool.minipoolSetAvailable(false);
+            rocketPool.setMinipoolAvailable(false); 
             // Staking
             setStatus(2);
             // Done
