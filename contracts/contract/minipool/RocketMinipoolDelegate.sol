@@ -6,7 +6,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/casper/CasperDepositInterface.sol";
+import "../../interface/casper/ValidatorRegistrationInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -42,7 +42,7 @@ contract RocketMinipoolDelegate {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    CasperDepositInterface casperDeposit   = CasperDepositInterface(0);                             // Interface of the Casper deposit contract
+    ValidatorRegistrationInterface validatorRegistration   = ValidatorRegistrationInterface(0);     // Interface of the Casper validator registration contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
@@ -152,7 +152,7 @@ contract RocketMinipoolDelegate {
     /// @dev Only registered users with this pool
     /// @param _user The users address.
     modifier isPoolUser(address _user) {
-        require(_user != 0 && users[_user].exists != false);
+        require(_user != 0 && users[_user].exists != false, "Is not a pool user.");
         _;
     }
 
@@ -173,8 +173,8 @@ contract RocketMinipoolDelegate {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Set the address of the Casper contract
-        casperDeposit = CasperDepositInterface(getContractAddress("casperDeposit"));
+        // Set the address of the validator registration contract
+        validatorRegistration = ValidatorRegistrationInterface(getContractAddress("validatorRegistration"));
         // Add the RPL contract address
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
     }
@@ -356,7 +356,7 @@ contract RocketMinipoolDelegate {
     
     // Methods
 
-    /// @dev All kids outta the pool - 
+    /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
     function closePool() public returns(bool) {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
@@ -376,31 +376,12 @@ contract RocketMinipoolDelegate {
     }
 
 
-    /// @dev This pool has timeout - It has been stuck in status 1 for too long and has not begun staking yet, or it has completed staking and not all users have withdrawn their ether for a long time.
-    function cancelPool() public returns(bool) {
-        // Get the RP interface
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        // Check to see we're allowed to close this pool
-        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) { 
-            // Send back the RPL to the node owner
-            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
-            // Remove the minipool from storage
-            rocketPool.minipoolRemove(address(this));
-            // Log it
-            emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send the ether (+ rewards if it completed) back
-            selfdestruct(node.contractAddress); 
-        }
-        // Nope
-        return false;
-    }
-
-
-
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get minipool settings
+        uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         /*
         // Check to see if we can close the pool
         // TODO: Fix minipool removal check and uncomment
@@ -423,12 +404,20 @@ contract RocketMinipoolDelegate {
             return;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= rocketMinipoolSettings.getMinipoolLaunchAmount()) {
+        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
             if(!node.trusted ) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
-            // TODO: send deposit to Casper contract
+            // Send deposit to validator registration contract
+            // TODO: implement real validator registration arguments
+            uint256 pubkeyVal = 1;
+            while (validatorRegistration.usedPubkey(bytes32(pubkeyVal))) { ++pubkeyVal; }
+            bytes32 pubkey = bytes32(pubkeyVal);
+            uint256 withdrawalShardID = 1;
+            address withdrawalAddress = address(this);
+            bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
+            validatorRegistration.deposit.value(launchAmount)(pubkey, withdrawalShardID, withdrawalAddress, randaoCommitment);
             // Staking
             setStatus(2);
             // Done

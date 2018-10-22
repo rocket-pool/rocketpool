@@ -94,24 +94,25 @@ function loadABI(abiFilePath) {
 // Start exporting now
 module.exports = async (deployer, network) => {
 
-  // Set our web3 1.0 provider
-  let $web3;
-  if ( network !== 'live' ) {
-    const providerUrl = `http://${config.networks[network].host}:${config.networks[network].port}`;
-    console.log(`Web3 1.0 provider using ${providerUrl}`);
-    $web3 = new config.web3(providerUrl);
-  }else{
-    // Live deployment
+  // Live deployment
+  if ( network == 'live' ) {
     // Add our live RPL token address in place
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
+  // Test network deployment
+  else {
 
-  // Only deploy test interface contracts on test networks
-  if ( network !== 'live' && testUtils) {
-    contracts.testLists = artifacts.require('./test/TestLists.sol');
-    contracts.testQueues = artifacts.require('./test/TestQueues.sol');
-    contracts.testSets = artifacts.require('./test/TestSets.sol');
+    // Casper validator registration contract
+    contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
+
+    // Test interface contracts
+    if (testUtils) {
+      contracts.testLists = artifacts.require('./test/TestLists.sol');
+      contracts.testQueues = artifacts.require('./test/TestQueues.sol');
+      contracts.testSets = artifacts.require('./test/TestSets.sol');
+    }
+
   }
  
   // Accounts
@@ -182,4 +183,5 @@ module.exports = async (deployer, network) => {
   console.log('\x1b[32m%s\x1b[0m', 'Post - Storage Direct Access Removed');
 
 };
+
 
