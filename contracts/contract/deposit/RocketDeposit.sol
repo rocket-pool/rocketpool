@@ -39,7 +39,7 @@ contract RocketDeposit is RocketBase {
     modifier onlyDepositVaultOrMinipool() {
         require(
             msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositVault"))) ||
-            rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)))
+            rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))),
             "Sender is not RocketDepositVault or Minipool"
         );
         _;
@@ -114,7 +114,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Withdraw a deposit fragment from a withdrawn or timed out minipool
-    function withdraw(address _userID, address _groupID, string _durationID, bytes32 _depositID, address _minipool, address _withdrawerAddress) returns (uint256) {
+    function withdraw(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public returns (uint256) {
 
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
@@ -123,7 +123,6 @@ contract RocketDeposit is RocketBase {
         require(rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", _depositID))), "Deposit does not exist");
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID");
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
-        require(rocketStorage.getString(keccak256(abi.encodePacked("deposit.stakingDurationID", _depositID))) == _durationID, "Incorrect deposit staking duration ID");
         require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
 
         // Withdraw deposit from minipool

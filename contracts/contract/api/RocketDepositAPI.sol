@@ -62,7 +62,6 @@ contract RocketDepositAPI is RocketBase {
         address indexed _to,
         address indexed _userID,
         address indexed _groupID,
-        string  durationID,
         bytes32 depositID,
         address minipool,
         uint256 value,
@@ -133,7 +132,7 @@ contract RocketDepositAPI is RocketBase {
 
 
     /// @dev Checks if the withdrawal parameters are correct for a successful withdrawal
-    function getDepositWithdrawalIsValid(address _from, address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyValidDuration(_durationID) returns(bool) {
+    function getDepositWithdrawalIsValid(address _from, address _groupID, address _userID, bytes32 _depositID) public returns(bool) {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -222,18 +221,17 @@ contract RocketDepositAPI is RocketBase {
     /// @dev Withdraw a deposit fragment from a withdrawn or timed out minipool
     /// @param _groupID The ID of the group in control of the deposit
     /// @param _userID The address of the user who the deposit belongs to
-    /// @param _durationID The ID of the deposit's staking duration
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
-    function withdrawMinipoolDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function withdrawMinipoolDeposit(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
-        if (getDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _durationID, _depositID)) {
+        if (getDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID)) {
             // Withdraw deposit
             rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-            uint256 amountWithdrawn = rocketDeposit.withdraw(_userID, _groupID, _durationID, _depositID, _minipool, msg.sender);
+            uint256 amountWithdrawn = rocketDeposit.withdraw(_userID, _groupID, _depositID, _minipool, msg.sender);
             require(amountWithdrawn > 0, "Minipool deposit could not be withdrawn");
             // All good? Fire the event for the withdrawal
-            emit DepositWithdraw(msg.sender, _userID, _groupID, _durationID, _depositID, _minipool, amountWithdrawn, now);
+            emit DepositWithdraw(msg.sender, _userID, _groupID, _depositID, _minipool, amountWithdrawn, now);
             // Return withdrawn amount
             return amountWithdrawn;
         }
