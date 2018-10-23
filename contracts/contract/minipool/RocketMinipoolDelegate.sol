@@ -84,6 +84,7 @@ contract RocketMinipoolDelegate {
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
+        uint256 addressIndex;                                   // User's index in the address list
     }
 
 
@@ -113,7 +114,12 @@ contract RocketMinipoolDelegate {
     );
     
     event UserAdded (
-        address indexed _user,                           // Users address
+        address indexed _user,                                  // Users address
+        uint256 created                                         // Creation timestamp
+    );
+
+    event UserRemoved (
+        address indexed _user,                                  // Users address
         uint256 created                                         // Creation timestamp
     );
 
@@ -273,6 +279,33 @@ contract RocketMinipoolDelegate {
         return true;
     }
 
+    /// @dev Withdraw a user's deposit and remove them from this contract.
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _withdrawalAddress The address to withdraw the user's deposit to
+    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(uint256) {
+        // Check current status
+        require(status.current == 4 || status.current == 6, "Minipool is not currently allowing withdrawals.");
+        // Check user address, group ID and balance
+        require(users[_user].exists, "User does not exist in minipool.");
+        require(users[_user].groupID == _groupID, "User does not exist in group.");
+        require(users[_user].balance > 0, "User does not have remaining balance in minipool.");
+        // Get remaining balance as withdrawal amount
+        uint256 amount = users[_user].balance;
+        // Remove user
+        removeUser(_user);
+        // Transfer withdrawal amount to withdrawal address
+        require(_withdrawalAddress.call.value(amount)(), "Withdrawal amount could not be transferred to withdrawal address");
+        // Decrease total network assigned ether
+        rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);
+        // All good? Fire the event for the withdrawal
+        emit PoolTransfer(this, _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
+        // Update the status
+        updateStatus();
+        // Return withdrawal amount
+        return amount;
+    }
+
     /// @dev Register a new user in the minipool
     /// @param _user New user address
     /// @param _groupID The 3rd party group address the user belongs too
@@ -296,9 +329,10 @@ contract RocketMinipoolDelegate {
                 feeRP: rocketGroupSettings.getDefaultFee(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
-                created: now
+                created: now,
+                addressIndex: userAddresses.length
             });
-            // Store our node address so we can iterate over it if needed
+            // Store our user address so we can iterate over it if needed
             userAddresses.push(_user);
             // Fire the event
             emit UserAdded(_user, now);
@@ -308,6 +342,24 @@ contract RocketMinipoolDelegate {
             return true;
         }
         return false;
+    }
+
+    /// @dev Remove a user from the minipool
+    /// @param _user User address
+    function removeUser(address _user) private returns(bool) {
+        // Check user exists
+        require(users[_user].exists, "User does not exist in minipool.");
+        // Remove user from address list
+        userAddresses[users[_user].addressIndex] = userAddresses[userAddresses.length - 1];
+        userAddresses.length--;
+        // Delete user
+        delete users[_user];
+        // Fire the event
+        emit UserRemoved(_user, now);
+        // Update the status of the pool
+        updateStatus();
+        // Success
+        return true;
     }
 
 

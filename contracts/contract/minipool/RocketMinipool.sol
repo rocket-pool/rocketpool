@@ -84,6 +84,7 @@ contract RocketMinipool {
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
+        uint256 addressIndex;                                   // User's index in the address list
     }
 
 
@@ -293,7 +294,18 @@ contract RocketMinipool {
         return true;
     }
 
-    
+
+    /// @dev Withdraw a user's deposit and remove them from this contract.
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _withdrawalAddress The address to withdraw the user's deposit to
+    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(uint256) {
+        // Will throw if conditions are not met in delegate or call fails
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("withdraw(address,address,address)"), _user, _groupID, _withdrawalAddress), "Delegate call failed.");
+        // Return withdrawal amount
+        return 0;
+    }
+
 
     /// @dev Register a new user in the minipool
     /// @param _user New user address
@@ -301,6 +313,16 @@ contract RocketMinipool {
     function addUser(address _user, address _groupID) private returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
+    /// @dev Remove a user from the minipool
+    /// @param _user User address
+    function removeUser(address _user) private returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("removeUser(address)"), _user), "Delegate call failed.");
         // Success
         return true;
     }

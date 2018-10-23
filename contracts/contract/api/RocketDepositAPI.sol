@@ -219,7 +219,7 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Withdraw a deposit chunk fragment from a withdrawn or timed out minipool
+    /// @dev Withdraw a deposit fragment from a withdrawn or timed out minipool
     /// @param _groupID The ID of the group in control of the deposit
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _durationID The ID of the deposit's staking duration
