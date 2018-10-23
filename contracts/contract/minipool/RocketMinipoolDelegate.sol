@@ -422,6 +422,13 @@ contract RocketMinipoolDelegate {
             // Done
             return;
         }
+        // Set to TimedOut - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it)
+        if (status.current == 1 && status.time <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
+            // TimedOut
+            setStatus(6);
+            // Done
+            return;
+        }
         // Done
         return; 
     }

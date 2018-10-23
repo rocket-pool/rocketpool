@@ -218,10 +218,8 @@ contract RocketPool is RocketBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get some common attributes
         uint8 status = rocketMinipool.getStatus();
-        // A priority initial check - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it), it can be closed by anyone so users get their funds back
-        if(status == 1 && rocketMinipool.getStatusChangedTime() <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
-            return true;
-        }
+        // Minipool has timed out
+        if (status == 6) { return true; }
         // Do some common global checks
         require(rocketMinipoolSettings.getMinipoolClosingEnabled(), "Minipools are not currently allowed to be closed.");
         // If there are users in this minipool, it cannot be closed, only empty ones can

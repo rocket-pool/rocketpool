@@ -19,7 +19,8 @@ contract RocketMinipoolSettings is RocketBase {
         Staking,                    // 2 - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration.
         LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
         Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
-        Closed                      // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
+        Closed,                     // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
+        TimedOut                    // 6 - The minipool has been assigned user(s) but has still not begun staking within the timeout period. The minipool will not progress to staking, and all users can withdraw.
     }
 
 
