@@ -299,11 +299,11 @@ contract RocketMinipool {
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
-    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(uint256) {
+    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("withdraw(address,address,address)"), _user, _groupID, _withdrawalAddress), "Delegate call failed.");
-        // Return withdrawal amount
-        return 0;
+        // Success
+        return true;
     }
 
 

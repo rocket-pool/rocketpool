@@ -125,9 +125,10 @@ contract RocketDeposit is RocketBase {
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
         require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
 
-        // Withdraw deposit from minipool
+        // Get minipool user balance & Withdraw deposit from minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        uint256 withdrawalAmount = minipool.withdraw(_userID, _groupID, address(this));
+        uint256 withdrawalAmount = minipool.getUserDeposit(_userID);
+        minipool.withdraw(_userID, _groupID, address(this));
 
         // Update deposit pool details
         addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);

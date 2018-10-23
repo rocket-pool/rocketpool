@@ -283,7 +283,7 @@ contract RocketMinipoolDelegate {
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
-    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(uint256) {
+    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
         require(status.current == 4 || status.current == 6, "Minipool is not currently allowing withdrawals.");
         // Check user address, group ID and balance
@@ -302,8 +302,8 @@ contract RocketMinipoolDelegate {
         emit PoolTransfer(this, _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
         updateStatus();
-        // Return withdrawal amount
-        return amount;
+        // Success
+        return true;
     }
 
     /// @dev Register a new user in the minipool
