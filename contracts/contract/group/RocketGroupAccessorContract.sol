@@ -75,8 +75,25 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /// @dev Make a withdrawal through the Rocket Pool Withdrawal API
-    /// TODO: implement
+    /// @dev Withdraw from a minipool through the Rocket Pool Deposit API
+    /// @dev Withdrawn ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
+    /// @param _durationID The ID of the staking duration of the deposit to withdraw
+    /// @param _depositID The ID of the deposit to withdraw
+    /// @param _minipool The address of the minipool to withdraw from
+    function withdrawMinipoolDeposit(string _durationID, bytes32 _depositID, address _minipool) public returns (bool) {
+        // Get deposit API
+        rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        // Get balance before withdrawal
+        uint256 initialBalance = address(this).balance;
+        // Perform withdrawal
+        uint256 amountWithdrawn = rocketDepositAPI.withdrawMinipoolDeposit(groupID, msg.sender, _durationID, _depositID, _minipool);
+        require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
+        require(amountWithdrawn == address(this).balance - initialBalance, "Amount withdrawn is incorrect");
+        // Transfer ether to user
+        require(msg.sender.call.value(amountWithdrawn)(), "Unable to send withdrawn ether to user");
+        // Return success flag
+        return true;
+    }
 
 
     /*** Rocket Pool Methods *****/
