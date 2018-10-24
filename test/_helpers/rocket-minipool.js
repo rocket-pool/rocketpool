@@ -22,7 +22,10 @@ export async function timeoutMinipool({minipoolAddress, owner}) {
     let timeDifference = minipoolTimeout + minipoolStatusChangeTime - currentTime;
 
     // Advance time
-    if (timeDifference > 0) await TimeController.addSeconds(timeDifference);
+    if (timeDifference > 0) {
+        await TimeController.addSeconds(timeDifference);
+        TimeController.reset();
+    }
 
     // Update minipool status
     await minipool.updateStatus({from: owner, gas: 500000});

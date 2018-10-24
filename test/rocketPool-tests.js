@@ -11,6 +11,7 @@ import rocketNodeTaskAdminTests from './rocket-node/rocket-node-task-admin-tests
 import rocketNodeTaskNodeTests from './rocket-node/rocket-node-task-node-tests';
 import rocketDepositAPIDepositTests from './rocket-deposit/rocket-deposit-api-deposit-tests';
 import rocketDepositAPIRefundTests from './rocket-deposit/rocket-deposit-api-refund-tests';
+import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 
 /**
@@ -36,6 +37,7 @@ rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
 rocketDepositAPIDepositTests();
 rocketDepositAPIRefundTests();
+rocketDepositAPIWithdrawalTests();
 rocketRPIPTests();
 
 // Profiling

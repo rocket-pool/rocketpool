@@ -181,6 +181,15 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
 }
 
 
+// Withdraw deposit from a minipool
+export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
+
+    // Withdraw
+    let result = await withdrawerContract.withdrawMinipoolDeposit(depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+
+
 // Attempt a deposit via the deposit API
 export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddress, value, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
