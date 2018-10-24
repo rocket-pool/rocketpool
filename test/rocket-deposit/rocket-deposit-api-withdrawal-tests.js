@@ -88,8 +88,8 @@ export default function() {
             });
 
             // Check minipool status
-            let status1 = parseInt(await minipool.getStatus.call());
-            assert.equal(status1, 1, 'Pre-check failed: minipool is not at PreLaunch status');
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 1, 'Pre-check failed: minipool is not at PreLaunch status');
 
             // Get deposit ID
             let user1DepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
@@ -113,8 +113,8 @@ export default function() {
             await timeoutMinipool({minipoolAddress: minipool.address, owner});
 
             // Check minipool status
-            let status2 = parseInt(await minipool.getStatus.call());
-            assert.equal(status2, 6, 'Pre-check failed: minipool is not at TimedOut status');
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 6, 'Pre-check failed: minipool is not at TimedOut status');
 
             // Get deposit ID
             let user1DepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
