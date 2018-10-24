@@ -141,6 +141,10 @@ export default function() {
                 gas: 7500000,
             });
 
+            // Get ID of deposit made to fill queue
+            let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupContract.address, user2, '3m'));
+            let fillQueueDepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
+
             // Check current max deposit size is equal to locked limit
             maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
             assert.equal(maxDepositSize, 0, 'Pre-check failed: current max deposit size is not the "locked" limit');
@@ -180,6 +184,16 @@ export default function() {
                 fromAddress: user2,
                 value: maxDepositSize,
                 gas: 7500000,
+            });
+
+            // Refund deposit made to fill queue
+            await scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
+                durationID: '3m',
+                depositID: fillQueueDepositID,
+                fromAddress: user2,
+                gas: 500000,
             });
 
         });
