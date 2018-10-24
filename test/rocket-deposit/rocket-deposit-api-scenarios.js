@@ -161,8 +161,8 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
     let depositBalance1 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
     let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
-	// Request refund
-	let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
+    // Request refund
+    let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
 
     // Get updated from address balance
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
@@ -228,9 +228,19 @@ export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddre
 
 // Attempt a deposit refund via the deposit API
 export async function scenarioAPIRefundDeposit({groupID, userID, durationID, depositID, fromAddress, gas}) {
-	const rocketDepositAPI = await RocketDepositAPI.deployed();
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
 
-	// Request refund
+    // Request refund
     await rocketDepositAPI.refundDeposit(groupID, userID, durationID, depositID, {from: fromAddress, gas: gas});
 
 }
+
+// Attempt a minipool deposit withdrawal via the deposit API
+export async function scenarioAPIWithdrawMinipoolDeposit({groupID, userID, depositID, minipoolAddress, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+
+    // Withdraw
+    await rocketDepositAPI.withdrawMinipoolDeposit(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+
