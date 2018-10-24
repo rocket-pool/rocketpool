@@ -27,6 +27,7 @@ export default function() {
         let groupContract;
         let groupAccessorContract;
         let nodeContract;
+        let minipool;
         before(async () => {
 
             // Initialise dummy beacon chain
@@ -50,15 +51,15 @@ export default function() {
         });
 
 
-        // Staker can withdraw from a timed out minipool
-        it(printTitle('staker', 'can withdraw from a timed out minipool'), async () => {
-
-            // Get deposit settings
-            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+        // Staker cannot withdraw from a minipool that has not timed out or withdrawn
+        it(printTitle('staker', 'cannot withdraw from a minipool that has not timed out or withdrawn'), async () => {
 
             // Create single minipool
             let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner}))[0];
-            let minipool = await RocketMinipoolInterface.at(minipoolAddress);
+            minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+            // Get deposit settings
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
 
             // Deposit to minipool
             await scenarioDeposit({
@@ -90,8 +91,26 @@ export default function() {
             let status1 = parseInt(await minipool.getStatus.call());
             assert.equal(status1, 1, 'Pre-check failed: minipool is not at PreLaunch status');
 
+            // Get deposit ID
+            let user1DepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+
+            // Attempt to withdraw minipool deposit
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID: user1DepositID,
+                minipoolAddress: minipool.address,
+                fromAddress: user1,
+                gas: 500000,
+            }), 'Withdrew from a minipool that has not timed out or withdrawn');
+
+        });
+
+
+        // Staker can withdraw from a timed out minipool
+        it(printTitle('staker', 'can withdraw from a timed out minipool'), async () => {
+
             // Time out minipool
-            await timeoutMinipool({minipoolAddress, owner});
+            await timeoutMinipool({minipoolAddress: minipool.address, owner});
 
             // Check minipool status
             let status2 = parseInt(await minipool.getStatus.call());
@@ -104,7 +123,7 @@ export default function() {
             await scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID: user1DepositID,
-                minipoolAddress: minipoolAddress,
+                minipoolAddress: minipool.address,
                 fromAddress: user1,
                 gas: 500000,
             });
