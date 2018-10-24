@@ -20,4 +20,5 @@ contract RocketMinipoolInterface {
     function deposit(address _user, address _groupID) public payable returns(bool);
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public returns(bool);
     function closePool() public returns(bool);
+    function updateStatus() public returns(bool);
 }
