@@ -10,5 +10,5 @@ contract RocketPoolInterface {
     function setNetworkIncreaseTotalEther(string _type, string _durationID, uint256 _value) external;
     function setNetworkDecreaseTotalEther(string _type, string _durationID, uint256 _value) external;
     function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external returns (address);
-    function minipoolRemove(address _minipool) public returns (bool);
+    function minipoolRemove() public returns (bool);
 }

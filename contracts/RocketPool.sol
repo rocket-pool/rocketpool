@@ -180,8 +180,7 @@ contract RocketPool is RocketBase {
 
     
     /// @dev Remove a minipool from storage - can only be called by minipools
-    /// @param _from The address that requested the minipool removal on the minipool contract
-    function minipoolRemove(address _from) external onlyMinipool(msg.sender) returns (bool) {
+    function minipoolRemove() external onlyMinipool(msg.sender) returns (bool) {
         // Can we destroy it?
         if(minipoolRemoveCheck(msg.sender)) {
             // Get contracts
