@@ -247,7 +247,7 @@ contract RocketMinipoolDelegate {
 
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
-        
+
     }
 
 
@@ -481,7 +481,7 @@ contract RocketMinipoolDelegate {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Remove the minipool if possible
-        if(rocketPool.minipoolRemove(address(this))) {
+        if(rocketPool.minipoolRemove()) {
             // Send any unclaimed RPL back to the node contract
             require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
             // Log it
