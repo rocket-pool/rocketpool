@@ -174,6 +174,11 @@ contract RocketNodeContract {
     
     /*** Methods *************/
 
+
+    /// @dev Default payable method to receive minipool node withdrawals
+    function() public payable {}
+
+
     /// @dev Reserves a deposit of Ether/RPL at the current rate. The node operator has 24hrs to deposit both once its locked in or it will expire.
     /// @param _amount The amount of ether the node operator wishes to deposit
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
@@ -205,8 +210,8 @@ contract RocketNodeContract {
     }
 
 
-   /// @dev Cancel a deposit reservation that was made - only node owner
-   function depositReserveCancel() public onlyNodeOwner() hasDepositReserved() returns(bool) { 
+    /// @dev Cancel a deposit reservation that was made - only node owner
+    function depositReserveCancel() public onlyNodeOwner() hasDepositReserved() returns(bool) { 
         // Get reservation time
         uint256 reservationTime = depositReservation.created;
         // Delete the reservation
@@ -218,9 +223,9 @@ contract RocketNodeContract {
     }
 
 
-   /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to Rocket Pool node account contract at `to.address()`.
-   /// @dev Deposit to Rocket Pool from a node to their own contract. Anyone can deposit to a nodes contract, but they must have the ether/rpl to do so. User must have a reserved deposit and the RPL required to cover the ether deposit.
-   function deposit() public payable hasDepositReserved() returns(bool) { 
+    /// @notice Send `msg.value ether` Eth from the account of `message.caller.address()`, to Rocket Pool node account contract at `to.address()`.
+    /// @dev Deposit to Rocket Pool from a node to their own contract. Anyone can deposit to a nodes contract, but they must have the ether/rpl to do so. User must have a reserved deposit and the RPL required to cover the ether deposit.
+    function deposit() public payable hasDepositReserved() returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the node Settings

@@ -61,9 +61,11 @@ contract RocketMinipoolDelegate {
     struct Node {
         address owner;                                          // Etherbase address of the node which owns this minipool
         address contractAddress;                                // The nodes Rocket Pool contract
-        uint256 depositEther;                                   // The nodes ether contribution
-        uint256 depositRPL;                                     // The nodes RPL contribution
+        uint256 depositEther;                                   // The nodes required ether contribution
+        uint256 depositRPL;                                     // The nodes required RPL contribution
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
+        bool    depositExists;                                  // The node operator's deposit exists
+        uint256 balance;                                        // The node operator's ether balance
     }
 
     struct Staking {
@@ -93,6 +95,13 @@ contract RocketMinipoolDelegate {
 
     event NodeDeposit (
         address indexed _from,                                  // Transferred from
+        uint256 etherAmount,                                    // Amount of ETH
+        uint256 rplAmount,                                      // Amount of RPL
+        uint256 created                                         // Creation timestamp
+    );
+
+    event NodeWithdrawal (
+        address indexed _to,                                    // Transferred to
         uint256 etherAmount,                                    // Amount of ETH
         uint256 rplAmount,                                      // Amount of RPL
         uint256 created                                         // Creation timestamp
@@ -224,6 +233,22 @@ contract RocketMinipoolDelegate {
         return node.depositRPL;
     }
 
+    /// @dev Gets the node's trusted status (at the time of minipool creation)
+    function getNodeTrusted() public view returns(bool) {
+        return node.trusted;
+    }
+
+    /// @dev Gets whether the node operator's deposit currently exists
+    function getNodeDepositExists() public view returns(bool) {
+        return node.depositExists;
+    }
+
+    /// @dev Gets the node operator's ether balance
+    function getNodeBalance() public view returns(uint256) {
+        return node.balance;
+    }
+
+
     // Methods
 
     /// @dev Set the ether / rpl deposit and check it
@@ -234,20 +259,38 @@ contract RocketMinipoolDelegate {
         require(rplContract.balanceOf(address(this)) >= node.depositRPL, "RPL deposit size does not match the minipool amount set when it was created.");
         // Check it is the correct amount passed when the minipool was created
         require(msg.value == node.depositEther, "Ether deposit size does not match the minipool amount set when it was created.");
-        // Check it is the correct amount passed when the minipool was created
-        require(address(this).balance >= node.depositEther, "Node owner has already made ether deposit for this minipool.");
-        // Set it now
-        node.depositEther = msg.value;
-        node.depositRPL = rplContract.balanceOf(address(this));
-        // Fire it
-        emit NodeDeposit(msg.sender, msg.value,  rplContract.balanceOf(address(this)), now);
+        // Check that the node operator has not already deposited
+        require(node.depositExists == false, "Node owner has already made deposit for this minipool.");
+        // Set node operator deposit flag & balance
+        node.depositExists = true;
+        node.balance = msg.value;
+        // Fire deposit event
+        emit NodeDeposit(msg.sender, msg.value, rplContract.balanceOf(address(this)), now);
         // All good
         return true;
     }
 
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
-
+        // Check current status
+        require(status.current == 0 || status.current == 4 || status.current == 6, "Minipool is not currently allowing node withdrawals.");
+        // Check node operator's deposit exists
+        require(node.depositExists == true, "Node operator does not have a deposit in minipool.");
+        // Get withdrawal amounts
+        uint256 etherAmount = node.balance;
+        uint256 rplAmount = rplContract.balanceOf(address(this));
+        // Update node operator deposit flag & balance
+        node.depositExists = false;
+        node.balance = 0;
+        // Transfer ether and RPL to node contract
+        if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
+        if (etherAmount > 0) { node.contractAddress.transfer(etherAmount); }
+        // Fire withdrawal event
+        emit NodeWithdrawal(msg.sender, etherAmount, rplAmount, now);
+        // Update the status
+        updateStatus();
+        // Success
+        return true;
     }
 
 
@@ -483,7 +526,8 @@ contract RocketMinipoolDelegate {
         // Remove the minipool if possible
         if(rocketPool.minipoolRemove()) {
             // Send any unclaimed RPL back to the node contract
-            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
+            uint256 rplBalance = rplContract.balanceOf(address(this));
+            if (rplBalance > 0) { require(rplContract.transfer(node.contractAddress, rplBalance), "RPL balance transfer error."); }
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
             // Close now and send any unclaimed ether back to the node contract

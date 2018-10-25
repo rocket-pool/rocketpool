@@ -61,9 +61,11 @@ contract RocketMinipool {
     struct Node {
         address owner;                                          // Etherbase address of the node which owns this minipool
         address contractAddress;                                // The nodes Rocket Pool contract
-        uint256 depositEther;                                   // The nodes ether contribution
-        uint256 depositRPL;                                     // The nodes RPL contribution
+        uint256 depositEther;                                   // The nodes required ether contribution
+        uint256 depositRPL;                                     // The nodes required RPL contribution
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
+        bool    depositExists;                                  // The node operator's deposit exists
+        uint256 balance;                                        // The node operator's ether balance
     }
 
     struct Staking {
@@ -234,6 +236,17 @@ contract RocketMinipool {
     function getNodeTrusted() public view returns(bool) {
         return node.trusted;
     }
+
+    /// @dev Gets whether the node operator's deposit currently exists
+    function getNodeDepositExists() public view returns(bool) {
+        return node.depositExists;
+    }
+
+    /// @dev Gets the node operator's ether balance
+    function getNodeBalance() public view returns(uint256) {
+        return node.balance;
+    }
+
 
     // Methods
 
