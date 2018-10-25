@@ -146,10 +146,17 @@ contract RocketMinipoolDelegate {
     /*** Modifiers *************/
 
 
-    /// @dev Only the node owner which this minipool belongs too
+    /// @dev Only the node owner which this minipool belongs to
     /// @param _nodeOwner The node owner address.
     modifier isNodeOwner(address _nodeOwner) {
         require(_nodeOwner != address(0x0) && _nodeOwner == node.owner, "Incorrect node owner address passed.");
+        _;
+    }
+
+    /// @dev Only the node contract which this minipool belongs to
+    /// @param _nodeContract The node contract address
+    modifier isNodeContract(address _nodeContract) {
+        require(_nodeContract != address(0x0) && _nodeContract == node.contractAddress, "Incorrect node contract address passed.");
         _;
     }
 
@@ -220,7 +227,7 @@ contract RocketMinipoolDelegate {
     // Methods
 
     /// @dev Set the ether / rpl deposit and check it
-    function nodeDeposit() public payable returns(bool) {
+    function nodeDeposit() public payable isNodeContract(msg.sender) returns(bool) {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check the RPL exists in the minipool now, should have been sent before the ether
