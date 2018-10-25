@@ -253,13 +253,17 @@ contract RocketMinipool {
     /// @dev Set the ether / rpl deposit and check it
     function nodeDeposit() public payable isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        return getDelegateBoolean("nodeDeposit()");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("nodeDeposit()")), "Delegate call failed.");
+        // Success
+        return true;
     }
 
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        return getDelegateBoolean("nodeWithdraw()");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("nodeWithdraw()")), "Delegate call failed.");
+        // Success
+        return true;
     }
 
 
@@ -401,7 +405,9 @@ contract RocketMinipool {
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct
-        return getDelegateBoolean("updateStatus()");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("updateStatus()")), "Delegate call failed.");
+        // Success
+        return true;
     }
 
 }
