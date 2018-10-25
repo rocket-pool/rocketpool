@@ -19,7 +19,7 @@ contract RocketNodeSettings is RocketBase {
             setNewAllowed(true);                                                        // Are new nodes allowed to be added                      
             setEtherMin(5 ether);                                                       // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
             setCheckinGasPrice(20000000000);                                            // Set the gas price for node checkins in Wei (20 gwei)
-            setDepositEtherGasLimit(50000);                                             // Set the gas limit for nodes transferring their ether to a minipool contract after it is created
+            setDepositEtherGasLimit(100000);                                            // Set the gas limit for nodes transferring their ether to a minipool contract after it is created
             setDepositRPLGasLimit(250000);                                              // Set the gas limit for nodes transferring their RPL to a minipool contract after it is created
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
             setInactiveDuration(1 hours);                                               // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
