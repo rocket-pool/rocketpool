@@ -111,9 +111,52 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 
 // Withdraw a deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
+    const minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+    // Get initial minipool status
+    let minipoolNodeDepositExists1 = await minipool.getNodeDepositExists.call();
+    let minipoolNodeBalance1 = parseInt(await minipool.getNodeBalance.call());
+
+    // Get initial node contract status
+    let nodeContractBalance1 = parseInt(await web3.eth.getBalance(nodeContract.address));
 
     // Withdraw
     await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: fromAddress, gas: gas});
+
+    // Check if minipool still exists after withdrawal
+    let minipoolCode = await web3.eth.getCode(minipoolAddress);
+    let minipoolExists = (minipoolCode != '0x0');
+
+    // Updated minipool status
+    let minipoolNodeDepositExists2;
+    let minipoolNodeBalance2;
+
+    // Get updated node contract status
+    let nodeContractBalance2 = parseInt(await web3.eth.getBalance(nodeContract.address));
+
+    // Minipool still exists
+    if (minipoolExists) {
+
+        // Get updated minipool status
+        minipoolNodeDepositExists2 = await minipool.getNodeDepositExists.call();
+        minipoolNodeBalance2 = parseInt(await minipool.getNodeBalance.call());
+
+    }
+
+    // Minipool was destroyed
+    else {
+
+        // Get updated minipool status
+        minipoolNodeDepositExists2 = false;
+        minipoolNodeBalance2 = 0;
+
+    }
+
+    // Asserts
+    assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
+    assert.equal(minipoolNodeDepositExists2, false, 'Incorrect updated minipool node deposit exists status');
+    assert.equal(minipoolNodeBalance2, 0, 'Incorrect updated minipool node balance');
+    assert.equal(nodeContractBalance2, nodeContractBalance1 + minipoolNodeBalance1, 'Node contract ether balance was not updated correctly');
 
 }
 
