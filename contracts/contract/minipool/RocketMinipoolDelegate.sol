@@ -245,6 +245,11 @@ contract RocketMinipoolDelegate {
         return true;
     }
 
+    /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
+    function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
+        
+    }
+
 
     /*** USERS ***********************************************/
 

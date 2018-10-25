@@ -254,6 +254,16 @@ contract RocketNodeContract {
     }
 
 
+    /// @dev Withdraw ether / rpl from a timed out or withdrawn minipool
+    /// @param _minipool The address of the minipool to withdraw the deposit from
+    function withdrawMinipoolDeposit(_minipool) public onlyNodeOwner() returns(bool) {
+        // Get the minipool
+        rocketMinipool = RocketMinipoolInterface(_minipool);
+        // Withdraw deposit
+        return rocketMinipool.nodeWithdraw();
+    }
+
+
     /// @dev Withdraw ether from the contract
     /// @param _amount Amount of ether in wei they wish to withdraw
     function withdrawEther(uint256 _amount) public onlyNodeOwner() returns(bool) {
