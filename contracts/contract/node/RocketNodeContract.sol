@@ -269,7 +269,9 @@ contract RocketNodeContract {
         // Get the minipool
         rocketMinipool = RocketMinipoolInterface(_minipool);
         // Withdraw deposit
-        return rocketMinipool.nodeWithdraw();
+        require(rocketMinipool.nodeWithdraw(), "The minipool deposit was not withdrawn successfully.");
+        // Done
+        return true;
     }
 
 
