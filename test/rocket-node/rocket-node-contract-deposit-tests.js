@@ -8,7 +8,7 @@ import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, 
 
 export default function() {
 
-    contract('RocketNodeContract', async (accounts) => {
+    contract('RocketNodeContract - Deposits', async (accounts) => {
 
 
         // Accounts

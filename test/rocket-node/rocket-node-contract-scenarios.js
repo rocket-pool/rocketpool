@@ -109,6 +109,15 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 }
 
 
+// Withdraw a deposit from a minipool
+export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
+
+    // Withdraw
+    await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+
+
 // Attempt a deposit via the node API
 export async function scenarioAPIDeposit({nodeOperator}) {
     const rocketNodeAPI = await RocketNodeAPI.deployed();
