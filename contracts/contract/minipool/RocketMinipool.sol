@@ -372,13 +372,6 @@ contract RocketMinipool {
     
     // Methods
 
-    /// @dev All kids outta the pool
-    function closePool() public returns(bool) {
-        // Will close the pool if conditions are correct
-        return getDelegateBoolean("closePool()");
-    }
-
-
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct

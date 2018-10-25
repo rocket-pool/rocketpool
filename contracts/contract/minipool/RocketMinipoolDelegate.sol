@@ -403,25 +403,6 @@ contract RocketMinipoolDelegate {
     
     // Methods
 
-    /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
-    function closePool() public returns(bool) {
-        // Get the RP interface
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        // Check to see we're allowed to close this pool
-        if(rocketPool.minipoolRemoveCheck(msg.sender, address(this))) { 
-            // Send back the RPL to the node owner
-            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
-            // Remove the minipool from storage
-            rocketPool.minipoolRemove(address(this));
-            // Log it
-            emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send the ether (+ rewards if it completed) back
-            selfdestruct(node.contractAddress); 
-        }
-        // Nope
-        return false;
-    }
-
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
@@ -431,26 +412,23 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
-        /*
         // Check to see if we can close the pool
-        // TODO: Fix minipool removal check and uncomment
         if (closePool()) {
             return true;
         }
-        */
         // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
         if (getUserCount() == 0 && status.current <= 1) {
             // No users, reset the status to awaiting deposits
             setStatus(0);
             // Done
-            return;
+            return true;
         }
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
             setStatus(1);
             // Done
-            return;
+            return true;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
         if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
@@ -472,22 +450,36 @@ contract RocketMinipoolDelegate {
             // Staking
             setStatus(2);
             // Done
-            return;
+            return true;
         }
         // Set to TimedOut - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it)
         if (status.current == 1 && status.time <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
             // TimedOut
             setStatus(6);
             // Done
-            return;
+            return true;
         }
         // Done
-        return; 
+        return true; 
     }
 
-    
 
+    /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
+    function closePool() private returns(bool) {
+        // Get the RP interface
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        // Remove the minipool if possible
+        if(rocketPool.minipoolRemove(address(this))) {
+            // Send any unclaimed RPL back to the node contract
+            require(rplContract.transfer(node.contractAddress, rplContract.balanceOf(address(this))), "RPL balance transfer error.");
+            // Log it
+            emit PoolDestroyed(msg.sender, address(this), now);
+            // Close now and send any unclaimed ether back to the node contract
+            selfdestruct(node.contractAddress);
+        }
+        // Nope
+        return false;
+    }
 
-   
 
 }

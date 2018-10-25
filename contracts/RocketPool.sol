@@ -183,7 +183,7 @@ contract RocketPool is RocketBase {
     /// @param _from The address that requested the minipool removal on the minipool contract
     function minipoolRemove(address _from) external onlyMinipool(msg.sender) returns (bool) {
         // Can we destroy it?
-        if(minipoolRemoveCheck(_from, msg.sender)) {
+        if(minipoolRemoveCheck(msg.sender)) {
             // Get contracts
             rocketMinipool = RocketMinipoolInterface(msg.sender);
             rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -210,28 +210,15 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Can we destroy this minipool? 
-    /// @param _sender The user requesting this check
     /// @param _minipool The minipool to check
-    function minipoolRemoveCheck(address _sender, address _minipool) public returns (bool) {
+    function minipoolRemoveCheck(address _minipool) public returns (bool) {
         // Get contracts
         rocketMinipool = RocketMinipoolInterface(_minipool);
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Get some common attributes
-        uint8 status = rocketMinipool.getStatus();
-        // Minipool has timed out
-        if (status == 6) { return true; }
-        // Do some common global checks
-        require(rocketMinipoolSettings.getMinipoolClosingEnabled(), "Minipools are not currently allowed to be closed.");
+        // Are minipools allowed to be closed?
+        if (rocketMinipoolSettings.getMinipoolClosingEnabled() == false) { return false; }
         // If there are users in this minipool, it cannot be closed, only empty ones can
-        require(rocketMinipool.getUserCount() == 0, "Cannot close minipool as it has users in it.");
-        // Firstly we need to check if this is the node owner that created the minipool
-        if(_sender == rocketMinipool.getNodeOwner()) {
-            // Owner can only close if its in its initial status - this probably shouldn't ever happen if its passed the first few initial checks, but check again
-            require(status == 0, "Minipool has an advanced status, cannot close.");
-        }else{
-            // Perform non-owner checks
-            // TODO: This will be built on more as we add user functionality to the new minipools, just checks for node owners if they can destroy atm
-        }
+        if (rocketMinipool.getUserCount() > 0) { return false; }
         // If it passes all these checks and doesn't revert, it can close
         return true;
     }
