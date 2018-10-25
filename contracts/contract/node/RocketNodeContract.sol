@@ -262,6 +262,10 @@ contract RocketNodeContract {
     /// @dev Withdraw ether / rpl from a timed out or withdrawn minipool
     /// @param _minipool The address of the minipool to withdraw the deposit from
     function withdrawMinipoolDeposit(address _minipool) public onlyNodeOwner() returns(bool) {
+        // Get the node Settings
+        rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
+        // Check whether node withdrawals are currently allowed
+        require(rocketNodeSettings.getWithdrawalAllowed(), "Node withdrawals are not currently allowed.");
         // Get the minipool
         rocketMinipool = RocketMinipoolInterface(_minipool);
         // Withdraw deposit
