@@ -471,13 +471,6 @@ contract RocketMinipoolDelegate {
         if (closePool()) {
             return true;
         }
-        // Set to Initialised - The last user has withdrawn their deposit after it there was previous users, revert minipool status to 0 to allow node operator to retrieve funds if desired
-        if (getUserCount() == 0 && status.current <= 1) {
-            // No users, reset the status to awaiting deposits
-            setStatus(0);
-            // Done
-            return true;
-        }
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
