@@ -3,7 +3,7 @@ import { RocketDepositSettings, RocketMinipoolInterface, RocketNodeSettings } fr
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { timeoutMinipool } from '../_helpers/rocket-minipool';
+import { timeoutMinipool, stakeSingleMinipool } from '../_helpers/rocket-minipool';
 import { mintRpl } from '../_helpers/rocket-pool-token';
 import { scenarioWithdrawMinipoolDeposit } from './rocket-node-contract-scenarios';
 
@@ -159,7 +159,31 @@ export default function() {
 
 
         // Node operator cannot withdraw from a staking minipool
-        it(printTitle('node operator', 'cannot withdraw from a staking minipool'));
+        it(printTitle('node operator', 'cannot withdraw from a staking minipool'), async () => {
+
+            // Create single minipool
+            let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
+            minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+            // Get deposit settings
+            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
+
+            // Progress minipool to staking
+            await stakeSingleMinipool({groupAccessorContract, staker});
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+
+            // Withdraw node deposit
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
+                nodeContract,
+                minipoolAddress: minipool.address,
+                fromAddress: operator,
+                gas: 500000,
+            }), 'Withdrew from a staking minipool');
+
+        });
 
 
         // Node operator cannot withdraw from a logged out minipool
