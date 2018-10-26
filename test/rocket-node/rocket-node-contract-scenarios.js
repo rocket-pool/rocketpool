@@ -111,11 +111,20 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 
 // Withdraw a deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
-    const minipool = await RocketMinipoolInterface.at(minipoolAddress);
 
-    // Get initial minipool status
-    let minipoolNodeDepositExists1 = await minipool.getNodeDepositExists.call();
-    let minipoolNodeBalance1 = parseInt(await minipool.getNodeBalance.call());
+    // Check if minipool exists
+    let minipoolCode = await web3.eth.getCode(minipoolAddress);
+    let minipoolExists = (minipoolCode != '0x0');
+
+    // Initialise minipool & get initial minipool status
+    let minipool;
+    let minipoolNodeDepositExists1 = false;
+    let minipoolNodeBalance1 = 0;
+    if (minipoolExists) {
+        minipool = await RocketMinipoolInterface.at(minipoolAddress);
+        minipoolNodeDepositExists1 = await minipool.getNodeDepositExists.call();
+        minipoolNodeBalance1 = parseInt(await minipool.getNodeBalance.call());
+    }
 
     // Get initial node contract status
     let nodeContractBalance1 = parseInt(await web3.eth.getBalance(nodeContract.address));
@@ -124,33 +133,19 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: fromAddress, gas: gas});
 
     // Check if minipool still exists after withdrawal
-    let minipoolCode = await web3.eth.getCode(minipoolAddress);
-    let minipoolExists = (minipoolCode != '0x0');
+    minipoolCode = await web3.eth.getCode(minipoolAddress);
+    minipoolExists = (minipoolCode != '0x0');
 
-    // Updated minipool status
-    let minipoolNodeDepositExists2;
-    let minipoolNodeBalance2;
+    // Get updated minipool status
+    let minipoolNodeDepositExists2 = false;
+    let minipoolNodeBalance2 = 0;
+    if (minipoolExists) {
+        minipoolNodeDepositExists2 = await minipool.getNodeDepositExists.call();
+        minipoolNodeBalance2 = parseInt(await minipool.getNodeBalance.call());
+    }
 
     // Get updated node contract status
     let nodeContractBalance2 = parseInt(await web3.eth.getBalance(nodeContract.address));
-
-    // Minipool still exists
-    if (minipoolExists) {
-
-        // Get updated minipool status
-        minipoolNodeDepositExists2 = await minipool.getNodeDepositExists.call();
-        minipoolNodeBalance2 = parseInt(await minipool.getNodeBalance.call());
-
-    }
-
-    // Minipool was destroyed
-    else {
-
-        // Get updated minipool status
-        minipoolNodeDepositExists2 = false;
-        minipoolNodeBalance2 = 0;
-
-    }
 
     // Asserts
     assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
