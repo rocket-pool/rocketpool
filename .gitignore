@@ -3,5 +3,8 @@ bin
 build
 app/config
 node_modules
+scTopics
+coverage.json
+coverage/
 .vscode
 1.0
