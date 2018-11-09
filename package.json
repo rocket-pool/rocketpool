@@ -9,6 +9,7 @@
     "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "scripts/test.sh test/rocketPool-tests.js",
+    "test-cov": "./node_modules/.bin/solidity-coverage",
     "test-utils": "scripts/test.sh test/rocketUtil-tests.js",
     "format": "prettier --write '**/*.js'"
   },
@@ -21,8 +22,9 @@
     "babel-register": "^6.26.0",
     "ganache-cli": "^6.1.8",
     "prettier": "^1.10.2",
-    "truffle": "^5.0.0-beta.0",
-    "truffle-contract": "^3.0.4",
+    "solidity-coverage": "^0.5.11",
+    "truffle": "^5.0.0-beta.1",
+    "truffle-contract": "^3.*",
     "web3": "^1.0.0-beta.35"
   },
   "prettier": {
