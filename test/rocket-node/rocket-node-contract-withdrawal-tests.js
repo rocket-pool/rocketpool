@@ -67,7 +67,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool while node withdrawals were disabled');
 
             // Re-enable node withdrawals
@@ -84,7 +84,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: staker,
-                gas: 500000,
+                gas: 5000000,
             }), 'Random account withdrew a node deposit from a minipool');
 
         });
@@ -98,7 +98,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             });
 
         });
@@ -131,7 +131,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a pre-launch minipool');
 
         });
@@ -152,7 +152,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             });
 
         });
@@ -180,7 +180,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a staking minipool');
 
         });
@@ -210,7 +210,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: minipoolOther.address,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from another node\'s minipool');
 
         });
@@ -224,7 +224,7 @@ export default function() {
                 nodeContract,
                 minipoolAddress: accounts[9],
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from an invalid minipool');
 
         });

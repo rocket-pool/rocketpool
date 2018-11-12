@@ -70,7 +70,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: chunkSize,
-                gas: 7500000,
             });
             await scenarioDeposit({
                 beaconChain,
@@ -78,7 +77,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: chunkSize,
-                gas: 7500000,
             });
 
             // Check minipool status
@@ -94,7 +92,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user1,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool that has not timed out or withdrawn');
 
         });
@@ -116,7 +114,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user1,
-                gas: 500000,
+                gas: 5000000,
             });
 
         });
@@ -134,7 +132,7 @@ export default function() {
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid deposit ID');
 
         });
@@ -152,7 +150,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool while withdrawals were disabled');
 
             // Re-enable refunds
@@ -170,7 +168,7 @@ export default function() {
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid deposit ID');
 
             // Incorrect minipool
@@ -179,7 +177,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipoolAddresses[1],
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid minipool address');
 
             // Incorrect user
@@ -188,7 +186,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user3,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid user ID');
 
         });
@@ -204,7 +202,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid user ID');
 
             // Invalid group ID
@@ -214,7 +212,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool with an invalid group ID');
 
             // Valid parameters; invalid withdrawer
@@ -224,7 +222,7 @@ export default function() {
                 depositID,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
-                gas: 500000,
+                gas: 5000000,
             }), 'Withdrew from a minipool directly via RocketDepositAPI');
 
         });
