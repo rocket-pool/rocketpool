@@ -12,4 +12,5 @@ contract RocketDepositAPIInterface {
     // Methods
     function deposit(address _groupID, address _userID, string _durationID) public payable returns(bool);
     function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public returns(uint256);
+    function withdrawMinipoolDeposit(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
 }

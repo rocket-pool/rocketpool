@@ -5,6 +5,8 @@ import "../../RocketBase.sol";
 import "../../interface/deposit/RocketDepositQueueInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/group/RocketGroupAccessorContractInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
@@ -26,7 +28,22 @@ contract RocketDeposit is RocketBase {
 
     RocketDepositQueueInterface rocketDepositQueue = RocketDepositQueueInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
+
+
+    /*** Modifiers **************/
+
+
+    // Sender must be RocketDepositVault or Minipool
+    modifier onlyDepositVaultOrMinipool() {
+        require(
+            msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositVault"))) ||
+            rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))),
+            "Sender is not RocketDepositVault or Minipool"
+        );
+        _;
+    }
 
 
     /*** Methods ****************/
@@ -38,8 +55,8 @@ contract RocketDeposit is RocketBase {
     }
 
 
-    // Default payable function - for deposit vault withdrawals
-    function() payable public onlyLatestContract("rocketDepositVault", msg.sender) {}
+    // Default payable function - for deposit vault or minipool withdrawals
+    function() payable public onlyDepositVaultOrMinipool() {}
 
 
     // Create a new deposit
@@ -92,6 +109,37 @@ contract RocketDeposit is RocketBase {
 
         // Return refunded amount
         return refundAmount;
+
+    }
+
+
+    // Withdraw a deposit fragment from a withdrawn or timed out minipool
+    function withdraw(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public returns (uint256) {
+
+        // Get contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+
+        // Check deposit details
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", _depositID))), "Deposit does not exist");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
+        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
+
+        // Get minipool user balance & Withdraw deposit from minipool
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        uint256 withdrawalAmount = minipool.getUserDeposit(_userID);
+        minipool.withdraw(_userID, _groupID, address(this));
+
+        // Update deposit pool details
+        addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), 0);
+
+        // Transfer refund amount to withdrawer
+        RocketGroupAccessorContractInterface withdrawer = RocketGroupAccessorContractInterface(_withdrawerAddress);
+        require(withdrawer.rocketpoolEtherDeposit.value(withdrawalAmount)(), "Minipool deposit could not be sent to group withdrawer");
+
+        // Return withdrawn amount
+        return withdrawalAmount;
 
     }
 

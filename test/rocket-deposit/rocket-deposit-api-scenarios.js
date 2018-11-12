@@ -161,8 +161,8 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
     let depositBalance1 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
     let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
-	// Request refund
-	let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
+    // Request refund
+    let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
 
     // Get updated from address balance
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
@@ -181,6 +181,41 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
 }
 
 
+// Withdraw deposit from a minipool
+export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
+    const minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+    // Get initial balances
+    let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let userBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Get initial minipool user status
+    let userCount1 = parseInt(await minipool.getUserCount.call());
+    let userExists1 = await minipool.getUserExists.call(fromAddress);
+    let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress));
+
+    // Withdraw
+    let result = await withdrawerContract.withdrawMinipoolDeposit(depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+    // Get updated balances
+    let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let userBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Get updated minipool user status
+    let userCount2 = parseInt(await minipool.getUserCount.call());
+    let userExists2 = await minipool.getUserExists.call(fromAddress);
+
+    // Asserts
+    assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
+    assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
+    assert.equal(userExists2, false, 'Second minipool user exists check incorrect');
+    assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
+    assert.equal(minipoolBalance2, minipoolBalance1 - userDeposit1, 'Minipool balance was not updated correctly');
+    assert.isTrue(userBalance2 > userBalance1, 'User balance was not updated correctly');
+
+}
+
+
 // Attempt a deposit via the deposit API
 export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddress, value, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
@@ -193,9 +228,19 @@ export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddre
 
 // Attempt a deposit refund via the deposit API
 export async function scenarioAPIRefundDeposit({groupID, userID, durationID, depositID, fromAddress, gas}) {
-	const rocketDepositAPI = await RocketDepositAPI.deployed();
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
 
-	// Request refund
+    // Request refund
     await rocketDepositAPI.refundDeposit(groupID, userID, durationID, depositID, {from: fromAddress, gas: gas});
 
 }
+
+// Attempt a minipool deposit withdrawal via the deposit API
+export async function scenarioAPIWithdrawMinipoolDeposit({groupID, userID, depositID, minipoolAddress, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+
+    // Withdraw
+    await rocketDepositAPI.withdrawMinipoolDeposit(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+

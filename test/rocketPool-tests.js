@@ -6,10 +6,13 @@ import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketGroupAPITests from './rocket-group/rocket-group-api-tests';
 import rocketGroupContractTests from './rocket-group/rocket-group-contract-tests';
 import rocketNodeAPITests from './rocket-node/rocket-node-api-tests';
-import rocketNodeContractTests from './rocket-node/rocket-node-contract-tests';
+import rocketNodeContractDepositTests from './rocket-node/rocket-node-contract-deposit-tests';
+import rocketNodeContractWithdrawalTests from './rocket-node/rocket-node-contract-withdrawal-tests';
 import rocketNodeTaskAdminTests from './rocket-node/rocket-node-task-admin-tests';
 import rocketNodeTaskNodeTests from './rocket-node/rocket-node-task-node-tests';
-import rocketDepositAPITests from './rocket-deposit/rocket-deposit-api-tests';
+import rocketDepositAPIDepositTests from './rocket-deposit/rocket-deposit-api-deposit-tests';
+import rocketDepositAPIRefundTests from './rocket-deposit/rocket-deposit-api-refund-tests';
+import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 
 /**
@@ -30,10 +33,13 @@ rocketStorageTests();
 rocketGroupAPITests();
 rocketGroupContractTests();
 rocketNodeAPITests();
-rocketNodeContractTests();
+rocketNodeContractDepositTests();
+rocketNodeContractWithdrawalTests();
 rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
-rocketDepositAPITests();
+rocketDepositAPIDepositTests();
+rocketDepositAPIRefundTests();
+rocketDepositAPIWithdrawalTests();
 rocketRPIPTests();
 
 // Profiling
