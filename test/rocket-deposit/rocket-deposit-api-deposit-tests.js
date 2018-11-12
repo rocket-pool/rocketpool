@@ -3,11 +3,11 @@ import { DummyBeaconChain } from '../_lib/utils/beacon';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit, scenarioAPIRefundDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
-    contract('RocketDepositAPI', async (accounts) => {
+    contract('RocketDepositAPI - Deposits', async (accounts) => {
 
 
         // Accounts
@@ -16,7 +16,6 @@ export default function() {
         const nodeOperator = accounts[2];
         const user1 = accounts[3];
         const user2 = accounts[4];
-        const user3 = accounts[5];
 
 
         // Setup
@@ -27,7 +26,6 @@ export default function() {
         let groupContract;
         let groupAccessorContract;
         let nodeContract;
-        let depositID;
         before(async () => {
 
             // Initialise dummy beacon chain
@@ -137,6 +135,10 @@ export default function() {
                 value: maxQueueSize,
             });
 
+            // Get ID of deposit made to fill queue
+            let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupContract.address, user2, '3m'));
+            let fillQueueDepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
+
             // Check current max deposit size is equal to locked limit
             maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
             assert.equal(maxDepositSize, 0, 'Pre-check failed: current max deposit size is not the "locked" limit');
@@ -173,6 +175,16 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: maxDepositSize,
+            });
+
+            // Refund deposit made to fill queue
+            await scenarioRefundDeposit({
+                depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
+                durationID: '3m',
+                depositID: fillQueueDepositID,
+                fromAddress: user2,
+                gas: 500000,
             });
 
         });

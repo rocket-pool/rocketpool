@@ -1,5 +1,6 @@
 // Dependencies
-import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract } from '../_lib/artifacts';
+import { getTransactionContractEvents } from '../_lib/utils/general';
+import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 import { mintRpl } from './rocket-pool-token';
 
 
@@ -21,12 +22,16 @@ export async function createNodeContract({timezone, nodeOperator}) {
 // Create minipools under a node
 export async function createNodeMinipools({nodeContract, stakingDurationID, minipoolCount, nodeOperator, owner}) {
 
-    // Get node deposit amount per minipool created
+    // Get contracts
     let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+    let rocketPool = await RocketPool.deployed();
+
+    // Get node deposit amount per minipool created
     let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
     let nodeDepositAmount = Math.floor(miniPoolLaunchAmount / 2);
 
-    // Create minipools
+    // Create minipools and return addresses
+    let minipoolAddresses = [];
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Reserve node deposit
@@ -37,9 +42,22 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
         if (rplRequired > 0) await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
 
         // Complete deposit to create minipool
-        await nodeContract.deposit({from: nodeOperator, value: nodeDepositAmount});
+        let result = await nodeContract.deposit({from: nodeOperator, value: nodeDepositAmount});
+
+        // Get minipool created events
+        let minipoolCreatedEvents = getTransactionContractEvents(result, rocketPool.address, 'PoolCreated', [
+            {type: 'address', name: '_address', indexed: true},
+            {type: 'string',  name: '_durationID', indexed: true},
+            {type: 'uint256', name: 'created'},
+        ]);
+
+        // Get created minipool addresses
+        minipoolCreatedEvents.forEach(event => {
+            minipoolAddresses.push(event._address);
+        });
 
     }
+    return minipoolAddresses;
 
 }
 

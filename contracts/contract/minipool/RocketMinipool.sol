@@ -61,9 +61,11 @@ contract RocketMinipool {
     struct Node {
         address owner;                                          // Etherbase address of the node which owns this minipool
         address contractAddress;                                // The nodes Rocket Pool contract
-        uint256 depositEther;                                   // The nodes ether contribution
-        uint256 depositRPL;                                     // The nodes RPL contribution
+        uint256 depositEther;                                   // The nodes required ether contribution
+        uint256 depositRPL;                                     // The nodes required RPL contribution
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
+        bool    depositExists;                                  // The node operator's deposit exists
+        uint256 balance;                                        // The node operator's ether balance
     }
 
     struct Staking {
@@ -84,6 +86,7 @@ contract RocketMinipool {
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
+        uint256 addressIndex;                                   // User's index in the address list
     }
 
 
@@ -101,10 +104,17 @@ contract RocketMinipool {
     /*** Modifiers *************/
 
 
-    /// @dev Only the node owner which this minipool belongs too
+    /// @dev Only the node owner which this minipool belongs to
     /// @param _nodeOwner The node owner address.
     modifier isNodeOwner(address _nodeOwner) {
         require(_nodeOwner != address(0x0) && _nodeOwner == node.owner, "Incorrect node owner address passed.");
+        _;
+    }
+
+    /// @dev Only the node contract which this minipool belongs to
+    /// @param _nodeContract The node contract address
+    modifier isNodeContract(address _nodeContract) {
+        require(_nodeContract != address(0x0) && _nodeContract == node.contractAddress, "Incorrect node contract address passed.");
         _;
     }
 
@@ -227,12 +237,33 @@ contract RocketMinipool {
         return node.trusted;
     }
 
+    /// @dev Gets whether the node operator's deposit currently exists
+    function getNodeDepositExists() public view returns(bool) {
+        return node.depositExists;
+    }
+
+    /// @dev Gets the node operator's ether balance
+    function getNodeBalance() public view returns(uint256) {
+        return node.balance;
+    }
+
+
     // Methods
 
     /// @dev Set the ether / rpl deposit and check it
-    function nodeDeposit() public payable returns(bool) {
+    function nodeDeposit() public payable isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        return getDelegateBoolean("nodeDeposit()");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("nodeDeposit()")), "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+    /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
+    function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
+        // Will throw if conditions are not met in delegate
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("nodeWithdraw()")), "Delegate call failed.");
+        // Success
+        return true;
     }
 
 
@@ -293,7 +324,18 @@ contract RocketMinipool {
         return true;
     }
 
-    
+
+    /// @dev Withdraw a user's deposit and remove them from this contract.
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _withdrawalAddress The address to withdraw the user's deposit to
+    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("withdraw(address,address,address)"), _user, _groupID, _withdrawalAddress), "Delegate call failed.");
+        // Success
+        return true;
+    }
+
 
     /// @dev Register a new user in the minipool
     /// @param _user New user address
@@ -301,6 +343,16 @@ contract RocketMinipool {
     function addUser(address _user, address _groupID) private returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
+    /// @dev Remove a user from the minipool
+    /// @param _user User address
+    function removeUser(address _user) private returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("removeUser(address)"), _user), "Delegate call failed.");
         // Success
         return true;
     }
@@ -350,17 +402,12 @@ contract RocketMinipool {
     
     // Methods
 
-    /// @dev All kids outta the pool
-    function closePool() public returns(bool) {
-        // Will close the pool if conditions are correct
-        return getDelegateBoolean("closePool()");
-    }
-
-
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct
-        return getDelegateBoolean("updateStatus()");
+        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("updateStatus()")), "Delegate call failed.");
+        // Success
+        return true;
     }
 
 }
