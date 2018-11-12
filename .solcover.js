@@ -1,4 +1,5 @@
 module.exports = {
+    testrpcOptions: '--accounts 35 --port 8555 --defaultBalanceEther 1000',
     testCommand: 'truffle test test/rocketPool-tests.js --network coverage',
     skipFiles: [
         'lib',

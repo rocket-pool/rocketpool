@@ -25,7 +25,6 @@ export default function() {
             await scenarioAddNode({
                 timezone: 'Australia/Brisbane',
                 fromAddress: operator1,
-                gas: 7500000,
             });
         });
 
@@ -35,7 +34,6 @@ export default function() {
             await assertThrows(scenarioAddNode({
                 timezone: 'Australia/Brisbane',
                 fromAddress: operator1,
-                gas: 7500000,
             }), 'Added a node when already registered');
         });
 
@@ -45,7 +43,6 @@ export default function() {
             await assertThrows(scenarioAddNode({
                 timezone: 'ABC',
                 fromAddress: operator2,
-                gas: 7500000,
             }), 'Added a node with an invalid timezone ID');
         });
 
@@ -60,7 +57,6 @@ export default function() {
             await assertThrows(scenarioAddNode({
                 timezone: 'Australia/Brisbane',
                 fromAddress: operator2,
-                gas: 7500000,
             }), 'Added a node while registrations are disabled');
 
             // Reenable registrations
@@ -82,13 +78,13 @@ export default function() {
                 from: operator2,
                 to: operator1,
                 value: sendAmount,
+                gas: 500000,
             });
 
             // Add node
             await assertThrows(scenarioAddNode({
                 timezone: 'Australia/Brisbane',
                 fromAddress: operator2,
-                gas: 7500000,
             }), 'Added a node while account contains less than minimum ether');
 
             // Refill account
@@ -96,6 +92,7 @@ export default function() {
                 from: operator1,
                 to: operator2,
                 value: sendAmount,
+                gas: 500000,
             });
 
         });
