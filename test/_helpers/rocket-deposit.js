@@ -14,6 +14,6 @@ export async function getQueuedDepositIDs({groupID, userID, durationID}) {
 
 // Make a user deposit
 export async function userDeposit({depositorContract, durationID, fromAddress, value}) {
-    await depositorContract.deposit(durationID, {from: fromAddress, value: value, gas: 7500000});
+    await depositorContract.deposit(durationID, {from: fromAddress, value: value});
 }
 

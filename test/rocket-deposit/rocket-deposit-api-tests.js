@@ -83,7 +83,6 @@ export default function() {
                     durationID: '3m',
                     fromAddress: user1,
                     value: selfAssignableDepositSize + parseInt(web3.utils.toWei('0.01', 'ether')),
-                    gas: 7500000,
                 });
             }
 
@@ -95,7 +94,6 @@ export default function() {
                     durationID: '3m',
                     fromAddress: user1,
                     value: minDepositSize,
-                    gas: 7500000,
                 });
             }
 
@@ -110,7 +108,6 @@ export default function() {
                     durationID: '3m',
                     fromAddress: user1,
                     value: selfAssignableDepositSize,
-                    gas: 7500000,
                 });
             }
 
@@ -138,7 +135,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: maxQueueSize,
-                gas: 7500000,
             });
 
             // Check current max deposit size is equal to locked limit
@@ -152,7 +148,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: web3.utils.toWei('1', 'ether'),
-                gas: 7500000,
             }), 'Deposited while the deposit queue was locked');
 
             // Create minipool to allow deposits up to "backlog" limit
@@ -169,7 +164,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: maxDepositSize + parseInt(web3.utils.toWei('1', 'ether')),
-                gas: 7500000,
             }), 'Deposited an amount over the current maximum deposit size');
 
             // Make deposit
@@ -179,7 +173,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user2,
                 value: maxDepositSize,
-                gas: 7500000,
             });
 
         });
@@ -193,7 +186,6 @@ export default function() {
                 durationID: 'beer',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited with an invalid staking duration ID');
         });
 
@@ -202,7 +194,7 @@ export default function() {
         it(printTitle('staker', 'cannot deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await rocketDepositSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositAllowed(false, {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
@@ -211,11 +203,10 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited while deposits were disabled');
 
             // Reenable deposits
-            await rocketDepositSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositAllowed(true, {from: owner});
 
         });
 
@@ -224,7 +215,7 @@ export default function() {
         it(printTitle('staker', 'cannot deposit under the minimum deposit amount'), async () => {
 
             // Set minimum deposit
-            await rocketDepositSettings.setDepositMin(web3.utils.toWei('1000', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('1000', 'ether'), {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
@@ -233,11 +224,10 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited under the minimum deposit amount');
 
             // Reset minimum deposit
-            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner});
 
         });
 
@@ -246,7 +236,7 @@ export default function() {
         it(printTitle('staker', 'cannot deposit over the maximum deposit amount'), async () => {
 
             // Set maximum deposit
-            await rocketDepositSettings.setDepositMax(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMax(web3.utils.toWei('0.5', 'ether'), {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
@@ -255,11 +245,10 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited over the maximum deposit amount');
 
             // Reset maximum deposit
-            await rocketDepositSettings.setDepositMax(web3.utils.toWei('1000', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMax(web3.utils.toWei('1000', 'ether'), {from: owner});
 
         });
 
@@ -268,7 +257,7 @@ export default function() {
         it(printTitle('staker', 'cannot make empty deposit'), async () => {
 
             // Set minimum deposit
-            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
@@ -277,11 +266,10 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: 0,
-                gas: 7500000,
             }), 'Made an empty deposit');
 
             // Reset minimum deposit
-            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner, gas: 500000});
+            await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner});
 
         });
 
@@ -296,7 +284,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited with an invalid user ID');
 
             // Invalid group ID
@@ -306,7 +293,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited with an invalid group ID');
 
             // Valid parameters; invalid depositor
@@ -316,7 +302,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('16', 'ether'),
-                gas: 7500000,
             }), 'Deposited directly via RocketDepositAPI');
 
         });
@@ -332,7 +317,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('500', 'ether'),
-                gas: 7500000,
             });
 
             // Get deposit ID
@@ -345,7 +329,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             });
 
         });
@@ -361,7 +344,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('500', 'ether'),
-                gas: 7500000,
             });
 
             // Get deposit ID
@@ -374,7 +356,6 @@ export default function() {
                 durationID: 'beer',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid staking duration ID');
 
         });
@@ -388,7 +369,6 @@ export default function() {
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid ID');
         });
 
@@ -397,7 +377,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a deposit while refunds are disabled'), async () => {
 
             // Disable refunds
-            await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner});
 
             // Request refund
             await assertThrows(scenarioRefundDeposit({
@@ -406,11 +386,10 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit while refunds were disabled');
 
             // Reenable refunds
-            await rocketDepositSettings.setRefundDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketDepositSettings.setRefundDepositAllowed(true, {from: owner});
 
         });
 
@@ -425,7 +404,6 @@ export default function() {
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
             // Nonexistant user
@@ -435,7 +413,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user3,
-                gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
         });
@@ -451,7 +428,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid user ID');
 
             // Invalid group ID
@@ -461,7 +437,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid group ID');
 
             // Valid parameters; invalid depositor
@@ -471,7 +446,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit directly via RocketDepositAPI');
 
         });

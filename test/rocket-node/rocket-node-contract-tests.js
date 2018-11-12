@@ -66,7 +66,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: accounts[2],
-                gas: 500000,
             }), 'Random account reserved a deposit');
         });
 
@@ -78,7 +77,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: 'beer',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid staking duration ID');
         });
 
@@ -92,7 +90,6 @@ export default function() {
                 amount: Math.floor(minDepositAmount / 2),
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid ether amount');
 
             // Over maximum amount
@@ -101,7 +98,6 @@ export default function() {
                 amount: (minDepositAmount + maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid ether amount');
 
         });
@@ -111,7 +107,7 @@ export default function() {
         it(printTitle('node operator', 'cannot reserve a deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await rocketNodeSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(false, {from: owner});
 
             // Reserve deposit
             await assertThrows(scenarioDepositReserve({
@@ -119,11 +115,10 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit while deposits are disabled');
 
             // Re-enable deposits
-            await rocketNodeSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(true, {from: owner});
 
         });
 
@@ -135,7 +130,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
         });
 
@@ -147,7 +141,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved multiple simultaneous deposits');
         });
 
@@ -157,7 +150,7 @@ export default function() {
             await assertThrows(scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: accounts[2],
-                gas: 500000,
+                gas: 5000000,
             }), 'Random account cancelled a deposit reservation');
         });
 
@@ -167,7 +160,7 @@ export default function() {
             await scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             });
         });
 
@@ -177,7 +170,7 @@ export default function() {
             await assertThrows(scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Cancelled a nonexistant deposit reservation');
         });
 
@@ -190,7 +183,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited without a reservation');
 
             // Reserve deposit
@@ -199,7 +191,6 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
 
         });
@@ -211,7 +202,6 @@ export default function() {
                 nodeContract,
                 value: Math.floor(maxDepositAmount / 2),
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited with insufficient ether');
         });
 
@@ -220,18 +210,17 @@ export default function() {
         it(printTitle('node operator', 'cannot deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await rocketNodeSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(false, {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited while deposits are disabled');
 
             // Re-enable deposits
-            await rocketNodeSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(true, {from: owner});
 
         });
 
@@ -256,7 +245,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
 
             // Perform user deposits to assign ether & lower RPL ratio from maximum to 0
@@ -298,13 +286,11 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
             await scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
 
         });
@@ -319,7 +305,6 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
 
             // Get required RPL amount
@@ -331,7 +316,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited without paying required RPL');
 
         });
@@ -352,7 +336,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
 
         });
