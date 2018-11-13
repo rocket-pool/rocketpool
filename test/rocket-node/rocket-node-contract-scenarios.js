@@ -1,6 +1,6 @@
 // Dependencies
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeAPI, RocketPoolToken } from '../_lib/artifacts';
+import { RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
@@ -42,6 +42,7 @@ export async function scenarioDepositReserveCancel({nodeContract, fromAddress, g
 // Perform a deposit
 export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+    const rocketPool = await RocketPool.deployed();
     const rocketPoolToken = await RocketPoolToken.deployed();
 
     // Get expected minipools created
@@ -69,12 +70,14 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
         assert.equal(depositMiniPoolETHLogs.length, expectedMiniPools, 'Required number of minipools were not deposited to successfully');
 
         // Check created minipool balances
-        let i, address, miniPool, ethRequired, ethBalance;
+        let i, address, miniPoolExists, miniPool, ethRequired, ethBalance;
         for (i = 0; i < expectedMiniPools; ++i) {
             address = depositMiniPoolETHLogs[i].args._minipool;
+            miniPoolExists = await rocketPool.getPoolExists.call(address);
             miniPool = await RocketMinipoolInterface.at(address);
             ethRequired = parseInt(await miniPool.getNodeDepositEther.call());
             ethBalance = parseInt(await web3.eth.getBalance(address));
+            assert.isTrue(miniPoolExists, 'Created minipool does not exist');
             assert.equal(ethRequired, ethBalance, 'Created minipool has invalid ether balance');
         }
 
@@ -88,12 +91,14 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
         assert.equal(depositMiniPoolRPLLogs.length, expectedMiniPools, 'Required number of minipools were not deposited to successfully');
 
         // Check created minipool balances
-        let i, address, miniPool, rplRequired, rplBalance;
+        let i, address, miniPoolExists, miniPool, rplRequired, rplBalance;
         for (i = 0; i < expectedMiniPools; ++i) {
             address = depositMiniPoolRPLLogs[i].args._minipool;
+            miniPoolExists = await rocketPool.getPoolExists.call(address);
             miniPool = await RocketMinipoolInterface.at(address);
             rplRequired = parseInt(await miniPool.getNodeDepositRPL.call());
             rplBalance = parseInt(await rocketPoolToken.balanceOf.call(address));
+            assert.isTrue(miniPoolExists, 'Created minipool does not exist');
             assert.equal(rplRequired, rplBalance, 'Created minipool has invalid RPL balance');
         }
 
