@@ -3,6 +3,7 @@ import { displayProfiling } from './_lib/utils/profiling';
 
 // Import tests
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
+import rocketAdminTests from './rocket-admin/rocket-admin-tests';
 import rocketGroupAPITests from './rocket-group/rocket-group-api-tests';
 import rocketGroupContractTests from './rocket-group/rocket-group-contract-tests';
 import rocketNodeAPITests from './rocket-node/rocket-node-api-tests';
@@ -30,6 +31,7 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
 rocketStorageTests();
+rocketAdminTests();
 rocketGroupAPITests();
 rocketGroupContractTests();
 rocketNodeAPITests();
