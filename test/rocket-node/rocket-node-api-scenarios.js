@@ -1,6 +1,6 @@
 // Dependencies
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketNodeAPI } from '../_lib/artifacts';
+import { RocketNodeAPI, RocketNodeContract } from '../_lib/artifacts';
 
 
 // Add a node
@@ -18,9 +18,14 @@ export async function scenarioAddNode({timezone, fromAddress, gas}) {
     // Get node contract address
     let nodeContractAddress = await rocketNodeAPI.getContract.call(fromAddress);
 
+    // Initialise node contract and get details
+    let nodeContract = await RocketNodeContract.at(nodeContractAddress);
+    let nodeContractOwner = await nodeContract.getOwner.call();
+
     // Asserts
     assert.equal(nodeAddEvents.length, 1, 'Node was not created successfully');
     assert.equal(nodeContractAddress, nodeAddContractAddress, 'Node contract address is incorrect');
+    assert.equal(nodeContractOwner, fromAddress, 'Node contract owner is incorrect');
 
 }
 

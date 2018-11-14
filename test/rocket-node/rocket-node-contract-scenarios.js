@@ -7,15 +7,21 @@ import { RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeAPI, RocketP
 export async function scenarioDepositReserve({nodeContract, amount, durationID, fromAddress, gas}) {
 
     // Reserve deposit
-    await nodeContract.depositReserve(amount, durationID, {from: fromAddress, gas: gas});
+    let result = await nodeContract.depositReserve(amount, durationID, {from: fromAddress, gas: gas});
+
+    // Get deposit reservation event
+    let depositReservationEvents = result.logs.filter(log => (log.event == 'NodeDepositReservation' && log.args._from.toLowerCase() == fromAddress.toLowerCase()));
+    let depositReservationEventTime = (depositReservationEvents.length == 1 ? parseInt(depositReservationEvents[0].args.created) : null);
 
     // Get deposit information
     let reservationExists = await nodeContract.getHasDepositReservation.call();
+    let reservationTime = parseInt(await nodeContract.getDepositReservedTime.call());
     let reservationAmount = parseInt(await nodeContract.getDepositReserveEtherRequired.call());
     let reservationDurationID = await nodeContract.getDepositReserveDurationID.call();
 
     // Asserts
     assert.isTrue(reservationExists, 'Reservation was not created successfully');
+    assert.equal(depositReservationEventTime, reservationTime, 'Reservation created time is incorrect');
     assert.equal(reservationAmount, amount, 'Reservation amount is incorrect');
     assert.equal(reservationDurationID, durationID, 'Reservation duration ID is incorrect');
 
