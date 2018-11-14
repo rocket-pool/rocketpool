@@ -191,8 +191,6 @@ contract RocketDepositAPI is RocketBase {
             // Done
             return true;
         }
-        // Safety
-        return false;    
     }
 
 
@@ -213,8 +211,6 @@ contract RocketDepositAPI is RocketBase {
             // Return refunded amount
             return amountRefunded;
         }
-        // Safety
-        return 0;
     }
 
 
@@ -235,8 +231,6 @@ contract RocketDepositAPI is RocketBase {
             // Return withdrawn amount
             return amountWithdrawn;
         }
-        // Safety
-        return 0;
     }
 
 
