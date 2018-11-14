@@ -19,3 +19,19 @@ export async function scenarioAddNode({timezone, fromAddress, gas}) {
 
 }
 
+
+// Set a node's timezone location
+export async function scenarioSetTimezoneLocation({timezone, fromAddress, gas}) {
+    const rocketNodeAPI = await RocketNodeAPI.deployed();
+
+    // Set timezone location
+    await rocketNodeAPI.setTimezoneLocation(timezone, {from: fromAddress, gas: gas});
+
+    // Get timezone location
+    let nodeTimezone = await rocketNodeAPI.getTimezoneLocation.call(fromAddress);
+
+    // Asserts
+    assert.equal(nodeTimezone, timezone, 'Node timezone location was not updated successfully');
+
+}
+

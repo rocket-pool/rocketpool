@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketNodeSettings } from '../_lib/artifacts';
-import { scenarioAddNode } from './rocket-node-api-scenarios';
+import { scenarioAddNode, scenarioSetTimezoneLocation } from './rocket-node-api-scenarios';
 
 export default function() {
 
@@ -95,6 +95,24 @@ export default function() {
                 gas: 500000,
             });
 
+        });
+
+
+        // Node operator can set the node's timezone location
+        it(printTitle('node operator', 'can set the node\'s timezone location'), async () => {
+            await scenarioSetTimezoneLocation({
+                timezone: 'Australia/Sydney',
+                fromAddress: operator1,
+            });
+        });
+
+
+        // Random account cannot set a node's timezone location
+        it(printTitle('random account', 'cannot set a node\'s timezone location'), async () => {
+            await assertThrows(scenarioSetTimezoneLocation({
+                timezone: 'Australia/Sydney',
+                fromAddress: accounts[9],
+            }), 'Random account set a node timezone location');
         });
 
 

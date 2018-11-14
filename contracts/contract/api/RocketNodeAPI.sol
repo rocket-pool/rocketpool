@@ -120,7 +120,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @return string The set timezone of this node
     function getTimezoneLocation(address _nodeAddress) public view returns (string) {
-        rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
+        return rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
     }
 
 
