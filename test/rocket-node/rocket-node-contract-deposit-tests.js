@@ -4,7 +4,7 @@ import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract } from '../_helpers/rocket-node';
 import { mintRpl } from '../_helpers/rocket-pool-token';
-import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
+import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioWithdrawNodeEther, scenarioWithdrawNodeRpl, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
 
 export default function() {
 
@@ -329,7 +329,11 @@ export default function() {
             assert.isTrue(rplRequired > 0, 'Pre-check failed: required RPL amount is 0');
 
             // Deposit required RPL
-            await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: rplRequired,
+                fromAddress: owner,
+            });
 
             // Deposit
             await scenarioDeposit({
@@ -337,6 +341,122 @@ export default function() {
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
             });
+
+        });
+
+
+        // Node operator can withdraw deposited ether from node contract
+        it(printTitle('node operator', 'can withdraw deposited ether from node contract'), async () => {
+
+            // Deposit ether
+            await web3.eth.sendTransaction({
+                from: operator,
+                to: nodeContract.address,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 500000,
+            });
+
+            // Withdraw ether
+            await scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: operator,
+            });
+
+        });
+
+
+        // Node operator cannot withdraw more ether from node contract than its balance
+        it(printTitle('node operator', 'cannot withdraw more ether from node contract than its balance'), async () => {
+
+            // Get node contract balance & withdrawal amount
+            let balance = parseInt(await nodeContract.getBalanceETH.call());
+            let withdrawAmount = balance + parseInt(web3.utils.toWei('1', 'ether'));
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: withdrawAmount,
+                fromAddress: operator,
+            }), 'Withdrew more ether from node contract than its balance');
+
+        });
+
+
+        // Random account cannot withdraw deposited ether from node contract
+        it(printTitle('random account', 'cannot withdraw deposited ether from node contract'), async () => {
+
+            // Deposit ether
+            await web3.eth.sendTransaction({
+                from: operator,
+                to: nodeContract.address,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 500000,
+            });
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: accounts[9],
+            }), 'Random account withdrew ether from node contract');
+
+        });
+
+
+        // Node operator can withdraw deposited RPL from node contract
+        it(printTitle('node operator', 'can withdraw deposited RPL from node contract'), async () => {
+
+            // Deposit RPL
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: web3.utils.toWei('1', 'ether'),
+                fromAddress: owner,
+            });
+
+            // Withdraw RPL
+            await scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: operator,
+            });
+
+        });
+
+
+        // Node operator cannot withdraw more RPL from node contract than its balance
+        it(printTitle('node operator', 'cannot withdraw more RPL from node contract than its balance'), async () => {
+
+            // Get node contract balance & withdrawal amount
+            let balance = parseInt(await nodeContract.getBalanceRPL.call());
+            let withdrawAmount = balance + parseInt(web3.utils.toWei('1', 'ether'));
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: withdrawAmount,
+                fromAddress: operator,
+            }), 'Withdrew more RPL from node contract than its balance');
+
+        });
+
+
+        // Random account cannot withdraw deposited RPL from node contract
+        it(printTitle('random account', 'cannot withdraw deposited RPL from node contract'), async () => {
+
+            // Deposit RPL
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: web3.utils.toWei('1', 'ether'),
+                fromAddress: owner,
+            });
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: accounts[9],
+            }), 'Random account withdrew RPL from node contract');
 
         });
 

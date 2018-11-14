@@ -161,6 +161,49 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
 }
 
 
+// Withdraw ether from a node contract
+export async function scenarioWithdrawNodeEther({nodeContract, amount, fromAddress, gas}) {
+
+    // Get initial ether balances
+    let nodeContractBalance1 = parseInt(await nodeContract.getBalanceETH.call());
+    let nodeOperatorBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Withdraw ether
+    await nodeContract.withdrawEther(amount, {from: fromAddress, gas: gas});
+
+    // Get updated ether balances
+    let nodeContractBalance2 = parseInt(await nodeContract.getBalanceETH.call());
+    let nodeOperatorBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
+
+    // Asserts
+    assert.equal(nodeContractBalance2, nodeContractBalance1 - amount, 'Node contract ether balance was not updated correctly');
+    assert.isTrue(nodeOperatorBalance2 > nodeOperatorBalance1, 'Node operator ether balance was not updated correctly');
+
+}
+
+
+// Withdraw RPL from a node contract
+export async function scenarioWithdrawNodeRpl({nodeContract, amount, fromAddress, gas}) {
+    const rocketPoolToken = await RocketPoolToken.deployed();
+
+    // Get initial RPL balances
+    let nodeContractBalance1 = parseInt(await nodeContract.getBalanceRPL.call());
+    let nodeOperatorBalance1 = parseInt(await rocketPoolToken.balanceOf.call(fromAddress));
+
+    // Withdraw RPL
+    await nodeContract.withdrawRPL(amount, {from: fromAddress, gas: gas});
+
+    // Get updated RPL balances
+    let nodeContractBalance2 = parseInt(await nodeContract.getBalanceRPL.call());
+    let nodeOperatorBalance2 = parseInt(await rocketPoolToken.balanceOf.call(fromAddress));
+
+    // Asserts
+    assert.equal(nodeContractBalance2, nodeContractBalance1 - amount, 'Node contract RPL balance was not updated correctly');
+    assert.equal(nodeOperatorBalance2, nodeOperatorBalance1 + amount, 'Node operator RPL balance was not updated correctly');
+
+}
+
+
 // Attempt a deposit via the node API
 export async function scenarioAPIDeposit({nodeOperator}) {
     const rocketNodeAPI = await RocketNodeAPI.deployed();
