@@ -205,8 +205,6 @@ contract RocketNodeContract {
             // Done
             return true;
         }
-        // Safety
-        return false;    
     }
 
 
@@ -254,8 +252,6 @@ contract RocketNodeContract {
             // Done
             return true;
         }
-        // Safety
-        return false;    
     }
 
 
