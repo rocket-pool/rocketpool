@@ -353,7 +353,7 @@ export default function() {
                 from: operator,
                 to: nodeContract.address,
                 value: web3.utils.toWei('1', 'ether'),
-                gas: 500000,
+                gas: 5000000,
             });
 
             // Withdraw ether
@@ -361,6 +361,7 @@ export default function() {
                 nodeContract,
                 amount: web3.utils.toWei('1', 'ether'),
                 fromAddress: operator,
+                gas: 5000000,
             });
 
         });
@@ -378,6 +379,7 @@ export default function() {
                 nodeContract,
                 amount: withdrawAmount,
                 fromAddress: operator,
+                gas: 5000000,
             }), 'Withdrew more ether from node contract than its balance');
 
         });
@@ -391,7 +393,7 @@ export default function() {
                 from: operator,
                 to: nodeContract.address,
                 value: web3.utils.toWei('1', 'ether'),
-                gas: 500000,
+                gas: 5000000,
             });
 
             // Attempt withdrawal
@@ -399,6 +401,7 @@ export default function() {
                 nodeContract,
                 amount: web3.utils.toWei('1', 'ether'),
                 fromAddress: accounts[9],
+                gas: 5000000,
             }), 'Random account withdrew ether from node contract');
 
         });
@@ -412,6 +415,7 @@ export default function() {
                 toAddress: nodeContract.address,
                 rplAmount: web3.utils.toWei('1', 'ether'),
                 fromAddress: owner,
+                gas: 5000000,
             });
 
             // Withdraw RPL
@@ -419,6 +423,7 @@ export default function() {
                 nodeContract,
                 amount: web3.utils.toWei('1', 'ether'),
                 fromAddress: operator,
+                gas: 5000000,
             });
 
         });
@@ -436,6 +441,7 @@ export default function() {
                 nodeContract,
                 amount: withdrawAmount,
                 fromAddress: operator,
+                gas: 5000000,
             }), 'Withdrew more RPL from node contract than its balance');
 
         });
@@ -449,6 +455,7 @@ export default function() {
                 toAddress: nodeContract.address,
                 rplAmount: web3.utils.toWei('1', 'ether'),
                 fromAddress: owner,
+                gas: 5000000,
             });
 
             // Attempt withdrawal
@@ -456,6 +463,7 @@ export default function() {
                 nodeContract,
                 amount: web3.utils.toWei('1', 'ether'),
                 fromAddress: accounts[9],
+                gas: 5000000,
             }), 'Random account withdrew RPL from node contract');
 
         });
