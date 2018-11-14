@@ -27,6 +27,7 @@ export default function() {
                 nodeAddress: nodeOperator,
                 trusted: true,
                 fromAddress: owner,
+                gas: 5000000,
             });
         });
 
@@ -37,6 +38,7 @@ export default function() {
                 nodeAddress: nodeOperator,
                 trusted: true,
                 fromAddress: owner,
+                gas: 5000000,
             }), 'Set a trusted node to its current status');
         });
 
@@ -47,6 +49,7 @@ export default function() {
                 nodeAddress: nodeOperator,
                 trusted: false,
                 fromAddress: owner,
+                gas: 5000000,
             });
         });
 
@@ -57,6 +60,7 @@ export default function() {
                 nodeAddress: nodeOperator,
                 trusted: false,
                 fromAddress: owner,
+                gas: 5000000,
             }), 'Set an untrusted node to its current status');
         });
 
@@ -67,6 +71,7 @@ export default function() {
                 nodeAddress: nodeOperator,
                 trusted: true,
                 fromAddress: accounts[9],
+                gas: 5000000,
             }), 'Random account set a node\'s trusted status');
         });
 
