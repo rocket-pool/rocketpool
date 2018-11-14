@@ -11,11 +11,16 @@ export async function scenarioAddNode({timezone, fromAddress, gas}) {
     let result = await rocketNodeAPI.add(timezone, {from: fromAddress, gas: gas});
     profileGasUsage('RocketNodeAPI.add', result);
 
+    // Get NodeAdd event
+    let nodeAddEvents = result.logs.filter(log => (log.event == 'NodeAdd' && log.args.ID.toLowerCase() == fromAddress.toLowerCase()));
+    let nodeAddContractAddress = (nodeAddEvents.length == 1 ? nodeAddEvents[0].args.contractAddress : null);
+
+    // Get node contract address
+    let nodeContractAddress = await rocketNodeAPI.getContract.call(fromAddress);
+
     // Asserts
-    assert.equal(
-        result.logs.filter(log => (log.event == 'NodeAdd' && log.args.ID.toLowerCase() == fromAddress.toLowerCase())).length, 1,
-        'Node was not created successfully'
-    );
+    assert.equal(nodeAddEvents.length, 1, 'Node was not created successfully');
+    assert.equal(nodeContractAddress, nodeAddContractAddress, 'Node contract address is incorrect');
 
 }
 

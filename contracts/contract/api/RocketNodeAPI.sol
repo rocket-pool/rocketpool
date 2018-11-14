@@ -113,7 +113,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the contract address where the nodes ether/rpl deposits will reside
     /// @return address The address of the contract
     function getContract(address _nodeOwner) public view returns (address) {
-        rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
+        return rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
     }
 
 
