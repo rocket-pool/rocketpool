@@ -46,24 +46,10 @@ contract RocketNodeFactory is RocketBase {
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Can we create one?
         require(rocketNodeSettings.getNewAllowed() == true, "New node contract creation is currently disabled.");
-        // Store it now after a few checks
-        if (addContract(keccak256(abi.encodePacked("rocketNodeContract")), newContractAddress)) {
-            return newContractAddress;
-        }
-    } 
-
-    /// @dev Add the contract to our list of contract created contracts
-    /// @param _newName The type/name of this contract
-    /// @param _newContractAddress The address of this contract
-    function addContract(bytes32 _newName, address _newContractAddress) private returns(bool) {
-         // Basic error checking for the storage
-        if (_newContractAddress != 0) {
-            // Add the event now
-            emit ContractCreated(_newName, _newContractAddress);
-            // All good
-            return true;
-        }
-        return false;
-    } 
+        // Emit created event
+        emit ContractCreated(keccak256(abi.encodePacked("rocketNodeContract")), newContractAddress);
+        // Return contract address
+        return newContractAddress;
+    }
 
 }
