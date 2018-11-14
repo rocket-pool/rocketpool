@@ -22,22 +22,45 @@ async function getTaskAddresses() {
 }
 
 
-// Add a node task
-export async function scenarioAddNodeTask({taskAddress, fromAddress, gas}) {
+// Retrieve task name list from storage
+async function getTaskNames() {
     const rocketNodeTasks = await RocketNodeTasks.deployed();
 
-    // Get initial task address list
+    // Get list count
+    let count = await rocketNodeTasks.getTaskCount.call();
+
+    // Get names
+    let names = [], name, index;
+    for (index = 0; index < count; ++index) {
+        name = await rocketNodeTasks.getTaskNameAt.call(index);
+        names.push(name);
+    }
+
+    // Return names
+    return names;
+
+}
+
+
+// Add a node task
+export async function scenarioAddNodeTask({taskAddress, taskName, fromAddress, gas}) {
+    const rocketNodeTasks = await RocketNodeTasks.deployed();
+
+    // Get initial task address & name list
     let taskAddresses1 = await getTaskAddresses();
+    let taskNames1 = await getTaskNames();
 
     // Add task
     await rocketNodeTasks.add(taskAddress, {from: fromAddress, gas: gas});
 
-    // Get updated task address list
+    // Get updated task address & name list
     let taskAddresses2 = await getTaskAddresses();
+    let taskNames2 = await getTaskNames();
 
     // Asserts
     assert.equal(taskAddresses2.length, taskAddresses1.length + 1, 'Task list count was not updated correctly');
     assert.notEqual(taskAddresses2.indexOf(taskAddress), -1, 'Task was not added correctly');
+    assert.equal(taskAddresses2.indexOf(taskAddress), taskNames2.indexOf(taskName), 'Added task name is incorrect');
     taskAddresses1.forEach((address) => {
         assert.notEqual(taskAddresses2.indexOf(address), -1, 'Task was removed which should not have been');
     });
