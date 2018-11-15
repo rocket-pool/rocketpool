@@ -337,27 +337,6 @@ contract RocketMinipool {
     }
 
 
-    /// @dev Register a new user in the minipool
-    /// @param _user New user address
-    /// @param _groupID The 3rd party group address the user belongs too
-    function addUser(address _user, address _groupID) private returns(bool) {
-        // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("addUser(address,address)"), _user, _groupID), "Delegate call failed.");
-        // Success
-        return true;
-    }
-
-
-    /// @dev Remove a user from the minipool
-    /// @param _user User address
-    function removeUser(address _user) private returns(bool) {
-        // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("removeUser(address)"), _user), "Delegate call failed.");
-        // Success
-        return true;
-    }
-
-
 
     /*** MINIPOOL  ******************************************/
 
@@ -387,16 +366,6 @@ contract RocketMinipool {
     /// @dev Returns the current staking duration in blocks
     function getStakingDuration() public view returns(uint256) {
         return staking.duration;
-    }
-
-
-    // Setters
-
-    /// @dev Change the status
-    /// @param _newStatus status id to apply to the minipool
-    function setStatus(uint8 _newStatus) private {
-        // Will throw if conditions are not met in delegate or call fails
-        require(getContractAddress("rocketMinipoolDelegate").delegatecall(getDelegateSignature("setStatus(uint8)"), _newStatus), "Delegate call failed.");
     }
     
     
