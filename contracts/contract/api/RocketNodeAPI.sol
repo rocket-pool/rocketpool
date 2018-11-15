@@ -174,7 +174,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Checks if the deposit parameters are correct for a successful ether deposit
     /// @param _nodeOwner  The address of the nodes owner
-    function getDepositIsValid(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) returns(bool) { 
+    function checkDepositIsValid(address _nodeOwner) private onlyValidNodeOwner(_nodeOwner) {
         // Get the RPL contract 
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
         // Get the node contract
@@ -189,8 +189,6 @@ contract RocketNodeAPI is RocketBase {
         require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
         // Does the node contract have sufficient RPL allowance to cover the reserved deposit?
         require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
-        // All good
-        return true;
     }
 
 
@@ -216,8 +214,6 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
         // Get the list utility
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        // Initial address check
-        require(address(msg.sender) != address(0x0), "An error has occurred with the sending address.");
         // Check the timezone location exists
         require(bytes(_timezoneLocation).length >= 4, "Node timezone supplied is invalid.");
         // Check registrations are allowed
@@ -250,31 +246,30 @@ contract RocketNodeAPI is RocketBase {
     /// @param _nodeOwner  The address of the nodes owner
     function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address[]) { 
         // Check the deposit is ready to go first
-        if(getDepositIsValid(_nodeOwner)) {
-            // Get the minipool settings contract
-            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-            // Get the node contract
-            rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
-            // Get Rocket Pool contract
-            rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-            // Get the deposit duration in blocks by using its ID
-            string memory durationID = rocketNodeContract.getDepositReserveDurationID();
-            // Ether deposited
-            uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
-            // RPL deposited
-            uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
-            // How many minipools are we making? each should have half the casper amount from the node
-            uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
-            // Store our minipool addresses
-            address[] memory minipools = new address[](minipoolAmount);
-            // Create minipools
-            for(uint8 i = 0; i < minipoolAmount; i++) {
-                // Build that bad boy 
-                minipools[i] = rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
-            }
-             // Return the minipool addresses
-            return minipools;
+        checkDepositIsValid(_nodeOwner);
+        // Get the minipool settings contract
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get the node contract
+        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
+        // Get Rocket Pool contract
+        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        // Get the deposit duration in blocks by using its ID
+        string memory durationID = rocketNodeContract.getDepositReserveDurationID();
+        // Ether deposited
+        uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
+        // RPL deposited
+        uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
+        // How many minipools are we making? each should have half the casper amount from the node
+        uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
+        // Store our minipool addresses
+        address[] memory minipools = new address[](minipoolAmount);
+        // Create minipools
+        for(uint8 i = 0; i < minipoolAmount; i++) {
+            // Build that bad boy 
+            minipools[i] = rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
         }
+        // Return the minipool addresses
+        return minipools;
     }
 
     /*
