@@ -9,6 +9,7 @@ export const RocketGroupAPI = artifacts.require('./contract/RocketGroupAPI');
 export const RocketGroupAccessorContract = artifacts.require('./contract/RocketGroupAccessorContract');
 export const RocketGroupContract = artifacts.require('./contract/RocketGroupContract');
 export const RocketGroupSettings = artifacts.require('./contract/RocketGroupSettings');
+export const RocketMinipool = artifacts.require('./contract/RocketMinipool');
 export const RocketMinipoolInterface = artifacts.require('./contract/RocketMinipoolInterface');
 export const RocketMinipoolSettings = artifacts.require('./contract/RocketMinipoolSettings');
 export const RocketNodeAPI = artifacts.require('./contract/RocketNodeAPI');
