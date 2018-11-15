@@ -1,4 +1,5 @@
 // Dependencies
+import { getTransactionContractEvents } from '../_lib/utils/general';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketPoolToken } from '../_lib/artifacts';
 
@@ -64,53 +65,46 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     let result = await nodeContract.deposit({from: fromAddress, gas: gas, value: value});
     profileGasUsage('RocketNodeContract.deposit', result);
 
-    // Logs
-    let depositMiniPoolETHLogs;
-    let depositMiniPoolRPLLogs;
+    // Get minipool created events
+    let minipoolCreatedEvents = getTransactionContractEvents(result, rocketPool.address, 'PoolCreated', [
+        {type: 'address', name: '_address', indexed: true},
+        {type: 'string',  name: '_durationID', indexed: true},
+        {type: 'uint256', name: 'created'},
+    ]);
 
-    // Check minipool ether deposits
-    if (nodeDepositEtherRequired > 0) {
+    // Check minipool created events
+    assert.equal(minipoolCreatedEvents.length, expectedMiniPools, 'Expected number of minipools was not created');
 
-        // Check deposit events
-        depositMiniPoolETHLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'ETH'));
-        assert.equal(depositMiniPoolETHLogs.length, expectedMiniPools, 'Required number of minipools were not deposited to successfully');
+    // Check minipools
+    for (let i = 0; i < minipoolCreatedEvents.length; ++i) {
 
-        // Check created minipool balances
-        let i, address, miniPoolExists, miniPool, ethRequired, ethBalance;
-        for (i = 0; i < expectedMiniPools; ++i) {
-            address = depositMiniPoolETHLogs[i].args._minipool;
-            miniPoolExists = await rocketPool.getPoolExists.call(address);
-            miniPool = await RocketMinipoolInterface.at(address);
-            ethRequired = parseInt(await miniPool.getNodeDepositEther.call());
-            ethBalance = parseInt(await web3.eth.getBalance(address));
-            assert.isTrue(miniPoolExists, 'Created minipool does not exist');
-            assert.equal(ethRequired, ethBalance, 'Created minipool has invalid ether balance');
-        }
+        // Get minipool
+        let minipoolAddress = minipoolCreatedEvents[i]._address;
+        let minipool = await RocketMinipoolInterface.at(minipoolAddress);
 
-    }
+        // Get minipool details
+        let miniPoolExists = await rocketPool.getPoolExists.call(minipoolAddress);
+        let ethRequired = parseInt(await minipool.getNodeDepositEther.call());
+        let rplRequired = parseInt(await minipool.getNodeDepositRPL.call());
 
-    // Check minipool RPL deposits
-    if (nodeDepositRPlRequired > 0) {
+        // Get minipool balances
+        let ethBalance = parseInt(await web3.eth.getBalance(minipoolAddress));
+        let rplBalance = parseInt(await rocketPoolToken.balanceOf.call(minipoolAddress));
 
-        // Check deposit events
-        depositMiniPoolRPLLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'RPL'));
-        assert.equal(depositMiniPoolRPLLogs.length, expectedMiniPools, 'Required number of minipools were not deposited to successfully');
-
-        // Check created minipool balances
-        let i, address, miniPoolExists, miniPool, rplRequired, rplBalance;
-        for (i = 0; i < expectedMiniPools; ++i) {
-            address = depositMiniPoolRPLLogs[i].args._minipool;
-            miniPoolExists = await rocketPool.getPoolExists.call(address);
-            miniPool = await RocketMinipoolInterface.at(address);
-            rplRequired = parseInt(await miniPool.getNodeDepositRPL.call());
-            rplBalance = parseInt(await rocketPoolToken.balanceOf.call(address));
-            assert.isTrue(miniPoolExists, 'Created minipool does not exist');
-            assert.equal(rplRequired, rplBalance, 'Created minipool has invalid RPL balance');
-        }
+        // Asserts
+        assert.isTrue(miniPoolExists, 'Created minipool does not exist');
+        assert.equal(ethRequired, ethBalance, 'Created minipool has invalid ether balance');
+        assert.equal(rplRequired, rplBalance, 'Created minipool has invalid RPL balance');
 
     }
 
-    // Check minipool ether & RPL deposits
+    // Get minipool deposit events
+    let depositMiniPoolETHLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'ETH'));
+    let depositMiniPoolRPLLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'RPL'));
+
+    // Check minipool deposit events
+    assert.equal(depositMiniPoolETHLogs.length, (nodeDepositEtherRequired > 0 ? expectedMiniPools : 0), 'ether was not deposited to required number of minipools successfully');
+    assert.equal(depositMiniPoolRPLLogs.length, (nodeDepositRPlRequired > 0 ? expectedMiniPools : 0), 'RPL was not deposited to required number of minipools successfully');
     if (nodeDepositEtherRequired > 0 && nodeDepositRPlRequired > 0) {
         depositMiniPoolRPLLogs.forEach((log, index) => {
             assert.equal(depositMiniPoolRPLLogs[index].args._minipool, depositMiniPoolETHLogs[index].args._minipool, 'Deposited minipool addresses do not match');
