@@ -5,7 +5,7 @@ pragma solidity 0.4.24;
 contract RocketNodeAPIInterface {
     // Getters
     function getContract(address _nodeAddress) public view returns (address);
-    function getDepositReservationIsValid(address _from, uint256 _value, string _durationID, uint256 _lastDepositReservedTime) public returns(bool);
+    function checkDepositReservationIsValid(address _from, uint256 _value, string _durationID, uint256 _lastDepositReservedTime) public;
     function getRPLRatio(string _durationID) public returns(uint256);
     function getRPLRequired(uint256 _weiAmount, string _durationID) public view returns(uint256);
     // Methods

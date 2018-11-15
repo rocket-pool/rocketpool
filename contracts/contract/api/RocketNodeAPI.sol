@@ -156,7 +156,7 @@ contract RocketNodeAPI is RocketBase {
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function getDepositReservationIsValid(address _nodeOwner, uint256 _value, string _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) returns(bool) { 
+    function checkDepositReservationIsValid(address _nodeOwner, uint256 _value, string _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
@@ -167,8 +167,6 @@ contract RocketNodeAPI is RocketBase {
         require(_value.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2))) <= rocketMinipoolSettings.getMinipoolNewMaxAtOnce(), "Ether deposit exceeds the amount of minipools it can create at once, please reduce deposit size.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
-        // All ok
-        return true;
     }
 
 
