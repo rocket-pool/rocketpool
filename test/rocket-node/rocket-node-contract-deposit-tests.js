@@ -21,6 +21,7 @@ export default function() {
         // Setup
         let rocketNodeAPI;
         let rocketNodeSettings;
+        let rocketMinipoolSettings;
         let rocketPool;
         let nodeContract;
         let groupContract;
@@ -33,6 +34,7 @@ export default function() {
             // Initialise contracts
             rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             rocketPool = await RocketPool.deployed();
 
             // Create node contract
@@ -46,7 +48,6 @@ export default function() {
             await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
             // Get minipool launch & min deposit amounts
-            let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
             let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
             minDepositAmount = Math.floor(miniPoolLaunchAmount / 2);
@@ -221,6 +222,25 @@ export default function() {
 
             // Re-enable deposits
             await rocketNodeSettings.setDepositAllowed(true, {from: owner});
+
+        });
+
+
+        // Node operator cannot deposit while minipool creation is disabled
+        it(printTitle('node operator', 'cannot deposit while minipool creation is disabled'), async () => {
+
+            // Disable deposits
+            await rocketMinipoolSettings.setMinipoolNewEnabled(false, {from: owner});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: maxDepositAmount,
+                fromAddress: operator,
+            }), 'Deposited while minipool creation was disabled');
+
+            // Re-enable deposits
+            await rocketMinipoolSettings.setMinipoolNewEnabled(true, {from: owner});
 
         });
 
