@@ -188,7 +188,7 @@ contract RocketNodeContract {
        // Returns the amount of RPL required for a single ether
        uint256 rplRatio = rocketNodeAPI.getRPLRatio(_durationID); 
        // Verify the deposit is acceptable 
-       if(rocketNodeAPI.getDepositReservationIsValid(msg.sender, _amount, _durationID, rplRatio, depositReservation.created)) {  
+       if(rocketNodeAPI.getDepositReservationIsValid(msg.sender, _amount, _durationID, depositReservation.created)) {  
             // How much RPL do we need for this deposit?
             uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
             // Record the reservation now
