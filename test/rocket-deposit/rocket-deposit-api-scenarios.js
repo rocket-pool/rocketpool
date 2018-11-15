@@ -238,6 +238,12 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
 }
 
 
+// Attempt a deposit via the depositor contract rocketpoolEtherDeposit method
+export async function scenarioRocketpoolEtherDeposit({depositorContract, fromAddress, value, gas}) {
+    await depositorContract.rocketpoolEtherDeposit({from: fromAddress, value: value, gas: gas});
+}
+
+
 // Attempt a deposit via the deposit API
 export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddress, value, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();

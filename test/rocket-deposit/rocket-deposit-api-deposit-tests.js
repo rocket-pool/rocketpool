@@ -3,7 +3,7 @@ import { DummyBeaconChain } from '../_lib/utils/beacon';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
@@ -282,6 +282,16 @@ export default function() {
             // Reset minimum deposit
             await rocketDepositSettings.setDepositMin(web3.utils.toWei('0.5', 'ether'), {from: owner});
 
+        });
+
+
+        // Staker cannot deposit via rocketpoolEtherDeposit method
+        it(printTitle('staker', 'cannot deposit via rocketpoolEtherDeposit method'), async () => {
+            await assertThrows(scenarioRocketpoolEtherDeposit({
+                depositorContract: groupAccessorContract,
+                fromAddress: user1,
+                value: web3.utils.toWei('1', 'ether'),
+            }), 'Deposited via rocketpoolEtherDeposit method');
         });
 
 
