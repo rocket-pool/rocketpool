@@ -3,8 +3,6 @@ pragma solidity 0.4.24;
 // Contracts
 import "../../RocketBase.sol";
 import "./RocketNodeContract.sol";
-// Interfaces
-import "../../interface/settings/RocketNodeSettingsInterface.sol";
 
 /***
    * Note: Since this contract handles contract creation by other contracts, it's deployment gas usage will be high depending on the amount of contracts it can create.
@@ -14,10 +12,6 @@ import "../../interface/settings/RocketNodeSettingsInterface.sol";
 /// @author David Rugendyke
 
 contract RocketNodeFactory is RocketBase {
-
-    /*** Contracts *************/
-
-    RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);            // Settings for the minipools 
 
     
     /*** Events *************/
@@ -42,10 +36,6 @@ contract RocketNodeFactory is RocketBase {
     function createRocketNodeContract(address _nodeOwnerAddress) public onlyLatestContract("rocketNodeAPI", msg.sender) returns(address) {
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside
         RocketNodeContract newContractAddress = new RocketNodeContract(address(rocketStorage), _nodeOwnerAddress);
-        // Do some initial checks
-        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        // Can we create one?
-        require(rocketNodeSettings.getNewAllowed() == true, "New node contract creation is currently disabled.");
         // Emit created event
         emit ContractCreated(keccak256(abi.encodePacked("rocketNodeContract")), newContractAddress);
         // Return contract address
