@@ -65,6 +65,17 @@ export default function() {
         });
 
 
+        // Owner cannot set the trusted status of a nonexistant node
+        it(printTitle('owner', 'cannot set the trusted status of a nonexistant node'), async () => {
+            await assertThrows(scenarioSetNodeTrusted({
+                nodeAddress: accounts[9],
+                trusted: true,
+                fromAddress: owner,
+                gas: 5000000,
+            }), 'Set the trusted status of a nonexistant node');
+        });
+
+
         // Random account cannot set a node's trusted status
         it(printTitle('random account', 'cannot set a node\'s trusted status'), async () => {
             await assertThrows(scenarioSetNodeTrusted({
