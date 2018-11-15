@@ -22,3 +22,13 @@ export async function scenarioCreateMinipool({nodeOwner, durationID, etherAmount
 
 }
 
+
+// Remove minipool directly
+export async function scenarioRemoveMinipool({fromAddress, gas}) {
+    const rocketPool = await RocketPool.deployed();
+
+    // Remove minipool
+    await rocketPool.minipoolRemove({from: fromAddress, gas: gas});
+
+}
+

@@ -60,7 +60,7 @@ contract RocketPool is RocketBase {
     /// @dev Only registered minipool addresses can access
     /// @param _minipoolAddress pool account address.
     modifier onlyMinipool(address _minipoolAddress) {
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))));
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Caller must be a valid minipool");
         _;
     }
 

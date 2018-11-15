@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { scenarioGetContractAddress, scenarioCreateMinipool } from './rocket-pool-scenarios';
+import { scenarioGetContractAddress, scenarioCreateMinipool, scenarioRemoveMinipool } from './rocket-pool-scenarios';
 
 export default function() {
 
@@ -27,6 +27,14 @@ export default function() {
                 isTrusted: false,
                 fromAddress: owner,
             }), 'Created a minipool directly');
+        });
+
+
+        // Cannot remove a minipool directly
+        it(printTitle('-----', 'cannot remove a minipool directly'), async () => {
+            await assertThrows(scenarioRemoveMinipool({
+                fromAddress: owner,
+            }), 'Removed a minipool directly');
         });
 
 
