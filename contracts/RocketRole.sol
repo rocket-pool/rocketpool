@@ -26,14 +26,6 @@ contract RocketRole is RocketBase {
     );
 
 
-    /*** Modifiers ************/
-
-    /// @dev Only allow access from the latest version of the RocketRole contract
-    modifier onlyLatestRocketRole() {
-        require(address(this) == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketRole"))), "Incorrect or outdated contract access");
-        _;
-    }
-  
     /*** Constructor **********/
    
     /// @dev constructor
@@ -46,7 +38,7 @@ contract RocketRole is RocketBase {
     * @dev Allows the current owner to transfer control of the contract to a newOwner.
     * @param _newOwner The address to transfer ownership to.
     */
-    function transferOwnership(address _newOwner) public onlyLatestRocketRole onlyOwner {
+    function transferOwnership(address _newOwner) public onlyLatestContract("rocketRole", address(this)) onlyOwner {
         // Legit address?
         require(_newOwner != 0x0, "The new owner address is invalid");
         require(_newOwner != msg.sender, "The new owner address must not be the existing owner address");
@@ -63,14 +55,14 @@ contract RocketRole is RocketBase {
    /**
    * @dev Give an address access to this role
    */
-    function adminRoleAdd(string _role, address _address) onlyLatestRocketRole onlySuperUser public {
+    function adminRoleAdd(string _role, address _address) onlyLatestContract("rocketRole", address(this)) onlySuperUser public {
         roleAdd(_role, _address);
     }
 
     /**
    * @dev Remove an address access to this role
    */
-    function adminRoleRemove(string _role, address _address) onlyLatestRocketRole onlySuperUser public {
+    function adminRoleRemove(string _role, address _address) onlyLatestContract("rocketRole", address(this)) onlySuperUser public {
         roleRemove(_role, _address);
     }
 
