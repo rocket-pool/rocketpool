@@ -191,6 +191,7 @@ contract RocketMinipool {
     }
 
 
+    /*
     /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
     function getDelegateBoolean(string _signatureMethod) public returns (bool) {
         bytes4 signature = getDelegateSignature(_signatureMethod);
@@ -205,6 +206,7 @@ contract RocketMinipool {
         }
         return response; 
     }
+    */
    
     
 
