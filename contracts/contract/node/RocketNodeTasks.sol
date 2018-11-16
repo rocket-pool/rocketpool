@@ -23,7 +23,7 @@ contract RocketNodeTasks is RocketBase {
 
     /// @dev requires that the _node address is a valid node in the Rocket Pool network
     modifier onlyValidRocketNode(address _node) {
-        // TODO: implement
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _node))), "Caller must be a valid node owner");
         _;
     }
 
