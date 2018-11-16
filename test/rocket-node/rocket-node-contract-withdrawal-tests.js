@@ -101,6 +101,25 @@ export default function() {
                 gas: 5000000,
             });
 
+            // Create single minipool
+            let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
+            minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 0, 'Pre-check failed: minipool is not at Initialised status');
+
+            // Send RPL to minipool contract
+            await mintRpl({toAddress: minipoolAddress, rplAmount: web3.utils.toWei('1', 'ether'), fromAddress: owner});
+
+            // Withdraw node deposit (with minipool RPL balance) (destroys minipool)
+            await scenarioWithdrawMinipoolDeposit({
+                nodeContract,
+                minipoolAddress: minipool.address,
+                fromAddress: operator,
+                gas: 5000000,
+            });
+
         });
 
 
