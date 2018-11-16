@@ -46,6 +46,8 @@ contract RocketRole is RocketBase {
         rocketStorage.deleteBool(keccak256(abi.encodePacked("access.role", "owner", msg.sender)));
         // Add new owner
         rocketStorage.setBool(keccak256(abi.encodePacked("access.role",  "owner", _newOwner)), true);
+        // Log it
+        emit OwnershipTransferred(msg.sender, _newOwner);
     }
 
 
