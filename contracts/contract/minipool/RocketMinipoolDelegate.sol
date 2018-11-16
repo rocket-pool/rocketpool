@@ -405,10 +405,8 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
-        // Check to see if we can close the pool
-        if (closePool()) {
-            return true;
-        }
+        // Check to see if we can close the pool - stops execution if closed
+        closePool();
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
@@ -453,7 +451,7 @@ contract RocketMinipoolDelegate {
 
 
     /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
-    function closePool() private returns(bool) {
+    function closePool() private {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Remove the minipool if possible
@@ -466,8 +464,6 @@ contract RocketMinipoolDelegate {
             // Close now and send any unclaimed ether back to the node contract
             selfdestruct(node.contractAddress);
         }
-        // Nope
-        return false;
     }
 
 
