@@ -185,12 +185,10 @@ contract RocketNodeContract {
     function depositReserve(uint256 _amount, string _durationID) public returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
-        // Returns the amount of RPL required for a single ether
-        uint256 rplRatio = rocketNodeAPI.getRPLRatio(_durationID); 
         // Verify the deposit is acceptable
         rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _amount, _durationID, depositReservation.created);
-        // How much RPL do we need for this deposit?
-        uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
+        // Get the RPL amount and ratio for the deposit
+        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(_amount, _durationID);
         // Record the reservation now
         depositReservation = DepositReservation({
             durationID: _durationID,

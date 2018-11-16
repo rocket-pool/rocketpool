@@ -141,13 +141,12 @@ contract RocketNodeAPI is RocketBase {
     }
 
 
-    /// @dev Returns the amount of RPL required to make an ether deposit based on the current network utilisation
+    /// @dev Returns the amount of RPL required, and the RPL ratio, to make an ether deposit based on the current network utilisation
     /// @param _weiAmount The amount of ether the node wishes to deposit
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRequired(uint256 _weiAmount, string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
-        
-        // TODO: Add in actual calculations using the quintic formula ratio - returns a 1:1 atm
-        return _weiAmount; 
+    function getRPLRequired(uint256 _weiAmount, string _durationID) public returns(uint256, uint256) {
+        uint256 rplRatio = getRPLRatio(_durationID);
+        return (_weiAmount.mul(rplRatio).div(1 ether), rplRatio);
     }
 
 
