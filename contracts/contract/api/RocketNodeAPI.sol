@@ -181,8 +181,6 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
-        // Check that they have a reserved deposit - will revert if one doesn't exist, double check tho
-        require(rocketNodeContract.getHasDepositReservation() == true, "Node does not have a current deposit reserved or it has been longer than 24hrs since it was created.");
         // Does the node contract have sufficient ether to cover the reserved deposit?
         require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
         // Does the node contract have sufficient RPL allowance to cover the reserved deposit?

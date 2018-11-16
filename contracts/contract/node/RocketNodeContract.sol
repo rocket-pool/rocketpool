@@ -143,11 +143,6 @@ contract RocketNodeContract {
         return rplContract.balanceOf(address(this));
     }
 
-    /// @dev Returns true if there is a current deposit reservation
-    function getHasDepositReservation() public hasDepositReserved() returns(bool) { 
-        return true;
-    }
-
     /// @dev Returns the time of the deposit reservation
     function getDepositReservedTime() public hasDepositReserved() returns(uint256) { 
         return depositReservation.created;
