@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositSettings, RocketMinipoolInterface, RocketNodeSettings } from '../_lib/artifacts';
+import { RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
@@ -22,6 +22,7 @@ export default function() {
 
         // Setup
         let rocketDepositSettings;
+        let rocketMinipoolSettings;
         let rocketNodeSettings;
         let nodeContract;
         let nodeContractOther;
@@ -32,6 +33,7 @@ export default function() {
 
             // Get contracts
             rocketDepositSettings = await RocketDepositSettings.deployed();
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
 
             // Create node contracts
@@ -101,6 +103,12 @@ export default function() {
                 gas: 5000000,
             });
 
+        });
+
+
+        // Node operator can withdraw from an initialised minipool with an RPL balance
+        it(printTitle('node operator', 'can withdraw from an initialised minipool with an RPL balance'), async () => {
+
             // Create single minipool
             let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
             minipool = await RocketMinipoolInterface.at(minipoolAddress);
@@ -112,13 +120,44 @@ export default function() {
             // Send RPL to minipool contract
             await mintRpl({toAddress: minipoolAddress, rplAmount: web3.utils.toWei('1', 'ether'), fromAddress: owner});
 
-            // Withdraw node deposit (with minipool RPL balance) (destroys minipool)
+            // Withdraw node deposit - with minipool RPL balance (destroys minipool)
             await scenarioWithdrawMinipoolDeposit({
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
                 gas: 5000000,
             });
+
+        });
+
+
+        // Node operator can withdraw from an initialised minipool while minipool closure is disabled
+        it(printTitle('node operator', 'can withdraw from an initialised minipool while minipool closure is disabled'), async () => {
+
+            // Create single minipool
+            let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
+            minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 0, 'Pre-check failed: minipool is not at Initialised status');
+
+            // Disable minipool closure
+            await rocketMinipoolSettings.setMinipoolClosingEnabled(false, {from: owner, gas: 500000});
+
+            // Withdraw node deposit - with minipool closure disabled (does not destroy minipool)
+            await scenarioWithdrawMinipoolDeposit({
+                nodeContract,
+                minipoolAddress: minipool.address,
+                fromAddress: operator,
+                gas: 5000000,
+            });
+
+            // Re-enable minipool closure
+            await rocketMinipoolSettings.setMinipoolClosingEnabled(true, {from: owner, gas: 500000});
+
+            // Destroy minipool
+            await minipool.updateStatus({from: owner});
 
         });
 
