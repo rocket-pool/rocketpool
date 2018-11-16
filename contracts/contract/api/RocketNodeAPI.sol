@@ -183,8 +183,6 @@ contract RocketNodeAPI is RocketBase {
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Does the node contract have sufficient ether to cover the reserved deposit?
         require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
-        // Does the node contract have sufficient RPL allowance to cover the reserved deposit?
-        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved ether deposit.");
     }
 
 
