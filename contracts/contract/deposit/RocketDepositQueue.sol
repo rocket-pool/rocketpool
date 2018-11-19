@@ -7,6 +7,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
@@ -32,6 +33,7 @@ contract RocketDepositQueue is RocketBase {
     RocketPoolInterface rocketPool = RocketPoolInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
@@ -196,13 +198,12 @@ contract RocketDepositQueue is RocketBase {
     function assignChunk(string _durationID) private {
 
         // Get contracts
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
-        // Get random available minipool to assign chunk to
-        address miniPoolAddress = rocketPool.getRandomAvailableMinipool(_durationID, msg.value);
+        // Get next minipool in the active set to assign chunk to
+        address miniPoolAddress = getNextActiveMinipool(_durationID, msg.value);
         require(miniPoolAddress != 0x0, "Invalid available minipool");
 
         // Remaining ether amount to match
@@ -222,9 +223,76 @@ contract RocketDepositQueue is RocketBase {
         // Double-check required ether amount has been matched
         require(amountToMatch == 0, "Required ether amount was not matched");
 
+        // Remove minipool from active set if no longer assignable
+        RocketMinipoolInterface miniPool = RocketMinipoolInterface(miniPoolAddress);
+        if (miniPool.getStatus() > 1) { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), miniPoolAddress); }
+
         // Update queue balance
         bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
         rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).sub(chunkSize));
+
+    }
+
+
+    // Get next minipool in the active set
+    function getNextActiveMinipool(string _durationID, uint256 _seed) private returns (address) {
+
+        // Get contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+
+        // Get active minipool count
+        uint256 activeMinipoolCount = addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.active", _durationID)));
+
+        // Build active minipool set if empty
+        if (activeMinipoolCount == 0) {
+
+            // Get settings
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            uint256 activeSetSize = rocketMinipoolSettings.getMinipoolActiveSetSize();
+
+            // Get node counts
+            uint256 untrustedNodeCount = addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", false, _durationID)));
+            uint256 trustedNodeCount = addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", true, _durationID)));
+
+            // Get active set node counts
+            uint256 untrustedNodeSetCount = untrustedNodeCount;
+            uint256 trustedNodeSetCount = trustedNodeCount;
+            if (untrustedNodeSetCount > activeSetSize) untrustedNodeSetCount = activeSetSize;
+            if (trustedNodeSetCount > activeSetSize.sub(untrustedNodeSetCount)) trustedNodeSetCount = activeSetSize.sub(untrustedNodeSetCount);
+
+            // Add random node minipools to active set
+            for (uint256 i = 0; i < untrustedNodeSetCount; ++i) { addRandomNodeMinipool(_durationID, _seed, false, untrustedNodeCount, i); }
+            for (uint256 j = 0; j < trustedNodeSetCount; ++j) { addRandomNodeMinipool(_durationID, _seed, true, trustedNodeCount, j); }
+
+            // Get new active minipool count
+            activeMinipoolCount = untrustedNodeSetCount + trustedNodeSetCount;
+
+        }
+
+        // Get & increment active minipool offset
+        uint256 offset = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)), (offset + 1) % activeMinipoolCount);
+
+        // Return active minipool
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.active", _durationID)), offset);
+
+    }
+
+
+    // Add random node minipool to active set
+    function addRandomNodeMinipool(string _durationID, uint256 _seed, bool _trusted, uint256 _nodeCount, uint256 _offset) private {
+
+        // Get contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+
+        // Get random node
+        uint256 nodeIndex = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _seed))).add(_offset) % _nodeCount;
+        address nodeAddress = addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)), nodeIndex);
+
+        // Get first minipool and add to active set
+        // :TODO: remove timed out minipools from active set
+        address miniPoolAddress = addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, _trusted, _durationID)), 0);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.active", _durationID)), miniPoolAddress);
 
     }
 
