@@ -4,7 +4,7 @@ import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract } from '../_helpers/rocket-node';
 import { mintRpl } from '../_helpers/rocket-pool-token';
-import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
+import { scenarioDepositReserve, scenarioDepositReserveCancel, scenarioDeposit, scenarioWithdrawNodeEther, scenarioWithdrawNodeRpl, scenarioAPIDeposit } from './rocket-node-contract-scenarios';
 
 export default function() {
 
@@ -21,6 +21,7 @@ export default function() {
         // Setup
         let rocketNodeAPI;
         let rocketNodeSettings;
+        let rocketMinipoolSettings;
         let rocketPool;
         let nodeContract;
         let groupContract;
@@ -33,6 +34,7 @@ export default function() {
             // Initialise contracts
             rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             rocketPool = await RocketPool.deployed();
 
             // Create node contract
@@ -46,7 +48,6 @@ export default function() {
             await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
             // Get minipool launch & min deposit amounts
-            let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             let miniPoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
             let miniPoolMaxCreateCount = parseInt(await rocketMinipoolSettings.getMinipoolNewMaxAtOnce.call());
             minDepositAmount = Math.floor(miniPoolLaunchAmount / 2);
@@ -66,7 +67,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: accounts[2],
-                gas: 500000,
             }), 'Random account reserved a deposit');
         });
 
@@ -78,7 +78,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: 'beer',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid staking duration ID');
         });
 
@@ -92,7 +91,6 @@ export default function() {
                 amount: Math.floor(minDepositAmount / 2),
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid ether amount');
 
             // Over maximum amount
@@ -101,7 +99,6 @@ export default function() {
                 amount: (minDepositAmount + maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit with an invalid ether amount');
 
         });
@@ -111,7 +108,7 @@ export default function() {
         it(printTitle('node operator', 'cannot reserve a deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await rocketNodeSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(false, {from: owner});
 
             // Reserve deposit
             await assertThrows(scenarioDepositReserve({
@@ -119,11 +116,10 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved a deposit while deposits are disabled');
 
             // Re-enable deposits
-            await rocketNodeSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(true, {from: owner});
 
         });
 
@@ -135,7 +131,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
         });
 
@@ -147,7 +142,6 @@ export default function() {
                 amount: minDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             }), 'Reserved multiple simultaneous deposits');
         });
 
@@ -157,7 +151,7 @@ export default function() {
             await assertThrows(scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: accounts[2],
-                gas: 500000,
+                gas: 5000000,
             }), 'Random account cancelled a deposit reservation');
         });
 
@@ -167,7 +161,7 @@ export default function() {
             await scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             });
         });
 
@@ -177,7 +171,7 @@ export default function() {
             await assertThrows(scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: operator,
-                gas: 500000,
+                gas: 5000000,
             }), 'Cancelled a nonexistant deposit reservation');
         });
 
@@ -190,7 +184,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited without a reservation');
 
             // Reserve deposit
@@ -199,7 +192,6 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
 
         });
@@ -211,7 +203,6 @@ export default function() {
                 nodeContract,
                 value: Math.floor(maxDepositAmount / 2),
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited with insufficient ether');
         });
 
@@ -220,18 +211,36 @@ export default function() {
         it(printTitle('node operator', 'cannot deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await rocketNodeSettings.setDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(false, {from: owner});
 
             // Deposit
             await assertThrows(scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited while deposits are disabled');
 
             // Re-enable deposits
-            await rocketNodeSettings.setDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketNodeSettings.setDepositAllowed(true, {from: owner});
+
+        });
+
+
+        // Node operator cannot deposit while minipool creation is disabled
+        it(printTitle('node operator', 'cannot deposit while minipool creation is disabled'), async () => {
+
+            // Disable deposits
+            await rocketMinipoolSettings.setMinipoolNewEnabled(false, {from: owner});
+
+            // Deposit
+            await assertThrows(scenarioDeposit({
+                nodeContract,
+                value: maxDepositAmount,
+                fromAddress: operator,
+            }), 'Deposited while minipool creation was disabled');
+
+            // Re-enable deposits
+            await rocketMinipoolSettings.setMinipoolNewEnabled(true, {from: owner});
 
         });
 
@@ -256,7 +265,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
 
             // Perform user deposits to assign ether & lower RPL ratio from maximum to 0
@@ -298,13 +306,11 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
             await scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
 
         });
@@ -319,7 +325,6 @@ export default function() {
                 amount: maxDepositAmount,
                 durationID: '3m',
                 fromAddress: operator,
-                gas: 500000,
             });
 
             // Get required RPL amount
@@ -331,7 +336,6 @@ export default function() {
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: operator,
-                gas: 7500000,
             }), 'Deposited without paying required RPL');
 
         });
@@ -345,15 +349,142 @@ export default function() {
             assert.isTrue(rplRequired > 0, 'Pre-check failed: required RPL amount is 0');
 
             // Deposit required RPL
-            await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: rplRequired,
+                fromAddress: owner,
+            });
 
             // Deposit
             await scenarioDeposit({
                 nodeContract,
                 value: maxDepositAmount,
                 fromAddress: accounts[2], // Allowed from any address
-                gas: 7500000,
             });
+
+        });
+
+
+        // Node operator can withdraw deposited ether from node contract
+        it(printTitle('node operator', 'can withdraw deposited ether from node contract'), async () => {
+
+            // Deposit ether
+            await web3.eth.sendTransaction({
+                from: operator,
+                to: nodeContract.address,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 5000000,
+            });
+
+            // Withdraw ether
+            await scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: operator,
+                gas: 5000000,
+            });
+
+        });
+
+
+        // Node operator cannot withdraw more ether from node contract than its balance
+        it(printTitle('node operator', 'cannot withdraw more ether from node contract than its balance'), async () => {
+
+            // Get node contract balance & withdrawal amount
+            let balance = parseInt(await nodeContract.getBalanceETH.call());
+            let withdrawAmount = balance + parseInt(web3.utils.toWei('1', 'ether'));
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: withdrawAmount,
+                fromAddress: operator,
+                gas: 5000000,
+            }), 'Withdrew more ether from node contract than its balance');
+
+        });
+
+
+        // Random account cannot withdraw deposited ether from node contract
+        it(printTitle('random account', 'cannot withdraw deposited ether from node contract'), async () => {
+
+            // Deposit ether
+            await web3.eth.sendTransaction({
+                from: operator,
+                to: nodeContract.address,
+                value: web3.utils.toWei('1', 'ether'),
+                gas: 5000000,
+            });
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeEther({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: accounts[9],
+                gas: 5000000,
+            }), 'Random account withdrew ether from node contract');
+
+        });
+
+
+        // Node operator can withdraw deposited RPL from node contract
+        it(printTitle('node operator', 'can withdraw deposited RPL from node contract'), async () => {
+
+            // Deposit RPL
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: web3.utils.toWei('1', 'ether'),
+                fromAddress: owner,
+                gas: 5000000,
+            });
+
+            // Withdraw RPL
+            await scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: operator,
+                gas: 5000000,
+            });
+
+        });
+
+
+        // Node operator cannot withdraw more RPL from node contract than its balance
+        it(printTitle('node operator', 'cannot withdraw more RPL from node contract than its balance'), async () => {
+
+            // Get node contract balance & withdrawal amount
+            let balance = parseInt(await nodeContract.getBalanceRPL.call());
+            let withdrawAmount = balance + parseInt(web3.utils.toWei('1', 'ether'));
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: withdrawAmount,
+                fromAddress: operator,
+                gas: 5000000,
+            }), 'Withdrew more RPL from node contract than its balance');
+
+        });
+
+
+        // Random account cannot withdraw deposited RPL from node contract
+        it(printTitle('random account', 'cannot withdraw deposited RPL from node contract'), async () => {
+
+            // Deposit RPL
+            await mintRpl({
+                toAddress: nodeContract.address,
+                rplAmount: web3.utils.toWei('1', 'ether'),
+                fromAddress: owner,
+                gas: 5000000,
+            });
+
+            // Attempt withdrawal
+            await assertThrows(scenarioWithdrawNodeRpl({
+                nodeContract,
+                amount: web3.utils.toWei('1', 'ether'),
+                fromAddress: accounts[9],
+                gas: 5000000,
+            }), 'Random account withdrew RPL from node contract');
 
         });
 

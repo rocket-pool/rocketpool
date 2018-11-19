@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { ValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
+import { RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -16,7 +16,7 @@ async function getAvailableMinipools() {
     let mi, minipoolAddress, minipool, status, availableMinipools = [];
     for (mi = 0; mi < minipoolCount; ++mi) {
         minipoolAddress = await rocketPool.getPoolAt.call(mi);
-        minipool = await RocketMinipoolInterface.at(minipoolAddress);
+        minipool = await RocketMinipool.at(minipoolAddress);
         status = parseInt(await minipool.getStatus.call());
         if (status == 0 || status == 1) availableMinipools.push(minipool);
     }
@@ -103,8 +103,10 @@ export async function scenarioDeposit({beaconChain, depositorContract, durationI
 
     // Get chunk fragment assignment events
     let chunkFragmentAssignEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositChunkFragmentAssign', [
-        {type: 'bytes32', name: '_depositID', indexed: true},
         {type: 'address', name: '_minipoolAddress', indexed: true},
+        {type: 'bytes32', name: '_depositID', indexed: true},
+        {type: 'address', name: 'userID'},
+        {type: 'address', name: 'groupID'},
         {type: 'uint256', name: 'value'},
         {type: 'uint256', name: 'created'},
     ]);
@@ -142,6 +144,26 @@ export async function scenarioDeposit({beaconChain, depositorContract, durationI
 
         // Check minipool balance
         assert.equal(minipoolBalances2[address], expectedBalance, 'Assigned minipool balance was not updated correctly');
+
+    }
+
+    // Check assigned users
+    for (let i = 0; i < chunkFragmentAssignEvents.length; ++i) {
+
+        // Get details & minipool
+        let userAddress = chunkFragmentAssignEvents[i].userID;
+        let minipoolAddress = chunkFragmentAssignEvents[i]._minipoolAddress;
+        let minipool = await RocketMinipool.at(minipoolAddress);
+
+        // Get minipool user details
+        let userExists = await minipool.getUserExists.call(userAddress);
+        let userHasDeposit = await minipool.getUserHasDeposit.call(userAddress);
+        let userDepositTokens = parseInt(await minipool.getUserDepositTokens.call(userAddress));
+
+        // Asserts
+        assert.isTrue(userExists, 'Incorrect minipool user exists status');
+        assert.isTrue(userHasDeposit, 'Incorrect minipool user deposit status');
+        assert.equal(userDepositTokens, 0, 'Incorrect minipool user deposit token count');
 
     }
 
@@ -183,7 +205,7 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
 
 // Withdraw deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
-    const minipool = await RocketMinipoolInterface.at(minipoolAddress);
+    const minipool = await RocketMinipool.at(minipoolAddress);
 
     // Get initial balances
     let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
@@ -213,6 +235,12 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     assert.equal(minipoolBalance2, minipoolBalance1 - userDeposit1, 'Minipool balance was not updated correctly');
     assert.isTrue(userBalance2 > userBalance1, 'User balance was not updated correctly');
 
+}
+
+
+// Attempt a deposit via the depositor contract rocketpoolEtherDeposit method
+export async function scenarioRocketpoolEtherDeposit({depositorContract, fromAddress, value, gas}) {
+    await depositorContract.rocketpoolEtherDeposit({from: fromAddress, value: value, gas: gas});
 }
 
 

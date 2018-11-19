@@ -211,44 +211,6 @@ contract RocketMinipoolDelegate {
 
     /*** NODE ***********************************************/
 
-    // Getters
-
-    /// @dev Gets the node contract address
-    function getNodeOwner() public view returns(address) {
-        return node.owner;
-    }
-
-    /// @dev Gets the node contract address
-    function getNodeContract() public view returns(address) {
-        return node.contractAddress;
-    }
-
-    /// @dev Gets the amount of ether the node owner must deposit
-    function getNodeDepositEther() public view returns(uint256) {
-        return node.depositEther;
-    }
-    
-    /// @dev Gets the amount of RPL the node owner must deposit
-    function getNodeDepositRPL() public view returns(uint256) {
-        return node.depositRPL;
-    }
-
-    /// @dev Gets the node's trusted status (at the time of minipool creation)
-    function getNodeTrusted() public view returns(bool) {
-        return node.trusted;
-    }
-
-    /// @dev Gets whether the node operator's deposit currently exists
-    function getNodeDepositExists() public view returns(bool) {
-        return node.depositExists;
-    }
-
-    /// @dev Gets the node operator's ether balance
-    function getNodeBalance() public view returns(uint256) {
-        return node.balance;
-    }
-
-
     // Methods
 
     /// @dev Set the ether / rpl deposit and check it
@@ -301,11 +263,6 @@ contract RocketMinipoolDelegate {
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
         return userAddresses.length;
-    }
-
-    /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _user) public view returns(bool) {
-        return users[_user].exists;
     }
 
 
@@ -421,25 +378,6 @@ contract RocketMinipoolDelegate {
 
     /*** MINIPOOL  ******************************************/
 
-
-    // Getters
-
-    /// @dev Gets the current status of the minipool
-    function getStatus() public view returns(uint8) {
-        return status.current;
-    }
-
-    /// @dev Returns the time the status last changed to its current status
-    function getStatusChanged() public view returns(uint256) {
-        return status.time;
-    }
-
-    /// @dev Returns the current staking duration in blocks
-    function getStakingDuration() public view returns(uint256) {
-        return staking.duration;
-    }
-
-
     // Setters
 
     /// @dev Change the status
@@ -467,10 +405,8 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
-        // Check to see if we can close the pool
-        if (closePool()) {
-            return true;
-        }
+        // Check to see if we can close the pool - stops execution if closed
+        closePool();
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
@@ -515,7 +451,7 @@ contract RocketMinipoolDelegate {
 
 
     /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
-    function closePool() private returns(bool) {
+    function closePool() private {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Remove the minipool if possible
@@ -528,8 +464,6 @@ contract RocketMinipoolDelegate {
             // Close now and send any unclaimed ether back to the node contract
             selfdestruct(node.contractAddress);
         }
-        // Nope
-        return false;
     }
 
 

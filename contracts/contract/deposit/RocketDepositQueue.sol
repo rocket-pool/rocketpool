@@ -81,8 +81,10 @@ contract RocketDepositQueue is RocketBase {
     );
 
     event DepositChunkFragmentAssign (
-        bytes32 indexed _depositID,
         address indexed _minipoolAddress,
+        bytes32 indexed _depositID,
+        address userID,
+        address groupID,
         uint256 value,
         uint256 created
     );
@@ -264,7 +266,7 @@ contract RocketDepositQueue is RocketBase {
         require(miniPool.deposit.value(matchAmount)(userID, groupID), "Deposit could not be transferred to minipool");
 
         // Emit chunk fragment assignment event
-        emit DepositChunkFragmentAssign(depositID, _miniPoolAddress, matchAmount, now);
+        emit DepositChunkFragmentAssign(_miniPoolAddress, depositID, userID, groupID, matchAmount, now);
 
         // Dequeue deposit if queued amount depleted
         if (queuedAmount == 0) { dequeueDeposit(userID, groupID, _durationID, depositID); }

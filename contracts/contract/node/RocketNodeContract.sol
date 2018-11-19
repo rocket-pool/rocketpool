@@ -183,30 +183,25 @@ contract RocketNodeContract {
     /// @param _amount The amount of ether the node operator wishes to deposit
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     function depositReserve(uint256 _amount, string _durationID) public returns(bool) { 
-       // Get the node API
-       rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
-       // Returns the amount of RPL required for a single ether
-       uint256 rplRatio = rocketNodeAPI.getRPLRatio(_durationID); 
-       // Verify the deposit is acceptable 
-       if(rocketNodeAPI.getDepositReservationIsValid(msg.sender, _amount, _durationID, rplRatio, depositReservation.created)) {  
-            // How much RPL do we need for this deposit?
-            uint256 rplAmount = (_amount.mul(rplRatio)).div(1 ether);
-            // Record the reservation now
-            depositReservation = DepositReservation({
-                durationID: _durationID,
-                etherAmount: _amount,
-                rplAmount: rplAmount,
-                rplRatio: rplRatio,
-                created: now,
-                exists: true
-            });
-            // All good? Fire the event for the new deposit
-            emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
-            // Done
-            return true;
-        }
-        // Safety
-        return false;    
+        // Get the node API
+        rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
+        // Verify the deposit is acceptable
+        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _amount, _durationID, depositReservation.created);
+        // Get the RPL amount and ratio for the deposit
+        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(_amount, _durationID);
+        // Record the reservation now
+        depositReservation = DepositReservation({
+            durationID: _durationID,
+            etherAmount: _amount,
+            rplAmount: rplAmount,
+            rplRatio: rplRatio,
+            created: now,
+            exists: true
+        });
+        // All good? Fire the event for the new deposit
+        emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
+        // Done
+        return true;
     }
 
 
@@ -254,8 +249,6 @@ contract RocketNodeContract {
             // Done
             return true;
         }
-        // Safety
-        return false;    
     }
 
 
