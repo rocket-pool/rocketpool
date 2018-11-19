@@ -32,6 +32,14 @@ contract: Contract,
       network_id: '*', // Match any network id
       gas: 8000000,
     },
+    // Solidity coverage test
+    coverage: {
+      provider: new Web3.providers.WebsocketProvider('ws://127.0.0.1:8555'),
+      network_id: '*', // Match any network id
+      port: 8555,
+      gas: 0xfffffffffff,
+      gasPrice: 0x01,
+    },
     // Local Parity Development 
     dev: {
         host: "127.0.0.1",

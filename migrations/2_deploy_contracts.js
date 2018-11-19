@@ -17,6 +17,7 @@ const rocketStorage = artifacts.require('./RocketStorage.sol');
 // All other contracts
 const contracts = {};
 // Core
+contracts.rocketAdmin = artifacts.require('./RocketAdmin.sol');
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
 contracts.rocketNode = artifacts.require('./RocketNode.sol');
