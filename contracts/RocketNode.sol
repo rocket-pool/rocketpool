@@ -38,7 +38,7 @@ contract RocketNode is RocketBase {
 
     /// @dev Get the address of a pseudorandom available node
     /// @return The node address and trusted status
-    function getRandomAvailableNode(string _durationID, uint256 _nonce) public returns (address, bool) {
+    function getRandomAvailableNode(string _durationID, uint256 _seed) public returns (address, bool) {
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Get node set type
@@ -49,7 +49,7 @@ contract RocketNode is RocketBase {
         // Get random node from set
         bytes32 key = keccak256(abi.encodePacked("nodes.available", trusted, _durationID));
         uint256 nodeCount = addressSetStorage.getCount(key);
-        uint256 randIndex = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _nonce))) % nodeCount;
+        uint256 randIndex = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _seed))) % nodeCount;
         return (addressSetStorage.getItem(key, randIndex), trusted);
     }
 
