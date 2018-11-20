@@ -3,11 +3,10 @@ pragma solidity 0.4.24;
 
 import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
-import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolSetInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
-import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
@@ -30,10 +29,9 @@ contract RocketDepositQueue is RocketBase {
 
 
     RocketNodeInterface rocketNode = RocketNodeInterface(0);
-    RocketPoolInterface rocketPool = RocketPoolInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
+    RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
-    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
@@ -199,11 +197,12 @@ contract RocketDepositQueue is RocketBase {
 
         // Get contracts
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
+        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
         // Get next minipool in the active set to assign chunk to
-        address miniPoolAddress = getNextActiveMinipool(_durationID, msg.value);
+        address miniPoolAddress = rocketMinipoolSet.getNextActiveMinipool(_durationID, msg.value);
         require(miniPoolAddress != 0x0, "Invalid available minipool");
 
         // Remaining ether amount to match
@@ -224,79 +223,12 @@ contract RocketDepositQueue is RocketBase {
         require(amountToMatch == 0, "Required ether amount was not matched");
 
         // Remove minipool from active set if no longer unavailable
-        checkActiveMinipool(_durationID, miniPoolAddress);
+        rocketMinipoolSet.checkActiveMinipool(_durationID, miniPoolAddress);
 
         // Update queue balance
         bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
         rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).sub(chunkSize));
 
-    }
-
-
-    // Get next minipool in the active set
-    function getNextActiveMinipool(string _durationID, uint256 _seed) private returns (address) {
-
-        // Get contracts
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-
-        // Get active minipool count
-        uint256 activeMinipoolCount = addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.active", _durationID)));
-
-        // Build active minipool set if empty
-        if (activeMinipoolCount == 0) {
-
-            // Get contracts
-            rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
-            rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-
-            // Get settings
-            uint256 activeSetSize = rocketMinipoolSettings.getMinipoolActiveSetSize();
-
-            // Get node counts
-            uint256 untrustedNodeCount = rocketNode.getAvailableNodeCount(false, _durationID);
-            uint256 trustedNodeCount = rocketNode.getAvailableNodeCount(true, _durationID);
-
-            // Get node type and number to add to active set
-            bool trusted;
-            uint256 nodeAddCount;
-            if (untrustedNodeCount > 0) {
-                trusted = false;
-                nodeAddCount = untrustedNodeCount;
-            }
-            else {
-                trusted = true;
-                nodeAddCount = trustedNodeCount;
-            }
-            if (nodeAddCount > activeSetSize) { nodeAddCount = activeSetSize; }
-
-            // Add random node minipools to active set
-            // :TODO: remove timed out minipools from active set
-            for (uint256 i = 0; i < nodeAddCount; ++i) {
-                address miniPoolAddress = rocketPool.getRandomAvailableMinipool(trusted, _durationID, _seed, i);
-                addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.active", _durationID)), miniPoolAddress);
-            }
-
-            // Get new active minipool count
-            activeMinipoolCount = nodeAddCount;
-
-        }
-
-        // Get & increment active minipool offset
-        uint256 offset = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)));
-        rocketStorage.setUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)), (offset + 1) % activeMinipoolCount);
-
-        // Return active minipool
-        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.active", _durationID)), offset);
-
-    }
-
-
-    // Check active minipool and remove from set if unavailable
-    function checkActiveMinipool(string _durationID, address _miniPoolAddress) private {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        RocketMinipoolInterface miniPool = RocketMinipoolInterface(_miniPoolAddress);
-        if (miniPool.getStatus() > 1) { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress); }
     }
 
 
