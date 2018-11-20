@@ -307,7 +307,7 @@ contract RocketMinipoolDelegate {
         // Remove user
         removeUser(_user);
         // Transfer withdrawal amount to withdrawal address
-        (bool success, bytes memory data) = _withdrawalAddress.call.value(amount)("");
+        (bool success,) = _withdrawalAddress.call.value(amount)("");
         require(success, "Withdrawal amount could not be transferred to withdrawal address");
         // Decrease total network assigned ether
         rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);

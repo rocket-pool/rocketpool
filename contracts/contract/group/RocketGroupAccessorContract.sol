@@ -69,7 +69,7 @@ contract RocketGroupAccessorContract {
         require(amountRefunded > 0, "The deposit was not refunded successfully");
         require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
         // Transfer ether to user
-        (bool success, bytes memory data) = msg.sender.call.value(amountRefunded)("");
+        (bool success,) = msg.sender.call.value(amountRefunded)("");
         require(success, "Unable to send refunded ether to user");
         // Return success flag
         return true;
@@ -90,7 +90,7 @@ contract RocketGroupAccessorContract {
         require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
         require(amountWithdrawn == address(this).balance - initialBalance, "Amount withdrawn is incorrect");
         // Transfer ether to user
-        (bool success, bytes memory data) = msg.sender.call.value(amountWithdrawn)("");
+        (bool success,) = msg.sender.call.value(amountWithdrawn)("");
         require(success, "Unable to send withdrawn ether to user");
         // Return success flag
         return true;
