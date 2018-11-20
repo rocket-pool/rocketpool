@@ -4,7 +4,6 @@ pragma solidity 0.4.24;
 import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/RocketPoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 
@@ -58,12 +57,12 @@ contract RocketMinipoolSet is RocketBase {
     }
 
 
-    // Check active minipool and remove from set if unavailable
-    // :TODO: remove timed out minipools from active set
-    function checkActiveMinipool(string _durationID, address _miniPoolAddress) public onlyLatestContract("rocketDepositQueue", msg.sender) {
+    // Check if minipool is in active set and remove it
+    function removeActiveMinipool(string _durationID, address _miniPoolAddress) public onlyLatestContract("rocketPool", msg.sender) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        RocketMinipoolInterface miniPool = RocketMinipoolInterface(_miniPoolAddress);
-        if (miniPool.getStatus() > 1) { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress); }
+        if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress) != -1) {
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress);
+        }
     }
 
 

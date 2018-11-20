@@ -222,9 +222,6 @@ contract RocketDepositQueue is RocketBase {
         // Double-check required ether amount has been matched
         require(amountToMatch == 0, "Required ether amount was not matched");
 
-        // Remove minipool from active set if no longer unavailable
-        rocketMinipoolSet.checkActiveMinipool(_durationID, miniPoolAddress);
-
         // Update queue balance
         bytes32 balanceKey = keccak256(abi.encodePacked("deposits.queue.balance", _durationID));
         rocketStorage.setUint(balanceKey, rocketStorage.getUint(balanceKey).sub(chunkSize));

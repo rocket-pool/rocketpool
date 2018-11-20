@@ -6,6 +6,7 @@ import "./RocketBase.sol";
 import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "./interface/minipool/RocketMinipoolSetInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
 // Libraries
@@ -26,6 +27,7 @@ contract RocketPool is RocketBase {
     RocketNodeInterface rocketNode = RocketNodeInterface(0);                                                // Interface for node methods
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
+    RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);                           // Maintains the active minipool set
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
 
@@ -231,6 +233,7 @@ contract RocketPool is RocketBase {
     function minipoolAvailable(address _minipool, bool _available) private returns (bool) {
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         rocketMinipool = RocketMinipoolInterface(_minipool);
         // Get minipool properties
@@ -248,6 +251,8 @@ contract RocketPool is RocketBase {
         else {
             // Remove minipool from node's available set
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
+            // Remove minipool from active set
+            rocketMinipoolSet.removeActiveMinipool(durationID, _minipool);
             // Remove node from available set if out of minipools
             if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID))) == 0) {
                 rocketNode.setNodeUnavailable(nodeOwner, trusted, durationID);
