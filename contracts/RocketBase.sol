@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 import "./interface/RocketStorageInterface.sol";
 
@@ -23,7 +23,7 @@ contract RocketBase {
     /**
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
-    modifier onlyLatestContract(string _contractName, address _contractAddress) {
+    modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
         require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Incorrect or outdated contract access used.");
         _;
     }
@@ -58,7 +58,7 @@ contract RocketBase {
     /**
     * @dev Reverts if the address doesn't have this role
     */
-    modifier onlyRole(string _role) {
+    modifier onlyRole(string memory _role) {
         roleCheck(_role, msg.sender);
         _;
     }
@@ -76,7 +76,7 @@ contract RocketBase {
     /*** Contract Utilities */
 
     /// @dev Get the the contracts address - This method should be called before interacting with any API contracts to ensure the latest address is used
-    function getContractAddress(string _contractName) public view returns(address) { 
+    function getContractAddress(string memory _contractName) public view returns(address) { 
         // Get the current API contract address 
         address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
         // Check it
@@ -92,14 +92,14 @@ contract RocketBase {
     * @dev Check if an address has this role
     * @return bool
     */
-    function roleHas(string _role, address _address) internal view returns (bool) {
+    function roleHas(string memory _role, address _address) internal view returns (bool) {
         return rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
     }
 
      /**
     * @dev Check if an address has this role, reverts if it doesn't
     */
-    function roleCheck(string _role, address _address) view internal {
+    function roleCheck(string memory _role, address _address) view internal {
         require(roleHas(_role, _address) == true, "User does not have correct role");
     }
 

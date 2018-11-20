@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 // Interfaces
@@ -172,12 +172,12 @@ contract RocketMinipoolDelegate {
     /// @dev Only registered users with this pool
     /// @param _user The users address.
     modifier isPoolUser(address _user) {
-        require(_user != 0 && users[_user].exists != false, "Is not a pool user.");
+        require(_user != address(0x0) && users[_user].exists != false, "Is not a pool user.");
         _;
     }
 
     /// @dev Only allow access from the latest version of the specified Rocket Pool contract
-    modifier onlyLatestContract(string _contract) {
+    modifier onlyLatestContract(string memory _contract) {
         require(msg.sender == getContractAddress(_contract), "Only the latest specified Rocket Pool contract can access this method.");
         _;
     }
@@ -201,7 +201,7 @@ contract RocketMinipoolDelegate {
     
 
     /// @dev Get the the contracts address - This method should be called before interacting with any RP contracts to ensure the latest address is used
-    function getContractAddress(string _contractName) private view returns(address) { 
+    function getContractAddress(string memory _contractName) private view returns(address) { 
         // Get the current API contract address 
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
     }
@@ -246,7 +246,7 @@ contract RocketMinipoolDelegate {
         node.balance = 0;
         // Transfer ether and RPL to node contract
         if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
-        if (etherAmount > 0) { node.contractAddress.transfer(etherAmount); }
+        if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rplAmount, now);
         // Update the status
@@ -284,7 +284,7 @@ contract RocketMinipoolDelegate {
         // Increase total network assigned ether
         rocketPool.setNetworkIncreaseTotalEther("assigned", staking.id, msg.value);
         // All good? Fire the event for the new deposit
-        emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
+        emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
         updateStatus();
         // Success
@@ -307,11 +307,12 @@ contract RocketMinipoolDelegate {
         // Remove user
         removeUser(_user);
         // Transfer withdrawal amount to withdrawal address
-        require(_withdrawalAddress.call.value(amount)(), "Withdrawal amount could not be transferred to withdrawal address");
+        (bool success, bytes memory data) = _withdrawalAddress.call.value(amount)("");
+        require(success, "Withdrawal amount could not be transferred to withdrawal address");
         // Decrease total network assigned ether
         rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);
         // All good? Fire the event for the withdrawal
-        emit PoolTransfer(this, _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
+        emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
         updateStatus();
         // Success
@@ -333,7 +334,7 @@ contract RocketMinipoolDelegate {
             // Add the new user to the mapping of User structs
             users[_user] = User({
                 user: _user,
-                backup: 0,
+                backup: address(0x0),
                 groupID: _groupID,
                 balance: 0,
                 rewards: 0,
@@ -462,7 +463,7 @@ contract RocketMinipoolDelegate {
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
             // Close now and send any unclaimed ether back to the node contract
-            selfdestruct(node.contractAddress);
+            selfdestruct(address(uint160(node.contractAddress)));
         }
     }
 

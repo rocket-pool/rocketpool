@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "../../RocketBase.sol";
@@ -90,7 +90,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Only passes if the supplied minipool duration is valid
     /// @param _durationID The ID that determines the minipool duration
-    modifier onlyValidDuration(string _durationID) {
+    modifier onlyValidDuration(string memory _durationID) {
         // Get our minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
@@ -119,14 +119,14 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @return string The set timezone of this node
-    function getTimezoneLocation(address _nodeAddress) public view returns (string) {
+    function getTimezoneLocation(address _nodeAddress) public view returns (string memory) {
         return rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
     }
 
 
     /// @dev Returns the amount of RPL required for a single ether
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRatio(string _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
+    function getRPLRatio(string memory _durationID) public onlyValidDuration(_durationID) returns(uint256) { 
         // Get network utilisation as a fraction of 1 ether
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         uint256 utilisation = rocketPool.getNetworkUtilisation(_durationID);
@@ -144,7 +144,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the amount of RPL required, and the RPL ratio, to make an ether deposit based on the current network utilisation
     /// @param _weiAmount The amount of ether the node wishes to deposit
     /// @param _durationID The ID that determines which pool duration
-    function getRPLRequired(uint256 _weiAmount, string _durationID) public returns(uint256, uint256) {
+    function getRPLRequired(uint256 _weiAmount, string memory _durationID) public returns(uint256, uint256) {
         uint256 rplRatio = getRPLRatio(_durationID);
         return (_weiAmount.mul(rplRatio).div(1 ether), rplRatio);
     }
@@ -155,7 +155,7 @@ contract RocketNodeAPI is RocketBase {
     /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, uint256 _value, string _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, uint256 _value, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
@@ -191,7 +191,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
-    function setTimezoneLocation(string _timezoneLocation) public onlyValidNodeOwner(msg.sender) returns (string) {
+    function setTimezoneLocation(string memory _timezoneLocation) public onlyValidNodeOwner(msg.sender) returns (string memory) {
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
     }
  
@@ -200,7 +200,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Register a new node address if it doesn't exist
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
-    function add(string _timezoneLocation) public onlyLatestContract("rocketNodeAPI", address(this)) returns (bool) {
+    function add(string memory _timezoneLocation) public onlyLatestContract("rocketNodeAPI", address(this)) returns (bool) {
         // Get the node settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Get the node factory
@@ -237,7 +237,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Process a deposit into a nodes contract
     /// @param _nodeOwner  The address of the nodes owner
-    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address[]) { 
+    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address[] memory) { 
         // Check the deposit is ready to go first
         checkDepositIsValid(_nodeOwner);
         // Get the minipool settings contract
@@ -269,7 +269,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Save a public key for this node from a newly generated account
     /// @param _account  The address of an account controlled by the node owner
     /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyAdd(address _account, bytes _pubkey) public onlyValidNodeOwner(msg.sender) returns(bool) { 
+    function pubKeyAdd(address _account, bytes memory _pubkey) public onlyValidNodeOwner(msg.sender) returns(bool) { 
         // Get our contracts
         bytesSetStorage = BytesSetStorageInterface(getContractAddress("utilBytesSetStorage"));
         // Pubkeys should only ever be used once 
@@ -290,7 +290,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Verify a public key for an account that belongs to a node
     /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyVerify(bytes _pubkey) public returns(bool) { 
+    function pubKeyVerify(bytes memory _pubkey) public returns(bool) { 
         // Verify this pubkey is for the supplied address - the extra padding gets it to the correct length
         require(uint256(keccak256(abi.encodePacked(_pubkey)) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) == uint256(msg.sender));
         // Its verified

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Interfaces
 import "./../../interface/token/ERC20.sol";
@@ -164,7 +164,7 @@ contract RocketNodeContract {
     }
 
     /// @dev Returns the current deposit reservation duration set
-    function getDepositReserveDurationID() public hasDepositReserved() returns(string) { 
+    function getDepositReserveDurationID() public hasDepositReserved() returns (string memory) { 
         return depositReservation.durationID;
     }
 
@@ -176,13 +176,13 @@ contract RocketNodeContract {
 
 
     /// @dev Default payable method to receive minipool node withdrawals
-    function() public payable {}
+    function() external payable {}
 
 
     /// @dev Reserves a deposit of Ether/RPL at the current rate. The node operator has 24hrs to deposit both once its locked in or it will expire.
     /// @param _amount The amount of ether the node operator wishes to deposit
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function depositReserve(uint256 _amount, string _durationID) public returns(bool) { 
+    function depositReserve(uint256 _amount, string memory _durationID) public returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Verify the deposit is acceptable
@@ -274,7 +274,7 @@ contract RocketNodeContract {
         // Check if they have enough
         require(getBalanceETH() >= _amount, "Not enough ether in node contract for withdrawal size requested.");
         // Lets send it back
-        owner.transfer(_amount);
+        msg.sender.transfer(_amount);
         // Done
         return true;
     }

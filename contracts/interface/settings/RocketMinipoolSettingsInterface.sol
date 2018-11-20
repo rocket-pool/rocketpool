@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 // Our minipool interface
@@ -14,7 +14,7 @@ contract RocketMinipoolSettingsInterface {
     function getMinipoolMax() public view returns (uint256);
     function getMinipoolNewGas() public view returns (uint256);
     function getMinipoolDepositGas() public view returns (uint256);
-    function getMinipoolStakingDuration(string _durationID) public view returns (uint256);
+    function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256);
     function getMinipoolMinimumStakingTime() public view returns (uint256);
     function getMinipoolWithdrawalFeePerc() public view returns (uint256);
     function getMinipoolWithdrawalFeeDepositAddress() public view returns (address);

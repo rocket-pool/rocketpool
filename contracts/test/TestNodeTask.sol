@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../RocketBase.sol";
@@ -15,14 +15,14 @@ contract TestNodeTask is RocketBase {
 
 
     // Constructor
-    constructor(address _rocketStorageAddress, string _taskName) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, string memory _taskName) RocketBase(_rocketStorageAddress) public {
         version = 1;
         taskName = _taskName;
     }
 
 
     // Task name
-    function name() public view returns (string) { return taskName; }
+    function name() public view returns (string memory) { return taskName; }
 
 
     // Run task

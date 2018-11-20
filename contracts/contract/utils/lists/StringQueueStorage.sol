@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../../RocketBase.sol";
@@ -16,7 +16,7 @@ contract StringQueueStorage is RocketBase {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != address(0x0), "Calls permitted from latest Rocket Pool network contracts only");
         _;
     }
 
@@ -41,7 +41,7 @@ contract StringQueueStorage is RocketBase {
 
 
     /// @dev The item in a string queue by index
-    function getQueueItem(bytes32 _key, uint _index) external view returns (string) {
+    function getQueueItem(bytes32 _key, uint _index) external view returns (string memory) {
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))).add(_index);
         if (index >= capacity) { index = index.sub(capacity); }
         return rocketStorage.getString(keccak256(abi.encodePacked(_key, "item", index)));
@@ -50,7 +50,7 @@ contract StringQueueStorage is RocketBase {
 
     /// @dev The index of an item in a string queue
     /// @dev Returns -1 if the value is not found
-    function getQueueIndexOf(bytes32 _key, string _value) external view returns (int) {
+    function getQueueIndexOf(bytes32 _key, string calldata _value) external view returns (int) {
         int index = int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
         if (index != -1) {
             index -= int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))));
@@ -63,7 +63,7 @@ contract StringQueueStorage is RocketBase {
     /// @dev Add an item to the end of a string queue
     /// @dev Requires that the queue is not at capacity
     /// @dev Requires that the item does not exist in the queue
-    function enqueueItem(bytes32 _key, string _value) onlyLatestRocketNetworkContract external {
+    function enqueueItem(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
         require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
         require(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value))) == 0, "Item already exists in queue");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
@@ -91,7 +91,7 @@ contract StringQueueStorage is RocketBase {
     /// @dev Remove an item from a string queue
     /// @dev Swaps the item with the last item in the queue and truncates it; computationally cheap
     /// @dev Requires that the item exists in the queue
-    function removeItem(bytes32 _key, string _value) onlyLatestRocketNetworkContract external {
+    function removeItem(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)));
         require(index-- > 0, "Item does not exist in queue");
         uint lastIndex = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));

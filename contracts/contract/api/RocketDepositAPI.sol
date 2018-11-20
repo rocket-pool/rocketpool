@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -29,7 +29,7 @@ contract RocketDepositAPI is RocketBase {
 
     /// @dev Only passes if the supplied minipool duration is valid
     /// @param _durationID The ID that determines the minipool duration
-    modifier onlyValidDuration(string _durationID) {
+    modifier onlyValidDuration(string memory _durationID) {
         // Check to verify the supplied mini pool staking time id is legit, it will revert if not
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
@@ -88,7 +88,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _groupID The generated conract address for the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function checkDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string _durationID) private onlyValidDuration(_durationID) { 
+    function checkDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string memory _durationID) private onlyValidDuration(_durationID) { 
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -108,7 +108,7 @@ contract RocketDepositAPI is RocketBase {
 
 
     /// @dev Checks if the refund parameters are correct for a successful refund
-    function checkDepositRefundIsValid(address _from, address _groupID, address _userID, string _durationID, bytes32 _depositID) private onlyValidDuration(_durationID) {
+    function checkDepositRefundIsValid(address _from, address _groupID, address _userID, string memory _durationID, bytes32 _depositID) private onlyValidDuration(_durationID) {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -144,14 +144,14 @@ contract RocketDepositAPI is RocketBase {
 
 
     /// @dev Get the number of queued deposits a user has
-    function getUserQueuedDepositCount(address _groupID, address _userID, string _durationID) public returns (uint256) {
+    function getUserQueuedDepositCount(address _groupID, address _userID, string memory _durationID) public returns (uint256) {
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
         return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)));
     }
 
 
     /// @dev Get a user's queued deposit ID by index
-    function getUserQueuedDepositAt(address _groupID, address _userID, string _durationID, uint256 _index) public returns (bytes32) {
+    function getUserQueuedDepositAt(address _groupID, address _userID, string memory _durationID, uint256 _index) public returns (bytes32) {
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
         return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _index);
     }
@@ -171,7 +171,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _groupID The ID of the group / 3rd party partner contract whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function deposit(address _groupID, address _userID, string _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) { 
+    function deposit(address _groupID, address _userID, string memory _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) { 
         // Verify the deposit is acceptable
         checkDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID);
         // Send and create deposit
@@ -189,7 +189,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _durationID The ID of the deposit's staking duration
     /// @param _depositID The ID of the deposit to refund
-    function refundDeposit(address _groupID, address _userID, string _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function refundDeposit(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the refund is acceptable
         checkDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID, _depositID);
         // Refund deposit

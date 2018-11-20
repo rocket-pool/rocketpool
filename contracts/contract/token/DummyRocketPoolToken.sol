@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "./../../contract/utils/Ownable.sol";
@@ -57,7 +57,7 @@ contract DummyRocketPoolToken is StandardToken, Ownable {
 
 
     /// @dev Returns the amount of tokens that can still be minted
-    function getRemainingTokens() public constant returns(uint256) {
+    function getRemainingTokens() public view returns(uint256) {
         return totalSupplyCap.sub(totalSupply);
     }
 

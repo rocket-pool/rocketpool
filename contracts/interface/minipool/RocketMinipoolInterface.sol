@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 contract RocketMinipoolInterface {
@@ -16,7 +16,7 @@ contract RocketMinipoolInterface {
     function getStatus() public view returns(uint8);
     function getStatusChangedTime() public view returns(uint256);
     function getStatusChangedBlock() public view returns(uint256);
-    function getStakingDurationID() public view returns(string);
+    function getStakingDurationID() public view returns (string memory);
     function getStakingDuration() public view returns(uint256);
     // Methods
     function nodeDeposit() public payable returns(bool);

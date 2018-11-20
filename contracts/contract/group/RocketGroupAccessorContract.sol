@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "./../../interface/RocketStorageInterface.sol";
@@ -45,7 +45,7 @@ contract RocketGroupAccessorContract {
 
     /// @dev Make a deposit through the Rocket Pool Deposit API
     /// @param _durationID The ID of the staking duration that the user wishes to stake for (3 months, 6 months etc)
-    function deposit(string _durationID) public payable returns (bool) {
+    function deposit(string memory _durationID) public payable returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
         // Perform deposit
@@ -59,7 +59,7 @@ contract RocketGroupAccessorContract {
     /// @dev Refunded ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
     /// @param _durationID The ID of the staking duration of the deposit to refund
     /// @param _depositID The ID of the deposit to refund
-    function refundDeposit(string _durationID, bytes32 _depositID) public returns (bool) {
+    function refundDeposit(string memory _durationID, bytes32 _depositID) public returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
         // Get balance before refund
@@ -69,7 +69,8 @@ contract RocketGroupAccessorContract {
         require(amountRefunded > 0, "The deposit was not refunded successfully");
         require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
         // Transfer ether to user
-        require(msg.sender.call.value(amountRefunded)(), "Unable to send refunded ether to user");
+        (bool success, bytes memory data) = msg.sender.call.value(amountRefunded)("");
+        require(success, "Unable to send refunded ether to user");
         // Return success flag
         return true;
     }
@@ -89,7 +90,8 @@ contract RocketGroupAccessorContract {
         require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
         require(amountWithdrawn == address(this).balance - initialBalance, "Amount withdrawn is incorrect");
         // Transfer ether to user
-        require(msg.sender.call.value(amountWithdrawn)(), "Unable to send withdrawn ether to user");
+        (bool success, bytes memory data) = msg.sender.call.value(amountWithdrawn)("");
+        require(success, "Unable to send withdrawn ether to user");
         // Return success flag
         return true;
     }
