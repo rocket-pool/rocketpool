@@ -48,8 +48,8 @@ contract RocketMinipoolSet is RocketBase {
         if (activeMinipoolCount == 0) { activeMinipoolCount = createActiveMinipoolSet(_durationID, _seed); }
 
         // Get & increment active minipool offset
-        uint256 offset = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)));
-        rocketStorage.setUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)), (offset + 1) % activeMinipoolCount);
+        uint256 offset = rocketStorage.getUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID))) % activeMinipoolCount;
+        rocketStorage.setUint(keccak256(abi.encodePacked("minipools.active.offset", _durationID)), offset + 1);
 
         // Return active minipool
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.active", _durationID)), offset);
