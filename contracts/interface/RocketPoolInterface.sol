@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 
 contract RocketPoolInterface {
-    function getRandomAvailableMinipool(string _durationID, uint256 _nonce) public view returns (address);
+    function getRandomAvailableMinipool(bool _trusted, string _durationID, uint256 _seed, uint256 _offset) public returns (address);
     function getNetworkUtilisation(string _durationID) public view returns (uint256);
     function getPoolsCount() public returns(uint256);
     function getTotalEther(string _type, string _durationID) public view returns (uint256);

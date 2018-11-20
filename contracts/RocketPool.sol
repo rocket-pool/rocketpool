@@ -98,11 +98,11 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Get the address of a pseudorandom available node's first minipool
-    function getRandomAvailableMinipool(string _durationID, uint256 _seed) public returns (address) {
+    function getRandomAvailableMinipool(bool _trusted, string _durationID, uint256 _seed, uint256 _offset) public returns (address) {
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        (address nodeAddress, bool nodeTrusted) = rocketNode.getRandomAvailableNode(_durationID, _seed);
-        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, nodeTrusted, _durationID)), 0);
+        address nodeAddress = rocketNode.getRandomAvailableNode(_trusted, _durationID, _seed, _offset);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, _trusted, _durationID)), 0);
     }
 
 
