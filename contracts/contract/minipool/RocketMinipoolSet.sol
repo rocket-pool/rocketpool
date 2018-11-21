@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -36,7 +36,7 @@ contract RocketMinipoolSet is RocketBase {
 
 
     // Get next minipool in the active set
-    function getNextActiveMinipool(string _durationID, uint256 _seed) public onlyLatestContract("rocketDepositQueue", msg.sender) returns (address) {
+    function getNextActiveMinipool(string memory _durationID, uint256 _seed) public onlyLatestContract("rocketDepositQueue", msg.sender) returns (address) {
 
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
@@ -58,7 +58,7 @@ contract RocketMinipoolSet is RocketBase {
 
 
     // Check if minipool is in active set and remove it
-    function removeActiveMinipool(string _durationID, address _miniPoolAddress) public onlyLatestContract("rocketPool", msg.sender) {
+    function removeActiveMinipool(string memory _durationID, address _miniPoolAddress) public onlyLatestContract("rocketPool", msg.sender) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress) != -1) {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress);
@@ -68,7 +68,7 @@ contract RocketMinipoolSet is RocketBase {
 
     // Create active minipool set
     // Returns active minipool set size
-    function createActiveMinipoolSet(string _durationID, uint256 _seed) private returns (uint256) {
+    function createActiveMinipoolSet(string memory _durationID, uint256 _seed) private returns (uint256) {
 
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));

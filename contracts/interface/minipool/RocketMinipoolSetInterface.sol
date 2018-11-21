@@ -1,6 +1,6 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 contract RocketMinipoolSetInterface {
-    function getNextActiveMinipool(string _durationID, uint256 _seed) public returns (address);
-    function removeActiveMinipool(string _durationID, address _miniPoolAddress) public;
+    function getNextActiveMinipool(string memory _durationID, uint256 _seed) public returns (address);
+    function removeActiveMinipool(string memory _durationID, address _miniPoolAddress) public;
 }

@@ -34,7 +34,7 @@ contract RocketNode is RocketBase {
             addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", false, _durationID))) +
             addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", true, _durationID)));
     }
-    function getAvailableNodeCount(bool _trusted, string _durationID) public returns (uint256) {
+    function getAvailableNodeCount(bool _trusted, string memory _durationID) public returns (uint256) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)));
     }
@@ -50,7 +50,7 @@ contract RocketNode is RocketBase {
         // Get node count
         uint256 nodeCount = addressSetStorage.getCount(key);
         // No nodes available
-        if (nodeCount == 0) { return 0x0; }
+        if (nodeCount == 0) { return address(0x0); }
         // Get random node from set
         uint256 randIndex = (uint256(keccak256(abi.encodePacked(block.number, block.timestamp, _seed))) + _offset) % nodeCount;
         return addressSetStorage.getItem(key, randIndex);
