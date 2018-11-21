@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -116,7 +116,7 @@ contract RocketMinipoolSettings is RocketBase {
     }
 
      /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
-    function getMinipoolStakingDuration(string _durationID) public view returns (uint256) {
+    function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256) {
         // Make sure the staking ID exists
         uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
         require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
@@ -175,7 +175,7 @@ contract RocketMinipoolSettings is RocketBase {
     }
 
     /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
-    function setMinipoolStakingDuration(string _option, uint256 _blocks) public onlySuperUser {
+    function setMinipoolStakingDuration(string memory _option, uint256 _blocks) public onlySuperUser {
         require(_blocks > 0, "Amount of blocks for staking duration not specified.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _option)), _blocks);  
     }

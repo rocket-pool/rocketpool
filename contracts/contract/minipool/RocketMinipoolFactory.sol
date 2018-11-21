@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "../../RocketBase.sol";
@@ -51,7 +51,7 @@ contract RocketMinipoolFactory is RocketBase {
     /// @param _etherDeposited Ether amount deposited by the node owner
     /// @param _rplDeposited RPL amount deposited by the node owner
     /// @param _trusted Is this node trusted?
-    function createRocketMinipool(address _nodeOwner, string _durationID, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
+    function createRocketMinipool(address _nodeOwner, string memory _durationID, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
         // Do some initial checks
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
@@ -61,7 +61,7 @@ contract RocketMinipoolFactory is RocketBase {
             require(_etherDeposited == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half required for a deposit with Casper eg 16 ether.");
         }
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside 
-        RocketMinipool newContractAddress = new RocketMinipool(address(rocketStorage), _nodeOwner, _durationID, _etherDeposited, _rplDeposited, _trusted);
+        address newContractAddress = address(new RocketMinipool(address(rocketStorage), _nodeOwner, _durationID, _etherDeposited, _rplDeposited, _trusted));
         // Emit created event
         emit ContractCreated(keccak256(abi.encodePacked("rocketMinipool")), newContractAddress);
         // Return contract address

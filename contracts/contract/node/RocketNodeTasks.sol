@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -72,7 +72,7 @@ contract RocketNodeTasks is RocketBase {
 
 
     /// @dev Get a task contract name by index
-    function getTaskNameAt(uint256 _index) external returns (string) {
+    function getTaskNameAt(uint256 _index) external returns (string memory) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         RocketNodeTaskInterface task = RocketNodeTaskInterface(addressSetStorage.getItem(keccak256("node.tasks"), _index));
         return task.name();
@@ -90,7 +90,7 @@ contract RocketNodeTasks is RocketBase {
     /// @param _taskAddress The address of the task contract to be added
     function add(address _taskAddress) external onlySuperUser() returns (bool) {
         // Check task contract address
-        require(_taskAddress != 0x0, "Invalid task contract address");
+        require(_taskAddress != address(0x0), "Invalid task contract address");
         // Get set storage
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Insert task contract address
@@ -117,7 +117,7 @@ contract RocketNodeTasks is RocketBase {
     /// @param _newAddress The new address of the task contract
     function update(address _oldAddress, address _newAddress) external onlySuperUser() returns (bool) {
         // Check task contract address
-        require(_newAddress != 0x0, "Invalid task contract address");
+        require(_newAddress != address(0x0), "Invalid task contract address");
         // Get set storage
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Update task contract address

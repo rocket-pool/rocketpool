@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -56,11 +56,11 @@ contract RocketDeposit is RocketBase {
 
 
     // Default payable function - for deposit vault or minipool withdrawals
-    function() payable public onlyDepositVaultOrMinipool() {}
+    function() external payable onlyDepositVaultOrMinipool() {}
 
 
     // Create a new deposit
-    function create(address _userID, address _groupID, string _durationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+    function create(address _userID, address _groupID, string memory _durationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
 
         // Check deposit amount
         require(msg.value > 0, "Invalid deposit amount sent");
@@ -86,7 +86,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Refund a deposit
-    function refund(address _userID, address _groupID, string _durationID, bytes32 _depositID, address _depositorAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
+    function refund(address _userID, address _groupID, string memory _durationID, bytes32 _depositID, address _depositorAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
         // Get remaining queued amount to refund
         uint256 refundAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
@@ -146,7 +146,7 @@ contract RocketDeposit is RocketBase {
 
     // Add a deposit
     // Returns the new deposit ID
-    function add(address _userID, address _groupID, string _durationID, uint256 _amount) private returns (bytes32) {
+    function add(address _userID, address _groupID, string memory _durationID, uint256 _amount) private returns (bytes32) {
 
         // Get user deposit nonce
         uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID, _durationID))).add(1);

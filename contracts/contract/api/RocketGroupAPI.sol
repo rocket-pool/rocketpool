@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "../../RocketBase.sol";
@@ -78,7 +78,7 @@ contract RocketGroupAPI is RocketBase {
     /*** Getters *************/
 
     /// @dev Get the group by its ID
-    function getGroupName(address _ID) public view returns(string) { 
+    function getGroupName(address _ID) public view returns (string memory) { 
         // Get the group name
         return rocketStorage.getString(keccak256(abi.encodePacked("group.name", _ID)));
     }
@@ -89,7 +89,7 @@ contract RocketGroupAPI is RocketBase {
     /// @dev Register a new group address if it doesn't exist, only the contract creator can do this
     /// @param _name Name of the group (eg rocketpool, coinbase etc) - should be strictly lower case
     /// @param _stakingFee The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function add(string _name, uint256 _stakingFee) public payable onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
+    function add(string memory _name, uint256 _stakingFee) public payable onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
         // Get the contracts
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
@@ -102,7 +102,7 @@ contract RocketGroupAPI is RocketBase {
         // Check the group name isn't already being used
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
         // Ok create the groups contract now, the address is their main ID and this is where the groups fees and more will reside
-        RocketGroupContract newContractAddress = new RocketGroupContract(address(rocketStorage), msg.sender, _stakingFee);
+        address newContractAddress = address(new RocketGroupContract(address(rocketStorage), msg.sender, _stakingFee));
         // If there is a fee required to register a group, check that it is sufficient
         if(rocketGroupSettings.getNewFee() > 0) {
             // Fee correct?
@@ -130,9 +130,9 @@ contract RocketGroupAPI is RocketBase {
     /// @dev Create a new default group accessor contract
     function createDefaultAccessor(address _ID) public onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
         // Check that the group exists
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != 0x0);
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != address(0x0));
         // Create accessor contract
-        RocketGroupAccessorContract newAccessorAddress = new RocketGroupAccessorContract(address(rocketStorage), _ID);
+        address newAccessorAddress = address(new RocketGroupAccessorContract(address(rocketStorage), _ID));
         // Emit creation event
         emit GroupCreateDefaultAccessor(_ID, newAccessorAddress, now);
         // Success

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 /// @title The primary persistent storage for Rocket Pool
@@ -23,7 +23,7 @@ contract RocketStorage {
         // The owner and other contracts are only allowed to set the storage upon deployment to register the initial contracts/settings, afterwards their direct access is disabled
         if (boolStorage[keccak256(abi.encodePacked("contract.storage.initialised"))] == true) {
             // Make sure the access is permitted to only contracts in our Dapp
-            require(addressStorage[keccak256(abi.encodePacked("contract.address", msg.sender))] != 0x0);
+            require(addressStorage[keccak256(abi.encodePacked("contract.address", msg.sender))] != address(0x0));
         }
         _;
     }
@@ -49,12 +49,12 @@ contract RocketStorage {
     }
 
     /// @param _key The key for the record
-    function getString(bytes32 _key) external view returns (string) {
+    function getString(bytes32 _key) external view returns (string memory) {
         return stringStorage[_key];
     }
 
     /// @param _key The key for the record
-    function getBytes(bytes32 _key) external view returns (bytes) {
+    function getBytes(bytes32 _key) external view returns (bytes memory) {
         return bytesStorage[_key];
     }
 
@@ -86,12 +86,12 @@ contract RocketStorage {
     }
 
     /// @param _key The key for the record
-    function setString(bytes32 _key, string _value) onlyLatestRocketNetworkContract external {
+    function setString(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
         stringStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
-    function setBytes(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
+    function setBytes(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
         bytesStorage[_key] = _value;
     }
     

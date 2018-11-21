@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../../RocketBase.sol";
@@ -11,7 +11,7 @@ contract BytesSetStorage is RocketBase {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != address(0x0), "Calls permitted from latest Rocket Pool network contracts only");
         _;
     }
 
@@ -29,21 +29,21 @@ contract BytesSetStorage is RocketBase {
 
 
     /// @dev The item in a set by index
-    function getItem(bytes32 _key, uint _index) external view returns (bytes) {
+    function getItem(bytes32 _key, uint _index) external view returns (bytes memory) {
         return rocketStorage.getBytes(keccak256(abi.encodePacked(_key, "item", _index)));
     }
 
 
     /// @dev The index of an item in a set
     /// @dev Returns -1 if the value is not found
-    function getIndexOf(bytes32 _key, bytes _value) external view returns (int) {
+    function getIndexOf(bytes32 _key, bytes calldata _value) external view returns (int) {
         return int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
     }
 
 
     /// @dev Add an item to a set
     /// @dev Requires that the item does not exist in the set
-    function addItem(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
+    function addItem(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
         require(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value))) == 0, "Item already exists in set");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", count)), _value);
@@ -55,7 +55,7 @@ contract BytesSetStorage is RocketBase {
     /// @dev Remove an item from a set
     /// @dev Swaps the item with the last item in the set and truncates it; computationally cheap
     /// @dev Requires that the item exists in the set
-    function removeItem(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
+    function removeItem(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
         uint256 index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)));
         require(index-- > 0, "Item does not exist in set");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));

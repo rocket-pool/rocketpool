@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "./RocketBase.sol";
@@ -98,7 +98,7 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Get the address of a pseudorandom available node's first minipool
-    function getRandomAvailableMinipool(string _durationID, uint256 _nonce) public returns (address) {
+    function getRandomAvailableMinipool(string memory _durationID, uint256 _nonce) public returns (address) {
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         (address nodeAddress, bool nodeTrusted) = rocketNode.getRandomAvailableNode(_durationID, _nonce);
@@ -109,14 +109,14 @@ contract RocketPool is RocketBase {
     /// @dev Get the total ether value of the network by key
     /// @param _type The type of total ether value to retrieve (e.g. "capacity")
     /// @param _durationID The staking duration
-    function getTotalEther(string _type, string _durationID) public view returns (uint256) {
+    function getTotalEther(string memory _type, string memory _durationID) public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)));
     }
 
 
     /// @dev Get the current network utilisation (assigned ether / ether capacity) as a fraction of 1 ether
     /// @param _durationID The staking duration
-    function getNetworkUtilisation(string _durationID) public view returns (uint256) {
+    function getNetworkUtilisation(string memory _durationID) public view returns (uint256) {
         uint256 etherCapacity = getTotalEther("capacity", _durationID);
         if (etherCapacity == 0) { return 1 ether; }
         uint256 base = 1 ether;
@@ -136,7 +136,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to increase (e.g. "capacity") - only externally available to minipools
     /// @param _value The amount to increase the total ether value by
     /// @param _durationID The staking duration
-    function setNetworkIncreaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMinipool(msg.sender) {
+    function setNetworkIncreaseTotalEther(string calldata _type, string calldata _durationID, uint256 _value) external onlyMinipool(msg.sender) {
         networkIncreaseTotalEther(_type, _durationID, _value);
     }
 
@@ -144,7 +144,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to decrease (e.g. "capacity")
     /// @param _value The amount to decrease the total ether value by
     /// @param _durationID The staking duration
-    function setNetworkDecreaseTotalEther(string _type, string _durationID, uint256 _value) external onlyMinipool(msg.sender) {
+    function setNetworkDecreaseTotalEther(string calldata _type, string calldata _durationID, uint256 _value) external onlyMinipool(msg.sender) {
         networkDecreaseTotalEther(_type, _durationID, _value);
     }
 
@@ -154,7 +154,7 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Create a minipool
-    function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+    function minipoolCreate(address _nodeOwner, string calldata _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -265,7 +265,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to increase (e.g. "capacity")
     /// @param _value The amount to increase the total ether value by
     /// @param _durationID The staking duration
-    function networkIncreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+    function networkIncreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).add(_value)
         );
@@ -277,7 +277,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to decrease (e.g. "capacity")
     /// @param _value The amount to decrease the total ether value by
     /// @param _durationID The staking duration
-    function networkDecreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+    function networkDecreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).sub(_value)
         );

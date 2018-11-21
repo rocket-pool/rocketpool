@@ -1,4 +1,4 @@
-pragma solidity 0.4.24; 
+pragma solidity 0.5.0; 
 
 contract BoolListStorageInterface {
     function getListCount(bytes32 _key) external view returns (uint);

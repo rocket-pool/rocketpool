@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -46,8 +46,8 @@ contract RocketGroupSettings is RocketBase {
     }
 
     /// @dev Address where the fee will be sent                      
-    function getNewFeeAddress() public view returns (address) {
-        return rocketStorage.getAddress(keccak256(abi.encodePacked("settings.group.new.fee.address"))); 
+    function getNewFeeAddress() public view returns (address payable) {
+        return address(uint160(rocketStorage.getAddress(keccak256(abi.encodePacked("settings.group.new.fee.address"))))); 
     }
 
 

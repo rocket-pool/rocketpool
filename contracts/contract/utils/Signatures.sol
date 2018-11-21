@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 /// @title Signature utility methods for Rocket Pool
 /// @author David Rugendyke
@@ -14,7 +14,7 @@ contract UtilSignatures {
     * @param _sig bytes signature, the signature is generated using web3.eth.sign()
     * @return address
     */
-    function ecVerifyRecoverAddr(bytes32 _msgHash, bytes _sig) public pure returns (address) {
+    function ecVerifyRecoverAddr(bytes32 _msgHash, bytes memory _sig) public pure returns (address) {
         return ecRecover(_msgHash, _sig);
     }
     
@@ -25,7 +25,7 @@ contract UtilSignatures {
     * @param _sig bytes signature, the signature is generated using web3.eth.sign()
     * @return bool
     */
-    function ecVerifyIsSigned(address _address, bytes32 _msgHash, bytes _sig) public pure returns (bool) {
+    function ecVerifyIsSigned(address _address, bytes32 _msgHash, bytes memory _sig) public pure returns (bool) {
         return ecRecover(_msgHash, _sig) == _address;
     }
 
@@ -34,7 +34,7 @@ contract UtilSignatures {
     * @dev Splits an ec signature into its component parts v, r, s
     * @param _sig Signature bytes to split
      */
-    function ecSplit(bytes _sig) public pure returns (uint8, bytes32, bytes32) {
+    function ecSplit(bytes memory _sig) public pure returns (uint8, bytes32, bytes32) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -59,7 +59,7 @@ contract UtilSignatures {
    * @param _msgHash bytes32 message, the hash is the signed message. What is recovered is the signer address.
    * @param _sig bytes signature, the signature is generated using web3.eth.sign()
    */
-  function ecRecover(bytes32 _msgHash, bytes _sig) private pure returns (address) {
+  function ecRecover(bytes32 _msgHash, bytes memory _sig) private pure returns (address) {
 
         bytes32 r;
         bytes32 s;
