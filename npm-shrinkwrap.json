@@ -5523,12 +5523,13 @@
       "dev": true
     },
     "solc": {
-      "version": "0.4.24",
-      "resolved": "https://registry.npmjs.org/solc/-/solc-0.4.24.tgz",
-      "integrity": "sha512-2xd7Cf1HeVwrIb6Bu1cwY2/TaLRodrppCq3l7rhLimFQgmxptXhTC3+/wesVLpB09F1A2kZgvbMOgH7wvhFnBQ==",
+      "version": "0.5.0",
+      "resolved": "https://registry.npmjs.org/solc/-/solc-0.5.0.tgz",
+      "integrity": "sha512-mdLHDl9WeYrN+FIKcMc9PlPfnA9DG9ur5QpCDKcv6VC4RINAsTF4EMuXMZMKoQTvZhtLyJIVH/BZ+KU830Z8Xg==",
       "dev": true,
       "requires": {
         "fs-extra": "0.30.0",
+        "keccak": "1.4.0",
         "memorystream": "0.3.1",
         "require-from-string": "1.2.1",
         "semver": "5.5.0",
@@ -6373,7 +6374,7 @@
       "requires": {
         "mocha": "4.1.0",
         "original-require": "1.0.1",
-        "solc": "0.4.24"
+        "solc": "0.5.0"
       }
     },
     "truffle-blockchain-utils": {
@@ -6396,8 +6397,7 @@
       },
       "dependencies": {
         "bignumber.js": {
-          "version": "git+https://github.com/frozeman/bignumber.js-nolookahead.git#57692b3ecfc98bbdd6b3a516cb2353652ea49934",
-          "dev": true
+          "version": "git+https://github.com/frozeman/bignumber.js-nolookahead.git#57692b3ecfc98bbdd6b3a516cb2353652ea49934"
         },
         "crypto-js": {
           "version": "3.1.8",
@@ -6416,6 +6416,12 @@
             "utf8": "2.1.1",
             "xhr2": "0.1.4",
             "xmlhttprequest": "1.8.0"
+          },
+          "dependencies": {
+            "bignumber.js": {
+              "version": "git+https://github.com/frozeman/bignumber.js-nolookahead.git#57692b3ecfc98bbdd6b3a516cb2353652ea49934",
+              "dev": true
+            }
           }
         }
       }
@@ -6878,6 +6884,17 @@
             "underscore": "1.8.3",
             "web3-core-helpers": "1.0.0-beta.35",
             "websocket": "git://github.com/frozeman/WebSocket-Node.git#6c72925e3f8aaaea8dc8450f97627e85263999f2"
+          },
+          "dependencies": {
+            "websocket": {
+              "version": "git://github.com/frozeman/WebSocket-Node.git#6c72925e3f8aaaea8dc8450f97627e85263999f2",
+              "requires": {
+                "debug": "2.6.8",
+                "nan": "2.8.0",
+                "typedarray-to-buffer": "3.1.5",
+                "yaeti": "0.0.6"
+              }
+            }
           }
         },
         "web3-shh": {
@@ -7421,6 +7438,15 @@
           "version": "1.8.3",
           "resolved": "https://registry.npmjs.org/underscore/-/underscore-1.8.3.tgz",
           "integrity": "sha1-Tz+1OxBuYJf8+ctBCfKl6b36UCI="
+        },
+        "websocket": {
+          "version": "git://github.com/frozeman/WebSocket-Node.git#6c72925e3f8aaaea8dc8450f97627e85263999f2",
+          "requires": {
+            "debug": "2.6.8",
+            "nan": "2.8.0",
+            "typedarray-to-buffer": "3.1.5",
+            "yaeti": "0.0.6"
+          }
         }
       }
     },
@@ -7459,15 +7485,6 @@
           "resolved": "https://registry.npmjs.org/underscore/-/underscore-1.8.3.tgz",
           "integrity": "sha1-Tz+1OxBuYJf8+ctBCfKl6b36UCI="
         }
-      }
-    },
-    "websocket": {
-      "version": "git://github.com/frozeman/WebSocket-Node.git#6c72925e3f8aaaea8dc8450f97627e85263999f2",
-      "requires": {
-        "debug": "2.6.8",
-        "nan": "2.8.0",
-        "typedarray-to-buffer": "3.1.5",
-        "yaeti": "0.0.6"
       }
     },
     "which": {
