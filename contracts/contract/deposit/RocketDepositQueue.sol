@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -100,17 +100,17 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Default payable function - for deposit vault withdrawals
-    function() payable public onlyLatestContract("rocketDepositVault", msg.sender) {}
+    function() external payable onlyLatestContract("rocketDepositVault", msg.sender) {}
 
 
     // Get the balance of the deposit queue by duration
-    function getBalance(string _durationID) public view returns (uint256) {
+    function getBalance(string memory _durationID) public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("deposits.queue.balance", _durationID)));
     }
 
 
     // Enqueue a deposit
-    function enqueueDeposit(address _userID, address _groupID, string _durationID, bytes32 _depositID, uint256 _amount) public onlyLatestContract("rocketDeposit", msg.sender) {
+    function enqueueDeposit(address _userID, address _groupID, string memory _durationID, bytes32 _depositID, uint256 _amount) public onlyLatestContract("rocketDeposit", msg.sender) {
 
         // Get contracts
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -131,7 +131,7 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Dequeue a deposit
-    function dequeueDeposit(address _userID, address _groupID, string _durationID, bytes32 _depositID) private {
+    function dequeueDeposit(address _userID, address _groupID, string memory _durationID, bytes32 _depositID) private {
 
         // Get contracts
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -148,7 +148,7 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Remove a deposit from the queue
-    function removeDeposit(address _userID, address _groupID, string _durationID, bytes32 _depositID, uint256 _amount) public onlyLatestContract("rocketDeposit", msg.sender) {
+    function removeDeposit(address _userID, address _groupID, string memory _durationID, bytes32 _depositID, uint256 _amount) public onlyLatestContract("rocketDeposit", msg.sender) {
 
         // Get contracts
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -169,7 +169,7 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Assign chunks while able
-    function assignChunks(string _durationID) public onlySuperUserOrDeposit() {
+    function assignChunks(string memory _durationID) public onlySuperUserOrDeposit() {
 
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
@@ -193,7 +193,7 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Assign chunk
-    function assignChunk(string _durationID) private {
+    function assignChunk(string memory _durationID) private {
 
         // Get contracts
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
@@ -203,7 +203,7 @@ contract RocketDepositQueue is RocketBase {
 
         // Get next minipool in the active set to assign chunk to
         address miniPoolAddress = rocketMinipoolSet.getNextActiveMinipool(_durationID, msg.value);
-        require(miniPoolAddress != 0x0, "Invalid available minipool");
+        require(miniPoolAddress != address(0x0), "Invalid available minipool");
 
         // Remaining ether amount to match
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
@@ -230,7 +230,7 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Assign a fragment of a chunk from the first deposit in the queue
-    function assignChunkDepositFragment(string _durationID, address _miniPoolAddress, uint256 _amountToMatch) private returns (uint256) {
+    function assignChunkDepositFragment(string memory _durationID, address _miniPoolAddress, uint256 _amountToMatch) private returns (uint256) {
 
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "../../RocketBase.sol";
@@ -35,7 +35,7 @@ contract RocketNodeFactory is RocketBase {
     /// @param _nodeOwnerAddress The owner of the node contract
     function createRocketNodeContract(address _nodeOwnerAddress) public onlyLatestContract("rocketNodeAPI", msg.sender) returns(address) {
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside
-        RocketNodeContract newContractAddress = new RocketNodeContract(address(rocketStorage), _nodeOwnerAddress);
+        address newContractAddress = address(new RocketNodeContract(address(rocketStorage), _nodeOwnerAddress));
         // Emit created event
         emit ContractCreated(keccak256(abi.encodePacked("rocketNodeContract")), newContractAddress);
         // Return contract address

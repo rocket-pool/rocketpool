@@ -24,8 +24,8 @@ require("babel-polyfill");
 
 module.exports = {
   web3: Web3,
-    fs: FS,
-contract: Contract,
+  fs: FS,
+  contract: Contract,
   networks: {
     development: {
       provider: new Web3.providers.WebsocketProvider('ws://127.0.0.1:8545'),
@@ -40,13 +40,13 @@ contract: Contract,
       gas: 0xfffffffffff,
       gasPrice: 0x01,
     },
-    // Local Parity Development 
+    // Local Parity Development
     dev: {
         host: "127.0.0.1",
         port: 8545,
         network_id: "*", 
         from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
         gas: 8000000,
-    }   
+    },
   },
 };

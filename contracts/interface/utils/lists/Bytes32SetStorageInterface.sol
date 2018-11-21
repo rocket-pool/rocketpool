@@ -1,4 +1,4 @@
-pragma solidity 0.4.24; 
+pragma solidity 0.5.0; 
 
 contract Bytes32SetStorageInterface {
     function getCount(bytes32 _key) external view returns (uint);

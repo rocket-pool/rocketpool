@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -47,7 +47,8 @@ contract RocketDepositVault is RocketBase {
     /// @param _withdrawalAddress The address to withdraw ether to
     /// @param _amount The amount of ether to withdraw
     function withdrawEther(address _withdrawalAddress, uint256 _amount) external onlyDepositOrDepositQueue() returns (bool) {
-        require(_withdrawalAddress.call.value(_amount)(), "Withdrawal amount could not be transferred to withdrawal address");
+        (bool success,) = _withdrawalAddress.call.value(_amount)("");
+        require(success, "Withdrawal amount could not be transferred to withdrawal address");
         return true;
     }
 
