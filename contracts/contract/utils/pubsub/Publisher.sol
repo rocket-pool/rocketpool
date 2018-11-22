@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../../RocketBase.sol";
@@ -24,7 +24,7 @@ contract Publisher is RocketBase {
     modifier onlyLatestRocketNetwork() {
         if (rocketStorage.getBool(keccak256(abi.encodePacked("contract.storage.initialised")))) {
             require(
-                rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0 || // Rocket Pool network contract
+                rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != address(0x0) || // Rocket Pool network contract
                 rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) // Minipool contract
             );
         }
@@ -42,22 +42,14 @@ contract Publisher is RocketBase {
 
 
     /// @dev Publish event
-    /// @dev Overloaded by _value parameters
     /// @param _event The key of the event to publish
-    function publish(bytes32 _event, address _value1, uint8 _value2) external onlyLatestRocketNetwork() {
+    /// @param _data The ABI encoded data of the event
+    function publish(bytes32 _event, bytes memory _data) public onlyLatestRocketNetwork() {
         stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
         uint256 count = stringSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
         for (uint256 i = 0; i < count; ++i) {
             SubscriberInterface subscriber = SubscriberInterface(getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)));
-            subscriber.notify(_event, _value1, _value2);
-        }
-    }
-    function publish(bytes32 _event, string _value1, uint256 _value2) external onlyLatestRocketNetwork() {
-        stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
-        uint256 count = stringSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
-        for (uint256 i = 0; i < count; ++i) {
-            SubscriberInterface subscriber = SubscriberInterface(getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)));
-            subscriber.notify(_event, _value1, _value2);
+            subscriber.notify(_event, _data);
         }
     }
 
@@ -65,7 +57,7 @@ contract Publisher is RocketBase {
     /// @dev Add a subscriber to an event
     /// @param _event The key of the event to subscribe to
     /// @param _subscriber The name of the subscriber to add
-    function addSubscriber(bytes32 _event, string _subscriber) external onlyLatestRocketNetwork() {
+    function addSubscriber(bytes32 _event, string memory _subscriber) public onlyLatestRocketNetwork() {
         stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
         stringSetStorage.addItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
     }
@@ -74,7 +66,7 @@ contract Publisher is RocketBase {
     /// @dev Remove a subscriber from an event
     /// @param _event The key of the event to unsubscribe from
     /// @param _subscriber The name of the subscriber to remove
-    function removeSubscriber(bytes32 _event, string _subscriber) external onlyLatestRocketNetwork() {
+    function removeSubscriber(bytes32 _event, string memory _subscriber) public onlyLatestRocketNetwork() {
         stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
         stringSetStorage.removeItem(keccak256(abi.encodePacked("publisher.event", _event)), _subscriber);
     }
