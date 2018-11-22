@@ -50,7 +50,7 @@ contract BytesQueueStorage is RocketBase {
 
     /// @dev The index of an item in a bytes queue
     /// @dev Returns -1 if the value is not found
-    function getQueueIndexOf(bytes32 _key, bytes calldata _value) external view returns (int) {
+    function getQueueIndexOf(bytes32 _key, bytes memory _value) public view returns (int) {
         int index = int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
         if (index != -1) {
             index -= int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "start"))));
@@ -63,7 +63,7 @@ contract BytesQueueStorage is RocketBase {
     /// @dev Add an item to the end of a bytes queue
     /// @dev Requires that the queue is not at capacity
     /// @dev Requires that the item does not exist in the queue
-    function enqueueItem(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
+    function enqueueItem(bytes32 _key, bytes memory _value) onlyLatestRocketNetworkContract public {
         require(getQueueLength(_key) < capacity - 1, "Queue is at capacity");
         require(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value))) == 0, "Item already exists in queue");
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));
@@ -91,7 +91,7 @@ contract BytesQueueStorage is RocketBase {
     /// @dev Remove an item from a bytes queue
     /// @dev Swaps the item with the last item in the queue and truncates it; computationally cheap
     /// @dev Requires that the item exists in the queue
-    function removeItem(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
+    function removeItem(bytes32 _key, bytes memory _value) onlyLatestRocketNetworkContract public {
         uint index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)));
         require(index-- > 0, "Item does not exist in queue");
         uint lastIndex = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "end")));

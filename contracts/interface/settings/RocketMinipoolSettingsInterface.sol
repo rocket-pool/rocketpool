@@ -21,5 +21,5 @@ contract RocketMinipoolSettingsInterface {
     function getMinipoolBackupCollectEnabled() public view returns (bool);
     function getMinipoolBackupCollectDuration() public view returns (uint256);
     function getMinipoolTimeout() public view returns (uint256);
-    
+    function getMinipoolActiveSetSize() public view returns (uint256);
 }

@@ -137,16 +137,16 @@ contract TestQueues is RocketBase {
     function bytes_getQueueItem(bytes32 _key, uint _index) external view returns (bytes memory) {
         return bytesQueueStorage.getQueueItem(_key, _index);
     }
-    function bytes_getQueueIndexOf(bytes32 _key, bytes calldata _value) external view returns (int) {
+    function bytes_getQueueIndexOf(bytes32 _key, bytes memory _value) public view returns (int) {
         return bytesQueueStorage.getQueueIndexOf(_key, _value);
     }
-    function bytes_enqueueItem(bytes32 _key, bytes calldata _value) external {
+    function bytes_enqueueItem(bytes32 _key, bytes memory _value) public {
         bytesQueueStorage.enqueueItem(_key, _value);
     }
     function bytes_dequeueItem(bytes32 _key) external {
         bytesQueueStorage.dequeueItem(_key);
     }
-    function bytes_removeItem(bytes32 _key, bytes calldata _value) external {
+    function bytes_removeItem(bytes32 _key, bytes memory _value) public {
         bytesQueueStorage.removeItem(_key, _value);
     }
 
@@ -185,16 +185,16 @@ contract TestQueues is RocketBase {
     function string_getQueueItem(bytes32 _key, uint _index) external view returns (string memory) {
         return stringQueueStorage.getQueueItem(_key, _index);
     }
-    function string_getQueueIndexOf(bytes32 _key, string calldata _value) external view returns (int) {
+    function string_getQueueIndexOf(bytes32 _key, string memory _value) public view returns (int) {
         return stringQueueStorage.getQueueIndexOf(_key, _value);
     }
-    function string_enqueueItem(bytes32 _key, string calldata _value) external {
+    function string_enqueueItem(bytes32 _key, string memory _value) public {
         stringQueueStorage.enqueueItem(_key, _value);
     }
     function string_dequeueItem(bytes32 _key) external {
         stringQueueStorage.dequeueItem(_key);
     }
-    function string_removeItem(bytes32 _key, string calldata _value) external {
+    function string_removeItem(bytes32 _key, string memory _value) public {
         stringQueueStorage.removeItem(_key, _value);
     }
 

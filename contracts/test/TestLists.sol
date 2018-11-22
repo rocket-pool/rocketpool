@@ -130,16 +130,16 @@ contract TestLists is RocketBase {
     function bytes_getListItem(bytes32 _key, uint _index) external view returns (bytes memory) {
         return bytesListStorage.getListItem(_key, _index);
     }
-    function bytes_getListIndexOf(bytes32 _key, bytes calldata _value) external view returns (int) {
+    function bytes_getListIndexOf(bytes32 _key, bytes memory _value) public view returns (int) {
         return bytesListStorage.getListIndexOf(_key, _value);
     }
-    function bytes_setListItem(bytes32 _key, uint _index, bytes calldata _value) external {
+    function bytes_setListItem(bytes32 _key, uint _index, bytes memory _value) public {
         bytesListStorage.setListItem(_key, _index, _value);
     }
-    function bytes_pushListItem(bytes32 _key, bytes calldata _value) external {
+    function bytes_pushListItem(bytes32 _key, bytes memory _value) public {
         bytesListStorage.pushListItem(_key, _value);
     }
-    function bytes_insertListItem(bytes32 _key, uint _index, bytes calldata _value) external {
+    function bytes_insertListItem(bytes32 _key, uint _index, bytes memory _value) public {
         bytesListStorage.insertListItem(_key, _index, _value);
     }
     function bytes_removeUnorderedListItem(bytes32 _key, uint _index) external {
@@ -184,16 +184,16 @@ contract TestLists is RocketBase {
     function string_getListItem(bytes32 _key, uint _index) external view returns (string memory) {
         return stringListStorage.getListItem(_key, _index);
     }
-    function string_getListIndexOf(bytes32 _key, string calldata _value) external view returns (int) {
+    function string_getListIndexOf(bytes32 _key, string memory _value) public view returns (int) {
         return stringListStorage.getListIndexOf(_key, _value);
     }
-    function string_setListItem(bytes32 _key, uint _index, string calldata _value) external {
+    function string_setListItem(bytes32 _key, uint _index, string memory _value) public {
         stringListStorage.setListItem(_key, _index, _value);
     }
-    function string_pushListItem(bytes32 _key, string calldata _value) external {
+    function string_pushListItem(bytes32 _key, string memory _value) public {
         stringListStorage.pushListItem(_key, _value);
     }
-    function string_insertListItem(bytes32 _key, uint _index, string calldata _value) external {
+    function string_insertListItem(bytes32 _key, uint _index, string memory _value) public {
         stringListStorage.insertListItem(_key, _index, _value);
     }
     function string_removeUnorderedListItem(bytes32 _key, uint _index) external {

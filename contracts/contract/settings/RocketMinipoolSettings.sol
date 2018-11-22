@@ -50,6 +50,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
+            setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
             // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
@@ -153,6 +154,11 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")));
     }
 
+    /// @dev The number of minipools in the active set
+    function getMinipoolActiveSetSize() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.activeset.size")));
+    }
+
 
 
 
@@ -238,6 +244,11 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
     function setMinipoolTimeout(uint256 _time) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")), _time); 
+    }
+
+    /// @dev The number of minipools in the active set
+    function setMinipoolActiveSetSize(uint256 _size) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.activeset.size")), _size);
     }
 
 

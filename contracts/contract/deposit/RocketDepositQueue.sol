@@ -3,9 +3,9 @@ pragma solidity 0.5.0;
 
 import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
-import "../../interface/RocketPoolInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolSetInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
@@ -29,8 +29,8 @@ contract RocketDepositQueue is RocketBase {
 
 
     RocketNodeInterface rocketNode = RocketNodeInterface(0);
-    RocketPoolInterface rocketPool = RocketPoolInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
+    RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
@@ -196,13 +196,13 @@ contract RocketDepositQueue is RocketBase {
     function assignChunk(string memory _durationID) private {
 
         // Get contracts
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
+        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
 
-        // Get random available minipool to assign chunk to
-        address miniPoolAddress = rocketPool.getRandomAvailableMinipool(_durationID, msg.value);
+        // Get next minipool in the active set to assign chunk to
+        address miniPoolAddress = rocketMinipoolSet.getNextActiveMinipool(_durationID, msg.value);
         require(miniPoolAddress != address(0x0), "Invalid available minipool");
 
         // Remaining ether amount to match

@@ -272,14 +272,14 @@ export default function() {
             for (let di = 0; di <= chunksToAssign; ++di) {
 
                 // Get network utilisation & RPL ratio
-                let networkUtilisation = web3.utils.fromWei(await rocketPool.getNetworkUtilisation.call('3m'), 'ether');
-                let rplRatio = web3.utils.fromWei(await rocketNodeAPI.getRPLRatio.call('3m'), 'ether');
+                let networkUtilisation = parseFloat(web3.utils.fromWei(await rocketPool.getNetworkUtilisation.call('3m'), 'ether'));
+                let rplRatio = parseFloat(web3.utils.fromWei(await rocketNodeAPI.getRPLRatio.call('3m'), 'ether'));
 
                 // Check RPL ratio based on network utilisation
                 switch (networkUtilisation) {
-                    case 0.000: assert.isTrue(rplRatio > 4.9 && rplRatio < 5.0, 'Incorrect RPL ratio'); break;
-                    case 0.125: assert.isTrue(rplRatio > 1.9 && rplRatio < 2.0, 'Incorrect RPL ratio'); break;
-                    case 0.250: assert.isTrue(rplRatio > 1.1 && rplRatio < 1.2, 'Incorrect RPL ratio'); break;
+                    case 0.000: assert.isTrue(rplRatio > 2.9 && rplRatio < 3.0, 'Incorrect RPL ratio'); break;
+                    case 0.125: assert.isTrue(rplRatio > 1.4 && rplRatio < 1.5, 'Incorrect RPL ratio'); break;
+                    case 0.250: assert.isTrue(rplRatio > 1.0 && rplRatio < 1.1, 'Incorrect RPL ratio'); break;
                     case 0.375: assert.isTrue(rplRatio > 1.0 && rplRatio < 1.1, 'Incorrect RPL ratio'); break;
                     case 0.500: assert.isTrue(rplRatio == 1,                    'Incorrect RPL ratio'); break;
                     case 0.625: assert.isTrue(rplRatio > 0.9 && rplRatio < 1.0, 'Incorrect RPL ratio'); break;

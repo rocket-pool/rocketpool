@@ -36,14 +36,14 @@ contract StringSetStorage is RocketBase {
 
     /// @dev The index of an item in a set
     /// @dev Returns -1 if the value is not found
-    function getIndexOf(bytes32 _key, string calldata _value) external view returns (int) {
+    function getIndexOf(bytes32 _key, string memory _value) public view returns (int) {
         return int(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)))) - 1;
     }
 
 
     /// @dev Add an item to a set
     /// @dev Requires that the item does not exist in the set
-    function addItem(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
+    function addItem(bytes32 _key, string memory _value) onlyLatestRocketNetworkContract public {
         require(rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value))) == 0, "Item already exists in set");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         rocketStorage.setString(keccak256(abi.encodePacked(_key, "item", count)), _value);
@@ -55,7 +55,7 @@ contract StringSetStorage is RocketBase {
     /// @dev Remove an item from a set
     /// @dev Swaps the item with the last item in the set and truncates it; computationally cheap
     /// @dev Requires that the item exists in the set
-    function removeItem(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
+    function removeItem(bytes32 _key, string memory _value) onlyLatestRocketNetworkContract public {
         uint256 index = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "index", _value)));
         require(index-- > 0, "Item does not exist in set");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
