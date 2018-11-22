@@ -14,8 +14,8 @@ contract RocketStorageInterface {
     // Setters
     function setAddress(bytes32 _key, address _value) external;
     function setUint(bytes32 _key, uint _value) external;
-    function setString(bytes32 _key, string calldata _value) external;
-    function setBytes(bytes32 _key, bytes calldata _value) external;
+    function setString(bytes32 _key, string memory _value) public;
+    function setBytes(bytes32 _key, bytes memory _value) public;
     function setBool(bytes32 _key, bool _value) external;
     function setInt(bytes32 _key, int _value) external;
     function setBytes32(bytes32 _key, bytes32 _value) external;

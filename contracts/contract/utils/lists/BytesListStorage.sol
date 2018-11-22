@@ -37,7 +37,7 @@ contract BytesListStorage is RocketBase {
     /// @dev The index of the first byte array list item found matching the value
     /// @dev Walks list until the item is found; computationally expensive
     /// @dev Returns -1 if the value is not found
-    function getListIndexOf(bytes32 _key, bytes calldata _value) external view returns (int) {
+    function getListIndexOf(bytes32 _key, bytes memory _value) public view returns (int) {
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         for (uint index = 0; index < count; ++index) {
             if (keccak256(rocketStorage.getBytes(keccak256(abi.encodePacked(_key, "item", index)))) == keccak256(_value)) {
@@ -51,7 +51,7 @@ contract BytesListStorage is RocketBase {
     /// @dev Set the item in a byte array list by index
     /// @dev Overrides any existing data at the index; other list elements and count are not modified
     /// @dev Requires that the index is within the list's bounds
-    function setListItem(bytes32 _key, uint _index, bytes calldata _value) onlyLatestRocketNetworkContract external {
+    function setListItem(bytes32 _key, uint _index, bytes memory _value) onlyLatestRocketNetworkContract public {
         require(_index < rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count"))), "List index out of bounds");
         rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", _index)), _value);
     }
@@ -59,7 +59,7 @@ contract BytesListStorage is RocketBase {
 
     /// @dev Push an item onto a byte array list
     /// @dev Increments list count
-    function pushListItem(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
+    function pushListItem(bytes32 _key, bytes memory _value) onlyLatestRocketNetworkContract public {
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         rocketStorage.setBytes(keccak256(abi.encodePacked(_key, "item", count)), _value);
         rocketStorage.setUint(keccak256(abi.encodePacked(_key, "count")), count + 1);
@@ -69,7 +69,7 @@ contract BytesListStorage is RocketBase {
     /// @dev Insert an item into a byte array list at index
     /// @dev Moves all items at _index and after and increments list count; computationally expensive
     /// @dev Requires that the index is no higher than the current list length
-    function insertListItem(bytes32 _key, uint _index, bytes calldata _value) onlyLatestRocketNetworkContract external {
+    function insertListItem(bytes32 _key, uint _index, bytes memory _value) onlyLatestRocketNetworkContract public {
         require(_index <= rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count"))), "List index out of bounds");
         uint count = rocketStorage.getUint(keccak256(abi.encodePacked(_key, "count")));
         for (uint index = count; index > _index; --index) {

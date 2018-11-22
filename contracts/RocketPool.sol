@@ -138,7 +138,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to increase (e.g. "capacity") - only externally available to minipools
     /// @param _value The amount to increase the total ether value by
     /// @param _durationID The staking duration
-    function setNetworkIncreaseTotalEther(string calldata _type, string calldata _durationID, uint256 _value) external onlyMinipool(msg.sender) {
+    function setNetworkIncreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) public onlyMinipool(msg.sender) {
         networkIncreaseTotalEther(_type, _durationID, _value);
     }
 
@@ -146,7 +146,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to decrease (e.g. "capacity")
     /// @param _value The amount to decrease the total ether value by
     /// @param _durationID The staking duration
-    function setNetworkDecreaseTotalEther(string calldata _type, string calldata _durationID, uint256 _value) external onlyMinipool(msg.sender) {
+    function setNetworkDecreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) public onlyMinipool(msg.sender) {
         networkDecreaseTotalEther(_type, _durationID, _value);
     }
 
@@ -156,7 +156,7 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Create a minipool
-    function minipoolCreate(address _nodeOwner, string calldata _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+    function minipoolCreate(address _nodeOwner, string memory _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
