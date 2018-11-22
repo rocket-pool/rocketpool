@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../../RocketBase.sol";
@@ -11,7 +11,7 @@ contract BoolSetStorage is RocketBase {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != 0x0, "Calls permitted from latest Rocket Pool network contracts only");
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != address(0x0), "Calls permitted from latest Rocket Pool network contracts only");
         _;
     }
 

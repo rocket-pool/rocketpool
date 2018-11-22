@@ -1,14 +1,24 @@
+// Dependencies
+import { RocketGroupSettings } from '../_lib/artifacts';
+
+
 // Set a group's fee percentage
 export async function scenarioSetFeePerc({groupContract, stakingFee, fromAddress, gas}) {
+    const rocketGroupSettings = await RocketGroupSettings.deployed();
 
     // Set fee percentage
     await groupContract.setFeePerc(stakingFee, {from: fromAddress, gas: gas});
 
-    // Get fee percentage
+    // Get fee percentages
     let feePerc = parseInt(await groupContract.getFeePerc.call());
+    let rpFeePerc = parseInt(await groupContract.getFeePercRocketPool.call());
+
+    // Get RP fee percentage group setting
+    let rpFeePercGroupSetting = parseInt(await rocketGroupSettings.getDefaultFee.call());
 
     // Asserts
     assert.equal(feePerc, stakingFee, 'Staking fee was not successfully updated');
+    assert.equal(rpFeePerc, rpFeePercGroupSetting, 'RP fee percentage is incorrect');
 
 }
 

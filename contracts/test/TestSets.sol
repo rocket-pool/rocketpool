@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../RocketBase.sol";
@@ -103,16 +103,16 @@ contract TestSets is RocketBase {
     function bytes_getCount(bytes32 _key) external view returns (uint) {
         return bytesSetStorage.getCount(_key);
     }
-    function bytes_getItem(bytes32 _key, uint _index) external view returns (bytes) {
+    function bytes_getItem(bytes32 _key, uint _index) external view returns (bytes memory) {
         return bytesSetStorage.getItem(_key, _index);
     }
-    function bytes_getIndexOf(bytes32 _key, bytes _value) external view returns (int) {
+    function bytes_getIndexOf(bytes32 _key, bytes memory _value) public view returns (int) {
         return bytesSetStorage.getIndexOf(_key, _value);
     }
-    function bytes_addItem(bytes32 _key, bytes _value) external {
+    function bytes_addItem(bytes32 _key, bytes memory _value) public {
         bytesSetStorage.addItem(_key, _value);
     }
-    function bytes_removeItem(bytes32 _key, bytes _value) external {
+    function bytes_removeItem(bytes32 _key, bytes memory _value) public {
         bytesSetStorage.removeItem(_key, _value);
     }
 
@@ -139,16 +139,16 @@ contract TestSets is RocketBase {
     function string_getCount(bytes32 _key) external view returns (uint) {
         return stringSetStorage.getCount(_key);
     }
-    function string_getItem(bytes32 _key, uint _index) external view returns (string) {
+    function string_getItem(bytes32 _key, uint _index) external view returns (string memory) {
         return stringSetStorage.getItem(_key, _index);
     }
-    function string_getIndexOf(bytes32 _key, string _value) external view returns (int) {
+    function string_getIndexOf(bytes32 _key, string memory _value) public view returns (int) {
         return stringSetStorage.getIndexOf(_key, _value);
     }
-    function string_addItem(bytes32 _key, string _value) external {
+    function string_addItem(bytes32 _key, string memory _value) public {
         stringSetStorage.addItem(_key, _value);
     }
-    function string_removeItem(bytes32 _key, string _value) external {
+    function string_removeItem(bytes32 _key, string memory _value) public {
         stringSetStorage.removeItem(_key, _value);
     }
 

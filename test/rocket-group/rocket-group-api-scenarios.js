@@ -24,7 +24,7 @@ export async function scenarioAddGroup({name, stakingFee, value, fromAddress, ga
     // Asserts
     let groupAddEvents = result.logs.filter(log => (log.event == 'GroupAdd'));
     assert.equal(groupAddEvents.length, 1, 'Group was not created successfully');
-    assert.isTrue(feeBalance2 > feeBalance1, 'Creation fee balance was not transferred successfully');
+    if (value > 0) assert.isTrue(feeBalance2 > feeBalance1, 'Creation fee balance was not transferred successfully');
 
     // Return group ID
     return groupAddEvents[0].args.ID;

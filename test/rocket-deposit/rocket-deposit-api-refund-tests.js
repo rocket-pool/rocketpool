@@ -53,7 +53,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('500', 'ether'),
-                gas: 7500000,
             });
 
             // Get deposit ID
@@ -66,7 +65,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             });
 
         });
@@ -82,7 +80,6 @@ export default function() {
                 durationID: '3m',
                 fromAddress: user1,
                 value: web3.utils.toWei('500', 'ether'),
-                gas: 7500000,
             });
 
             // Get deposit ID
@@ -95,7 +92,6 @@ export default function() {
                 durationID: 'beer',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid staking duration ID');
 
         });
@@ -109,7 +105,6 @@ export default function() {
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid ID');
         });
 
@@ -118,7 +113,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a deposit while refunds are disabled'), async () => {
 
             // Disable refunds
-            await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner, gas: 500000});
+            await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner});
 
             // Request refund
             await assertThrows(scenarioRefundDeposit({
@@ -127,11 +122,10 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit while refunds were disabled');
 
             // Reenable refunds
-            await rocketDepositSettings.setRefundDepositAllowed(true, {from: owner, gas: 500000});
+            await rocketDepositSettings.setRefundDepositAllowed(true, {from: owner});
 
         });
 
@@ -146,7 +140,6 @@ export default function() {
                 durationID: '3m',
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
             // Nonexistant user
@@ -156,7 +149,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user2,
-                gas: 500000,
             }), 'Refunded a nonexistant deposit');
 
         });
@@ -172,7 +164,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid user ID');
 
             // Invalid group ID
@@ -182,7 +173,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit with an invalid group ID');
 
             // Valid parameters; invalid depositor
@@ -192,7 +182,6 @@ export default function() {
                 durationID: '3m',
                 depositID,
                 fromAddress: user1,
-                gas: 500000,
             }), 'Refunded a deposit directly via RocketDepositAPI');
 
         });

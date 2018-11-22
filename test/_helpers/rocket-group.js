@@ -11,7 +11,7 @@ export async function createGroupContract({name, stakingFee, groupOwner}) {
 
     // Create group
     let rocketGroupAPI = await RocketGroupAPI.deployed();
-    let groupAddResult = await rocketGroupAPI.add(name, stakingFee, {from: groupOwner, gas: 7500000, value: newGroupFee});
+    let groupAddResult = await rocketGroupAPI.add(name, stakingFee, {from: groupOwner, value: newGroupFee});
 
     // Get & return group contract
     let groupContractAddress = groupAddResult.logs.filter(log => (log.event == 'GroupAdd'))[0].args.ID;
@@ -26,7 +26,7 @@ export async function createGroupAccessorContract({groupContractAddress, groupOw
 
     // Create accessor
     let rocketGroupAPI = await RocketGroupAPI.deployed();
-    let accessorCreateResult = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner, gas: 7500000});
+    let accessorCreateResult = await rocketGroupAPI.createDefaultAccessor(groupContractAddress, {from: groupOwner});
 
     // Get & return accessor contract
     let accessorContractAddress = accessorCreateResult.logs.filter(log => (log.event == 'GroupCreateDefaultAccessor'))[0].args.accessorAddress;
@@ -38,7 +38,7 @@ export async function createGroupAccessorContract({groupContractAddress, groupOw
 
 // Add an accessor to a group
 export async function addGroupAccessor({groupContract, groupAccessorContractAddress, groupOwner}) {
-    await groupContract.addDepositor(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
-    await groupContract.addWithdrawer(groupAccessorContractAddress, {from: groupOwner, gas: 500000});
+    await groupContract.addDepositor(groupAccessorContractAddress, {from: groupOwner});
+    await groupContract.addWithdrawer(groupAccessorContractAddress, {from: groupOwner});
 }
 

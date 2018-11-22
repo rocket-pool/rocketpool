@@ -32,16 +32,19 @@ export default function() {
         it(printTitle('owner', 'can add a node task'), async () => {
             await scenarioAddNodeTask({
                 taskAddress: testNodeTask1.address,
+                taskName: 'NodeTask1',
                 fromAddress: owner,
                 gas: 500000,
             });
             await scenarioAddNodeTask({
                 taskAddress: testNodeTask2.address,
+                taskName: 'NodeTask2',
                 fromAddress: owner,
                 gas: 500000,
             });
             await scenarioAddNodeTask({
                 taskAddress: testNodeTask3.address,
+                taskName: 'NodeTask3',
                 fromAddress: owner,
                 gas: 500000,
             });
@@ -52,6 +55,7 @@ export default function() {
         it(printTitle('owner', 'cannot add a node task with an invalid address'), async () => {
             await assertThrows(scenarioAddNodeTask({
                 taskAddress: '0x0000000000000000000000000000000000000000',
+                taskName: 'NodeTaskNull',
                 fromAddress: owner,
                 gas: 500000,
             }), 'Added a node task with an invalid address');
@@ -62,6 +66,7 @@ export default function() {
         it(printTitle('owner', 'cannot add a node task with an existing address'), async () => {
             await assertThrows(scenarioAddNodeTask({
                 taskAddress: testNodeTask1.address,
+                taskName: 'NodeTask1',
                 fromAddress: owner,
                 gas: 500000,
             }), 'Added a node task with an existing address');
@@ -136,6 +141,7 @@ export default function() {
         it(printTitle('random account', 'cannot add a node task'), async () => {
             await assertThrows(scenarioAddNodeTask({
                 taskAddress: testNodeTask4.address,
+                taskName: 'NodeTask4',
                 fromAddress: accounts[1],
                 gas: 500000,
             }), 'Random account added a node task');

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 // Interfaces
@@ -174,12 +174,12 @@ contract RocketMinipoolDelegate {
     /// @dev Only registered users with this pool
     /// @param _user The users address.
     modifier isPoolUser(address _user) {
-        require(_user != 0 && users[_user].exists != false, "Is not a pool user.");
+        require(_user != address(0x0) && users[_user].exists != false, "Is not a pool user.");
         _;
     }
 
     /// @dev Only allow access from the latest version of the specified Rocket Pool contract
-    modifier onlyLatestContract(string _contract) {
+    modifier onlyLatestContract(string memory _contract) {
         require(msg.sender == getContractAddress(_contract), "Only the latest specified Rocket Pool contract can access this method.");
         _;
     }
@@ -203,7 +203,7 @@ contract RocketMinipoolDelegate {
     
 
     /// @dev Get the the contracts address - This method should be called before interacting with any RP contracts to ensure the latest address is used
-    function getContractAddress(string _contractName) private view returns(address) { 
+    function getContractAddress(string memory _contractName) private view returns(address) { 
         // Get the current API contract address 
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
     }
@@ -212,44 +212,6 @@ contract RocketMinipoolDelegate {
     
 
     /*** NODE ***********************************************/
-
-    // Getters
-
-    /// @dev Gets the node contract address
-    function getNodeOwner() public view returns(address) {
-        return node.owner;
-    }
-
-    /// @dev Gets the node contract address
-    function getNodeContract() public view returns(address) {
-        return node.contractAddress;
-    }
-
-    /// @dev Gets the amount of ether the node owner must deposit
-    function getNodeDepositEther() public view returns(uint256) {
-        return node.depositEther;
-    }
-    
-    /// @dev Gets the amount of RPL the node owner must deposit
-    function getNodeDepositRPL() public view returns(uint256) {
-        return node.depositRPL;
-    }
-
-    /// @dev Gets the node's trusted status (at the time of minipool creation)
-    function getNodeTrusted() public view returns(bool) {
-        return node.trusted;
-    }
-
-    /// @dev Gets whether the node operator's deposit currently exists
-    function getNodeDepositExists() public view returns(bool) {
-        return node.depositExists;
-    }
-
-    /// @dev Gets the node operator's ether balance
-    function getNodeBalance() public view returns(uint256) {
-        return node.balance;
-    }
-
 
     // Methods
 
@@ -286,7 +248,7 @@ contract RocketMinipoolDelegate {
         node.balance = 0;
         // Transfer ether and RPL to node contract
         if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
-        if (etherAmount > 0) { node.contractAddress.transfer(etherAmount); }
+        if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rplAmount, now);
         // Update the status
@@ -303,11 +265,6 @@ contract RocketMinipoolDelegate {
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
         return userAddresses.length;
-    }
-
-    /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _user) public view returns(bool) {
-        return users[_user].exists;
     }
 
 
@@ -329,7 +286,7 @@ contract RocketMinipoolDelegate {
         // Publish deposit event
         publisher.publish(keccak256("minipool.user.deposit"), staking.id, msg.value);
         // All good? Fire the event for the new deposit
-        emit PoolTransfer(msg.sender, this, keccak256("deposit"), msg.value, users[_user].balance, now);
+        emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
         updateStatus();
         // Success
@@ -352,11 +309,12 @@ contract RocketMinipoolDelegate {
         // Remove user
         removeUser(_user);
         // Transfer withdrawal amount to withdrawal address
-        require(_withdrawalAddress.call.value(amount)(), "Withdrawal amount could not be transferred to withdrawal address");
+        (bool success,) = _withdrawalAddress.call.value(amount)("");
+        require(success, "Withdrawal amount could not be transferred to withdrawal address");
         // Decrease total network assigned ether
         rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);
         // All good? Fire the event for the withdrawal
-        emit PoolTransfer(this, _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
+        emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
         updateStatus();
         // Success
@@ -378,7 +336,7 @@ contract RocketMinipoolDelegate {
             // Add the new user to the mapping of User structs
             users[_user] = User({
                 user: _user,
-                backup: 0,
+                backup: address(0x0),
                 groupID: _groupID,
                 balance: 0,
                 rewards: 0,
@@ -423,25 +381,6 @@ contract RocketMinipoolDelegate {
 
     /*** MINIPOOL  ******************************************/
 
-
-    // Getters
-
-    /// @dev Gets the current status of the minipool
-    function getStatus() public view returns(uint8) {
-        return status.current;
-    }
-
-    /// @dev Returns the time the status last changed to its current status
-    function getStatusChanged() public view returns(uint256) {
-        return status.time;
-    }
-
-    /// @dev Returns the current staking duration in blocks
-    function getStakingDuration() public view returns(uint256) {
-        return staking.duration;
-    }
-
-
     // Setters
 
     /// @dev Change the status
@@ -470,10 +409,8 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
-        // Check to see if we can close the pool
-        if (closePool()) {
-            return true;
-        }
+        // Check to see if we can close the pool - stops execution if closed
+        closePool();
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getUserCount() == 1 && status.current == 0) {
             // Prelaunch
@@ -516,7 +453,7 @@ contract RocketMinipoolDelegate {
 
 
     /// @dev All kids outta the pool - will close and self destruct this pool if the conditions are correct
-    function closePool() private returns(bool) {
+    function closePool() private {
         // Get the RP interface
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Remove the minipool if possible
@@ -527,10 +464,8 @@ contract RocketMinipoolDelegate {
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
             // Close now and send any unclaimed ether back to the node contract
-            selfdestruct(node.contractAddress);
+            selfdestruct(address(uint160(node.contractAddress)));
         }
-        // Nope
-        return false;
     }
 
 

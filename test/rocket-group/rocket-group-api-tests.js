@@ -33,6 +33,23 @@ export default function() {
 
         // Group owner can add a group
         it(printTitle('group owner', 'can add a group'), async () => {
+
+            // Set registration fee to zero
+            await rocketGroupSettings.setNewFee(0, {from: owner, gas: 500000});
+
+            // Zero registration fee
+            groupID = await scenarioAddGroup({
+                name: 'Group 0',
+                stakingFee: web3.utils.toWei('0.05', 'ether'),
+                value: 0,
+                fromAddress: groupOwner,
+                gas: 7500000,
+            });
+
+            // Reset registration fee to default
+            await rocketGroupSettings.setNewFee(newGroupFee, {from: owner, gas: 500000});
+
+            // Default registration fee
             groupID = await scenarioAddGroup({
                 name: 'Group 1',
                 stakingFee: web3.utils.toWei('0.05', 'ether'),
@@ -40,6 +57,7 @@ export default function() {
                 fromAddress: groupOwner,
                 gas: 7500000,
             });
+
         });
 
 

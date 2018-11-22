@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 // Our group interface
@@ -7,5 +7,5 @@ contract RocketGroupSettingsInterface {
     function getDefaultFee() public view returns (uint256);
     function getNewAllowed() public view returns (bool);
     function getNewFee() public view returns (uint256);
-    function getNewFeeAddress() public view returns (address);
+    function getNewFeeAddress() public view returns (address payable);
 }

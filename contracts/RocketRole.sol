@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 import "./RocketBase.sol";
 import "./interface/RocketStorageInterface.sol";
@@ -26,14 +26,6 @@ contract RocketRole is RocketBase {
     );
 
 
-    /*** Modifiers ************/
-
-    /// @dev Only allow access from the latest version of the RocketRole contract
-    modifier onlyLatestRocketRole() {
-        require(address(this) == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketRole"))));
-        _;
-    }
-  
     /*** Constructor **********/
    
     /// @dev constructor
@@ -46,15 +38,16 @@ contract RocketRole is RocketBase {
     * @dev Allows the current owner to transfer control of the contract to a newOwner.
     * @param _newOwner The address to transfer ownership to.
     */
-    function transferOwnership(address _newOwner) public onlyLatestRocketRole onlyOwner {
+    function transferOwnership(address _newOwner) public onlyLatestContract("rocketRole", address(this)) onlyOwner {
         // Legit address?
-        require(_newOwner != 0x0);
-        // Check the role exists 
-        roleCheck("owner", msg.sender);
+        require(_newOwner != address(0x0), "The new owner address is invalid");
+        require(_newOwner != msg.sender, "The new owner address must not be the existing owner address");
         // Remove current role
         rocketStorage.deleteBool(keccak256(abi.encodePacked("access.role", "owner", msg.sender)));
         // Add new owner
         rocketStorage.setBool(keccak256(abi.encodePacked("access.role",  "owner", _newOwner)), true);
+        // Log it
+        emit OwnershipTransferred(msg.sender, _newOwner);
     }
 
 
@@ -64,14 +57,14 @@ contract RocketRole is RocketBase {
    /**
    * @dev Give an address access to this role
    */
-    function adminRoleAdd(string _role, address _address) onlyLatestRocketRole onlySuperUser public {
+    function adminRoleAdd(string memory _role, address _address) onlyLatestContract("rocketRole", address(this)) onlySuperUser public {
         roleAdd(_role, _address);
     }
 
     /**
    * @dev Remove an address access to this role
    */
-    function adminRoleRemove(string _role, address _address) onlyLatestRocketRole onlySuperUser public {
+    function adminRoleRemove(string memory _role, address _address) onlyLatestContract("rocketRole", address(this)) onlySuperUser public {
         roleRemove(_role, _address);
     }
 
@@ -81,11 +74,13 @@ contract RocketRole is RocketBase {
     /**
    * @dev Give an address access to this role
    */
-    function roleAdd(string _role, address _address) internal {
+    function roleAdd(string memory _role, address _address) internal {
         // Legit address?
-        require(_address != 0x0);
+        require(_address != address(0x0), "The role address is invalid");
         // Only one owner to rule them all
-        require(keccak256(abi.encodePacked(_role)) != keccak256(abi.encodePacked("owner")));
+        require(keccak256(abi.encodePacked(_role)) != keccak256(abi.encodePacked("owner")), "The owner role cannot be added to an address");
+        // Address does not already have role?
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address))) == false, "The address already has access to this role");
         // Add it
         rocketStorage.setBool(keccak256(abi.encodePacked("access.role", _role, _address)), true);
         // Log it
@@ -95,9 +90,11 @@ contract RocketRole is RocketBase {
     /**
     * @dev Remove an address' access to this role
     */
-    function roleRemove(string _role, address _address) internal {
+    function roleRemove(string memory _role, address _address) internal {
         // Only an owner can transfer their access
-        require(!roleHas("owner", _address));
+        require(!roleHas("owner", _address), "Roles cannot be removed from the owner address");
+        // Address already has role?
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address))) == true, "The address does not have access to this role");
         // Remove from storage
         rocketStorage.deleteBool(keccak256(abi.encodePacked("access.role", _role, _address)));
         // Log it

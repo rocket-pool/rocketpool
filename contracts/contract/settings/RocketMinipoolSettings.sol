@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
@@ -50,6 +50,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
+            setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
             // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
@@ -116,7 +117,7 @@ contract RocketMinipoolSettings is RocketBase {
     }
 
      /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
-    function getMinipoolStakingDuration(string _durationID) public view returns (uint256) {
+    function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256) {
         // Make sure the staking ID exists
         uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
         require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
@@ -153,6 +154,11 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")));
     }
 
+    /// @dev The number of minipools in the active set
+    function getMinipoolActiveSetSize() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.activeset.size")));
+    }
+
 
 
 
@@ -175,7 +181,7 @@ contract RocketMinipoolSettings is RocketBase {
     }
 
     /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
-    function setMinipoolStakingDuration(string _option, uint256 _blocks) public onlySuperUser {
+    function setMinipoolStakingDuration(string memory _option, uint256 _blocks) public onlySuperUser {
         require(_blocks > 0, "Amount of blocks for staking duration not specified.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _option)), _blocks);  
     }
@@ -238,6 +244,11 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
     function setMinipoolTimeout(uint256 _time) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.timeout.period")), _time); 
+    }
+
+    /// @dev The number of minipools in the active set
+    function setMinipoolActiveSetSize(uint256 _size) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.activeset.size")), _size);
     }
 
 

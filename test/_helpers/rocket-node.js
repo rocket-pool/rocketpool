@@ -9,7 +9,7 @@ export async function createNodeContract({timezone, nodeOperator}) {
 
     // Create node contract
     let rocketNodeAPI = await RocketNodeAPI.deployed();
-    let nodeAddResult = await rocketNodeAPI.add(timezone, {from: nodeOperator, gas: 7500000});
+    let nodeAddResult = await rocketNodeAPI.add(timezone, {from: nodeOperator});
 
     // Get & return node contract instance
     let nodeContractAddress = nodeAddResult.logs.filter(log => (log.event == 'NodeAdd'))[0].args.contractAddress;
@@ -35,14 +35,14 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Reserve node deposit
-        await nodeContract.depositReserve(nodeDepositAmount, stakingDurationID, {from: nodeOperator, gas: 500000});
+        await nodeContract.depositReserve(nodeDepositAmount, stakingDurationID, {from: nodeOperator});
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
         if (rplRequired > 0) await mintRpl({toAddress: nodeContract.address, rplAmount: rplRequired, fromAddress: owner});
 
         // Complete deposit to create minipool
-        let result = await nodeContract.deposit({from: nodeOperator, gas: 7500000, value: nodeDepositAmount});
+        let result = await nodeContract.deposit({from: nodeOperator, value: nodeDepositAmount});
 
         // Get minipool created events
         let minipoolCreatedEvents = getTransactionContractEvents(result, rocketPool.address, 'PoolCreated', [

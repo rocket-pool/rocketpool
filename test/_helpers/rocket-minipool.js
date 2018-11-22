@@ -29,7 +29,7 @@ export async function timeoutMinipool({minipoolAddress, owner}) {
     }
 
     // Update minipool status
-    await minipool.updateStatus({from: owner, gas: 500000});
+    await minipool.updateStatus({from: owner});
 
 }
 

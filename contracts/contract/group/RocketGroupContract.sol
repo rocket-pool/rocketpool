@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Interfaces
 import "./../../interface/RocketStorageInterface.sol";
@@ -66,7 +66,6 @@ contract RocketGroupContract {
     */
     modifier onlyValidFeePerc(uint256 _stakingFeePerc) {
         // Check its a legit amount
-        require(_stakingFeePerc >= 0, "User fee cannot be less than 0.");
         require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
         _;
     }

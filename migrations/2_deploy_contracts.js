@@ -17,6 +17,7 @@ const rocketStorage = artifacts.require('./RocketStorage.sol');
 // All other contracts
 const contracts = {};
 // Core
+contracts.rocketAdmin = artifacts.require('./RocketAdmin.sol');
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
 contracts.rocketNode = artifacts.require('./RocketNode.sol');
@@ -35,6 +36,7 @@ contracts.rocketNodeTasks = artifacts.require('./node/RocketNodeTasks.sol');
 // Minipool
 contracts.rocketMinipoolDelegate = artifacts.require('./minipool/RocketMinipoolDelegate.sol');
 contracts.rocketMinipoolFactory = artifacts.require('./minipool/RocketMinipoolFactory.sol');
+contracts.rocketMinipoolSet = artifacts.require('./minipool/RocketMinipoolSet.sol');
 // Settings
 contracts.rocketMinipoolSettings = artifacts.require('./settings/RocketMinipoolSettings.sol');
 contracts.rocketDepositSettings = artifacts.require('./settings/RocketDepositSettings.sol');

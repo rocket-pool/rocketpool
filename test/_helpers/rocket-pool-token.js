@@ -7,7 +7,7 @@ export async function mintRpl({toAddress, rplAmount, fromAddress}) {
 
     // Mint RPL
     let rocketPoolToken = await RocketPoolToken.deployed();
-    await rocketPoolToken.mint(toAddress, rplAmount, {from: fromAddress, gas: 500000});
+    await rocketPoolToken.mint(toAddress, rplAmount, {from: fromAddress});
 
 }
 

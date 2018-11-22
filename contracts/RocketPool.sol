@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "./RocketBase.sol";
@@ -6,6 +6,7 @@ import "./RocketBase.sol";
 import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "./interface/minipool/RocketMinipoolSetInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
 // Libraries
@@ -26,6 +27,7 @@ contract RocketPool is RocketBase {
     RocketNodeInterface rocketNode = RocketNodeInterface(0);                                                // Interface for node methods
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
+    RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);                           // Maintains the active minipool set
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
 
@@ -60,7 +62,7 @@ contract RocketPool is RocketBase {
     /// @dev Only registered minipool addresses can access
     /// @param _minipoolAddress pool account address.
     modifier onlyMinipool(address _minipoolAddress) {
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))));
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Caller must be a valid minipool");
         _;
     }
 
@@ -122,25 +124,25 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Get the address of a pseudorandom available node's first minipool
-    function getRandomAvailableMinipool(string _durationID, uint256 _nonce) public returns (address) {
+    function getRandomAvailableMinipool(bool _trusted, string memory _durationID, uint256 _seed, uint256 _offset) public returns (address) {
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        (address nodeAddress, bool nodeTrusted) = rocketNode.getRandomAvailableNode(_durationID, _nonce);
-        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, nodeTrusted, _durationID)), 0);
+        address nodeAddress = rocketNode.getRandomAvailableNode(_trusted, _durationID, _seed, _offset);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeAddress, _trusted, _durationID)), 0);
     }
 
 
     /// @dev Get the total ether value of the network by key
     /// @param _type The type of total ether value to retrieve (e.g. "capacity")
     /// @param _durationID The staking duration
-    function getTotalEther(string _type, string _durationID) public view returns (uint256) {
+    function getTotalEther(string memory _type, string memory _durationID) public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)));
     }
 
 
     /// @dev Get the current network utilisation (assigned ether / ether capacity) as a fraction of 1 ether
     /// @param _durationID The staking duration
-    function getNetworkUtilisation(string _durationID) public view returns (uint256) {
+    function getNetworkUtilisation(string memory _durationID) public view returns (uint256) {
         uint256 etherCapacity = getTotalEther("capacity", _durationID);
         if (etherCapacity == 0) { return 1 ether; }
         uint256 base = 1 ether;
@@ -148,14 +150,11 @@ contract RocketPool is RocketBase {
     }
 
 
-    /*** Setters *************/
-
-
     /*** Methods - Minipool *************/
 
 
     /// @dev Create a minipool
-    function minipoolCreate(address _nodeOwner, string _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) external onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+    function minipoolCreate(address _nodeOwner, string memory _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
@@ -232,6 +231,7 @@ contract RocketPool is RocketBase {
     function minipoolAvailable(address _minipool, bool _available) private returns (bool) {
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
+        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         rocketMinipool = RocketMinipoolInterface(_minipool);
         // Get minipool properties
@@ -249,6 +249,8 @@ contract RocketPool is RocketBase {
         else {
             // Remove minipool from node's available set
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
+            // Remove minipool from active set
+            rocketMinipoolSet.removeActiveMinipool(durationID, _minipool);
             // Remove node from available set if out of minipools
             if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID))) == 0) {
                 rocketNode.setNodeUnavailable(nodeOwner, trusted, durationID);
@@ -266,7 +268,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to increase (e.g. "capacity")
     /// @param _value The amount to increase the total ether value by
     /// @param _durationID The staking duration
-    function networkIncreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+    function networkIncreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).add(_value)
         );
@@ -278,7 +280,7 @@ contract RocketPool is RocketBase {
     /// @param _type The type of total ether value to decrease (e.g. "capacity")
     /// @param _value The amount to decrease the total ether value by
     /// @param _durationID The staking duration
-    function networkDecreaseTotalEther(string _type, string _durationID, uint256 _value) private {
+    function networkDecreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).sub(_value)
         );

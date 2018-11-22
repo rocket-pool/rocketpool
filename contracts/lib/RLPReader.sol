@@ -2,7 +2,7 @@
 * @author Hamdi Allam hamdi.allam97@gmail.com
 * Please reach our for any questions/concerns
 */
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 library RLPReader {
     uint8 constant STRING_SHORT_START = 0x80;
@@ -175,7 +175,7 @@ library RLPReader {
         return result;
     }
 
-    function toBytes(RLPItem memory item) internal pure returns (bytes) {
+    function toBytes(RLPItem memory item) internal pure returns (bytes memory) {
         uint offset = _payloadOffset(item.memPtr);
         uint len = item.len - offset; // data length
         bytes memory result = new bytes(len);

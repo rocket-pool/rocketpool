@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 // Contracts
 import "./RocketBase.sol";
@@ -29,6 +29,13 @@ contract RocketAdmin is RocketBase {
     
 
     /*** Node Methods **********************************/
+
+
+    /// @dev Get a node's trusted status
+    /// @param _nodeAddress The address of the node
+    function getNodeTrusted(address _nodeAddress) public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
+    }
 
 
     /// @dev Set this node as a 'Trusted Node' - Is not required to stake as much ether as they receive, but does need the RPL. Is served after regular node operators to ensure the network can always grow.
