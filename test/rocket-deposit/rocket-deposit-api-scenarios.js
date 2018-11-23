@@ -218,6 +218,7 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
 
     // Withdraw
     let result = await withdrawerContract.withdrawMinipoolDeposit(depositID, minipoolAddress, {from: fromAddress, gas: gas});
+    profileGasUsage('RocketGroupAccessorContract.withdrawMinipoolDeposit', result);
 
     // Get updated balances
     let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
