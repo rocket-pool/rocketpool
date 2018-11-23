@@ -276,15 +276,13 @@ contract RocketMinipoolDelegate {
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
-        // Load contracts
-        publisher = PublisherInterface(getContractAddress("utilPublisher"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
         // Publish deposit event
-        publisher.publish(keccak256("minipool.user.deposit"), staking.id, msg.value);
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.deposit"), abi.encode(staking.id, msg.value));
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
@@ -311,8 +309,9 @@ contract RocketMinipoolDelegate {
         // Transfer withdrawal amount to withdrawal address
         (bool success,) = _withdrawalAddress.call.value(amount)("");
         require(success, "Withdrawal amount could not be transferred to withdrawal address");
-        // Decrease total network assigned ether
-        rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);
+        // Publish withdrawal event
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.withdraw"), abi.encode(staking.id, amount));
         // All good? Fire the event for the withdrawal
         emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
@@ -395,7 +394,7 @@ contract RocketMinipoolDelegate {
             emit StatusChange(status.current, status.previous, status.time, status.block);
             // Publish status change event
             publisher = PublisherInterface(getContractAddress("utilPublisher"));
-            publisher.publish(keccak256("minipool.status.change"), address(this), _newStatus);
+            publisher.publish(keccak256("minipool.status.change"), abi.encode(address(this), _newStatus));
         }
     }
     
@@ -440,8 +439,6 @@ contract RocketMinipoolDelegate {
         }
         // Set to TimedOut - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it)
         if (status.current == 1 && status.time <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
-            // Set minipool availability status
-            rocketPool.setMinipoolAvailable(false); 
             // TimedOut
             setStatus(6);
             // Done
