@@ -45,6 +45,7 @@ contract RocketMinipoolSet is RocketBase {
             // Remove minipool from active set if unavailable
             if (!available) { removeActiveMinipool(durationID, minipool); }
 
+            return;
         }
 
     }

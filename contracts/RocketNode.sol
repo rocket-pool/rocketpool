@@ -45,6 +45,7 @@ contract RocketNode is RocketBase {
                 if (rocketPool.getAvailableNodePoolsCount(nodeOwner, trusted, durationID) == 0) { setNodeUnavailable(nodeOwner, trusted, durationID); }
             }
 
+            return;
         }
 
     }
