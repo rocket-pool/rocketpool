@@ -12,6 +12,7 @@ export const RocketGroupSettings = artifacts.require('./contract/RocketGroupSett
 export const RocketMinipool = artifacts.require('./contract/RocketMinipool');
 export const RocketMinipoolInterface = artifacts.require('./contract/RocketMinipoolInterface');
 export const RocketMinipoolSettings = artifacts.require('./contract/RocketMinipoolSettings');
+export const RocketNode = artifacts.require('./contract/RocketNode');
 export const RocketNodeAPI = artifacts.require('./contract/RocketNodeAPI');
 export const RocketNodeContract = artifacts.require('./contract/RocketNodeContract');
 export const RocketNodeSettings = artifacts.require('./contract/RocketNodeSettings');
@@ -21,6 +22,7 @@ export const RocketPool = artifacts.require('./contract/RocketPool');
 export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToken.sol');
 export const RocketRole = artifacts.require('./contract/RocketRole');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
+export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
 
 export const TestLists = artifacts.require('./test/TestLists');
 export const TestQueues = artifacts.require('./test/TestQueues');
