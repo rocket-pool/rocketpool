@@ -86,7 +86,7 @@ contract RocketPool is RocketBase {
             (address minipoolAddress, uint8 newStatus) = abi.decode(_data, (address, uint8));
 
             // Staking / timed out - set minipool unavailable
-            if (newStatus == uint8(2) || newStatus == uint8(6)) { setMinipoolAvailable(minipoolAddress, false); }
+            if (newStatus == uint8(2) || newStatus == uint8(6)) { minipoolAvailable(minipoolAddress, false); }
 
             return;
         }
@@ -184,7 +184,7 @@ contract RocketPool is RocketBase {
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", _durationID)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Set minipool available
-        setMinipoolAvailable(minipoolAddress, true);
+        minipoolAvailable(minipoolAddress, true);
         // Increase total network ether capacity
         networkIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount() - _etherAmount);
         // Fire the event
@@ -210,7 +210,7 @@ contract RocketPool is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDurationID())), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Set minipool unavailable
-            setMinipoolAvailable(msg.sender, false);
+            minipoolAvailable(msg.sender, false);
             // Decrease total network ether capacity
             networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipoolSettings.getMinipoolLaunchAmount() - rocketMinipool.getNodeDepositEther());
             // Fire the event
@@ -243,7 +243,7 @@ contract RocketPool is RocketBase {
     /// @dev Set a minipool's available status
     /// @param _minipool The minipool address
     /// @param _available Boolean that indicates the availability of the minipool
-    function setMinipoolAvailable(address _minipool, bool _available) private returns (bool) {
+    function minipoolAvailable(address _minipool, bool _available) private returns (bool) {
         // Get contracts
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
