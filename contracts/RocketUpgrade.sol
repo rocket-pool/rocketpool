@@ -50,22 +50,22 @@ contract RocketUpgrade is RocketBase {
         // Get the current contracts address
         address oldContractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _name)));
         // Check it exists
-        require(oldContractAddress != address(0x0));
+        require(oldContractAddress != address(0x0), "Contract name does not exist");
         // Check it is not the contract's current address
-        require(oldContractAddress != _upgradedContractAddress);
+        require(oldContractAddress != _upgradedContractAddress, "Upgraded contract address must not be existing contract address");
         // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
         // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
         if (!_forceEther) {
-            require(oldContractAddress.balance == 0);
+            require(oldContractAddress.balance == 0, "Existing contract has an ether balance");
         }
         // Check for any known tokens assigned to this contract
         if (!_forceTokens) {
             // Check for RPL
             tokenContract = ERC20(getContractAddress("rocketPoolToken"));
-            require(tokenContract.balanceOf(oldContractAddress) == 0);
+            require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPL balance");
             //// Check for RPD
             //tokenContract = ERC20(getContractAddress("rocketDepositToken"));
-            //require(tokenContract.balanceOf(oldContractAddress) == 0);
+            //require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPD balance");
         }
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.name", _name)), _upgradedContractAddress);
@@ -85,13 +85,13 @@ contract RocketUpgrade is RocketBase {
     /// @param _contractAbi The zlib compressed, base64 encoded ABI of the new contract
     function addContract(string memory _name, address _contractAddress, string memory _contractAbi) onlyOwner public {
         // Check the contract address
-        require(_contractAddress != address(0x0));
+        require(_contractAddress != address(0x0), "Invalid contract address");
         // Check the name is not already in use
         address existingContractName = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _name)));
-        require(existingContractName == address(0x0));
+        require(existingContractName == address(0x0), "Contract name is already in use");
         // Check the address is not already in use
         address existingContractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractAddress)));
-        require(existingContractAddress == address(0x0));
+        require(existingContractAddress == address(0x0), "Contract address is already in use");
         // Set contract name, address and ABI in storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.name", _name)), _contractAddress);
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.address", _contractAddress)), _contractAddress);
