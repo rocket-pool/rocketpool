@@ -48,7 +48,7 @@ contract RocketMinipoolDelegate {
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
-    PublisherInterface publisher = PublisherInterface(0);                                           // main pubsub system event publisher
+    PublisherInterface publisher = PublisherInterface(0);                                           // Main pubsub system event publisher
 
     
     /*** Structs ***************/
