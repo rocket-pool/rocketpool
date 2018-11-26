@@ -32,6 +32,24 @@ contract RocketMinipoolSet is RocketBase {
     }
 
 
+    /*** Subscription ************/
+
+
+    /// @dev Pubsub event notifications
+    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+
+        // Minipool available status change
+        if (_event == keccak256("minipool.available.change")) {
+            (address minipool, bool available, , , string memory durationID) = abi.decode(_data, (address, bool, address, bool, string));
+
+            // Remove minipool from active set if unavailable
+            if (!available) { removeActiveMinipool(durationID, minipool); }
+
+        }
+
+    }
+
+
     /*** Methods *************/
 
 
@@ -58,7 +76,7 @@ contract RocketMinipoolSet is RocketBase {
 
 
     // Check if minipool is in active set and remove it
-    function removeActiveMinipool(string memory _durationID, address _miniPoolAddress) public onlyLatestContract("rocketPool", msg.sender) {
+    function removeActiveMinipool(string memory _durationID, address _miniPoolAddress) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress) != -1) {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.active", _durationID)), _miniPoolAddress);

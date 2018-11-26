@@ -76,6 +76,8 @@ if (testUtils) {
 const subscriptions = {
   'minipool.status.change': ['rocketPool'],
   'minipool.user.deposit': ['rocketPool'],
+  'minipool.user.withdraw': ['rocketPool'],
+  'minipool.available.change': ['rocketNode', 'rocketMinipoolSet'],
 };
 
 
