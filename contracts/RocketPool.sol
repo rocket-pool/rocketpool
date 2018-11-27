@@ -6,9 +6,9 @@ import "./RocketBase.sol";
 import "./interface/RocketNodeInterface.sol";
 import "./interface/minipool/RocketMinipoolInterface.sol";
 import "./interface/minipool/RocketMinipoolFactoryInterface.sol";
-import "./interface/minipool/RocketMinipoolSetInterface.sol";
 import "./interface/settings/RocketMinipoolSettingsInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
+import "./interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "./lib/SafeMath.sol";
 
@@ -27,9 +27,9 @@ contract RocketPool is RocketBase {
     RocketNodeInterface rocketNode = RocketNodeInterface(0);                                                // Interface for node methods
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                                    // Interface for common minipool methods
     RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(0);               // Where minipools are made
-    RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);                           // Maintains the active minipool set
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
+    PublisherInterface publisher = PublisherInterface(0);                                                   // Main pubsub system event publisher
 
   
     /*** Events ****************/
@@ -76,6 +76,38 @@ contract RocketPool is RocketBase {
     }
 
 
+    /*** Subscription ************/
+
+    /// @dev Pubsub event notifications
+    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+
+        // Minipool status change
+        if (_event == keccak256("minipool.status.change")) {
+            (address minipoolAddress, uint8 newStatus) = abi.decode(_data, (address, uint8));
+
+            // Staking / timed out - set minipool unavailable
+            if (newStatus == uint8(2) || newStatus == uint8(6)) { minipoolAvailable(minipoolAddress, false); }
+
+            return;
+        }
+
+        // Minipool user deposit - increase total assigned ether
+        if (_event == keccak256("minipool.user.deposit")) {
+            (string memory durationID, uint256 depositAmount) = abi.decode(_data, (string, uint256));
+            networkIncreaseTotalEther("assigned", durationID, depositAmount);
+            return;
+        }
+
+        // Minipool user withdrawal - decrease total assigned ether
+        if (_event == keccak256("minipool.user.withdraw")) {
+            (string memory durationID, uint256 withdrawalAmount) = abi.decode(_data, (string, uint256));
+            networkDecreaseTotalEther("assigned", durationID, withdrawalAmount);
+            return;
+        }
+
+    }
+
+
     /*** Getters *************/
 
     /// @dev Check if this minipool exists in the network
@@ -96,6 +128,13 @@ contract RocketPool is RocketBase {
     function getPoolAt(uint256 _index) public returns (address) {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools", "list")), _index);
+    }
+
+
+    // @dev Returns a count of the available minipools under a node
+    function getAvailableNodePoolsCount(address _nodeAddress, bool _trusted, string memory _durationID) public returns(uint256) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", _nodeAddress, _trusted, _durationID)));
     }
 
 
@@ -126,32 +165,6 @@ contract RocketPool is RocketBase {
     }
 
 
-
-    /*** Setters *************/
-
-    /// @dev Set a minipool's available status - only externally available to minipools
-    /// @param _available The availability of the minipool
-    function setMinipoolAvailable(bool _available) external onlyMinipool(msg.sender) {
-        minipoolAvailable(msg.sender, _available);
-    }
-
-    /// @param _type The type of total ether value to increase (e.g. "capacity") - only externally available to minipools
-    /// @param _value The amount to increase the total ether value by
-    /// @param _durationID The staking duration
-    function setNetworkIncreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) public onlyMinipool(msg.sender) {
-        networkIncreaseTotalEther(_type, _durationID, _value);
-    }
-
-    /// @dev Decrease the total ether value of the network by key
-    /// @param _type The type of total ether value to decrease (e.g. "capacity")
-    /// @param _value The amount to decrease the total ether value by
-    /// @param _durationID The staking duration
-    function setNetworkDecreaseTotalEther(string memory _type, string memory _durationID, uint256 _value) public onlyMinipool(msg.sender) {
-        networkDecreaseTotalEther(_type, _durationID, _value);
-    }
-
-
-   
     /*** Methods - Minipool *************/
 
 
@@ -232,32 +245,18 @@ contract RocketPool is RocketBase {
     /// @param _available Boolean that indicates the availability of the minipool
     function minipoolAvailable(address _minipool, bool _available) private returns (bool) {
         // Get contracts
-        rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
-        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
         rocketMinipool = RocketMinipoolInterface(_minipool);
         // Get minipool properties
         address nodeOwner = rocketMinipool.getNodeOwner();
         bool trusted = rocketMinipool.getNodeTrusted();
         string memory durationID = rocketMinipool.getStakingDurationID();
-        // Set available
-        if (_available) {
-            // Add minipool to node's available set
-            addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
-            // Add node to available set
-            rocketNode.setNodeAvailable(nodeOwner, trusted, durationID);
-        }
-        // Set unavailable
-        else {
-            // Remove minipool from node's available set
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
-            // Remove minipool from active set
-            rocketMinipoolSet.removeActiveMinipool(durationID, _minipool);
-            // Remove node from available set if out of minipools
-            if (addressSetStorage.getCount(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID))) == 0) {
-                rocketNode.setNodeUnavailable(nodeOwner, trusted, durationID);
-            }
-        }
+        // Add minipool to / remove from node's available set
+        if (_available) { addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
+        else { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
+        // Publish available status event
+        publisher.publish(keccak256("minipool.available.change"), abi.encode(_minipool, _available, nodeOwner, trusted, durationID));
         // Success
         return true;
     }

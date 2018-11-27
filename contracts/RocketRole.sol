@@ -1,7 +1,8 @@
 pragma solidity 0.5.0;
 
+
 import "./RocketBase.sol";
-import "./interface/RocketStorageInterface.sol";
+
 
 /// @title Role Based Access Control for Rocket Pool
 /// @author David Rugendyke

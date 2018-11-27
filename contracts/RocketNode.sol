@@ -1,6 +1,7 @@
 pragma solidity 0.5.0;
 
 import "./RocketBase.sol";
+import "./interface/RocketPoolInterface.sol";
 import "./interface/utils/lists/AddressSetStorageInterface.sol";
 
 
@@ -12,7 +13,8 @@ contract RocketNode is RocketBase {
     /*** Contracts **************/
 
 
-    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
+    RocketPoolInterface rocketPool = RocketPoolInterface(0);
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
 
     /*** Constructor *************/
@@ -21,6 +23,31 @@ contract RocketNode is RocketBase {
     /// @dev RocketNode constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
+    }
+
+
+    /*** Subscription ************/
+
+
+    /// @dev Pubsub event notifications
+    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+
+        // Minipool available status change
+        if (_event == keccak256("minipool.available.change")) {
+            (, bool available, address nodeOwner, bool trusted, string memory durationID) = abi.decode(_data, (address, bool, address, bool, string));
+
+            // Set node available if minipool available
+            if (available) { setNodeAvailable(nodeOwner, trusted, durationID); }
+
+            // Set node unavailable if last minipool made unavailable
+            else {
+                rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+                if (rocketPool.getAvailableNodePoolsCount(nodeOwner, trusted, durationID) == 0) { setNodeUnavailable(nodeOwner, trusted, durationID); }
+            }
+
+            return;
+        }
+
     }
 
 
@@ -62,7 +89,7 @@ contract RocketNode is RocketBase {
 
     /// @dev Set node availabile
     /// @dev Adds the node to the available index if not already present
-    function setNodeAvailable(address _nodeOwner, bool _trusted, string memory _durationID) public onlyLatestContract("rocketPool", msg.sender) {
+    function setNodeAvailable(address _nodeOwner, bool _trusted, string memory _durationID) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)), _nodeOwner) == -1) {
             addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)), _nodeOwner);
@@ -72,7 +99,7 @@ contract RocketNode is RocketBase {
 
     /// @dev Set node unavailabile
     /// @dev Removes the node from the available index if already present
-    function setNodeUnavailable(address _nodeOwner, bool _trusted, string memory _durationID) public onlyLatestContract("rocketPool", msg.sender) {
+    function setNodeUnavailable(address _nodeOwner, bool _trusted, string memory _durationID) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         if (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)), _nodeOwner) != -1) {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.available", _trusted, _durationID)), _nodeOwner);

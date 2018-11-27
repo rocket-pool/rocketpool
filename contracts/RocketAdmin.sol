@@ -1,9 +1,7 @@
 pragma solidity 0.5.0;
 
-// Contracts
+
 import "./RocketBase.sol";
-// Interfaces
-import "./interface/RocketStorageInterface.sol";
 
 
 /// @title Admin only methods for Rocket Pool owner and admins

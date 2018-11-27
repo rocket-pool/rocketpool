@@ -28,7 +28,7 @@ module.exports = {
         'contract/utils/lists/IntSetStorage.sol',
         'contract/utils/lists/StringListStorage.sol',
         'contract/utils/lists/StringQueueStorage.sol',
-        'contract/utils/lists/StringSetStorage.sol',
+        //'contract/utils/lists/StringSetStorage.sol',
         'contract/utils/lists/UintListStorage.sol',
         'contract/utils/lists/UintQueueStorage.sol',
         'contract/utils/lists/UintSetStorage.sol',
