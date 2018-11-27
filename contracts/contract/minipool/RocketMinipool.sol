@@ -9,6 +9,7 @@ import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/ValidatorRegistrationInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
+import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
@@ -41,12 +42,13 @@ contract RocketMinipool {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ValidatorRegistrationInterface validatorRegistration   = ValidatorRegistrationInterface(0);     // Interface of the Casper validator registration contract
+    ValidatorRegistrationInterface validatorRegistration = ValidatorRegistrationInterface(0);       // Interface of the Casper validator registration contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
+    PublisherInterface publisher = PublisherInterface(0);                                           // Main pubsub system event publisher
 
     
     /*** Structs ***************/

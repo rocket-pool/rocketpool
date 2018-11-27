@@ -9,6 +9,7 @@ import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/ValidatorRegistrationInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
+import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
@@ -41,12 +42,13 @@ contract RocketMinipoolDelegate {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ValidatorRegistrationInterface validatorRegistration   = ValidatorRegistrationInterface(0);     // Interface of the Casper validator registration contract
+    ValidatorRegistrationInterface validatorRegistration = ValidatorRegistrationInterface(0);       // Interface of the Casper validator registration contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
+    PublisherInterface publisher = PublisherInterface(0);                                           // Main pubsub system event publisher
 
     
     /*** Structs ***************/
@@ -274,15 +276,13 @@ contract RocketMinipoolDelegate {
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Add this user if they are not currently in this minipool
         addUser(_user, _groupID);
-        // Load contracts
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
-        // Increase total network assigned ether
-        rocketPool.setNetworkIncreaseTotalEther("assigned", staking.id, msg.value);
+        // Publish deposit event
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.deposit"), abi.encode(staking.id, msg.value));
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
@@ -309,8 +309,9 @@ contract RocketMinipoolDelegate {
         // Transfer withdrawal amount to withdrawal address
         (bool success,) = _withdrawalAddress.call.value(amount)("");
         require(success, "Withdrawal amount could not be transferred to withdrawal address");
-        // Decrease total network assigned ether
-        rocketPool.setNetworkDecreaseTotalEther("assigned", staking.id, amount);
+        // Publish withdrawal event
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.withdraw"), abi.encode(staking.id, amount));
         // All good? Fire the event for the withdrawal
         emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
@@ -391,6 +392,9 @@ contract RocketMinipoolDelegate {
             status.time = now;
             status.block = block.number;
             emit StatusChange(status.current, status.previous, status.time, status.block);
+            // Publish status change event
+            publisher = PublisherInterface(getContractAddress("utilPublisher"));
+            publisher.publish(keccak256("minipool.status.change"), abi.encode(address(this), _newStatus));
         }
     }
     
@@ -400,8 +404,6 @@ contract RocketMinipoolDelegate {
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
-        // Get the RP interface
-        rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Get minipool settings
@@ -430,8 +432,6 @@ contract RocketMinipoolDelegate {
             address withdrawalAddress = address(this);
             bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
             validatorRegistration.deposit.value(launchAmount)(pubkey, withdrawalShardID, withdrawalAddress, randaoCommitment);
-            // Set minipool availability status
-            rocketPool.setMinipoolAvailable(false); 
             // Staking
             setStatus(2);
             // Done
@@ -439,8 +439,6 @@ contract RocketMinipoolDelegate {
         }
         // Set to TimedOut - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it)
         if (status.current == 1 && status.time <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
-            // Set minipool availability status
-            rocketPool.setMinipoolAvailable(false); 
             // TimedOut
             setStatus(6);
             // Done
