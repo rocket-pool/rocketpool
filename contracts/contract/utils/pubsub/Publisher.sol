@@ -3,7 +3,6 @@ pragma solidity 0.5.0;
 
 import "../../../RocketBase.sol";
 import "../../../interface/utils/lists/StringSetStorageInterface.sol";
-import "../../../interface/utils/pubsub/SubscriberInterface.sol";
 
 
 /// @title PubSub system event publisher
@@ -43,13 +42,13 @@ contract Publisher is RocketBase {
 
     /// @dev Publish event
     /// @param _event The key of the event to publish
-    /// @param _data The ABI encoded data of the event
-    function publish(bytes32 _event, bytes memory _data) public onlyLatestRocketNetwork() {
+    /// @param _payload The ABI encoded subscriber method call payload
+    function publish(bytes32 _event, bytes memory _payload) public onlyLatestRocketNetwork() {
         stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
         uint256 count = stringSetStorage.getCount(keccak256(abi.encodePacked("publisher.event", _event)));
         for (uint256 i = 0; i < count; ++i) {
-            SubscriberInterface subscriber = SubscriberInterface(getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)));
-            subscriber.notify(_event, _data);
+            (bool success,) = getContractAddress(stringSetStorage.getItem(keccak256(abi.encodePacked("publisher.event", _event)), i)).call(_payload);
+            require(success, "Subscriber call failed.");
         }
     }
 

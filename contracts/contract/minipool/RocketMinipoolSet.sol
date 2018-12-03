@@ -32,21 +32,14 @@ contract RocketMinipoolSet is RocketBase {
     }
 
 
-    /*** Subscription ************/
+    /*** Subscriptions ***********/
 
 
-    /// @dev Pubsub event notifications
-    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+    /// @dev Minipool available status changed
+    function onMinipoolAvailableChange(address _minipool, bool _available, address, bool, string memory _durationID) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Minipool available status change
-        if (_event == keccak256("minipool.available.change")) {
-            (address minipool, bool available, , , string memory durationID) = abi.decode(_data, (address, bool, address, bool, string));
-
-            // Remove minipool from active set if unavailable
-            if (!available) { removeActiveMinipool(durationID, minipool); }
-
-            return;
-        }
+        // Remove minipool from active set if unavailable
+        if (!_available) { removeActiveMinipool(_durationID, _minipool); }
 
     }
 
