@@ -88,20 +88,20 @@ contract RocketPool is RocketBase {
             // Staking / timed out - set minipool unavailable
             if (newStatus == uint8(2) || newStatus == uint8(6)) { minipoolAvailable(minipoolAddress, false); }
 
+            // Withdrawn / timed out - decrease total network ether capacity & assigned ether
+            if (newStatus == uint8(4) || newStatus == uint8(6)) {
+                rocketMinipool = RocketMinipoolInterface(minipoolAddress);
+                networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
+                networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
+            }
+
             return;
         }
 
-        // Minipool user deposit - increase total assigned ether
+        // Minipool user deposit - increase total network assigned ether
         if (_event == keccak256("minipool.user.deposit")) {
             (string memory durationID, uint256 depositAmount) = abi.decode(_data, (string, uint256));
             networkIncreaseTotalEther("assigned", durationID, depositAmount);
-            return;
-        }
-
-        // Minipool user withdrawal - decrease total assigned ether
-        if (_event == keccak256("minipool.user.withdraw")) {
-            (string memory durationID, uint256 withdrawalAmount) = abi.decode(_data, (string, uint256));
-            networkDecreaseTotalEther("assigned", durationID, withdrawalAmount);
             return;
         }
 
@@ -186,7 +186,7 @@ contract RocketPool is RocketBase {
         // Set minipool available
         minipoolAvailable(minipoolAddress, true);
         // Increase total network ether capacity
-        networkIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount() - _etherAmount);
+        networkIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_etherAmount));
         // Fire the event
         emit PoolCreated(minipoolAddress, _durationID, now);
         // Return minipool address
@@ -211,8 +211,8 @@ contract RocketPool is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Set minipool unavailable
             minipoolAvailable(msg.sender, false);
-            // Decrease total network ether capacity
-            networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipoolSettings.getMinipoolLaunchAmount() - rocketMinipool.getNodeDepositEther());
+            // Decrease total network ether capacity if minipool was initialised
+            if (rocketMinipool.getStatus() == uint8(0)) { networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity()); }
             // Fire the event
             emit PoolRemoved(msg.sender, now);
             // Return minipool address
