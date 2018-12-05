@@ -1,7 +1,7 @@
 pragma solidity 0.5.0;
 
 
-import "../RocketBase.sol";
+import "../../../RocketBase.sol";
 
 
 /// @title DisableInactiveNodes - disables nodes that have not checked in recently
@@ -20,12 +20,12 @@ contract DisableInactiveNodes is RocketBase {
 
 
     /// @dev Task name
-    function name() public view returns (string memory) { return "DisableInactiveNodes"; }
+    function name() public pure returns (string memory) { return "DisableInactiveNodes"; }
 
 
     /// @dev Run task
     function run(address _nodeAddress) public onlyLatestContract("rocketNodeTasks", msg.sender) returns (bool) {
-        
+
     }
 
 

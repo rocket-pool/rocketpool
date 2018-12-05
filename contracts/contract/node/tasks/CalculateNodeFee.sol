@@ -1,7 +1,7 @@
 pragma solidity 0.5.0;
 
 
-import "../RocketBase.sol";
+import "../../../RocketBase.sol";
 
 
 /// @title CalculateNodeFee - calculates the node operator fee based on the median value
@@ -20,7 +20,7 @@ contract CalculateNodeFee is RocketBase {
 
 
     /// @dev Task name
-    function name() public view returns (string memory) { return "CalculateNodeFee"; }
+    function name() public pure returns (string memory) { return "CalculateNodeFee"; }
 
 
     /// @dev Run task
