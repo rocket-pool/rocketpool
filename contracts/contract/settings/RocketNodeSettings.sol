@@ -22,7 +22,8 @@ contract RocketNodeSettings is RocketBase {
             setDepositEtherGasLimit(100000);                                            // Set the gas limit for nodes transferring their ether to a minipool contract after it is created
             setDepositRPLGasLimit(250000);                                              // Set the gas limit for nodes transferring their RPL to a minipool contract after it is created
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
-            setInactiveDuration(1 hours);                                               // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+            setInactiveDuration(48 hours);                                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
+            setMaxInactiveNodeChecks(3);                                                // The maximum number of other nodes to check for inactivity on checkin
             setDepositAllowed(true);                                                    // Are deposits allowed by nodes?
             setDepositReservationTime(1 days);                                          // How long a deposit reservation stays valid for before the actual ether/rpl needs to be sent
             setWithdrawalAllowed(true);                                                 // Are withdrawals allowed by nodes?
@@ -68,6 +69,11 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function getInactiveDuration() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.setinactive.duration"))); 
+    }
+
+    /// @dev The maximum number of other nodes to check for inactivity on checkin
+    function getMaxInactiveNodeChecks() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.setinactive.checks.max"))); 
     }
 
     /// @dev Are deposits currently allowed?
@@ -121,6 +127,11 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
     function setInactiveDuration(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.setinactive.duration")), _amount); 
+    }
+
+    /// @dev The maximum number of other nodes to check for inactivity on checkin
+    function setMaxInactiveNodeChecks(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.setinactive.checks.max")), _amount); 
     }
 
     /// @dev Are user deposits currently allowed?
