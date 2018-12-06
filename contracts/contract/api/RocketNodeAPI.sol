@@ -10,6 +10,7 @@ import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/node/RocketNodeTasksInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/utils/lists/AddressQueueStorageInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/BytesSetStorageInterface.sol";
 // Libraries
@@ -36,6 +37,7 @@ contract RocketNodeAPI is RocketBase {
     RocketNodeTasksInterface rocketNodeTasks = RocketNodeTasksInterface(0);                                 // Node task manager
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
+    AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(0);                     // Address list utility
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
     BytesSetStorageInterface bytesSetStorage = BytesSetStorageInterface(0);                                 // Bytes list utility
 
@@ -225,12 +227,15 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.feeVote", msg.sender)), 0);
-        rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), 0);
+        rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), now);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
         // Store our node address as an index set
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes", "list")), msg.sender); 
+        // Add node to checkin queue
+        addressQueueStorage = AddressQueueStorageInterface(getContractAddress("utilAddressQueueStorage"));
+        addressQueueStorage.enqueueItem(keccak256(abi.encodePacked("nodes.checkin.queue")), msg.sender);
         // Log it
         emit NodeAdd(msg.sender, newContractAddress, now);
         // Done
