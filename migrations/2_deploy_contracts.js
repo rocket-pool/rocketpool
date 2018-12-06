@@ -44,6 +44,9 @@ contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSetting
 contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
 // Dummy Contracts
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
+// Node tasks
+contracts.taskDisableInactiveNodes = artifacts.require('./tasks/DisableInactiveNodes.sol');
+contracts.taskCalculateNodeFees = artifacts.require('./tasks/CalculateNodeFee.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilPublisher = artifacts.require('./Publisher.sol');
@@ -78,6 +81,12 @@ const subscriptions = {
   'minipool.user.deposit': ['rocketPool'],
   'minipool.user.withdraw': ['rocketPool'],
   'minipool.available.change': ['rocketNode', 'rocketMinipoolSet'],
+};
+
+// Node tasks to register
+const nodeTasks = {
+  'DisableInactiveNodes': contracts.taskDisableInactiveNodes,
+  'CalculateNodeFees': contracts.taskCalculateNodeFees,
 };
 
 
@@ -174,9 +183,20 @@ module.exports = async (deployer, network) => {
       }
     }
   }
+  // Register node tasks
+  const registerNodeTasks = async function() {
+    let nodeTasksInstance = await contracts.rocketNodeTasks.deployed();
+    for (let task in nodeTasks) {
+      // Log it
+      console.log('\x1b[33m%s\x1b[0m.', 'Register node task '+task);
+      let taskInstance = await nodeTasks[task].deployed();
+      await nodeTasksInstance.add(taskInstance.address);
+    }
+  }
   // Run it
   await addContracts();
   await registerSubscriptions();
+  await registerNodeTasks();
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(
     config.web3.utils.soliditySha3('contract.storage.initialised'),
