@@ -7,6 +7,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
+import "../../interface/node/RocketNodeTasksInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -32,6 +33,7 @@ contract RocketNodeAPI is RocketBase {
     ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
+    RocketNodeTasksInterface rocketNodeTasks = RocketNodeTasksInterface(0);                                 // Node task manager
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
@@ -222,6 +224,7 @@ contract RocketNodeAPI is RocketBase {
         // Ok now set our node data to key/value pair storage
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
+        rocketStorage.setUint(keccak256(abi.encodePacked("node.feeVote", msg.sender)), 0);
         rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), 0);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         rocketStorage.setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
@@ -264,6 +267,26 @@ contract RocketNodeAPI is RocketBase {
         // Return the minipool addresses
         return minipools;
     }
+
+
+    /// @dev Perform a node checkin
+    /// @param _nodeOwner The address of the node owner
+    /// @param _averageLoad The average server load on the node over the last checkin period
+    /// @param _nodeFeeVote The node operator fee percentage vote
+    function checkin(address _nodeOwner, uint256 _averageLoad, uint256 _nodeFeeVote) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(bool) {
+        // Record average load
+        rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", _nodeOwner)), _averageLoad);
+        // Record node operator fee percentage vote
+        rocketStorage.setUint(keccak256(abi.encodePacked("node.feeVote", _nodeOwner)), _nodeFeeVote);
+        // Record last checkin time
+        rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", _nodeOwner)), now);
+        // Run node tasks
+        rocketNodeTasks = RocketNodeTasksInterface(getContractAddress("rocketNodeTasks"));
+        rocketNodeTasks.run(_nodeOwner);
+        // Done
+        return true;
+    } 
+
 
     /*
     /// @dev Save a public key for this node from a newly generated account

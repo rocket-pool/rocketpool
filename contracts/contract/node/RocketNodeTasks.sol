@@ -38,22 +38,22 @@ contract RocketNodeTasks is RocketBase {
 
 
     /// @dev Run all tasks
-    function run() external onlyValidRocketNode(msg.sender) {
+    function run(address _nodeAddress) external onlyValidRocketNode(_nodeAddress) onlyLatestContract("rocketNodeAPI", msg.sender) {
         // Get set storage
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Run tasks
         uint256 count = addressSetStorage.getCount(keccak256("node.tasks"));
         for (uint256 i = 0; i < count; ++i) {
             RocketNodeTaskInterface task = RocketNodeTaskInterface(addressSetStorage.getItem(keccak256("node.tasks"), i));
-            task.run(msg.sender);
+            task.run(_nodeAddress);
         }
     }
 
 
     /// @dev Run a single task by address
-    function runOne(address _taskAddress) external onlyValidRocketNode(msg.sender) {
+    function runOne(address _nodeAddress, address _taskAddress) external onlyValidRocketNode(_nodeAddress) onlyLatestContract("rocketNodeAPI", msg.sender) {
         RocketNodeTaskInterface task = RocketNodeTaskInterface(_taskAddress);
-        task.run(msg.sender);
+        task.run(_nodeAddress);
     }
 
 
