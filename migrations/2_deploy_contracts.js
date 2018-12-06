@@ -47,6 +47,7 @@ contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol'
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilPublisher = artifacts.require('./Publisher.sol');
+contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
 contracts.utilBytes32QueueStorage = artifacts.require('./Bytes32QueueStorage.sol');
 contracts.utilAddressSetStorage = artifacts.require('./AddressSetStorage.sol');
 contracts.utilBytes32SetStorage = artifacts.require('./Bytes32SetStorage.sol');
@@ -60,7 +61,6 @@ if (testUtils) {
   contracts.utilIntListStorage = artifacts.require('./IntListStorage.sol');
   contracts.utilStringListStorage = artifacts.require('./StringListStorage.sol');
   contracts.utilUintListStorage = artifacts.require('./UintListStorage.sol');
-  contracts.utilAddressQueueStorage = artifacts.require('./AddressQueueStorage.sol');
   contracts.utilBoolQueueStorage = artifacts.require('./BoolQueueStorage.sol');
   contracts.utilBytesQueueStorage = artifacts.require('./BytesQueueStorage.sol');
   contracts.utilIntQueueStorage = artifacts.require('./IntQueueStorage.sol');
