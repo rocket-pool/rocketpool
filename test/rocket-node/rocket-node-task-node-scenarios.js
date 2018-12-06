@@ -10,8 +10,12 @@ async function getTimesTestTasksRun(nodeAddress) {
     let count = await rocketNodeTasks.getTaskCount.call();
 
     // Process tasks
-    let times = [], taskTimes, address, testNodeTask, index;
+    let times = [], taskTimes, name, address, testNodeTask, index;
     for (index = 0; index < count; ++index) {
+
+        // Check task name
+        name = await rocketNodeTasks.getTaskNameAt.call(index);
+        if (!name.match(/^NodeTask/)) continue;
 
         // Initialise task
         address = await rocketNodeTasks.getTaskAddressAt.call(index);
