@@ -22,6 +22,7 @@ contracts.rocketPool = artifacts.require('./RocketPool.sol');
 contracts.rocketRole = artifacts.require('./RocketRole.sol');
 contracts.rocketNode = artifacts.require('./RocketNode.sol');
 contracts.rocketPIP = artifacts.require('./RocketPIP.sol');
+contracts.rocketUpgrade = artifacts.require('./RocketUpgrade.sol');
 // API
 contracts.rocketDepositAPI = artifacts.require('./api/RocketDepositAPI.sol');
 contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
