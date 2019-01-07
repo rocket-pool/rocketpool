@@ -286,7 +286,7 @@ contract RocketMinipoolDelegate {
         userDepositTotal = userDepositTotal.add(msg.value);
         // Publish deposit event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
-        publisher.publish(keccak256("minipool.user.deposit"), abi.encode(staking.id, msg.value));
+        publisher.publish(keccak256("minipool.user.deposit"), abi.encodeWithSignature("onMinipoolUserDeposit(string,uint256)", staking.id, msg.value));
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
@@ -317,7 +317,7 @@ contract RocketMinipoolDelegate {
         require(success, "Withdrawal amount could not be transferred to withdrawal address");
         // Publish withdrawal event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
-        publisher.publish(keccak256("minipool.user.withdraw"), abi.encode(staking.id, amount));
+        publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, amount));
         // All good? Fire the event for the withdrawal
         emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
@@ -400,7 +400,7 @@ contract RocketMinipoolDelegate {
             emit StatusChange(status.current, status.previous, status.time, status.block);
             // Publish status change event
             publisher = PublisherInterface(getContractAddress("utilPublisher"));
-            publisher.publish(keccak256("minipool.status.change"), abi.encode(address(this), _newStatus));
+            publisher.publish(keccak256("minipool.status.change"), abi.encodeWithSignature("onMinipoolStatusChange(address,uint8)", address(this), _newStatus));
         }
     }
     

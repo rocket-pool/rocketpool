@@ -26,26 +26,19 @@ contract RocketNode is RocketBase {
     }
 
 
-    /*** Subscription ************/
+    /*** Subscriptions ***********/
 
 
-    /// @dev Pubsub event notifications
-    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+    /// @dev Minipool available status changed
+    function onMinipoolAvailableChange(address, bool _available, address _nodeOwner, bool _trusted, string memory _durationID) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Minipool available status change
-        if (_event == keccak256("minipool.available.change")) {
-            (, bool available, address nodeOwner, bool trusted, string memory durationID) = abi.decode(_data, (address, bool, address, bool, string));
+        // Set node available if minipool available
+        if (_available) { setNodeAvailable(_nodeOwner, _trusted, _durationID); }
 
-            // Set node available if minipool available
-            if (available) { setNodeAvailable(nodeOwner, trusted, durationID); }
-
-            // Set node unavailable if last minipool made unavailable
-            else {
-                rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-                if (rocketPool.getAvailableNodePoolsCount(nodeOwner, trusted, durationID) == 0) { setNodeUnavailable(nodeOwner, trusted, durationID); }
-            }
-
-            return;
+        // Set node unavailable if last minipool made unavailable
+        else {
+            rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+            if (rocketPool.getAvailableNodePoolsCount(_nodeOwner, _trusted, _durationID) == 0) { setNodeUnavailable(_nodeOwner, _trusted, _durationID); }
         }
 
     }

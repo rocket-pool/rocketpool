@@ -76,35 +76,24 @@ contract RocketPool is RocketBase {
     }
 
 
-    /*** Subscription ************/
+    /*** Subscriptions ***********/
 
-    /// @dev Pubsub event notifications
-    function notify(bytes32 _event, bytes memory _data) public onlyLatestContract("utilPublisher", msg.sender) {
+    /// @dev Minipool status changed
+    function onMinipoolStatusChange(address _minipoolAddress, uint8 _newStatus) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Minipool status change
-        if (_event == keccak256("minipool.status.change")) {
-            (address minipoolAddress, uint8 newStatus) = abi.decode(_data, (address, uint8));
+        // Staking / timed out - set minipool unavailable
+        if (_newStatus == uint8(2) || _newStatus == uint8(6)) { minipoolAvailable(_minipoolAddress, false); }
 
-            // Staking / timed out - set minipool unavailable
-            if (newStatus == uint8(2) || newStatus == uint8(6)) { minipoolAvailable(minipoolAddress, false); }
+    }
 
-            // Withdrawn / timed out - decrease total network ether capacity & assigned ether
-            if (newStatus == uint8(4) || newStatus == uint8(6)) {
-                rocketMinipool = RocketMinipoolInterface(minipoolAddress);
-                networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
-                networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
-            }
+    /// @dev Minipool user deposit made
+    function onMinipoolUserDeposit(string memory _durationID, uint256 _depositAmount) public onlyLatestContract("utilPublisher", msg.sender) {
+        networkIncreaseTotalEther("assigned", _durationID, _depositAmount);
+    }
 
-            return;
-        }
-
-        // Minipool user deposit - increase total network assigned ether
-        if (_event == keccak256("minipool.user.deposit")) {
-            (string memory durationID, uint256 depositAmount) = abi.decode(_data, (string, uint256));
-            networkIncreaseTotalEther("assigned", durationID, depositAmount);
-            return;
-        }
-
+    /// @dev Minipool user withdrawal made
+    function onMinipoolUserWithdraw(string memory _durationID, uint256 _withdrawalAmount) public onlyLatestContract("utilPublisher", msg.sender) {
+        networkDecreaseTotalEther("assigned", _durationID, _withdrawalAmount);
     }
 
 
@@ -256,7 +245,7 @@ contract RocketPool is RocketBase {
         if (_available) { addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
         else { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
         // Publish available status event
-        publisher.publish(keccak256("minipool.available.change"), abi.encode(_minipool, _available, nodeOwner, trusted, durationID));
+        publisher.publish(keccak256("minipool.available.change"), abi.encodeWithSignature("onMinipoolAvailableChange(address,bool,address,bool,string)", _minipool, _available, nodeOwner, trusted, durationID));
         // Success
         return true;
     }
