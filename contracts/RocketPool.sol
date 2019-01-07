@@ -84,16 +84,18 @@ contract RocketPool is RocketBase {
         // Staking / timed out - set minipool unavailable
         if (_newStatus == uint8(2) || _newStatus == uint8(6)) { minipoolAvailable(_minipoolAddress, false); }
 
+        // Withdrawn / timed out - decrease total network ether capacity & assigned ether
+        if (newStatus == uint8(4) || newStatus == uint8(6)) {
+            rocketMinipool = RocketMinipoolInterface(_minipoolAddress);
+            networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
+            networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
+        }
+
     }
 
     /// @dev Minipool user deposit made
     function onMinipoolUserDeposit(string memory _durationID, uint256 _depositAmount) public onlyLatestContract("utilPublisher", msg.sender) {
         networkIncreaseTotalEther("assigned", _durationID, _depositAmount);
-    }
-
-    /// @dev Minipool user withdrawal made
-    function onMinipoolUserWithdraw(string memory _durationID, uint256 _withdrawalAmount) public onlyLatestContract("utilPublisher", msg.sender) {
-        networkDecreaseTotalEther("assigned", _durationID, _withdrawalAmount);
     }
 
 
