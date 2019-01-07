@@ -85,7 +85,7 @@ contract RocketPool is RocketBase {
         if (_newStatus == uint8(2) || _newStatus == uint8(6)) { minipoolAvailable(_minipoolAddress, false); }
 
         // Withdrawn / timed out - decrease total network ether capacity & assigned ether
-        if (newStatus == uint8(4) || newStatus == uint8(6)) {
+        if (_newStatus == uint8(4) || _newStatus == uint8(6)) {
             rocketMinipool = RocketMinipoolInterface(_minipoolAddress);
             networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
             networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
