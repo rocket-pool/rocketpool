@@ -12,7 +12,7 @@ module.exports = {
         'contract/utils/Ownable.sol',
         'contract/utils/Signatures.sol',
         'contract/utils/lists/AddressListStorage.sol',
-        'contract/utils/lists/AddressQueueStorage.sol',
+        //'contract/utils/lists/AddressQueueStorage.sol',
         //'contract/utils/lists/AddressSetStorage.sol',
         'contract/utils/lists/BoolListStorage.sol',
         'contract/utils/lists/BoolQueueStorage.sol',

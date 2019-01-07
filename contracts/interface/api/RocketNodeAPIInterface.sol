@@ -11,4 +11,5 @@ contract RocketNodeAPIInterface {
     // Methods
     function add(string memory _timezoneLocation) public returns (bool);
     function deposit(address _nodeOwner) public returns(address[] memory);
+    function checkin(address _nodeOwner, uint256 _averageLoad, uint256 _nodeFeeVote) public returns(bool);
 }

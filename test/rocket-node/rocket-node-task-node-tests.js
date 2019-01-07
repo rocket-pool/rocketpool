@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { createNodeContract } from '../_helpers/rocket-node';
 import { createTestNodeTaskContract, addNodeTask, removeNodeTask, updateNodeTask } from '../_helpers/rocket-node-task';
-import { scenarioRunTasks, scenarioRunOneTask } from './rocket-node-task-node-scenarios';
+import { scenarioRunTasks } from './rocket-node-task-node-scenarios';
 
 export default function() {
 
@@ -22,6 +22,9 @@ export default function() {
         let testNodeTask2;
         let testNodeTask3;
         let testNodeTask1v2;
+        let nodeContract1;
+        let nodeContract2;
+        let nodeContract3;
         before(async () => {
 
             // Deploy test node tasks
@@ -31,9 +34,9 @@ export default function() {
             testNodeTask1v2 = await createTestNodeTaskContract({name: 'NodeTask1v2', owner});
 
             // Create node contracts
-            await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator1});
-            await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator2});
-            await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator3});
+            nodeContract1 = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator1});
+            nodeContract2 = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator2});
+            nodeContract3 = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: nodeOperator3});
 
         });
 
@@ -49,16 +52,13 @@ export default function() {
         // Run tasks
         it(printTitle('node', 'running tasks'), async () => {
             await scenarioRunTasks({
+                nodeContract: nodeContract1,
                 fromAddress: nodeOperator1,
                 gas: 500000,
             });
             await scenarioRunTasks({
+                nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
-                gas: 500000,
-            });
-            await scenarioRunOneTask({
-                taskAddress: testNodeTask1.address,
-                fromAddress: nodeOperator1,
                 gas: 500000,
             });
         });
@@ -73,16 +73,13 @@ export default function() {
         // Run tasks
         it(printTitle('node', 'running tasks'), async () => {
             await scenarioRunTasks({
+                nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
                 gas: 500000,
             });
             await scenarioRunTasks({
+                nodeContract: nodeContract3,
                 fromAddress: nodeOperator3,
-                gas: 500000,
-            });
-            await scenarioRunOneTask({
-                taskAddress: testNodeTask1.address,
-                fromAddress: nodeOperator1,
                 gas: 500000,
             });
         });
@@ -97,20 +94,18 @@ export default function() {
         // Run tasks
         it(printTitle('node', 'running tasks'), async () => {
             await scenarioRunTasks({
+                nodeContract: nodeContract1,
                 fromAddress: nodeOperator1,
                 gas: 500000,
             });
             await scenarioRunTasks({
+                nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
                 gas: 500000,
             });
             await scenarioRunTasks({
+                nodeContract: nodeContract3,
                 fromAddress: nodeOperator3,
-                gas: 500000,
-            });
-            await scenarioRunOneTask({
-                taskAddress: testNodeTask1v2.address,
-                fromAddress: nodeOperator1,
                 gas: 500000,
             });
         });

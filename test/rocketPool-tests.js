@@ -17,6 +17,7 @@ import rocketDepositAPIDepositTests from './rocket-deposit/rocket-deposit-api-de
 import rocketDepositAPIRefundTests from './rocket-deposit/rocket-deposit-api-refund-tests';
 import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
+import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 
 /**
  * Header
@@ -47,6 +48,7 @@ rocketDepositAPIDepositTests();
 rocketDepositAPIRefundTests();
 rocketDepositAPIWithdrawalTests();
 rocketRPIPTests();
+rocketUpgradeTests();
 
 // Profiling
 displayProfiling();
