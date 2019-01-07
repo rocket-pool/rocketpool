@@ -31,6 +31,8 @@ contract RocketMinipoolDelegate {
     Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
     Node    private node;                                       // Node this minipool is attached to, its creator 
     Staking private staking;                                    // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                        // Total capacity for user deposits
+    uint256 private userDepositTotal;                           // Total value of all assigned user deposits
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -280,6 +282,8 @@ contract RocketMinipoolDelegate {
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
         // Add to their balance
         users[_user].balance = users[_user].balance.add(msg.value);
+        // Update total user deposit balance
+        userDepositTotal = userDepositTotal.add(msg.value);
         // Publish deposit event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         publisher.publish(keccak256("minipool.user.deposit"), abi.encode(staking.id, msg.value));
@@ -304,6 +308,8 @@ contract RocketMinipoolDelegate {
         require(users[_user].balance > 0, "User does not have remaining balance in minipool.");
         // Get remaining balance as withdrawal amount
         uint256 amount = users[_user].balance;
+        // Update total user deposit balance
+        userDepositTotal = userDepositTotal.sub(amount);
         // Remove user
         removeUser(_user);
         // Transfer withdrawal amount to withdrawal address

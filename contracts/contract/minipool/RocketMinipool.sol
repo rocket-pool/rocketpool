@@ -31,6 +31,8 @@ contract RocketMinipool {
     Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
     Node    private node;                                       // Node this minipool is attached to, its creator 
     Staking private staking;                                    // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                        // Total capacity for user deposits
+    uint256 private userDepositTotal;                           // Total value of all assigned user deposits
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -166,6 +168,8 @@ contract RocketMinipool {
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        // Set the user deposit capacity
+        userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
 
 
@@ -368,6 +372,16 @@ contract RocketMinipool {
     /// @dev Returns the current staking duration in blocks
     function getStakingDuration() public view returns(uint256) {
         return staking.duration;
+    }
+
+    /// @dev Gets the total user deposit capacity
+    function getUserDepositCapacity() public view returns(uint256) {
+        return userDepositCapacity;
+    }
+
+    /// @dev Gets the total value of all assigned user deposits
+    function getUserDepositTotal() public view returns(uint256) {
+        return userDepositTotal;
     }
     
     
