@@ -107,8 +107,28 @@ function loadABI(abiFilePath) {
 // Start exporting now
 module.exports = async (deployer, network) => {
 
+
+  // Set our web3 provider
+  
+  let $web3 = new config.web3(config.networks[network].provider.connection._url);
+  console.log(`Web3 1.0 provider using network: `+network);
+  console.log('\n');
+
+  // Accounts
+  let accounts = await $web3.eth.getAccounts(function(error, result) {
+    if(error != null) {
+      console.log(error);
+      console.log("Error retrieving accounts.'");
+    }
+    return result;
+  });
+
+  
+  
   // Live deployment
   if ( network == 'live' ) {
+    // Casper live contract address
+    let casperDepositAddress = '0XADDLIVECASPERADDRESS';
     // Add our live RPL token address in place
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
@@ -116,8 +136,35 @@ module.exports = async (deployer, network) => {
   // Test network deployment
   else {
 
+    // TODO: Remove below when vyper pre-compiled is in
     // Casper validator registration contract
     contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
+
+    // Precompiled - Casper Deposit Contract
+    const casper = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/ValidatorRegistration.abi'), null, {
+        from: accounts[0], 
+        gasPrice: '20000000000' // 20 gwei
+    });
+
+    // Create the contract now
+    const casperContract = await casper.deploy(
+      // Casper deployment 
+      {               
+        data: config.fs.readFileSync('./contracts/contract/casper/compiled/ValidatorRegistration.bin')
+      }).send({
+          from: accounts[0], 
+          gas: 8000000, 
+          gasPrice: '20000000000'
+      });
+
+    // Set the Casper deposit address
+    let casperDepositAddress = casperContract._address;
+
+    // Log it
+    console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Casper Deposit Contract Address');
+    console.log(casperDepositAddress);
+    
+        
 
     // Test interface contracts
     if (testUtils) {
@@ -128,9 +175,7 @@ module.exports = async (deployer, network) => {
 
   }
  
-  // Accounts
-  const accounts = await web3.eth.getAccounts();
-
+  
   // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
   await deployer.deploy(rocketStorage);
   // Update the storage with the new addresses
@@ -143,8 +188,6 @@ module.exports = async (deployer, network) => {
   };
   // Run it
   await deployContracts();
-  // Add them to RocketStorage
-  console.log('\n');
   // Register all other contracts with storage and store their abi
   const addContracts = async function() {
     for (let contract in contracts) {
@@ -154,17 +197,17 @@ module.exports = async (deployer, network) => {
         console.log(contracts[contract].address);
         // First register the contract address as being part of the network so we can do a validation check using just the address
         await rocketStorageInstance.setAddress(
-          config.web3.utils.soliditySha3('contract.address', contracts[contract].address),
+          $web3.utils.soliditySha3('contract.address', contracts[contract].address),
           contracts[contract].address
         );
         // Now register again that contracts name so we can retrieve it by name if needed
         await rocketStorageInstance.setAddress(
-          config.web3.utils.soliditySha3('contract.name', contract),
+          $web3.utils.soliditySha3('contract.name', contract),
           contracts[contract].address
         );
         // Compress and store the ABI
         await rocketStorageInstance.setString(
-          config.web3.utils.soliditySha3('contract.abi', contract),
+          $web3.utils.soliditySha3('contract.abi', contract),
           compressABI(contracts[contract].abi)
         );
       } 
@@ -179,7 +222,7 @@ module.exports = async (deployer, network) => {
       for (let si = 0; si < subscriptions[event].length; ++si) {
         console.log(subscriptions[event][si]);
         // Regsiter the subscription
-        await publisherInstance.addSubscriber(web3.utils.soliditySha3(event), subscriptions[event][si]);
+        await publisherInstance.addSubscriber($web3.utils.soliditySha3(event), subscriptions[event][si]);
       }
     }
   }
@@ -199,7 +242,7 @@ module.exports = async (deployer, network) => {
   await registerNodeTasks();
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(
-    config.web3.utils.soliditySha3('contract.storage.initialised'),
+    $web3.utils.soliditySha3('contract.storage.initialised'),
     true
   );
   // Log it
