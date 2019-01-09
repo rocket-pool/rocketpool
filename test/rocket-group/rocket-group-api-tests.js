@@ -47,7 +47,8 @@ export default function() {
             });
 
             // Reset registration fee to default
-            await rocketGroupSettings.setNewFee(newGroupFee, {from: owner, gas: 500000});
+            // TODO: Remove hex encoding when web3 AbiCoder bug is fixed
+            await rocketGroupSettings.setNewFee(web3.utils.numberToHex(newGroupFee), {from: owner, gas: 500000});
 
             // Default registration fee
             groupID = await scenarioAddGroup({
