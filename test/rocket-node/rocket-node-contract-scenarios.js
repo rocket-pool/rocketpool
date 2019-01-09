@@ -132,7 +132,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
 
     // Check if minipool exists
     let minipoolCode = await web3.eth.getCode(minipoolAddress);
-    let minipoolExists = (minipoolCode != '0x0');
+    let minipoolExists = (minipoolCode != '0x0' && minipoolCode != '0x');
 
     // Initialise minipool & get initial minipool status
     let minipool;
@@ -152,7 +152,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
 
     // Check if minipool still exists after withdrawal
     minipoolCode = await web3.eth.getCode(minipoolAddress);
-    minipoolExists = (minipoolCode != '0x0');
+    minipoolExists = (minipoolCode != '0x0' && minipoolCode != '0x');
 
     // Get updated minipool status
     let minipoolNodeDepositExists2 = false;
