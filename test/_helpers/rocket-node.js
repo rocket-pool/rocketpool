@@ -35,7 +35,8 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Reserve node deposit
-        await nodeContract.depositReserve(nodeDepositAmount, stakingDurationID, {from: nodeOperator});
+        // TODO: Remove hex encoding when web3 AbiCoder bug is fixed
+        await nodeContract.depositReserve(web3.utils.numberToHex(nodeDepositAmount), stakingDurationID, {from: nodeOperator});
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();

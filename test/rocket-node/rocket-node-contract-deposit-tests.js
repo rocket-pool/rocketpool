@@ -64,7 +64,8 @@ export default function() {
         it(printTitle('random account', 'cannot reserve a deposit'), async () => {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                // TODO: Remove hex encoding when web3 AbiCoder bug is fixed
+                amount: web3.utils.numberToHex(minDepositAmount),
                 durationID: '3m',
                 fromAddress: accounts[2],
             }), 'Random account reserved a deposit');
@@ -75,7 +76,7 @@ export default function() {
         it(printTitle('node operator', 'cannot reserve a deposit with an invalid staking duration ID'), async () => {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                amount: web3.utils.numberToHex(minDepositAmount),
                 durationID: 'beer',
                 fromAddress: operator,
             }), 'Reserved a deposit with an invalid staking duration ID');
@@ -88,7 +89,7 @@ export default function() {
             // Not a multiple of minipool creation amount
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: Math.floor(minDepositAmount / 2),
+                amount: web3.utils.numberToHex(Math.floor(minDepositAmount / 2)),
                 durationID: '3m',
                 fromAddress: operator,
             }), 'Reserved a deposit with an invalid ether amount');
@@ -96,7 +97,7 @@ export default function() {
             // Over maximum amount
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: (minDepositAmount + maxDepositAmount),
+                amount: web3.utils.numberToHex(minDepositAmount + maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             }), 'Reserved a deposit with an invalid ether amount');
@@ -113,7 +114,7 @@ export default function() {
             // Reserve deposit
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                amount: web3.utils.numberToHex(minDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             }), 'Reserved a deposit while deposits are disabled');
@@ -128,7 +129,7 @@ export default function() {
         it(printTitle('node operator', 'can reserve a deposit'), async () => {
             await scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                amount: web3.utils.numberToHex(minDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             });
@@ -139,7 +140,7 @@ export default function() {
         it(printTitle('node operator', 'cannot reserve multiple simultaneous deposits'), async () => {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
-                amount: minDepositAmount,
+                amount: web3.utils.numberToHex(minDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             }), 'Reserved multiple simultaneous deposits');
@@ -189,7 +190,7 @@ export default function() {
             // Reserve deposit
             await scenarioDepositReserve({
                 nodeContract,
-                amount: maxDepositAmount,
+                amount: web3.utils.numberToHex(maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             });
@@ -303,7 +304,7 @@ export default function() {
             // Make node deposit to create more minipools and raise RPL ratio above 0
             await scenarioDepositReserve({
                 nodeContract,
-                amount: maxDepositAmount,
+                amount: web3.utils.numberToHex(maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             });
@@ -322,7 +323,7 @@ export default function() {
             // Reserve deposit
             await scenarioDepositReserve({
                 nodeContract,
-                amount: maxDepositAmount,
+                amount: web3.utils.numberToHex(maxDepositAmount),
                 durationID: '3m',
                 fromAddress: operator,
             });
@@ -397,7 +398,7 @@ export default function() {
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawNodeEther({
                 nodeContract,
-                amount: withdrawAmount,
+                amount: web3.utils.numberToHex(withdrawAmount),
                 fromAddress: operator,
                 gas: 5000000,
             }), 'Withdrew more ether from node contract than its balance');
@@ -459,7 +460,7 @@ export default function() {
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawNodeRpl({
                 nodeContract,
-                amount: withdrawAmount,
+                amount: web3.utils.numberToHex(withdrawAmount),
                 fromAddress: operator,
                 gas: 5000000,
             }), 'Withdrew more RPL from node contract than its balance');
