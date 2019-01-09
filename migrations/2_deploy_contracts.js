@@ -141,13 +141,14 @@ module.exports = async (deployer, network) => {
     contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
 
     // Precompiled - Casper Deposit Contract
-    const casper = new $web3.eth.Contract(loadABI('./contracts/contract/casper/compiled/ValidatorRegistration.abi'), null, {
+    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/ValidatorRegistration.abi');
+    const casperDeposit = new $web3.eth.Contract(casperDepositABI, null, {
         from: accounts[0], 
         gasPrice: '20000000000' // 20 gwei
     });
 
     // Create the contract now
-    const casperContract = await casper.deploy(
+    const casperDepositContract = await casperDeposit.deploy(
       // Casper deployment 
       {               
         data: config.fs.readFileSync('./contracts/contract/casper/compiled/ValidatorRegistration.bin')
@@ -158,13 +159,14 @@ module.exports = async (deployer, network) => {
       });
 
     // Set the Casper deposit address
-    let casperDepositAddress = casperContract._address;
+    let casperDepositAddress = casperDepositContract._address;
 
-    // Log it
-    console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Casper Deposit Contract Address');
-    console.log(casperDepositAddress);
-    
-        
+    // Store it in storage
+    contracts.casperDeposit = {
+          address: casperDepositAddress,
+              abi: casperDepositABI,
+      precompiled: true
+    };
 
     // Test interface contracts
     if (testUtils) {
@@ -183,7 +185,10 @@ module.exports = async (deployer, network) => {
   // Deploy other contracts - have to be inside an async loop
   const deployContracts = async function() {
     for (let contract in contracts) {
-      await deployer.deploy(contracts[contract], rocketStorage.address);
+      // Only deploy if it hasn't been deployed already like a precompiled
+      if(!contracts[contract].hasOwnProperty('precompiled')) {
+        await deployer.deploy(contracts[contract], rocketStorage.address);
+      }
     }
   };
   // Run it
