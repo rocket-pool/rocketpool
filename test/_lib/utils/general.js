@@ -177,7 +177,7 @@ export const TimeController = (() => {
 // eventName is the name of the event to retrieve
 // eventParams is an array of objects with string 'type' and 'name' keys and an optional boolean 'indexed' key
 export function getTransactionContractEvents(txResult, contractAddress, eventName, eventParams) {
-    return txResult.receipt.logs
+    return txResult.receipt.rawLogs
         .filter(log => (log.address.toLowerCase() == contractAddress.toLowerCase()))
         .filter(log => (log.topics[0] == web3.utils.soliditySha3(eventName + '(' + eventParams.map(param => param.type).join(',') + ')')))
         .map(log => web3.eth.abi.decodeLog(eventParams.map(param => {

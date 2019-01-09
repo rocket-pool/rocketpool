@@ -23,7 +23,7 @@
     "ganache-cli": "^6.1.8",
     "prettier": "^1.10.2",
     "solidity-coverage": "^0.5.11",
-    "truffle": "^5.0.0-beta.1",
+    "truffle": "^5.0.1",
     "truffle-contract": "^3.*"
   },
   "prettier": {
@@ -42,6 +42,6 @@
     "scrypt": "^6.0.3",
     "secp256k1": "^3.5.0",
     "underscore": "^1.9.0",
-    "web3": "^1.0.0-beta.35"
+    "web3": "^1.0.0-beta.37"
   }
 }
