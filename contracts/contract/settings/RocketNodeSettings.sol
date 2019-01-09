@@ -24,6 +24,9 @@ contract RocketNodeSettings is RocketBase {
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
             setInactiveDuration(48 hours);                                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             setMaxInactiveNodeChecks(3);                                                // The maximum number of other nodes to check for inactivity on checkin
+            setFeePerc(0.05 ether);                                                     // The node operator fee percentage, as a fraction of 1 ether (5%)
+            setFeeVoteCycleDuration(24 hours);                                          // The duration of a node fee voting cycle
+            setFeeVoteCyclePercChange(0.005 ether);                                     // Node fee percentage change per voting cycle, as a fraction of 1 ether (0.5%)
             setDepositAllowed(true);                                                    // Are deposits allowed by nodes?
             setDepositReservationTime(1 days);                                          // How long a deposit reservation stays valid for before the actual ether/rpl needs to be sent
             setWithdrawalAllowed(true);                                                 // Are withdrawals allowed by nodes?
@@ -74,6 +77,21 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The maximum number of other nodes to check for inactivity on checkin
     function getMaxInactiveNodeChecks() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.setinactive.checks.max"))); 
+    }
+
+    /// @dev The node operator fee percentage, as a fraction of 1 ether
+    function getFeePerc() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.fee.perc")));
+    }
+
+    /// @dev The duration of a node fee voting cycle
+    function getFeeVoteCycleDuration() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.fee.vote.cycle.duration")));
+    }
+
+    /// @dev Node fee percentage change per voting cycle, as a fraction of 1 ether
+    function getFeeVoteCyclePercChange() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.fee.vote.cycle.perc.change")));
     }
 
     /// @dev Are deposits currently allowed?
@@ -132,6 +150,23 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The maximum number of other nodes to check for inactivity on checkin
     function setMaxInactiveNodeChecks(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.setinactive.checks.max")), _amount); 
+    }
+
+    /// @dev The node operator fee percentage, as a fraction of 1 ether
+    /// @dev Can only be set on initialisation
+    function setFeePerc(uint256 _amount) public onlySuperUser {
+        require(!rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.init"))), "Node operator fee percentage cannot be set after initialisation");
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), _amount);
+    }
+
+    /// @dev The duration of a node fee voting cycle
+    function setFeeVoteCycleDuration(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.vote.cycle.duration")), _amount);
+    }
+
+    /// @dev Node fee percentage change per voting cycle, as a fraction of 1 ether
+    function setFeeVoteCyclePercChange(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.vote.cycle.perc.change")), _amount);
     }
 
     /// @dev Are user deposits currently allowed?
