@@ -47,7 +47,7 @@ contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
 // Node tasks
 contracts.taskDisableInactiveNodes = artifacts.require('./tasks/DisableInactiveNodes.sol');
-contracts.taskCalculateNodeFees = artifacts.require('./tasks/CalculateNodeFee.sol');
+contracts.taskCalculateNodeFee = artifacts.require('./tasks/CalculateNodeFee.sol');
 // Utilities
 contracts.utilMaths = artifacts.require('./utils/Maths.sol');
 contracts.utilPublisher = artifacts.require('./Publisher.sol');
@@ -86,7 +86,7 @@ const subscriptions = {
 // Node tasks to register
 const nodeTasks = {
   'DisableInactiveNodes': contracts.taskDisableInactiveNodes,
-  'CalculateNodeFees': contracts.taskCalculateNodeFees,
+  'CalculateNodeFee': contracts.taskCalculateNodeFee,
 };
 
 
