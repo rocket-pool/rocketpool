@@ -292,7 +292,7 @@ contract RocketNodeContract {
 
     /// @dev Perform a node checkin
     /// @param _averageLoad The average server load on the node over the last checkin period
-    /// @param _nodeFeeVote The node operator fee percentage vote
+    /// @param _nodeFeeVote The node fee percentage vote: 0 = no change; 1 = increase; 2 = decrease
     function checkin(uint256 _averageLoad, uint256 _nodeFeeVote) public onlyNodeOwner() returns(bool) {
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
