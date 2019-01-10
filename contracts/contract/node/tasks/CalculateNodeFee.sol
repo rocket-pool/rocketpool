@@ -68,7 +68,7 @@ contract CalculateNodeFee is RocketBase {
         }
         // Tally node's fee vote
         if (rocketStorage.getUint(keccak256(abi.encodePacked("node.lastCycleVoted", _nodeAddress))) < currentVotingCycle) {
-            // Increment node's fee vote count
+            // Increment vote count for node's fee vote
             uint256 feeVote = rocketStorage.getUint(keccak256(abi.encodePacked("node.feeVote", _nodeAddress)));
             rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", feeVote)), rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", feeVote))).add(1));
             // Record last cycle voted
