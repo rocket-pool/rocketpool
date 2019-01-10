@@ -2,6 +2,8 @@ pragma solidity 0.5.0;
 
 
 import "../../../RocketBase.sol";
+import "../../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../../lib/SafeMath.sol";
 
 
 /// @title CalculateNodeFee - calculates the node operator fee based on the median value
@@ -44,23 +46,25 @@ contract CalculateNodeFee is RocketBase {
         // Finalise previous voting cycle if complete
         if (rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.voting.cycle"))) < currentVotingCycle) {
             // Get vote counts
-            uint256 noChangeVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", 0)));
-            uint256 increaseVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", 1)));
-            uint256 decreaseVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", 2)));
+            uint256 noChangeVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(0))));
+            uint256 increaseVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(1))));
+            uint256 decreaseVotes = rocketStorage.getUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(2))));
             // Update fee percentage
             uint256 feePerc = rocketNodeSettings.getFeePerc();
             uint256 feeVoteCyclePercChange = rocketNodeSettings.getFeeVoteCyclePercChange();
-            if (increaseVotes > decreaseVotes && increaseVotes > noChangeVotes && feePerc <= (1 ether).sub(feeVoteCyclePercChange)) {
+            uint256 minFeePerc = 0 ether;
+            uint256 maxFeePerc = 1 ether;
+            if (increaseVotes > decreaseVotes && increaseVotes > noChangeVotes && feePerc <= maxFeePerc.sub(feeVoteCyclePercChange)) {
                 rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), feePerc.add(feeVoteCyclePercChange));
             }
-            else if (decreaseVotes > increaseVotes && decreaseVotes > noChangeVotes && feePerc >= feeVoteCyclePercChange) {
+            else if (decreaseVotes > increaseVotes && decreaseVotes > noChangeVotes && feePerc >= minFeePerc.add(feeVoteCyclePercChange)) {
                 rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), feePerc.sub(feeVoteCyclePercChange));
             }
             // Reset voting cycle
             rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.voting.cycle")), currentVotingCycle);
-            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", 0)), 0);
-            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", 1)), 0);
-            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", 2)), 0);
+            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(0))), 0);
+            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(1))), 0);
+            rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.votes", uint256(2))), 0);
         }
         // Tally node's fee vote
         if (rocketStorage.getUint(keccak256(abi.encodePacked("node.lastCycleVoted", _nodeAddress))) < currentVotingCycle) {
