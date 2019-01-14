@@ -24,7 +24,8 @@
     "prettier": "^1.10.2",
     "solidity-coverage": "^0.5.11",
     "truffle": "^5.0.1",
-    "truffle-contract": "^3.*"
+    "truffle-contract": "^3.*",
+    "ssz": "^1.5.*"
   },
   "prettier": {
     "singleQuote": true,
@@ -32,6 +33,7 @@
     "trailingComma": "es5"
   },
   "dependencies": {
+    "bls-wasm": "^0.2.1",
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",
     "ethereumjs-util": "^5.2.0",
