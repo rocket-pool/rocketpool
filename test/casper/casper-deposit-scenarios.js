@@ -1,27 +1,20 @@
-import { printTitle, assertThrows } from '../_lib/utils/general';
 import { CasperInstance } from '../_lib/utils/casper';
 
 
-// An address makes a deposit into Casper
-export async function scenarioValidatorDeposit(depositInput) {
+// Make a validator registration deposit into Casper
+export async function scenarioValidatorDeposit({depositInput, fromAddress, value, gas}) {
 
-    // Verify the deposit input is a correct SSZ 
-    
-    /*
-    // Make sure epoch is set correctly
-    await casperEpochInitialise(fromAddress)
+    // Verify the deposit input is a correct SSZ
+    // TODO: verify
 
-    // Casper
+    // Get Casper validator registration contract
     const casper = await CasperInstance();
-    let tx = await casper.methods.deposit(validationAddr, withdrawalAddr).send({
-        from: fromAddress, 
-        gas: 3750000, 
-        gasPrice: '20000000000',
-        value: amountInWei
+
+    // Deposit
+    let result = await casper.methods.deposit(depositInput).send({
+        from: fromAddress,
+        value: value,
+        gas: gas,
     });
-    assert.equal(tx.events.Deposit.returnValues._from.toLowerCase(), withdrawalAddr.toLowerCase(), 'Casper deposit failed and has incorrect fromAddress');
-    */
+
 }
-
-
-
