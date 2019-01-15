@@ -2,7 +2,6 @@
 
 const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
-const FS = require('fs');
 
 import { getABI, getContractAddressFromStorage } from './general';
 
@@ -16,4 +15,3 @@ async function Casper() {
 export async function CasperInstance() {
     return await Casper();
 }
-
