@@ -187,3 +187,13 @@ export function getTransactionContractEvents(txResult, contractAddress, eventNam
         }), log.data, log.topics.slice(1)));
 }
 
+
+// Repeatedly hash a value n times
+export function repeatHash(value, n) {
+    let ret = value;
+    for (let i = 0; i < n; ++i) {
+        ret = web3.utils.sha3(ret);
+    }
+    return ret;
+}
+
