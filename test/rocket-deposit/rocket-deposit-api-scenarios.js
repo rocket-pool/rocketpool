@@ -1,6 +1,5 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
-import { ValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
 
@@ -64,7 +63,7 @@ async function getMinipoolBalances(minipools) {
 
 
 // Make a deposit
-export async function scenarioDeposit({beaconChain, depositorContract, durationID, fromAddress, value, gas}) {
+export async function scenarioDeposit({depositorContract, durationID, fromAddress, value, gas}) {
     const rocketDepositQueue = await RocketDepositQueue.deployed();
     const rocketDepositSettings = await RocketDepositSettings.deployed();
     const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
@@ -88,18 +87,12 @@ export async function scenarioDeposit({beaconChain, depositorContract, durationI
     // Get initial minipool balances
     let minipoolBalances1 = await getMinipoolBalances(availableMinipools);
 
-    // Get initial beacon chain validators
-    let validators1 = beaconChain.getValidatorsByStatus(ValidatorStatus.ACTIVE);
-
     // Deposit
     let result = await depositorContract.deposit(durationID, {from: fromAddress, value: value, gas: gas});
     profileGasUsage('RocketGroupAccessorContract.deposit', result);
 
     // Get updated minipool balances
     let minipoolBalances2 = await getMinipoolBalances(availableMinipools);
-
-    // Get updated beacon chain validators
-    let validators2 = beaconChain.getValidatorsByStatus(ValidatorStatus.ACTIVE);
 
     // Get chunk fragment assignment events
     let chunkFragmentAssignEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositChunkFragmentAssign', [
@@ -137,8 +130,7 @@ export async function scenarioDeposit({beaconChain, depositorContract, durationI
             expectedBalance = 0;
 
             // Check active validator set on beacon chain
-            assert.equal(validators1.filter(validator => validator.withdrawalAddress.toLowerCase() == address.toLowerCase()).length, 0, 'Validator existed for minipool before launch');
-            assert.equal(validators2.filter(validator => validator.withdrawalAddress.toLowerCase() == address.toLowerCase()).length, 1, 'Validator was not added for launched minipool');
+            // TODO: implement
 
         }
 

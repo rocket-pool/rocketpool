@@ -6,7 +6,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/casper/ValidatorRegistrationInterface.sol";
+import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -44,7 +44,7 @@ contract RocketMinipool {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ValidatorRegistrationInterface validatorRegistration = ValidatorRegistrationInterface(0);       // Interface of the Casper validator registration contract
+    DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
@@ -151,8 +151,8 @@ contract RocketMinipool {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Set the address of the validator registration contract
-        validatorRegistration = ValidatorRegistrationInterface(getContractAddress("validatorRegistration"));
+        // Set the address of the casper deposit contract
+        casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         // Add the RPL contract address
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
         // Set the initial status

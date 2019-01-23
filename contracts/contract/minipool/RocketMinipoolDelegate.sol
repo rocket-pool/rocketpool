@@ -6,7 +6,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/casper/ValidatorRegistrationInterface.sol";
+import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -44,7 +44,7 @@ contract RocketMinipoolDelegate {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ValidatorRegistrationInterface validatorRegistration = ValidatorRegistrationInterface(0);       // Interface of the Casper validator registration contract
+    DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
@@ -197,8 +197,8 @@ contract RocketMinipoolDelegate {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Set the address of the validator registration contract
-        validatorRegistration = ValidatorRegistrationInterface(getContractAddress("validatorRegistration"));
+        // Set the address of the casper deposit contract
+        casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         // Add the RPL contract address
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
     }
@@ -426,18 +426,13 @@ contract RocketMinipoolDelegate {
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
         if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
-            if(!node.trusted ) {
+            if(!node.trusted) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
-            // Send deposit to validator registration contract
-            // TODO: implement real validator registration arguments
-            uint256 pubkeyVal = 1;
-            while (validatorRegistration.usedPubkey(bytes32(pubkeyVal))) { ++pubkeyVal; }
-            bytes32 pubkey = bytes32(pubkeyVal);
-            uint256 withdrawalShardID = 1;
-            address withdrawalAddress = address(this);
-            bytes32 randaoCommitment = 0x0000000000000000000000000000000000000000000000000000000000000002;
-            validatorRegistration.deposit.value(launchAmount)(pubkey, withdrawalShardID, withdrawalAddress, randaoCommitment);
+            // Send deposit to casper deposit contract
+            // TODO: implement real deposit input arguments
+            bytes depositInput = ;
+            casperDeposit.deposit.value(launchAmount)(depositInput);
             // Staking
             setStatus(2);
             // Done

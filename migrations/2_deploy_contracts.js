@@ -136,12 +136,8 @@ module.exports = async (deployer, network) => {
   // Test network deployment
   else {
 
-    // TODO: Remove below when vyper pre-compiled is in
-    // Casper validator registration contract
-    contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
-
     // Precompiled - Casper Deposit Contract
-    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/ValidatorRegistration.abi');
+    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     const casperDeposit = new $web3.eth.Contract(casperDepositABI, null, {
         from: accounts[0], 
         gasPrice: '20000000000' // 20 gwei
@@ -151,7 +147,7 @@ module.exports = async (deployer, network) => {
     const casperDepositContract = await casperDeposit.deploy(
       // Casper deployment 
       {               
-        data: config.fs.readFileSync('./contracts/contract/casper/compiled/ValidatorRegistration.bin')
+        data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin')
       }).send({
           from: accounts[0], 
           gas: 8000000, 
