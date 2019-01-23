@@ -431,7 +431,7 @@ contract RocketMinipoolDelegate {
             }
             // Send deposit to casper deposit contract
             // TODO: implement real deposit input arguments
-            bytes depositInput = ;
+            bytes memory depositInput = new bytes(2048);
             casperDeposit.deposit.value(launchAmount)(depositInput);
             // Staking
             setStatus(2);
