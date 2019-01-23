@@ -6,7 +6,6 @@ import "./../../interface/RocketStorageInterface.sol";
 import "./../../interface/api/RocketNodeAPIInterface.sol";
 import "./../../interface/minipool/RocketMinipoolInterface.sol";
 import "./../../interface/settings/RocketNodeSettingsInterface.sol";
-import "./../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
 import "./../../lib/SafeMath.sol";
 
@@ -36,7 +35,6 @@ contract RocketNodeContract {
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                            // Minipool contract 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
-    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main minipool settings
 
 
     /*** Structs ***************/
