@@ -232,10 +232,10 @@ contract RocketNodeContract {
         address minipool = rocketNodeAPI.deposit(owner);
         // Get the minipool
         rocketMinipool = RocketMinipoolInterface(minipool);
-        // Transfer the RPL to the minipool now - note: May have to look at manually setting gas here via a call
+        // Transfer the RPL to the minipool now
         require(rplContract.transfer(minipool, rocketMinipool.getNodeDepositRPL()), "Could not transfer RPL to minipool contract");
         // Transfer the ether to the minipool now
-        require(rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(rocketNodeSettings.getDepositEtherGasLimit())(), "Could not transfer ether to minipool contract");
+        require(rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther())(), "Could not transfer ether to minipool contract");
         // Delete the deposit reservation
         delete depositReservation;
         // Emit deposit events
