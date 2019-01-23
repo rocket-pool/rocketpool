@@ -276,12 +276,16 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Perform a node checkin
     /// @param _nodeOwner The address of the node owner
-    /// @param _averageLoad The average server load on the node over the last checkin period
-    /// @param _nodeFeeVote The node operator fee percentage vote
+    /// @param _averageLoad The average server load on the node over the last checkin period, as a fraction of 1 ether
+    /// @param _nodeFeeVote The node fee percentage vote: 0 = no change; 1 = increase; 2 = decrease
     function checkin(address _nodeOwner, uint256 _averageLoad, uint256 _nodeFeeVote) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(bool) {
+        // Check average load
+        require(_averageLoad <= 1 ether, "Invalid average load");
+        // Check node fee percentage vote
+        require(_nodeFeeVote >= 0 && _nodeFeeVote <= 2, "Invalid node fee vote");
         // Record average load
         rocketStorage.setUint(keccak256(abi.encodePacked("node.averageLoad", _nodeOwner)), _averageLoad);
-        // Record node operator fee percentage vote
+        // Record node fee percentage vote
         rocketStorage.setUint(keccak256(abi.encodePacked("node.feeVote", _nodeOwner)), _nodeFeeVote);
         // Record last checkin time
         rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", _nodeOwner)), now);

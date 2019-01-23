@@ -54,12 +54,12 @@ export default function() {
             await scenarioRunTasks({
                 nodeContract: nodeContract1,
                 fromAddress: nodeOperator1,
-                gas: 500000,
+                gas: 5000000,
             });
             await scenarioRunTasks({
                 nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
-                gas: 500000,
+                gas: 5000000,
             });
         });
 
@@ -75,12 +75,12 @@ export default function() {
             await scenarioRunTasks({
                 nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
-                gas: 500000,
+                gas: 5000000,
             });
             await scenarioRunTasks({
                 nodeContract: nodeContract3,
                 fromAddress: nodeOperator3,
-                gas: 500000,
+                gas: 5000000,
             });
         });
 
@@ -96,17 +96,17 @@ export default function() {
             await scenarioRunTasks({
                 nodeContract: nodeContract1,
                 fromAddress: nodeOperator1,
-                gas: 500000,
+                gas: 5000000,
             });
             await scenarioRunTasks({
                 nodeContract: nodeContract2,
                 fromAddress: nodeOperator2,
-                gas: 500000,
+                gas: 5000000,
             });
             await scenarioRunTasks({
                 nodeContract: nodeContract3,
                 fromAddress: nodeOperator3,
-                gas: 500000,
+                gas: 5000000,
             });
         });
 
