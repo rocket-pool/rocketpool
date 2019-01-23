@@ -17,4 +17,14 @@ export async function scenarioValidatorDeposit({depositInput, fromAddress, value
         gas: gas,
     });
 
+    // Get deposit data
+    let depositData = Buffer.from(result.events.Deposit.returnValues.data.substr(2), 'hex');
+
+    // Decode deposit amount
+    let depositAmountGweiEncoded = depositData.slice(0, 8);
+    let depositAmountWei = parseInt(depositAmountGweiEncoded.toString('hex'), 16) * 1000000000;
+
+    // Check deposit amount
+    assert.equal(depositAmountWei, parseInt(value), 'Deposit amount does not match');
+
 }
