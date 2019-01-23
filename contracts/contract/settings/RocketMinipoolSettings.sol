@@ -43,7 +43,6 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
             setMinipoolBackupCollectDuration(526000);                                           // The block count limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit - 3months default
             setMinipoolNewEnabled(true);                                                        // Minipools allowed to be created?
-            setMinipoolNewMaxAtOnce(2);                                                         // How many minipools are allowed to be created at once? keep gas block limit in mind
             setMinipoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
             setMinipoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
@@ -89,11 +88,6 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev Minipools allowed to be created?
     function getMinipoolNewEnabled() public view returns (bool) {
         return rocketStorage.getBool(keccak256("settings.minipool.new.enabled"));
-    }
-
-    /// @dev How many minipools are allowed to be created at once? keep gas block limit in mind
-    function getMinipoolNewMaxAtOnce() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.minipool.new.max"));
     }
 
     /// @dev Existing mini pools are allowed to be closed and selfdestruct when finished
@@ -209,11 +203,6 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev Minipools allowed to be created?
     function setMinipoolNewEnabled(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.new.enabled")), _enabled); 
-    }
-
-    /// @dev How many minipools are allowed to be created at once? keep gas block limit in mind
-    function setMinipoolNewMaxAtOnce(uint256 _amount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.new.max")), _amount); 
     }
 
     /// @dev Minipools allowed to be closed?
