@@ -32,6 +32,7 @@
     "trailingComma": "es5"
   },
   "dependencies": {
+    "@chainsafesystems/ssz": "github:ChainSafeSystems/ssz-js#master",
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",
     "ethereumjs-util": "^5.2.0",
@@ -41,7 +42,6 @@
     "rlp": "^2.0.0",
     "scrypt": "^6.0.3",
     "secp256k1": "^3.5.0",
-    "ssz": "^1.5.3",
     "underscore": "^1.9.0",
     "web3": "^1.0.0-beta.37"
   }
