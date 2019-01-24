@@ -1,4 +1,4 @@
-import { printTitle, assertThrows } from '../_lib/utils/general';
+import { printTitle, assertThrows, getDepositInput } from '../_lib/utils/general';
 import { RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
@@ -62,6 +62,7 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: accounts[2],
             }), 'Random account reserved a deposit');
         });
@@ -72,8 +73,22 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: 'beer',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             }), 'Reserved a deposit with an invalid staking duration ID');
+        });
+
+
+        // Node operator cannot reserve a deposit with invalid withdrawal credentials
+        it(printTitle('node operator', 'cannot reserve a deposit with invalid withdrawal credentials'), async () => {
+            await assertThrows(scenarioDepositReserve({
+                nodeContract,
+                durationID: '3m',
+                depositInput: getDepositInput({
+                    withdrawalPubkey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456700000000'
+                }),
+                fromAddress: operator,
+            }), 'Reserved a deposit with invalid withdrawal credentials');
         });
 
 
@@ -87,6 +102,7 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             }), 'Reserved a deposit while deposits are disabled');
 
@@ -101,6 +117,7 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             });
         });
@@ -111,6 +128,7 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             }), 'Reserved multiple simultaneous deposits');
         });
@@ -160,6 +178,7 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             });
 
@@ -273,6 +292,7 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             });
             await scenarioDeposit({
@@ -291,6 +311,7 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 fromAddress: operator,
             });
 

@@ -1,5 +1,5 @@
 // Dependencies
-import { getTransactionContractEvents } from '../_lib/utils/general';
+import { getTransactionContractEvents, getDepositInput } from '../_lib/utils/general';
 import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 import { mintRpl } from './rocket-pool-token';
 
@@ -35,7 +35,7 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Reserve node deposit
-        await nodeContract.depositReserve(stakingDurationID, {from: nodeOperator});
+        await nodeContract.depositReserve(stakingDurationID, getDepositInput({}), {from: nodeOperator});
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();

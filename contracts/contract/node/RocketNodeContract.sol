@@ -181,13 +181,14 @@ contract RocketNodeContract {
 
     /// @dev Reserves a deposit of Ether/RPL at the current rate. The node operator has 24hrs to deposit both once its locked in or it will expire.
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function depositReserve(string memory _durationID) public returns(bool) { 
+    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
+    function depositReserve(string memory _durationID, bytes memory _depositInput) public returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
         // Verify the deposit is acceptable
-        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, depositReservation.created);
+        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _depositInput, depositReservation.created);
         // Get the required ether amount
         uint256 etherAmount = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
         // Get the RPL amount and ratio for the deposit

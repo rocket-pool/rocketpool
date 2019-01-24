@@ -157,14 +157,37 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _nodeOwner  The address of the nodes owner
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
+    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > _lastDepositReservedTime.add(rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
+        // Check the deposit input is valid
+        checkDepositInput(_depositInput);
+    }
+
+
+    /// @dev Checks if a deposit input is valid
+    /// @param _depositInput The serialized deposit input
+    function checkDepositInput(bytes memory _depositInput) private pure {
+        // Rocket Pool withdrawal credentials
+        // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        bytes memory rpWithdrawalCredentials = hex"00ece929cbe97155f64f8f6a9a1d8e6bbdc89addb33117501faa13c3f1a68a70";
+        // Check deposit input withdrawal credentials (bytes 52 - 83)
+        bool wcMatch = true;
+        uint256 wcStart = 52;
+        uint256 wcEnd = 84;
+        for (uint256 i = 0; i < wcEnd - wcStart; ++i) {
+            if (rpWithdrawalCredentials[i] != _depositInput[i + wcStart]) {
+                wcMatch = false;
+                break;
+            }
+        }
+        require(wcMatch, "Invalid deposit input withdrawal credentials");
     }
 
 
