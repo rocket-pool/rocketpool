@@ -233,14 +233,16 @@ contract RocketNodeContract {
         // Get the minipool
         rocketMinipool = RocketMinipoolInterface(minipool);
         // Transfer the RPL to the minipool now
-        require(rplContract.transfer(minipool, rocketMinipool.getNodeDepositRPL()), "Could not transfer RPL to minipool contract");
+        if (rplContract.transfer(minipool, rocketMinipool.getNodeDepositRPL())) {
+            emit NodeDepositMinipool(minipool, "RPL", rocketMinipool.getNodeDepositRPL(), now);
+        }
         // Transfer the ether to the minipool now
-        require(rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther())(), "Could not transfer ether to minipool contract");
+        rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther())();
+        if (rocketMinipool.getNodeDepositEther() > 0) {
+            emit NodeDepositMinipool(minipool, "ETH", rocketMinipool.getNodeDepositEther(), now);
+        }
         // Delete the deposit reservation
         delete depositReservation;
-        // Emit deposit events
-        emit NodeDepositMinipool(minipool, "RPL", rocketMinipool.getNodeDepositRPL(), now);
-        emit NodeDepositMinipool(minipool, "ETH", rocketMinipool.getNodeDepositEther(), now);
         // Done
         return true;
     }
