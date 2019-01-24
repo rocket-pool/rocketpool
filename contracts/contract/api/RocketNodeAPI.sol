@@ -276,12 +276,16 @@ contract RocketNodeAPI is RocketBase {
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Get the deposit duration ID
         string memory durationID = rocketNodeContract.getDepositReserveDurationID();
+        // Get the deposit input data
+        bytes memory depositInput = rocketNodeContract.getDepositReserveDepositInput();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
         uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
+        // Node trusted status
+        bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
         // Create minipool and return address
-        return rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited, rplDeposited, rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner))));
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, depositInput, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 

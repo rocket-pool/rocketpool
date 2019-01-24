@@ -43,6 +43,7 @@ contract RocketNodeContract {
 
     struct DepositReservation {
         string  durationID;             // The deposit duration (eg 3m, 6m etc)
+        bytes   depositInput;           // The simple serialized validator deposit input data
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
         uint256 rplRatio;               // Amount of RPL required per ether deposited
@@ -168,6 +169,11 @@ contract RocketNodeContract {
         return depositReservation.durationID;
     }
 
+    /// @dev Returns the current deposit reservation deposit input data
+    function getDepositReserveDepositInput() public hasDepositReserved() returns (bytes memory) { 
+        return depositReservation.depositInput;
+    }
+
     
     /*** Setters *************/
 
@@ -196,6 +202,7 @@ contract RocketNodeContract {
         // Record the reservation now
         depositReservation = DepositReservation({
             durationID: _durationID,
+            depositInput: _depositInput,
             etherAmount: etherAmount,
             rplAmount: rplAmount,
             rplRatio: rplRatio,

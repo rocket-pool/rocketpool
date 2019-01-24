@@ -73,10 +73,11 @@ contract RocketMinipoolDelegate {
     }
 
     struct Staking {
-         string id;                                             // Duration ID
+        string  id;                                             // Duration ID
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
+        bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
     }
 
     struct User {
@@ -84,7 +85,7 @@ contract RocketMinipoolDelegate {
         address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
-         int256 rewards;                                        // Rewards received after Casper
+        int256  rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
@@ -430,9 +431,7 @@ contract RocketMinipoolDelegate {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
             // Send deposit to casper deposit contract
-            // TODO: implement real deposit input arguments
-            bytes memory depositInput = new bytes(2048);
-            casperDeposit.deposit.value(launchAmount)(depositInput);
+            casperDeposit.deposit.value(launchAmount)(staking.depositInput);
             // Staking
             setStatus(2);
             // Done

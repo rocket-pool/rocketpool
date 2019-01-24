@@ -1,4 +1,4 @@
-import { printTitle, assertThrows } from '../_lib/utils/general';
+import { printTitle, assertThrows, getDepositInput } from '../_lib/utils/general';
 import { scenarioGetContractAddress, scenarioCreateMinipool, scenarioRemoveMinipool } from './rocket-pool-scenarios';
 
 export default function() {
@@ -22,6 +22,7 @@ export default function() {
             await assertThrows(scenarioCreateMinipool({
                 nodeOwner: nodeOwner,
                 durationID: '3m',
+                depositInput: getDepositInput({}),
                 etherAmount: web3.utils.toWei('1', 'ether'),
                 rplAmount: web3.utils.toWei('1', 'ether'),
                 isTrusted: false,

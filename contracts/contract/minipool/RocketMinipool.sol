@@ -73,10 +73,11 @@ contract RocketMinipool {
     }
 
     struct Staking {
-         string id;                                             // Duration ID
+        string  id;                                             // Duration ID
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
+        bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
     }
 
     struct User {
@@ -84,7 +85,7 @@ contract RocketMinipool {
         address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
-         int256 rewards;                                        // Rewards received after Casper
+        int256  rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
@@ -143,10 +144,11 @@ contract RocketMinipool {
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
+    /// @param _depositInput The validator depositInput data to be submitted to the casper deposit contract
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get minipool settings
@@ -168,6 +170,7 @@ contract RocketMinipool {
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        staking.depositInput = _depositInput;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
