@@ -282,42 +282,7 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeTasks.run(_nodeOwner);
         // Done
         return true;
-    } 
-
-
-    /*
-    /// @dev Save a public key for this node from a newly generated account
-    /// @param _account  The address of an account controlled by the node owner
-    /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyAdd(address _account, bytes memory _pubkey) public onlyValidNodeOwner(msg.sender) returns(bool) { 
-        // Get our contracts
-        bytesSetStorage = BytesSetStorageInterface(getContractAddress("utilBytesSetStorage"));
-        // Pubkeys should only ever be used once 
-        require(rocketStorage.getBytes(keccak256(abi.encodePacked("pubkey.used", _pubkey))).length > 0, "Pubkey has already been used by a node.");
-        // Accounts should only ever be used once 
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("pubkey.account", _account))) != address(0x0), "Account has already been used by a node.");
-        // Pubkey should have a length of greater than 32 bytes (64 mostly, but not always)
-        require(_pubkey.length >= 32, "Pubkey is too short.");
-        // Verify this pubkey is for the supplied address - the extra padding gets it to the correct length
-        require(uint256(keccak256(abi.encodePacked(_pubkey)) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) == uint256(_account));
-        // Add it as a key, but an unverified one
-        rocketStorage.setBool(keccak256(abi.encodePacked("account.pubkey.verified", _pubkey)), false);
-        // Add it to that nodes list
-        bytesSetStorage.addItem(keccak256(abi.encodePacked("node.pubkey", msg.sender)), _pubkey); 
-        // Done
-        return true;
     }
 
-    /// @dev Verify a public key for an account that belongs to a node
-    /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyVerify(bytes memory _pubkey) public returns(bool) { 
-        // Verify this pubkey is for the supplied address - the extra padding gets it to the correct length
-        require(uint256(keccak256(abi.encodePacked(_pubkey)) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) == uint256(msg.sender));
-        // Its verified
-        rocketStorage.setBool(keccak256(abi.encodePacked("pubkey.verified", _pubkey)), true);
-        // Done
-        return true;
-    }
-    */
 
 }
