@@ -1,4 +1,5 @@
-import { printTitle, assertThrows, getDepositInput } from '../_lib/utils/general';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { getDepositInput } from '../_lib/utils/beacon';
 import { RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';

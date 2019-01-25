@@ -1,5 +1,6 @@
 // Dependencies
-import { getTransactionContractEvents, getDepositInput } from '../_lib/utils/general';
+import { getTransactionContractEvents } from '../_lib/utils/general';
+import { getDepositInput } from '../_lib/utils/beacon';
 import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 import { mintRpl } from './rocket-pool-token';
 

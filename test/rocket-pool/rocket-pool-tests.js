@@ -1,4 +1,5 @@
-import { printTitle, assertThrows, getDepositInput } from '../_lib/utils/general';
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { getDepositInput } from '../_lib/utils/beacon';
 import { scenarioGetContractAddress, scenarioCreateMinipool, scenarioRemoveMinipool } from './rocket-pool-scenarios';
 
 export default function() {
