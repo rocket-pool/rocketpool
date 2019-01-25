@@ -1,3 +1,0 @@
-[submodule "beacon-chain-simulator"]
-	path = beacon-chain-simulator
-	url = https://github.com/rocket-pool/beacon-chain-simulator.git
