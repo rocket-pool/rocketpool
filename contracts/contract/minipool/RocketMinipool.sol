@@ -377,6 +377,11 @@ contract RocketMinipool {
         return staking.duration;
     }
 
+    /// @dev Returns the minipool's deposit input data to be submitted to casper
+    function getDepositInput() public view returns (bytes memory) {
+        return staking.depositInput;
+    }
+
     /// @dev Gets the total user deposit capacity
     function getUserDepositCapacity() public view returns(uint256) {
         return userDepositCapacity;

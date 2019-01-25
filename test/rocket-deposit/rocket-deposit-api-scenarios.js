@@ -1,5 +1,6 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
+import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
 
@@ -129,8 +130,15 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
         if (expectedBalance >= launchAmount) {
             expectedBalance = 0;
 
-            // Check active validator set on beacon chain
-            // TODO: implement
+            // Extract minipool's validator pubkey from deposit input data
+            let minipool = await RocketMinipool.at(address);
+            let depositInput = deserialiseDepositInput(await minipool.getDepositInput.call());
+
+            // Check for validator on beacon chain
+            let validatorExists = true;
+            try { await getValidatorStatus(depositInput.pubkey); }
+            catch (e) { validatorExists = false; }
+            assert.isTrue(validatorExists, 'Launched minipool validator does not exist on beacon chain');
 
         }
 
