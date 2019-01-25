@@ -164,6 +164,9 @@ module.exports = async (deployer, network) => {
       precompiled: true
     };
 
+    // Casper withdrawal contract
+    contracts.casperWithdraw = artifacts.require('./casper/DummyWithdraw.sol');
+
     // Test interface contracts
     if (testUtils) {
       contracts.testLists = artifacts.require('./test/TestLists.sol');
