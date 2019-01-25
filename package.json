@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@chainsafesystems/ssz": "github:ChainSafeSystems/ssz-js#master",
+    "beacon-chain-simulator": "github:rocket-pool/beacon-chain-simulator#master",
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",
     "ethereumjs-util": "^5.2.0",
