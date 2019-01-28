@@ -6,7 +6,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/casper/ValidatorRegistrationInterface.sol";
+import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -44,7 +44,7 @@ contract RocketMinipool {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ValidatorRegistrationInterface validatorRegistration = ValidatorRegistrationInterface(0);       // Interface of the Casper validator registration contract
+    DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
@@ -73,10 +73,11 @@ contract RocketMinipool {
     }
 
     struct Staking {
-         string id;                                             // Duration ID
+        string  id;                                             // Duration ID
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
+        bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
     }
 
     struct User {
@@ -84,7 +85,7 @@ contract RocketMinipool {
         address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
-         int256 rewards;                                        // Rewards received after Casper
+        int256  rewards;                                        // Rewards received after Casper
         uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
@@ -143,16 +144,17 @@ contract RocketMinipool {
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
+    /// @param _depositInput The validator depositInput data to be submitted to the casper deposit contract
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _depositEther, uint256 _depositRPL, bool _trusted) public {
         // Update the storage contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Set the address of the validator registration contract
-        validatorRegistration = ValidatorRegistrationInterface(getContractAddress("validatorRegistration"));
+        // Set the address of the casper deposit contract
+        casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         // Add the RPL contract address
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
         // Set the initial status
@@ -168,6 +170,7 @@ contract RocketMinipool {
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        staking.depositInput = _depositInput;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
@@ -372,6 +375,11 @@ contract RocketMinipool {
     /// @dev Returns the current staking duration in blocks
     function getStakingDuration() public view returns(uint256) {
         return staking.duration;
+    }
+
+    /// @dev Returns the minipool's deposit input data to be submitted to casper
+    function getDepositInput() public view returns (bytes memory) {
+        return staking.depositInput;
     }
 
     /// @dev Gets the total user deposit capacity

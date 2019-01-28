@@ -5,10 +5,10 @@ import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, Rock
 
 
 // Reserve a deposit
-export async function scenarioDepositReserve({nodeContract, amount, durationID, fromAddress, gas}) {
+export async function scenarioDepositReserve({nodeContract, durationID, depositInput, fromAddress, gas}) {
 
     // Reserve deposit
-    let result = await nodeContract.depositReserve(amount, durationID, {from: fromAddress, gas: gas});
+    let result = await nodeContract.depositReserve(durationID, depositInput, {from: fromAddress, gas: gas});
 
     // Get deposit reservation event
     let depositReservationEvents = result.logs.filter(log => (log.event == 'NodeDepositReservation' && log.args._from.toLowerCase() == fromAddress.toLowerCase()));
@@ -17,13 +17,11 @@ export async function scenarioDepositReserve({nodeContract, amount, durationID, 
     // Get deposit information
     let reservationExists = await nodeContract.getHasDepositReservation.call();
     let reservationTime = parseInt(await nodeContract.getDepositReservedTime.call());
-    let reservationAmount = parseInt(await nodeContract.getDepositReserveEtherRequired.call());
     let reservationDurationID = await nodeContract.getDepositReserveDurationID.call();
 
     // Asserts
     assert.isTrue(reservationExists, 'Reservation was not created successfully');
     assert.equal(depositReservationEventTime, reservationTime, 'Reservation created time is incorrect');
-    assert.equal(reservationAmount, amount, 'Reservation amount is incorrect');
     assert.equal(reservationDurationID, durationID, 'Reservation duration ID is incorrect');
 
 }
@@ -52,11 +50,6 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     const rocketPool = await RocketPool.deployed();
     const rocketPoolToken = await RocketPoolToken.deployed();
 
-    // Get expected minipools created
-    let minipoolLaunchAmount = parseInt(await rocketMinipoolSettings.getMinipoolLaunchAmount.call());
-    let minipoolCreationAmount = Math.floor(minipoolLaunchAmount / 2);
-    let expectedMiniPools = Math.floor(value / minipoolCreationAmount);
-
     // Get deposits required
     let nodeDepositEtherRequired = parseInt(await nodeContract.getDepositReserveEtherRequired.call());
     let nodeDepositRPlRequired = parseInt(await nodeContract.getDepositReserveRPLRequired.call());
@@ -76,48 +69,43 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     ]);
 
     // Check minipool created events
-    assert.equal(minipoolCreatedEvents.length, expectedMiniPools, 'Expected number of minipools was not created');
+    assert.equal(minipoolCreatedEvents.length, 1, 'Minipool was not created');
 
-    // Check minipools
-    for (let i = 0; i < minipoolCreatedEvents.length; ++i) {
+    // Get minipool
+    let minipoolAddress = minipoolCreatedEvents[0]._address;
+    let minipool = await RocketMinipool.at(minipoolAddress);
 
-        // Get minipool
-        let minipoolAddress = minipoolCreatedEvents[i]._address;
-        let minipool = await RocketMinipool.at(minipoolAddress);
+    // Get minipool details
+    let minipoolExists = await rocketPool.getPoolExists.call(minipoolAddress);
+    let minipoolNodeContract = await minipool.getNodeContract.call();
+    let minipoolStatusChangedBlock = parseInt(await minipool.getStatusChangedBlock.call());
+    let minipoolStakingDurationID = await minipool.getStakingDurationID.call();
+    let minipoolStakingDuration = parseInt(await minipool.getStakingDuration.call());
 
-        // Get minipool details
-        let minipoolExists = await rocketPool.getPoolExists.call(minipoolAddress);
-        let minipoolNodeContract = await minipool.getNodeContract.call();
-        let minipoolStatusChangedBlock = parseInt(await minipool.getStatusChangedBlock.call());
-        let minipoolStakingDurationID = await minipool.getStakingDurationID.call();
-        let minipoolStakingDuration = parseInt(await minipool.getStakingDuration.call());
+    // Get minipool balance requirements & balances
+    let ethRequired = parseInt(await minipool.getNodeDepositEther.call());
+    let rplRequired = parseInt(await minipool.getNodeDepositRPL.call());
+    let ethBalance = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let rplBalance = parseInt(await rocketPoolToken.balanceOf.call(minipoolAddress));
 
-        // Get minipool balance requirements & balances
-        let ethRequired = parseInt(await minipool.getNodeDepositEther.call());
-        let rplRequired = parseInt(await minipool.getNodeDepositRPL.call());
-        let ethBalance = parseInt(await web3.eth.getBalance(minipoolAddress));
-        let rplBalance = parseInt(await rocketPoolToken.balanceOf.call(minipoolAddress));
+    // Get settings
+    let expectedStakingDuration = parseInt(await rocketMinipoolSettings.getMinipoolStakingDuration.call(minipoolStakingDurationID));
 
-        // Get settings
-        let expectedStakingDuration = parseInt(await rocketMinipoolSettings.getMinipoolStakingDuration.call(minipoolStakingDurationID));
-
-        // Asserts
-        assert.isTrue(minipoolExists, 'Created minipool does not exist');
-        assert.equal(minipoolNodeContract.toLowerCase(), nodeContract.address.toLowerCase(), 'Incorrect minipool node contract address');
-        assert.equal(minipoolStatusChangedBlock, blockNumber, 'Incorrect minipool status block number');
-        assert.equal(minipoolStakingDuration, expectedStakingDuration, 'Incorrect minipool staking duration');
-        assert.equal(ethRequired, ethBalance, 'Created minipool has invalid ether balance');
-        assert.equal(rplRequired, rplBalance, 'Created minipool has invalid RPL balance');
-
-    }
+    // Asserts
+    assert.isTrue(minipoolExists, 'Created minipool does not exist');
+    assert.equal(minipoolNodeContract.toLowerCase(), nodeContract.address.toLowerCase(), 'Incorrect minipool node contract address');
+    assert.equal(minipoolStatusChangedBlock, blockNumber, 'Incorrect minipool status block number');
+    assert.equal(minipoolStakingDuration, expectedStakingDuration, 'Incorrect minipool staking duration');
+    assert.equal(ethRequired, ethBalance, 'Created minipool has invalid ether balance');
+    assert.equal(rplRequired, rplBalance, 'Created minipool has invalid RPL balance');
 
     // Get minipool deposit events
     let depositMiniPoolETHLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'ETH'));
     let depositMiniPoolRPLLogs = result.logs.filter(log => (log.event == 'NodeDepositMinipool' && log.args.tokenType == 'RPL'));
 
     // Check minipool deposit events
-    assert.equal(depositMiniPoolETHLogs.length, (nodeDepositEtherRequired > 0 ? expectedMiniPools : 0), 'ether was not deposited to required number of minipools successfully');
-    assert.equal(depositMiniPoolRPLLogs.length, (nodeDepositRPlRequired > 0 ? expectedMiniPools : 0), 'RPL was not deposited to required number of minipools successfully');
+    assert.equal(depositMiniPoolETHLogs.length, (nodeDepositEtherRequired > 0 ? 1 : 0), 'ether was not deposited to minipool successfully');
+    assert.equal(depositMiniPoolRPLLogs.length, (nodeDepositRPlRequired > 0 ? 1 : 0), 'RPL was not deposited to minipool successfully');
     if (nodeDepositEtherRequired > 0 && nodeDepositRPlRequired > 0) {
         depositMiniPoolRPLLogs.forEach((log, index) => {
             assert.equal(depositMiniPoolRPLLogs[index].args._minipool, depositMiniPoolETHLogs[index].args._minipool, 'Deposited minipool addresses do not match');

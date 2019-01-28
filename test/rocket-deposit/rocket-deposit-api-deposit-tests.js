@@ -1,5 +1,4 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { DummyBeaconChain } from '../_lib/utils/beacon';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
@@ -19,7 +18,6 @@ export default function() {
 
 
         // Setup
-        let beaconChain;
         let rocketDepositAPI;
         let rocketDepositSettings;
         let rocketMinipoolSettings;
@@ -27,10 +25,6 @@ export default function() {
         let groupAccessorContract;
         let nodeContract;
         before(async () => {
-
-            // Initialise dummy beacon chain
-            beaconChain = new DummyBeaconChain(web3);
-            await beaconChain.init();
 
             // Get contracts
             rocketDepositAPI = await RocketDepositAPI.deployed();
@@ -76,7 +70,6 @@ export default function() {
             // Fill minipool and leave change from last deposit in queue
             for (let di = 0; di < selfAssignableDepositsPerMinipool; ++di) {
                 await scenarioDeposit({
-                    beaconChain,
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
                     fromAddress: user1,
@@ -87,7 +80,6 @@ export default function() {
             // Make minimum deposits
             for (let di = 0; di < maxMinDepositsPerAssignTx; ++di) {
                 await scenarioDeposit({
-                    beaconChain,
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
                     fromAddress: user1,
@@ -101,7 +93,6 @@ export default function() {
             // Make final deposits to process queue and fill minipool
             for (let di = 0; di < selfAssignableDepositsPerMinipool - 1; ++di) {
                 await scenarioDeposit({
-                    beaconChain,
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
                     fromAddress: user1,
@@ -128,7 +119,6 @@ export default function() {
 
             // Make deposit to fill queue
             await scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
@@ -145,7 +135,6 @@ export default function() {
 
             // Attempt deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
@@ -161,7 +150,6 @@ export default function() {
 
             // Attempt deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
@@ -170,7 +158,6 @@ export default function() {
 
             // Make deposit
             await scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
@@ -192,7 +179,6 @@ export default function() {
         // Staker cannot deposit with an invalid staking duration ID
         it(printTitle('staker', 'cannot deposit with an invalid staking duration ID'), async () => {
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: 'beer',
                 fromAddress: user1,
@@ -209,7 +195,6 @@ export default function() {
 
             // Deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
@@ -230,7 +215,6 @@ export default function() {
 
             // Deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
@@ -251,7 +235,6 @@ export default function() {
 
             // Deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
@@ -272,7 +255,6 @@ export default function() {
 
             // Deposit
             await assertThrows(scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,

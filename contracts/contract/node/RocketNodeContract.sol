@@ -43,6 +43,7 @@ contract RocketNodeContract {
 
     struct DepositReservation {
         string  durationID;             // The deposit duration (eg 3m, 6m etc)
+        bytes   depositInput;           // The simple serialized validator deposit input data
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
         uint256 rplRatio;               // Amount of RPL required per ether deposited
@@ -168,6 +169,11 @@ contract RocketNodeContract {
         return depositReservation.durationID;
     }
 
+    /// @dev Returns the current deposit reservation deposit input data
+    function getDepositReserveDepositInput() public hasDepositReserved() returns (bytes memory) { 
+        return depositReservation.depositInput;
+    }
+
     
     /*** Setters *************/
 
@@ -180,26 +186,31 @@ contract RocketNodeContract {
 
 
     /// @dev Reserves a deposit of Ether/RPL at the current rate. The node operator has 24hrs to deposit both once its locked in or it will expire.
-    /// @param _amount The amount of ether the node operator wishes to deposit
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function depositReserve(uint256 _amount, string memory _durationID) public returns(bool) { 
+    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
+    function depositReserve(string memory _durationID, bytes memory _depositInput) public returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
+        // Get the minipool settings
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
         // Verify the deposit is acceptable
-        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _amount, _durationID, depositReservation.created);
+        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _depositInput, depositReservation.created);
+        // Get the required ether amount
+        uint256 etherAmount = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
         // Get the RPL amount and ratio for the deposit
-        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(_amount, _durationID);
+        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(etherAmount, _durationID);
         // Record the reservation now
         depositReservation = DepositReservation({
             durationID: _durationID,
-            etherAmount: _amount,
+            depositInput: _depositInput,
+            etherAmount: etherAmount,
             rplAmount: rplAmount,
             rplRatio: rplRatio,
             created: now,
             exists: true
         });
         // All good? Fire the event for the new deposit
-        emit NodeDepositReservation(msg.sender, _amount, rplAmount, _durationID, rplRatio, now);   
+        emit NodeDepositReservation(msg.sender, etherAmount, rplAmount, _durationID, rplRatio, now);   
         // Done
         return true;
     }
@@ -225,30 +236,23 @@ contract RocketNodeContract {
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the node Settings
         rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
-        // Check the contract has sufficient RPL balance for the reserved deposit
-        require(getDepositReserveRPLRequired() <= getBalanceRPL(), "Node contract does not have enough RPL to cover the reserved ether deposit.");
-        // Verify the deposit is acceptable and create a minipool for it, will return how many minipools were created
-        address[] memory minipools = rocketNodeAPI.deposit(owner);
-        // Did we make any?
-        if(minipools.length > 0) {   
-            // Transfer balances for each minipool
-            for(uint8 i = 0; i < minipools.length; i++) {
-                // Get the minipool
-                rocketMinipool = RocketMinipoolInterface(minipools[i]);
-                // Transfer the RPL to the minipool now - note: May have to look at manually setting gas here via a call
-                if (rplContract.transfer(minipools[i], rocketMinipool.getNodeDepositRPL())) {
-                    emit NodeDepositMinipool(minipools[i], "RPL", rocketMinipool.getNodeDepositRPL(), now);
-                } 
-                // Transfer the ether to the minipool now
-                if (rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther()).gas(rocketNodeSettings.getDepositEtherGasLimit())()) {
-                    emit NodeDepositMinipool(minipools[i], "ETH", rocketMinipool.getNodeDepositEther(), now);
-                }
-            }
-            // Delete the reservation
-            delete depositReservation;
-            // Done
-            return true;
+        // Verify the deposit is acceptable and create a minipool for it
+        address minipool = rocketNodeAPI.deposit(owner);
+        // Get the minipool
+        rocketMinipool = RocketMinipoolInterface(minipool);
+        // Transfer the RPL to the minipool now
+        if (rplContract.transfer(minipool, rocketMinipool.getNodeDepositRPL())) {
+            emit NodeDepositMinipool(minipool, "RPL", rocketMinipool.getNodeDepositRPL(), now);
         }
+        // Transfer the ether to the minipool now
+        rocketMinipool.nodeDeposit.value(rocketMinipool.getNodeDepositEther())();
+        if (rocketMinipool.getNodeDepositEther() > 0) {
+            emit NodeDepositMinipool(minipool, "ETH", rocketMinipool.getNodeDepositEther(), now);
+        }
+        // Delete the deposit reservation
+        delete depositReservation;
+        // Done
+        return true;
     }
 
 

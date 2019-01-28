@@ -1,5 +1,6 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
+import { getDepositInput } from '../_lib/utils/beacon';
 import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 import { mintRpl } from './rocket-pool-token';
 
@@ -35,8 +36,7 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Reserve node deposit
-        // TODO: Remove hex encoding when web3 AbiCoder bug is fixed
-        await nodeContract.depositReserve(web3.utils.numberToHex(nodeDepositAmount), stakingDurationID, {from: nodeOperator});
+        await nodeContract.depositReserve(stakingDurationID, getDepositInput({}), {from: nodeOperator});
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
