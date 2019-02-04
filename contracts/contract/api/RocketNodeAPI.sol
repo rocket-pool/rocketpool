@@ -234,7 +234,7 @@ contract RocketNodeAPI is RocketBase {
         // Check the timezone location exists
         require(bytes(_timezoneLocation).length >= 4, "Node timezone supplied is invalid.");
         // Check registrations are allowed
-        require(rocketNodeSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
+        require(rocketNodeSettings.getNewAllowed() == true, "Node registrations are currently disabled in Rocket Pool");
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins etc
         require(msg.sender.balance >= rocketNodeSettings.getEtherMin(), "Node account requires a minimum amount of ether in it for registration.");
         // Check it isn't already registered
