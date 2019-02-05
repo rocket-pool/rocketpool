@@ -216,6 +216,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
     function setTimezoneLocation(string memory _timezoneLocation) public onlyValidNodeOwner(msg.sender) returns (string memory) {
+        require(bytes(_timezoneLocation).length >= 4, "Node timezone supplied is invalid.");
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
     }
  
