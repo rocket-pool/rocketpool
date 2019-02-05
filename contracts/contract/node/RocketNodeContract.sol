@@ -105,9 +105,7 @@ contract RocketNodeContract {
 
     /// @dev Throws if the node doesn't have a deposit currently reserved
     modifier hasDepositReserved() {
-        // Get the node settings
-        rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
-        require(depositReservation.exists && now < (depositReservation.created + rocketNodeSettings.getDepositReservationTime()), "Node does not have a current deposit reservation, please make one first before sending ether/rpl.");
+        require(getHasDepositReservation(), "Node does not have a current deposit reservation, please make one first before sending ether/rpl.");
         _;
     }
 
@@ -145,8 +143,11 @@ contract RocketNodeContract {
     }
 
     /// @dev Returns true if there is a current deposit reservation
-    function getHasDepositReservation() public hasDepositReserved() returns(bool) { 
-        return true;
+    function getHasDepositReservation() public returns(bool) { 
+        // Get the node settings
+        rocketNodeSettings = RocketNodeSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeSettings"))));
+        // Check deposit reservation time
+        return (depositReservation.exists && now < (depositReservation.created + rocketNodeSettings.getDepositReservationTime()));
     }
 
     /// @dev Returns the time of the deposit reservation
