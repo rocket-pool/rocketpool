@@ -176,7 +176,7 @@ contract RocketNodeAPI is RocketBase {
     function checkDepositInput(bytes memory _depositInput) private pure {
         // Rocket Pool withdrawal credentials
         // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        bytes memory rpWithdrawalCredentials = hex"00ece929cbe97155f64f8f6a9a1d8e6bbdc89addb33117501faa13c3f1a68a70";
+        bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
         // Check deposit input withdrawal credentials (bytes 52 - 83)
         bool wcMatch = true;
         uint256 wcStart = 52;
