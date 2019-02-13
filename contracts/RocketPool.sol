@@ -36,7 +36,7 @@ contract RocketPool is RocketBase {
 
     event PoolCreated (
         address indexed _address,
-        string  indexed _durationID,
+        bytes32 indexed _durationID,
         uint256 created
     );
 
@@ -179,7 +179,7 @@ contract RocketPool is RocketBase {
         // Increase total network ether capacity
         networkIncreaseTotalEther("capacity", _durationID, rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_etherAmount));
         // Fire the event
-        emit PoolCreated(minipoolAddress, _durationID, now);
+        emit PoolCreated(minipoolAddress, keccak256(abi.encodePacked(_durationID)), now);
         // Return minipool address
         return minipoolAddress;
     }
