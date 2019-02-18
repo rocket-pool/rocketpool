@@ -111,7 +111,7 @@ export function getDepositInput({pubkey, withdrawalPubkey}) {
 export function deserialiseDepositInput(depositInputHex) {
 
     // Deserialise
-    let depositInputData = ssz.deserialize(Buffer.from(depositInputHex.substr(2), 'hex'), 0, {fields: [
+    let depositInputData = ssz.deserialize(Buffer.from(depositInputHex.substr(2), 'hex'), {fields: [
         ['pubkey', 'bytes48'],
         ['withdrawal_credentials', 'bytes32'],
         ['proof_of_possession', 'bytes96'],
