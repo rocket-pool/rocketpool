@@ -48,7 +48,7 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
         // Get minipool created events
         let minipoolCreatedEvents = getTransactionContractEvents(result, rocketPool.address, 'PoolCreated', [
             {type: 'address', name: '_address', indexed: true},
-            {type: 'string',  name: '_durationID', indexed: true},
+            {type: 'bytes32', name: '_durationID', indexed: true},
             {type: 'uint256', name: 'created'},
         ]);
 

@@ -34,9 +34,7 @@ export async function scenarioDepositReserveCancel({nodeContract, fromAddress, g
     await nodeContract.depositReserveCancel({from: fromAddress, gas: gas});
 
     // Check deposit
-    let reservationExists;
-    try { await nodeContract.getHasDepositReservation.call(); }
-    catch (e) { reservationExists = false; }
+    let reservationExists = await nodeContract.getHasDepositReservation.call();
 
     // Asserts 
     assert.isTrue(reservationExists === false, 'Reservation was not cancelled successfully');
@@ -64,7 +62,7 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     // Get minipool created events
     let minipoolCreatedEvents = getTransactionContractEvents(result, rocketPool.address, 'PoolCreated', [
         {type: 'address', name: '_address', indexed: true},
-        {type: 'string',  name: '_durationID', indexed: true},
+        {type: 'bytes32', name: '_durationID', indexed: true},
         {type: 'uint256', name: 'created'},
     ]);
 
