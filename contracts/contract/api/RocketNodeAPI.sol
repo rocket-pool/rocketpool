@@ -13,6 +13,7 @@ import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressQueueStorageInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/BytesSetStorageInterface.sol";
+import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
@@ -40,6 +41,7 @@ contract RocketNodeAPI is RocketBase {
     AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(0);                     // Address list utility
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
     BytesSetStorageInterface bytesSetStorage = BytesSetStorageInterface(0);                                 // Bytes list utility
+    PublisherInterface publisher = PublisherInterface(0);                                                   // Main pubsub system event publisher
 
 
     /*** Events ****************/
@@ -123,8 +125,8 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @return string The set timezone of this node
-    function getTimezoneLocation(address _nodeAddress) public view returns (string memory) {
-        return rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
+    function getTimezoneLocation(address _nodeOwner) public view returns (string memory) {
+        return rocketStorage.getString(keccak256(abi.encodePacked("node.timezone.location", _nodeOwner)));
     }
 
 
@@ -305,6 +307,14 @@ contract RocketNodeAPI is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("node.feeVote", _nodeOwner)), _nodeFeeVote);
         // Record last checkin time
         rocketStorage.setUint(keccak256(abi.encodePacked("node.lastCheckin", _nodeOwner)), now);
+        // Set node active if inactive
+        if (!rocketStorage.getBool(keccak256(abi.encodePacked("node.active", _nodeOwner)))) {
+            // Set node active
+            rocketStorage.setBool(keccak256(abi.encodePacked("node.active", _nodeOwner)), true);
+            // Publish node active status event
+            publisher = PublisherInterface(getContractAddress("utilPublisher"));
+            publisher.publish(keccak256("node.active.change"), abi.encodeWithSignature("onNodeActiveChange(address,bool)", _nodeOwner, true));
+        }
         // Run node tasks
         rocketNodeTasks = RocketNodeTasksInterface(getContractAddress("rocketNodeTasks"));
         rocketNodeTasks.run(_nodeOwner);
