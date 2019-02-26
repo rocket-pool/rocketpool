@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 import "./../../interface/token/ERC20.sol";
 import "./../../interface/RocketStorageInterface.sol";
 import "./../../interface/api/RocketNodeAPIInterface.sol";
+import "./../../interface/node/RocketNodeKeysInterface.sol";
 import "./../../interface/minipool/RocketMinipoolInterface.sol";
 import "./../../interface/settings/RocketNodeSettingsInterface.sol";
 import "./../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -34,7 +35,8 @@ contract RocketNodeContract {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
-    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                            // Minipool contract 
+    RocketNodeKeysInterface rocketNodeKeys = RocketNodeKeysInterface(0);                            // Node validator key manager
+    RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                            // Minipool contract
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main minipool settings
 
@@ -210,6 +212,9 @@ contract RocketNodeContract {
             created: now,
             exists: true
         });
+        // Reserve the validator pubkey used
+        rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
+        rocketNodeKeys.reservePubkey(owner, _depositInput, true);
         // All good? Fire the event for the new deposit
         emit NodeDepositReservation(msg.sender, etherAmount, rplAmount, _durationID, rplRatio, now);   
         // Done
@@ -219,6 +224,9 @@ contract RocketNodeContract {
 
     /// @dev Cancel a deposit reservation that was made - only node owner
     function depositReserveCancel() public onlyNodeOwner() hasDepositReserved() returns(bool) { 
+        // Free the validator pubkey used
+        rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
+        rocketNodeKeys.reservePubkey(owner, depositReservation.depositInput, false);
         // Get reservation time
         uint256 reservationTime = depositReservation.created;
         // Delete the reservation
