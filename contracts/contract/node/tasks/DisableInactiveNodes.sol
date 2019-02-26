@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 import "../../../RocketBase.sol";
 import "../../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../../interface/utils/lists/AddressQueueStorageInterface.sol";
+import "../../../interface/utils/pubsub/PublisherInterface.sol";
 import "../../../lib/SafeMath.sol";
 
 
@@ -24,6 +25,7 @@ contract DisableInactiveNodes is RocketBase {
 
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);
     AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(0);
+    PublisherInterface publisher = PublisherInterface(0);
 
 
     /*** Methods ****************/
@@ -61,7 +63,11 @@ contract DisableInactiveNodes is RocketBase {
             if (node == _nodeAddress) { continue; }
             // Disable node if it hasn't checked in during the last inactive duration
             if (rocketStorage.getUint(keccak256(abi.encodePacked("node.lastCheckin", node))) < now.sub(inactiveDuration)) {
+                // Set node inactive
                 rocketStorage.setBool(keccak256(abi.encodePacked("node.active", node)), false);
+                // Publish node active status event
+                publisher = PublisherInterface(getContractAddress("utilPublisher"));
+                publisher.publish(keccak256("node.active.change"), abi.encodeWithSignature("onNodeActiveChange(address,bool)", node, false));
             }
             // Move node to end of checkin queue
             addressQueueStorage.dequeueItem(keccak256(abi.encodePacked("nodes.checkin.queue")));

@@ -130,7 +130,7 @@ contract RocketGroupAPI is RocketBase {
     /// @dev Create a new default group accessor contract
     function createDefaultAccessor(address _ID) public onlyLatestContract("rocketGroupAPI", address(this)) returns (bool) {
         // Check that the group exists
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != address(0x0));
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != address(0x0), "Invalid group ID");
         // Create accessor contract
         address newAccessorAddress = address(new RocketGroupAccessorContract(address(rocketStorage), _ID));
         // Emit creation event
