@@ -24,8 +24,7 @@
     "prettier": "^1.10.2",
     "solidity-coverage": "^0.5.11",
     "truffle": "^5.0.1",
-    "truffle-contract": "^3.*",
-    "ssz": "^1.5.*"
+    "truffle-contract": "^3.*"
   },
   "prettier": {
     "singleQuote": true,
@@ -33,7 +32,8 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "bls-wasm": "^0.2.1",
+    "@chainsafesystems/ssz": "^1.6.0",
+    "beacon-chain-simulator": "github:rocket-pool/beacon-chain-simulator#master",
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",
     "ethereumjs-util": "^5.2.0",
@@ -44,6 +44,7 @@
     "scrypt": "^6.0.3",
     "secp256k1": "^3.5.0",
     "underscore": "^1.9.0",
-    "web3": "^1.0.0-beta.37"
+    "web3": "^1.0.0-beta.37",
+    "ws": "^6.1.3"
   }
 }
