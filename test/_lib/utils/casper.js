@@ -8,7 +8,7 @@ import { getABI, getContractAddressFromStorage } from './general';
 
 // Load our precompiled casper contract now as web3.eth.contract
 async function Casper() {
-    return new $web3.eth.Contract(getABI(__dirname + '/../../../contracts/contract/casper/compiled/ValidatorRegistration.abi'), await getContractAddressFromStorage('casperDeposit'));
+    return new $web3.eth.Contract(getABI(__dirname + '/../../../contracts/contract/casper/compiled/Deposit.abi'), await getContractAddressFromStorage('casperDeposit'));
 }
 
 // Load our precompiled casper contract now as web3.eth.contract
