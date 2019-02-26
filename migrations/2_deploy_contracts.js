@@ -89,6 +89,7 @@ const subscriptions = {
   'minipool.status.change': ['rocketPool'],
   'minipool.user.deposit': ['rocketPool'],
   'minipool.available.change': ['rocketNode', 'rocketMinipoolSet'],
+  'node.active.change': ['rocketNode'],
 };
 
 // Node tasks to register

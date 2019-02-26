@@ -32,13 +32,41 @@ contract RocketNode is RocketBase {
     /// @dev Minipool available status changed
     function onMinipoolAvailableChange(address, bool _available, address _nodeOwner, bool _trusted, string memory _durationID) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Set node available if minipool available
-        if (_available) { setNodeAvailable(_nodeOwner, _trusted, _durationID); }
+        // Set node available if minipool available and node active
+        if (_available) {
+            if (rocketStorage.getBool(keccak256(abi.encodePacked("node.active", _nodeOwner)))) { setNodeAvailable(_nodeOwner, _trusted, _durationID); }
+        }
 
         // Set node unavailable if last minipool made unavailable
         else {
             rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
             if (rocketPool.getAvailableNodePoolsCount(_nodeOwner, _trusted, _durationID) == 0) { setNodeUnavailable(_nodeOwner, _trusted, _durationID); }
+        }
+
+    }
+
+
+    /// @dev Node active status changed
+    function onNodeActiveChange(address _nodeOwner, bool _active) public onlyLatestContract("utilPublisher", msg.sender) {
+
+        // Trusted and duration ID types
+        bool[2] memory trustedTypes = [true, false];
+        string[3] memory durationIDs = ["3m", "6m", "12m"];
+        for (uint256 ti = 0; ti < trustedTypes.length; ++ti) {
+            for (uint256 di = 0; di < durationIDs.length; ++di) {
+
+                // Set node available if active and has minipools
+                if (_active) {
+                    rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+                    if (rocketPool.getAvailableNodePoolsCount(_nodeOwner, trustedTypes[ti], durationIDs[di]) > 0) { setNodeAvailable(_nodeOwner, trustedTypes[ti], durationIDs[di]); }
+                }
+
+                // Set node unavailable if inactive
+                else {
+                    setNodeUnavailable(_nodeOwner, trustedTypes[ti], durationIDs[di]);
+                }
+
+            }
         }
 
     }
