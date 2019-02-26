@@ -7,6 +7,7 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
+import "../../interface/node/RocketNodeKeysInterface.sol";
 import "../../interface/node/RocketNodeTasksInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -33,7 +34,8 @@ contract RocketNodeAPI is RocketBase {
     RocketPoolInterface rocketPool = RocketPoolInterface(0);
     ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
-    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract 
+    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract
+    RocketNodeKeysInterface rocketNodeKeys = RocketNodeKeysInterface(0);                                    // Node validator key manager
     RocketNodeTasksInterface rocketNodeTasks = RocketNodeTasksInterface(0);                                 // Node task manager
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
@@ -167,27 +169,8 @@ contract RocketNodeAPI is RocketBase {
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > _lastDepositReservedTime.add(rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
         // Check the deposit input is valid
-        checkDepositInput(_depositInput);
-    }
-
-
-    /// @dev Checks if a deposit input is valid
-    /// @param _depositInput The serialized deposit input
-    function checkDepositInput(bytes memory _depositInput) private pure {
-        // Rocket Pool withdrawal credentials
-        // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
-        // Check deposit input withdrawal credentials (bytes 52 - 83)
-        bool wcMatch = true;
-        uint256 wcStart = 52;
-        uint256 wcEnd = 84;
-        for (uint256 i = 0; i < wcEnd - wcStart; ++i) {
-            if (rpWithdrawalCredentials[i] != _depositInput[i + wcStart]) {
-                wcMatch = false;
-                break;
-            }
-        }
-        require(wcMatch, "Invalid deposit input withdrawal credentials");
+        rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
+        rocketNodeKeys.validateDepositInput(_depositInput);
     }
 
 
