@@ -113,6 +113,37 @@ export default function() {
         });
 
 
+        // Node operator cannot reserve a deposit with a used validator pubkey
+        it(printTitle('node operator', 'cannot reserve a deposit with a used validator pubkey'), async () => {
+
+            // Reserve and complete deposit
+            await scenarioDepositReserve({
+                nodeContract,
+                durationID: '6m',
+                depositInput: getDepositInput({
+                    pubkey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+                }),
+                fromAddress: operator,
+            });
+            await scenarioDeposit({
+                nodeContract,
+                value: depositAmount,
+                fromAddress: accounts[2], // Allowed from any address
+            });
+
+            // Attempt to reserve deposit with used pubkey
+            await assertThrows(scenarioDepositReserve({
+                nodeContract,
+                durationID: '6m',
+                depositInput: getDepositInput({
+                    pubkey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+                }),
+                fromAddress: operator,
+            }), 'Reserved a deposit with a used validator pubkey');
+
+        });
+
+
         // Node operator can reserve a deposit
         it(printTitle('node operator', 'can reserve a deposit'), async () => {
             await scenarioDepositReserve({
