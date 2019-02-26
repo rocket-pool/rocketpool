@@ -5,7 +5,6 @@ module.exports = {
         'lib',
         'interface',
         'test',
-        'contract/casper/ValidatorRegistration.sol',
         'contract/token/DummyRocketPoolToken.sol',
         'contract/token/StandardToken.sol',
         'contract/utils/Maths.sol',

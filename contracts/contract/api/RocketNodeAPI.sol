@@ -156,20 +156,38 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _nodeOwner  The address of the nodes owner
-    /// @param _value The amount being deposited
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
+    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, uint256 _value, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
-        // Is the deposit multiples of half needed to be deposited (node owners must deposit as much as we assign them)
-        require(_value % (rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)) == 0, "Ether deposit size must be half required for a deposit with Casper eg 16, 32, 64 ether.");
-        // Only so many minipools can be created at once
-        require(_value.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2))) <= rocketMinipoolSettings.getMinipoolNewMaxAtOnce(), "Ether deposit exceeds the amount of minipools it can create at once, please reduce deposit size.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
-        require(now > (_lastDepositReservedTime + rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
+        require(now > _lastDepositReservedTime.add(rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
+        // Check the deposit input is valid
+        checkDepositInput(_depositInput);
+    }
+
+
+    /// @dev Checks if a deposit input is valid
+    /// @param _depositInput The serialized deposit input
+    function checkDepositInput(bytes memory _depositInput) private pure {
+        // Rocket Pool withdrawal credentials
+        // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
+        // Check deposit input withdrawal credentials (bytes 52 - 83)
+        bool wcMatch = true;
+        uint256 wcStart = 52;
+        uint256 wcEnd = 84;
+        for (uint256 i = 0; i < wcEnd - wcStart; ++i) {
+            if (rpWithdrawalCredentials[i] != _depositInput[i + wcStart]) {
+                wcMatch = false;
+                break;
+            }
+        }
+        require(wcMatch, "Invalid deposit input withdrawal credentials");
     }
 
 
@@ -186,6 +204,8 @@ contract RocketNodeAPI is RocketBase {
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Does the node contract have sufficient ether to cover the reserved deposit?
         require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
+        // Does the node contract have sufficient RPL to cover the reserved deposit?
+        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved deposit.");
     }
 
 
@@ -196,6 +216,7 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @param _timezoneLocation The location of the nodes timezone as Country/City eg America/New_York
     function setTimezoneLocation(string memory _timezoneLocation) public onlyValidNodeOwner(msg.sender) returns (string memory) {
+        require(bytes(_timezoneLocation).length >= 4, "Node timezone supplied is invalid.");
         rocketStorage.setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
     }
  
@@ -214,7 +235,7 @@ contract RocketNodeAPI is RocketBase {
         // Check the timezone location exists
         require(bytes(_timezoneLocation).length >= 4, "Node timezone supplied is invalid.");
         // Check registrations are allowed
-        require(rocketNodeSettings.getNewAllowed() == true, "Group registrations are currently disabled in Rocket Pool");
+        require(rocketNodeSettings.getNewAllowed() == true, "Node registrations are currently disabled in Rocket Pool");
         // Get the balance of the node, must meet the min requirements to service gas costs for checkins etc
         require(msg.sender.balance >= rocketNodeSettings.getEtherMin(), "Node account requires a minimum amount of ether in it for registration.");
         // Check it isn't already registered
@@ -245,7 +266,7 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Process a deposit into a nodes contract
     /// @param _nodeOwner  The address of the nodes owner
-    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address[] memory) { 
+    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address) { 
         // Check the deposit is ready to go first
         checkDepositIsValid(_nodeOwner);
         // Get the minipool settings contract
@@ -254,23 +275,18 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
         // Get Rocket Pool contract
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        // Get the deposit duration in blocks by using its ID
+        // Get the deposit duration ID
         string memory durationID = rocketNodeContract.getDepositReserveDurationID();
+        // Get the deposit input data
+        bytes memory depositInput = rocketNodeContract.getDepositReserveDepositInput();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
         uint256 rplDeposited = rocketNodeContract.getDepositReserveRPLRequired();
-        // How many minipools are we making? each should have half the casper amount from the node
-        uint256 minipoolAmount = etherDeposited.div((rocketMinipoolSettings.getMinipoolLaunchAmount().div(2)));
-        // Store our minipool addresses
-        address[] memory minipools = new address[](minipoolAmount);
-        // Create minipools
-        for(uint8 i = 0; i < minipoolAmount; i++) {
-            // Build that bad boy 
-            minipools[i] = rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited.div(minipoolAmount), rplDeposited.div(minipoolAmount), rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))));
-        }
-        // Return the minipool addresses
-        return minipools;
+        // Node trusted status
+        bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
+        // Create minipool and return address
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, depositInput, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 
@@ -294,42 +310,7 @@ contract RocketNodeAPI is RocketBase {
         rocketNodeTasks.run(_nodeOwner);
         // Done
         return true;
-    } 
-
-
-    /*
-    /// @dev Save a public key for this node from a newly generated account
-    /// @param _account  The address of an account controlled by the node owner
-    /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyAdd(address _account, bytes memory _pubkey) public onlyValidNodeOwner(msg.sender) returns(bool) { 
-        // Get our contracts
-        bytesSetStorage = BytesSetStorageInterface(getContractAddress("utilBytesSetStorage"));
-        // Pubkeys should only ever be used once 
-        require(rocketStorage.getBytes(keccak256(abi.encodePacked("pubkey.used", _pubkey))).length > 0, "Pubkey has already been used by a node.");
-        // Accounts should only ever be used once 
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("pubkey.account", _account))) != address(0x0), "Account has already been used by a node.");
-        // Pubkey should have a length of greater than 32 bytes (64 mostly, but not always)
-        require(_pubkey.length >= 32, "Pubkey is too short.");
-        // Verify this pubkey is for the supplied address - the extra padding gets it to the correct length
-        require(uint256(keccak256(abi.encodePacked(_pubkey)) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) == uint256(_account));
-        // Add it as a key, but an unverified one
-        rocketStorage.setBool(keccak256(abi.encodePacked("account.pubkey.verified", _pubkey)), false);
-        // Add it to that nodes list
-        bytesSetStorage.addItem(keccak256(abi.encodePacked("node.pubkey", msg.sender)), _pubkey); 
-        // Done
-        return true;
     }
 
-    /// @dev Verify a public key for an account that belongs to a node
-    /// @param _pubkey  The pubkey of a new account on the node to use for this deposit
-    function pubKeyVerify(bytes memory _pubkey) public returns(bool) { 
-        // Verify this pubkey is for the supplied address - the extra padding gets it to the correct length
-        require(uint256(keccak256(abi.encodePacked(_pubkey)) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) == uint256(msg.sender));
-        // Its verified
-        rocketStorage.setBool(keccak256(abi.encodePacked("pubkey.verified", _pubkey)), true);
-        // Done
-        return true;
-    }
-    */
 
 }

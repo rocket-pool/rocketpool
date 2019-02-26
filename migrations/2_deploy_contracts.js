@@ -16,6 +16,8 @@ const testUtils = !!testScript.match(/util/i);
 const rocketStorage = artifacts.require('./RocketStorage.sol');
 // All other contracts
 const contracts = {};
+// ABIs for deployment
+const abis = {};
 // Core
 contracts.rocketAdmin = artifacts.require('./RocketAdmin.sol');
 contracts.rocketPool = artifacts.require('./RocketPool.sol');
@@ -75,6 +77,11 @@ if (testUtils) {
   contracts.utilIntSetStorage = artifacts.require('./IntSetStorage.sol');
   contracts.utilUintSetStorage = artifacts.require('./UintSetStorage.sol');
 }
+
+// ABIs
+abis.rocketGroupContract = artifacts.require('./group/RocketGroupContract.sol');
+abis.rocketNodeContract = artifacts.require('./node/RocketNodeContract.sol');
+abis.rocketMinipool = artifacts.require('./minipool/RocketMinipool.sol');
 
 // Pubsub event subscriptions
 const subscriptions = {
@@ -136,12 +143,8 @@ module.exports = async (deployer, network) => {
   // Test network deployment
   else {
 
-    // TODO: Remove below when vyper pre-compiled is in
-    // Casper validator registration contract
-    contracts.validatorRegistration = artifacts.require('./ValidatorRegistration.sol');
-
     // Precompiled - Casper Deposit Contract
-    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/ValidatorRegistration.abi');
+    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     const casperDeposit = new $web3.eth.Contract(casperDepositABI, null, {
         from: accounts[0], 
         gasPrice: '20000000000' // 20 gwei
@@ -151,7 +154,7 @@ module.exports = async (deployer, network) => {
     const casperDepositContract = await casperDeposit.deploy(
       // Casper deployment 
       {               
-        data: config.fs.readFileSync('./contracts/contract/casper/compiled/ValidatorRegistration.bin')
+        data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin')
       }).send({
           from: accounts[0], 
           gas: 8000000, 
@@ -167,6 +170,9 @@ module.exports = async (deployer, network) => {
               abi: casperDepositABI,
       precompiled: true
     };
+
+    // Casper withdrawal contract
+    contracts.casperWithdraw = artifacts.require('./casper/DummyWithdraw.sol');
 
     // Test interface contracts
     if (testUtils) {
@@ -218,6 +224,20 @@ module.exports = async (deployer, network) => {
       } 
     }
   };
+  // Register ABI-only contracts
+  const addABIs = async function() {
+    for (let contract in abis) {
+      if(abis.hasOwnProperty(contract)) {
+        // Log it
+        console.log('\x1b[33m%s\x1b[0m.', 'Set Storage '+contract+' ABI');
+        // Compress and store the ABI
+        await rocketStorageInstance.setString(
+          $web3.utils.soliditySha3('contract.abi', contract),
+          compressABI(abis[contract].abi)
+        );
+      }
+    }
+  };
   // Register event subscriptions
   const registerSubscriptions = async function() {
     let publisherInstance = await contracts.utilPublisher.deployed();
@@ -243,6 +263,7 @@ module.exports = async (deployer, network) => {
   }
   // Run it
   await addContracts();
+  await addABIs();
   await registerSubscriptions();
   await registerNodeTasks();
   // Disable direct access to storage now

@@ -1,5 +1,4 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { DummyBeaconChain } from '../_lib/utils/beacon';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
@@ -21,7 +20,6 @@ export default function() {
 
 
         // Setup
-        let beaconChain;
         let rocketDepositAPI;
         let rocketDepositSettings;
         let groupContract;
@@ -31,10 +29,6 @@ export default function() {
         let minipool;
         let depositID;
         before(async () => {
-
-            // Initialise dummy beacon chain
-            beaconChain = new DummyBeaconChain(web3);
-            await beaconChain.init();
 
             // Get contracts
             rocketDepositAPI = await RocketDepositAPI.deployed();
@@ -65,14 +59,12 @@ export default function() {
 
             // Deposit to minipool
             await scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
                 value: chunkSize,
             });
             await scenarioDeposit({
-                beaconChain,
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
