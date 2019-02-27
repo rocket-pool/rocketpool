@@ -40,6 +40,16 @@ contract RocketBETHToken is StandardToken, RocketBase {
     );
 
 
+    /*** Modifiers **************/
+
+
+    // Sender must be Casper withdrawal contract
+    modifier onlyCasperWithdraw() {
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "casperWithdraw"))), "Sender is not Casper withdrawal contract");
+        _;
+    }
+
+
     /*** Methods ****************/
 
 
@@ -59,7 +69,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
      * @param _amount The amount of tokens to mint
      * @return A boolean that indicates if the operation was successful
      */
-    function mint(address _to, uint256 _amount) public returns (bool) {
+    function mint(address _to, uint256 _amount) public onlyCasperWithdraw returns (bool) {
         // Check burn amount
         require(_amount > 0, "Invalid token mint amount");
         // Mint tokens
