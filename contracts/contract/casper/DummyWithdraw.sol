@@ -44,7 +44,7 @@ contract DummyWithdraw is RocketBase {
         rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
         rocketBETHToken.mint(_to, _amount);
         // Transfer withdrawal amount to RPB contract
-        address(rocketBETHToken).transfer(_amount);
+        address(uint160(address(rocketBETHToken))).transfer(_amount);
         // Emit withdrawal event
         emit Withdrawal(_to, _amount, now);
     }

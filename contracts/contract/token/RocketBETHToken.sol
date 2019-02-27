@@ -58,7 +58,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
 
 
     /// @dev Fallback payable function, receives ether from beacon chain withdrawals
-    function() public payable {
+    function() external payable {
         emit Deposit(msg.sender, msg.value, now);
     }
 
