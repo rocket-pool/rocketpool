@@ -1,8 +1,8 @@
 pragma solidity 0.5.0;
 
 // Interfaces
-import "./../../interface/RocketStorageInterface.sol";
-import "./../../interface/settings/RocketGroupSettingsInterface.sol";
+import "../../interface/RocketStorageInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 
 
 /// @title The contract for a group that operates in Rocket Pool, holds the entities fees and more
