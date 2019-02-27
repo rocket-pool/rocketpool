@@ -48,6 +48,7 @@ contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSetting
 contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
 // Dummy Contracts
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
+contracts.rocketBETHToken = artifacts.require('./token/RocketBETHToken.sol');
 // Node tasks
 contracts.taskDisableInactiveNodes = artifacts.require('./tasks/DisableInactiveNodes.sol');
 contracts.taskCalculateNodeFee = artifacts.require('./tasks/CalculateNodeFee.sol');
