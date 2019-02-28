@@ -7,7 +7,7 @@ import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/group/RocketGroupAccessorContractInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
-import "../../interface/tokens/RocketBETHTokenInterface.sol";
+import "../../interface/token/RocketBETHTokenInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -160,7 +160,7 @@ contract RocketDeposit is RocketBase {
         uint256 tokenAmount = _amount.mul(calcBase.sub(rocketDepositSettings.getStakingWithdrawalFeePerc())).div(calcBase);
 
         // Mint RPB tokens to withdrawer address
-        RocketBETHTokenInterface rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
+        rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
         rocketBETHToken.mint(_withdrawerAddress, tokenAmount);
 
         // Withdraw amount from minipool
