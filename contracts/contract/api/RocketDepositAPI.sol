@@ -52,7 +52,6 @@ contract RocketDepositAPI is RocketBase {
         address indexed _to,
         address indexed _userID,
         address indexed _groupID,
-        string  durationID,
         bytes32 depositID,
         uint256 value,
         uint256 created
@@ -88,7 +87,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _groupID The generated conract address for the group / 3rd party partner whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function checkDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string memory _durationID) private onlyValidDuration(_durationID) { 
+    function checkDepositIsValid(uint256 _value, address _from, address _groupID, address _userID, string memory _durationID) private { 
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -107,8 +106,8 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Checks if the refund parameters are correct for a successful refund
-    function checkDepositRefundIsValid(address _from, address _groupID, address _userID, string memory _durationID, bytes32 _depositID) private onlyValidDuration(_durationID) {
+    /// @dev Checks if the refund parameters are correct for a successful deposit refund
+    function checkDepositRefundIsValid(address _from, address _groupID, address _userID, bytes32 _depositID) private {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
@@ -125,7 +124,7 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Checks if the withdrawal parameters are correct for a successful withdrawal
+    /// @dev Checks if the withdrawal parameters are correct for a successful deposit withdrawal
     function checkDepositWithdrawalIsValid(address _from, address _groupID, address _userID, bytes32 _depositID) private {
         // Get contracts
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
@@ -171,7 +170,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _groupID The ID of the group / 3rd party partner contract whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function deposit(address _groupID, address _userID, string memory _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) { 
+    function deposit(address _groupID, address _userID, string memory _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(bool) { 
         // Verify the deposit is acceptable
         checkDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID);
         // Send and create deposit
@@ -189,31 +188,70 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _durationID The ID of the deposit's staking duration
     /// @param _depositID The ID of the deposit to refund
-    function refundDeposit(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function refundDepositQueued(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(uint256) {
         // Verify the refund is acceptable
-        checkDepositRefundIsValid(msg.sender, _groupID, _userID, _durationID, _depositID);
+        checkDepositRefundIsValid(msg.sender, _groupID, _userID, _depositID);
         // Refund deposit
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
         uint256 amountRefunded = rocketDeposit.refund(_userID, _groupID, _durationID, _depositID, msg.sender);
         require(amountRefunded > 0, "Deposit could not be refunded");
         // All good? Fire the event for the refund
-        emit DepositRefund(msg.sender, _userID, _groupID, _durationID, _depositID, amountRefunded, now);
+        emit DepositRefund(msg.sender, _userID, _groupID, _depositID, amountRefunded, now);
         // Return refunded amount
         return amountRefunded;
     }
 
 
-    /// @dev Withdraw a deposit fragment from a withdrawn or timed out minipool
+    /// @dev Refund a deposit fragment from a stalled minipool
+    /// @param _groupID The ID of the group in control of the deposit
+    /// @param _userID The address of the user who the deposit belongs to
+    /// @param _depositID The ID of the deposit to refund
+    /// @param _minipool The address of the minipool to refund from
+    function refundDepositMinipoolStalled(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+        // Verify the refund is acceptable
+        checkDepositRefundIsValid(msg.sender, _groupID, _userID, _depositID);
+        // Refund deposit
+        rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
+        uint256 amountRefunded = rocketDeposit.refundFromStalledMinipool(_userID, _groupID, _depositID, _minipool, msg.sender);
+        require(amountRefunded > 0, "Minipool deposit could not be refunded");
+        // All good? Fire the event for the refund
+        emit DepositRefund(msg.sender, _userID, _groupID, _depositID, amountRefunded, now);
+        // Return refunded amount
+        return amountRefunded;
+    }
+
+
+    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as RPB tokens, forfeiting rewards for that amount
     /// @param _groupID The ID of the group in control of the deposit
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
-    function withdrawMinipoolDeposit(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    /// @param _amount The amount of the deposit to withdraw as RPB tokens
+    function withdrawDepositMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
         checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID);
-        // Withdraw deposit
+        // Withdraw deposit amount as RPB tokens
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-        uint256 amountWithdrawn = rocketDeposit.withdraw(_userID, _groupID, _depositID, _minipool, msg.sender);
+        uint256 amountWithdrawn = rocketDeposit.withdrawFromStakingMinipool(_userID, _groupID, _depositID, _minipool, _amount, msg.sender);
+        require(amountWithdrawn > 0, "Minipool deposit amount could not be withdrawn");
+        // All good? Fire the event for the withdrawal
+        emit DepositWithdraw(msg.sender, _userID, _groupID, _depositID, _minipool, amountWithdrawn, now);
+        // Return withdrawn amount
+        return amountWithdrawn;
+    }
+
+
+    /// @dev Withdraw a deposit fragment from a withdrawn minipool as RPB tokens
+    /// @param _groupID The ID of the group in control of the deposit
+    /// @param _userID The address of the user who the deposit belongs to
+    /// @param _depositID The ID of the deposit to withdraw
+    /// @param _minipool The address of the minipool to withdraw from
+    function withdrawDepositMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+        // Verify the withdrawal is acceptable
+        checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID);
+        // Withdraw deposit as RPB tokens
+        rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
+        uint256 amountWithdrawn = rocketDeposit.withdrawFromWithdrawnMinipool(_userID, _groupID, _depositID, _minipool, msg.sender);
         require(amountWithdrawn > 0, "Minipool deposit could not be withdrawn");
         // All good? Fire the event for the withdrawal
         emit DepositWithdraw(msg.sender, _userID, _groupID, _depositID, _minipool, amountWithdrawn, now);
