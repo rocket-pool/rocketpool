@@ -33,6 +33,7 @@ contract RocketMinipool {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
+    uint256 private rpbWithdrawnStakingTotal;                   // The total RPB withdrawn while staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -44,6 +45,7 @@ contract RocketMinipool {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
+    ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
@@ -295,17 +297,17 @@ contract RocketMinipool {
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals
     function getUserBackupAddressExists(address _userBackupAddress) public view returns(bool) {
-        return usersBackupAddress[_userBackupAddress] != address(0x0) ? true : false;
+        return usersBackupAddress[_userBackupAddress] != address(0x0);
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
     function getUserBackupAddressOK(address _user, address _userBackupAddress) public view isPoolUser(_user) returns(bool) {
-        return usersBackupAddress[_userBackupAddress] == _user ? true : false;
+        return usersBackupAddress[_userBackupAddress] == _user;
     }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
     function getUserHasDeposit(address _user) public view returns(bool) {
-        return users[_user].exists && users[_user].balance > 0 ? true : false;
+        return users[_user].exists && users[_user].balance > 0;
     }
 
     /// @dev Returns the amount of the users deposit
@@ -333,7 +335,35 @@ contract RocketMinipool {
     }
 
 
-    /// @dev Withdraw a user's deposit and remove them from this contract.
+    /// @dev Refund a user's deposit and remove them from this contract (if minipool stalled).
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _refundAddress The address to refund the user's deposit to
+    function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
+    /// @dev Withdraw some amount of a user's deposit as RPB tokens, forfeiting rewards for that amount, and remove them if entire deposit is withdrawn (if minipool staking).
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _withdrawnAmount The amount of the user's deposit withdrawn
+    /// @param _tokenAmount The amount of RPB tokens withdrawn
+    /// @param _withdrawnAddress The address the user's deposit was withdrawn to
+    function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
+    /// @dev Withdraw a user's deposit as RPB tokens and remove them from this contract (if minipool withdrawn).
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
@@ -344,7 +374,6 @@ contract RocketMinipool {
         // Success
         return true;
     }
-
 
 
     /*** MINIPOOL  ******************************************/
