@@ -1,6 +1,7 @@
 pragma solidity 0.5.0;
 
 
+import "../../interface/token/ERC20.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/api/RocketDepositAPIInterface.sol";
 
@@ -25,6 +26,7 @@ contract RocketGroupAccessorContract {
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);  // The Rocket Pool Deposit API
+    ERC20 rocketBETHToken = ERC20(0);
 
 
     /*** Constructor *************/
@@ -59,13 +61,13 @@ contract RocketGroupAccessorContract {
     /// @dev Refunded ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
     /// @param _durationID The ID of the staking duration of the deposit to refund
     /// @param _depositID The ID of the deposit to refund
-    function refundDeposit(string memory _durationID, bytes32 _depositID) public returns (bool) {
+    function refundDepositQueued(string memory _durationID, bytes32 _depositID) public returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
         // Get balance before refund
         uint256 initialBalance = address(this).balance;
         // Perform refund
-        uint256 amountRefunded = rocketDepositAPI.refundDeposit(groupID, msg.sender, _durationID, _depositID);
+        uint256 amountRefunded = rocketDepositAPI.refundDepositQueued(groupID, msg.sender, _durationID, _depositID);
         require(amountRefunded > 0, "The deposit was not refunded successfully");
         require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
         // Transfer ether to user
@@ -76,22 +78,67 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /// @dev Withdraw from a minipool through the Rocket Pool Deposit API
-    /// @dev Withdrawn ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
-    /// @param _depositID The ID of the deposit to withdraw
-    /// @param _minipool The address of the minipool to withdraw from
-    function withdrawMinipoolDeposit(bytes32 _depositID, address _minipool) public returns (bool) {
+    /// @dev Refund a deposit fragment from a stalled minipool through the Rocket Pool Deposit API
+    /// @dev Refunded ether is sent to this contract's rocketpoolEtherDeposit method, then transferred to the user
+    /// @param _depositID The ID of the deposit to refund
+    /// @param _minipool The address of the minipool to refund from
+    function refundDepositMinipoolStalled(bytes32 _depositID, address _minipool) public returns (bool) {
         // Get deposit API
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
-        // Get balance before withdrawal
+        // Get balance before refund
         uint256 initialBalance = address(this).balance;
-        // Perform withdrawal
-        uint256 amountWithdrawn = rocketDepositAPI.withdrawMinipoolDeposit(groupID, msg.sender, _depositID, _minipool);
-        require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
-        require(amountWithdrawn == address(this).balance - initialBalance, "Amount withdrawn is incorrect");
+        // Perform refund
+        uint256 amountRefunded = rocketDepositAPI.refundDepositMinipoolStalled(groupID, msg.sender, _depositID, _minipool);
+        require(amountRefunded > 0, "The minipool deposit was not refunded successfully");
+        require(amountRefunded == address(this).balance - initialBalance, "Amount refunded is incorrect");
         // Transfer ether to user
-        (bool success,) = msg.sender.call.value(amountWithdrawn)("");
-        require(success, "Unable to send withdrawn ether to user");
+        (bool success,) = msg.sender.call.value(amountRefunded)("");
+        require(success, "Unable to send refunded ether to user");
+        // Return success flag
+        return true;
+    }
+
+
+    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as RPB tokens, forfeiting rewards for that amount, through the Rocket Pool Deposit API
+    /// @dev Withdrawn RPB tokens are minted to this contract's address, then transferred to the user
+    /// @param _depositID The ID of the deposit to withdraw from
+    /// @param _minipool The address of the minipool to withdraw from
+    /// @param _amount The amount of the deposit to withdraw as RPB tokens
+    function withdrawDepositMinipoolStaking(bytes32 _depositID, address _minipool, uint256 _amount) public returns (bool) {
+        // Check amount
+        require(_amount > 0, "Invalid withdrawal amount");
+        // Get contracts
+        rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        rocketBETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketBETHToken"))));
+        // Get balance before withdrawal
+        uint256 initialBalance = rocketBETHToken.balanceOf(address(this));
+        // Perform withdrawal
+        uint256 amountWithdrawn = rocketDepositAPI.withdrawDepositMinipoolStaking(groupID, msg.sender, _depositID, _minipool, _amount);
+        require(amountWithdrawn > 0, "The minipool was not withdrawn from successfully");
+        require(amountWithdrawn == rocketBETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
+        // Transfer RPB tokens to user
+        require(rocketBETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn RPB tokens to user");
+        // Return success flag
+        return true;
+    }
+
+
+    /// @dev Withdraw a deposit fragment from a withdrawn minipool as RPB tokens through the Rocket Pool Deposit API
+    /// @dev Withdrawn RPB tokens are minted to this contract's address, then transferred to the user
+    /// @param _depositID The ID of the deposit to withdraw
+    /// @param _minipool The address of the minipool to withdraw from
+    function withdrawDepositMinipool(bytes32 _depositID, address _minipool) public returns (bool) {
+        // Get contracts
+        rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
+        rocketBETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketBETHToken"))));
+        // Get balance before withdrawal
+        uint256 initialBalance = rocketBETHToken.balanceOf(address(this));
+        // Perform withdrawal
+        uint256 amountWithdrawn = rocketDepositAPI.withdrawDepositMinipool(groupID, msg.sender, _depositID, _minipool);
+        require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
+        require(amountWithdrawn == rocketBETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
+        // Transfer RPB tokens to user
+        require(rocketBETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn RPB tokens to user");
         // Return success flag
         return true;
     }
