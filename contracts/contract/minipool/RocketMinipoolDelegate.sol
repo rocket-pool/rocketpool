@@ -33,7 +33,7 @@ contract RocketMinipoolDelegate {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private rpbWithdrawnStakingTotal;                   // The total RPB withdrawn while staking
+    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -88,7 +88,7 @@ contract RocketMinipoolDelegate {
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
         int256  rewards;                                        // Rewards received after Casper
-        uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
+        uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
@@ -150,12 +150,6 @@ contract RocketMinipoolDelegate {
         uint256 indexed _statusCodeOld,                         // Pools status code - old
         uint256 time,                                           // The last time the status changed
         uint256 block                                           // The last block number the status changed
-    );
-
-    event DepositTokenFundSent (
-        address indexed _tokenContractAddress,                  // RPD Token Funds Sent
-        uint256 amount,                                         // The amount sent
-        uint256 created                                         // Creation timestamp
     );
 
 
@@ -344,11 +338,11 @@ contract RocketMinipoolDelegate {
         require(users[_user].groupID == _groupID, "User does not exist in group.");
         require(users[_user].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
         // Update total RPB withdrawn while staking
-        rpbWithdrawnStakingTotal = rpbWithdrawnStakingTotal.add(_tokenAmount);
+        stakingTokensWithdrawnTotal = stakingTokensWithdrawnTotal.add(_tokenAmount);
         // Decrement user's balance
         users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
         // Increment user's deposit token balance
-        users[_user].depositTokens = users[_user].depositTokens.add(_tokenAmount);
+        users[_user].stakingTokensWithdrawn = users[_user].stakingTokensWithdrawn.add(_tokenAmount);
         // Remove user if balance depleted
         if (users[_user].balance == 0) { removeUser(_user); }
         // Publish withdrawal event
@@ -413,7 +407,7 @@ contract RocketMinipoolDelegate {
                 groupID: _groupID,
                 balance: 0,
                 rewards: 0,
-                depositTokens: 0,
+                stakingTokensWithdrawn: 0,
                 feeRP: rocketGroupSettings.getDefaultFee(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,

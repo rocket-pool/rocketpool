@@ -33,7 +33,7 @@ contract RocketMinipool {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private rpbWithdrawnStakingTotal;                   // The total RPB withdrawn while staking
+    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -88,7 +88,7 @@ contract RocketMinipool {
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
         int256  rewards;                                        // Rewards received after Casper
-        uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
+        uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
@@ -316,8 +316,8 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the amount of the deposit tokens the user has taken out
-    function getUserDepositTokens(address _user) public view isPoolUser(_user) returns(uint256) {
-        return users[_user].depositTokens;
+    function getUserStakingTokensWithdrawn(address _user) public view isPoolUser(_user) returns(uint256) {
+        return users[_user].stakingTokensWithdrawn;
     }
 
 
