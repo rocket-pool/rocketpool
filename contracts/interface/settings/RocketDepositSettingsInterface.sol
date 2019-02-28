@@ -15,4 +15,5 @@ contract RocketDepositSettingsInterface {
     function getWithdrawalAllowed() public view returns (bool);
     function getWithdrawalMin() public view returns (uint256);
     function getWithdrawalMax() public view returns (uint256);
+    function getStakingWithdrawalFeePerc() public view returns (uint256);
 }
