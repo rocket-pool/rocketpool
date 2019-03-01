@@ -234,7 +234,7 @@ contract RocketMinipoolDelegate {
     }
 
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
-    // TODO: update node withdrawals to withdraw ETH pre-staking and RPB post-staking
+    // TODO: update to account for rewards instead of only matching deposit amount
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Check current status
         require(status.current == 0 || status.current == 4 || status.current == 6, "Minipool is not currently allowing node withdrawals.");
@@ -246,9 +246,19 @@ contract RocketMinipoolDelegate {
         // Update node operator deposit flag & balance
         node.depositExists = false;
         node.balance = 0;
-        // Transfer ether and RPL to node contract
+        // Transfer ether and RPL balances to node contract
         if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
-        if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
+        if (etherAmount > 0) {
+            // Refund ether to node contract if initialised or timed out
+            if (status.current == 0 || status.current == 6) {
+                address(uint160(node.contractAddress)).transfer(etherAmount);
+            }
+            // Transfer RPB to node contract if withdrawn
+            else {
+                rpbContract = ERC20(getContractAddress("rocketBETHToken"));
+                require(rpbContract.transfer(node.contractAddress, etherAmount), "RPB balance transfer error.");
+            }
+        }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rplAmount, now);
         // Update the status
