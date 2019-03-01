@@ -158,12 +158,12 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
         // Get minipool user details
         let userExists = await minipool.getUserExists.call(userAddress);
         let userHasDeposit = await minipool.getUserHasDeposit.call(userAddress);
-        let userDepositTokens = parseInt(await minipool.getUserDepositTokens.call(userAddress));
+        let userStakingTokensWithdrawn = parseInt(await minipool.getUserStakingTokensWithdrawn.call(userAddress));
 
         // Asserts
         assert.isTrue(userExists, 'Incorrect minipool user exists status');
         assert.isTrue(userHasDeposit, 'Incorrect minipool user deposit status');
-        assert.equal(userDepositTokens, 0, 'Incorrect minipool user deposit token count');
+        assert.equal(userStakingTokensWithdrawn, 0, 'Incorrect minipool user staking tokens withdrawn count');
 
     }
 
@@ -171,7 +171,7 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
 
 
 // Request a deposit refund
-export async function scenarioRefundDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
+export async function scenarioRefundQueuedDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
     const rocketDepositQueue = await RocketDepositQueue.deployed();
 
@@ -184,7 +184,7 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
     let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Request refund
-    let result = await depositorContract.refundDeposit(durationID, depositID, {from: fromAddress, gas: gas});
+    let result = await depositorContract.refundDepositQueued(durationID, depositID, {from: fromAddress, gas: gas});
 
     // Get updated from address balance
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
@@ -204,7 +204,7 @@ export async function scenarioRefundDeposit({depositorContract, groupID, duratio
 
 
 // Withdraw deposit from a minipool
-export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
+export async function scenarioRefundStalledMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
     const minipool = await RocketMinipool.at(minipoolAddress);
 
     // Get initial balances
@@ -217,8 +217,8 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress));
 
     // Withdraw
-    let result = await withdrawerContract.withdrawMinipoolDeposit(depositID, minipoolAddress, {from: fromAddress, gas: gas});
-    profileGasUsage('RocketGroupAccessorContract.withdrawMinipoolDeposit', result);
+    let result = await withdrawerContract.refundDepositMinipoolStalled(depositID, minipoolAddress, {from: fromAddress, gas: gas});
+    profileGasUsage('RocketGroupAccessorContract.refundDepositMinipoolStalled', result);
 
     // Get updated balances
     let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
@@ -256,20 +256,20 @@ export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddre
 
 
 // Attempt a deposit refund via the deposit API
-export async function scenarioAPIRefundDeposit({groupID, userID, durationID, depositID, fromAddress, gas}) {
+export async function scenarioAPIRefundQueuedDeposit({groupID, userID, durationID, depositID, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
 
     // Request refund
-    await rocketDepositAPI.refundDeposit(groupID, userID, durationID, depositID, {from: fromAddress, gas: gas});
+    await rocketDepositAPI.refundDepositQueued(groupID, userID, durationID, depositID, {from: fromAddress, gas: gas});
 
 }
 
 // Attempt a minipool deposit withdrawal via the deposit API
-export async function scenarioAPIWithdrawMinipoolDeposit({groupID, userID, depositID, minipoolAddress, fromAddress, gas}) {
+export async function scenarioAPIRefundStalledMinipoolDeposit({groupID, userID, depositID, minipoolAddress, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
 
     // Withdraw
-    await rocketDepositAPI.withdrawMinipoolDeposit(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
+    await rocketDepositAPI.refundDepositMinipoolStalled(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
 
 }
 

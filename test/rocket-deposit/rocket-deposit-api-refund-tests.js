@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositAPI, RocketDepositSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
-import { scenarioDeposit, scenarioRefundDeposit, scenarioAPIRefundDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioAPIRefundQueuedDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
@@ -52,7 +52,7 @@ export default function() {
             depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
-            await scenarioRefundDeposit({
+            await scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
@@ -78,7 +78,7 @@ export default function() {
             depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
-            await assertThrows(scenarioRefundDeposit({
+            await assertThrows(scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: 'beer',
@@ -91,7 +91,7 @@ export default function() {
 
         // Staker cannot refund a deposit with an invalid ID
         it(printTitle('staker', 'cannot refund a deposit with an invalid ID'), async () => {
-            await assertThrows(scenarioRefundDeposit({
+            await assertThrows(scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
@@ -108,7 +108,7 @@ export default function() {
             await rocketDepositSettings.setRefundDepositAllowed(false, {from: owner});
 
             // Request refund
-            await assertThrows(scenarioRefundDeposit({
+            await assertThrows(scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
@@ -126,7 +126,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a nonexistant deposit'), async () => {
 
             // Nonexistant deposit ID
-            await assertThrows(scenarioRefundDeposit({
+            await assertThrows(scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
@@ -135,7 +135,7 @@ export default function() {
             }), 'Refunded a nonexistant deposit');
 
             // Nonexistant user
-            await assertThrows(scenarioRefundDeposit({
+            await assertThrows(scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
@@ -150,7 +150,7 @@ export default function() {
         it(printTitle('staker', 'cannot refund a deposit via deposit API'), async () => {
 
             // Invalid user ID
-            await assertThrows(scenarioAPIRefundDeposit({
+            await assertThrows(scenarioAPIRefundQueuedDeposit({
                 groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
                 durationID: '3m',
@@ -159,7 +159,7 @@ export default function() {
             }), 'Refunded a deposit with an invalid user ID');
 
             // Invalid group ID
-            await assertThrows(scenarioAPIRefundDeposit({
+            await assertThrows(scenarioAPIRefundQueuedDeposit({
                 groupID: accounts[9],
                 userID: user1,
                 durationID: '3m',
@@ -168,7 +168,7 @@ export default function() {
             }), 'Refunded a deposit with an invalid group ID');
 
             // Valid parameters; invalid depositor
-            await assertThrows(scenarioAPIRefundDeposit({
+            await assertThrows(scenarioAPIRefundQueuedDeposit({
                 groupID: groupContract.address,
                 userID: user1,
                 durationID: '3m',
