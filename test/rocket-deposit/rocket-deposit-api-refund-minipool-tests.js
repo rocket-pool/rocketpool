@@ -118,7 +118,7 @@ export default function() {
             // Get deposit ID
             depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
 
-            // Attempt to Refund minipool deposit
+            // Attempt to refund minipool deposit
             await assertThrows(scenarioRefundStalledMinipoolDeposit({
                 depositorContract: groupAccessorContract,
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
