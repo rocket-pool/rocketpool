@@ -170,7 +170,7 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
 }
 
 
-// Request a deposit refund
+// Request a refund from a queued deposit
 export async function scenarioRefundQueuedDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
     const rocketDepositQueue = await RocketDepositQueue.deployed();
@@ -203,8 +203,8 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
 }
 
 
-// Withdraw deposit from a minipool
-export async function scenarioRefundStalledMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
+// Request a refund from a stalled minipool
+export async function scenarioRefundStalledMinipoolDeposit({depositorContract, depositID, minipoolAddress, fromAddress, gas}) {
     const minipool = await RocketMinipool.at(minipoolAddress);
 
     // Get initial balances
@@ -216,8 +216,8 @@ export async function scenarioRefundStalledMinipoolDeposit({withdrawerContract, 
     let userExists1 = await minipool.getUserExists.call(fromAddress);
     let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress));
 
-    // Withdraw
-    let result = await withdrawerContract.refundDepositMinipoolStalled(depositID, minipoolAddress, {from: fromAddress, gas: gas});
+    // Refund
+    let result = await depositorContract.refundDepositMinipoolStalled(depositID, minipoolAddress, {from: fromAddress, gas: gas});
     profileGasUsage('RocketGroupAccessorContract.refundDepositMinipoolStalled', result);
 
     // Get updated balances
@@ -255,7 +255,7 @@ export async function scenarioAPIDeposit({groupID, userID, durationID, fromAddre
 }
 
 
-// Attempt a deposit refund via the deposit API
+// Attempt a queued deposit refund via the deposit API
 export async function scenarioAPIRefundQueuedDeposit({groupID, userID, durationID, depositID, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
 
@@ -264,11 +264,11 @@ export async function scenarioAPIRefundQueuedDeposit({groupID, userID, durationI
 
 }
 
-// Attempt a minipool deposit withdrawal via the deposit API
+// Attempt a stalled minipool refund via the deposit API
 export async function scenarioAPIRefundStalledMinipoolDeposit({groupID, userID, depositID, minipoolAddress, fromAddress, gas}) {
     const rocketDepositAPI = await RocketDepositAPI.deployed();
 
-    // Withdraw
+    // Refund
     await rocketDepositAPI.refundDepositMinipoolStalled(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
 
 }

@@ -15,8 +15,8 @@ import rocketNodeTaskAdminTests from './rocket-node/rocket-node-task-admin-tests
 import rocketNodeTaskNodeTests from './rocket-node/rocket-node-task-node-tests';
 import rocketNodeTaskCalculateNodeFeeTests from './rocket-node/rocket-node-task-calculate-node-fee-tests';
 import rocketDepositAPIDepositTests from './rocket-deposit/rocket-deposit-api-deposit-tests';
-import rocketDepositAPIRefundTests from './rocket-deposit/rocket-deposit-api-refund-tests';
-import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
+import rocketDepositAPIRefundQueueTests from './rocket-deposit/rocket-deposit-api-refund-queue-tests';
+import rocketDepositAPIRefundMinipoolTests from './rocket-deposit/rocket-deposit-api-refund-minipool-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 
@@ -47,8 +47,8 @@ rocketNodeTaskAdminTests();
 rocketNodeTaskNodeTests();
 rocketNodeTaskCalculateNodeFeeTests();
 rocketDepositAPIDepositTests();
-rocketDepositAPIRefundTests();
-rocketDepositAPIWithdrawalTests();
+rocketDepositAPIRefundQueueTests();
+rocketDepositAPIRefundMinipoolTests();
 rocketRPIPTests();
 rocketUpgradeTests();
 

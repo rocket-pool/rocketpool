@@ -5,7 +5,7 @@ import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioAPIRefundQueuedDe
 
 export default function() {
 
-    contract('RocketDepositAPI - Refunds', async (accounts) => {
+    contract('RocketDepositAPI - Queue Refunds', async (accounts) => {
 
 
         // Accounts
