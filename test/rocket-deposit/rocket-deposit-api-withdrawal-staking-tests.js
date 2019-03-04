@@ -2,6 +2,7 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
+import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
 import { scenarioDeposit, scenarioWithdrawStakingMinipoolDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
@@ -15,6 +16,7 @@ export default function() {
         const nodeOperator = accounts[2];
         const user1 = accounts[3];
         const user2 = accounts[4];
+        const user3 = accounts[5];
 
 
         // Setup
@@ -87,6 +89,29 @@ export default function() {
                 fromAddress: user1,
                 gas: 5000000,
             }), 'Withdrew from a minipool that has not timed out');
+
+        });
+
+
+        // Staker can withdraw from a staking minipool
+        it(printTitle('staker', 'can withdraw from a staking minipool'), async () => {
+
+            // Progress minipool to staking
+            await stakeSingleMinipool({groupAccessorContract, staker: user3});
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+
+            // Withdraw minipool deposit
+            scenarioWithdrawStakingMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID,
+                minipoolAddress: minipool.address,
+                amount: depositAmount,
+                fromAddress: user1,
+                gas: 5000000,
+            });
 
         });
 
