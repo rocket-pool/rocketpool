@@ -239,6 +239,16 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
 }
 
 
+// Withdraw a deposit from a staking minipool
+export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, amount, fromAddress, gas}) {
+
+    // Withdraw
+    let result = await withdrawerContract.withdrawDepositMinipoolStaking(depositID, minipoolAddress, amount, {from: fromAddress, gas: gas});
+    profileGasUsage('RocketGroupAccessorContract.withdrawDepositMinipoolStaking', result);
+
+}
+
+
 // Attempt a deposit via the depositor contract rocketpoolEtherDeposit method
 export async function scenarioRocketpoolEtherDeposit({depositorContract, fromAddress, value, gas}) {
     await depositorContract.rocketpoolEtherDeposit({from: fromAddress, value: value, gas: gas});
