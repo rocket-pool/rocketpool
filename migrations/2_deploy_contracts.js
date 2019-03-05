@@ -203,6 +203,9 @@ module.exports = async (deployer, network) => {
   await deployContracts();
   // Register all other contracts with storage and store their abi
   const addContracts = async function() {
+    // Log RocketStorage
+    console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Address');
+    console.log(rocketStorage.address);
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
         // Log it

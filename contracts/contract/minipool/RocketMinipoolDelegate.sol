@@ -371,7 +371,10 @@ contract RocketMinipoolDelegate {
         // Check user exists
         require(users[_user].exists, "User does not exist in minipool.");
         // Remove user from address list
-        userAddresses[users[_user].addressIndex] = userAddresses[userAddresses.length - 1];
+        uint256 currentUserIndex = users[_user].addressIndex;
+        uint256 lastUserIndex = userAddresses.length - 1;
+        users[userAddresses[lastUserIndex]].addressIndex = currentUserIndex;
+        userAddresses[currentUserIndex] = userAddresses[lastUserIndex];
         userAddresses.length--;
         // Delete user
         delete users[_user];
