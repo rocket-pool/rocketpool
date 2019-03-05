@@ -283,3 +283,12 @@ export async function scenarioAPIRefundStalledMinipoolDeposit({groupID, userID, 
 
 }
 
+// Attempt to withdraw from a staking minipool via the deposit API
+export async function scenarioAPIWithdrawStakingMinipoolDeposit({groupID, userID, depositID, minipoolAddress, amount, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+
+    // Withdraw
+    await rocketDepositAPI.withdrawDepositMinipoolStaking(groupID, userID, depositID, minipoolAddress, amount, {from: fromAddress, gas: gas});
+
+}
+
