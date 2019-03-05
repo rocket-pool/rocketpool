@@ -2,6 +2,7 @@
 import { displayProfiling } from './_lib/utils/profiling';
 
 // Import tests
+import casperDepositTests from './casper/casper-deposit-tests';
 import rocketStorageTests from './rocket-storage/rocket-storage-tests';
 import rocketAdminTests from './rocket-admin/rocket-admin-tests';
 import rocketRoleTests from './rocket-role/rocket-role-tests';
@@ -35,6 +36,7 @@ console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
+casperDepositTests();
 rocketStorageTests();
 rocketAdminTests();
 rocketRoleTests();
