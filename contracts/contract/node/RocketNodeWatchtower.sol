@@ -4,12 +4,19 @@ pragma solidity 0.5.0;
 import "../../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/token/RocketBETHTokenInterface.sol";
+import "../../lib/SafeMath.sol";
 
 
 /// @title RocketNodeWatchtower - Handles watchtower (trusted) node functions
 /// @author Jake Pospischil
 
 contract RocketNodeWatchtower is RocketBase {
+
+
+    /*** Libs  ******************/
+
+
+    using SafeMath for uint;
 
 
     /*** Contracts **************/
@@ -55,14 +62,18 @@ contract RocketNodeWatchtower is RocketBase {
     /// @param _minipool The address of the minipool to withdraw
     /// @param _balance The balance of the minipool to mint as RPB tokens
     function withdrawMinipool(address _minipool, uint256 _balance) public onlyTrustedNode returns (bool) {
-        // Mint RPB tokens to minipool
-        if (_balance > 0) {
-            rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-            rocketBETHToken.mint(_minipool, _balance);
-        }
-        // Set minipool status to Withdrawn, reverts if already at status
+        // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        // Set minipool status to Withdrawn, reverts if already at status
         minipool.setStatusTo(4);
+        // Get token amount to mint - subtract tokens withdrawn while staking
+        uint256 stakingTokensWithdrawn = minipool.getStakingTokensWithdrawnTotal();
+        uint256 amount = (stakingTokensWithdrawn > _balance) ? 0 : _balance.sub(stakingTokensWithdrawn);
+        // Mint RPB tokens to minipool
+        if (amount > 0) {
+            rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
+            rocketBETHToken.mint(_minipool, amount);
+        }
         // Success
         return true;
     }

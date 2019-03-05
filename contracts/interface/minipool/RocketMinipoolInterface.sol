@@ -22,6 +22,7 @@ contract RocketMinipoolInterface {
     function getDepositInput() public view returns (bytes memory);
     function getUserDepositCapacity() public view returns(uint256);
     function getUserDepositTotal() public view returns(uint256);
+    function getStakingTokensWithdrawnTotal() public view returns(uint256);
     // Methods
     function nodeDeposit() public payable returns(bool);
     function nodeWithdraw() public returns(bool);

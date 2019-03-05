@@ -420,8 +420,13 @@ contract RocketMinipool {
     function getUserDepositTotal() public view returns(uint256) {
         return userDepositTotal;
     }
-    
-    
+
+    /// @dev Gets the total RPB tokens withdrawn during staking
+    function getStakingTokensWithdrawnTotal() public view returns(uint256) {
+        return stakingTokensWithdrawnTotal;
+    }
+
+
     // Methods
 
     /// @dev Sets the status of the pool based on its current parameters 
