@@ -39,6 +39,7 @@ contracts.rocketGroupAccessorFactory = artifacts.require('./group/RocketGroupAcc
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
 contracts.rocketNodeKeys = artifacts.require('./node/RocketNodeKeys.sol');
 contracts.rocketNodeTasks = artifacts.require('./node/RocketNodeTasks.sol');
+contracts.rocketNodeWatchtower = artifacts.require('./node/RocketNodeWatchtower.sol');
 // Minipool
 contracts.rocketMinipoolDelegate = artifacts.require('./minipool/RocketMinipoolDelegate.sol');
 contracts.rocketMinipoolFactory = artifacts.require('./minipool/RocketMinipoolFactory.sol');

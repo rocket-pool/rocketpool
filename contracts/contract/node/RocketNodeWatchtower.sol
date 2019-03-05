@@ -28,6 +28,15 @@ contract RocketNodeWatchtower is RocketBase {
     }
 
 
+    /*** Constructor *************/
+
+
+    /// @dev RocketNodeWatchtower constructor
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
+
+
     /*** Methods ****************/
 
 
