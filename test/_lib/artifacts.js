@@ -2,6 +2,7 @@ const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
 
 export const RocketAdmin = artifacts.require('./contract/RocketAdmin');
+export const RocketBETHToken = artifacts.require('./contract/RocketBETHToken.sol');
 export const RocketDepositAPI = artifacts.require('./contract/RocketDepositAPI');
 export const RocketDepositSettings = artifacts.require('./contract/RocketDepositSettings');
 export const RocketDepositQueue = artifacts.require('./contract/RocketDepositQueue');

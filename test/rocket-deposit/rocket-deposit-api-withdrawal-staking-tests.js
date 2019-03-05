@@ -104,11 +104,12 @@ export default function() {
             assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
 
             // Withdraw partial minipool deposit
-            scenarioWithdrawStakingMinipoolDeposit({
+            await scenarioWithdrawStakingMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,
                 amount: web3.utils.numberToHex(parseInt(depositAmount) / 2),
+                amountInt: parseInt(depositAmount) / 2,
                 fromAddress: user1,
                 gas: 5000000,
             });
@@ -117,7 +118,7 @@ export default function() {
             depositAmount = await minipool.getUserDeposit.call(user1);
 
             // Withdraw remaining minipool deposit
-            scenarioWithdrawStakingMinipoolDeposit({
+            await scenarioWithdrawStakingMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,

@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
+import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -240,11 +240,48 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
 
 
 // Withdraw a deposit from a staking minipool
-export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, amount, fromAddress, gas}) {
+export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, amount, amountInt, fromAddress, gas}) {
+    const minipool = await RocketMinipool.at(minipoolAddress);
+    const rocketBETHToken = await RocketBETHToken.deployed();
+
+    // Initialise params
+    if (amountInt === undefined) amountInt = parseInt(amount);
+
+    // Get initial balances
+    let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let userRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
+
+    // Get initial minipool user status
+    let userCount1 = parseInt(await minipool.getUserCount.call());
+    let userExists1 = await minipool.getUserExists.call(fromAddress);
+    let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress));
+    let userStakingTokensWithdrawn1 = parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress));
+
+    // Check if the user should be removed
+    let expectUserRemoved = (amountInt == userDeposit1);
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipoolStaking(depositID, minipoolAddress, amount, {from: fromAddress, gas: gas});
     profileGasUsage('RocketGroupAccessorContract.withdrawDepositMinipoolStaking', result);
+
+    // Get updated balances
+    let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let userRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
+
+    // Get updated minipool user status
+    let userCount2 = parseInt(await minipool.getUserCount.call());
+    let userExists2 = await minipool.getUserExists.call(fromAddress);
+    let userDeposit2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserDeposit.call(fromAddress)));
+    let userStakingTokensWithdrawn2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress)));
+
+    // Asserts
+    assert.equal(userCount2, (expectUserRemoved ? userCount1 - 1 : userCount1), 'Minipool user count was not updated correctly');
+    assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
+    assert.equal(userExists2, !expectUserRemoved, 'Second minipool user exists check incorrect');
+    assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
+    assert.equal(userDeposit2, userDeposit1 - amountInt, 'User deposit amount was not updated correctly');
+    assert.isTrue((expectUserRemoved ? userStakingTokensWithdrawn2 == 0 : userStakingTokensWithdrawn2 > userStakingTokensWithdrawn1), 'User staking tokens withdrawn was not updated correctly');
+    assert.equal(minipoolBalance2, minipoolBalance1, 'Minipool balance changed and should not have');
 
 }
 
