@@ -47,8 +47,10 @@ contract RocketNodeWatchtower is RocketBase {
     /// @param _balance The balance of the minipool to mint as RPB tokens
     function withdrawMinipool(address _minipool, uint256 _balance) public onlyTrustedNode returns (bool) {
         // Mint RPB tokens to minipool
-        rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-        rocketBETHToken.mint(_minipool, _balance);
+        if (_balance > 0) {
+            rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
+            rocketBETHToken.mint(_minipool, _balance);
+        }
         // Set minipool status to Withdrawn, reverts if already at status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         minipool.setStatusTo(4);
