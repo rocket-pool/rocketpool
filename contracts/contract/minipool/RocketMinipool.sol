@@ -433,4 +433,15 @@ contract RocketMinipool {
         return true;
     }
 
+    /// @dev Sets the status of the pool to a specific value if valid
+    /// @param _status The new status ID to apply
+    function setStatusTo(uint8 _status) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Will update the status of the pool if conditions are correct
+        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("setStatusTo(uint8)", _status));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
 }
