@@ -526,9 +526,12 @@ contract RocketMinipoolDelegate {
     /// @dev Sets the status of the pool to a specific value if valid
     /// @param _status The new status ID to apply
     function setStatusTo(uint8 _status) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
-        // Check status
-        require(_status == 3 || _status == 4, "Minipool status may only be set to LoggedOut or Withdrawn");
-        require(_status != status.current, "Minipool is already set to status");
+        // Check current and new status
+        require(
+            (status.current == 2 && _status == 3) ||
+            (status.current == 3 && _status == 4),
+            "Minipool status may only be updated from Staking to LoggedOut or LoggedOut to Withdrawn"
+        );
         // Set status
         setStatus(_status);
         // Success
