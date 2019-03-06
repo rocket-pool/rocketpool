@@ -18,6 +18,7 @@ export const RocketNodeAPI = artifacts.require('./contract/RocketNodeAPI');
 export const RocketNodeContract = artifacts.require('./contract/RocketNodeContract');
 export const RocketNodeSettings = artifacts.require('./contract/RocketNodeSettings');
 export const RocketNodeTasks = artifacts.require('./contract/RocketNodeTasks');
+export const RocketNodeWatchtower = artifacts.require('./contract/RocketNodeWatchtower');
 export const RocketPIP = artifacts.require('./contract/RocketPIP');
 export const RocketPool = artifacts.require('./contract/RocketPool');
 export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToken.sol');
