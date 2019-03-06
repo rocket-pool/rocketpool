@@ -56,7 +56,7 @@ export default function() {
 
             // Attempt logout
             await assertThrows(scenarioLogoutMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 fromAddress: trustedNodeOperator,
                 gas: 500000,
             }), 'Logged out a minipool that was not staking');
@@ -73,7 +73,7 @@ export default function() {
 
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 balance: web3.utils.toWei('32', 'ether'),
                 fromAddress: trustedNodeOperator,
                 gas: 500000,
@@ -94,7 +94,7 @@ export default function() {
 
             // Attempt logout
             await assertThrows(scenarioLogoutMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 fromAddress: untrustedNodeOperator,
                 gas: 500000,
             }), 'Untrusted node logged out a staking minipool');
@@ -111,7 +111,7 @@ export default function() {
 
             // Logout
             await scenarioLogoutMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 fromAddress: trustedNodeOperator,
                 gas: 500000,
             });
@@ -128,7 +128,7 @@ export default function() {
 
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 balance: web3.utils.toWei('32', 'ether'),
                 fromAddress: untrustedNodeOperator,
                 gas: 500000,
@@ -146,7 +146,7 @@ export default function() {
 
             // Withdraw
             await scenarioWithdrawMinipool({
-                minipoolAddress: minipool.address,
+                minipool,
                 balance: web3.utils.toWei('32', 'ether'),
                 fromAddress: trustedNodeOperator,
                 gas: 500000,
