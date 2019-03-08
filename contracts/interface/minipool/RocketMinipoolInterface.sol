@@ -22,7 +22,7 @@ contract RocketMinipoolInterface {
     function getDepositInput() public view returns (bytes memory);
     function getUserDepositCapacity() public view returns(uint256);
     function getUserDepositTotal() public view returns(uint256);
-    function getStakingTokensWithdrawnTotal() public view returns(uint256);
+    function getStakingUserDepositsWithdrawn() public view returns(uint256);
     // Methods
     function nodeDeposit() public payable returns(bool);
     function nodeWithdraw() public returns(bool);
@@ -31,5 +31,6 @@ contract RocketMinipoolInterface {
     function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public returns(bool);
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public returns(bool);
     function updateStatus() public returns(bool);
-    function setStatusTo(uint8 _status) public returns (bool);
+    function logoutMinipool() public returns (bool);
+    function withdrawMinipool(uint256 _withdrawalBalance) public returns (bool);
 }

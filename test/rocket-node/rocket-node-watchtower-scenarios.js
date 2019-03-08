@@ -30,7 +30,7 @@ export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, 
     // Get initial minipool status
     let status1 = parseInt(await minipool.getStatus.call());
     let rpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(minipool.address));
-    let stakingTokensWithdrawn = parseInt(await minipool.getStakingTokensWithdrawnTotal.call());
+    let stakingUserDepositsWithdrawn = parseInt(await minipool.getStakingUserDepositsWithdrawn.call());
 
     // Withdraw
     await rocketNodeWatchtower.withdrawMinipool(minipool.address, balance, {from: fromAddress, gas: gas});
@@ -40,7 +40,7 @@ export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, 
     let rpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(minipool.address));
 
     // Get expected RPB increase
-    let expectedRpbIncrease = (stakingTokensWithdrawn > parseInt(balance)) ? 0 : parseInt(balance) - stakingTokensWithdrawn;
+    let expectedRpbIncrease = (stakingUserDepositsWithdrawn > parseInt(balance)) ? 0 : parseInt(balance) - stakingUserDepositsWithdrawn;
 
     // Asserts
     assert.equal(status1, 3, 'Minipool was not at LoggedOut status before withdrawal');

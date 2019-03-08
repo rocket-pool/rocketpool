@@ -33,7 +33,7 @@ contract RocketMinipool {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
+    uint256 private stakingUserDepositsWithdrawn;               // Total value of user deposits withdrawn while staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -422,8 +422,8 @@ contract RocketMinipool {
     }
 
     /// @dev Gets the total RPB tokens withdrawn during staking
-    function getStakingTokensWithdrawnTotal() public view returns(uint256) {
-        return stakingTokensWithdrawnTotal;
+    function getStakingUserDepositsWithdrawn() public view returns(uint256) {
+        return stakingUserDepositsWithdrawn;
     }
 
 
@@ -438,11 +438,20 @@ contract RocketMinipool {
         return true;
     }
 
-    /// @dev Sets the status of the pool to a specific value if valid
-    /// @param _status The new status ID to apply
-    function setStatusTo(uint8 _status) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+    /// @dev Sets the minipool to logged out
+    function logoutMinipool() public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
         // Will update the status of the pool if conditions are correct
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("setStatusTo(uint8)", _status));
+        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("logoutMinipool()"));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+    /// @dev Sets the minipool to withdrawn and sets its balance at withdrawal
+    /// @param _withdrawalBalance The minipool's balance at withdrawal
+    function withdrawMinipool(uint256 _withdrawalBalance) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Will update the status of the pool if conditions are correct
+        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdrawMinipool(uint256)", _withdrawalBalance));
         require(success, "Delegate call failed.");
         // Success
         return true;

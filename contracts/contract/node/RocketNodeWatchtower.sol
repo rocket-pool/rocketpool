@@ -50,9 +50,9 @@ contract RocketNodeWatchtower is RocketBase {
     /// @dev Set a minipool to LoggedOut status
     /// @param _minipool The address of the minipool to log out
     function logoutMinipool(address _minipool) public onlyTrustedNode returns (bool) {
-        // Set minipool status to LoggedOut, reverts if already at status
+        // Log minipool out, reverts if not allowed
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        minipool.setStatusTo(3);
+        minipool.logoutMinipool();
         // Success
         return true;
     }
@@ -64,15 +64,15 @@ contract RocketNodeWatchtower is RocketBase {
     function withdrawMinipool(address _minipool, uint256 _balance) public onlyTrustedNode returns (bool) {
         // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        // Set minipool status to Withdrawn, reverts if already at status
-        minipool.setStatusTo(4);
-        // Get token amount to mint - subtract tokens withdrawn while staking
-        uint256 stakingTokensWithdrawn = minipool.getStakingTokensWithdrawnTotal();
-        uint256 amount = (stakingTokensWithdrawn > _balance) ? 0 : _balance.sub(stakingTokensWithdrawn);
+        // Withdraw minipool, reverts if not allowed
+        minipool.withdrawMinipool(_balance);
+        // Get token amount to mint - subtract deposits withdrawn while staking
+        uint256 stakingUserDepositsWithdrawn = minipool.getStakingUserDepositsWithdrawn();
+        uint256 tokenAmount = (stakingUserDepositsWithdrawn > _balance) ? 0 : _balance.sub(stakingUserDepositsWithdrawn);
         // Mint RPB tokens to minipool
-        if (amount > 0) {
+        if (tokenAmount > 0) {
             rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-            rocketBETHToken.mint(_minipool, amount);
+            rocketBETHToken.mint(_minipool, tokenAmount);
         }
         // Success
         return true;

@@ -33,7 +33,7 @@ contract RocketMinipoolDelegate {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
+    uint256 private stakingUserDepositsWithdrawn;               // Total value of user deposits withdrawn while staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -347,8 +347,8 @@ contract RocketMinipoolDelegate {
         require(users[_user].exists, "User does not exist in minipool.");
         require(users[_user].groupID == _groupID, "User does not exist in group.");
         require(users[_user].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
-        // Update total RPB withdrawn while staking
-        stakingTokensWithdrawnTotal = stakingTokensWithdrawnTotal.add(_tokenAmount);
+        // Update total user deposits withdrawn while staking
+        stakingUserDepositsWithdrawn = stakingUserDepositsWithdrawn.add(_withdrawnAmount);
         // Decrement user's balance
         users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
         // Increment user's deposit token balance
@@ -506,6 +506,8 @@ contract RocketMinipoolDelegate {
             }
             // Send deposit to casper deposit contract
             casperDeposit.deposit.value(launchAmount)(staking.depositInput);
+            // Set staking start balance
+            staking.balanceStart = launchAmount;
             // Staking
             setStatus(2);
             // Done
@@ -523,17 +525,26 @@ contract RocketMinipoolDelegate {
     }
 
 
-    /// @dev Sets the status of the pool to a specific value if valid
-    /// @param _status The new status ID to apply
-    function setStatusTo(uint8 _status) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
-        // Check current and new status
-        require(
-            (status.current == 2 && _status == 3) ||
-            (status.current == 3 && _status == 4),
-            "Minipool status may only be updated from Staking to LoggedOut or LoggedOut to Withdrawn"
-        );
-        // Set status
-        setStatus(_status);
+    /// @dev Sets the minipool to logged out
+    function logoutMinipool() public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Check current status
+        require(status.current == 2, "Minipool may only be logged out while staking");
+        // Set LoggedOut status
+        setStatus(3);
+        // Success
+        return true;
+    }
+
+
+    /// @dev Sets the minipool to withdrawn and sets its balance at withdrawal
+    /// @param _withdrawalBalance The minipool's balance at withdrawal
+    function withdrawMinipool(uint256 _withdrawalBalance) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Check current status
+        require(status.current == 3, "Minipool may only be withdrawn while logged out");
+        // Set Withdrawn status
+        setStatus(4);
+        // Set staking end balance
+        staking.balanceEnd = _withdrawalBalance;
         // Success
         return true;
     }
