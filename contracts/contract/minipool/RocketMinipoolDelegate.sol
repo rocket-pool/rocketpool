@@ -5,6 +5,7 @@ pragma solidity 0.5.0;
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
+import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
@@ -49,6 +50,7 @@ contract RocketMinipoolDelegate {
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
+    RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
@@ -90,6 +92,7 @@ contract RocketMinipoolDelegate {
         int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
+        uint256 feeNode;                                        // Node operator fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
@@ -406,8 +409,9 @@ contract RocketMinipoolDelegate {
         require(_user != address(0x0), "User address invalid.");
         // Get the users group contract 
         rocketGroupContract = RocketGroupContractInterface(_groupID);
-        // Get the group settings
+        // Get the settings
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
+        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -419,6 +423,7 @@ contract RocketMinipoolDelegate {
                 rewards: 0,
                 stakingTokensWithdrawn: 0,
                 feeRP: rocketGroupSettings.getDefaultFee(),
+                feeNode: rocketNodeSettings.getFeePerc(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now,
