@@ -27,6 +27,8 @@ contract RocketMinipool {
 
     /**** Properties ***********/
 
+    uint256 private calcBase = 1 ether;
+
     // General
     uint8   public version = 1;                                 // Version of this contract
     Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
