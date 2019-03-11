@@ -4,7 +4,6 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
-import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -30,13 +29,15 @@ contract RocketMinipoolDelegate {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                 // Version of this contract
-    Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                       // Node this minipool is attached to, its creator 
-    Staking private staking;                                    // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                        // Total capacity for user deposits
-    uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;               // Total value of user deposits withdrawn while staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (address => uint256) private stakingGroupDepositsWithdrawn; // Total value of all deposits withdrawn while staking, by group
+    address[] private stakingGroupDepositsWithdrawnAddresses;
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -51,7 +52,6 @@ contract RocketMinipoolDelegate {
     ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
-    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
@@ -379,7 +379,6 @@ contract RocketMinipoolDelegate {
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
-    // TODO: transfer fees to RP, node, group
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
         require(status.current == 4, "Minipool is not currently allowing withdrawals.");
@@ -396,13 +395,20 @@ contract RocketMinipoolDelegate {
         uint256 amount = uint256(int256(users[_user].balance) + rewardsEarned);
         // Pay fees if rewards were earned
         if (rewardsEarned > 0) {
+            // Get the settings
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            // Get fee amounts
             uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[_user].feeRP).div(calcBase);
             uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
             uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[_user].feeGroup).div(calcBase);
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
+            // Transfer fees
+            require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
+            require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
+            require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
-        require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address as RPB tokens");
+        require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address");
         // Remove user
         removeUser(_user);
         // Publish withdrawal event
@@ -424,7 +430,7 @@ contract RocketMinipoolDelegate {
         // Get the users group contract 
         rocketGroupContract = RocketGroupContractInterface(_groupID);
         // Get the settings
-        rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -435,7 +441,7 @@ contract RocketMinipoolDelegate {
                 balance: 0,
                 rewards: 0,
                 stakingTokensWithdrawn: 0,
-                feeRP: rocketGroupSettings.getDefaultFee(),
+                feeRP: rocketMinipoolSettings.getMinipoolWithdrawalFeePerc(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now,

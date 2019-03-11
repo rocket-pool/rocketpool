@@ -4,7 +4,6 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
-import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -30,13 +29,15 @@ contract RocketMinipool {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                 // Version of this contract
-    Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                       // Node this minipool is attached to, its creator 
-    Staking private staking;                                    // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                        // Total capacity for user deposits
-    uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;               // Total value of user deposits withdrawn while staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (address => uint256) private stakingGroupDepositsWithdrawn; // Total value of all deposits withdrawn while staking, by group
+    address[] private stakingGroupDepositsWithdrawnAddresses;
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -51,7 +52,6 @@ contract RocketMinipool {
     ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
-    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
