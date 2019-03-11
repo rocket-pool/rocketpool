@@ -1,15 +1,15 @@
 pragma solidity 0.5.0;
 
 // Interfaces
-import "./../../interface/token/ERC20.sol";
-import "./../../interface/RocketStorageInterface.sol";
-import "./../../interface/api/RocketNodeAPIInterface.sol";
-import "./../../interface/node/RocketNodeKeysInterface.sol";
-import "./../../interface/minipool/RocketMinipoolInterface.sol";
-import "./../../interface/settings/RocketNodeSettingsInterface.sol";
-import "./../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/token/ERC20.sol";
+import "../../interface/RocketStorageInterface.sol";
+import "../../interface/api/RocketNodeAPIInterface.sol";
+import "../../interface/node/RocketNodeKeysInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 // Libraries
-import "./../../lib/SafeMath.sol";
+import "../../lib/SafeMath.sol";
 
 
 /// @title The contract for a node that operates in Rocket Pool, holds the entities ether/rpl deposits and more

@@ -33,6 +33,8 @@ contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
 contracts.rocketDepositQueue = artifacts.require('./deposit/RocketDepositQueue.sol');
 contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
+// Group
+contracts.rocketGroupAccessorFactory = artifacts.require('./group/RocketGroupAccessorFactory.sol');
 // Node
 contracts.rocketNodeFactory = artifacts.require('./node/RocketNodeFactory.sol');
 contracts.rocketNodeKeys = artifacts.require('./node/RocketNodeKeys.sol');
@@ -48,6 +50,7 @@ contracts.rocketGroupSettings = artifacts.require('./settings/RocketGroupSetting
 contracts.rocketNodeSettings = artifacts.require('./settings/RocketNodeSettings.sol');
 // Dummy Contracts
 contracts.rocketPoolToken = artifacts.require('./token/DummyRocketPoolToken.sol');
+contracts.rocketBETHToken = artifacts.require('./token/RocketBETHToken.sol');
 // Node tasks
 contracts.taskDisableInactiveNodes = artifacts.require('./tasks/DisableInactiveNodes.sol');
 contracts.taskCalculateNodeFee = artifacts.require('./tasks/CalculateNodeFee.sol');

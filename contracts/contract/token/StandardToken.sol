@@ -1,7 +1,7 @@
 pragma solidity 0.5.0;
 
 
-import "../../interface/token//ERC20.sol";
+import "../../interface/token/ERC20.sol";
 import "../../lib/SafeMath.sol";
 
 

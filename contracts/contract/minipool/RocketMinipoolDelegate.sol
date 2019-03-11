@@ -33,6 +33,7 @@ contract RocketMinipoolDelegate {
     Staking private staking;                                    // Staking properties of the minipool to track
     uint256 private userDepositCapacity;                        // Total capacity for user deposits
     uint256 private userDepositTotal;                           // Total value of all assigned user deposits
+    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -44,6 +45,7 @@ contract RocketMinipoolDelegate {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
+    ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
@@ -86,7 +88,7 @@ contract RocketMinipoolDelegate {
         address groupID;                                        // Address ID of the users group
         uint256 balance;                                        // Chunk balance deposited
         int256  rewards;                                        // Rewards received after Casper
-        uint256 depositTokens;                                  // Rocket Pool deposit tokens withdrawn by the user on this minipool
+        uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
@@ -148,12 +150,6 @@ contract RocketMinipoolDelegate {
         uint256 indexed _statusCodeOld,                         // Pools status code - old
         uint256 time,                                           // The last time the status changed
         uint256 block                                           // The last block number the status changed
-    );
-
-    event DepositTokenFundSent (
-        address indexed _tokenContractAddress,                  // RPD Token Funds Sent
-        uint256 amount,                                         // The amount sent
-        uint256 created                                         // Creation timestamp
     );
 
 
@@ -238,6 +234,7 @@ contract RocketMinipoolDelegate {
     }
 
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
+    // TODO: update to account for rewards instead of only matching deposit amount
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Check current status
         require(status.current == 0 || status.current == 4 || status.current == 6, "Minipool is not currently allowing node withdrawals.");
@@ -249,9 +246,19 @@ contract RocketMinipoolDelegate {
         // Update node operator deposit flag & balance
         node.depositExists = false;
         node.balance = 0;
-        // Transfer ether and RPL to node contract
+        // Transfer ether and RPL balances to node contract
         if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
-        if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
+        if (etherAmount > 0) {
+            // Refund ether to node contract if initialised or timed out
+            if (status.current == 0 || status.current == 6) {
+                address(uint160(node.contractAddress)).transfer(etherAmount);
+            }
+            // Transfer RPB to node contract if withdrawn
+            else {
+                rpbContract = ERC20(getContractAddress("rocketBETHToken"));
+                require(rpbContract.transfer(node.contractAddress, etherAmount), "RPB balance transfer error.");
+            }
+        }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rplAmount, now);
         // Update the status
@@ -296,13 +303,77 @@ contract RocketMinipoolDelegate {
         return true;
     }
 
-    /// @dev Withdraw a user's deposit and remove them from this contract.
+    /// @dev Refund a user's deposit and remove them from this contract (if minipool stalled).
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _refundAddress The address to refund the user's deposit to
+    function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Check current status
+        require(status.current == 6, "Minipool is not currently allowing refunds.");
+        // Check user address, group ID and balance
+        require(users[_user].exists, "User does not exist in minipool.");
+        require(users[_user].groupID == _groupID, "User does not exist in group.");
+        require(users[_user].balance > 0, "User does not have remaining balance in minipool.");
+        // Get remaining balance as refund amount
+        uint256 amount = users[_user].balance;
+        // Update total user deposit balance
+        userDepositTotal = userDepositTotal.sub(amount);
+        // Remove user
+        removeUser(_user);
+        // Transfer refund amount to refund address
+        (bool success,) = _refundAddress.call.value(amount)("");
+        require(success, "Refund amount could not be transferred to refund address");
+        // Publish refund event
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.refund"), abi.encodeWithSignature("onMinipoolUserRefund(string,uint256)", staking.id, amount));
+        // All good? Fire the event for the refund
+        emit PoolTransfer(address(this), _refundAddress, keccak256("refund"), amount, 0, now);
+        // Update the status
+        updateStatus();
+        // Success
+        return true;
+    }
+
+    /// @dev Withdraw some amount of a user's deposit as RPB tokens, forfeiting rewards for that amount, and remove them if entire deposit is withdrawn (if minipool staking).
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _withdrawnAmount The amount of the user's deposit withdrawn
+    /// @param _tokenAmount The amount of RPB tokens withdrawn
+    /// @param _withdrawnAddress The address the user's deposit was withdrawn to
+    function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Check current status
+        require(status.current == 2 || status.current == 3, "Minipool is not currently allowing early withdrawals.");
+        // Check user address, group ID and withdrawn amount
+        require(users[_user].exists, "User does not exist in minipool.");
+        require(users[_user].groupID == _groupID, "User does not exist in group.");
+        require(users[_user].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
+        // Update total RPB withdrawn while staking
+        stakingTokensWithdrawnTotal = stakingTokensWithdrawnTotal.add(_tokenAmount);
+        // Decrement user's balance
+        users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
+        // Increment user's deposit token balance
+        users[_user].stakingTokensWithdrawn = users[_user].stakingTokensWithdrawn.add(_tokenAmount);
+        // Remove user if balance depleted
+        if (users[_user].balance == 0) { removeUser(_user); }
+        // Publish withdrawal event
+        publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, _withdrawnAmount));
+        // All good? Fire the event for the withdrawal
+        emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, 0, now);
+        // Update the status
+        updateStatus();
+        // Success
+        return true;
+    }
+
+    /// @dev Withdraw a user's deposit as RPB tokens and remove them from this contract (if minipool withdrawn).
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
+    // TODO: update to account for rewards instead of only matching deposit amount
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
-        require(status.current == 4 || status.current == 6, "Minipool is not currently allowing withdrawals.");
+        require(status.current == 4, "Minipool is not currently allowing withdrawals.");
         // Check user address, group ID and balance
         require(users[_user].exists, "User does not exist in minipool.");
         require(users[_user].groupID == _groupID, "User does not exist in group.");
@@ -313,9 +384,9 @@ contract RocketMinipoolDelegate {
         userDepositTotal = userDepositTotal.sub(amount);
         // Remove user
         removeUser(_user);
-        // Transfer withdrawal amount to withdrawal address
-        (bool success,) = _withdrawalAddress.call.value(amount)("");
-        require(success, "Withdrawal amount could not be transferred to withdrawal address");
+        // Transfer withdrawal amount to withdrawal address as RPB tokens
+        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
+        require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address as RPB tokens");
         // Publish withdrawal event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, amount));
@@ -346,7 +417,7 @@ contract RocketMinipoolDelegate {
                 groupID: _groupID,
                 balance: 0,
                 rewards: 0,
-                depositTokens: 0,
+                stakingTokensWithdrawn: 0,
                 feeRP: rocketGroupSettings.getDefaultFee(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,

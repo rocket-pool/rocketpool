@@ -39,7 +39,8 @@ contract RocketDepositSettings is RocketBase {
             setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
             setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
-            setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei     
+            setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei
+            setStakingWithdrawalFeePerc(0.0025 ether);                                      // The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.init")), true);
         }
@@ -120,6 +121,11 @@ contract RocketDepositSettings is RocketBase {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.max"))); 
     }
 
+    /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
+    function getStakingWithdrawalFeePerc() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.staking.fee"))); 
+    }
+
 
 
     /*** Setters ****************/
@@ -180,6 +186,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Max allowed to be withdrawn in Wei
     function setWithdrawalMax(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.max")), _weiAmount); 
+    }
+
+    /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
+    function setStakingWithdrawalFeePerc(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.staking.fee")), _amount);
     }
 
 

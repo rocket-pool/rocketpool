@@ -2,7 +2,7 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { scenarioDeposit, scenarioRefundDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
@@ -165,7 +165,7 @@ export default function() {
             });
 
             // Refund deposit made to fill queue
-            await scenarioRefundDeposit({
+            await scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',

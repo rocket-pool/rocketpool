@@ -3,7 +3,7 @@ pragma solidity 0.5.0;
 // Contracts
 import "../../RocketBase.sol";
 import "../../contract/group/RocketGroupContract.sol";
-import "../../contract/group/RocketGroupAccessorContract.sol";
+import "../../contract/group/RocketGroupAccessorFactory.sol";
 // Interfaces
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
@@ -24,6 +24,7 @@ contract RocketGroupAPI is RocketBase {
 
     /*** Contracts *************/
 
+    RocketGroupAccessorFactory rocketGroupAccessorFactory = RocketGroupAccessorFactory(0);        // The default Rocket Group Accessor factory
     RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);           // Settings for the groups
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                 // Address list utility
    
@@ -132,7 +133,8 @@ contract RocketGroupAPI is RocketBase {
         // Check that the group exists
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != address(0x0), "Invalid group ID");
         // Create accessor contract
-        address newAccessorAddress = address(new RocketGroupAccessorContract(address(rocketStorage), _ID));
+        rocketGroupAccessorFactory = RocketGroupAccessorFactory(getContractAddress("rocketGroupAccessorFactory"));
+        address newAccessorAddress = rocketGroupAccessorFactory.createDefaultAccessor(_ID);
         // Emit creation event
         emit GroupCreateDefaultAccessor(_ID, newAccessorAddress, now);
         // Success

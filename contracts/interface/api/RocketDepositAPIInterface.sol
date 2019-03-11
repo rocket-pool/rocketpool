@@ -9,6 +9,8 @@ contract RocketDepositAPIInterface {
     function getUserQueuedDepositBalance(bytes32 _depositID) public view returns (uint256);
     // Methods
     function deposit(address _groupID, address _userID, string memory _durationID) public payable returns(bool);
-    function refundDeposit(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public returns(uint256);
-    function withdrawMinipoolDeposit(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
+    function refundDepositQueued(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public returns(uint256);
+    function refundDepositMinipoolStalled(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
+    function withdrawDepositMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public returns(uint256);
+    function withdrawDepositMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
 }
