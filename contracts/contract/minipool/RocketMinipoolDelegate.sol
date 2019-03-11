@@ -365,7 +365,7 @@ contract RocketMinipoolDelegate {
         stakingUserDepositsWithdrawals.push(StakingWithdrawal({
             groupID: _groupID,
             amount: _withdrawnAmount,
-            groupFee: users[_user].feeGroup,
+            groupFee: users[_user].feeGroup
         }));
         // Decrement user's balance
         users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
@@ -602,7 +602,7 @@ contract RocketMinipoolDelegate {
             // Transfer fees from forfeited rewards to group contracts
             for (uint256 i = 0; i < stakingUserDepositsWithdrawals.length; ++i) {
                 StakingWithdrawal memory withdrawal = stakingUserDepositsWithdrawals[i];
-                uint256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
+                int256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
                 if (userRewardsForfeited > 0) {
                     uint256 groupFeeAmount = uint256(userRewardsForfeited).mul(withdrawal.groupFee).div(calcBase);
                     require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
