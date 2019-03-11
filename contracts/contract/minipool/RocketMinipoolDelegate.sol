@@ -76,6 +76,7 @@ contract RocketMinipoolDelegate {
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
         bool    depositExists;                                  // The node operator's deposit exists
         uint256 balance;                                        // The node operator's ether balance
+        uint256 userFee;                                        // The fee charged to users by the node, determined when the minipool begins staking
     }
 
     struct Staking {
@@ -94,7 +95,6 @@ contract RocketMinipoolDelegate {
         int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
-        uint256 feeNode;                                        // Node operator fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
@@ -397,7 +397,7 @@ contract RocketMinipoolDelegate {
         // Pay fees if rewards were earned
         if (rewardsEarned > 0) {
             uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[_user].feeRP).div(calcBase);
-            uint256 nodeFeeAmount = uint256(rewardsEarned).mul(users[_user].feeNode).div(calcBase);
+            uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
             uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[_user].feeGroup).div(calcBase);
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
         }
@@ -425,7 +425,6 @@ contract RocketMinipoolDelegate {
         rocketGroupContract = RocketGroupContractInterface(_groupID);
         // Get the settings
         rocketGroupSettings = RocketGroupSettingsInterface(getContractAddress("rocketGroupSettings"));
-        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -437,7 +436,6 @@ contract RocketMinipoolDelegate {
                 rewards: 0,
                 stakingTokensWithdrawn: 0,
                 feeRP: rocketGroupSettings.getDefaultFee(),
-                feeNode: rocketNodeSettings.getFeePerc(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now,
@@ -527,6 +525,9 @@ contract RocketMinipoolDelegate {
             casperDeposit.deposit.value(launchAmount)(staking.depositInput);
             // Set staking start balance
             staking.balanceStart = launchAmount;
+            // Set node user fee
+            rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+            node.userFee = rocketNodeSettings.getFeePerc();
             // Staking
             setStatus(2);
             // Done

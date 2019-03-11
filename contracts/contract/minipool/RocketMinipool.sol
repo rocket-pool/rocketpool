@@ -76,6 +76,7 @@ contract RocketMinipool {
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
         bool    depositExists;                                  // The node operator's deposit exists
         uint256 balance;                                        // The node operator's ether balance
+        uint256 userFee;                                        // The fee charged to users by the node, determined when the minipool begins staking
     }
 
     struct Staking {
@@ -94,7 +95,6 @@ contract RocketMinipool {
         int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
-        uint256 feeNode;                                        // Node operator fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
