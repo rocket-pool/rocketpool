@@ -29,15 +29,14 @@ contract RocketMinipool {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                         // Version of this contract
-    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                               // Node this minipool is attached to, its creator 
-    Staking private staking;                                            // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                                // Total capacity for user deposits
-    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
-    mapping (address => uint256) private stakingGroupDepositsWithdrawn; // Total value of all deposits withdrawn while staking, by group
-    address[] private stakingGroupDepositsWithdrawnAddresses;
+    uint8   public version = 1;                                     // Version of this contract
+    Status  private status;                                         // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                           // Node this minipool is attached to, its creator 
+    Staking private staking;                                        // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                            // Total capacity for user deposits
+    uint256 private userDepositTotal;                               // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                   // Total value of user deposits withdrawn while staking
+    StakingWithdrawal[] private stakingUserDepositsWithdrawals;     // Information on deposit withdrawals made by users while staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -101,6 +100,12 @@ contract RocketMinipool {
         uint256 addressIndex;                                   // User's index in the address list
     }
 
+    struct StakingWithdrawal {
+        address groupID;                                        // The address of the group the user belonged to
+        uint256 amount;                                         // The amount withdrawn by the user
+        uint256 groupFee;                                       // The fee charged to the user by the group
+    }
+
 
       
     /*** Events ****************/
@@ -162,8 +167,9 @@ contract RocketMinipool {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the address of the casper deposit contract
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        // Add the RPL contract address
+        // Add the token contract addresses
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
+        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
         // Set the initial status
         status.current = 0;
         status.time = now;

@@ -29,15 +29,14 @@ contract RocketMinipoolDelegate {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                         // Version of this contract
-    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                               // Node this minipool is attached to, its creator 
-    Staking private staking;                                            // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                                // Total capacity for user deposits
-    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
-    mapping (address => uint256) private stakingGroupDepositsWithdrawn; // Total value of all deposits withdrawn while staking, by group
-    address[] private stakingGroupDepositsWithdrawnAddresses;
+    uint8   public version = 1;                                     // Version of this contract
+    Status  private status;                                         // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                           // Node this minipool is attached to, its creator 
+    Staking private staking;                                        // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                            // Total capacity for user deposits
+    uint256 private userDepositTotal;                               // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                   // Total value of user deposits withdrawn while staking
+    StakingWithdrawal[] private stakingUserDepositsWithdrawals;     // Information on deposit withdrawals made by users while staking
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
@@ -99,6 +98,12 @@ contract RocketMinipoolDelegate {
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
         uint256 addressIndex;                                   // User's index in the address list
+    }
+
+    struct StakingWithdrawal {
+        address groupID;                                        // The address of the group the user belonged to
+        uint256 amount;                                         // The amount withdrawn by the user
+        uint256 groupFee;                                       // The fee charged to the user by the group
     }
 
 
@@ -202,8 +207,9 @@ contract RocketMinipoolDelegate {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the address of the casper deposit contract
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        // Add the RPL contract address
+        // Add the token contract addresses
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
+        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
     }
     
 
@@ -263,10 +269,7 @@ contract RocketMinipoolDelegate {
         // Transferring RPB to node contract if withdrawn
         else {
             rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
-            if (rpbAmount > 0) {
-                rpbContract = ERC20(getContractAddress("rocketBETHToken"));
-                require(rpbContract.transfer(node.contractAddress, rpbAmount), "RPB balance transfer error.");
-            }
+            if (rpbAmount > 0) { require(rpbContract.transfer(node.contractAddress, rpbAmount), "RPB balance transfer error."); }
         }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rpbAmount, rplAmount, now);
@@ -358,6 +361,12 @@ contract RocketMinipoolDelegate {
         require(users[_user].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
         // Update total user deposits withdrawn while staking
         stakingUserDepositsWithdrawn = stakingUserDepositsWithdrawn.add(_withdrawnAmount);
+        // Update staking deposit withdrawal info
+        stakingUserDepositsWithdrawals.push(StakingWithdrawal({
+            groupID: _groupID,
+            amount: _withdrawnAmount,
+            groupFee: users[_user].feeGroup,
+        }));
         // Decrement user's balance
         users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
         // Increment user's deposit token balance
@@ -387,7 +396,6 @@ contract RocketMinipoolDelegate {
         require(users[_user].groupID == _groupID, "User does not exist in group.");
         require(users[_user].balance > 0, "User does not have remaining balance in minipool.");
         // Get contracts
-        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         // Calculate rewards earned by user
         int256 rewardsEarned = int256(users[_user].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(users[_user].balance);
@@ -585,6 +593,26 @@ contract RocketMinipoolDelegate {
             // Send any unclaimed RPL back to the node contract
             uint256 rplBalance = rplContract.balanceOf(address(this));
             if (rplBalance > 0) { require(rplContract.transfer(node.contractAddress, rplBalance), "RPL balance transfer error."); }
+            // Transfer fees from forfeited rewards to node contract
+            int256 rewardsForfeited = int256(stakingUserDepositsWithdrawn.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(stakingUserDepositsWithdrawn);
+            if (rewardsForfeited > 0) {
+                uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
+                require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
+            }
+            // Transfer fees from forfeited rewards to group contracts
+            for (uint256 i = 0; i < stakingUserDepositsWithdrawals.length; ++i) {
+                StakingWithdrawal memory withdrawal = stakingUserDepositsWithdrawals[i];
+                uint256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
+                if (userRewardsForfeited > 0) {
+                    uint256 groupFeeAmount = uint256(userRewardsForfeited).mul(withdrawal.groupFee).div(calcBase);
+                    require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
+                }
+            }
+            // Get minipool settings
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            // Transfer remaining RPB balance to rocket pool
+            uint256 rpbBalance = rpbContract.balanceOf(address(this));
+            if (rpbBalance > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpbBalance), "RPB balance transfer error."); }
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
             // Close now and send any unclaimed ether back to the node contract
