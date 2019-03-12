@@ -5,6 +5,7 @@ import "../../RocketBase.sol";
 import "../../contract/group/RocketGroupContract.sol";
 import "../../contract/group/RocketGroupAccessorFactory.sol";
 // Interfaces
+import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/settings/RocketGroupSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 // Utilities
@@ -103,7 +104,7 @@ contract RocketGroupAPI is RocketBase {
         // Check the group name isn't already being used
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
         // Ok create the groups contract now, the address is their main ID and this is where the groups fees and more will reside
-        address newContractAddress = address(new RocketGroupContract(address(rocketStorage), msg.sender, _stakingFee));
+        address newContractAddress = address(new RocketGroupContract(address(rocketStorage), msg.sender, _stakingFee, rocketGroupSettings.getDefaultFee()));
         // If there is a fee required to register a group, check that it is sufficient
         if(rocketGroupSettings.getNewFee() > 0) {
             // Fee correct?
@@ -116,7 +117,6 @@ contract RocketGroupAPI is RocketBase {
         // Ok now set our data to key/value pair storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("group.id", newContractAddress)), newContractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", newContractAddress)), _name);
-        rocketStorage.setUint(keccak256(abi.encodePacked("group.fee", newContractAddress)), rocketGroupSettings.getDefaultFee());
         // Set the name as being used now
         rocketStorage.setString(keccak256(abi.encodePacked("group.name", _name)), _name);
         // Store our group address as an index set
@@ -124,6 +124,18 @@ contract RocketGroupAPI is RocketBase {
         // Log it
         emit GroupAdd(newContractAddress, _name, _stakingFee, now);
         // Done
+        return true;
+    }
+
+
+    /// @dev Set the Rocket Pool fee percentage charged to a group's users
+    function setGroupRocketPoolFeePercent(address _ID, uint256 _feePerc) public onlyLatestContract("rocketGroupAPI", address(this)) onlySuperUser() returns (bool) {
+        // Check that the group exists
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("group.id", _ID))) != address(0x0), "Invalid group ID");
+        // Set fee percentage
+        RocketGroupContractInterface groupContract = RocketGroupContractInterface(_ID);
+        groupContract.setFeePercRocketPool(_feePerc);
+        // Success
         return true;
     }
 
