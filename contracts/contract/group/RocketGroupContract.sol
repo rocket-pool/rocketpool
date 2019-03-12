@@ -102,7 +102,7 @@ contract RocketGroupContract {
     }
 
     /// @dev Get the fee that Rocket Pool charges for this group given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function getFeePercRocketPool() public returns(uint256) {
+    function getFeePercRocketPool() public view returns(uint256) {
         return feePercRocketPool;
     }
 
