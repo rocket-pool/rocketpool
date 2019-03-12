@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";

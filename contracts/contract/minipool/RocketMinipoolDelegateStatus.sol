@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -261,26 +262,30 @@ contract RocketMinipoolDelegateStatus {
             // Send any unclaimed RPL back to the node contract
             uint256 rplBalance = rplContract.balanceOf(address(this));
             if (rplBalance > 0) { require(rplContract.transfer(node.contractAddress, rplBalance), "RPL balance transfer error."); }
-            // Transfer fees from forfeited rewards to node contract
-            int256 rewardsForfeited = int256(stakingUserDepositsWithdrawn.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(stakingUserDepositsWithdrawn);
-            if (rewardsForfeited > 0) {
-                uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
-                require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
-            }
-            // Transfer fees from forfeited rewards to group contracts
-            for (uint256 i = 0; i < stakingUserDepositsWithdrawals.length; ++i) {
-                StakingWithdrawal memory withdrawal = stakingUserDepositsWithdrawals[i];
-                int256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
-                if (userRewardsForfeited > 0) {
-                    uint256 groupFeeAmount = uint256(userRewardsForfeited).mul(withdrawal.groupFee).div(calcBase);
-                    require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
+            // Transfer fees from forfeited rewards
+            if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
+                // Transfer fees to node contract
+                int256 rewardsForfeited = int256(stakingUserDepositsWithdrawn.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(stakingUserDepositsWithdrawn);
+                if (rewardsForfeited > 0) {
+                    uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
+                    require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
+                }
+                // Transfer fees to group contracts
+                for (uint256 i = 0; i < stakingUserDepositsWithdrawals.length; ++i) {
+                    StakingWithdrawal memory withdrawal = stakingUserDepositsWithdrawals[i];
+                    int256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
+                    if (userRewardsForfeited > 0) {
+                        uint256 groupFeeAmount = uint256(userRewardsForfeited).mul(withdrawal.groupFee).div(calcBase);
+                        require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
+                    }
                 }
             }
-            // Get minipool settings
-            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
             // Transfer remaining RPB balance to rocket pool
             uint256 rpbBalance = rpbContract.balanceOf(address(this));
-            if (rpbBalance > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpbBalance), "RPB balance transfer error."); }
+            if (rpbBalance > 0) {
+                rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+                require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpbBalance), "RPB balance transfer error.");
+            }
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
             // Close now and send any unclaimed ether back to the node contract

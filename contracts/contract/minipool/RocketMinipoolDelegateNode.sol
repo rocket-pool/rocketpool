@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -175,13 +176,6 @@ contract RocketMinipoolDelegateNode {
     }
 
 
-    /// @dev Update minipool status
-    function updateStatus() private {
-        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("updateStatus()"));
-        require(success, "Delegate call failed.");
-    }
-
-
     /*** Node methods ********/
 
 
@@ -234,7 +228,8 @@ contract RocketMinipoolDelegateNode {
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rpbAmount, rplAmount, now);
         // Update the status
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }

@@ -4,6 +4,7 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -165,13 +166,6 @@ contract RocketMinipoolDelegateUser {
     }
 
 
-    /// @dev Update minipool status
-    function updateStatus() private {
-        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("updateStatus()"));
-        require(success, "Delegate call failed.");
-    }
-
-
     /*** User methods ********/
 
 
@@ -193,7 +187,8 @@ contract RocketMinipoolDelegateUser {
         // All good? Fire the event for the new deposit
         emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[_user].balance, now);
         // Update the status
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }
@@ -224,7 +219,8 @@ contract RocketMinipoolDelegateUser {
         // All good? Fire the event for the refund
         emit PoolTransfer(address(this), _refundAddress, keccak256("refund"), amount, 0, now);
         // Update the status
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }
@@ -262,7 +258,8 @@ contract RocketMinipoolDelegateUser {
         // All good? Fire the event for the withdrawal
         emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, 0, now);
         // Update the status
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }
@@ -307,7 +304,8 @@ contract RocketMinipoolDelegateUser {
         // All good? Fire the event for the withdrawal
         emit PoolTransfer(address(this), _withdrawalAddress, keccak256("withdrawal"), amount, 0, now);
         // Update the status
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }
@@ -341,7 +339,8 @@ contract RocketMinipoolDelegateUser {
             // Fire the event
             emit UserAdded(_user, now);
             // Update the status of the pool
-            updateStatus();
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+            minipool.updateStatus();
             // Success
             return true;
         }
@@ -364,7 +363,8 @@ contract RocketMinipoolDelegateUser {
         // Fire the event
         emit UserRemoved(_user, now);
         // Update the status of the pool
-        updateStatus();
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        minipool.updateStatus();
         // Success
         return true;
     }
