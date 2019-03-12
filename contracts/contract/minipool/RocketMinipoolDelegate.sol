@@ -437,8 +437,6 @@ contract RocketMinipoolDelegate {
         require(_user != address(0x0), "User address invalid.");
         // Get the users group contract 
         rocketGroupContract = RocketGroupContractInterface(_groupID);
-        // Get the settings
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check the user isn't already registered
         if (users[_user].exists == false) {
             // Add the new user to the mapping of User structs
@@ -449,7 +447,7 @@ contract RocketMinipoolDelegate {
                 balance: 0,
                 rewards: 0,
                 stakingTokensWithdrawn: 0,
-                feeRP: rocketMinipoolSettings.getMinipoolWithdrawalFeePerc(),
+                feeRP: rocketGroupContract.getFeePercRocketPool(),
                 feeGroup: rocketGroupContract.getFeePerc(),
                 exists: true,
                 created: now,
