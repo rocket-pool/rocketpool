@@ -14,7 +14,7 @@ import "../../interface/utils/pubsub/PublisherInterface.sol";
 import "../../lib/SafeMath.sol";
 
 
-/// @title A minipool under the main RocketPool, all major logic is contained within the RocketMinipoolDelegate contract which is upgradable when minipools are deployed
+/// @title A minipool under the main RocketPool, all major logic is contained within the RocketMinipoolDelegate contracts which are upgradable when minipools are deployed
 /// @author David Rugendyke
 
 contract RocketMinipool {
@@ -207,25 +207,6 @@ contract RocketMinipool {
     }
 
 
-    /*
-    /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
-    function getDelegateBoolean(string memory _signatureMethod) public returns (bool) {
-        bytes4 signature = getDelegateSignature(_signatureMethod);
-        address minipoolDelegate = getContractAddress("rocketMinipoolDelegate");
-        bool response = false;
-        assembly {
-            let returnSize := 32
-            let mem := mload(0x40)
-            mstore(mem, signature)
-            let err := delegatecall(sub(gas, 10000), minipoolDelegate, mem, 0x04, mem, returnSize)
-            response := mload(mem)
-        }
-        return response; 
-    }
-    */
-   
-    
-
     /*** NODE ***********************************************/
 
     // Getters
@@ -271,7 +252,7 @@ contract RocketMinipool {
     /// @dev Set the ether / rpl deposit and check it
     function nodeDeposit() public payable isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("nodeDeposit()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateNode").delegatecall(abi.encodeWithSignature("nodeDeposit()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -280,7 +261,7 @@ contract RocketMinipool {
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("nodeWithdraw()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateNode").delegatecall(abi.encodeWithSignature("nodeWithdraw()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -339,7 +320,7 @@ contract RocketMinipool {
     /// @param _groupID The 3rd party group the user belongs too
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -352,7 +333,7 @@ contract RocketMinipool {
     /// @param _refundAddress The address to refund the user's deposit to
     function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -367,7 +348,7 @@ contract RocketMinipool {
     /// @param _withdrawnAddress The address the user's deposit was withdrawn to
     function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -380,7 +361,7 @@ contract RocketMinipool {
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -443,7 +424,7 @@ contract RocketMinipool {
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("updateStatus()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("updateStatus()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -452,7 +433,7 @@ contract RocketMinipool {
     /// @dev Sets the minipool to logged out
     function logoutMinipool() public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
         // Will update the status of the pool if conditions are correct
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("logoutMinipool()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("logoutMinipool()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -462,7 +443,7 @@ contract RocketMinipool {
     /// @param _withdrawalBalance The minipool's balance at withdrawal
     function withdrawMinipool(uint256 _withdrawalBalance) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
         // Will update the status of the pool if conditions are correct
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdrawMinipool(uint256)", _withdrawalBalance));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("withdrawMinipool(uint256)", _withdrawalBalance));
         require(success, "Delegate call failed.");
         // Success
         return true;

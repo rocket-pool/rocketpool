@@ -41,7 +41,9 @@ contracts.rocketNodeKeys = artifacts.require('./node/RocketNodeKeys.sol');
 contracts.rocketNodeTasks = artifacts.require('./node/RocketNodeTasks.sol');
 contracts.rocketNodeWatchtower = artifacts.require('./node/RocketNodeWatchtower.sol');
 // Minipool
-contracts.rocketMinipoolDelegate = artifacts.require('./minipool/RocketMinipoolDelegate.sol');
+contracts.rocketMinipoolDelegateNode = artifacts.require('./minipool/RocketMinipoolDelegateNode.sol');
+contracts.rocketMinipoolDelegateStatus = artifacts.require('./minipool/RocketMinipoolDelegateStatus.sol');
+contracts.rocketMinipoolDelegateUser = artifacts.require('./minipool/RocketMinipoolDelegateUser.sol');
 contracts.rocketMinipoolFactory = artifacts.require('./minipool/RocketMinipoolFactory.sol');
 contracts.rocketMinipoolSet = artifacts.require('./minipool/RocketMinipoolSet.sol');
 // Settings
