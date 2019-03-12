@@ -19,7 +19,7 @@ contract RocketGroupSettings is RocketBase {
             setDefaultFee(0.02 ether);                                                          // The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
             setNewAllowed(true);                                                                // Are new groups allowed to be added
             setNewFee(0.05 ether);                                                              // The amount of ether required to register a new group 
-            setNewFeeAddress(msg.sender);                                                       // The address to send the new group fee too
+            setNewFeeAddress(msg.sender);                                                       // The address to send the new group fee to
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.group.init")), true);
         }

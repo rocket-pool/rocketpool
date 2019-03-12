@@ -38,7 +38,6 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMinipoolStakingDuration("6m",  1052000);                                         // 6 Months
             setMinipoolStakingDuration("12m", 2104000);                                         // 12 Months
-            setMinipoolWithdrawalFeePerc(0.05 ether);                                           // The default fee given as a % of 1 Ether (eg 5%)    
             setMinipoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
             setMinipoolBackupCollectDuration(526000);                                           // The block count limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit - 3months default
@@ -123,11 +122,6 @@ contract RocketMinipoolSettings is RocketBase {
         return getMinipoolStakingDuration("3m");
     }
 
-    /// @dev The default fee given as a % of 1 Ether (eg 5%)    
-    function getMinipoolWithdrawalFeePerc() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.fee.withdrawal.perc")));
-    }
-
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
     function getMinipoolWithdrawalFeeDepositAddress() public view returns (address) {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("settings.minipool.fee.withdrawal.address")));
@@ -178,11 +172,6 @@ contract RocketMinipoolSettings is RocketBase {
     function setMinipoolStakingDuration(string memory _option, uint256 _blocks) public onlySuperUser {
         require(_blocks > 0, "Amount of blocks for staking duration not specified.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _option)), _blocks);  
-    }
-
-    /// @dev Set the Rocket Pool post Casper withdrawal fee given as a % of 1 Ether (eg 5% = 0.05 Ether = 50000000000000000 Wei)
-    function setMinipoolWithdrawalFeePerc(uint256 _withdrawalFeePerc) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.fee.withdrawal.perc")), _withdrawalFeePerc); 
     }
 
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
