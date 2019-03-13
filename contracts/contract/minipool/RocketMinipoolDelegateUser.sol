@@ -288,37 +288,33 @@ contract RocketMinipoolDelegateUser {
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
         require(status.current == 4, "Minipool is not currently allowing withdrawals.");
+        require(staking.balanceStart > 0, "Invalid balance at staking start");
         // Check user address, group ID and balance
         require(users[userID].exists, "User does not exist in minipool.");
         require(users[userID].groupID == _groupID, "User does not exist in group.");
         require(users[userID].balance > 0, "User does not have remaining balance in minipool.");
         // Get contracts
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        // Calculate rewards earned by user
+        int256 rewardsEarned = int256(users[userID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(users[userID].balance);
         // Withdrawal amount
-        uint256 amount = users[userID].balance;
-        // Check staking balances
-        if (staking.balanceStart > 0) {
-            // Calculate rewards earned by user
-            int256 rewardsEarned = int256(users[userID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(users[userID].balance);
-            // Set withdrawal amount
-            amount = uint256(int256(users[userID].balance) + rewardsEarned);
-            // Pay fees if rewards were earned
-            if (rewardsEarned > 0) {
-                // Get the settings
-                rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-                // Calculate and subtract RP and node fees from rewards
-                uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[userID].feeRP).div(calcBase);
-                uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
-                rewardsEarned -= int256(rpFeeAmount + nodeFeeAmount);
-                // Calculate group fee from remaining rewards
-                uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[userID].feeGroup).div(calcBase);
-                // Update withdrawal amount
-                amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
-                // Transfer fees
-                require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
-                require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
-                if (groupFeeAmount > 0) { require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
-            }
+        uint256 amount = uint256(int256(users[userID].balance) + rewardsEarned);
+        // Pay fees if rewards were earned
+        if (rewardsEarned > 0) {
+            // Get the settings
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            // Calculate and subtract RP and node fees from rewards
+            uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[userID].feeRP).div(calcBase);
+            uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
+            rewardsEarned -= int256(rpFeeAmount + nodeFeeAmount);
+            // Calculate group fee from remaining rewards
+            uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[userID].feeGroup).div(calcBase);
+            // Update withdrawal amount
+            amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
+            // Transfer fees
+            require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
+            require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
+            if (groupFeeAmount > 0) { require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
         if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
