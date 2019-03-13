@@ -221,7 +221,7 @@ contract RocketMinipoolDelegateNode {
             if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
         }
         // Transferring RPB to node contract if withdrawn
-        else {
+        else if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
             rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
             if (rpbAmount > 0) { require(rpbContract.transfer(node.contractAddress, rpbAmount), "RPB balance transfer error."); }
         }
