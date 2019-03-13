@@ -346,9 +346,6 @@ contract RocketMinipoolDelegateUser {
             userAddresses.push(_user);
             // Fire the event
             emit UserAdded(_user, now);
-            // Update the status of the pool
-            RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
-            minipool.updateStatus();
             // Success
             return true;
         }
@@ -370,9 +367,6 @@ contract RocketMinipoolDelegateUser {
         delete users[_user];
         // Fire the event
         emit UserRemoved(_user, now);
-        // Update the status of the pool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
-        minipool.updateStatus();
         // Success
         return true;
     }
