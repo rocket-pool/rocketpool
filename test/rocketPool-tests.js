@@ -20,6 +20,7 @@ import rocketDepositAPIDepositTests from './rocket-deposit/rocket-deposit-api-de
 import rocketDepositAPIRefundQueueTests from './rocket-deposit/rocket-deposit-api-refund-queue-tests';
 import rocketDepositAPIRefundMinipoolTests from './rocket-deposit/rocket-deposit-api-refund-minipool-tests';
 import rocketDepositAPIWithdrawalStakingTests from './rocket-deposit/rocket-deposit-api-withdrawal-staking-tests';
+import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
 import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 
@@ -55,6 +56,7 @@ rocketDepositAPIDepositTests();
 rocketDepositAPIRefundQueueTests();
 rocketDepositAPIRefundMinipoolTests();
 rocketDepositAPIWithdrawalStakingTests();
+rocketDepositAPIWithdrawalTests();
 rocketRPIPTests();
 rocketUpgradeTests();
 
