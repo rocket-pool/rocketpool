@@ -297,7 +297,7 @@ contract RocketMinipoolDelegateUser {
         // Withdrawal amount
         uint256 amount = users[userID].balance;
         // Check staking balances
-        if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
+        if (staking.balanceStart > 0) {
             // Calculate rewards earned by user
             int256 rewardsEarned = int256(users[userID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(users[userID].balance);
             // Set withdrawal amount
