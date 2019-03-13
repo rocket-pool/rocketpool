@@ -321,7 +321,7 @@ contract RocketMinipoolDelegateUser {
             }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
-        require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address");
+        if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
         // Remove user
         removeUser(_user, _groupID);
         // Publish withdrawal event
