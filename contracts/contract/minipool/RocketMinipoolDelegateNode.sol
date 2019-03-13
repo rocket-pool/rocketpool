@@ -41,9 +41,9 @@ contract RocketMinipoolDelegateNode {
     bytes32[] private stakingWithdrawalIDs;
 
     // Users
-    mapping (address => User) private users;                    // Users in this pool
+    mapping (bytes32 => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
-    address[] private userAddresses;                            // Users in this pool addresses for iteration
+    bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
     /*** Contracts **************/
@@ -89,16 +89,15 @@ contract RocketMinipoolDelegateNode {
 
     struct User {
         address user;                                           // Address of the user
-        address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
+        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
-        int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
-        uint256 addressIndex;                                   // User's index in the address list
+        uint256 idIndex;                                        // User's index in the ID list
     }
 
     struct StakingWithdrawal {

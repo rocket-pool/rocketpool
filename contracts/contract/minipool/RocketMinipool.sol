@@ -41,9 +41,9 @@ contract RocketMinipool {
     bytes32[] private stakingWithdrawalIDs;
 
     // Users
-    mapping (address => User) private users;                    // Users in this pool
+    mapping (bytes32 => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
-    address[] private userAddresses;                            // Users in this pool addresses for iteration
+    bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
     /*** Contracts **************/
@@ -89,16 +89,15 @@ contract RocketMinipool {
 
     struct User {
         address user;                                           // Address of the user
-        address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
+        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
-        int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
-        uint256 addressIndex;                                   // User's index in the address list
+        uint256 idIndex;                                        // User's index in the ID list
     }
 
     struct StakingWithdrawal {
@@ -140,8 +139,9 @@ contract RocketMinipool {
 
     /// @dev Only registered users with this pool
     /// @param _user The users address.
-    modifier isPoolUser(address _user) {
-        require(_user != address(0x0) && users[_user].exists != false);
+    modifier isPoolUser(address _user, address _group) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        require(_user != address(0x0) && _group != address(0x0) && users[userID].exists != false);
         _;
     }
 
@@ -277,12 +277,13 @@ contract RocketMinipool {
 
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
-        return userAddresses.length;
+        return userIDs.length;
     }
 
     /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _user) public view returns(bool) {
-        return users[_user].exists;
+    function getUserExists(address _user, address _group) public view returns(bool) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].exists;
     }
 
     /// @dev Returns the users original address specified for withdrawals
@@ -296,23 +297,26 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
-    function getUserBackupAddressOK(address _user, address _userBackupAddress) public view isPoolUser(_user) returns(bool) {
+    function getUserBackupAddressOK(address _user, address _group, address _userBackupAddress) public view isPoolUser(_user, _group) returns(bool) {
         return usersBackupAddress[_userBackupAddress] == _user;
     }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
-    function getUserHasDeposit(address _user) public view returns(bool) {
-        return users[_user].exists && users[_user].balance > 0;
+    function getUserHasDeposit(address _user, address _group) public view returns(bool) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].exists && users[userID].balance > 0;
     }
 
     /// @dev Returns the amount of the users deposit
-    function getUserDeposit(address _user) public view isPoolUser(_user) returns(uint256) {
-        return users[_user].balance;
+    function getUserDeposit(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].balance;
     }
 
     /// @dev Returns the amount of the deposit tokens the user has taken out
-    function getUserStakingTokensWithdrawn(address _user) public view isPoolUser(_user) returns(uint256) {
-        return users[_user].stakingTokensWithdrawn;
+    function getUserStakingTokensWithdrawn(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].stakingTokensWithdrawn;
     }
 
 
