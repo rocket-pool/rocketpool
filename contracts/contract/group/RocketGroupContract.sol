@@ -2,6 +2,7 @@ pragma solidity 0.5.0;
 
 // Interfaces
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/settings/RocketGroupSettingsInterface.sol";
 
 
 /// @title The contract for a group that operates in Rocket Pool, holds the entities fees and more
@@ -25,6 +26,7 @@ contract RocketGroupContract {
     /*** Contracts ***************/
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main Rocket Pool storage contract where primary persistant storage is maintained
+    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);
 
     /*** Events ******************/
 
@@ -72,8 +74,12 @@ contract RocketGroupContract {
     * @dev Throws if fee percentage is invalid.
     */
     modifier onlyValidFeePerc(uint256 _stakingFeePerc) {
-        // Check its a legit amount
         require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
+        _;
+    }
+    modifier onlyValidFeePercRocketPool(uint256 _stakingFeePercRocketPool) {
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
+        require(_stakingFeePercRocketPool <= rocketGroupSettings.getMaxFee(), "Rocket Pool fee is above maximum amount.");
         _;
     }
 
@@ -81,7 +87,7 @@ contract RocketGroupContract {
     /*** Constructor *************/
 
     /// @dev RocketGroupContract constructor
-    constructor(address _rocketStorageAddress, address _owner, uint256 _stakingFeePerc, uint256 _stakingFeePercRocketPool) public onlyValidFeePerc(_stakingFeePerc) onlyValidFeePerc(_stakingFeePercRocketPool) {
+    constructor(address _rocketStorageAddress, address _owner, uint256 _stakingFeePerc, uint256 _stakingFeePercRocketPool) public onlyValidFeePerc(_stakingFeePerc) onlyValidFeePercRocketPool(_stakingFeePercRocketPool) {
         // Version
         version = 1;
         // Update the storage contract address
@@ -121,15 +127,13 @@ contract RocketGroupContract {
 
     /// @dev Set the fee this group charges their users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
     function setFeePerc(uint256 _stakingFeePerc) public onlyGroupOwner onlyValidFeePerc(_stakingFeePerc) returns(bool) {
-        // Ok set it
         feePerc = _stakingFeePerc;
-        // Done
         return true;
     }
 
     /// @dev Set the fee Rocket Pool charges this group's users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function setFeePercRocketPool(uint256 _stakingFeePerc) public onlyRocketGroupAPI onlyValidFeePerc(_stakingFeePerc) returns(bool) {
-        feePercRocketPool = _stakingFeePerc;
+    function setFeePercRocketPool(uint256 _stakingFeePercRocketPool) public onlyRocketGroupAPI onlyValidFeePercRocketPool(_stakingFeePercRocketPool) returns(bool) {
+        feePercRocketPool = _stakingFeePercRocketPool;
         return true;
     }
 

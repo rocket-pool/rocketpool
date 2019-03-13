@@ -53,7 +53,7 @@ contract CalculateNodeFee is RocketBase {
             uint256 feePerc = rocketNodeSettings.getFeePerc();
             uint256 feeVoteCyclePercChange = rocketNodeSettings.getFeeVoteCyclePercChange();
             uint256 minFeePerc = 0 ether; // 0%
-            uint256 maxFeePerc = 1 ether; // 100%
+            uint256 maxFeePerc = rocketNodeSettings.getMaxFeePerc();
             if (increaseVotes > decreaseVotes && increaseVotes > noChangeVotes && feePerc <= maxFeePerc.sub(feeVoteCyclePercChange)) {
                 rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), feePerc.add(feeVoteCyclePercChange));
             }
