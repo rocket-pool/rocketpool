@@ -87,7 +87,7 @@ contract RocketGroupContract {
     /*** Constructor *************/
 
     /// @dev RocketGroupContract constructor
-    constructor(address _rocketStorageAddress, address _owner, uint256 _stakingFeePerc, uint256 _stakingFeePercRocketPool) public onlyValidFeePerc(_stakingFeePerc) onlyValidFeePercRocketPool(_stakingFeePercRocketPool) {
+    constructor(address _rocketStorageAddress, address _owner, uint256 _stakingFeePerc) public onlyValidFeePerc(_stakingFeePerc) {
         // Version
         version = 1;
         // Update the storage contract address
@@ -97,7 +97,8 @@ contract RocketGroupContract {
         // Set the staking fee percent
         feePerc = _stakingFeePerc;
         // Set the RP staking fee percent
-        feePercRocketPool = _stakingFeePercRocketPool;
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
+        feePercRocketPool = rocketGroupSettings.getDefaultFee();
     }
 
     /*** Getters *************/

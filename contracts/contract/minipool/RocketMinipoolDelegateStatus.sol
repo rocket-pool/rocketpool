@@ -278,7 +278,7 @@ contract RocketMinipoolDelegateStatus {
                         uint256 rpFeeAmount = uint256(rewardsForfeited).mul(withdrawal.feeRP).div(calcBase);
                         uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
                         nodeFeeTotal = nodeFeeTotal.add(nodeFeeAmount);
-                        rewardsForfeited -= (rpFeeAmount + nodeFeeAmount);
+                        rewardsForfeited -= int256(rpFeeAmount + nodeFeeAmount);
                         // Calculate group fee from remaining rewards and transfer
                         uint256 groupFeeAmount = uint256(rewardsForfeited).mul(withdrawal.feeGroup).div(calcBase);
                         if (groupFeeAmount > 0) { require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }

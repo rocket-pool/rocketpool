@@ -302,7 +302,7 @@ contract RocketMinipoolDelegateUser {
                 // Calculate and subtract RP and node fees from rewards
                 uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[_user].feeRP).div(calcBase);
                 uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
-                rewardsEarned -= (rpFeeAmount + nodeFeeAmount);
+                rewardsEarned -= int256(rpFeeAmount + nodeFeeAmount);
                 // Calculate group fee from remaining rewards
                 uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[_user].feeGroup).div(calcBase);
                 // Update withdrawal amount
