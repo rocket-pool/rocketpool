@@ -312,8 +312,8 @@ contract RocketMinipoolDelegateUser {
             // Update withdrawal amount
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
             // Transfer fees
-            require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
-            require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
+            if (rpFeeAmount > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
+            if (nodeFeeAmount > 0) { require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
             if (groupFeeAmount > 0) { require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
