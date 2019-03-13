@@ -30,20 +30,20 @@ contract RocketMinipoolDelegateUser {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                     // Version of this contract
-    Status  private status;                                         // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                           // Node this minipool is attached to, its creator 
-    Staking private staking;                                        // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                            // Total capacity for user deposits
-    uint256 private userDepositTotal;                               // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;                   // Total value of user deposits withdrawn while staking
-    StakingWithdrawal[] private stakingUserDepositsWithdrawals;     // Information on deposit withdrawals made by users while staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
+    bytes32[] private stakingWithdrawalIDs;
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
     address[] private userAddresses;                            // Users in this pool addresses for iteration
-    
 
 
     /*** Contracts **************/
@@ -104,7 +104,9 @@ contract RocketMinipoolDelegateUser {
     struct StakingWithdrawal {
         address groupID;                                        // The address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
-        uint256 groupFee;                                       // The fee charged to the user by the group
+        uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
+        uint256 feeGroup;                                       // The fee charged to the user by the group
+        bool exists;
     }
 
 
@@ -238,14 +240,22 @@ contract RocketMinipoolDelegateUser {
         require(users[_user].exists, "User does not exist in minipool.");
         require(users[_user].groupID == _groupID, "User does not exist in group.");
         require(users[_user].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
+        // Get user/group ID
+        bytes32 userGroupID = keccak256(abi.encodePacked(_user, _groupID));
         // Update total user deposits withdrawn while staking
         stakingUserDepositsWithdrawn = stakingUserDepositsWithdrawn.add(_withdrawnAmount);
         // Update staking deposit withdrawal info
-        stakingUserDepositsWithdrawals.push(StakingWithdrawal({
-            groupID: _groupID,
-            amount: _withdrawnAmount,
-            groupFee: users[_user].feeGroup
-        }));
+        if (!stakingWithdrawals[userGroupID].exists) {
+            stakingWithdrawals[userGroupID] = StakingWithdrawal({
+                groupID: _groupID,
+                amount: 0,
+                feeRP: users[_user].feeRP,
+                feeGroup: users[_user].feeGroup,
+                exists: true
+            });
+            stakingWithdrawalIDs.push(userGroupID);
+        }
+        stakingWithdrawals[userGroupID].amount = stakingWithdrawals[userGroupID].amount.add(_withdrawnAmount);
         // Decrement user's balance
         users[_user].balance = users[_user].balance.sub(_withdrawnAmount);
         // Increment user's deposit token balance
@@ -300,7 +310,7 @@ contract RocketMinipoolDelegateUser {
                 // Transfer fees
                 require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
                 require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
-                require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
+                if (groupFeeAmount > 0) { require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
             }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens

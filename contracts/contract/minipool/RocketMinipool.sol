@@ -30,20 +30,20 @@ contract RocketMinipool {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                     // Version of this contract
-    Status  private status;                                         // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                           // Node this minipool is attached to, its creator 
-    Staking private staking;                                        // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                            // Total capacity for user deposits
-    uint256 private userDepositTotal;                               // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;                   // Total value of user deposits withdrawn while staking
-    StakingWithdrawal[] private stakingUserDepositsWithdrawals;     // Information on deposit withdrawals made by users while staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
+    bytes32[] private stakingWithdrawalIDs;
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
     address[] private userAddresses;                            // Users in this pool addresses for iteration
-    
 
 
     /*** Contracts **************/
@@ -104,7 +104,9 @@ contract RocketMinipool {
     struct StakingWithdrawal {
         address groupID;                                        // The address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
-        uint256 groupFee;                                       // The fee charged to the user by the group
+        uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
+        uint256 feeGroup;                                       // The fee charged to the user by the group
+        bool exists;
     }
 
 

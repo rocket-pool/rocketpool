@@ -30,20 +30,20 @@ contract RocketMinipoolDelegateStatus {
     uint256 private calcBase = 1 ether;
 
     // General
-    uint8   public version = 1;                                     // Version of this contract
-    Status  private status;                                         // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                           // Node this minipool is attached to, its creator 
-    Staking private staking;                                        // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                            // Total capacity for user deposits
-    uint256 private userDepositTotal;                               // Total value of all assigned user deposits
-    uint256 private stakingUserDepositsWithdrawn;                   // Total value of user deposits withdrawn while staking
-    StakingWithdrawal[] private stakingUserDepositsWithdrawals;     // Information on deposit withdrawals made by users while staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
+    bytes32[] private stakingWithdrawalIDs;
 
     // Users
     mapping (address => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
     address[] private userAddresses;                            // Users in this pool addresses for iteration
-    
 
 
     /*** Contracts **************/
@@ -104,7 +104,9 @@ contract RocketMinipoolDelegateStatus {
     struct StakingWithdrawal {
         address groupID;                                        // The address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
-        uint256 groupFee;                                       // The fee charged to the user by the group
+        uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
+        uint256 feeGroup;                                       // The fee charged to the user by the group
+        bool exists;
     }
 
 
@@ -262,23 +264,28 @@ contract RocketMinipoolDelegateStatus {
             // Send any unclaimed RPL back to the node contract
             uint256 rplBalance = rplContract.balanceOf(address(this));
             if (rplBalance > 0) { require(rplContract.transfer(node.contractAddress, rplBalance), "RPL balance transfer error."); }
-            // Transfer fees from forfeited rewards
+            // Process fees for forfeited rewards if staking completed
             if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
-                // Transfer fees to node contract
-                int256 rewardsForfeited = int256(stakingUserDepositsWithdrawn.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(stakingUserDepositsWithdrawn);
-                if (rewardsForfeited > 0) {
-                    uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
-                    require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address");
-                }
-                // Transfer fees to group contracts
-                for (uint256 i = 0; i < stakingUserDepositsWithdrawals.length; ++i) {
-                    StakingWithdrawal memory withdrawal = stakingUserDepositsWithdrawals[i];
-                    int256 userRewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
-                    if (userRewardsForfeited > 0) {
-                        uint256 groupFeeAmount = uint256(userRewardsForfeited).mul(withdrawal.groupFee).div(calcBase);
-                        require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address");
+                // Total node fees
+                uint256 nodeFeeTotal = 0;
+                // Process staking withdrawals
+                for (uint256 i = 0; i < stakingWithdrawalIDs.length; ++i) {
+                    StakingWithdrawal memory withdrawal = stakingWithdrawals[stakingWithdrawalIDs[i]];
+                    // Calculate rewards forfeited by user
+                    int256 rewardsForfeited = int256(withdrawal.amount.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(withdrawal.amount);
+                    if (rewardsForfeited > 0) {
+                        // Calculate and subtract RP and node fees from rewards
+                        uint256 rpFeeAmount = uint256(rewardsForfeited).mul(withdrawal.feeRP).div(calcBase);
+                        uint256 nodeFeeAmount = uint256(rewardsForfeited).mul(node.userFee).div(calcBase);
+                        nodeFeeTotal = nodeFeeTotal.add(nodeFeeAmount);
+                        rewardsForfeited -= (rpFeeAmount + nodeFeeAmount);
+                        // Calculate group fee from remaining rewards and transfer
+                        uint256 groupFeeAmount = uint256(rewardsForfeited).mul(withdrawal.feeGroup).div(calcBase);
+                        if (groupFeeAmount > 0) { require(rpbContract.transfer(withdrawal.groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
                     }
                 }
+                // Transfer total node fees
+                if (nodeFeeTotal > 0) { require(rpbContract.transfer(node.contractAddress, nodeFeeTotal), "Node operator fee could not be transferred to node contract address"); }
             }
             // Transfer remaining RPB balance to rocket pool
             uint256 rpbBalance = rpbContract.balanceOf(address(this));
