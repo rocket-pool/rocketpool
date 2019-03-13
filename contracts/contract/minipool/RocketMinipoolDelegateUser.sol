@@ -289,10 +289,13 @@ contract RocketMinipoolDelegateUser {
             if (rewardsEarned > 0) {
                 // Get the settings
                 rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-                // Get fee amounts
+                // Calculate and subtract RP and node fees from rewards
                 uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[_user].feeRP).div(calcBase);
                 uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
+                rewardsEarned -= (rpFeeAmount + nodeFeeAmount);
+                // Calculate group fee from remaining rewards
                 uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[_user].feeGroup).div(calcBase);
+                // Update withdrawal amount
                 amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
                 // Transfer fees
                 require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address");
