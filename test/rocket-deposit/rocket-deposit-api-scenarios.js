@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
+import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -304,18 +304,22 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let groupID = await withdrawerContract.groupID.call();
     let groupContract = await RocketGroupContract.at(groupID);
 
-    // Get RP, node and group fee/reward addresses
-    let rpFeeAccount = await rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress.call();
-    let nodeOwner = await minipool.getNodeOwner.call();
-    let groupOwner = await groupContract.owner.call();
+    // Get node contract
+    let nodeContractAddress = await minipool.getNodeContract.call();
+    let nodeContract = await RocketNodeContract.at(nodeContractAddress);
+
+    // Get RP, node and group fee addresses
+    let rpFeeAddress = await rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress.call();
+    let nodeFeeAddress = await nodeContract.getRewardsAddress.call();
+    let groupFeeAddress = await groupContract.getFeeAddress.call();
 
     // Get initial balances
     let minipoolEthBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let minipoolRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(minipoolAddress));
     let userRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
-    let rpRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAccount));
-    let nodeRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(nodeOwner));
-    let groupRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(groupOwner));
+    let rpRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAddress));
+    let nodeRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(nodeFeeAddress));
+    let groupRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(groupFeeAddress));
 
     // Get initial minipool user status
     let userCount1 = parseInt(await minipool.getUserCount.call());
@@ -330,9 +334,9 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let minipoolEthBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let minipoolRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(minipoolAddress));
     let userRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
-    let rpRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAccount));
-    let nodeRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(nodeOwner));
-    let groupRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(groupOwner));
+    let rpRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAddress));
+    let nodeRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(nodeFeeAddress));
+    let groupRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(groupFeeAddress));
 
     // Get updated minipool user status
     let userCount2 = parseInt(await minipool.getUserCount.call());
