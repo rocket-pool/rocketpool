@@ -254,7 +254,7 @@ contract RocketMinipoolDelegateUser {
         // Update staking deposit withdrawal info
         if (!stakingWithdrawals[userID].exists) {
             stakingWithdrawals[userID] = StakingWithdrawal({
-                groupOwner: rocketGroupContract.owner,
+                groupOwner: rocketGroupContract.getOwner(),
                 amount: 0,
                 feeRP: users[userID].feeRP,
                 feeGroup: users[userID].feeGroup,
@@ -317,7 +317,7 @@ contract RocketMinipoolDelegateUser {
             // Transfer fees
             if (rpFeeAmount > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
             if (nodeFeeAmount > 0) { require(rpbContract.transfer(node.owner, nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
-            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.owner, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
+            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.getOwner(), groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
         if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }

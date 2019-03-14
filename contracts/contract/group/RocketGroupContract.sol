@@ -103,6 +103,11 @@ contract RocketGroupContract {
 
     /*** Getters *************/
 
+    /// @dev Get the group owner
+    function getOwner() public view returns(address) {
+        return owner;
+    }
+
     /// @dev The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     function getFeePerc() public view returns(uint256) {
         return feePerc;
