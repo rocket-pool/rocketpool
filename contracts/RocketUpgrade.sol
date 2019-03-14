@@ -63,9 +63,9 @@ contract RocketUpgrade is RocketBase {
             // Check for RPL
             tokenContract = ERC20(getContractAddress("rocketPoolToken"));
             require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPL balance");
-            //// Check for RPD
-            //tokenContract = ERC20(getContractAddress("rocketDepositToken"));
-            //require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPD balance");
+            // Check for RPB
+            tokenContract = ERC20(getContractAddress("rocketBETHToken"));
+            require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPB balance");
         }
         // Replace the address for the name lookup - contract addresses can be looked up by their name or verified by a reverse address lookup
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.name", _name)), _upgradedContractAddress);
