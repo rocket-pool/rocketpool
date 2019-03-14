@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
+import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -255,7 +255,7 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     let groupID = await withdrawerContract.groupID.call();
 
     // Get initial balances
-    let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let minipoolEthBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
 
     // Get initial minipool user status
@@ -272,7 +272,7 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     profileGasUsage('RocketGroupAccessorContract.withdrawDepositMinipoolStaking', result);
 
     // Get updated balances
-    let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let minipoolEthBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
 
     // Get updated minipool user status
@@ -288,7 +288,8 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
     assert.equal(userDeposit2, userDeposit1 - amountInt, 'User deposit amount was not updated correctly');
     assert.isTrue((expectUserRemoved ? userStakingTokensWithdrawn2 == 0 : userStakingTokensWithdrawn2 > userStakingTokensWithdrawn1), 'User staking tokens withdrawn was not updated correctly');
-    assert.equal(minipoolBalance2, minipoolBalance1, 'Minipool balance changed and should not have');
+    assert.isTrue(userRpbBalance2 > userRpbBalance1, 'User RPB balance was not updated correctly');
+    assert.equal(minipoolEthBalance2, minipoolEthBalance1, 'Minipool ether balance changed and should not have');
 
 }
 
@@ -296,10 +297,65 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
 // Withdraw a deposit from a withdrawn minipool
 export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress, gas}) {
     const minipool = await RocketMinipool.at(minipoolAddress);
+    const rocketBETHToken = await RocketBETHToken.deployed();
+    const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+
+    // Get group ID & contract
+    let groupID = await withdrawerContract.groupID.call();
+    let groupContract = await RocketGroupContract.at(groupID);
+
+    // Get RP, node and group fee/reward addresses
+    let rpFeeAccount = await rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress.call();
+    let nodeOwner = await minipool.getNodeOwner.call();
+    let groupOwner = await groupContract.owner.call();
+
+    // Get initial balances
+    let minipoolEthBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let minipoolRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(minipoolAddress));
+    let userRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
+    let rpRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAccount));
+    let nodeRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(nodeOwner));
+    let groupRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(groupOwner));
+
+    // Get initial minipool user status
+    let userCount1 = parseInt(await minipool.getUserCount.call());
+    let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
+    let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress, groupID));
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
     profileGasUsage('RocketGroupAccessorContract.withdrawDepositMinipool', result);
+
+    // Get updated balances
+    let minipoolEthBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
+    let minipoolRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(minipoolAddress));
+    let userRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(fromAddress));
+    let rpRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(rpFeeAccount));
+    let nodeRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(nodeOwner));
+    let groupRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(groupOwner));
+
+    // Get updated minipool user status
+    let userCount2 = parseInt(await minipool.getUserCount.call());
+    let userExists2 = await minipool.getUserExists.call(fromAddress, groupID);
+
+    // Get RPB transfer amounts
+    let userRpbSent = userRpbBalance2 - userRpbBalance1;
+    let rpRpbSent = rpRpbBalance2 - rpRpbBalance1;
+    let nodeRpbSent = nodeRpbBalance2 - nodeRpbBalance1;
+    let groupRpbSent = groupRpbBalance2 - groupRpbBalance1;
+    let totalRpbSent = userRpbSent + rpRpbSent + nodeRpbSent + groupRpbSent;
+
+    // Asserts
+    assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
+    assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
+    assert.equal(userExists2, false, 'Minipool user was not removed correctly');
+    assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
+    assert.isTrue(userRpbBalance2 > userRpbBalance1, 'User RPB balance was not updated correctly');
+    assert.isTrue(rpRpbBalance2 > rpRpbBalance1, 'User RPB balance was not updated correctly');
+    assert.isTrue(nodeRpbBalance2 > nodeRpbBalance1, 'User RPB balance was not updated correctly');
+    assert.isTrue(groupRpbBalance2 > groupRpbBalance1, 'User RPB balance was not updated correctly');
+    assert.equal(minipoolRpbBalance2, minipoolRpbBalance1 - totalRpbSent, 'Minipool RPB balance was not updated correctly');
+    assert.equal(minipoolEthBalance2, minipoolEthBalance1, 'Minipool ether balance changed and should not have');
 
 }
 
