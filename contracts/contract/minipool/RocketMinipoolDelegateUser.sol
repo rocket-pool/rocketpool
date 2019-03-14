@@ -9,6 +9,7 @@ import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
+import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
@@ -51,7 +52,8 @@ contract RocketMinipoolDelegateUser {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
-    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong to
+    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                // The node contract for the node which owns this minipool
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
@@ -101,7 +103,7 @@ contract RocketMinipoolDelegateUser {
     }
 
     struct StakingWithdrawal {
-        address groupOwner;                                     // The owner address of the group the user belonged to
+        address groupFeeAddress;                                // The address to send group fees to
         uint256 amount;                                         // The amount withdrawn by the user
         uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
         uint256 feeGroup;                                       // The fee charged to the user by the group
@@ -174,7 +176,7 @@ contract RocketMinipoolDelegateUser {
 
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
-    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupID The 3rd party group the user belongs to
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
@@ -254,7 +256,7 @@ contract RocketMinipoolDelegateUser {
         // Update staking deposit withdrawal info
         if (!stakingWithdrawals[userID].exists) {
             stakingWithdrawals[userID] = StakingWithdrawal({
-                groupOwner: rocketGroupContract.getOwner(),
+                groupFeeAddress: rocketGroupContract.getFeeAddress(),
                 amount: 0,
                 feeRP: users[userID].feeRP,
                 feeGroup: users[userID].feeGroup,
@@ -316,8 +318,8 @@ contract RocketMinipoolDelegateUser {
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
             // Transfer fees
             if (rpFeeAmount > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
-            if (nodeFeeAmount > 0) { require(rpbContract.transfer(node.owner, nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
-            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.getOwner(), groupFeeAmount), "Group fee could not be transferred to group contract address"); }
+            if (nodeFeeAmount > 0) { require(rpbContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
+            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.getFeeAddress(), groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
         if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
@@ -336,7 +338,7 @@ contract RocketMinipoolDelegateUser {
 
     /// @dev Register a new user in the minipool
     /// @param _user New user address
-    /// @param _groupID The 3rd party group address the user belongs too
+    /// @param _groupID The 3rd party group address the user belongs to
     function addUser(address _user, address _groupID) private returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));

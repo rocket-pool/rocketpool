@@ -9,6 +9,7 @@ import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
+import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
@@ -51,7 +52,8 @@ contract RocketMinipool {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
-    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong to
+    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                // The node contract for the node which owns this minipool
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
@@ -101,7 +103,7 @@ contract RocketMinipool {
     }
 
     struct StakingWithdrawal {
-        address groupOwner;                                     // The owner address of the group the user belonged to
+        address groupFeeAddress;                                // The address to send group fees to
         uint256 amount;                                         // The amount withdrawn by the user
         uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
         uint256 feeGroup;                                       // The fee charged to the user by the group
@@ -183,6 +185,8 @@ contract RocketMinipool {
         node.depositRPL = _depositRPL;
         node.trusted = _trusted;
         node.contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
+        // Initialise the node contract
+        rocketNodeContract = RocketNodeContractInterface(node.contractAddress);
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
@@ -324,7 +328,7 @@ contract RocketMinipool {
 
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
-    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupID The 3rd party group the user belongs to
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));

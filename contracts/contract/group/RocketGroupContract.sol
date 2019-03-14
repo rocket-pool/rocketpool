@@ -16,6 +16,7 @@ contract RocketGroupContract {
     uint8   public version;                                                     // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     uint256 private feePercRocketPool = 0;                                      // The fee Rocket Pool charges this group's users given as a % of 1 Ether (eg 0.02 ether = 2%)
+    address private feeAddress;                                                 // The address to send group fees to as RPB
 
     mapping(address => bool) private depositors;                                // Valid depositor contracts for the group
     uint256 private depositorCount = 0;
@@ -99,6 +100,8 @@ contract RocketGroupContract {
         // Set the RP staking fee percent
         rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
         feePercRocketPool = rocketGroupSettings.getDefaultFee();
+        // Default the fee address to the group owner
+        feeAddress = _owner;
     }
 
     /*** Getters *************/
@@ -116,6 +119,11 @@ contract RocketGroupContract {
     /// @dev Get the fee that Rocket Pool charges for this group given as a % of 1 Ether (eg 0.02 ether = 2%)
     function getFeePercRocketPool() public view returns(uint256) {
         return feePercRocketPool;
+    }
+
+    /// @dev Get the address to send group fees to as RPB
+    function getFeeAddress() public view returns(address) {
+        return feeAddress;
     }
 
     /// @dev Check that a depositor exists in the group
@@ -140,6 +148,13 @@ contract RocketGroupContract {
     /// @dev Set the fee Rocket Pool charges this group's users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
     function setFeePercRocketPool(uint256 _stakingFeePercRocketPool) public onlyRocketGroupAPI onlyValidFeePercRocketPool(_stakingFeePercRocketPool) returns(bool) {
         feePercRocketPool = _stakingFeePercRocketPool;
+        return true;
+    }
+
+    /// @dev Set the address to send group fees to as RPB
+    function setFeeAddress(address _feeAddress) public onlyGroupOwner returns(bool) {
+        require(_feeAddress != address(0x0), "Invalid fee address");
+        feeAddress = _feeAddress;
         return true;
     }
 
