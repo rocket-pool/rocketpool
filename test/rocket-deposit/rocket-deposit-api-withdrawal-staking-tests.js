@@ -249,7 +249,7 @@ export default function() {
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid group ID');
 
-            // Valid parameters; invalid depositor
+            // Valid parameters; invalid withdrawer
             await assertThrows(scenarioAPIWithdrawStakingMinipoolDeposit({
                 groupID: groupContract.address,
                 userID: user2,
