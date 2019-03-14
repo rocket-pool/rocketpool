@@ -53,6 +53,9 @@ contract RocketUpgrade is RocketBase {
         require(oldContractAddress != address(0x0), "Contract name does not exist");
         // Check it is not the contract's current address
         require(oldContractAddress != _upgradedContractAddress, "Upgraded contract address must not be existing contract address");
+        // Check contract is not a token contract
+        require(oldContractAddress != getContractAddress("rocketPoolToken"), "Cannot upgrade token contracts");
+        require(oldContractAddress != getContractAddress("rocketBETHToken"), "Cannot upgrade token contracts");
         // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
         // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
         if (!_forceEther) {
