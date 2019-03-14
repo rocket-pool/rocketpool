@@ -101,7 +101,7 @@ contract RocketMinipoolDelegateUser {
     }
 
     struct StakingWithdrawal {
-        address groupID;                                        // The address of the group the user belonged to
+        address groupOwner;                                     // The owner address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
         uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
         uint256 feeGroup;                                       // The fee charged to the user by the group
@@ -247,12 +247,14 @@ contract RocketMinipoolDelegateUser {
         require(users[userID].exists, "User does not exist in minipool.");
         require(users[userID].groupID == _groupID, "User does not exist in group.");
         require(users[userID].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
+        // Get contracts
+        rocketGroupContract = RocketGroupContractInterface(_groupID);
         // Update total user deposits withdrawn while staking
         stakingUserDepositsWithdrawn = stakingUserDepositsWithdrawn.add(_withdrawnAmount);
         // Update staking deposit withdrawal info
         if (!stakingWithdrawals[userID].exists) {
             stakingWithdrawals[userID] = StakingWithdrawal({
-                groupID: _groupID,
+                groupOwner: rocketGroupContract.owner,
                 amount: 0,
                 feeRP: users[userID].feeRP,
                 feeGroup: users[userID].feeGroup,
@@ -301,8 +303,9 @@ contract RocketMinipoolDelegateUser {
         uint256 amount = uint256(int256(users[userID].balance) + rewardsEarned);
         // Pay fees if rewards were earned
         if (rewardsEarned > 0) {
-            // Get the settings
+            // Get contracts
             rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            rocketGroupContract = RocketGroupContractInterface(_groupID);
             // Calculate and subtract RP and node fees from rewards
             uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[userID].feeRP).div(calcBase);
             uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
@@ -313,8 +316,8 @@ contract RocketMinipoolDelegateUser {
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
             // Transfer fees
             if (rpFeeAmount > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
-            if (nodeFeeAmount > 0) { require(rpbContract.transfer(node.contractAddress, nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
-            if (groupFeeAmount > 0) { require(rpbContract.transfer(_groupID, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
+            if (nodeFeeAmount > 0) { require(rpbContract.transfer(node.owner, nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
+            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.owner, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
         if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }

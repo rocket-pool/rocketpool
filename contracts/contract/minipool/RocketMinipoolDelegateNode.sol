@@ -101,7 +101,7 @@ contract RocketMinipoolDelegateNode {
     }
 
     struct StakingWithdrawal {
-        address groupID;                                        // The address of the group the user belonged to
+        address groupOwner;                                     // The owner address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
         uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
         uint256 feeGroup;                                       // The fee charged to the user by the group
@@ -224,7 +224,7 @@ contract RocketMinipoolDelegateNode {
         // Transferring RPB to node contract if withdrawn
         else if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
             rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
-            if (rpbAmount > 0) { require(rpbContract.transfer(node.contractAddress, rpbAmount), "RPB balance transfer error."); }
+            if (rpbAmount > 0) { require(rpbContract.transfer(node.owner, rpbAmount), "RPB balance transfer error."); }
         }
         // Fire withdrawal event
         emit NodeWithdrawal(msg.sender, etherAmount, rpbAmount, rplAmount, now);

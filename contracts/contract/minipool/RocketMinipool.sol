@@ -101,7 +101,7 @@ contract RocketMinipool {
     }
 
     struct StakingWithdrawal {
-        address groupID;                                        // The address of the group the user belonged to
+        address groupOwner;                                     // The owner address of the group the user belonged to
         uint256 amount;                                         // The amount withdrawn by the user
         uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
         uint256 feeGroup;                                       // The fee charged to the user by the group
