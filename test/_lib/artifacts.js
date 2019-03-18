@@ -2,7 +2,7 @@ const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
 
 export const RocketAdmin = artifacts.require('./contract/RocketAdmin');
-export const RocketBETHToken = artifacts.require('./contract/RocketBETHToken.sol');
+export const RocketBETHToken = artifacts.require('./contract/RocketBETHToken');
 export const RocketDepositAPI = artifacts.require('./contract/RocketDepositAPI');
 export const RocketDepositSettings = artifacts.require('./contract/RocketDepositSettings');
 export const RocketDepositQueue = artifacts.require('./contract/RocketDepositQueue');
@@ -22,10 +22,11 @@ export const RocketNodeTasks = artifacts.require('./contract/RocketNodeTasks');
 export const RocketNodeWatchtower = artifacts.require('./contract/RocketNodeWatchtower');
 export const RocketPIP = artifacts.require('./contract/RocketPIP');
 export const RocketPool = artifacts.require('./contract/RocketPool');
-export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToken.sol');
+export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToken');
 export const RocketRole = artifacts.require('./contract/RocketRole');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
 export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
+export const UtilAddressSetStorage = artifacts.require('./contract/AddressSetStorage');
 
 export const TestLists = artifacts.require('./test/TestLists');
 export const TestQueues = artifacts.require('./test/TestQueues');
