@@ -65,20 +65,6 @@ contract RocketNodeAPI is RocketBase {
     );
 
 
-    // TODO: Remove Flag Events
-    event FlagAddress (
-        address flag
-    );
-
-    event FlagString (
-        string flag
-    );
-
-    event FlagUint (
-        uint256 flag
-    );
-
-       
     /*** Modifiers *************/
 
     /// @dev Only passes if the user calling it is a registered node owner

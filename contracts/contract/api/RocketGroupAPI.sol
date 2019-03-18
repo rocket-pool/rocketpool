@@ -54,16 +54,6 @@ contract RocketGroupAPI is RocketBase {
     );
 
 
-    // TODO: Remove Flag Events
-    event FlagString (
-        string flag
-    );
-
-    event FlagUint (
-        uint256 flag
-    );
-
-       
     /*** Modifiers *************/
     
        

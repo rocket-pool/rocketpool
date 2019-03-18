@@ -86,17 +86,7 @@ contract RocketNodeContract {
         uint256 created                                                     // The time of the withdrawal
     );
 
-    
-    // TODO: Remove Flag Events
-    event FlagAddress (
-        address flag
-    );
 
-    event FlagUint (
-        uint256 flag
-    );
-
- 
     /*** Modifiers ***************/
 
     /// @dev Throws if called by any account other than the owner.

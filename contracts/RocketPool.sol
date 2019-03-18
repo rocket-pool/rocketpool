@@ -46,17 +46,6 @@ contract RocketPool is RocketBase {
     );
 
 
-    // TODO: Remove Flag Events
-    event FlagAddress (
-        address flag
-    );
-
-    event FlagUint (
-        uint256 flag
-    );
-
-
-       
     /*** Modifiers *************/
 
     /// @dev Only registered minipool addresses can access
@@ -267,7 +256,6 @@ contract RocketPool is RocketBase {
     }
 
 
-    // TODO: decrease total network ether "capacity" & "assigned" when minipool withdraws from Casper
     /// @dev Decrease the total ether value of the network by key
     /// @param _type The type of total ether value to decrease (e.g. "capacity")
     /// @param _value The amount to decrease the total ether value by
