@@ -105,10 +105,10 @@ contract RocketGroupAPI is RocketBase {
         require(bytes(rocketStorage.getString(keccak256(abi.encodePacked("group.name", _name)))).length == 0, "Group name is already being used.");
         // Ok create the groups contract now, the address is their main ID and this is where the groups fees and more will reside
         address newContractAddress = address(new RocketGroupContract(address(rocketStorage), msg.sender, _stakingFee));
-        // If there is a fee required to register a group, check that it is sufficient
-        if(rocketGroupSettings.getNewFee() > 0) {
-            // Fee correct?
-            require(rocketGroupSettings.getNewFee() == msg.value, "New group fee insufficient.");
+        // Check group registration fee
+        require(rocketGroupSettings.getNewFee() == msg.value, "Transaction value does not match new group fee.");
+        // If there is a fee required to register a group, transfer it
+        if (rocketGroupSettings.getNewFee() > 0) {
             // Transfer the fee amount now 
             rocketGroupSettings.getNewFeeAddress().transfer(msg.value);
             // Log it
