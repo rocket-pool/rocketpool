@@ -2,12 +2,12 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
-import { scenarioDeposit, scenarioWithdrawStakingMinipoolDeposit, scenarioAPIWithdrawStakingMinipoolDeposit } from './rocket-deposit-api-scenarios';
+import { stakeSingleMinipool, withdrawMinipool } from '../_helpers/rocket-minipool';
+import { scenarioDeposit, scenarioWithdrawMinipoolDeposit, scenarioAPIWithdrawMinipoolDeposit } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
-    contract('RocketDepositAPI - Staking Withdrawals', async (accounts) => {
+    contract('RocketDepositAPI - Withdrawals', async (accounts) => {
 
 
         // Accounts
@@ -28,7 +28,6 @@ export default function() {
         let minipoolAddresses;
         let minipool;
         let depositID;
-        let depositAmount;
         before(async () => {
 
             // Get contracts
@@ -48,8 +47,8 @@ export default function() {
         });
 
 
-        // Staker cannot withdraw from a minipool that isn't staking
-        it(printTitle('staker', 'cannot withdraw from a minipool that isn\'t staking'), async () => {
+        // Staker cannot withdraw from a minipool that hasn't withdrawn
+        it(printTitle('staker', 'cannot withdraw from a minipool that hasn\'t withdrawn'), async () => {
 
             // Create single minipool
             minipoolAddresses = await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 2, nodeOperator, owner});
@@ -72,30 +71,6 @@ export default function() {
                 value: chunkSize,
             });
 
-            // Check minipool status
-            let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 1, 'Pre-check failed: minipool is not at PreLaunch status');
-
-            // Get deposit details
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
-            depositAmount = await minipool.getUserDeposit.call(user1, groupContract.address);
-
-            // Attempt to withdraw minipool deposit
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
-                withdrawerContract: groupAccessorContract,
-                depositID,
-                minipoolAddress: minipool.address,
-                amount: depositAmount,
-                fromAddress: user1,
-                gas: 5000000,
-            }), 'Withdrew from a minipool that has not timed out');
-
-        });
-
-
-        // Staker can withdraw from a staking minipool
-        it(printTitle('staker', 'can withdraw from a staking minipool'), async () => {
-
             // Progress minipool to staking
             await stakeSingleMinipool({groupAccessorContract, staker: user3});
 
@@ -103,49 +78,39 @@ export default function() {
             let status = parseInt(await minipool.getStatus.call());
             assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
 
-            // Withdraw partial minipool deposit
-            await scenarioWithdrawStakingMinipoolDeposit({
+            // Get deposit ID
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+
+            // Attempt to withdraw minipool deposit
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: web3.utils.numberToHex(parseInt(depositAmount) / 2),
-                amountInt: parseInt(depositAmount) / 2,
                 fromAddress: user1,
                 gas: 5000000,
-            });
-
-            // Get deposit amount
-            depositAmount = await minipool.getUserDeposit.call(user1, groupContract.address);
-
-            // Withdraw remaining minipool deposit
-            await scenarioWithdrawStakingMinipoolDeposit({
-                withdrawerContract: groupAccessorContract,
-                depositID,
-                minipoolAddress: minipool.address,
-                amount: depositAmount,
-                fromAddress: user1,
-                gas: 5000000,
-            });
+            }), 'Withdrew from a minipool that has not withdrawn');
 
         });
 
 
-        // Staker cannot withdraw a deposit with an invalid amount
-        it(printTitle('staker', 'cannot withdraw a deposit with an invalid amount'), async () => {
+        // Staker can withdraw from a withdrawn minipool
+        it(printTitle('staker', 'can withdraw from a withdrawn minipool'), async () => {
 
-            // Get deposit details
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
-            depositAmount = await minipool.getUserDeposit.call(user2, groupContract.address);
+            // Withdraw minipool
+            await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator, owner});
 
-            // Attempt to withdraw minipool deposit
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 4, 'Pre-check failed: minipool is not at Withdrawn status');
+
+            // Withdraw minipool deposit
+            await scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: 0,
-                fromAddress: user2,
+                fromAddress: user1,
                 gas: 5000000,
-            }), 'Withdrew from a minipool with an invalid deposit amount');
+            });
 
         });
 
@@ -153,12 +118,14 @@ export default function() {
         // Staker cannot withdraw a deposit with an invalid ID
         it(printTitle('staker', 'cannot withdraw a deposit with an invalid ID'), async () => {
 
+            // Get deposit ID
+            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
+
             // Attempt to withdraw minipool deposit
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid deposit ID');
@@ -173,11 +140,10 @@ export default function() {
             await rocketDepositSettings.setWithdrawalAllowed(false, {from: owner, gas: 500000});
 
             // Attempt to withdraw minipool deposit
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool while withdrawals were disabled');
@@ -192,31 +158,28 @@ export default function() {
         it(printTitle('staker', 'cannot withdraw a nonexistant deposit'), async () => {
 
             // Nonexistant deposit ID
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000001',
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid deposit ID');
 
             // Incorrect minipool
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipoolAddresses[1],
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid minipool address');
 
             // Incorrect user
-            await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user3,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid user ID');
@@ -228,34 +191,31 @@ export default function() {
         it(printTitle('staker', 'cannot withdraw a deposit via deposit API'), async () => {
 
             // Invalid user ID
-            await assertThrows(scenarioAPIWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid user ID');
 
             // Invalid group ID
-            await assertThrows(scenarioAPIWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: accounts[9],
                 userID: user2,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid group ID');
 
             // Valid parameters; invalid withdrawer
-            await assertThrows(scenarioAPIWithdrawStakingMinipoolDeposit({
+            await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: groupContract.address,
                 userID: user2,
                 depositID,
                 minipoolAddress: minipool.address,
-                amount: depositAmount,
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool directly via RocketDepositAPI');

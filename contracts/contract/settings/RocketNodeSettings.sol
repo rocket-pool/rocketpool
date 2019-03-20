@@ -25,6 +25,7 @@ contract RocketNodeSettings is RocketBase {
             setInactiveDuration(48 hours);                                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             setMaxInactiveNodeChecks(3);                                                // The maximum number of other nodes to check for inactivity on checkin
             setFeePerc(0.05 ether);                                                     // The node operator fee percentage, as a fraction of 1 ether (5%)
+            setMaxFeePerc(0.5 ether);                                                   // The maximum node operator fee percentage, as a fraction of 1 ether (50%)
             setFeeVoteCycleDuration(24 hours);                                          // The duration of a node fee voting cycle
             setFeeVoteCyclePercChange(0.005 ether);                                     // Node fee percentage change per voting cycle, as a fraction of 1 ether (0.5%)
             setDepositAllowed(true);                                                    // Are deposits allowed by nodes?
@@ -82,6 +83,11 @@ contract RocketNodeSettings is RocketBase {
     /// @dev The node operator fee percentage, as a fraction of 1 ether
     function getFeePerc() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.fee.perc")));
+    }
+
+    /// @dev The node operator fee percentage, as a fraction of 1 ether
+    function getMaxFeePerc() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.max.fee.perc")));
     }
 
     /// @dev The duration of a node fee voting cycle
@@ -157,6 +163,11 @@ contract RocketNodeSettings is RocketBase {
     function setFeePerc(uint256 _amount) public onlySuperUser {
         require(!rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.init"))), "Node operator fee percentage cannot be set after initialisation");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), _amount);
+    }
+
+    /// @dev The maximum node operator fee percentage, as a fraction of 1 ether
+    function setMaxFeePerc(uint256 _amount) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.max.fee.perc")), _amount);
     }
 
     /// @dev The duration of a node fee voting cycle

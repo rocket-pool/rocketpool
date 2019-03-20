@@ -26,6 +26,7 @@ contract RocketNodeContract {
 
     address private owner;                                                          // The node that created the contract
     uint8   public version;                                                         // Version of this contract
+    address private rewardsAddress;                                                  // The address to send node operator rewards and fees to as RPB
 
     DepositReservation private depositReservation;                                  // Node operator's deposit reservation
 
@@ -114,6 +115,8 @@ contract RocketNodeContract {
         rplContract = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPoolToken"))));
         // Set the node owner
         owner = _owner;
+        // Default the reward address to the node owner
+        rewardsAddress = _owner;
     }
 
 
@@ -122,6 +125,11 @@ contract RocketNodeContract {
     /// @dev Returns the nodes owner - its coinbase account
     function getOwner() public view returns(address) { 
         return owner;
+    }
+
+    /// @dev Returns the address to send node operator rewards and fees to as RPB
+    function getRewardsAddress() public view returns(address) {
+        return rewardsAddress;
     }
 
     /// @dev Returns the current ETH balance on the contract
@@ -170,7 +178,15 @@ contract RocketNodeContract {
     
     /*** Setters *************/
 
-    
+
+    /// @dev Set the address to send node operator rewards and fees to as RPB
+    function setRewardsAddress(address _rewardsAddress) public onlyNodeOwner returns(bool) {
+        require(_rewardsAddress != address(0x0), "Invalid reward address");
+        rewardsAddress = _rewardsAddress;
+        return true;
+    }
+
+
     /*** Methods *************/
 
 

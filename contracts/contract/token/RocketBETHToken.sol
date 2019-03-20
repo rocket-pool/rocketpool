@@ -43,10 +43,10 @@ contract RocketBETHToken is StandardToken, RocketBase {
     /*** Modifiers **************/
 
 
-    // Sender must be a super user or RocketDeposit
-    modifier onlySuperUserOrDeposit() {
+    // Sender must be RocketNodeWatchtower or RocketDeposit contract
+    modifier onlyNodeWatchtowerOrDeposit() {
         require(
-            (roleHas("owner", msg.sender) || roleHas("admin", msg.sender)) ||
+            msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeWatchtower"))) ||
             msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))),
             "Sender is not a super user or RocketDeposit"
         );
@@ -73,7 +73,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
      * @param _amount The amount of tokens to mint
      * @return A boolean that indicates if the operation was successful
      */
-    function mint(address _to, uint256 _amount) public onlySuperUserOrDeposit returns (bool) {
+    function mint(address _to, uint256 _amount) public onlyNodeWatchtowerOrDeposit returns (bool) {
         // Check burn amount
         require(_amount > 0, "Invalid token mint amount");
         // Mint tokens

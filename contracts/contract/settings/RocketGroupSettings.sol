@@ -17,9 +17,10 @@ contract RocketGroupSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.group.init")))) {
             // Group Settings
             setDefaultFee(0.02 ether);                                                          // The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
+            setMaxFee(0.5 ether);                                                               // The maximum fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
             setNewAllowed(true);                                                                // Are new groups allowed to be added
             setNewFee(0.05 ether);                                                              // The amount of ether required to register a new group 
-            setNewFeeAddress(msg.sender);                                                       // The address to send the new group fee too
+            setNewFeeAddress(msg.sender);                                                       // The address to send the new group fee to
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.group.init")), true);
         }
@@ -30,9 +31,14 @@ contract RocketGroupSettings is RocketBase {
     /*** Getters **********************/
 
 
-    /// @dev The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)                                              
+    /// @dev The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
     function getDefaultFee() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.group.fee.default"))); 
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.group.fee.default")));
+    }
+
+    /// @dev The maximum fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function getMaxFee() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.group.fee.max")));
     }
 
     /// @dev Are new groups allowed to be added                             
@@ -53,11 +59,18 @@ contract RocketGroupSettings is RocketBase {
 
     /*** Setters **********************/
 
-    /// @dev The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)                                              
+    /// @dev The default fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
     function setDefaultFee(uint256 _weiAmount) public onlySuperUser {
         require(_weiAmount >= 0, "Default fee cannot be less than 0.");
         require(_weiAmount <= 1 ether, "Default fee cannot be greater than 100%.");
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.group.fee.default")), _weiAmount); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.group.fee.default")), _weiAmount);
+    }
+
+    /// @dev The maximum fee Rocket Pool charges given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function setMaxFee(uint256 _weiAmount) public onlySuperUser {
+        require(_weiAmount >= 0, "Maximum fee cannot be less than 0.");
+        require(_weiAmount <= 1 ether, "Maximum fee cannot be greater than 100%.");
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.group.fee.max")), _weiAmount);
     }
 
     /// @dev Are new groups allowed to be added                                                   

@@ -131,7 +131,7 @@ contract RocketDeposit is RocketBase {
 
         // Get minipool user balance & refund deposit from minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        uint256 refundAmount = minipool.getUserDeposit(_userID);
+        uint256 refundAmount = minipool.getUserDeposit(_userID, _groupID);
         minipool.refund(_userID, _groupID, address(this));
 
         // Update deposit pool details
@@ -168,7 +168,7 @@ contract RocketDeposit is RocketBase {
         minipool.withdrawStaking(_userID, _groupID, _amount, tokenAmount, _withdrawerAddress);
 
         // Update deposit pool details
-        if (!minipool.getUserHasDeposit(_userID)) { addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool); }
+        if (!minipool.getUserHasDeposit(_userID, _groupID)) { addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool); }
         uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)));
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), stakingPoolAmount.sub(_amount));
 
@@ -184,10 +184,16 @@ contract RocketDeposit is RocketBase {
         // Check deposit details
         checkDepositDetails(_userID, _groupID, _depositID, _minipool);
 
+        // Get initial withdrawer address balance
+        rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
+        uint256 initialBalance = rocketBETHToken.balanceOf(_withdrawerAddress);
+
         // Get minipool user balance & withdraw deposit from minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        uint256 withdrawalAmount = minipool.getUserDeposit(_userID);
         minipool.withdraw(_userID, _groupID, _withdrawerAddress);
+
+        // Get amount withdrawn
+        uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
 
         // Update deposit pool details
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));

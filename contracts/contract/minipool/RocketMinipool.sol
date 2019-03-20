@@ -4,17 +4,19 @@ pragma solidity 0.5.0;
 // Interfaces
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketStorageInterface.sol";
-import "../../interface/settings/RocketGroupSettingsInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
+import "../../interface/node/RocketNodeContractInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
 
 
-/// @title A minipool under the main RocketPool, all major logic is contained within the RocketMinipoolDelegate contract which is upgradable when minipools are deployed
+/// @title A minipool under the main RocketPool, all major logic is contained within the RocketMinipoolDelegate contracts which are upgradable when minipools are deployed
 /// @author David Rugendyke
 
 contract RocketMinipool {
@@ -26,20 +28,23 @@ contract RocketMinipool {
 
     /**** Properties ***********/
 
+    uint256 private calcBase = 1 ether;
+
     // General
-    uint8   public version = 1;                                 // Version of this contract
-    Status  private status;                                     // The current status of this pool, statuses are declared via Enum in the minipool settings
-    Node    private node;                                       // Node this minipool is attached to, its creator 
-    Staking private staking;                                    // Staking properties of the minipool to track
-    uint256 private userDepositCapacity;                        // Total capacity for user deposits
-    uint256 private userDepositTotal;                           // Total value of all assigned user deposits
-    uint256 private stakingTokensWithdrawnTotal;                // Total RPB tokens withdrawn during staking
+    uint8   public version = 1;                                         // Version of this contract
+    Status  private status;                                             // The current status of this pool, statuses are declared via Enum in the minipool settings
+    Node    private node;                                               // Node this minipool is attached to, its creator 
+    Staking private staking;                                            // Staking properties of the minipool to track
+    uint256 private userDepositCapacity;                                // Total capacity for user deposits
+    uint256 private userDepositTotal;                                   // Total value of all assigned user deposits
+    uint256 private stakingUserDepositsWithdrawn;                       // Total value of user deposits withdrawn while staking
+    mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
+    bytes32[] private stakingWithdrawalIDs;
 
     // Users
-    mapping (address => User) private users;                    // Users in this pool
+    mapping (bytes32 => User) private users;                    // Users in this pool
     mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
-    address[] private userAddresses;                            // Users in this pool addresses for iteration
-    
+    bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
     /*** Contracts **************/
@@ -47,8 +52,9 @@ contract RocketMinipool {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
-    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong too
-    RocketGroupSettingsInterface rocketGroupSettings = RocketGroupSettingsInterface(0);             // The settings for groups
+    RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong to
+    RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                // The node contract for the node which owns this minipool
+    RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The settings for nodes
     RocketPoolInterface rocketPool = RocketPoolInterface(0);                                        // The main pool manager
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main settings contract most global parameters are maintained
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
@@ -72,6 +78,7 @@ contract RocketMinipool {
         bool    trusted;                                        // Was the node trusted at the time of minipool creation?
         bool    depositExists;                                  // The node operator's deposit exists
         uint256 balance;                                        // The node operator's ether balance
+        uint256 userFee;                                        // The fee charged to users by the node, determined when the minipool begins staking
     }
 
     struct Staking {
@@ -84,16 +91,23 @@ contract RocketMinipool {
 
     struct User {
         address user;                                           // Address of the user
-        address backup;                                         // The backup address of the user
         address groupID;                                        // Address ID of the users group
+        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
-        int256  rewards;                                        // Rewards received after Casper
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pools fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
         bool    exists;                                         // User exists?
-        uint256 addressIndex;                                   // User's index in the address list
+        uint256 idIndex;                                        // User's index in the ID list
+    }
+
+    struct StakingWithdrawal {
+        address groupFeeAddress;                                // The address to send group fees to
+        uint256 amount;                                         // The amount withdrawn by the user
+        uint256 feeRP;                                          // The fee charged to the user by Rocket Pool
+        uint256 feeGroup;                                       // The fee charged to the user by the group
+        bool exists;
     }
 
 
@@ -127,8 +141,9 @@ contract RocketMinipool {
 
     /// @dev Only registered users with this pool
     /// @param _user The users address.
-    modifier isPoolUser(address _user) {
-        require(_user != address(0x0) && users[_user].exists != false);
+    modifier isPoolUser(address _user, address _group) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        require(_user != address(0x0) && _group != address(0x0) && users[userID].exists != false);
         _;
     }
 
@@ -157,8 +172,9 @@ contract RocketMinipool {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the address of the casper deposit contract
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
-        // Add the RPL contract address
+        // Add the token contract addresses
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
+        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
         // Set the initial status
         status.current = 0;
         status.time = now;
@@ -169,6 +185,8 @@ contract RocketMinipool {
         node.depositRPL = _depositRPL;
         node.trusted = _trusted;
         node.contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner)));
+        // Initialise the node contract
+        rocketNodeContract = RocketNodeContractInterface(node.contractAddress);
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
@@ -195,25 +213,6 @@ contract RocketMinipool {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
     }
 
-
-    /*
-    /// @dev Use inline assembly to read the boolean value back from a delegatecall method in the minipooldelegate contract
-    function getDelegateBoolean(string memory _signatureMethod) public returns (bool) {
-        bytes4 signature = getDelegateSignature(_signatureMethod);
-        address minipoolDelegate = getContractAddress("rocketMinipoolDelegate");
-        bool response = false;
-        assembly {
-            let returnSize := 32
-            let mem := mload(0x40)
-            mstore(mem, signature)
-            let err := delegatecall(sub(gas, 10000), minipoolDelegate, mem, 0x04, mem, returnSize)
-            response := mload(mem)
-        }
-        return response; 
-    }
-    */
-   
-    
 
     /*** NODE ***********************************************/
 
@@ -260,7 +259,7 @@ contract RocketMinipool {
     /// @dev Set the ether / rpl deposit and check it
     function nodeDeposit() public payable isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("nodeDeposit()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateNode").delegatecall(abi.encodeWithSignature("nodeDeposit()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -269,7 +268,7 @@ contract RocketMinipool {
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Will throw if conditions are not met in delegate
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("nodeWithdraw()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateNode").delegatecall(abi.encodeWithSignature("nodeWithdraw()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -282,12 +281,13 @@ contract RocketMinipool {
 
     /// @dev Returns the user count for this pool
     function getUserCount() public view returns(uint256) {
-        return userAddresses.length;
+        return userIDs.length;
     }
 
     /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _user) public view returns(bool) {
-        return users[_user].exists;
+    function getUserExists(address _user, address _group) public view returns(bool) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].exists;
     }
 
     /// @dev Returns the users original address specified for withdrawals
@@ -301,23 +301,26 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
-    function getUserBackupAddressOK(address _user, address _userBackupAddress) public view isPoolUser(_user) returns(bool) {
+    function getUserBackupAddressOK(address _user, address _group, address _userBackupAddress) public view isPoolUser(_user, _group) returns(bool) {
         return usersBackupAddress[_userBackupAddress] == _user;
     }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
-    function getUserHasDeposit(address _user) public view returns(bool) {
-        return users[_user].exists && users[_user].balance > 0;
+    function getUserHasDeposit(address _user, address _group) public view returns(bool) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].exists && users[userID].balance > 0;
     }
 
     /// @dev Returns the amount of the users deposit
-    function getUserDeposit(address _user) public view isPoolUser(_user) returns(uint256) {
-        return users[_user].balance;
+    function getUserDeposit(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].balance;
     }
 
     /// @dev Returns the amount of the deposit tokens the user has taken out
-    function getUserStakingTokensWithdrawn(address _user) public view isPoolUser(_user) returns(uint256) {
-        return users[_user].stakingTokensWithdrawn;
+    function getUserStakingTokensWithdrawn(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        return users[userID].stakingTokensWithdrawn;
     }
 
 
@@ -325,10 +328,10 @@ contract RocketMinipool {
 
     /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
     /// @param _user New user address
-    /// @param _groupID The 3rd party group the user belongs too
+    /// @param _groupID The 3rd party group the user belongs to
     function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -341,7 +344,7 @@ contract RocketMinipool {
     /// @param _refundAddress The address to refund the user's deposit to
     function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -356,7 +359,7 @@ contract RocketMinipool {
     /// @param _withdrawnAddress The address the user's deposit was withdrawn to
     function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -369,7 +372,7 @@ contract RocketMinipool {
     /// @param _withdrawalAddress The address to withdraw the user's deposit to
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
@@ -420,17 +423,42 @@ contract RocketMinipool {
     function getUserDepositTotal() public view returns(uint256) {
         return userDepositTotal;
     }
-    
-    
+
+    /// @dev Gets the total RPB tokens withdrawn during staking
+    function getStakingUserDepositsWithdrawn() public view returns(uint256) {
+        return stakingUserDepositsWithdrawn;
+    }
+
+
     // Methods
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct
-        (bool success,) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("updateStatus()"));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("updateStatus()"));
         require(success, "Delegate call failed.");
         // Success
         return true;
     }
+
+    /// @dev Sets the minipool to logged out
+    function logoutMinipool() public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Will update the status of the pool if conditions are correct
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("logoutMinipool()"));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+    /// @dev Sets the minipool to withdrawn and sets its balance at withdrawal
+    /// @param _withdrawalBalance The minipool's balance at withdrawal
+    function withdrawMinipool(uint256 _withdrawalBalance) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
+        // Will update the status of the pool if conditions are correct
+        (bool success,) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("withdrawMinipool(uint256)", _withdrawalBalance));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
 
 }

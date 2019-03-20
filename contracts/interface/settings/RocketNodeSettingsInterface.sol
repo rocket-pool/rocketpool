@@ -13,6 +13,7 @@ contract RocketNodeSettingsInterface {
     function getInactiveDuration() public view returns (uint256);
     function getMaxInactiveNodeChecks() public view returns (uint256);
     function getFeePerc() public view returns (uint256);
+    function getMaxFeePerc() public view returns (uint256);
     function getFeeVoteCycleDuration() public view returns (uint256);
     function getFeeVoteCyclePercChange() public view returns (uint256);
     function getDepositAllowed() public view returns (bool);

@@ -15,6 +15,8 @@ contract RocketGroupContract {
     address public owner;                                                       // The group owner that created the contract
     uint8   public version;                                                     // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
+    uint256 private feePercRocketPool = 0;                                      // The fee Rocket Pool charges this group's users given as a % of 1 Ether (eg 0.02 ether = 2%)
+    address private feeAddress;                                                 // The address to send group fees to as RPB
 
     mapping(address => bool) private depositors;                                // Valid depositor contracts for the group
     uint256 private depositorCount = 0;
@@ -54,19 +56,31 @@ contract RocketGroupContract {
     /*** Modifiers ***************/
 
     /**
+    * @dev Throws if not called by RocketGroupAPI.
+    */
+    modifier onlyRocketGroupAPI() {
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupAPI"))), "Only the RocketGroupAPI contract can perform this function.");
+        _;
+    }
+
+    /**
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyGroupOwner() {
-      require(msg.sender == owner, "Only the group owner account can perform this function.");
-      _;
+        require(msg.sender == owner, "Only the group owner account can perform this function.");
+        _;
     }
 
     /**
     * @dev Throws if fee percentage is invalid.
     */
     modifier onlyValidFeePerc(uint256 _stakingFeePerc) {
-        // Check its a legit amount
         require(_stakingFeePerc <= 1 ether, "User fee cannot be greater than 100%.");
+        _;
+    }
+    modifier onlyValidFeePercRocketPool(uint256 _stakingFeePercRocketPool) {
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
+        require(_stakingFeePercRocketPool <= rocketGroupSettings.getMaxFee(), "Rocket Pool fee is above maximum amount.");
         _;
     }
 
@@ -83,22 +97,33 @@ contract RocketGroupContract {
         owner = _owner;
         // Set the staking fee percent
         feePerc = _stakingFeePerc;
+        // Set the RP staking fee percent
+        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
+        feePercRocketPool = rocketGroupSettings.getDefaultFee();
+        // Default the fee address to the group owner
+        feeAddress = _owner;
     }
 
     /*** Getters *************/
 
+    /// @dev Get the group owner
+    function getOwner() public view returns(address) {
+        return owner;
+    }
+
     /// @dev The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function getFeePerc() public view returns(uint256) { 
-        // Get the fee for this groups users
+    function getFeePerc() public view returns(uint256) {
         return feePerc;
     }
 
     /// @dev Get the fee that Rocket Pool charges for this group given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function getFeePercRocketPool() public returns(uint256) { 
-        // Get the settings
-        rocketGroupSettings = RocketGroupSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketGroupSettings"))));
-        // Get the RP fee
-        return rocketGroupSettings.getDefaultFee();
+    function getFeePercRocketPool() public view returns(uint256) {
+        return feePercRocketPool;
+    }
+
+    /// @dev Get the address to send group fees to as RPB
+    function getFeeAddress() public view returns(address) {
+        return feeAddress;
     }
 
     /// @dev Check that a depositor exists in the group
@@ -116,9 +141,20 @@ contract RocketGroupContract {
 
     /// @dev Set the fee this group charges their users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
     function setFeePerc(uint256 _stakingFeePerc) public onlyGroupOwner onlyValidFeePerc(_stakingFeePerc) returns(bool) {
-        // Ok set it
         feePerc = _stakingFeePerc;
-        // Done
+        return true;
+    }
+
+    /// @dev Set the fee Rocket Pool charges this group's users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function setFeePercRocketPool(uint256 _stakingFeePercRocketPool) public onlyRocketGroupAPI onlyValidFeePercRocketPool(_stakingFeePercRocketPool) returns(bool) {
+        feePercRocketPool = _stakingFeePercRocketPool;
+        return true;
+    }
+
+    /// @dev Set the address to send group fees to as RPB
+    function setFeeAddress(address _feeAddress) public onlyGroupOwner returns(bool) {
+        require(_feeAddress != address(0x0), "Invalid fee address");
+        feeAddress = _feeAddress;
         return true;
     }
 
