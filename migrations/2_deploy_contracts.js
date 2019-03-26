@@ -87,6 +87,7 @@ if (testUtils) {
 
 // ABIs
 abis.rocketGroupContract = artifacts.require('./group/RocketGroupContract.sol');
+abis.rocketGroupAccessorContract = artifacts.require('./group/RocketGroupAccessorContract.sol');
 abis.rocketNodeContract = artifacts.require('./node/RocketNodeContract.sol');
 abis.rocketMinipool = artifacts.require('./minipool/RocketMinipool.sol');
 
