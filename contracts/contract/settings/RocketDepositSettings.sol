@@ -38,8 +38,6 @@ contract RocketDepositSettings is RocketBase {
             setDepositQueueSizeMax(320 ether);                                              // Maximum deposit queue size in Wei
             setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
             setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
-            setWithdrawalMin(0);                                                            // Min allowed to be withdrawn in Wei, 0 = all
-            setWithdrawalMax(10 ether);                                                     // Max allowed to be withdrawn in Wei
             setStakingWithdrawalFeePerc(0.0025 ether);                                      // The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.init")), true);
@@ -111,16 +109,6 @@ contract RocketDepositSettings is RocketBase {
         return rocketStorage.getBool(keccak256(abi.encodePacked("settings.withdrawal.allowed"))); 
     }
 
-    /// @dev Min allowed to be withdrawn in Wei, 0 = all
-    function getWithdrawalMin() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.min"))); 
-    }
-
-    /// @dev Max allowed to be withdrawn in Wei
-    function getWithdrawalMax() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.max"))); 
-    }
-
     /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
     function getStakingWithdrawalFeePerc() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.withdrawal.staking.fee"))); 
@@ -176,16 +164,6 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Are withdrawals allowed?                                            
     function setWithdrawalAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256(abi.encodePacked("settings.withdrawal.allowed")), _enabled); 
-    }
-
-    /// @dev Min allowed to be withdrawn in Wei, 0 = all
-    function setWithdrawalMin(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.min")), _weiAmount); 
-    }
-
-    /// @dev Max allowed to be withdrawn in Wei
-    function setWithdrawalMax(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.withdrawal.max")), _weiAmount); 
     }
 
     /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
