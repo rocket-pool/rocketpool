@@ -32,9 +32,7 @@ contract RocketMinipoolSettings is RocketBase {
         // Only set defaults on deployment
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
-            setMinipoolDefaultStatus(uint256(MinipoolStatuses.Initialised));                    // The default status for newly created mini pools
             setMinipoolLaunchAmount(32 ether);                                                  // The exact Wei required for a pool to launch
-            setMinipoolCountDown(240);                                                          // The block count to stay in countdown before staking begins - Default is 240 (1hr)
             setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMinipoolStakingDuration("6m",  1052000);                                         // 6 Months
             setMinipoolStakingDuration("12m", 2104000);                                         // 12 Months
@@ -58,19 +56,9 @@ contract RocketMinipoolSettings is RocketBase {
     /*** Getters **********************/
 
 
-    /// @dev Get default status of a new mini pool
-    function getMinipoolDefaultStatus() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.minipool.status.default"));
-    }
-
     /// @dev The minimum Wei required for a pool to launch
     function getMinipoolLaunchAmount() public view returns (uint256) {
         return rocketStorage.getUint(keccak256("settings.minipool.launch.wei"));
-    }
-
-    /// @dev The time limit to stay in countdown before staking begins
-    function getMinipoolCountDownTime() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.minipool.countdown.blocks"));
     }
     
     /// @dev Check to see if new pools are allowed to be created
@@ -117,11 +105,6 @@ contract RocketMinipoolSettings is RocketBase {
         return stakingTime;
     }
 
-    /// @dev Get the minimum required time for staking
-    function getMinipoolMinimumStakingTime() public view returns (uint256) {
-        return getMinipoolStakingDuration("3m");
-    }
-
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
     function getMinipoolWithdrawalFeeDepositAddress() public view returns (address) {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("settings.minipool.fee.withdrawal.address")));
@@ -153,19 +136,9 @@ contract RocketMinipoolSettings is RocketBase {
     /*** Setters **********************/
 
 
-    /// @dev Set the minipools default status
-    function setMinipoolDefaultStatus(uint256 _statusID) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.status.default")), _statusID);  
-    }
-
     /// @dev Set the minimum Wei required for a pool to launch
     function setMinipoolLaunchAmount(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.launch.wei")), _weiAmount);  
-    }
-
-    /// @dev Set the block count to stay in countdown before staking begins
-    function setMinipoolCountDown(uint256 _blocks) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.countdown.time")), _blocks);  
     }
 
     /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
