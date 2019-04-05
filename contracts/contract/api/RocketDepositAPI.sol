@@ -142,6 +142,21 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
+    /// @dev Checks if the set backup address request parameters are correct
+    function checkUserBackupWithdrawalAddressIsValid(address _from, address _groupID, address _userID, address _backupWithdrawalAddress) private {
+        // Check addresses are correct
+        require(address(_userID) != address(0x0), "UserID address is not a correct address");
+        require(address(_backupWithdrawalAddress) != address(0x0), "Backup withdrawal address is not a correct address");
+        require(_backupWithdrawalAddress != _userID, "Backup withdrawal address must not be the user ID");
+        // Verify the groupID exists
+        rocketGroupAPI = RocketGroupAPIInterface(getContractAddress("rocketGroupAPI"));
+        require(bytes(rocketGroupAPI.getGroupName(_groupID)).length > 0, "Group ID specified does not match a group name or does not exist");
+        // Verify that _from is a withdrawer of the group
+        RocketGroupContractInterface rocketGroup = RocketGroupContractInterface(_groupID);
+        require(rocketGroup.hasWithdrawer(_from), "Group ID specified does not have a withdrawer matching the sender.");
+    }
+
+
     /// @dev Get the number of queued deposits a user has
     function getUserQueuedDepositCount(address _groupID, address _userID, string memory _durationID) public returns (uint256) {
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -257,6 +272,18 @@ contract RocketDepositAPI is RocketBase {
         emit DepositWithdraw(msg.sender, _userID, _groupID, _depositID, _minipool, amountWithdrawn, now);
         // Return withdrawn amount
         return amountWithdrawn;
+    }
+
+
+    /// @dev Set a backup withdrawal address for a minipool user
+    function setMinipoolUserBackupWithdrawalAddress(address _groupID, address _userID, address _minipool, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
+        // Verify the set backup address request is acceptable
+        checkUserBackupWithdrawalAddressIsValid(msg.sender, _groupID, _userID, _backupWithdrawalAddress);
+        // Set backup withdrawal address
+        rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
+        rocketDeposit.setMinipoolUserBackupWithdrawalAddress(_userID, _groupID, _minipool, _backupWithdrawalAddress);
+        // Success
+        return true;
     }
 
 

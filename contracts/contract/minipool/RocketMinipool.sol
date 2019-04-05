@@ -43,7 +43,7 @@ contract RocketMinipool {
 
     // Users
     mapping (bytes32 => User) private users;                    // Users in this pool
-    mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
+    mapping (bytes32 => bytes32) private userBackupIDs;         // Users backup withdrawal ID => users current ID in this pool, need these in a mapping so we can do a reverse lookup using the backup ID
     bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
@@ -291,18 +291,22 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the users original address specified for withdrawals
-    function getUserAddressFromBackupAddress(address _userBackupAddress) public view returns(address) {
-        return usersBackupAddress[_userBackupAddress];
+    function getUserIDFromBackupAddress(address _userBackupAddress, address _group) public view returns(bytes32) {
+        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
+        return userBackupIDs[backupID];
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals
-    function getUserBackupAddressExists(address _userBackupAddress) public view returns(bool) {
-        return usersBackupAddress[_userBackupAddress] != address(0x0);
+    function getUserBackupAddressExists(address _userBackupAddress, address _group) public view returns(bool) {
+        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
+        return userBackupIDs[backupID] != 0x0;
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
-    function getUserBackupAddressOK(address _user, address _group, address _userBackupAddress) public view isPoolUser(_user, _group) returns(bool) {
-        return usersBackupAddress[_userBackupAddress] == _user;
+    function getUserBackupAddressOK(address _user, address _userBackupAddress, address _group) public view isPoolUser(_user, _group) returns(bool) {
+        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
+        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
+        return userBackupIDs[backupID] == userID;
     }
 
     /// @dev Returns the true if the user has a deposit in this mini pool
@@ -373,6 +377,19 @@ contract RocketMinipool {
     function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+
+
+    /// @dev Set a user's backup withdrawal address
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
+    function setBackupWithdrawalAddress(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("setBackupWithdrawalAddress(address,address,address)", _user, _groupID, _backupWithdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;

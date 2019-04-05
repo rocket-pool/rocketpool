@@ -13,4 +13,5 @@ contract RocketDepositAPIInterface {
     function refundDepositMinipoolStalled(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
     function withdrawDepositMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public returns(uint256);
     function withdrawDepositMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public returns(uint256);
+    function setMinipoolUserBackupWithdrawalAddress(address _groupID, address _userID, address _minipool, address _backupWithdrawalAddress) public returns(bool);
 }

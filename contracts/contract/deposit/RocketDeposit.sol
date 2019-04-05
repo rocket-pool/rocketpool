@@ -206,6 +206,26 @@ contract RocketDeposit is RocketBase {
     }
 
 
+    // Set a backup withdrawal address for a minipool user
+    function setMinipoolUserBackupWithdrawalAddress(address _userID, address _groupID, address _minipool, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+
+        // Get minipool contract
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+
+        // Check user ID and backup withdrawal ID
+        require(minipool.getUserExists(_userID, _groupID), "The user does not exist in the minipool");
+        require(!minipool.getUserExists(_backupWithdrawalAddress, _groupID), "The backup withdrawal address is already in use by the minipool");
+        require(!minipool.getUserBackupAddressExists(_backupWithdrawalAddress, _groupID), "The backup withdrawal address is already in use by the minipool");
+
+        // Set backup withdrawal address
+        minipool.setBackupWithdrawalAddress(_userID, _groupID, _backupWithdrawalAddress);
+
+        // Success
+        return true;
+
+    }
+
+
     // Check deposit details are valid
     function checkDepositDetails(address _userID, address _groupID, bytes32 _depositID, address _minipool) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
