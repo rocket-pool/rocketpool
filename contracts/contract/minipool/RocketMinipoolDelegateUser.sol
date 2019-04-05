@@ -356,6 +356,27 @@ contract RocketMinipoolDelegateUser {
         return true;
     }
 
+    /// @dev Set a user's ID to their backup withdrawal ID
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _backupWithdrawalAddress The user's backup withdrawal address
+    function setUserIDToBackupWithdrawalID(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Check minipool status
+        require(status.current == 4, "Minipool is not currently allowing withdrawals.");
+        // Get user IDs
+        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
+        bytes32 backupID = keccak256(abi.encodePacked(_backupWithdrawalAddress, _groupID));
+        // Check IDs
+        require(users[userID].backup == _backupWithdrawalAddress, "Invalid backup withdrawal address.");
+        // Copy user record to user mapping, keyed by backup ID
+        users[backupID] = users[userID];
+        userIDs.push(backupID);
+        // Remove existing user record
+        removeUser(_user, _groupID);
+        // Success
+        return true;
+    }
+
     /// @dev Register a new user in the minipool
     /// @param _user New user address
     /// @param _groupID The 3rd party group address the user belongs to

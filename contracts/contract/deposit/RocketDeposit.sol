@@ -7,6 +7,7 @@ import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/group/RocketGroupAccessorContractInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/token/RocketBETHTokenInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
@@ -37,6 +38,7 @@ contract RocketDeposit is RocketBase {
     RocketDepositQueueInterface rocketDepositQueue = RocketDepositQueueInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     RocketBETHTokenInterface rocketBETHToken = RocketBETHTokenInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
@@ -188,8 +190,29 @@ contract RocketDeposit is RocketBase {
         rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
         uint256 initialBalance = rocketBETHToken.balanceOf(_withdrawerAddress);
 
-        // Get minipool user balance & withdraw deposit from minipool
+        // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+
+        /*
+        // Check if user is withdrawing from backup address
+        if (!minipool.getUserExists(_userID, _groupID) && minipool.getUserBackupAddressExists(_userID, _groupID)) {
+
+            // Check minipool settings
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            require(rocketMinipoolSettings.getMinipoolBackupCollectEnabled(), "Withdrawal from backup addresses is not currently allowed.");
+            require(minipool.getStatus() == 4 && block.number >= (minipool.getStatusChangedBlock() + rocketMinipoolSettings.getMinipoolBackupCollectDuration()), "Withdrawal from backup addresses is not yet allowed by this minipool.");
+
+            // Get and check user address
+            address userAddress = minipool.getUserAddressFromBackupAddress(_userID, _groupID);
+            require(minipool.getUserBackupAddressOK(userAddress, _userID, _groupID));
+
+            // Set user ID to backup withdrawal ID
+            minipool.setUserIDToBackupWithdrawalID(userAddress, _groupID, _userID);
+
+        }
+        */
+
+        // Withdraw from minipool
         minipool.withdraw(_userID, _groupID, _withdrawerAddress);
 
         // Get amount withdrawn

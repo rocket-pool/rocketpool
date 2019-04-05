@@ -291,9 +291,9 @@ contract RocketMinipool {
     }
 
     /// @dev Returns the users original address specified for withdrawals
-    function getUserIDFromBackupAddress(address _userBackupAddress, address _group) public view returns(bytes32) {
+    function getUserAddressFromBackupAddress(address _userBackupAddress, address _group) public view returns(address) {
         bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
-        return userBackupIDs[backupID];
+        return users[userBackupIDs[backupID]].user;
     }
 
     /// @dev Returns the true if the user has a backup address specified for withdrawals
@@ -394,6 +394,21 @@ contract RocketMinipool {
         // Success
         return true;
     }
+
+
+    /*
+    /// @dev Set a user's ID to their backup withdrawal ID
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _backupWithdrawalAddress The user's backup withdrawal address
+    function setUserIDToBackupWithdrawalID(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Will throw if conditions are not met in delegate or call fails
+        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("setUserIDToBackupWithdrawalID(address,address,address)", _user, _groupID, _backupWithdrawalAddress));
+        require(success, "Delegate call failed.");
+        // Success
+        return true;
+    }
+    */
 
 
     /*** MINIPOOL  ******************************************/
