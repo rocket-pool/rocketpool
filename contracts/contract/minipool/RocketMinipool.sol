@@ -125,13 +125,6 @@ contract RocketMinipool {
     /*** Modifiers *************/
 
 
-    /// @dev Only the node owner which this minipool belongs to
-    /// @param _nodeOwner The node owner address.
-    modifier isNodeOwner(address _nodeOwner) {
-        require(_nodeOwner != address(0x0) && _nodeOwner == node.owner, "Incorrect node owner address passed.");
-        _;
-    }
-
     /// @dev Only the node contract which this minipool belongs to
     /// @param _nodeContract The node contract address
     modifier isNodeContract(address _nodeContract) {
