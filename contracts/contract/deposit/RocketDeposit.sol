@@ -185,7 +185,7 @@ contract RocketDeposit is RocketBase {
     function withdrawFromWithdrawnMinipool(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
         // Check deposit details
-        checkDepositDetails(_userID, _groupID, _depositID, _minipool);
+        checkDepositDetails(address(0x0), _groupID, _depositID, _minipool);
 
         // Get initial withdrawer address balance
         rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
@@ -193,6 +193,9 @@ contract RocketDeposit is RocketBase {
 
         // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+
+        // Check user ID
+        if (minipool.getUserExists(_userID, _groupID)) { require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID"); }
 
         // Check if user is withdrawing from backup address
         if (!minipool.getUserExists(_userID, _groupID) && minipool.getUserBackupAddressExists(_userID, _groupID)) {
@@ -246,10 +249,11 @@ contract RocketDeposit is RocketBase {
 
 
     // Check deposit details are valid
+    // Ignores user ID if null
     function checkDepositDetails(address _userID, address _groupID, bytes32 _depositID, address _minipool) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         require(rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", _depositID))), "Deposit does not exist");
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID");
+        if (_userID != address(0x0)) { require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID"); }
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
         require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
     }
