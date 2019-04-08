@@ -1,8 +1,8 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
+import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { stakeSingleMinipool, withdrawMinipool } from '../_helpers/rocket-minipool';
+import { stakeSingleMinipool, withdrawMinipool, enableMinipoolBackupCollect } from '../_helpers/rocket-minipool';
 import { scenarioDeposit, scenarioWithdrawMinipoolDeposit, scenarioAPIWithdrawMinipoolDeposit, scenarioSetBackupWithdrawalAddress, scenarioAPISetBackupWithdrawalAddress } from './rocket-deposit-api-scenarios';
 
 export default function() {
@@ -25,6 +25,7 @@ export default function() {
         // Setup
         let rocketDepositAPI;
         let rocketDepositSettings;
+        let rocketMinipoolSettings;
         let groupContract;
         let groupAccessorContract;
         let nodeContract;
@@ -36,6 +37,7 @@ export default function() {
             // Get contracts
             rocketDepositAPI = await RocketDepositAPI.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
+            rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -343,6 +345,61 @@ export default function() {
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Set a backup withdrawal address after minipool logout');
+        });
+
+
+        // Staker cannot withdraw using a backup withdrawal address before backup collect duration has passed
+        it(printTitle('staker', 'cannot withdraw using a backup withdrawal address before backup collect duration has passed'), async () => {
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID,
+                minipoolAddress: minipool.address,
+                fromAddress: user2Backup,
+                gas: 5000000,
+            }), 'Withdrew from a backup address before backup collection duration passed');
+        });
+
+
+        // Staker cannot withdraw using a backup withdrawal address while backup collection is disabled
+        it(printTitle('staker', 'cannot withdraw using a backup withdrawal address while backup collection is disabled'), async () => {
+
+            // Enable minipool backup collection
+            await rocketMinipoolSettings.setMinipoolBackupCollectDuration(5, {from: owner, gas: 500000});
+            await enableMinipoolBackupCollect({minipoolAddress: minipool.address});
+
+            // Disable backup collection
+            await rocketMinipoolSettings.setMinipoolBackupCollectEnabled(false, {from: owner, gas: 500000});
+
+            // Withdraw
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID,
+                minipoolAddress: minipool.address,
+                fromAddress: user2Backup,
+                gas: 5000000,
+            }), 'Withdrew from a backup address while backup collection was disabled');
+
+            // Re-enable backup collection
+            await rocketMinipoolSettings.setMinipoolBackupCollectEnabled(true, {from: owner, gas: 500000});
+
+        });
+
+
+        // Staker can withdraw using a backup withdrawal address
+        it(printTitle('staker', 'can withdraw using a backup withdrawal address'), async () => {
+
+            // Withdraw
+            await scenarioWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID,
+                minipoolAddress: minipool.address,
+                fromAddress: user2Backup,
+                gas: 5000000,
+            });
+
+            // Reset backup collect duration
+            await rocketMinipoolSettings.setMinipoolBackupCollectDuration(526000, {from: owner, gas: 500000});
+
         });
 
 

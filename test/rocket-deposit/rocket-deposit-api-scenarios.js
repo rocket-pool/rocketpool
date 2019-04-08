@@ -324,7 +324,7 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     // Get initial minipool user status
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
-    let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress, groupID));
+    let userBackupExists1 = await minipool.getUserBackupAddressExists.call(fromAddress, groupID);
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
@@ -351,9 +351,8 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
 
     // Asserts
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
-    assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
+    assert.equal(userExists1 || userBackupExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Minipool user was not removed correctly');
-    assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
     assert.isTrue(userRpbBalance2 > userRpbBalance1, 'User RPB balance was not updated correctly');
     assert.isTrue(rpRpbBalance2 > rpRpbBalance1, 'User RPB balance was not updated correctly');
     assert.isTrue(nodeRpbBalance2 > nodeRpbBalance1, 'User RPB balance was not updated correctly');
