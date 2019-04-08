@@ -295,13 +295,6 @@ contract RocketMinipool {
         return userBackupIDs[backupID] != 0x0;
     }
 
-    /// @dev Returns the true if the user has a backup address specified for withdrawals and that maps correctly to their original user address
-    function getUserBackupAddressOK(address _user, address _userBackupAddress, address _group) public view isPoolUser(_user, _group) returns(bool) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
-        return userBackupIDs[backupID] == userID;
-    }
-
     /// @dev Returns the true if the user has a deposit in this mini pool
     function getUserHasDeposit(address _user, address _group) public view returns(bool) {
         bytes32 userID = keccak256(abi.encodePacked(_user, _group));
@@ -389,7 +382,6 @@ contract RocketMinipool {
     }
 
 
-    /*
     /// @dev Set a user's ID to their backup withdrawal ID
     /// @param _user User address
     /// @param _groupID The 3rd party group the user belongs to
@@ -401,7 +393,6 @@ contract RocketMinipool {
         // Success
         return true;
     }
-    */
 
 
     /*** MINIPOOL  ******************************************/

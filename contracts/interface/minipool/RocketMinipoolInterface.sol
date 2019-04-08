@@ -14,7 +14,6 @@ contract RocketMinipoolInterface {
     function getUserExists(address _user, address _group) public view returns(bool);
     function getUserAddressFromBackupAddress(address _userBackupAddress, address _group) public view returns(address);
     function getUserBackupAddressExists(address _userBackupAddress, address _group) public view returns(bool);
-    function getUserBackupAddressOK(address _user, address _userBackupAddress, address _group) public view returns(bool);
     function getUserHasDeposit(address _user, address _group) public view returns(bool);
     function getUserDeposit(address _user, address _group) public view returns(uint256);
     function getStatus() public view returns(uint8);
