@@ -2,6 +2,7 @@ pragma solidity 0.5.0;
 
 
 import "../../RocketBase.sol";
+import "../../interface/deposit/RocketDepositIndexInterface.sol";
 import "../../interface/deposit/RocketDepositQueueInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/group/RocketGroupAccessorContractInterface.sol";
@@ -10,7 +11,6 @@ import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/token/RocketBETHTokenInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
-import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
 
@@ -35,13 +35,13 @@ contract RocketDeposit is RocketBase {
     /*** Contracts **************/
 
 
+    RocketDepositIndexInterface rocketDepositIndex = RocketDepositIndexInterface(0);
     RocketDepositQueueInterface rocketDepositQueue = RocketDepositQueueInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     RocketBETHTokenInterface rocketBETHToken = RocketBETHTokenInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
-    Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
 
 
     /*** Modifiers **************/
@@ -78,7 +78,8 @@ contract RocketDeposit is RocketBase {
         require(msg.value > 0, "Invalid deposit amount sent");
 
         // Add deposit
-        bytes32 depositID = add(_userID, _groupID, _durationID, msg.value);
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        bytes32 depositID = rocketDepositIndex.add(_userID, _groupID, _durationID, msg.value);
 
         // Add deposit to queue
         rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));
@@ -193,7 +194,6 @@ contract RocketDeposit is RocketBase {
         // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
 
-        /*
         // Check if user is withdrawing from backup address
         if (!minipool.getUserExists(_userID, _groupID) && minipool.getUserBackupAddressExists(_userID, _groupID)) {
 
@@ -202,15 +202,11 @@ contract RocketDeposit is RocketBase {
             require(rocketMinipoolSettings.getMinipoolBackupCollectEnabled(), "Withdrawal from backup addresses is not currently allowed.");
             require(minipool.getStatus() == 4 && block.number >= (minipool.getStatusChangedBlock() + rocketMinipoolSettings.getMinipoolBackupCollectDuration()), "Withdrawal from backup addresses is not yet allowed by this minipool.");
 
-            // Get and check user address
+            // Get user address; set user ID to backup withdrawal ID
             address userAddress = minipool.getUserAddressFromBackupAddress(_userID, _groupID);
-            require(minipool.getUserBackupAddressOK(userAddress, _userID, _groupID));
-
-            // Set user ID to backup withdrawal ID
             minipool.setUserIDToBackupWithdrawalID(userAddress, _groupID, _userID);
 
         }
-        */
 
         // Withdraw from minipool
         minipool.withdraw(_userID, _groupID, _withdrawerAddress);
@@ -256,40 +252,6 @@ contract RocketDeposit is RocketBase {
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID");
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
         require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
-    }
-
-
-    // Add a deposit
-    // Returns the new deposit ID
-    function add(address _userID, address _groupID, string memory _durationID, uint256 _amount) private returns (bytes32) {
-
-        // Get user deposit nonce
-        uint depositIDNonce = rocketStorage.getUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID, _durationID))).add(1);
-        rocketStorage.setUint(keccak256(abi.encodePacked("user.deposit.nonce", _userID, _groupID, _durationID)), depositIDNonce);
-
-        // Get deposit ID
-        bytes32 depositID = keccak256(abi.encodePacked("deposit", _userID, _groupID, _durationID, depositIDNonce));
-        require(!rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", depositID))), "Deposit ID already in use");
-
-        // Set deposit details
-        rocketStorage.setBool(keccak256(abi.encodePacked("deposit.exists", depositID)), true);
-        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.userID", depositID)), _userID);
-        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.groupID", depositID)), _groupID);
-        rocketStorage.setString(keccak256(abi.encodePacked("deposit.stakingDurationID", depositID)), _durationID);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.totalAmount", depositID)), _amount);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)), _amount);
-        // + stakingAmount
-        // + stakingPools
-        // + stakingPoolAmount
-        // + refundedAmount
-
-        // Update deposit indexes
-        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-        bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)), depositID);
-
-        // Return ID
-        return depositID;
-
     }
 
 
