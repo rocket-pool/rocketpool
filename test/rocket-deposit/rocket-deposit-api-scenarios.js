@@ -364,6 +364,29 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
 }
 
 
+// Set a backup withdrawal address for a minipool
+export async function scenarioSetBackupWithdrawalAddress({withdrawerContract, minipoolAddress, backupWithdrawalAddress, fromAddress, gas}) {
+    const minipool = await RocketMinipool.at(minipoolAddress);
+
+    // Get group ID
+    let groupID = await withdrawerContract.groupID.call();
+
+    // Get initial backup address status
+    let addressFromBackup1 = await minipool.getUserAddressFromBackupAddress.call(backupWithdrawalAddress, groupID);
+
+    // Set backup withdrawal address
+    await withdrawerContract.setMinipoolBackupWithdrawalAddress(minipoolAddress, backupWithdrawalAddress, {from: fromAddress, gas: gas});
+
+    // Get updated backup address status
+    let addressFromBackup2 = await minipool.getUserAddressFromBackupAddress.call(backupWithdrawalAddress, groupID);
+
+    // Asserts
+    assert.equal(addressFromBackup1, '0x0000000000000000000000000000000000000000', 'Backup withdrawal address was already set');
+    assert.equal(addressFromBackup2.toLowerCase(), fromAddress.toLowerCase(), 'Backup withdrawal address was not set successfully');
+
+}
+
+
 // Attempt a deposit via the depositor contract rocketpoolEtherDeposit method
 export async function scenarioRocketpoolEtherDeposit({depositorContract, fromAddress, value, gas}) {
     await depositorContract.rocketpoolEtherDeposit({from: fromAddress, value: value, gas: gas});
@@ -414,6 +437,16 @@ export async function scenarioAPIWithdrawMinipoolDeposit({groupID, userID, depos
 
     // Withdraw
     await rocketDepositAPI.withdrawDepositMinipool(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+
+
+// Attempt to set a backup withdrawal address for a minipool via the deposit API
+export async function scenarioAPISetBackupWithdrawalAddress({groupID, userID, minipoolAddress, backupWithdrawalAddress, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+
+    // Set backup withdrawal address
+    await rocketDepositAPI.setMinipoolUserBackupWithdrawalAddress(groupID, userID, minipoolAddress, backupWithdrawalAddress, {from: fromAddress, gas: gas});
 
 }
 
