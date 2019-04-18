@@ -273,11 +273,35 @@ module.exports = async (deployer, network) => {
       await nodeTasksInstance.add(taskInstance.address);
     }
   }
+  // Deploy default Rocket Pool group & accessor contract
+  const registerRocketPoolGroup = async function() {
+    // Get contracts
+    let rocketGroupSettingsInstance = await contracts.rocketGroupSettings.deployed();
+    let rocketGroupAPIInstance = await contracts.rocketGroupAPI.deployed();
+    // Get new group fee
+    let newGroupFee = await rocketGroupSettingsInstance.getNewFee.call();
+    // Create group
+    let groupAddResult = await rocketGroupAPIInstance.add('rocketpool', 0, {value: newGroupFee});
+    let groupId = groupAddResult.logs.filter(log => log.event == 'GroupAdd')[0].args.ID;
+    // Create group accessor
+    let groupAccessorResult = await rocketGroupAPIInstance.createDefaultAccessor(groupId);
+    let groupAccessorAddress = groupAccessorResult.logs.filter(log => log.event == 'GroupCreateDefaultAccessor')[0].args.accessorAddress;
+    // Add group accessor
+    let rocketGroupInstance = await abis.rocketGroupContract.at(groupId);
+    await rocketGroupInstance.addDepositor(groupAccessorAddress);
+    await rocketGroupInstance.addWithdrawer(groupAccessorAddress);
+    // Log it
+    console.log('\x1b[33m%s\x1b[0m:', 'Rocket Pool group address');
+    console.log(groupId);
+    console.log('\x1b[33m%s\x1b[0m:', 'Rocket Pool group accessor address');
+    console.log(groupAccessorAddress);
+  }
   // Run it
   await addContracts();
   await addABIs();
   await registerSubscriptions();
   await registerNodeTasks();
+  await registerRocketPoolGroup();
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(
     $web3.utils.soliditySha3('contract.storage.initialised'),
