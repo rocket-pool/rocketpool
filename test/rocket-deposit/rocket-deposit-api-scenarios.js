@@ -324,7 +324,7 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     // Get initial minipool user status
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
-    let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress, groupID));
+    let userBackupExists1 = await minipool.getUserBackupAddressExists.call(fromAddress, groupID);
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
@@ -351,15 +351,37 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
 
     // Asserts
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
-    assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
+    assert.equal(userExists1 || userBackupExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Minipool user was not removed correctly');
-    assert.isTrue(userDeposit1 > 0, 'Initial user deposit check incorrect');
     assert.isTrue(userRpbBalance2 > userRpbBalance1, 'User RPB balance was not updated correctly');
     assert.isTrue(rpRpbBalance2 > rpRpbBalance1, 'User RPB balance was not updated correctly');
     assert.isTrue(nodeRpbBalance2 > nodeRpbBalance1, 'User RPB balance was not updated correctly');
     assert.isTrue(groupRpbBalance2 > groupRpbBalance1, 'User RPB balance was not updated correctly');
     assert.equal(minipoolRpbBalance2, minipoolRpbBalance1 - totalRpbSent, 'Minipool RPB balance was not updated correctly');
     assert.equal(minipoolEthBalance2, minipoolEthBalance1, 'Minipool ether balance changed and should not have');
+
+}
+
+
+// Set a backup withdrawal address for a minipool
+export async function scenarioSetBackupWithdrawalAddress({withdrawerContract, minipoolAddress, backupWithdrawalAddress, fromAddress, gas}) {
+    const minipool = await RocketMinipool.at(minipoolAddress);
+
+    // Get group ID
+    let groupID = await withdrawerContract.groupID.call();
+
+    // Get initial backup address status
+    let addressFromBackup1 = await minipool.getUserAddressFromBackupAddress.call(backupWithdrawalAddress, groupID);
+
+    // Set backup withdrawal address
+    await withdrawerContract.setMinipoolBackupWithdrawalAddress(minipoolAddress, backupWithdrawalAddress, {from: fromAddress, gas: gas});
+
+    // Get updated backup address status
+    let addressFromBackup2 = await minipool.getUserAddressFromBackupAddress.call(backupWithdrawalAddress, groupID);
+
+    // Asserts
+    assert.equal(addressFromBackup1, '0x0000000000000000000000000000000000000000', 'Backup withdrawal address was already set');
+    assert.equal(addressFromBackup2.toLowerCase(), fromAddress.toLowerCase(), 'Backup withdrawal address was not set successfully');
 
 }
 
@@ -414,6 +436,16 @@ export async function scenarioAPIWithdrawMinipoolDeposit({groupID, userID, depos
 
     // Withdraw
     await rocketDepositAPI.withdrawDepositMinipool(groupID, userID, depositID, minipoolAddress, {from: fromAddress, gas: gas});
+
+}
+
+
+// Attempt to set a backup withdrawal address for a minipool via the deposit API
+export async function scenarioAPISetBackupWithdrawalAddress({groupID, userID, minipoolAddress, backupWithdrawalAddress, fromAddress, gas}) {
+    const rocketDepositAPI = await RocketDepositAPI.deployed();
+
+    // Set backup withdrawal address
+    await rocketDepositAPI.setMinipoolUserBackupWithdrawalAddress(groupID, userID, minipoolAddress, backupWithdrawalAddress, {from: fromAddress, gas: gas});
 
 }
 

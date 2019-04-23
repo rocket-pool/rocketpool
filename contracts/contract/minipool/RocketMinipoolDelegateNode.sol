@@ -43,7 +43,7 @@ contract RocketMinipoolDelegateNode {
 
     // Users
     mapping (bytes32 => User) private users;                    // Users in this pool
-    mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
+    mapping (bytes32 => bytes32) private userBackupIDs;         // Users backup withdrawal ID => users current ID in this pool, need these in a mapping so we can do a reverse lookup using the backup ID
     bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
@@ -132,13 +132,6 @@ contract RocketMinipoolDelegateNode {
 
     /*** Modifiers *************/
 
-
-    /// @dev Only the node owner which this minipool belongs to
-    /// @param _nodeOwner The node owner address.
-    modifier isNodeOwner(address _nodeOwner) {
-        require(_nodeOwner != address(0x0) && _nodeOwner == node.owner, "Incorrect node owner address passed.");
-        _;
-    }
 
     /// @dev Only the node contract which this minipool belongs to
     /// @param _nodeContract The node contract address

@@ -31,6 +31,7 @@ contracts.rocketGroupAPI = artifacts.require('./api/RocketGroupAPI.sol');
 contracts.rocketNodeAPI = artifacts.require('./api/RocketNodeAPI.sol');
 // Deposit
 contracts.rocketDeposit = artifacts.require('./deposit/RocketDeposit.sol');
+contracts.rocketDepositIndex = artifacts.require('./deposit/RocketDepositIndex.sol');
 contracts.rocketDepositQueue = artifacts.require('./deposit/RocketDepositQueue.sol');
 contracts.rocketDepositVault = artifacts.require('./deposit/RocketDepositVault.sol');
 // Group

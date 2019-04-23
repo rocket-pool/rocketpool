@@ -159,7 +159,7 @@ contract RocketMinipoolSettings is RocketBase {
 
     /// @dev The time limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit
     function setMinipoolBackupCollectDuration(uint256 _blocks) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.backupcollect.time")), _blocks); 
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.backupcollect.blocks")), _blocks); 
     }
 
     /// @dev Minipools allowed to be created?

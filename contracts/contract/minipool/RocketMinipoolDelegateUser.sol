@@ -43,7 +43,7 @@ contract RocketMinipoolDelegateUser {
 
     // Users
     mapping (bytes32 => User) private users;                    // Users in this pool
-    mapping (address => address) private usersBackupAddress;    // Users backup withdrawal address => users current address in this pool, need these in a mapping so we can do a reverse lookup using the backup address
+    mapping (bytes32 => bytes32) private userBackupIDs;         // Users backup withdrawal ID => users current ID in this pool, need these in a mapping so we can do a reverse lookup using the backup ID
     bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
 
 
@@ -332,6 +332,47 @@ contract RocketMinipoolDelegateUser {
         // Update the status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
         minipool.updateStatus();
+        // Success
+        return true;
+    }
+
+    /// @dev Set a user's backup withdrawal address
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
+    function setBackupWithdrawalAddress(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Check minipool status
+        require(status.current == 1 || status.current == 2, "Minipool is not currently allowing backup withdrawal addresses to be set.");
+        // Get user IDs
+        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
+        bytes32 backupID = keccak256(abi.encodePacked(_backupWithdrawalAddress, _groupID));
+        // Remove any existing backup address for the user
+        address currentBackupAddress = users[userID].backup;
+        if (currentBackupAddress != address(0x0)) { userBackupIDs[keccak256(abi.encodePacked(currentBackupAddress, _groupID))] = 0x0; }
+        // Set backup ID
+        userBackupIDs[backupID] = userID;
+        users[userID].backup = _backupWithdrawalAddress;
+        // Success
+        return true;
+    }
+
+    /// @dev Set a user's ID to their backup withdrawal ID
+    /// @param _user User address
+    /// @param _groupID The 3rd party group the user belongs to
+    /// @param _backupWithdrawalAddress The user's backup withdrawal address
+    function setUserIDToBackupWithdrawalID(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+        // Check minipool status
+        require(status.current == 4, "Minipool is not currently allowing withdrawals.");
+        // Get user IDs
+        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
+        bytes32 backupID = keccak256(abi.encodePacked(_backupWithdrawalAddress, _groupID));
+        // Check IDs
+        require(users[userID].backup == _backupWithdrawalAddress, "Invalid backup withdrawal address.");
+        // Copy user record to user mapping, keyed by backup ID
+        users[backupID] = users[userID];
+        userIDs.push(backupID);
+        // Remove existing user record
+        removeUser(_user, _groupID);
         // Success
         return true;
     }

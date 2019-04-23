@@ -83,3 +83,39 @@ export async function withdrawMinipool({minipoolAddress, balance, nodeOperator, 
 
 }
 
+
+// Make minipool progress to backup collection enabled
+export async function enableMinipoolBackupCollect({minipoolAddress}) {
+
+    // Get contracts
+    let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+    let minipool = await RocketMinipoolInterface.at(minipoolAddress);
+
+    // Get minipool status change block and backup collect duration
+    let minipoolBackupCollectDuration = parseInt(await rocketMinipoolSettings.getMinipoolBackupCollectDuration.call());
+    let minipoolStatusChangeBlock = parseInt(await minipool.getStatusChangedBlock.call());
+
+    // Get current block number
+    let latestBlock = await web3.eth.getBlock('latest');
+    let blockNumber = latestBlock.number;
+
+    // Get target block to advance to
+    let targetBlock = minipoolStatusChangeBlock + minipoolBackupCollectDuration;
+
+    // Advance blocks
+    while (blockNumber < targetBlock) {
+        await new Promise((resolve, reject) => {
+            web3.currentProvider.send({
+                jsonrpc: '2.0',
+                method: 'evm_mine',
+                params: [],
+                id: new Date().getSeconds()
+            }, (error, result) => {
+                if (error) reject(error);
+                if (result) resolve(result.result);
+            });
+        });
+    }
+
+}
+
