@@ -5,11 +5,12 @@ const RocketUpgrade = artifacts.require('./RocketUpgrade');
 module.exports = async (done) => {
     try {
 
-        // Validate arguments
-        const args = process.argv.splice(4);
+        // Parse & validate arguments
+        const args = process.argv.slice(4);
         if (args.length != 3) throw new Error('Usage: truffle exec initialise-approvers.js address1 address2 address3');
-        args.forEach((arg, i) => {
-            if (!web3.utils.isAddress(arg)) throw new Error('Invalid approver address ' + (i + 1));
+        const approvers = args;
+        approvers.forEach((approver, i) => {
+            if (!web3.utils.isAddress(approver)) throw new Error('Invalid approver address ' + (i + 1));
         });
 
         // Get owner account
@@ -20,10 +21,10 @@ module.exports = async (done) => {
         const rocketUpgrade = await RocketUpgrade.deployed();
 
         // Initialise approvers
-        await rocketUpgrade.initialiseUpgradeApprovers(args, {from: owner});
+        await rocketUpgrade.initialiseUpgradeApprovers(approvers, {from: owner});
 
         // Success
-        done('Upgrade approvers initialised successfully: ' + args.join(' '));
+        done('Upgrade approvers initialised successfully: ' + approvers.join(' '));
 
     }
     catch (e) {
