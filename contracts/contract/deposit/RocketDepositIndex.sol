@@ -56,6 +56,7 @@ contract RocketDepositIndex is RocketBase {
         // + stakingPools
         // + stakingPoolAmount
         // + refundedAmount
+        // + withdrawnAmount
 
         // Update deposit indexes
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
