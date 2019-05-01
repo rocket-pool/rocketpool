@@ -70,6 +70,30 @@ contract RocketDepositIndex is RocketBase {
     }
 
 
+    // Handle assignment of a deposit fragment to a minipool
+    function assign(bytes32 _depositID, address _minipool, uint256 _assignAmount) public onlyLatestContract("rocketDepositQueue", msg.sender) {
+
+        // Decrease queued amount
+        uint256 queuedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)), queuedAmount.sub(_assignAmount));
+
+        // Increase staking amount
+        uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)), stakingAmount.add(_assignAmount));
+
+        // Add staking pool if user is joining pool
+        uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)));
+        if (stakingPoolAmount == 0) {
+            addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+            addressSetStorage.addItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
+        }
+
+        // Increase staking pool amount
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), stakingPoolAmount.add(_assignAmount));
+
+    }
+
+
     // Handle a refund of a queued deposit
     function refund(bytes32 _depositID, uint256 _refundAmount) public onlyLatestContract("rocketDeposit", msg.sender) {
 
