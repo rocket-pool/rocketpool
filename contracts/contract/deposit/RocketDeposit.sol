@@ -110,7 +110,8 @@ contract RocketDeposit is RocketBase {
 
         // Update deposit details
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)), 0);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)), refundAmount);
+        uint256 refundedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)), refundedAmount.add(refundAmount));
 
         // Withdraw refund amount from vault
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
@@ -137,10 +138,14 @@ contract RocketDeposit is RocketBase {
         uint256 refundAmount = minipool.getUserDeposit(_userID, _groupID);
         minipool.refund(_userID, _groupID, address(this));
 
-        // Update deposit pool details
+        // Update deposit details
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)), stakingAmount.sub(refundAmount));
         addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), 0);
+        uint256 refundedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)), refundedAmount.add(refundAmount));
 
         // Transfer refund amount to depositor
         RocketGroupAccessorContractInterface depositor = RocketGroupAccessorContractInterface(_depositorAddress);
@@ -170,10 +175,17 @@ contract RocketDeposit is RocketBase {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         minipool.withdrawStaking(_userID, _groupID, _amount, tokenAmount, _withdrawerAddress);
 
-        // Update deposit pool details
-        if (!minipool.getUserHasDeposit(_userID, _groupID)) { addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool); }
+        // Update deposit details
+        uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)), stakingAmount.sub(_amount));
+        if (!minipool.getUserHasDeposit(_userID, _groupID)) {
+            addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
+        }
         uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)));
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), stakingPoolAmount.sub(_amount));
+        uint256 withdrawnAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.withdrawnAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.withdrawnAmount", _depositID)), withdrawnAmount.add(_amount));
 
         // Return token amount withdrawn
         return tokenAmount;
@@ -211,16 +223,23 @@ contract RocketDeposit is RocketBase {
 
         }
 
+        // Get user deposit amount
+        uint256 userDepositAmount = minipool.getUserDeposit(_userID, _groupID);
+
         // Withdraw from minipool
         minipool.withdraw(_userID, _groupID, _withdrawerAddress);
 
         // Get amount withdrawn
         uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
 
-        // Update deposit pool details
+        // Update deposit details
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)), stakingAmount.sub(userDepositAmount));
         addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), 0);
+        uint256 withdrawnAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.withdrawnAmount", _depositID)));
+        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.withdrawnAmount", _depositID)), withdrawnAmount.add(userDepositAmount));
 
         // Return withdrawn amount
         return withdrawalAmount;
