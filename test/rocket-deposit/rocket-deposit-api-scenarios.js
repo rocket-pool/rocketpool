@@ -410,6 +410,10 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
     let userBackupExists1 = await minipool.getUserBackupAddressExists.call(fromAddress, groupID);
+    let userDeposit1 = userExists1 ? parseInt(await minipool.getUserDeposit.call(fromAddress, groupID)) : null;
+
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
@@ -427,6 +431,9 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let userCount2 = parseInt(await minipool.getUserCount.call());
     let userExists2 = await minipool.getUserExists.call(fromAddress, groupID);
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get RPB transfer amounts
     let userRpbSent = userRpbBalance2 - userRpbBalance1;
     let rpRpbSent = rpRpbBalance2 - rpRpbBalance1;
@@ -435,6 +442,9 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let totalRpbSent = userRpbSent + rpRpbSent + nodeRpbSent + groupRpbSent;
 
     // Asserts
+    if (userDeposit1) assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - userDeposit1, 'Deposit staking amount was not decreased correctly');
+    if (userDeposit1) assert.equal(parseInt(depositDetails2.withdrawnAmount), parseInt(depositDetails1.withdrawnAmount) + userDeposit1, 'Deposit withdrawn amount was not increased correctly');
+    assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
     assert.equal(userExists1 || userBackupExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Minipool user was not removed correctly');
