@@ -349,6 +349,9 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress, groupID));
     let userStakingTokensWithdrawn1 = parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress, groupID));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Check if the user should be removed
     let expectUserRemoved = (amountInt == userDeposit1);
 
@@ -366,7 +369,14 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     let userDeposit2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserDeposit.call(fromAddress, groupID)));
     let userStakingTokensWithdrawn2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress, groupID)));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Asserts
+    assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - amountInt, 'Deposit staking amount was not decreased correctly');
+    assert.equal(parseInt(depositDetails2.withdrawnAmount), parseInt(depositDetails1.withdrawnAmount) + amountInt, 'Deposit withdrawn amount was not increased correctly');
+    if (expectUserRemoved) assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
+    else assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], depositDetails1.pools[minipoolAddress.toLowerCase()] - amountInt, 'Deposit staking pool amount was not decreased correctly');
     assert.equal(userCount2, (expectUserRemoved ? userCount1 - 1 : userCount1), 'Minipool user count was not updated correctly');
     assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, !expectUserRemoved, 'Second minipool user exists check incorrect');
