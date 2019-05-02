@@ -270,9 +270,9 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
     let queueBalance2 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Asserts
-    assert.isTrue(fromBalance2 > fromBalance1, 'From address balance was not increased');
     assert.equal(parseInt(depositDetails2.queuedAmount), 0, 'Deposit queued amount was not decreased');
-    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.queuedAmount), 'Deposit refunded amount was not increased');
+    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.refundedAmount) + parseInt(depositDetails1.queuedAmount), 'Deposit refunded amount was not increased correctly');
+    assert.isTrue(fromBalance2 > fromBalance1, 'From address balance was not increased');
     assert.equal(depositCount2, depositCount1 - 1, 'User deposit count was not decremented');
     assert.equal(depositBalance2, 0, 'Queued deposit balance was not set to 0');
     assert.equal(queueBalance2, queueBalance1 - depositBalance1, 'Deposit queue balance was not decreased by deposit amount');
@@ -291,6 +291,9 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
     let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Get initial minipool user status
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
@@ -304,11 +307,17 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
     let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get updated minipool user status
     let userCount2 = parseInt(await minipool.getUserCount.call());
     let userExists2 = await minipool.getUserExists.call(fromAddress, groupID);
 
     // Asserts
+    assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - userDeposit1, 'Deposit staking amount was not decreased correctly');
+    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.refundedAmount) + userDeposit1, 'Deposit refunded amount was not increased correctly');
+    assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
     assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Second minipool user exists check incorrect');
