@@ -247,6 +247,9 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
     // Get initial from address balance
     let fromBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Get initial queue status
     let depositCount1 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
     let depositBalance1 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
@@ -258,6 +261,9 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
     // Get updated from address balance
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get updated queue status
     let depositCount2 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
     let depositBalance2 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
@@ -265,6 +271,8 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
 
     // Asserts
     assert.isTrue(fromBalance2 > fromBalance1, 'From address balance was not increased');
+    assert.equal(parseInt(depositDetails2.queuedAmount), 0, 'Deposit queued amount was not decreased');
+    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.queuedAmount), 'Deposit refunded amount was not increased');
     assert.equal(depositCount2, depositCount1 - 1, 'User deposit count was not decremented');
     assert.equal(depositBalance2, 0, 'Queued deposit balance was not set to 0');
     assert.equal(queueBalance2, queueBalance1 - depositBalance1, 'Deposit queue balance was not decreased by deposit amount');
