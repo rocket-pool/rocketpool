@@ -63,6 +63,41 @@ async function getMinipoolBalances(minipools) {
 }
 
 
+// Get deposit details
+async function getDepositDetails(depositID) {
+    const rocketDepositIndex = await RocketDepositIndex.deployed();
+
+    // Get deposit data
+    let [totalAmount, queuedAmount, stakingAmount, refundedAmount, withdrawnAmount, stakingPoolCount] = await Promise.all([
+        rocketDepositIndex.getUserDepositTotalAmount.call(depositID),
+        rocketDepositIndex.getUserDepositQueuedAmount.call(depositID),
+        rocketDepositIndex.getUserDepositStakingAmount.call(depositID),
+        rocketDepositIndex.getUserDepositRefundedAmount.call(depositID),
+        rocketDepositIndex.getUserDepositWithdrawnAmount.call(depositID),
+        rocketDepositIndex.getUserDepositStakingPoolCount.call(depositID),
+    ]);
+
+    // Get staking pools
+    let pi, poolAddress, poolAmount, pools = {};
+    for (pi = 0; pi < stakingPoolCount; ++pi) {
+        poolAddress = await rocketDepositIndex.getUserDepositStakingPoolAt.call(depositID, pi);
+        poolAmount = await rocketDepositIndex.getUserDepositStakingPoolAmount.call(depositID, poolAddress);
+        pools[poolAddress.toLowerCase()] = poolAmount;
+    }
+
+    // Return
+    return {
+        totalAmount,
+        queuedAmount,
+        stakingAmount,
+        refundedAmount,
+        withdrawnAmount,
+        pools,
+    };
+
+}
+
+
 // Make a deposit
 export async function scenarioDeposit({depositorContract, durationID, fromAddress, value, gas}) {
     const rocketDepositQueue = await RocketDepositQueue.deployed();
@@ -95,6 +130,17 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
     // Get updated minipool balances
     let minipoolBalances2 = await getMinipoolBalances(availableMinipools);
 
+    // Get deposit enqueue events & deposit ID
+    let depositEnqueueEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositEnqueue', [
+        {type: 'bytes32', name: '_depositID', indexed: true},
+        {type: 'address', name: '_userID', indexed: true},
+        {type: 'address', name: '_groupID', indexed: true},
+        {type: 'string',  name: 'durationID'},
+        {type: 'uint256', name: 'value'},
+        {type: 'uint256', name: 'created'},
+    ]);
+    let depositID = depositEnqueueEvents[0]._depositID;
+
     // Get chunk fragment assignment events
     let chunkFragmentAssignEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositChunkFragmentAssign', [
         {type: 'address', name: '_minipoolAddress', indexed: true},
@@ -116,8 +162,30 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
         minipoolEtherAssigned[address] += parseInt(event.value);
     });
 
+    // Get total ether assigned in chunk fragments from current deposit
+    let depositEtherAssigned = chunkFragmentAssignEvents.filter(event => event._depositID == depositID).reduce((acc, val) => (acc + parseInt(val.value)), 0);
+
+    // Get total ether assigned in chunk fragments from current deposit per minipool
+    let depositMinipoolEtherAssigned = {};
+    chunkFragmentAssignEvents.filter(event => event._depositID == depositID).forEach(event => {
+        let address = event._minipoolAddress.toLowerCase();
+        if (depositMinipoolEtherAssigned[address] === undefined) depositMinipoolEtherAssigned[address] = 0;
+        depositMinipoolEtherAssigned[address] += parseInt(event.value);
+    });
+
     // Check total ether assigned
     assert.equal(etherAssigned, chunkSize * expectedChunkAssignments, 'Expected number of chunk assignments not performed');
+
+    // Check deposit details
+    let depositDetails = await getDepositDetails(depositID);
+    assert.equal(parseInt(depositDetails.totalAmount), parseInt(value), 'Deposit total amount does not match amount deposited');
+    assert.equal(parseInt(depositDetails.queuedAmount), parseInt(value) - depositEtherAssigned, 'Deposit queued amount does not match expected value');
+    assert.equal(parseInt(depositDetails.stakingAmount), depositEtherAssigned, 'Deposit staking amount does not match expected value');
+    for (let address in depositMinipoolEtherAssigned) {
+        let amount = depositMinipoolEtherAssigned[address];
+        assert.property(depositDetails.pools, address, 'Deposit staking pool not found');
+        assert.equal(parseInt(depositDetails.pools[address]), amount, 'Deposit staking pool amount does not match expected value');
+    }
 
     // Check assigned minipools
     for (let address in minipoolEtherAssigned) {
