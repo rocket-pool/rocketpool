@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings } from '../_lib/artifacts';
+import { RocketDepositIndex, RocketDepositSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioAPIRefundQueuedDeposit } from './rocket-deposit-api-scenarios';
 
@@ -16,7 +16,7 @@ export default function() {
 
 
         // Setup
-        let rocketDepositAPI;
+        let rocketDepositIndex;
         let rocketDepositSettings;
         let groupContract;
         let groupAccessorContract;
@@ -24,7 +24,7 @@ export default function() {
         before(async () => {
 
             // Get contracts
-            rocketDepositAPI = await RocketDepositAPI.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
 
             // Create group contract
@@ -49,7 +49,7 @@ export default function() {
             });
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
             await scenarioRefundQueuedDeposit({
@@ -75,7 +75,7 @@ export default function() {
             });
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Request refund
             await assertThrows(scenarioRefundQueuedDeposit({

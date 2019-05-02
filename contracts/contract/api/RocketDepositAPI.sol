@@ -7,7 +7,6 @@ import "../../interface/deposit/RocketDepositInterface.sol";
 import "../../interface/group/RocketGroupContractInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 
 
 /// @title RocketDepositAPI - API for deposits into the Rocket Pool network
@@ -22,7 +21,6 @@ contract RocketDepositAPI is RocketBase {
     RocketDepositInterface rocketDeposit = RocketDepositInterface(0);                                               // Rocket Pool deposits contract
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);                       // The main settings contract for the API
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);                    // The main settings contract for minipools
-    Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
 
 
     /*** Modifiers *************/
@@ -154,26 +152,6 @@ contract RocketDepositAPI is RocketBase {
         // Verify that _from is a withdrawer of the group
         RocketGroupContractInterface rocketGroup = RocketGroupContractInterface(_groupID);
         require(rocketGroup.hasWithdrawer(_from), "Group ID specified does not have a withdrawer matching the sender.");
-    }
-
-
-    /// @dev Get the number of queued deposits a user has
-    function getUserQueuedDepositCount(address _groupID, address _userID, string memory _durationID) public returns (uint256) {
-        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-        return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)));
-    }
-
-
-    /// @dev Get a user's queued deposit ID by index
-    function getUserQueuedDepositAt(address _groupID, address _userID, string memory _durationID, uint256 _index) public returns (bytes32) {
-        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
-        return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _index);
-    }
-
-
-    /// @dev Get the queued balance of a user deposit
-    function getUserQueuedDepositBalance(bytes32 _depositID) public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
     }
 
 

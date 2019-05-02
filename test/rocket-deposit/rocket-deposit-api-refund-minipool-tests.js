@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
+import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolInterface } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { timeoutMinipool } from '../_helpers/rocket-minipool';
@@ -20,7 +20,7 @@ export default function() {
 
 
         // Setup
-        let rocketDepositAPI;
+        let rocketDepositIndex;
         let rocketDepositSettings;
         let groupContract;
         let groupAccessorContract;
@@ -31,7 +31,7 @@ export default function() {
         before(async () => {
 
             // Get contracts
-            rocketDepositAPI = await RocketDepositAPI.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
 
             // Create group contract
@@ -76,7 +76,7 @@ export default function() {
             assert.equal(status, 1, 'Pre-check failed: minipool is not at PreLaunch status');
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Attempt to refund minipool deposit
             await assertThrows(scenarioRefundStalledMinipoolDeposit({
@@ -116,7 +116,7 @@ export default function() {
         it(printTitle('staker', 'cannot get refund for a deposit with an invalid ID'), async () => {
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
 
             // Attempt to refund minipool deposit
             await assertThrows(scenarioRefundStalledMinipoolDeposit({

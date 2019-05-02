@@ -26,13 +26,97 @@ contract RocketDepositIndex is RocketBase {
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
 
 
-    /*** Methods ****************/
+    /*** Constructor ************/
 
 
     // Constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
     }
+
+
+    /*** Getters ****************/
+
+
+    /// @dev Get the number of deposits a user has made
+    function getUserDepositCount(address _groupID, address _userID, string memory _durationID) public returns (uint256) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)));
+    }
+
+
+    /// @dev Get a user's deposit ID by index
+    function getUserDepositAt(address _groupID, address _userID, string memory _durationID, uint256 _index) public returns (bytes32) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)), _index);
+    }
+
+
+    /// @dev Get the number of queued deposits a user has
+    function getUserQueuedDepositCount(address _groupID, address _userID, string memory _durationID) public returns (uint256) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getCount(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)));
+    }
+
+
+    /// @dev Get a user's queued deposit ID by index
+    function getUserQueuedDepositAt(address _groupID, address _userID, string memory _durationID, uint256 _index) public returns (bytes32) {
+        bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
+        return bytes32SetStorage.getItem(keccak256(abi.encodePacked("user.deposits.queued", _userID, _groupID, _durationID)), _index);
+    }
+
+
+    /// @dev Get the total amount of a user deposit
+    function getUserDepositTotalAmount(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.totalAmount", _depositID)));
+    }
+
+
+    /// @dev Get the queued amount of a user deposit
+    function getUserDepositQueuedAmount(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)));
+    }
+
+
+    /// @dev Get the staking amount of a user deposit
+    function getUserDepositStakingAmount(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", _depositID)));
+    }
+
+
+    /// @dev Get the refunded amount of a user deposit
+    function getUserDepositRefundedAmount(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)));
+    }
+
+
+    /// @dev Get the withdrawn amount of a user deposit
+    function getUserDepositWithdrawnAmount(bytes32 _depositID) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.withdrawnAmount", _depositID)));
+    }
+
+
+    /// @dev Get the number of minipools a user deposit is staking under
+    function getUserDepositStakingPoolCount(bytes32 _depositID) public returns (uint256) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)));
+    }
+
+
+    /// @dev Get the address of a minipool a user deposit is staking under by index
+    function getUserDepositStakingPoolAt(bytes32 _depositID, uint256 _index) public returns (address) {
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _index);
+    }
+
+
+    /// @dev Get the amount of a user deposit staking under a minipool
+    function getUserDepositStakingPoolAmount(bytes32 _depositID, address _minipool) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)));
+    }
+
+
+    /*** Methods ****************/
 
 
     // Add a deposit
@@ -54,15 +138,16 @@ contract RocketDepositIndex is RocketBase {
         rocketStorage.setString(keccak256(abi.encodePacked("deposit.stakingDurationID", depositID)), _durationID);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.totalAmount", depositID)), _amount);
         rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)), _amount);
-        // + stakingAmount
-        // + stakingPools
-        // + stakingPoolAmount
-        // + refundedAmount
-        // + withdrawnAmount
+        // + deposit.stakingAmount
+        // + deposit.stakingPools
+        // + deposit.stakingPoolAmount
+        // + deposit.refundedAmount
+        // + deposit.withdrawnAmount
 
         // Update deposit indexes
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
         bytes32SetStorage.addItem(keccak256(abi.encodePacked("user.deposits", _userID, _groupID, _durationID)), depositID);
+        // + user.deposits.queued
 
         // Return ID
         return depositID;
@@ -147,17 +232,6 @@ contract RocketDepositIndex is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
         }
 
-    }
-
-
-    // Check if deposit details are valid
-    // Ignores user ID if null
-    function checkDepositDetails(address _userID, address _groupID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDeposit", msg.sender) {
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", _depositID))), "Deposit does not exist");
-        if (_userID != address(0x0)) { require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID"); }
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
-        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
     }
 
 

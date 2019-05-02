@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
+import { RocketBETHToken, RocketDepositAPI, RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -173,15 +173,15 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
 
 // Request a refund from a queued deposit
 export async function scenarioRefundQueuedDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
-    const rocketDepositAPI = await RocketDepositAPI.deployed();
+    const rocketDepositIndex = await RocketDepositIndex.deployed();
     const rocketDepositQueue = await RocketDepositQueue.deployed();
 
     // Get initial from address balance
     let fromBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
 
     // Get initial queue status
-    let depositCount1 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
-    let depositBalance1 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let depositCount1 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance1 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
     let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Request refund
@@ -191,8 +191,8 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
 
     // Get updated queue status
-    let depositCount2 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
-    let depositBalance2 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let depositCount2 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance2 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
     let queueBalance2 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Asserts

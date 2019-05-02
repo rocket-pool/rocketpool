@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketStorage, RocketBETHToken, RocketDepositAPI, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts'
+import { RocketStorage, RocketBETHToken, RocketDepositIndex, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
@@ -25,7 +25,7 @@ export default function() {
         // Setup
         let rocketStorage;
         let rocketBETHToken;
-        let rocketDepositAPI;
+        let rocketDepositIndex;
         let rocketDepositVault;
         let rocketDepositVaultNew;
         let rocketNode;
@@ -48,7 +48,7 @@ export default function() {
             // Initialise contracts
             rocketStorage = await RocketStorage.deployed();
             rocketBETHToken = await RocketBETHToken.deployed();
-            rocketDepositAPI = await RocketDepositAPI.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositVault = await RocketDepositVault.deployed();
             rocketDepositVaultNew = await RocketDepositVault.new(rocketStorage.address, {from: owner});
             rocketNode = await RocketNode.deployed();
@@ -181,7 +181,7 @@ export default function() {
 
             // Deposit to minipool
             await userDeposit({depositorContract: groupAccessorContract, durationID: '3m', fromAddress: user1, value: web3.utils.toWei('1', 'ether')});
-            let depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            let depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Progress minipool to staking
             await stakeSingleMinipool({groupAccessorContract, staker: user1});
