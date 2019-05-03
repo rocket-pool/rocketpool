@@ -123,13 +123,15 @@ contract RocketMinipoolDelegateDeposit {
         uint256 created                                         // Creation timestamp
     );
     
-    event UserAdded (
+    event DepositAdded (
+        bytes32 indexed _depositID,                             // Deposit ID
         address indexed _user,                                  // Users address
         address indexed _group,                                 // Group ID
         uint256 created                                         // Creation timestamp
     );
 
-    event UserRemoved (
+    event DepositRemoved (
+        bytes32 indexed _depositID,                             // Deposit ID
         address indexed _user,                                  // Users address
         address indexed _group,                                 // Group ID
         uint256 created                                         // Creation timestamp
@@ -171,13 +173,14 @@ contract RocketMinipoolDelegateDeposit {
     }
 
 
-    /*** User methods ********/
+    /*** Deposit methods ********/
 
 
-    /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
-    /// @param _user New user address
+    /// @dev Deposit a user's ether to this contract. Will register the deposit if it doesn't exist in this contract already.
+    /// @param _depositID The ID of the deposit
+    /// @param _userID New user address
     /// @param _groupID The 3rd party group the user belongs to
-    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
+    function deposit(bytes32 _depositID, address _userID, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Add this user if they are not currently in this minipool
@@ -200,11 +203,10 @@ contract RocketMinipoolDelegateDeposit {
         return true;
     }
 
-    /// @dev Refund a user's deposit and remove them from this contract (if minipool stalled).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _refundAddress The address to refund the user's deposit to
-    function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @dev Refund a deposit and remove it from this contract (if minipool stalled).
+    /// @param _depositID The ID of the deposit
+    /// @param _refundAddress The address to refund the deposit to
+    function refund(bytes32 _depositID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
@@ -234,13 +236,12 @@ contract RocketMinipoolDelegateDeposit {
         return true;
     }
 
-    /// @dev Withdraw some amount of a user's deposit as RPB tokens, forfeiting rewards for that amount, and remove them if entire deposit is withdrawn (if minipool staking).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _withdrawnAmount The amount of the user's deposit withdrawn
+    /// @dev Withdraw some amount of a deposit as RPB tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
+    /// @param _depositID The ID of the deposit
+    /// @param _withdrawnAmount The amount of the deposit withdrawn
     /// @param _tokenAmount The amount of RPB tokens withdrawn
-    /// @param _withdrawnAddress The address the user's deposit was withdrawn to
-    function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @param _withdrawnAddress The address the deposit was withdrawn to
+    function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
@@ -275,7 +276,7 @@ contract RocketMinipoolDelegateDeposit {
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, _withdrawnAmount));
         // All good? Fire the event for the withdrawal
-        emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, 0, now);
+        emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, users[userID].balance, now);
         // Update the status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
         minipool.updateStatus();
@@ -283,11 +284,10 @@ contract RocketMinipoolDelegateDeposit {
         return true;
     }
 
-    /// @dev Withdraw a user's deposit as RPB tokens and remove them from this contract (if minipool withdrawn).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _withdrawalAddress The address to withdraw the user's deposit to
-    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @dev Withdraw a deposit as RPB tokens and remove it from this contract (if minipool withdrawn).
+    /// @param _depositID The ID of the deposit
+    /// @param _withdrawalAddress The address to withdraw the deposit to
+    function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Get user ID
         bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
@@ -336,11 +336,10 @@ contract RocketMinipoolDelegateDeposit {
         return true;
     }
 
-    /// @dev Set a user's backup withdrawal address
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
+    /// @dev Set a user's backup withdrawal address for a deposit
+    /// @param _depositID The ID of the deposit
     /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
-    function setBackupWithdrawalAddress(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check minipool status
         require(status.current == 1 || status.current == 2, "Minipool is not currently allowing backup withdrawal addresses to be set.");
         // Get user IDs
@@ -352,27 +351,6 @@ contract RocketMinipoolDelegateDeposit {
         // Set backup ID
         userBackupIDs[backupID] = userID;
         users[userID].backup = _backupWithdrawalAddress;
-        // Success
-        return true;
-    }
-
-    /// @dev Set a user's ID to their backup withdrawal ID
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _backupWithdrawalAddress The user's backup withdrawal address
-    function setUserIDToBackupWithdrawalID(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Check minipool status
-        require(status.current == 4, "Minipool is not currently allowing withdrawals.");
-        // Get user IDs
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
-        bytes32 backupID = keccak256(abi.encodePacked(_backupWithdrawalAddress, _groupID));
-        // Check IDs
-        require(users[userID].backup == _backupWithdrawalAddress, "Invalid backup withdrawal address.");
-        // Copy user record to user mapping, keyed by backup ID
-        users[backupID] = users[userID];
-        userIDs.push(backupID);
-        // Remove existing user record
-        removeUser(_user, _groupID);
         // Success
         return true;
     }
