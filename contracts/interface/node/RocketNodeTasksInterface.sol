@@ -1,4 +1,4 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.8;
 
 contract RocketNodeTasksInterface {
     function run(address _nodeAddress) external;

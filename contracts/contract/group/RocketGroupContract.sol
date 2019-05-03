@@ -1,4 +1,4 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.8;
 
 // Interfaces
 import "../../interface/RocketStorageInterface.sol";

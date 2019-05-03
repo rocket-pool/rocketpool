@@ -1,4 +1,4 @@
-pragma solidity 0.5.0; 
+pragma solidity 0.5.8; 
 
 contract StringQueueStorageInterface {
 	function capacity() public view returns (uint);

@@ -26,6 +26,11 @@ module.exports = {
   web3: Web3,
   fs: FS,
   contract: Contract,
+  compilers: {
+      solc: {
+          version: "0.5.8",
+      }
+  },
   networks: {
     development: {
       provider: new Web3.providers.WebsocketProvider('ws://127.0.0.1:8545'),

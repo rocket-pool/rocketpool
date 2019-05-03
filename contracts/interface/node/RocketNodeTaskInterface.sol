@@ -1,4 +1,4 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.8;
 
 contract RocketNodeTaskInterface {
     function name() public view returns (string memory);
