@@ -207,18 +207,19 @@ module.exports = async (deployer, network) => {
       }
     }
   };
+  
   // Run it
   await deployContracts();
   // Register all other contracts with storage and store their abi
   const addContracts = async function() {
     // Log RocketStorage
-    console.log('\x1b[33m%s\x1b[0m:', 'Set Storage Address');
-    console.log(rocketStorage.address);
+    console.log('\x1b[31m%s\x1b[0m:', '   Set Storage Address');
+    console.log('   '+rocketStorage.address);
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
         // Log it
-        console.log('\x1b[33m%s\x1b[0m:', 'Set Storage '+contract+' Address');
-        console.log(contracts[contract].address);
+        console.log('\x1b[31m%s\x1b[0m:', '   Set Storage '+contract+' Address');
+        console.log('     '+contracts[contract].address);
         // First register the contract address as being part of the network so we can do a validation check using just the address
         await rocketStorageInstance.setAddress(
           $web3.utils.soliditySha3('contract.address', contracts[contract].address),
@@ -237,12 +238,13 @@ module.exports = async (deployer, network) => {
       } 
     }
   };
+  
   // Register ABI-only contracts
   const addABIs = async function() {
     for (let contract in abis) {
       if(abis.hasOwnProperty(contract)) {
-        // Log it
-        console.log('\x1b[33m%s\x1b[0m.', 'Set Storage '+contract+' ABI');
+        console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ABI');
+        console.log('     '+contract);
         // Compress and store the ABI
         await rocketStorageInstance.setString(
           $web3.utils.soliditySha3('contract.abi', contract),
@@ -251,25 +253,28 @@ module.exports = async (deployer, network) => {
       }
     }
   };
+  
   // Register event subscriptions
   const registerSubscriptions = async function() {
     let publisherInstance = await contracts.utilPublisher.deployed();
     for (let event in subscriptions) {
       // Log it
-      console.log('\x1b[33m%s\x1b[0m:', 'Add event '+event+' subscriptions');
+      console.log('\x1b[31m%s\x1b[0m:', '   Add subscription event '+event);
       for (let si = 0; si < subscriptions[event].length; ++si) {
-        console.log(subscriptions[event][si]);
+        console.log('     '+subscriptions[event][si]);
         // Regsiter the subscription
         await publisherInstance.addSubscriber($web3.utils.soliditySha3(event), subscriptions[event][si]);
       }
     }
   }
+  
   // Register node tasks
   const registerNodeTasks = async function() {
     let nodeTasksInstance = await contracts.rocketNodeTasks.deployed();
     for (let task in nodeTasks) {
       // Log it
-      console.log('\x1b[33m%s\x1b[0m.', 'Register node task '+task);
+      console.log('\x1b[31m%s\x1b[0m:', '   Register node task');
+      console.log('     '+task);
       let taskInstance = await nodeTasks[task].deployed();
       await nodeTasksInstance.add(taskInstance.address);
     }
@@ -292,16 +297,30 @@ module.exports = async (deployer, network) => {
     await rocketGroupInstance.addDepositor(groupAccessorAddress);
     await rocketGroupInstance.addWithdrawer(groupAccessorAddress);
     // Log it
-    console.log('\x1b[33m%s\x1b[0m:', 'Rocket Pool group address');
-    console.log(groupId);
-    console.log('\x1b[33m%s\x1b[0m:', 'Rocket Pool group accessor address');
-    console.log(groupAccessorAddress);
+    console.log('\x1b[31m%s\x1b[0m:', '   Rocket Pool group address');
+    console.log('     '+groupId);
+    console.log('\x1b[31m%s\x1b[0m:', '   Rocket Pool group accessor address');
+    console.log('     '+groupAccessorAddress);
   }
   // Run it
+  console.log('  Deploy Contracts');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addContracts();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Set ABI Only Storage');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addABIs();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Register Event Subscribers');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await registerSubscriptions();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Register Node Tasks');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await registerNodeTasks();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Register RP Group');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await registerRocketPoolGroup();
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(
@@ -310,7 +329,8 @@ module.exports = async (deployer, network) => {
   );
   // Log it
   console.log('\n');
-  console.log('\x1b[32m%s\x1b[0m', 'Post - Storage Direct Access Removed');
+  console.log('\x1b[32m%s\x1b[0m', '  Storage Direct Access For Owner Removed... Lets begin! :)');
+  console.log('\n');
 
 };
 
