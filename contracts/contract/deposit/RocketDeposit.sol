@@ -109,6 +109,7 @@ contract RocketDeposit is RocketBase {
         rocketDepositQueue.removeDeposit(_userID, _groupID, _durationID, _depositID, refundAmount);
 
         // Update deposit details
+        // :TODO: ensure deposit index update logic works with new minipool structure
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
         rocketDepositIndex.refund(_depositID, refundAmount);
 
@@ -138,6 +139,7 @@ contract RocketDeposit is RocketBase {
         minipool.refund(_userID, _groupID, address(this));
 
         // Update deposit details
+        // :TODO: ensure deposit index update logic works with new minipool structure
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
         rocketDepositIndex.refundFromStalledMinipool(_depositID, _minipool, refundAmount);
 
@@ -170,6 +172,7 @@ contract RocketDeposit is RocketBase {
         minipool.withdrawStaking(_userID, _groupID, _amount, tokenAmount, _withdrawerAddress);
 
         // Update deposit details
+        // :TODO: ensure deposit index update logic works with new minipool structure
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
         rocketDepositIndex.withdrawFromMinipool(_depositID, _minipool, _amount);
 
@@ -219,6 +222,7 @@ contract RocketDeposit is RocketBase {
         uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
 
         // Update deposit details
+        // :TODO: ensure deposit index update logic works with new minipool structure
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
         rocketDepositIndex.withdrawFromMinipool(_depositID, _minipool, userDepositAmount);
 
