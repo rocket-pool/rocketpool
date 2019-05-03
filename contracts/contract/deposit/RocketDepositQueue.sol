@@ -3,11 +3,11 @@ pragma solidity 0.5.0;
 
 import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
+import "../../interface/deposit/RocketDepositIndexInterface.sol";
 import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolSetInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
-import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -29,10 +29,10 @@ contract RocketDepositQueue is RocketBase {
 
 
     RocketNodeInterface rocketNode = RocketNodeInterface(0);
+    RocketDepositIndexInterface rocketDepositIndex = RocketDepositIndexInterface(0);
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
-    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
@@ -233,14 +233,12 @@ contract RocketDepositQueue is RocketBase {
     function assignChunkDepositFragment(string memory _durationID, address _miniPoolAddress, uint256 _amountToMatch) private returns (uint256) {
 
         // Get contracts
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         bytes32QueueStorage = Bytes32QueueStorageInterface(getContractAddress("utilBytes32QueueStorage"));
         RocketMinipoolInterface miniPool = RocketMinipoolInterface(_miniPoolAddress);
 
         // Get deposit details
         bytes32 depositID = bytes32QueueStorage.getQueueItem(keccak256(abi.encodePacked("deposits.queue", _durationID)), 0);
         uint256 queuedAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)));
-        uint256 stakingAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingAmount", depositID)));
         address userID = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", depositID)));
         address groupID = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", depositID)));
 
@@ -251,16 +249,12 @@ contract RocketDepositQueue is RocketBase {
         // Update remaining ether amount to match
         _amountToMatch = _amountToMatch.sub(matchAmount);
 
-        // Update deposit queued / staking ether amounts
+        // Update deposit queued amount
         queuedAmount = queuedAmount.sub(matchAmount);
-        stakingAmount = stakingAmount.add(matchAmount);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", depositID)), queuedAmount);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingAmount", depositID)), stakingAmount);
 
-        // Add deposit staking pool details
-        uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, _miniPoolAddress)));
-        if (stakingPoolAmount == 0) { addressSetStorage.addItem(keccak256(abi.encodePacked("deposit.stakingPools", depositID)), _miniPoolAddress); }
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", depositID, _miniPoolAddress)), stakingPoolAmount.add(matchAmount));
+        // Update deposit details
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        rocketDepositIndex.assign(depositID, _miniPoolAddress, matchAmount);
 
         // Transfer matched amount to minipool contract
         require(miniPool.deposit.value(matchAmount)(userID, groupID), "Deposit could not be transferred to minipool");

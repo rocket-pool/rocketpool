@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
+import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
@@ -18,7 +18,7 @@ export default function() {
 
 
         // Setup
-        let rocketDepositAPI;
+        let rocketDepositIndex;
         let rocketDepositSettings;
         let rocketMinipoolSettings;
         let groupContract;
@@ -27,7 +27,7 @@ export default function() {
         before(async () => {
 
             // Get contracts
-            rocketDepositAPI = await RocketDepositAPI.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
             rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
@@ -126,8 +126,8 @@ export default function() {
             });
 
             // Get ID of deposit made to fill queue
-            let depositCount = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupContract.address, user2, '3m'));
-            let fillQueueDepositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
+            let depositCount = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupContract.address, user2, '3m'));
+            let fillQueueDepositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
 
             // Check current max deposit size is equal to locked limit
             maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));

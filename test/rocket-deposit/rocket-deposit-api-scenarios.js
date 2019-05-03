@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { deserialiseDepositInput, getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketBETHToken, RocketDepositAPI, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
+import { RocketBETHToken, RocketDepositAPI, RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -63,6 +63,41 @@ async function getMinipoolBalances(minipools) {
 }
 
 
+// Get deposit details
+async function getDepositDetails(depositID) {
+    const rocketDepositIndex = await RocketDepositIndex.deployed();
+
+    // Get deposit data
+    let [totalAmount, queuedAmount, stakingAmount, refundedAmount, withdrawnAmount, stakingPoolCount] = await Promise.all([
+        rocketDepositIndex.getUserDepositTotalAmount.call(depositID),
+        rocketDepositIndex.getUserDepositQueuedAmount.call(depositID),
+        rocketDepositIndex.getUserDepositStakingAmount.call(depositID),
+        rocketDepositIndex.getUserDepositRefundedAmount.call(depositID),
+        rocketDepositIndex.getUserDepositWithdrawnAmount.call(depositID),
+        rocketDepositIndex.getUserDepositStakingPoolCount.call(depositID),
+    ]);
+
+    // Get staking pools
+    let pi, poolAddress, poolAmount, pools = {};
+    for (pi = 0; pi < stakingPoolCount; ++pi) {
+        poolAddress = await rocketDepositIndex.getUserDepositStakingPoolAt.call(depositID, pi);
+        poolAmount = await rocketDepositIndex.getUserDepositStakingPoolAmount.call(depositID, poolAddress);
+        pools[poolAddress.toLowerCase()] = poolAmount;
+    }
+
+    // Return
+    return {
+        totalAmount,
+        queuedAmount,
+        stakingAmount,
+        refundedAmount,
+        withdrawnAmount,
+        pools,
+    };
+
+}
+
+
 // Make a deposit
 export async function scenarioDeposit({depositorContract, durationID, fromAddress, value, gas}) {
     const rocketDepositQueue = await RocketDepositQueue.deployed();
@@ -95,6 +130,17 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
     // Get updated minipool balances
     let minipoolBalances2 = await getMinipoolBalances(availableMinipools);
 
+    // Get deposit enqueue events & deposit ID
+    let depositEnqueueEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositEnqueue', [
+        {type: 'bytes32', name: '_depositID', indexed: true},
+        {type: 'address', name: '_userID', indexed: true},
+        {type: 'address', name: '_groupID', indexed: true},
+        {type: 'string',  name: 'durationID'},
+        {type: 'uint256', name: 'value'},
+        {type: 'uint256', name: 'created'},
+    ]);
+    let depositID = depositEnqueueEvents[0]._depositID;
+
     // Get chunk fragment assignment events
     let chunkFragmentAssignEvents = getTransactionContractEvents(result, rocketDepositQueue.address, 'DepositChunkFragmentAssign', [
         {type: 'address', name: '_minipoolAddress', indexed: true},
@@ -116,8 +162,30 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
         minipoolEtherAssigned[address] += parseInt(event.value);
     });
 
+    // Get total ether assigned in chunk fragments from current deposit
+    let depositEtherAssigned = chunkFragmentAssignEvents.filter(event => event._depositID == depositID).reduce((acc, val) => (acc + parseInt(val.value)), 0);
+
+    // Get total ether assigned in chunk fragments from current deposit per minipool
+    let depositMinipoolEtherAssigned = {};
+    chunkFragmentAssignEvents.filter(event => event._depositID == depositID).forEach(event => {
+        let address = event._minipoolAddress.toLowerCase();
+        if (depositMinipoolEtherAssigned[address] === undefined) depositMinipoolEtherAssigned[address] = 0;
+        depositMinipoolEtherAssigned[address] += parseInt(event.value);
+    });
+
     // Check total ether assigned
     assert.equal(etherAssigned, chunkSize * expectedChunkAssignments, 'Expected number of chunk assignments not performed');
+
+    // Check deposit details
+    let depositDetails = await getDepositDetails(depositID);
+    assert.equal(parseInt(depositDetails.totalAmount), parseInt(value), 'Deposit total amount does not match amount deposited');
+    assert.equal(parseInt(depositDetails.queuedAmount), parseInt(value) - depositEtherAssigned, 'Deposit queued amount does not match expected value');
+    assert.equal(parseInt(depositDetails.stakingAmount), depositEtherAssigned, 'Deposit staking amount does not match expected value');
+    for (let address in depositMinipoolEtherAssigned) {
+        let amount = depositMinipoolEtherAssigned[address];
+        assert.property(depositDetails.pools, address, 'Deposit staking pool not found');
+        assert.equal(parseInt(depositDetails.pools[address]), amount, 'Deposit staking pool amount does not match expected value');
+    }
 
     // Check assigned minipools
     for (let address in minipoolEtherAssigned) {
@@ -173,15 +241,18 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
 
 // Request a refund from a queued deposit
 export async function scenarioRefundQueuedDeposit({depositorContract, groupID, durationID, depositID, fromAddress, gas}) {
-    const rocketDepositAPI = await RocketDepositAPI.deployed();
+    const rocketDepositIndex = await RocketDepositIndex.deployed();
     const rocketDepositQueue = await RocketDepositQueue.deployed();
 
     // Get initial from address balance
     let fromBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Get initial queue status
-    let depositCount1 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
-    let depositBalance1 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let depositCount1 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance1 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
     let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Request refund
@@ -190,12 +261,17 @@ export async function scenarioRefundQueuedDeposit({depositorContract, groupID, d
     // Get updated from address balance
     let fromBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get updated queue status
-    let depositCount2 = parseInt(await rocketDepositAPI.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
-    let depositBalance2 = parseInt(await rocketDepositAPI.getUserQueuedDepositBalance.call(depositID));
+    let depositCount2 = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupID, fromAddress, durationID));
+    let depositBalance2 = parseInt(await rocketDepositIndex.getUserDepositQueuedAmount.call(depositID));
     let queueBalance2 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
 
     // Asserts
+    assert.equal(parseInt(depositDetails2.queuedAmount), 0, 'Deposit queued amount was not decreased');
+    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.refundedAmount) + parseInt(depositDetails1.queuedAmount), 'Deposit refunded amount was not increased correctly');
     assert.isTrue(fromBalance2 > fromBalance1, 'From address balance was not increased');
     assert.equal(depositCount2, depositCount1 - 1, 'User deposit count was not decremented');
     assert.equal(depositBalance2, 0, 'Queued deposit balance was not set to 0');
@@ -215,6 +291,9 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
     let minipoolBalance1 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userBalance1 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Get initial minipool user status
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
@@ -228,11 +307,17 @@ export async function scenarioRefundStalledMinipoolDeposit({depositorContract, d
     let minipoolBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let userBalance2 = parseInt(await web3.eth.getBalance(fromAddress));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get updated minipool user status
     let userCount2 = parseInt(await minipool.getUserCount.call());
     let userExists2 = await minipool.getUserExists.call(fromAddress, groupID);
 
     // Asserts
+    assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - userDeposit1, 'Deposit staking amount was not decreased correctly');
+    assert.equal(parseInt(depositDetails2.refundedAmount), parseInt(depositDetails1.refundedAmount) + userDeposit1, 'Deposit refunded amount was not increased correctly');
+    assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
     assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Second minipool user exists check incorrect');
@@ -264,6 +349,9 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     let userDeposit1 = parseInt(await minipool.getUserDeposit.call(fromAddress, groupID));
     let userStakingTokensWithdrawn1 = parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress, groupID));
 
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
+
     // Check if the user should be removed
     let expectUserRemoved = (amountInt == userDeposit1);
 
@@ -281,7 +369,14 @@ export async function scenarioWithdrawStakingMinipoolDeposit({withdrawerContract
     let userDeposit2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserDeposit.call(fromAddress, groupID)));
     let userStakingTokensWithdrawn2 = (expectUserRemoved ? 0 : parseInt(await minipool.getUserStakingTokensWithdrawn.call(fromAddress, groupID)));
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Asserts
+    assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - amountInt, 'Deposit staking amount was not decreased correctly');
+    assert.equal(parseInt(depositDetails2.withdrawnAmount), parseInt(depositDetails1.withdrawnAmount) + amountInt, 'Deposit withdrawn amount was not increased correctly');
+    if (expectUserRemoved) assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
+    else assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], depositDetails1.pools[minipoolAddress.toLowerCase()] - amountInt, 'Deposit staking pool amount was not decreased correctly');
     assert.equal(userCount2, (expectUserRemoved ? userCount1 - 1 : userCount1), 'Minipool user count was not updated correctly');
     assert.equal(userExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, !expectUserRemoved, 'Second minipool user exists check incorrect');
@@ -325,6 +420,10 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let userCount1 = parseInt(await minipool.getUserCount.call());
     let userExists1 = await minipool.getUserExists.call(fromAddress, groupID);
     let userBackupExists1 = await minipool.getUserBackupAddressExists.call(fromAddress, groupID);
+    let userDeposit1 = userExists1 ? parseInt(await minipool.getUserDeposit.call(fromAddress, groupID)) : null;
+
+    // Get initial deposit details
+    let depositDetails1 = await getDepositDetails(depositID);
 
     // Withdraw
     let result = await withdrawerContract.withdrawDepositMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
@@ -342,6 +441,9 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let userCount2 = parseInt(await minipool.getUserCount.call());
     let userExists2 = await minipool.getUserExists.call(fromAddress, groupID);
 
+    // Get updated deposit details
+    let depositDetails2 = await getDepositDetails(depositID);
+
     // Get RPB transfer amounts
     let userRpbSent = userRpbBalance2 - userRpbBalance1;
     let rpRpbSent = rpRpbBalance2 - rpRpbBalance1;
@@ -350,6 +452,9 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let totalRpbSent = userRpbSent + rpRpbSent + nodeRpbSent + groupRpbSent;
 
     // Asserts
+    if (userDeposit1) assert.equal(parseInt(depositDetails2.stakingAmount), parseInt(depositDetails1.stakingAmount) - userDeposit1, 'Deposit staking amount was not decreased correctly');
+    if (userDeposit1) assert.equal(parseInt(depositDetails2.withdrawnAmount), parseInt(depositDetails1.withdrawnAmount) + userDeposit1, 'Deposit withdrawn amount was not increased correctly');
+    assert.equal(depositDetails2.pools[minipoolAddress.toLowerCase()], undefined, 'Deposit staking pool was not removed correctly');
     assert.equal(userCount2, userCount1 - 1, 'Minipool user count was not updated correctly');
     assert.equal(userExists1 || userBackupExists1, true, 'Initial minipool user exists check incorrect');
     assert.equal(userExists2, false, 'Minipool user was not removed correctly');

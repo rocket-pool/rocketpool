@@ -109,8 +109,8 @@ contract RocketDeposit is RocketBase {
         rocketDepositQueue.removeDeposit(_userID, _groupID, _durationID, _depositID, refundAmount);
 
         // Update deposit details
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.queuedAmount", _depositID)), 0);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.refundedAmount", _depositID)), refundAmount);
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        rocketDepositIndex.refund(_depositID, refundAmount);
 
         // Withdraw refund amount from vault
         rocketDepositVault = RocketDepositVaultInterface(getContractAddress("rocketDepositVault"));
@@ -137,10 +137,9 @@ contract RocketDeposit is RocketBase {
         uint256 refundAmount = minipool.getUserDeposit(_userID, _groupID);
         minipool.refund(_userID, _groupID, address(this));
 
-        // Update deposit pool details
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), 0);
+        // Update deposit details
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        rocketDepositIndex.refundFromStalledMinipool(_depositID, _minipool, refundAmount);
 
         // Transfer refund amount to depositor
         RocketGroupAccessorContractInterface depositor = RocketGroupAccessorContractInterface(_depositorAddress);
@@ -170,10 +169,9 @@ contract RocketDeposit is RocketBase {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         minipool.withdrawStaking(_userID, _groupID, _amount, tokenAmount, _withdrawerAddress);
 
-        // Update deposit pool details
-        if (!minipool.getUserHasDeposit(_userID, _groupID)) { addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool); }
-        uint256 stakingPoolAmount = rocketStorage.getUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)));
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), stakingPoolAmount.sub(_amount));
+        // Update deposit details
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        rocketDepositIndex.withdrawFromMinipool(_depositID, _minipool, _amount);
 
         // Return token amount withdrawn
         return tokenAmount;
@@ -211,16 +209,18 @@ contract RocketDeposit is RocketBase {
 
         }
 
+        // Get user deposit amount
+        uint256 userDepositAmount = minipool.getUserDeposit(_userID, _groupID);
+
         // Withdraw from minipool
         minipool.withdraw(_userID, _groupID, _withdrawerAddress);
 
         // Get amount withdrawn
         uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
 
-        // Update deposit pool details
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.stakingPoolAmount", _depositID, _minipool)), 0);
+        // Update deposit details
+        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
+        rocketDepositIndex.withdrawFromMinipool(_depositID, _minipool, userDepositAmount);
 
         // Return withdrawn amount
         return withdrawalAmount;
@@ -248,7 +248,7 @@ contract RocketDeposit is RocketBase {
     }
 
 
-    // Check deposit details are valid
+    // Check if deposit details are valid
     // Ignores user ID if null
     function checkDepositDetails(address _userID, address _groupID, bytes32 _depositID, address _minipool) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));

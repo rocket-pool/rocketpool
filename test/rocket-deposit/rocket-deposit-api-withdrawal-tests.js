@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositAPI, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings } from '../_lib/artifacts';
+import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool, withdrawMinipool, enableMinipoolBackupCollect } from '../_helpers/rocket-minipool';
@@ -23,7 +23,7 @@ export default function() {
 
 
         // Setup
-        let rocketDepositAPI;
+        let rocketDepositIndex;
         let rocketDepositSettings;
         let rocketMinipoolSettings;
         let groupContract;
@@ -35,7 +35,7 @@ export default function() {
         before(async () => {
 
             // Get contracts
-            rocketDepositAPI = await RocketDepositAPI.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
             rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
@@ -84,7 +84,7 @@ export default function() {
             assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -232,7 +232,7 @@ export default function() {
         it(printTitle('staker', 'cannot withdraw a deposit with an invalid ID'), async () => {
 
             // Get deposit ID
-            depositID = await rocketDepositAPI.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
+            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
