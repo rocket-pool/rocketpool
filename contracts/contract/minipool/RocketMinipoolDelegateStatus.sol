@@ -163,9 +163,9 @@ contract RocketMinipoolDelegateStatus {
     }
 
 
-    /// @dev Returns the user count for this pool
-    function getUserCount() public view returns(uint256) {
-        return userIDs.length;
+    /// @dev Returns the deposit count for this pool
+    function getDepositCount() public view returns(uint256) {
+        return depositIDs.length;
     }
 
 
@@ -195,14 +195,14 @@ contract RocketMinipoolDelegateStatus {
         // Check to see if we can close the pool - stops execution if closed
         closePool();
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
-        if (getUserCount() == 1 && status.current == 0) {
+        if (getDepositCount() == 1 && status.current == 0) {
             // Prelaunch
             setStatus(1);
             // Done
             return true;
         }
         // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        if (getUserCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
+        if (getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
             // If the node is not trusted, double check to make sure it has the correct RPL balance
             if(!node.trusted) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
