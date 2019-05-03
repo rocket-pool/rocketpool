@@ -41,10 +41,10 @@ contract RocketMinipoolDelegateStatus {
     mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
     bytes32[] private stakingWithdrawalIDs;
 
-    // Users
-    mapping (bytes32 => User) private users;                    // Users in this pool
-    mapping (bytes32 => bytes32) private userBackupIDs;         // Users backup withdrawal ID => users current ID in this pool, need these in a mapping so we can do a reverse lookup using the backup ID
-    bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
+    // Deposits
+    mapping (bytes32 => Deposit) private deposits;              // Deposits in this pool
+    mapping (address => bytes32) private userBackupAddresses;   // User's backup withdrawal address => ID of deposit in this pool
+    bytes32[] private depositIDs;                               // IDs of deposits in this pool for iteration
 
 
     /*** Contracts **************/
@@ -89,17 +89,17 @@ contract RocketMinipoolDelegateStatus {
         bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
     }
 
-    struct User {
-        address user;                                           // Address of the user
-        address groupID;                                        // Address ID of the users group
+    struct Deposit {
+        address userID;                                         // Address ID of the user
+        address groupID;                                        // Address ID of the user's group
         address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
-        uint256 feeRP;                                          // Rocket Pools fee
+        uint256 feeRP;                                          // Rocket Pool's fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
-        bool    exists;                                         // User exists?
-        uint256 idIndex;                                        // User's index in the ID list
+        bool    exists;                                         // Deposit exists
+        uint256 idIndex;                                        // Deposit's index in the ID list
     }
 
     struct StakingWithdrawal {

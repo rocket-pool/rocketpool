@@ -41,10 +41,10 @@ contract RocketMinipool {
     mapping (bytes32 => StakingWithdrawal) private stakingWithdrawals;  // Information on deposit withdrawals made by users while staking
     bytes32[] private stakingWithdrawalIDs;
 
-    // Users
-    mapping (bytes32 => User) private users;                    // Users in this pool
-    mapping (bytes32 => bytes32) private userBackupIDs;         // Users backup withdrawal ID => users current ID in this pool, need these in a mapping so we can do a reverse lookup using the backup ID
-    bytes32[] private userIDs;                                  // Users in this pool IDs for iteration
+    // Deposits
+    mapping (bytes32 => Deposit) private deposits;              // Deposits in this pool
+    mapping (address => bytes32) private userBackupAddresses;   // User's backup withdrawal address => ID of deposit in this pool
+    bytes32[] private depositIDs;                               // IDs of deposits in this pool for iteration
 
 
     /*** Contracts **************/
@@ -89,17 +89,17 @@ contract RocketMinipool {
         bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
     }
 
-    struct User {
-        address user;                                           // Address of the user
-        address groupID;                                        // Address ID of the users group
+    struct Deposit {
+        address userID;                                         // Address ID of the user
+        address groupID;                                        // Address ID of the user's group
         address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
-        uint256 feeRP;                                          // Rocket Pools fee
+        uint256 feeRP;                                          // Rocket Pool's fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
-        bool    exists;                                         // User exists?
-        uint256 idIndex;                                        // User's index in the ID list
+        bool    exists;                                         // Deposit exists
+        uint256 idIndex;                                        // Deposit's index in the ID list
     }
 
     struct StakingWithdrawal {
@@ -129,14 +129,6 @@ contract RocketMinipool {
     /// @param _nodeContract The node contract address
     modifier isNodeContract(address _nodeContract) {
         require(_nodeContract != address(0x0) && _nodeContract == node.contractAddress, "Incorrect node contract address passed.");
-        _;
-    }
-
-    /// @dev Only registered users with this pool
-    /// @param _user The users address.
-    modifier isPoolUser(address _user, address _group) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        require(_user != address(0x0) && _group != address(0x0) && users[userID].exists != false);
         _;
     }
 
@@ -268,127 +260,110 @@ contract RocketMinipool {
     }
 
 
-    /*** USERS ***********************************************/
+    /*** DEPOSITS ***********************************************/
 
     // Getters
 
-    /// @dev Returns the user count for this pool
-    function getUserCount() public view returns(uint256) {
-        return userIDs.length;
+    /// @dev Returns the deposit count for this pool
+    function getDepositCount() public view returns(uint256) {
+        return depositIDs.length;
     }
 
-    /// @dev Returns the true if the user is in this pool
-    function getUserExists(address _user, address _group) public view returns(bool) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        return users[userID].exists;
+    /// @dev Returns true if the deposit is in this pool
+    function getDepositExists(bytes32 _depositID) public view returns(bool) {
+        return (depositIDs[_depositID].exists && depositIDs[_depositID].balance > 0);
     }
 
-    /// @dev Returns the users original address specified for withdrawals
-    function getUserAddressFromBackupAddress(address _userBackupAddress, address _group) public view returns(address) {
-        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
-        return users[userBackupIDs[backupID]].user;
+    /// @dev Returns the deposit's user ID
+    function getDepositUserID(bytes32 _depositID) public view returns(address) {
+        return depositIDs[_depositID].userID;
     }
 
-    /// @dev Returns the true if the user has a backup address specified for withdrawals
-    function getUserBackupAddressExists(address _userBackupAddress, address _group) public view returns(bool) {
-        bytes32 backupID = keccak256(abi.encodePacked(_userBackupAddress, _group));
-        return userBackupIDs[backupID] != 0x0;
+    /// @dev Returns the deposit's group ID
+    function getDepositGroupID(bytes32 _depositID) public view returns(address) {
+        return depositIDs[_depositID].groupID;
     }
 
-    /// @dev Returns the true if the user has a deposit in this mini pool
-    function getUserHasDeposit(address _user, address _group) public view returns(bool) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        return users[userID].exists && users[userID].balance > 0;
+    /// @dev Returns the deposit's backup withdrawal address
+    function getDepositBackupAddress(bytes32 _depositID) public view returns(address) {
+        return depositIDs[_depositID].backup;
     }
 
-    /// @dev Returns the amount of the users deposit
-    function getUserDeposit(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        return users[userID].balance;
+    /// @dev Returns the balance of the deposit
+    function getDepositBalance(bytes32 _depositID) public view returns(uint256) {
+        return depositIDs[_depositID].balance;
     }
 
-    /// @dev Returns the amount of the deposit tokens the user has taken out
-    function getUserStakingTokensWithdrawn(address _user, address _group) public view isPoolUser(_user, _group) returns(uint256) {
-        bytes32 userID = keccak256(abi.encodePacked(_user, _group));
-        return users[userID].stakingTokensWithdrawn;
+    /// @dev Returns the amount of the deposit withdrawn as RPB
+    function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256) {
+        return depositIDs[_depositID].stakingTokensWithdrawn;
+    }
+
+    /// @dev Returns the deposit ID of a user's backup withdrawal address
+    function getUserBackupAddressDepositID(address _userBackupAddress) public view returns(bytes32) {
+        return userBackupAddresses[_userBackupAddress];
     }
 
 
     // Methods
 
-    /// @dev Deposit a users ether to this contract. Will register the user if they don't exist in this contract already.
-    /// @param _user New user address
+    /// @dev Deposit a user's ether to this contract. Will register the deposit if it doesn't exist in this contract already.
+    /// @param _depositID The ID of the deposit
+    /// @param _userID New user address
     /// @param _groupID The 3rd party group the user belongs to
-    function deposit(address _user, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
+    function deposit(bytes32 _depositID, address _userID, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("deposit(address,address)", _user, _groupID));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("deposit(bytes32,address,address)", _depositID, _userID, _groupID));
         require(success, "Delegate call failed.");
         // Success
         return true;
     }
 
 
-    /// @dev Refund a user's deposit and remove them from this contract (if minipool stalled).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _refundAddress The address to refund the user's deposit to
-    function refund(address _user, address _groupID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @dev Refund a deposit and remove it from this contract (if minipool stalled).
+    /// @param _depositID The ID of the deposit
+    /// @param _refundAddress The address to refund the deposit to
+    function refund(bytes32 _depositID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("refund(address,address,address)", _user, _groupID, _refundAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("refund(bytes32,address)", _depositID, _refundAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
     }
 
 
-    /// @dev Withdraw some amount of a user's deposit as RPB tokens, forfeiting rewards for that amount, and remove them if entire deposit is withdrawn (if minipool staking).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _withdrawnAmount The amount of the user's deposit withdrawn
+    /// @dev Withdraw some amount of a deposit as RPB tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
+    /// @param _depositID The ID of the deposit
+    /// @param _withdrawnAmount The amount of the deposit withdrawn
     /// @param _tokenAmount The amount of RPB tokens withdrawn
-    /// @param _withdrawnAddress The address the user's deposit was withdrawn to
-    function withdrawStaking(address _user, address _groupID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @param _withdrawnAddress The address the deposit was withdrawn to
+    function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdrawStaking(address,address,uint256,uint256,address)", _user, _groupID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("withdrawStaking(bytes32,uint256,uint256,address)", _depositID, _withdrawnAmount, _tokenAmount, _withdrawnAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
     }
 
 
-    /// @dev Withdraw a user's deposit as RPB tokens and remove them from this contract (if minipool withdrawn).
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _withdrawalAddress The address to withdraw the user's deposit to
-    function withdraw(address _user, address _groupID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    /// @dev Withdraw a deposit as RPB tokens and remove it from this contract (if minipool withdrawn).
+    /// @param _depositID The ID of the deposit
+    /// @param _withdrawalAddress The address to withdraw the deposit to
+    function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("withdraw(address,address,address)", _user, _groupID, _withdrawalAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("withdraw(bytes32,address)", _depositID, _withdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
     }
 
 
-    /// @dev Set a user's backup withdrawal address
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
+    /// @dev Set a user's backup withdrawal address for a deposit
+    /// @param _depositID The ID of the deposit
     /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
-    function setBackupWithdrawalAddress(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
+    function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("setBackupWithdrawalAddress(address,address,address)", _user, _groupID, _backupWithdrawalAddress));
-        require(success, "Delegate call failed.");
-        // Success
-        return true;
-    }
-
-
-    /// @dev Set a user's ID to their backup withdrawal ID
-    /// @param _user User address
-    /// @param _groupID The 3rd party group the user belongs to
-    /// @param _backupWithdrawalAddress The user's backup withdrawal address
-    function setUserIDToBackupWithdrawalID(address _user, address _groupID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateUser").delegatecall(abi.encodeWithSignature("setUserIDToBackupWithdrawalID(address,address,address)", _user, _groupID, _backupWithdrawalAddress));
+        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("setBackupWithdrawalAddress(bytes32,address)", _depositID, _backupWithdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;
