@@ -257,7 +257,7 @@ contract RocketDepositQueue is RocketBase {
         rocketDepositIndex.assign(depositID, _miniPoolAddress, matchAmount);
 
         // Transfer matched amount to minipool contract
-        require(miniPool.deposit.value(matchAmount)(userID, groupID), "Deposit could not be transferred to minipool");
+        require(miniPool.deposit.value(matchAmount)(depositID, userID, groupID), "Deposit could not be transferred to minipool");
 
         // Emit chunk fragment assignment event
         emit DepositChunkFragmentAssign(_miniPoolAddress, depositID, userID, groupID, matchAmount, now);

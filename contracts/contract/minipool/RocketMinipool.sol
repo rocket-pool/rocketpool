@@ -269,27 +269,27 @@ contract RocketMinipool {
 
     /// @dev Returns true if the deposit is in this pool
     function getDepositExists(bytes32 _depositID) public view returns(bool) {
-        return (depositIDs[_depositID].exists && depositIDs[_depositID].balance > 0);
+        return (deposits[_depositID].exists && deposits[_depositID].balance > 0);
     }
 
     /// @dev Returns the deposit's user ID
     function getDepositUserID(bytes32 _depositID) public view returns(address) {
-        return depositIDs[_depositID].userID;
+        return deposits[_depositID].userID;
     }
 
     /// @dev Returns the deposit's group ID
     function getDepositGroupID(bytes32 _depositID) public view returns(address) {
-        return depositIDs[_depositID].groupID;
+        return deposits[_depositID].groupID;
     }
 
     /// @dev Returns the balance of the deposit
     function getDepositBalance(bytes32 _depositID) public view returns(uint256) {
-        return depositIDs[_depositID].balance;
+        return deposits[_depositID].balance;
     }
 
     /// @dev Returns the amount of the deposit withdrawn as RPB
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256) {
-        return depositIDs[_depositID].stakingTokensWithdrawn;
+        return deposits[_depositID].stakingTokensWithdrawn;
     }
 
 
