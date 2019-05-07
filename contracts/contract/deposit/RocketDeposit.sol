@@ -132,9 +132,11 @@ contract RocketDeposit is RocketBase {
 
         // Check deposit details
         checkDepositDetails(_userID, _groupID, _depositID, _minipool);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        require(_userID == minipool.getDepositUserID(_depositID), "Incorrect minipool deposit user ID");
+        require(_groupID == minipool.getDepositGroupID(_depositID), "Incorrect minipool deposit group ID");
 
         // Get minipool user balance & refund deposit from minipool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         uint256 refundAmount = minipool.getDepositBalance(_depositID);
         minipool.refund(_depositID, address(this));
 
@@ -158,6 +160,9 @@ contract RocketDeposit is RocketBase {
 
         // Check deposit details
         checkDepositDetails(_userID, _groupID, _depositID, _minipool);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        require(_userID == minipool.getDepositUserID(_depositID), "Incorrect minipool deposit user ID");
+        require(_groupID == minipool.getDepositGroupID(_depositID), "Incorrect minipool deposit group ID");
 
         // Get RPB token amount to withdraw
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
@@ -168,7 +173,6 @@ contract RocketDeposit is RocketBase {
         rocketBETHToken.mint(_withdrawerAddress, tokenAmount);
 
         // Withdraw amount from minipool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         minipool.withdrawStaking(_depositID, _amount, tokenAmount, _withdrawerAddress);
 
         // Update deposit details
@@ -185,18 +189,20 @@ contract RocketDeposit is RocketBase {
     // Withdraw a deposit fragment from a withdrawn minipool as RPB tokens
     function withdrawFromWithdrawnMinipool(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
-        // Get minipool deposit user address
+        // Get minipool deposit addresses
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         address minipoolUserAddress = minipool.getDepositUserID(_depositID);
+        address minipoolGroupAddress = minipool.getDepositGroupID(_depositID);
 
         // Get deposit backup address
         address depositBackupAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)));
 
         // Check deposit details
         checkDepositDetails(minipoolUserAddress, _groupID, _depositID, _minipool);
-        require(_userID == minipoolUserAddress || _userID == depositBackupAddress, "Incorrect deposit user ID or backup address");
+        require(_userID == minipoolUserAddress || _userID == depositBackupAddress, "Incorrect minipool deposit user ID or deposit backup address");
+        require(_groupID == minipoolGroupAddress, "Incorrect minipool deposit group ID");
 
-        // Check if user is withdrawing from backup address
+        // Check backup settings if user is withdrawing from backup address
         if (_userID != minipoolUserAddress && _userID == depositBackupAddress) {
             rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
             require(rocketMinipoolSettings.getMinipoolBackupCollectEnabled(), "Withdrawal from backup addresses is not currently allowed.");
