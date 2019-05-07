@@ -238,7 +238,6 @@ contract RocketDepositIndex is RocketBase {
 
     // Set the backup address for a deposit
     function setBackupAddress(bytes32 _depositID, address _backupAddress) public onlyLatestContract("rocketDeposit", msg.sender) {
-        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) != _backupAddress, "Deposit backup address cannot be set to user ID");
         rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)), _backupAddress);
     }
 
