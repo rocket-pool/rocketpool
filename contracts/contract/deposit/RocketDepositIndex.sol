@@ -116,6 +116,12 @@ contract RocketDepositIndex is RocketBase {
     }
 
 
+    /// @dev Get the backup address for a user deposit
+    function getUserDepositBackupAddress(bytes32 _depositID) public view returns (address) {
+        return rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)));
+    }
+
+
     /*** Methods ****************/
 
 
@@ -233,12 +239,6 @@ contract RocketDepositIndex is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
         }
 
-    }
-
-
-    // Set the backup address for a deposit
-    function setBackupAddress(bytes32 _depositID, address _backupAddress) public onlyLatestContract("rocketDeposit", msg.sender) {
-        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)), _backupAddress);
     }
 
 

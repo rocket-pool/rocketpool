@@ -236,8 +236,7 @@ contract RocketDeposit is RocketBase {
         checkDepositDetails(_userID, _groupID, _depositID, address(0x0));
 
         // Set backup withdrawal address
-        rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
-        rocketDepositIndex.setBackupAddress(_depositID, _backupWithdrawalAddress);
+        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)), _backupWithdrawalAddress);
 
         // Success
         return true;
