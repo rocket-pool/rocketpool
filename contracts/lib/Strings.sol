@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.8;
 
 /**
  * Strings Library
@@ -185,7 +185,7 @@ library Strings {
      *               character
      * @return string[] An array of values split based off the delimiter, but
      *                  do not container the delimiter.
-     */
+     
     function split(string memory _base, string memory _value)
         internal
         returns (string[] storage splitArr) {
@@ -210,7 +210,7 @@ library Strings {
             splitArr.push(string(_tmpBytes));
         }
         return splitArr;
-    }
+    }*/
 
     /**
      * Compare To

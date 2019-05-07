@@ -1,4 +1,4 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.8;
 
 /// @title Rocket Pool deposits
 contract RocketDepositInterface {

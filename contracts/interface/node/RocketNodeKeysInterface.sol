@@ -1,4 +1,4 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.8;
 
 contract RocketNodeKeysInterface {
     function validateDepositInput(bytes memory _depositInput) public view;
