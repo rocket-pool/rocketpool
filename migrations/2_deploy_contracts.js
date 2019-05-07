@@ -330,7 +330,7 @@ module.exports = async (deployer, network) => {
   // Log it
   console.log('\n');
   console.log('\x1b[32m%s\x1b[0m', '  Storage Direct Access For Owner Removed... Lets begin! :)');
-  console.log('\n');
+  console.log('\n');  
 
 };
 
