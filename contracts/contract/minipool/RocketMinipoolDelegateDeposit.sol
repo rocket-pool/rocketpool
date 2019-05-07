@@ -181,21 +181,19 @@ contract RocketMinipoolDelegateDeposit {
     /// @param _userID New user address
     /// @param _groupID The 3rd party group the user belongs to
     function deposit(bytes32 _depositID, address _userID, address _groupID) public payable onlyLatestContract("rocketDepositQueue") returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
-        // Add this user if they are not currently in this minipool
-        addUser(_user, _groupID);
         // Make sure we are accepting deposits
         require(status.current == 0 || status.current == 1, "Minipool is not currently allowing deposits.");
-        // Add to their balance
-        users[userID].balance = users[userID].balance.add(msg.value);
+        // Add this deposit if it is not currently in this minipool
+        addDeposit(_depositID, _userID, _groupID);
+        // Update deposit balance
+        deposits[_depositID].balance = deposits[_depositID].balance.add(msg.value);
         // Update total user deposit balance
         userDepositTotal = userDepositTotal.add(msg.value);
         // Publish deposit event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         publisher.publish(keccak256("minipool.user.deposit"), abi.encodeWithSignature("onMinipoolUserDeposit(string,uint256)", staking.id, msg.value));
         // All good? Fire the event for the new deposit
-        emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, users[userID].balance, now);
+        emit PoolTransfer(msg.sender, address(this), keccak256("deposit"), msg.value, deposits[_depositID].balance, now);
         // Update the status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
         minipool.updateStatus();
@@ -207,20 +205,17 @@ contract RocketMinipoolDelegateDeposit {
     /// @param _depositID The ID of the deposit
     /// @param _refundAddress The address to refund the deposit to
     function refund(bytes32 _depositID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
         require(status.current == 6, "Minipool is not currently allowing refunds.");
-        // Check user address, group ID and balance
-        require(users[userID].exists, "User does not exist in minipool.");
-        require(users[userID].groupID == _groupID, "User does not exist in group.");
-        require(users[userID].balance > 0, "User does not have remaining balance in minipool.");
+        // Check deposit ID and balance
+        require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
+        require(deposits[_depositID].balance > 0, "Deposit does not have remaining balance in minipool.");
         // Get remaining balance as refund amount
-        uint256 amount = users[userID].balance;
+        uint256 amount = deposits[_depositID].balance;
         // Update total user deposit balance
         userDepositTotal = userDepositTotal.sub(amount);
-        // Remove user
-        removeUser(_user, _groupID);
+        // Remove deposit
+        removeDeposit(_depositID);
         // Transfer refund amount to refund address
         (bool success,) = _refundAddress.call.value(amount)("");
         require(success, "Refund amount could not be transferred to refund address");
@@ -242,41 +237,38 @@ contract RocketMinipoolDelegateDeposit {
     /// @param _tokenAmount The amount of RPB tokens withdrawn
     /// @param _withdrawnAddress The address the deposit was withdrawn to
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
         require(status.current == 2 || status.current == 3, "Minipool is not currently allowing early withdrawals.");
-        // Check user address, group ID and withdrawn amount
-        require(users[userID].exists, "User does not exist in minipool.");
-        require(users[userID].groupID == _groupID, "User does not exist in group.");
-        require(users[userID].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
+        // Check deposit ID and withdrawn amount
+        require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
+        require(deposits[_depositID].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
         // Get contracts
-        rocketGroupContract = RocketGroupContractInterface(_groupID);
+        rocketGroupContract = RocketGroupContractInterface(deposits[_depositID].groupID);
         // Update total user deposits withdrawn while staking
         stakingUserDepositsWithdrawn = stakingUserDepositsWithdrawn.add(_withdrawnAmount);
         // Update staking deposit withdrawal info
-        if (!stakingWithdrawals[userID].exists) {
-            stakingWithdrawals[userID] = StakingWithdrawal({
+        if (!stakingWithdrawals[_depositID].exists) {
+            stakingWithdrawals[_depositID] = StakingWithdrawal({
                 groupFeeAddress: rocketGroupContract.getFeeAddress(),
                 amount: 0,
-                feeRP: users[userID].feeRP,
-                feeGroup: users[userID].feeGroup,
+                feeRP: deposits[_depositID].feeRP,
+                feeGroup: deposits[_depositID].feeGroup,
                 exists: true
             });
-            stakingWithdrawalIDs.push(userID);
+            stakingWithdrawalIDs.push(_depositID);
         }
-        stakingWithdrawals[userID].amount = stakingWithdrawals[userID].amount.add(_withdrawnAmount);
-        // Decrement user's balance
-        users[userID].balance = users[userID].balance.sub(_withdrawnAmount);
-        // Increment user's deposit token balance
-        users[userID].stakingTokensWithdrawn = users[userID].stakingTokensWithdrawn.add(_tokenAmount);
-        // Remove user if balance depleted
-        if (users[userID].balance == 0) { removeUser(_user, _groupID); }
+        stakingWithdrawals[_depositID].amount = stakingWithdrawals[_depositID].amount.add(_withdrawnAmount);
+        // Decrement deposit balance
+        deposits[_depositID].balance = deposits[_depositID].balance.sub(_withdrawnAmount);
+        // Increment deposit tokens withdrawn balance
+        deposits[_depositID].stakingTokensWithdrawn = deposits[_depositID].stakingTokensWithdrawn.add(_tokenAmount);
+        // Remove deposit if balance depleted
+        if (deposits[_depositID].balance == 0) { removeDeposit(_depositID); }
         // Publish withdrawal event
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
         publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, _withdrawnAmount));
         // All good? Fire the event for the withdrawal
-        emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, users[userID].balance, now);
+        emit PoolTransfer(address(this), _withdrawnAddress, keccak256("withdrawal"), _withdrawnAmount, deposits[_depositID].balance, now);
         // Update the status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
         minipool.updateStatus();
@@ -288,32 +280,29 @@ contract RocketMinipoolDelegateDeposit {
     /// @param _depositID The ID of the deposit
     /// @param _withdrawalAddress The address to withdraw the deposit to
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
         // Check current status
         require(status.current == 4, "Minipool is not currently allowing withdrawals.");
         require(staking.balanceStart > 0, "Invalid balance at staking start");
-        // Check user address, group ID and balance
-        require(users[userID].exists, "User does not exist in minipool.");
-        require(users[userID].groupID == _groupID, "User does not exist in group.");
-        require(users[userID].balance > 0, "User does not have remaining balance in minipool.");
+        // Check deposit ID and balance
+        require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
+        require(deposits[_depositID].balance > 0, "Deposit does not have remaining balance in minipool.");
         // Get contracts
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
-        // Calculate rewards earned by user
-        int256 rewardsEarned = int256(users[userID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(users[userID].balance);
+        // Calculate rewards earned by deposit
+        int256 rewardsEarned = int256(deposits[_depositID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(deposits[_depositID].balance);
         // Withdrawal amount
-        uint256 amount = uint256(int256(users[userID].balance) + rewardsEarned);
+        uint256 amount = uint256(int256(deposits[_depositID].balance) + rewardsEarned);
         // Pay fees if rewards were earned
         if (rewardsEarned > 0) {
             // Get contracts
             rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-            rocketGroupContract = RocketGroupContractInterface(_groupID);
+            rocketGroupContract = RocketGroupContractInterface(deposits[_depositID].groupID);
             // Calculate and subtract RP and node fees from rewards
-            uint256 rpFeeAmount = uint256(rewardsEarned).mul(users[userID].feeRP).div(calcBase);
+            uint256 rpFeeAmount = uint256(rewardsEarned).mul(deposits[_depositID].feeRP).div(calcBase);
             uint256 nodeFeeAmount = uint256(rewardsEarned).mul(node.userFee).div(calcBase);
             rewardsEarned -= int256(rpFeeAmount + nodeFeeAmount);
             // Calculate group fee from remaining rewards
-            uint256 groupFeeAmount = uint256(rewardsEarned).mul(users[userID].feeGroup).div(calcBase);
+            uint256 groupFeeAmount = uint256(rewardsEarned).mul(deposits[_depositID].feeGroup).div(calcBase);
             // Update withdrawal amount
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
             // Transfer fees
@@ -323,8 +312,8 @@ contract RocketMinipoolDelegateDeposit {
         }
         // Transfer withdrawal amount to withdrawal address as RPB tokens
         if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
-        // Remove user
-        removeUser(_user, _groupID);
+        // Remove deposit
+        removeDeposit(_depositID);
         // Publish withdrawal event
         publisher.publish(keccak256("minipool.user.withdraw"), abi.encodeWithSignature("onMinipoolUserWithdraw(string,uint256)", staking.id, amount));
         // All good? Fire the event for the withdrawal
@@ -342,34 +331,31 @@ contract RocketMinipoolDelegateDeposit {
     function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check minipool status
         require(status.current == 1 || status.current == 2, "Minipool is not currently allowing backup withdrawal addresses to be set.");
-        // Get user IDs
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
-        bytes32 backupID = keccak256(abi.encodePacked(_backupWithdrawalAddress, _groupID));
-        // Remove any existing backup address for the user
-        address currentBackupAddress = users[userID].backup;
-        if (currentBackupAddress != address(0x0)) { userBackupIDs[keccak256(abi.encodePacked(currentBackupAddress, _groupID))] = 0x0; }
+        // Remove any existing backup address for the deposit
+        address currentBackupAddress = deposits[_depositID].backup;
+        if (currentBackupAddress != address(0x0)) { userBackupAddresses[currentBackupAddress] = 0x0; }
         // Set backup ID
-        userBackupIDs[backupID] = userID;
-        users[userID].backup = _backupWithdrawalAddress;
+        userBackupAddresses[_backupWithdrawalAddress] = _depositID;
+        deposits[_depositID].backup = _backupWithdrawalAddress;
         // Success
         return true;
     }
 
-    /// @dev Register a new user in the minipool
-    /// @param _user New user address
+    /// @dev Register a new deposit in the minipool
+    /// @param _depositID The ID of the deposit
+    /// @param _userID New user address
     /// @param _groupID The 3rd party group address the user belongs to
-    function addUser(address _user, address _groupID) private returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
-        // Address exists?
-        require(_user != address(0x0), "User address invalid.");
-        // Get the users group contract 
+    function addDeposit(bytes32 _depositID, address _userID, address _groupID) private returns(bool) {
+        // Check user and group IDs
+        require(_userID != address(0x0), "Invalid user ID.");
+        require(_groupID != address(0x0), "Invalid group ID.");
+        // Get the user's group contract 
         rocketGroupContract = RocketGroupContractInterface(_groupID);
-        // Check the user isn't already registered
-        if (users[userID].exists == false) {
-            // Add the new user to the mapping of User structs
-            users[userID] = User({
-                user: _user,
+        // Check the deposit isn't already registered
+        if (deposits[_depositID].exists == false) {
+            // Add the new deposit to the mapping of Deposit structs
+            deposits[_depositID] = Deposit({
+                userID: _userID,
                 groupID: _groupID,
                 backup: address(0x0),
                 balance: 0,
@@ -378,35 +364,36 @@ contract RocketMinipoolDelegateDeposit {
                 feeGroup: rocketGroupContract.getFeePerc(),
                 created: now,
                 exists: true,
-                idIndex: userIDs.length
+                idIndex: depositIDs.length
             });
-            // Store our user address so we can iterate over it if needed
-            userIDs.push(userID);
+            // Store our deposit ID so we can iterate over it if needed
+            depositIDs.push(_depositID);
             // Fire the event
-            emit UserAdded(_user, _groupID, now);
+            emit DepositAdded(_depositID, _userID, _groupID, now);
             // Success
             return true;
         }
         return false;
     }
 
-    /// @dev Remove a user from the minipool
-    /// @param _user User address
-    function removeUser(address _user, address _groupID) private returns(bool) {
-        // Get user ID
-        bytes32 userID = keccak256(abi.encodePacked(_user, _groupID));
-        // Check user exists
-        require(users[userID].exists, "User does not exist in minipool.");
-        // Remove user from address list
-        uint256 currentUserIndex = users[userID].idIndex;
-        uint256 lastUserIndex = userIDs.length - 1;
-        users[userIDs[lastUserIndex]].idIndex = currentUserIndex;
-        userIDs[currentUserIndex] = userIDs[lastUserIndex];
-        userIDs.length--;
-        // Delete user
-        delete users[userID];
+    /// @dev Remove a deposit from the minipool
+    /// @param _depositID The ID of the deposit
+    function removeDeposit(bytes32 _depositID) private returns(bool) {
+        // Check deposit exists
+        require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
+        // Get deposit details
+        address userID = deposits[_depositID].userID;
+        address groupID = deposits[_depositID].groupID;
+        // Remove deposit from ID list
+        uint256 currentDepositIndex = deposits[_depositID].idIndex;
+        uint256 lastDepositIndex = depositIDs.length - 1;
+        deposits[depositIDs[lastDepositIndex]].idIndex = currentDepositIndex;
+        depositIDs[currentDepositIndex] = depositIDs[lastDepositIndex];
+        depositIDs.length--;
+        // Delete deposit
+        delete deposits[_depositID];
         // Fire the event
-        emit UserRemoved(_user, _groupID, now);
+        emit DepositRemoved(_depositID, userID, groupID, now);
         // Success
         return true;
     }
