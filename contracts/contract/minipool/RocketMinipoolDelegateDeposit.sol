@@ -43,7 +43,6 @@ contract RocketMinipoolDelegateDeposit {
 
     // Deposits
     mapping (bytes32 => Deposit) private deposits;              // Deposits in this pool
-    mapping (address => bytes32) private userBackupAddresses;   // User's backup withdrawal address => ID of deposit in this pool
     bytes32[] private depositIDs;                               // IDs of deposits in this pool for iteration
 
 
@@ -92,7 +91,6 @@ contract RocketMinipoolDelegateDeposit {
     struct Deposit {
         address userID;                                         // Address ID of the user
         address groupID;                                        // Address ID of the user's group
-        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pool's fee
@@ -325,22 +323,6 @@ contract RocketMinipoolDelegateDeposit {
         return true;
     }
 
-    /// @dev Set a user's backup withdrawal address for a deposit
-    /// @param _depositID The ID of the deposit
-    /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
-    function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Check minipool status
-        require(status.current == 1 || status.current == 2, "Minipool is not currently allowing backup withdrawal addresses to be set.");
-        // Remove any existing backup address for the deposit
-        address currentBackupAddress = deposits[_depositID].backup;
-        if (currentBackupAddress != address(0x0)) { userBackupAddresses[currentBackupAddress] = 0x0; }
-        // Set backup ID
-        userBackupAddresses[_backupWithdrawalAddress] = _depositID;
-        deposits[_depositID].backup = _backupWithdrawalAddress;
-        // Success
-        return true;
-    }
-
     /// @dev Register a new deposit in the minipool
     /// @param _depositID The ID of the deposit
     /// @param _userID New user address
@@ -357,7 +339,6 @@ contract RocketMinipoolDelegateDeposit {
             deposits[_depositID] = Deposit({
                 userID: _userID,
                 groupID: _groupID,
-                backup: address(0x0),
                 balance: 0,
                 stakingTokensWithdrawn: 0,
                 feeRP: rocketGroupContract.getFeePercRocketPool(),

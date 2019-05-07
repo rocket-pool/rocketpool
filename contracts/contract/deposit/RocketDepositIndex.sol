@@ -143,6 +143,7 @@ contract RocketDepositIndex is RocketBase {
         // + deposit.stakingPoolAmount
         // + deposit.refundedAmount
         // + deposit.withdrawnAmount
+        // + deposit.backupAddress
 
         // Update deposit indexes
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
@@ -232,6 +233,13 @@ contract RocketDepositIndex is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool);
         }
 
+    }
+
+
+    // Set the backup address for a deposit
+    function setBackupAddress(bytes32 _depositID, address _backupAddress) public onlyLatestContract("rocketDeposit", msg.sender) {
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) != _backupAddress, "Deposit backup address cannot be set to user ID");
+        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)), _backupAddress);
     }
 
 

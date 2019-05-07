@@ -43,7 +43,6 @@ contract RocketMinipool {
 
     // Deposits
     mapping (bytes32 => Deposit) private deposits;              // Deposits in this pool
-    mapping (address => bytes32) private userBackupAddresses;   // User's backup withdrawal address => ID of deposit in this pool
     bytes32[] private depositIDs;                               // IDs of deposits in this pool for iteration
 
 
@@ -92,7 +91,6 @@ contract RocketMinipool {
     struct Deposit {
         address userID;                                         // Address ID of the user
         address groupID;                                        // Address ID of the user's group
-        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pool's fee
@@ -284,11 +282,6 @@ contract RocketMinipool {
         return depositIDs[_depositID].groupID;
     }
 
-    /// @dev Returns the deposit's backup withdrawal address
-    function getDepositBackupAddress(bytes32 _depositID) public view returns(address) {
-        return depositIDs[_depositID].backup;
-    }
-
     /// @dev Returns the balance of the deposit
     function getDepositBalance(bytes32 _depositID) public view returns(uint256) {
         return depositIDs[_depositID].balance;
@@ -297,11 +290,6 @@ contract RocketMinipool {
     /// @dev Returns the amount of the deposit withdrawn as RPB
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256) {
         return depositIDs[_depositID].stakingTokensWithdrawn;
-    }
-
-    /// @dev Returns the deposit ID of a user's backup withdrawal address
-    function getUserBackupAddressDepositID(address _userBackupAddress) public view returns(bytes32) {
-        return userBackupAddresses[_userBackupAddress];
     }
 
 
@@ -352,18 +340,6 @@ contract RocketMinipool {
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
         (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("withdraw(bytes32,address)", _depositID, _withdrawalAddress));
-        require(success, "Delegate call failed.");
-        // Success
-        return true;
-    }
-
-
-    /// @dev Set a user's backup withdrawal address for a deposit
-    /// @param _depositID The ID of the deposit
-    /// @param _backupWithdrawalAddress The backup withdrawal address to set for the user
-    function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
-        // Will throw if conditions are not met in delegate or call fails
-        (bool success,) = getContractAddress("rocketMinipoolDelegateDeposit").delegatecall(abi.encodeWithSignature("setBackupWithdrawalAddress(bytes32,address)", _depositID, _backupWithdrawalAddress));
         require(success, "Delegate call failed.");
         // Success
         return true;

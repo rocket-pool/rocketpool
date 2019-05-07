@@ -43,7 +43,6 @@ contract RocketMinipoolDelegateStatus {
 
     // Deposits
     mapping (bytes32 => Deposit) private deposits;              // Deposits in this pool
-    mapping (address => bytes32) private userBackupAddresses;   // User's backup withdrawal address => ID of deposit in this pool
     bytes32[] private depositIDs;                               // IDs of deposits in this pool for iteration
 
 
@@ -92,7 +91,6 @@ contract RocketMinipoolDelegateStatus {
     struct Deposit {
         address userID;                                         // Address ID of the user
         address groupID;                                        // Address ID of the user's group
-        address backup;                                         // The backup address of the user
         uint256 balance;                                        // Chunk balance deposited
         uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pool's fee

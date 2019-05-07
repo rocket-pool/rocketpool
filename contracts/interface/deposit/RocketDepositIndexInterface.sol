@@ -20,4 +20,5 @@ contract RocketDepositIndexInterface {
     function refund(bytes32 _depositID, uint256 _refundAmount) public;
     function refundFromStalledMinipool(bytes32 _depositID, address _minipool, uint256 _refundAmount) public;
     function withdrawFromMinipool(bytes32 _depositID, address _minipool, uint256 _withdrawalAmount) public;
+    function setBackupAddress(bytes32 _depositID, address _backupAddress) public;
 }

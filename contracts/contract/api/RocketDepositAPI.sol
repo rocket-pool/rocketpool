@@ -253,13 +253,13 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Set a backup withdrawal address for a minipool user
-    function setMinipoolUserBackupWithdrawalAddress(address _groupID, address _userID, address _minipool, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
+    /// @dev Set a backup withdrawal address for a deposit
+    function setDepositBackupWithdrawalAddress(address _groupID, address _userID, bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
         // Verify the set backup address request is acceptable
         checkUserBackupWithdrawalAddressIsValid(msg.sender, _groupID, _userID, _backupWithdrawalAddress);
         // Set backup withdrawal address
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-        rocketDeposit.setMinipoolUserBackupWithdrawalAddress(_userID, _groupID, _minipool, _backupWithdrawalAddress);
+        rocketDeposit.setDepositBackupWithdrawalAddress(_userID, _groupID, _depositID, _backupWithdrawalAddress);
         // Success
         return true;
     }

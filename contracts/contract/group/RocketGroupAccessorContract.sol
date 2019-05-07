@@ -144,12 +144,12 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /// @dev Set a backup withdrawal address for a minipool
-    function setMinipoolBackupWithdrawalAddress(address _minipool, address _backupWithdrawalAddress) public returns (bool) {
+    /// @dev Set a backup withdrawal address for a deposit
+    function setDepositBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public returns (bool) {
         // Get contracts
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
         // Set backup withdrawal address
-        rocketDepositAPI.setMinipoolUserBackupWithdrawalAddress(groupID, msg.sender, _minipool, _backupWithdrawalAddress);
+        rocketDepositAPI.setDepositBackupWithdrawalAddress(groupID, msg.sender, _depositID, _backupWithdrawalAddress);
         // Return success flag
         return true;
     }

@@ -14,10 +14,8 @@ contract RocketMinipoolInterface {
     function getDepositExists(bytes32 _depositID) public view returns(bool);
     function getDepositUserID(bytes32 _depositID) public view returns(address);
     function getDepositGroupID(bytes32 _depositID) public view returns(address);
-    function getDepositBackupAddress(bytes32 _depositID) public view returns(address);
     function getDepositBalance(bytes32 _depositID) public view returns(uint256);
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256);
-    function getUserBackupAddressDepositID(address _userBackupAddress) public view returns(bytes32);
     function getStatus() public view returns(uint8);
     function getStatusChangedTime() public view returns(uint256);
     function getStatusChangedBlock() public view returns(uint256);
@@ -34,7 +32,6 @@ contract RocketMinipoolInterface {
     function refund(bytes32 _depositID, address _refundAddress) public returns(bool);
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public returns(bool);
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public returns(bool);
-    function setBackupWithdrawalAddress(bytes32 _depositID, address _backupWithdrawalAddress) public returns(bool);
     function updateStatus() public returns(bool);
     function logoutMinipool() public returns (bool);
     function withdrawMinipool(uint256 _withdrawalBalance) public returns (bool);
