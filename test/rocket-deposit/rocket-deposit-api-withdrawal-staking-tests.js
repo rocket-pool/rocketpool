@@ -78,7 +78,7 @@ export default function() {
 
             // Get deposit details
             depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
-            depositAmount = await minipool.getUserDeposit.call(user1, groupContract.address);
+            depositAmount = await minipool.getDepositBalance.call(depositID);
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
@@ -115,7 +115,7 @@ export default function() {
             });
 
             // Get deposit amount
-            depositAmount = await minipool.getUserDeposit.call(user1, groupContract.address);
+            depositAmount = await minipool.getDepositBalance.call(depositID);
 
             // Withdraw remaining minipool deposit
             await scenarioWithdrawStakingMinipoolDeposit({
@@ -135,7 +135,7 @@ export default function() {
 
             // Get deposit details
             depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
-            depositAmount = await minipool.getUserDeposit.call(user2, groupContract.address);
+            depositAmount = await minipool.getDepositBalance.call(depositID);
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawStakingMinipoolDeposit({

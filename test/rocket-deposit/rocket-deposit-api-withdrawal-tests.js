@@ -31,7 +31,8 @@ export default function() {
         let nodeContract;
         let minipoolAddresses;
         let minipool;
-        let depositID;
+        let depositID1;
+        let depositID2;
         before(async () => {
 
             // Get contracts
@@ -84,12 +85,13 @@ export default function() {
             assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
 
             // Get deposit ID
-            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID1 = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+            depositID2 = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID1,
                 minipoolAddress: minipool.address,
                 fromAddress: user1,
                 gas: 5000000,
@@ -102,7 +104,7 @@ export default function() {
         it(printTitle('staker', 'cannot set an invalid backup withdrawal address'), async () => {
             await assertThrows(scenarioSetBackupWithdrawalAddress({
                 withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: '0x0000000000000000000000000000000000000000',
                 fromAddress: user2,
                 gas: 5000000,
@@ -114,7 +116,7 @@ export default function() {
         it(printTitle('staker', 'cannot set their backup withdrawal address to their current address'), async () => {
             await assertThrows(scenarioSetBackupWithdrawalAddress({
                 withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: user2,
                 fromAddress: user2,
                 gas: 5000000,
@@ -129,7 +131,7 @@ export default function() {
             await assertThrows(scenarioAPISetBackupWithdrawalAddress({
                 groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: user2Backup,
                 fromAddress: user2,
                 gas: 5000000,
@@ -139,7 +141,7 @@ export default function() {
             await assertThrows(scenarioAPISetBackupWithdrawalAddress({
                 groupID: accounts[9],
                 userID: user2,
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: user2Backup,
                 fromAddress: user2,
                 gas: 5000000,
@@ -149,7 +151,7 @@ export default function() {
             await assertThrows(scenarioAPISetBackupWithdrawalAddress({
                 groupID: groupContract.address,
                 userID: user2,
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: user2Backup,
                 fromAddress: user2,
                 gas: 5000000,
@@ -162,7 +164,7 @@ export default function() {
         it(printTitle('staker', 'can set a backup withdrawal address while a minipool is staking'), async () => {
             await scenarioSetBackupWithdrawalAddress({
                 withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
+                depositID: depositID2,
                 backupWithdrawalAddress: user2Backup,
                 fromAddress: user2,
                 gas: 5000000,
@@ -170,35 +172,11 @@ export default function() {
         });
 
 
-        // Staker cannot set a backup withdrawal address which is in use
-        it(printTitle('staker', 'cannot set a backup withdrawal address which is in use'), async () => {
-
-            // Existing user address
-            await assertThrows(scenarioSetBackupWithdrawalAddress({
-                withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
-                backupWithdrawalAddress: user2,
-                fromAddress: user1,
-                gas: 5000000,
-            }), 'Set a backup withdrawal address in use as a user address');
-
-            // Existing backup address
-            await assertThrows(scenarioSetBackupWithdrawalAddress({
-                withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
-                backupWithdrawalAddress: user2Backup,
-                fromAddress: user1,
-                gas: 5000000,
-            }), 'Set a backup withdrawal address in use as another backup address');
-
-        });
-
-
         // Random account cannot set a backup withdrawal address
         it(printTitle('random account', 'cannot set a backup withdrawal address'), async () => {
             await assertThrows(scenarioSetBackupWithdrawalAddress({
                 withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
+                depositID: depositID1,
                 backupWithdrawalAddress: user4Backup,
                 fromAddress: user4,
                 gas: 5000000,
@@ -219,7 +197,7 @@ export default function() {
             // Withdraw minipool deposit
             await scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID1,
                 minipoolAddress: minipool.address,
                 fromAddress: user1,
                 gas: 5000000,
@@ -230,11 +208,6 @@ export default function() {
 
         // Staker cannot withdraw a deposit with an invalid ID
         it(printTitle('staker', 'cannot withdraw a deposit with an invalid ID'), async () => {
-
-            // Get deposit ID
-            depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', 0);
-
-            // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
                 depositID: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -242,7 +215,6 @@ export default function() {
                 fromAddress: user2,
                 gas: 5000000,
             }), 'Withdrew from a minipool with an invalid deposit ID');
-
         });
 
 
@@ -255,7 +227,7 @@ export default function() {
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
                 gas: 5000000,
@@ -282,7 +254,7 @@ export default function() {
             // Incorrect minipool
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipoolAddresses[1],
                 fromAddress: user2,
                 gas: 5000000,
@@ -291,7 +263,7 @@ export default function() {
             // Incorrect user
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user3,
                 gas: 5000000,
@@ -307,7 +279,7 @@ export default function() {
             await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: groupContract.address,
                 userID: '0x0000000000000000000000000000000000000000',
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
                 gas: 5000000,
@@ -317,7 +289,7 @@ export default function() {
             await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: accounts[9],
                 userID: user2,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
                 gas: 5000000,
@@ -327,7 +299,7 @@ export default function() {
             await assertThrows(scenarioAPIWithdrawMinipoolDeposit({
                 groupID: groupContract.address,
                 userID: user2,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2,
                 gas: 5000000,
@@ -336,23 +308,11 @@ export default function() {
         });
 
 
-        // Staker cannot set a backup withdrawal address after a minipool has logged out
-        it(printTitle('staker', 'cannot set a backup withdrawal address after a minipool has logged out'), async () => {
-            await assertThrows(scenarioSetBackupWithdrawalAddress({
-                withdrawerContract: groupAccessorContract,
-                minipoolAddress: minipool.address,
-                backupWithdrawalAddress: user4Backup,
-                fromAddress: user2,
-                gas: 5000000,
-            }), 'Set a backup withdrawal address after minipool logout');
-        });
-
-
         // Staker cannot withdraw using a backup withdrawal address before backup collect duration has passed
         it(printTitle('staker', 'cannot withdraw using a backup withdrawal address before backup collect duration has passed'), async () => {
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2Backup,
                 gas: 5000000,
@@ -373,7 +333,7 @@ export default function() {
             // Withdraw
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2Backup,
                 gas: 5000000,
@@ -391,7 +351,7 @@ export default function() {
             // Withdraw
             await scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
-                depositID,
+                depositID: depositID2,
                 minipoolAddress: minipool.address,
                 fromAddress: user2Backup,
                 gas: 5000000,
