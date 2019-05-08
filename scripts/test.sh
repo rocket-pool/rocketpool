@@ -26,7 +26,7 @@ fi
 # Beacon chain simulator config
 beacon_port=9545
 deposit_contract_address=0xb50eA9565646e5Ed39688694b283cb185A3CC130
-withdrawal_contract_address=0xbFCc171226E3B5f98db59B625ED02d084D9bebF3
+withdrawal_contract_address=0x5631A31aC732c334cD0a4d69963995e0BFDE251C
 withdrawal_from_address=0xe6ed92d26573c67af5eca7fb2a49a807fb8f88db
 
 ganache_running() {
@@ -34,12 +34,7 @@ ganache_running() {
 }
 
 start_ganache() {
-  if [ "$SOLIDITY_COVERAGE" = true ]; then
-    node_modules/.bin/ganache-cli -l 8000000 -e 1000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" --port "$ganache_port" > /dev/null &
-  else
-    node_modules/.bin/ganache-cli -l 8000000 -e 1000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" > /dev/null &
-  fi
-
+  node_modules/.bin/ganache-cli -l 8000000 -e 1000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" --port "$ganache_port" > /dev/null &
   ganache_pid=$!
 }
 
