@@ -127,7 +127,7 @@ module.exports = async (deployer, network) => {
 
   // Set our web3 provider
   
-  let $web3 = new config.web3(config.networks[network].provider.connection._url);
+  let $web3 = new config.web3('http://' + config.networks[network].host + ':' + config.networks[network].port);
   console.log(`Web3 1.0 provider using network: `+network);
   console.log('\n');
 
