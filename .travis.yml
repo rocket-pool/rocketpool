@@ -4,6 +4,8 @@ group: beta
 language: node_js
 node_js:
   - 9
+before_install:
+  - npm i -g npm@6.9.0
 install:
   - npm ci
 cache:
