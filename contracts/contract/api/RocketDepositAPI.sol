@@ -41,6 +41,7 @@ contract RocketDepositAPI is RocketBase {
         address indexed _from,                                              // Address that sent the deposit, must be registered to the GroupID
         address indexed _userID,                                            // Address of the users account that owns the deposit
         address indexed _groupID,                                           // Group ID that controls the deposit
+        bytes32 depositID,                                                  // The ID of the created deposit
         string  durationID,                                                 // The deposits staking duration ID
         uint256 value,                                                      // Amount in wei deposited
         uint256 created                                                     // Timestamp of the deposit
@@ -168,9 +169,10 @@ contract RocketDepositAPI is RocketBase {
         checkDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID);
         // Send and create deposit
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-        require(rocketDeposit.create.value(msg.value)(_userID, _groupID, _durationID), "Deposit could not be created");
+        bytes32 depositID = rocketDeposit.create.value(msg.value)(_userID, _groupID, _durationID);
+        require(depositID != 0x0, "Deposit could not be created");
         // All good? Fire the event for the new deposit
-        emit Deposit(msg.sender, _userID, _groupID, _durationID, msg.value, now);   
+        emit Deposit(msg.sender, _userID, _groupID, depositID, _durationID, msg.value, now);   
         // Done
         return true;
     }
