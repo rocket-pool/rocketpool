@@ -72,7 +72,7 @@ contract RocketDeposit is RocketBase {
 
 
     // Create a new deposit
-    function create(address _userID, address _groupID, string memory _durationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+    function create(address _userID, address _groupID, string memory _durationID) payable public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bytes32) {
 
         // Check deposit amount
         require(msg.value > 0, "Invalid deposit amount sent");
@@ -92,8 +92,8 @@ contract RocketDeposit is RocketBase {
         // Assign chunks
         rocketDepositQueue.assignChunks(_durationID);
 
-        // Return success flag
-        return true;
+        // Return deposit ID
+        return depositID;
 
     }
 
@@ -131,11 +131,13 @@ contract RocketDeposit is RocketBase {
 
         // Check deposit details
         checkDepositDetails(_userID, _groupID, _depositID, _minipool);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        require(_userID == minipool.getDepositUserID(_depositID), "Incorrect minipool deposit user ID");
+        require(_groupID == minipool.getDepositGroupID(_depositID), "Incorrect minipool deposit group ID");
 
         // Get minipool user balance & refund deposit from minipool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        uint256 refundAmount = minipool.getUserDeposit(_userID, _groupID);
-        minipool.refund(_userID, _groupID, address(this));
+        uint256 refundAmount = minipool.getDepositBalance(_depositID);
+        minipool.refund(_depositID, address(this));
 
         // Update deposit details
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
@@ -156,6 +158,9 @@ contract RocketDeposit is RocketBase {
 
         // Check deposit details
         checkDepositDetails(_userID, _groupID, _depositID, _minipool);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        require(_userID == minipool.getDepositUserID(_depositID), "Incorrect minipool deposit user ID");
+        require(_groupID == minipool.getDepositGroupID(_depositID), "Incorrect minipool deposit group ID");
 
         // Get RPB token amount to withdraw
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
@@ -166,8 +171,7 @@ contract RocketDeposit is RocketBase {
         rocketBETHToken.mint(_withdrawerAddress, tokenAmount);
 
         // Withdraw amount from minipool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        minipool.withdrawStaking(_userID, _groupID, _amount, tokenAmount, _withdrawerAddress);
+        minipool.withdrawStaking(_depositID, _amount, tokenAmount, _withdrawerAddress);
 
         // Update deposit details
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));
@@ -182,38 +186,35 @@ contract RocketDeposit is RocketBase {
     // Withdraw a deposit fragment from a withdrawn minipool as RPB tokens
     function withdrawFromWithdrawnMinipool(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
+        // Get minipool deposit addresses
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        address minipoolUserAddress = minipool.getDepositUserID(_depositID);
+        address minipoolGroupAddress = minipool.getDepositGroupID(_depositID);
+
+        // Get deposit backup address
+        address depositBackupAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)));
+
         // Check deposit details
-        checkDepositDetails(address(0x0), _groupID, _depositID, _minipool);
+        checkDepositDetails(minipoolUserAddress, _groupID, _depositID, _minipool);
+        require(_userID == minipoolUserAddress || _userID == depositBackupAddress, "Incorrect minipool deposit user ID or deposit backup address");
+        require(_groupID == minipoolGroupAddress, "Incorrect minipool deposit group ID");
+
+        // Check backup settings if user is withdrawing from backup address
+        if (_userID != minipoolUserAddress && _userID == depositBackupAddress) {
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            require(rocketMinipoolSettings.getMinipoolBackupCollectEnabled(), "Withdrawal from backup addresses is not currently allowed.");
+            require(minipool.getStatus() == 4 && block.number >= (minipool.getStatusChangedBlock() + rocketMinipoolSettings.getMinipoolBackupCollectDuration()), "Withdrawal from backup addresses is not yet allowed by this minipool.");
+        }
 
         // Get initial withdrawer address balance
         rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
         uint256 initialBalance = rocketBETHToken.balanceOf(_withdrawerAddress);
 
-        // Get minipool contract
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-
-        // Check user ID
-        if (minipool.getUserExists(_userID, _groupID)) { require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID"); }
-
-        // Check if user is withdrawing from backup address
-        if (!minipool.getUserExists(_userID, _groupID) && minipool.getUserBackupAddressExists(_userID, _groupID)) {
-
-            // Check minipool settings
-            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-            require(rocketMinipoolSettings.getMinipoolBackupCollectEnabled(), "Withdrawal from backup addresses is not currently allowed.");
-            require(minipool.getStatus() == 4 && block.number >= (minipool.getStatusChangedBlock() + rocketMinipoolSettings.getMinipoolBackupCollectDuration()), "Withdrawal from backup addresses is not yet allowed by this minipool.");
-
-            // Get user address; set user ID to backup withdrawal ID
-            address userAddress = minipool.getUserAddressFromBackupAddress(_userID, _groupID);
-            minipool.setUserIDToBackupWithdrawalID(userAddress, _groupID, _userID);
-
-        }
-
         // Get user deposit amount
-        uint256 userDepositAmount = minipool.getUserDeposit(_userID, _groupID);
+        uint256 userDepositAmount = minipool.getDepositBalance(_depositID);
 
         // Withdraw from minipool
-        minipool.withdraw(_userID, _groupID, _withdrawerAddress);
+        minipool.withdraw(_depositID, _withdrawerAddress);
 
         // Get amount withdrawn
         uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
@@ -228,19 +229,14 @@ contract RocketDeposit is RocketBase {
     }
 
 
-    // Set a backup withdrawal address for a minipool user
-    function setMinipoolUserBackupWithdrawalAddress(address _userID, address _groupID, address _minipool, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
+    // Set a backup withdrawal address for a deposit
+    function setDepositBackupWithdrawalAddress(address _userID, address _groupID, bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (bool) {
 
-        // Get minipool contract
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-
-        // Check user ID and backup withdrawal ID
-        require(minipool.getUserExists(_userID, _groupID), "The user does not exist in the minipool");
-        require(!minipool.getUserExists(_backupWithdrawalAddress, _groupID), "The backup withdrawal address is already in use by the minipool");
-        require(!minipool.getUserBackupAddressExists(_backupWithdrawalAddress, _groupID), "The backup withdrawal address is already in use by the minipool");
+        // Check deposit details
+        checkDepositDetails(_userID, _groupID, _depositID, address(0x0));
 
         // Set backup withdrawal address
-        minipool.setBackupWithdrawalAddress(_userID, _groupID, _backupWithdrawalAddress);
+        rocketStorage.setAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)), _backupWithdrawalAddress);
 
         // Success
         return true;
@@ -249,13 +245,13 @@ contract RocketDeposit is RocketBase {
 
 
     // Check if deposit details are valid
-    // Ignores user ID if null
+    // Ignores minipool if null
     function checkDepositDetails(address _userID, address _groupID, bytes32 _depositID, address _minipool) private {
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         require(rocketStorage.getBool(keccak256(abi.encodePacked("deposit.exists", _depositID))), "Deposit does not exist");
-        if (_userID != address(0x0)) { require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID"); }
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.userID", _depositID))) == _userID, "Incorrect deposit user ID");
         require(rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.groupID", _depositID))) == _groupID, "Incorrect deposit group ID");
-        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool");
+        if (_minipool != address(0x0)) { require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("deposit.stakingPools", _depositID)), _minipool) != -1, "Deposit is not staking under minipool"); }
     }
 
 

@@ -14,6 +14,7 @@ contract RocketDepositIndexInterface {
     function getUserDepositStakingPoolCount(bytes32 _depositID) public returns (uint256);
     function getUserDepositStakingPoolAt(bytes32 _depositID, uint256 _index) public returns (address);
     function getUserDepositStakingPoolAmount(bytes32 _depositID, address _minipool) public view returns (uint256);
+    function getUserDepositBackupAddress(bytes32 _depositID) public view returns (address);
     // Methods
     function add(address _userID, address _groupID, string memory _durationID, uint256 _amount) public returns (bytes32);
     function assign(bytes32 _depositID, address _minipool, uint256 _assignAmount) public;

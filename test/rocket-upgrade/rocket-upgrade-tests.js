@@ -9,7 +9,7 @@ import { scenarioUpgradeContract, scenarioAddContract, scenarioInitialiseUpgrade
 
 export default function() {
 
-    contract('RocketUpgrade', async (accounts) => {
+    contract('RocketUpgrade - Upgrades', async (accounts) => {
 
 
         // Accounts

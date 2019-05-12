@@ -3,7 +3,7 @@ import { scenarioInitialiseUpgradeApprovers, scenarioTransferUpgradeApprover } f
 
 export default function() {
 
-    contract('RocketUpgrade', async (accounts) => {
+    contract('RocketUpgrade - Approvers', async (accounts) => {
 
 
         // Accounts

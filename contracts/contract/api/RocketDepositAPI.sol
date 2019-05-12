@@ -41,6 +41,7 @@ contract RocketDepositAPI is RocketBase {
         address indexed _from,                                              // Address that sent the deposit, must be registered to the GroupID
         address indexed _userID,                                            // Address of the users account that owns the deposit
         address indexed _groupID,                                           // Group ID that controls the deposit
+        bytes32 depositID,                                                  // The ID of the created deposit
         string  durationID,                                                 // The deposits staking duration ID
         uint256 value,                                                      // Amount in wei deposited
         uint256 created                                                     // Timestamp of the deposit
@@ -168,9 +169,10 @@ contract RocketDepositAPI is RocketBase {
         checkDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID);
         // Send and create deposit
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-        require(rocketDeposit.create.value(msg.value)(_userID, _groupID, _durationID), "Deposit could not be created");
+        bytes32 depositID = rocketDeposit.create.value(msg.value)(_userID, _groupID, _durationID);
+        require(depositID != 0x0, "Deposit could not be created");
         // All good? Fire the event for the new deposit
-        emit Deposit(msg.sender, _userID, _groupID, _durationID, msg.value, now);   
+        emit Deposit(msg.sender, _userID, _groupID, depositID, _durationID, msg.value, now);   
         // Done
         return true;
     }
@@ -253,13 +255,13 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Set a backup withdrawal address for a minipool user
-    function setMinipoolUserBackupWithdrawalAddress(address _groupID, address _userID, address _minipool, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
+    /// @dev Set a backup withdrawal address for a deposit
+    function setDepositBackupWithdrawalAddress(address _groupID, address _userID, bytes32 _depositID, address _backupWithdrawalAddress) public onlyLatestContract("rocketDepositAPI", address(this)) returns(bool) {
         // Verify the set backup address request is acceptable
         checkUserBackupWithdrawalAddressIsValid(msg.sender, _groupID, _userID, _backupWithdrawalAddress);
         // Set backup withdrawal address
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
-        rocketDeposit.setMinipoolUserBackupWithdrawalAddress(_userID, _groupID, _minipool, _backupWithdrawalAddress);
+        rocketDeposit.setDepositBackupWithdrawalAddress(_userID, _groupID, _depositID, _backupWithdrawalAddress);
         // Success
         return true;
     }

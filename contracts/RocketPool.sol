@@ -211,8 +211,8 @@ contract RocketPool is RocketBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Are minipools allowed to be closed?
         if (rocketMinipoolSettings.getMinipoolClosingEnabled() == false) { return false; }
-        // If there are users in this minipool, it cannot be closed, only empty ones can
-        if (rocketMinipool.getUserCount() > 0) { return false; }
+        // If there are deposits in this minipool, it cannot be closed, only empty ones can
+        if (rocketMinipool.getDepositCount() > 0) { return false; }
         // If the node operator's deposit still exists in this minipool, it cannot be closed
         if (rocketMinipool.getNodeDepositExists() == true) { return false; }
         // If it passes all these checks, it can close

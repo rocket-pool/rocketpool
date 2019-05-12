@@ -116,6 +116,12 @@ contract RocketDepositIndex is RocketBase {
     }
 
 
+    /// @dev Get the backup address for a user deposit
+    function getUserDepositBackupAddress(bytes32 _depositID) public view returns (address) {
+        return rocketStorage.getAddress(keccak256(abi.encodePacked("deposit.backupAddress", _depositID)));
+    }
+
+
     /*** Methods ****************/
 
 
@@ -143,6 +149,7 @@ contract RocketDepositIndex is RocketBase {
         // + deposit.stakingPoolAmount
         // + deposit.refundedAmount
         // + deposit.withdrawnAmount
+        // + deposit.backupAddress
 
         // Update deposit indexes
         bytes32SetStorage = Bytes32SetStorageInterface(getContractAddress("utilBytes32SetStorage"));
