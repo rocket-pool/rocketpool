@@ -71,7 +71,8 @@ contract RocketDepositAPI is RocketBase {
         address indexed _userID,
         address indexed _groupID,
         bytes32 depositID,
-        address backupAddress
+        address backupAddress,
+        uint256 created
     );
 
 
@@ -271,7 +272,7 @@ contract RocketDepositAPI is RocketBase {
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
         rocketDeposit.setDepositBackupWithdrawalAddress(_userID, _groupID, _depositID, _backupWithdrawalAddress);
         // All good? Fire the event for the backup address getting set
-        emit DepositSetBackupAddress(msg.sender, _userID, _groupID, _depositID, _backupWithdrawalAddress);
+        emit DepositSetBackupAddress(msg.sender, _userID, _groupID, _depositID, _backupWithdrawalAddress, now);
         // Success
         return true;
     }
