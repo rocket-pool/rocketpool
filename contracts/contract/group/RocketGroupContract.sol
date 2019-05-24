@@ -55,6 +55,14 @@ contract RocketGroupContract {
 
     /*** Modifiers ***************/
 
+     /**
+    * @dev Throws if called by any account other than the owner.
+    */
+    modifier onlyGroupOwner() {
+        require(msg.sender == owner, "Only the group owner account can perform this function.");
+        _;
+    }
+
     /**
     * @dev Throws if not called by RocketGroupAPI.
     */
@@ -64,10 +72,10 @@ contract RocketGroupContract {
     }
 
     /**
-    * @dev Throws if called by any account other than the owner.
+    * @dev Throws if not called by RocketAdmin.
     */
-    modifier onlyGroupOwner() {
-        require(msg.sender == owner, "Only the group owner account can perform this function.");
+    modifier onlyRocketAdmin() {
+        require(msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketAdmin"))), "Only the RocketAdmin contract can perform this function.");
         _;
     }
 
@@ -145,16 +153,17 @@ contract RocketGroupContract {
         return true;
     }
 
-    /// @dev Set the fee Rocket Pool charges this group's users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
-    function setFeePercRocketPool(uint256 _stakingFeePercRocketPool) public onlyRocketGroupAPI onlyValidFeePercRocketPool(_stakingFeePercRocketPool) returns(bool) {
-        feePercRocketPool = _stakingFeePercRocketPool;
-        return true;
-    }
-
     /// @dev Set the address to send group fees to as RPB
     function setFeeAddress(address _feeAddress) public onlyGroupOwner returns(bool) {
         require(_feeAddress != address(0x0), "Invalid fee address");
         feeAddress = _feeAddress;
+        return true;
+    }
+
+
+    /// @dev Set the fee Rocket Pool charges this group's users - Given as a % of 1 Ether (eg 0.02 ether = 2%)
+    function setFeePercRocketPool(uint256 _stakingFeePercRocketPool) public onlyRocketAdmin onlyValidFeePercRocketPool(_stakingFeePercRocketPool) returns(bool) {
+        feePercRocketPool = _stakingFeePercRocketPool;
         return true;
     }
 
