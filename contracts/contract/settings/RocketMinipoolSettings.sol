@@ -142,9 +142,9 @@ contract RocketMinipoolSettings is RocketBase {
     }
 
     /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
-    function setMinipoolStakingDuration(string memory _option, uint256 _blocks) public onlySuperUser {
+    function setMinipoolStakingDuration(string memory _duration, uint256 _blocks) public onlySuperUser {
         require(_blocks > 0, "Amount of blocks for staking duration not specified.");
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _option)), _blocks);  
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _duration)), _blocks);  
     }
 
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address

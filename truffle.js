@@ -46,12 +46,12 @@ module.exports = {
       gas: 0xfffffffffff,
       gasPrice: 0x01,
     },
-    // Local Parity Development
-    dev: {
+    // Geth RP Testnet Development
+    'betatest': {
         host: "127.0.0.1",
-        port: 8545,
-        network_id: "*", 
-        from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
+        port: 8999,
+        network_id: "77", 
+        from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
         gas: 8000000,
     },
   },
