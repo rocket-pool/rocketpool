@@ -1,6 +1,6 @@
 // Dependencies
 import { TimeController } from '../_lib/utils/general'
-import { RocketAdmin, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeWatchtower } from '../_lib/artifacts';
+import { RocketAdmin, RocketNodeAPI, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeWatchtower } from '../_lib/artifacts';
 import { userDeposit } from './rocket-deposit';
 
 
@@ -72,9 +72,10 @@ export async function withdrawMinipool({minipoolAddress, balance, nodeOperator, 
     // Get contracts
     let rocketNodeWatchtower = await RocketNodeWatchtower.deployed();
     let rocketAdmin = await RocketAdmin.deployed();
+    let rocketNodeAPI = await RocketNodeAPI.deployed();
 
     // Set node status
-    let nodeTrusted = await rocketAdmin.getNodeTrusted.call(nodeOperator);
+    let nodeTrusted = await rocketNodeAPI.getTrusted.call(nodeOperator);
     if (!nodeTrusted) await rocketAdmin.setNodeTrusted(nodeOperator, true, {from: owner});
 
     // Logout & withdraw minipool

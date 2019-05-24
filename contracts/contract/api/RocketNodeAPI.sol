@@ -111,6 +111,13 @@ contract RocketNodeAPI is RocketBase {
     }
 
 
+    /// @dev Get a node's trusted status
+    /// @param _nodeAddress The address of the node
+    function getTrusted(address _nodeAddress) public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
+    }
+
+
     /// @dev Returns the timezone of the node as Country/City eg America/New_York
     /// @return string The set timezone of this node
     function getTimezoneLocation(address _nodeOwner) public view returns (string memory) {
