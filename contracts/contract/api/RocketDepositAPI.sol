@@ -192,7 +192,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _durationID The ID of the deposit's staking duration
     /// @param _depositID The ID of the deposit to refund
-    function refundDepositQueued(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(uint256) {
+    function depositRefundQueued(address _groupID, address _userID, string memory _durationID, bytes32 _depositID) public onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(uint256) {
         // Verify the refund is acceptable
         checkDepositRefundIsValid(msg.sender, _groupID, _userID, _depositID);
         // Refund deposit
@@ -211,7 +211,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _depositID The ID of the deposit to refund
     /// @param _minipool The address of the minipool to refund from
-    function refundDepositMinipoolStalled(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function depositRefundMinipoolStalled(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the refund is acceptable
         checkDepositRefundIsValid(msg.sender, _groupID, _userID, _depositID);
         // Refund deposit
@@ -231,7 +231,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
     /// @param _amount The amount of the deposit to withdraw as RPB tokens
-    function withdrawDepositMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function depositWithdrawMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
         checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID);
         // Withdraw deposit amount as RPB tokens
@@ -250,7 +250,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
-    function withdrawDepositMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
+    function depositWithdrawMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
         checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID);
         // Withdraw deposit as RPB tokens

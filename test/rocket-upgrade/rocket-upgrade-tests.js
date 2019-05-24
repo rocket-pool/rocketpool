@@ -187,7 +187,7 @@ export default function() {
             await stakeSingleMinipool({groupAccessorContract, staker: user1});
 
             // Withdraw user from minipool while staking to get RPB tokens
-            await groupAccessorContract.withdrawDepositMinipoolStaking(depositID, minipool.address, web3.utils.toWei('1', 'ether'), {from: user1, gas: 5000000});
+            await groupAccessorContract.depositWithdrawMinipoolStaking(depositID, minipool.address, web3.utils.toWei('1', 'ether'), {from: user1, gas: 5000000});
 
             // Send RPB to RocketPool contract
             await rocketBETHToken.transfer(rocketPool.address, web3.utils.toWei('0.5', 'ether'), {from: user1});
