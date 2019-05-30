@@ -43,7 +43,6 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
             setMinipoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
-            setMinipoolNewGasPrice(0.000000002 ether);                                          // This is the minipool creation gas price - default 2 gwei
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
             setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
@@ -180,11 +179,6 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
     function setMinipoolNewGasLimit(uint256 _gas) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.new.gas")), _gas); 
-    }
-
-    /// @dev This is the minipool creation gas price - default 2 gwei
-    function setMinipoolNewGasPrice(uint256 _price) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.new.price")), _price); 
     }
 
     /// @dev The gas required for depositing with Casper and being added as a validator

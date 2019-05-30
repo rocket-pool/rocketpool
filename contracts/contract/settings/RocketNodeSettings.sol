@@ -18,7 +18,6 @@ contract RocketNodeSettings is RocketBase {
             // Node Settings            
             setNewAllowed(true);                                                        // Are new nodes allowed to be added                      
             setEtherMin(5 ether);                                                       // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
-            setCheckinGasPrice(20000000000);                                            // Set the gas price for node checkins in Wei (20 gwei)
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
             setInactiveDuration(48 hours);                                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
             setMaxInactiveNodeChecks(3);                                                // The maximum number of other nodes to check for inactivity on checkin
@@ -46,11 +45,6 @@ contract RocketNodeSettings is RocketBase {
     /// @dev Get the min eth needed for a node coinbase account to cover gas costs associated with checkins
     function getEtherMin() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.account.ether.min")));
-    }
-
-    /// @dev Get the gas price for node checkins in Wei
-    function getCheckinGasPrice() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.node.checkin.gas.price")));
     }
 
     /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
@@ -114,11 +108,6 @@ contract RocketNodeSettings is RocketBase {
      /// @dev Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
     function setEtherMin(uint256 _weiAmount) public onlySuperUser { 
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.account.ether.min")), _weiAmount); 
-    }
-
-    /// @dev Set the gas price for node checkins in Wei
-    function setCheckinGasPrice(uint256 _weiAmount) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.checkin.gas.price")), _weiAmount); 
     }
 
     /// @dev Can nodes be set inactive automatically by the contract? they won't receive new users
