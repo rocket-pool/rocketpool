@@ -214,7 +214,7 @@ contract RocketNodeContract {
         // Check the pubkey is not in use
         rocketNodeKeys.validatePubkey(_validatorPubkey);
         // Verify the deposit is acceptable
-        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _validatorPubkey, depositReservation.created);
+        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, depositReservation.created);
         // Get the required ether amount
         uint256 etherAmount = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
         // Get the RPL amount and ratio for the deposit
