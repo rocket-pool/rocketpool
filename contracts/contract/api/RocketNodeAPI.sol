@@ -7,7 +7,6 @@ import "../../interface/RocketPoolInterface.sol";
 import "../../interface/token/ERC20.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeContractInterface.sol";
-import "../../interface/node/RocketNodeKeysInterface.sol";
 import "../../interface/node/RocketNodeTasksInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -36,7 +35,6 @@ contract RocketNodeAPI is RocketBase {
     ERC20 rplContract = ERC20(0);                                                                           // The address of our RPL ERC20 token contract
     RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(0);                           // Node contract factory
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                        // Node contract
-    RocketNodeKeysInterface rocketNodeKeys = RocketNodeKeysInterface(0);                                    // Node validator key manager
     RocketNodeTasksInterface rocketNodeTasks = RocketNodeTasksInterface(0);                                 // Node task manager
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                        // Settings for the nodes
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
@@ -154,18 +152,14 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _nodeOwner  The address of the nodes owner
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > _lastDepositReservedTime.add(rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
-        // Check the pubkey is valid
-        rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
-        rocketNodeKeys.validatePubkey(_validatorPubkey);
     }
 
 

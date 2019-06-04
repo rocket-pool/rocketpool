@@ -209,6 +209,10 @@ contract RocketNodeContract {
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
+        // Get the node key manager
+        rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
+        // Check the pubkey is not in use
+        rocketNodeKeys.validatePubkey(_validatorPubkey);
         // Verify the deposit is acceptable
         rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _validatorPubkey, depositReservation.created);
         // Get the required ether amount
@@ -227,7 +231,6 @@ contract RocketNodeContract {
             exists: true
         });
         // Reserve the validator pubkey used
-        rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
         rocketNodeKeys.reservePubkey(owner, _validatorPubkey, true);
         // All good? Fire the event for the new deposit
         emit NodeDepositReservation(msg.sender, etherAmount, rplAmount, _durationID, rplRatio, now);   
