@@ -70,6 +70,16 @@ export function getValidatorPubkey() {
 }
 
 
+// Get the Rocket Pool withdrawal credentials
+export function getWithdrawalCredentials() {
+    let withdrawalPubkey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    return Buffer.concat([
+        Buffer.from('00', 'hex'), // BLS_WITHDRAWAL_PREFIX_BYTE
+        Buffer.from(web3.utils.sha3(Buffer.from(withdrawalPubkey, 'hex')).substr(2), 'hex').slice(1) // Last 31 bytes of withdrawal pubkey hash
+    ], 32);
+}
+
+
 // Create a validator signature
 // TODO: implement correctly once BLS library found
 export function getValidatorSignature() {

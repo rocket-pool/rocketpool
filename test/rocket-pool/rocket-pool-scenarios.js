@@ -14,11 +14,11 @@ export async function scenarioGetContractAddress(name) {
 
 
 // Create minipool directly
-export async function scenarioCreateMinipool({nodeOwner, durationID, depositInput, etherAmount, rplAmount, isTrusted, fromAddress, gas}) {
+export async function scenarioCreateMinipool({nodeOwner, durationID, validatorPubkey, validatorSignature, etherAmount, rplAmount, isTrusted, fromAddress, gas}) {
     const rocketPool = await RocketPool.deployed();
 
     // Create minipool
-    await rocketPool.minipoolCreate(nodeOwner, durationID, depositInput, etherAmount, rplAmount, isTrusted, {from: fromAddress, gas: gas});
+    await rocketPool.minipoolCreate(nodeOwner, durationID, validatorPubkey, validatorSignature, etherAmount, rplAmount, isTrusted, {from: fromAddress, gas: gas});
 
 }
 
