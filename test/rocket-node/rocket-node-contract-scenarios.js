@@ -5,10 +5,10 @@ import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, Rock
 
 
 // Reserve a deposit
-export async function scenarioDepositReserve({nodeContract, durationID, depositInput, fromAddress, gas}) {
+export async function scenarioDepositReserve({nodeContract, durationID, validatorPubkey, validatorSignature, fromAddress, gas}) {
 
     // Reserve deposit
-    let result = await nodeContract.depositReserve(durationID, depositInput, {from: fromAddress, gas: gas});
+    let result = await nodeContract.depositReserve(durationID, validatorPubkey, validatorSignature, {from: fromAddress, gas: gas});
 
     // Get deposit reservation event
     let depositReservationEvents = result.logs.filter(log => (log.event == 'NodeDepositReservation' && log.args._from.toLowerCase() == fromAddress.toLowerCase()));
