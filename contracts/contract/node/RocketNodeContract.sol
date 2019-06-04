@@ -46,7 +46,8 @@ contract RocketNodeContract {
 
     struct DepositReservation {
         string  durationID;             // The deposit duration (eg 3m, 6m etc)
-        bytes   depositInput;           // The simple serialized validator deposit input data
+        bytes   validatorPubkey;        // The validator's pubkey
+        bytes   validatorSignature;     // The validator's signature for the deposit (pubkey + withdrawal credentials + amount)
         uint256 etherAmount;            // Amount of ether required
         uint256 rplAmount;              // Amount of RPL required
         uint256 rplRatio;               // Amount of RPL required per ether deposited
@@ -170,9 +171,14 @@ contract RocketNodeContract {
         return depositReservation.durationID;
     }
 
-    /// @dev Returns the current deposit reservation deposit input data
-    function getDepositReserveDepositInput() public hasDepositReserved() returns (bytes memory) { 
-        return depositReservation.depositInput;
+    /// @dev Returns the current deposit reservation validator pubkey
+    function getDepositReserveValidatorPubkey() public hasDepositReserved() returns (bytes memory) { 
+        return depositReservation.validatorPubkey;
+    }
+
+    /// @dev Returns the current deposit reservation validator signature
+    function getDepositReserveValidatorSignature() public hasDepositReserved() returns (bytes memory) { 
+        return depositReservation.validatorSignature;
     }
 
     
@@ -196,14 +202,15 @@ contract RocketNodeContract {
 
     /// @dev Reserves a deposit of Ether/RPL at the current rate. The node operator has 24hrs to deposit both once its locked in or it will expire.
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
-    function depositReserve(string memory _durationID, bytes memory _depositInput) public returns(bool) { 
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketMinipoolSettings"))));
         // Verify the deposit is acceptable
-        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _depositInput, depositReservation.created);
+        rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, _validatorPubkey, depositReservation.created);
         // Get the required ether amount
         uint256 etherAmount = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
         // Get the RPL amount and ratio for the deposit
@@ -211,7 +218,8 @@ contract RocketNodeContract {
         // Record the reservation now
         depositReservation = DepositReservation({
             durationID: _durationID,
-            depositInput: _depositInput,
+            validatorPubkey: _validatorPubkey,
+            validatorSignature: _validatorSignature,
             etherAmount: etherAmount,
             rplAmount: rplAmount,
             rplRatio: rplRatio,
@@ -220,7 +228,7 @@ contract RocketNodeContract {
         });
         // Reserve the validator pubkey used
         rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
-        rocketNodeKeys.reservePubkey(owner, _depositInput, true);
+        rocketNodeKeys.reservePubkey(owner, _validatorPubkey, true);
         // All good? Fire the event for the new deposit
         emit NodeDepositReservation(msg.sender, etherAmount, rplAmount, _durationID, rplRatio, now);   
         // Done
@@ -232,7 +240,7 @@ contract RocketNodeContract {
     function depositReserveCancel() public onlyNodeOwner() hasDepositReserved() returns(bool) { 
         // Free the validator pubkey used
         rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
-        rocketNodeKeys.reservePubkey(owner, depositReservation.depositInput, false);
+        rocketNodeKeys.reservePubkey(owner, depositReservation.validatorPubkey, false);
         // Get reservation time
         uint256 reservationTime = depositReservation.created;
         // Delete the reservation

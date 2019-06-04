@@ -9,5 +9,6 @@ contract RocketNodeContractInterface {
     function getDepositReserveEtherRequired() public returns(uint256);
     function getDepositReserveRPLRequired() public returns(uint256);
     function getDepositReserveDurationID() public returns (string memory);
-    function getDepositReserveDepositInput() public returns (bytes memory);
+    function getDepositReserveValidatorPubkey() public returns (bytes memory);
+    function getDepositReserveValidatorSignature() public returns (bytes memory);
 }

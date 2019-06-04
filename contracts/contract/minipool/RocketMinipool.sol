@@ -36,11 +36,12 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
-    /// @param _depositInput The validator depositInput data to be submitted to the casper deposit contract
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the initial status
@@ -58,7 +59,8 @@ contract RocketMinipool is RocketMinipoolBase {
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
-        staking.depositInput = _depositInput;
+        staking.validatorPubkey = _validatorPubkey;
+        staking.validatorSignature = _validatorSignature;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
@@ -252,9 +254,14 @@ contract RocketMinipool is RocketMinipoolBase {
         return staking.duration;
     }
 
-    /// @dev Returns the minipool's deposit input data to be submitted to casper
-    function getDepositInput() public view returns (bytes memory) {
-        return staking.depositInput;
+    /// @dev Returns the minipool's validator pubkey to be submitted to casper
+    function getValidatorPubkey() public view returns (bytes memory) {
+        return staking.validatorPubkey;
+    }
+
+    /// @dev Returns the minipool's validator signature to be submitted to casper
+    function getValidatorSignature() public view returns (bytes memory) {
+        return staking.validatorSignature;
     }
 
     /// @dev Gets the total user deposit capacity

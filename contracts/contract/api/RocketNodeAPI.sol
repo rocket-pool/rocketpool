@@ -154,18 +154,18 @@ contract RocketNodeAPI is RocketBase {
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _nodeOwner  The address of the nodes owner
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    /// @param _depositInput The simple serialized deposit input to be submitted to the casper deposit contract for the validator
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, bytes memory _depositInput, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 
         require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
         // Check the node operator doesn't have a reservation that's current, must wait for that to expire first or cancel it.
         require(now > _lastDepositReservedTime.add(rocketNodeSettings.getDepositReservationTime()), "Only one deposit reservation can be made at a time, the current deposit reservation will expire in under 24hrs.");
-        // Check the deposit input is valid
+        // Check the pubkey is valid
         rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
-        rocketNodeKeys.validateDepositInput(_depositInput);
+        rocketNodeKeys.validatePubkey(_validatorPubkey);
     }
 
 
@@ -255,8 +255,9 @@ contract RocketNodeAPI is RocketBase {
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         // Get the deposit duration ID
         string memory durationID = rocketNodeContract.getDepositReserveDurationID();
-        // Get the deposit input data
-        bytes memory depositInput = rocketNodeContract.getDepositReserveDepositInput();
+        // Get the deposit data
+        bytes memory validatorPubkey = rocketNodeContract.getDepositReserveValidatorPubkey();
+        bytes memory validatorSignature = rocketNodeContract.getDepositReserveValidatorSignature();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
@@ -264,7 +265,7 @@ contract RocketNodeAPI is RocketBase {
         // Node trusted status
         bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
         // Create minipool and return address
-        return rocketPool.minipoolCreate(_nodeOwner, durationID, depositInput, etherDeposited, rplDeposited, nodeTrusted);
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 
