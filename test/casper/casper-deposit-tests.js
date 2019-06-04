@@ -26,19 +26,6 @@ export default function() {
         });
 
 
-        // Cannot deposit more than the maximum deposit amount
-        it(printTitle('validator', 'cannot deposit more than the maximum deposit amount into Casper'), async () => {
-            await assertThrows(scenarioValidatorDeposit({
-                pubkey: getValidatorPubkey(),
-                withdrawalCredentials: getWithdrawalCredentials(),
-                signature: getValidatorSignature(),
-                fromAddress: user1,
-                value: web3.utils.toWei('33', 'ether'),
-                gas: 5000000,
-            }), 'Deposited more than the maximum deposit amount into Casper.');
-        });
-
-
         // Can deposit a valid deposit amount
         it(printTitle('validator', 'can deposit a valid deposit amount into Casper'), async () => {
             await scenarioValidatorDeposit({
