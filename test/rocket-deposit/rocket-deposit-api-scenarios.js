@@ -198,19 +198,15 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
         if (expectedBalance >= launchAmount) {
             expectedBalance = 0;
 
-            /*
-            :TODO: add check back in once beacon chain simulator is updated
-
             // Get minipool's validator pubkey
             let minipool = await RocketMinipool.at(address);
-            let pubkey = await minipool.getValidatorPubkey.call();
+            let pubkey = (await minipool.getValidatorPubkey.call()).substr(2);
 
             // Check for validator on beacon chain
             let validatorExists = true;
             try { await getValidatorStatus(pubkey); }
             catch (e) { validatorExists = false; }
             assert.isTrue(validatorExists, 'Launched minipool validator does not exist on beacon chain');
-            */
 
         }
 
