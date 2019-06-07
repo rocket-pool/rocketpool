@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketStorage, RocketBETHToken, RocketDepositIndex, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
+import { RocketStorage, RocketBETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
@@ -26,6 +26,7 @@ export default function() {
         let rocketStorage;
         let rocketBETHToken;
         let rocketDepositIndex;
+        let rocketDepositSettings;
         let rocketDepositVault;
         let rocketDepositVaultNew;
         let rocketNode;
@@ -49,6 +50,7 @@ export default function() {
             rocketStorage = await RocketStorage.deployed();
             rocketBETHToken = await RocketBETHToken.deployed();
             rocketDepositIndex = await RocketDepositIndex.deployed();
+            rocketDepositSettings = await RocketDepositSettings.deployed();
             rocketDepositVault = await RocketDepositVault.deployed();
             rocketDepositVaultNew = await RocketDepositVault.new(rocketStorage.address, {from: owner});
             rocketNode = await RocketNode.deployed();
@@ -187,7 +189,9 @@ export default function() {
             await stakeSingleMinipool({groupAccessorContract, staker: user1});
 
             // Withdraw user from minipool while staking to get RPB tokens
+            await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});
             await groupAccessorContract.depositWithdrawMinipoolStaking(depositID, minipool.address, web3.utils.toWei('1', 'ether'), {from: user1, gas: 5000000});
+            await rocketDepositSettings.setStakingWithdrawalAllowed(false, {from: owner, gas: 500000});
 
             // Send RPB to RocketPool contract
             await rocketBETHToken.transfer(rocketPool.address, web3.utils.toWei('0.5', 'ether'), {from: user1});
