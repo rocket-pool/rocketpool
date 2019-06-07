@@ -45,6 +45,9 @@ export default function() {
             // Create node contract
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
 
+            // Enable staking withdrawals
+            await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});
+
         });
 
 
@@ -166,11 +169,11 @@ export default function() {
         });
 
 
-        // Staker cannot withdraw a deposit while withdrawals are disabled
-        it(printTitle('staker', 'cannot withdraw a deposit while withdrawals are disabled'), async () => {
+        // Staker cannot withdraw a deposit while staking withdrawals are disabled
+        it(printTitle('staker', 'cannot withdraw a deposit while staking withdrawals are disabled'), async () => {
 
-            // Disable withdrawals
-            await rocketDepositSettings.setWithdrawalAllowed(false, {from: owner, gas: 500000});
+            // Disable staking withdrawals
+            await rocketDepositSettings.setStakingWithdrawalAllowed(false, {from: owner, gas: 500000});
 
             // Attempt to withdraw minipool deposit
             await assertThrows(scenarioWithdrawStakingMinipoolDeposit({
@@ -182,8 +185,8 @@ export default function() {
                 gas: 5000000,
             }), 'Withdrew from a minipool while withdrawals were disabled');
 
-            // Re-enable withdrawals
-            await rocketDepositSettings.setWithdrawalAllowed(true, {from: owner, gas: 500000});
+            // Re-enable staking withdrawals
+            await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});
 
         });
 
