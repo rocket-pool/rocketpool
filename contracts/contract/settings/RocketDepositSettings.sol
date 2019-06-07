@@ -37,7 +37,8 @@ contract RocketDepositSettings is RocketBase {
             setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
             setDepositQueueSizeMax(320 ether);                                              // Maximum deposit queue size in Wei
             setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
-            setWithdrawalAllowed(true);                                                     // Are withdrawals allowed?
+            setStakingWithdrawalAllowed(false);                                             // Are withdrawals from staking minipools allowed?
+            setWithdrawalAllowed(true);                                                     // Are withdrawals from exited minipools allowed?
             setStakingWithdrawalFeePerc(0.0025 ether);                                      // The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
             // Initialise settings
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.init")), true);
@@ -104,9 +105,14 @@ contract RocketDepositSettings is RocketBase {
 
     // Withdrawals
 
-    /// @dev Are withdrawals allowed?                                            
+    /// @dev Are withdrawals from staking minipools allowed?
+    function getStakingWithdrawalAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.withdrawal.staking.allowed")));
+    }
+
+    /// @dev Are withdrawals from exited minipools allowed?
     function getWithdrawalAllowed() public view returns (bool) {
-        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.withdrawal.allowed"))); 
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.withdrawal.allowed")));
     }
 
     /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
@@ -161,9 +167,15 @@ contract RocketDepositSettings is RocketBase {
 
     // Withdrawals
 
-    /// @dev Are withdrawals allowed?                                            
+
+    /// @dev Are withdrawals from staking minipools allowed?
+    function setStakingWithdrawalAllowed(bool _enabled) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.withdrawal.staking.allowed")), _enabled);
+    }
+
+    /// @dev Are withdrawals from exited minipools allowed?
     function setWithdrawalAllowed(bool _enabled) public onlySuperUser {
-        rocketStorage.setBool(keccak256(abi.encodePacked("settings.withdrawal.allowed")), _enabled); 
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.withdrawal.allowed")), _enabled);
     }
 
     /// @dev The staking withdrawal fee given as a % of 1 Ether (eg 0.25%)
