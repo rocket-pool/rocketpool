@@ -63,66 +63,30 @@ export async function getValidatorStatus(pubkey) {
 }
 
 
-// Create a serialised DepositInput object from a given set of credentials
-export function getDepositInput({pubkey, withdrawalPubkey}) {
-
-    // Create default pubkey
-    if (!pubkey) {
-        let index = ++defaultPubkeyIndex;
-        pubkey = index.toString(16).padStart(96, '0');
-    }
-
-    // Default withdrawal pubkey
-    if (!withdrawalPubkey) withdrawalPubkey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-
-    // Get withdrawal credentials
-    let withdrawalCredentials = Buffer.concat([
-        Buffer.from('00', 'hex'), // BLS_WITHDRAWAL_PREFIX_BYTE
-        Buffer.from(web3.utils.sha3(Buffer.from(withdrawalPubkey, 'hex')).substr(2), 'hex').slice(1) // Last 31 bytes of withdrawal pubkey hash
-    ], 32);
-
-    // Get proof of possession
-    // TODO: implement correctly once BLS library found
-    let proofOfPossession = Buffer.from(
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' +
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' +
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        'hex'
-    );
-
-    // Return depositInput
-    return ssz.serialize(
-        {
-            'pubkey': Buffer.from(pubkey, 'hex'),
-            'withdrawal_credentials': withdrawalCredentials,
-            'proof_of_possession': proofOfPossession,
-        },
-        {fields: [
-            ['pubkey', 'bytes48'],
-            ['withdrawal_credentials', 'bytes32'],
-            ['proof_of_possession', 'bytes96'],
-        ]}
-    );
-
+// Create a random validator pubkey
+export function getValidatorPubkey() {
+    let index = ++defaultPubkeyIndex;
+    return Buffer.from(index.toString(16).padStart(96, '0'), 'hex');
 }
 
 
-// Deserialise a serialised DepositInput object
-export function deserialiseDepositInput(depositInputHex) {
+// Get the Rocket Pool withdrawal credentials
+export function getWithdrawalCredentials() {
+    let withdrawalPubkey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    return Buffer.concat([
+        Buffer.from('00', 'hex'), // BLS_WITHDRAWAL_PREFIX_BYTE
+        Buffer.from(web3.utils.sha3(Buffer.from(withdrawalPubkey, 'hex')).substr(2), 'hex').slice(1) // Last 31 bytes of withdrawal pubkey hash
+    ], 32);
+}
 
-    // Deserialise
-    let depositInputData = ssz.deserialize(Buffer.from(depositInputHex.substr(2), 'hex'), {fields: [
-        ['pubkey', 'bytes48'],
-        ['withdrawal_credentials', 'bytes32'],
-        ['proof_of_possession', 'bytes96'],
-    ]});
 
-    // Return DepositInput object
-    return {
-        pubkey: depositInputData.deserializedData.pubkey.toString('hex'),
-        withdrawal_credentials: depositInputData.deserializedData.withdrawal_credentials.toString('hex'),
-        proof_of_possession: depositInputData.deserializedData.proof_of_possession.toString('hex'),
-    };
-
+// Create a validator signature
+// TODO: implement correctly once BLS library found
+export function getValidatorSignature() {
+    return Buffer.from(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' +
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' +
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    'hex');
 }
 

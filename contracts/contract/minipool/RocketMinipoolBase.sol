@@ -77,7 +77,8 @@ contract RocketMinipoolBase {
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
-        bytes   depositInput;                                   // DepositInput data to be submitted to the casper deposit contract
+        bytes   validatorPubkey;                                // Validator pubkey to be submitted to the casper deposit contract
+        bytes   validatorSignature;                             // Validator signature to be submitted to the casper deposit contract
     }
 
     struct Deposit {

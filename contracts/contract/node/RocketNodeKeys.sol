@@ -10,16 +10,6 @@ import "../../RocketBase.sol";
 contract RocketNodeKeys is RocketBase {
 
 
-    /*** Properties *************/
-
-
-    // DepositInput field byte indices
-    uint256 constant pubkeyStart = 4;
-    uint256 constant pubkeyEnd = 52;
-    uint256 constant withdrawalCredentialsStart = 52;
-    uint256 constant withdrawalCredentialsEnd = 84;
-
-
     /*** Modifiers **************/
 
 
@@ -46,47 +36,20 @@ contract RocketNodeKeys is RocketBase {
     }
 
 
-    /// @dev Validate a deposit input object
-    /// @param _depositInput The simple serialized deposit input
-    function validateDepositInput(bytes memory _depositInput) public view {
-        // Rocket Pool withdrawal credentials
-        // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
-        // Check deposit input withdrawal credentials
-        bool wcMatch = true;
-        for (uint256 i = 0; i < withdrawalCredentialsEnd - withdrawalCredentialsStart; ++i) {
-            if (rpWithdrawalCredentials[i] != _depositInput[i + withdrawalCredentialsStart]) {
-                wcMatch = false;
-                break;
-            }
-        }
-        require(wcMatch, "Invalid deposit input withdrawal credentials");
-        // Get pubkey from deposit input data
-        bytes memory pubkey = getDepositInputPubkey(_depositInput);
+    /// @dev Validate a validator pubkey
+    /// @param _validatorPubkey The validator's pubkey
+    function validatePubkey(bytes memory _validatorPubkey) public view {
         // Check pubkey
-        require(!rocketStorage.getBool(keccak256(abi.encodePacked("validator.pubkey.used", pubkey))), "Validator pubkey is already in use");
+        require(!rocketStorage.getBool(keccak256(abi.encodePacked("validator.pubkey.used", _validatorPubkey))), "Validator pubkey is already in use");
     }
 
 
     /// @dev Reserve a validator pubkey used by a node
-    /// @param _depositInput The simple serialized deposit input containing the validator pubkey
+    /// @param _validatorPubkey The validator's pubkey
     /// @param _reserve Whether to reserve or free the pubkey
-    function reservePubkey(address _nodeOwner, bytes memory _depositInput, bool _reserve) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) {
-        // Get pubkey from deposit input data
-        bytes memory pubkey = getDepositInputPubkey(_depositInput);
+    function reservePubkey(address _nodeOwner, bytes memory _validatorPubkey, bool _reserve) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) {
         // Record pubkey usage
-        rocketStorage.setBool(keccak256(abi.encodePacked("validator.pubkey.used", pubkey)), _reserve);
-    }
-
-
-    /// @dev Extract a validator pubkey from a deposit input object
-    /// @param _depositInput The simple serialized deposit input containing the validator pubkey
-    function getDepositInputPubkey(bytes memory _depositInput) private pure returns (bytes memory) {
-        bytes memory pubkey = new bytes(pubkeyEnd - pubkeyStart);
-        for (uint256 i = 0; i < pubkeyEnd - pubkeyStart; ++i) {
-            pubkey[i] = _depositInput[i + pubkeyStart];
-        }
-        return pubkey;
+        rocketStorage.setBool(keccak256(abi.encodePacked("validator.pubkey.used", _validatorPubkey)), _reserve);
     }
 
 
