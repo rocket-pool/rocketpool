@@ -17,7 +17,7 @@ contract RocketNodeSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.node.init")))) {
             // Node Settings            
             setNewAllowed(true);                                                        // Are new nodes allowed to be added                      
-            setEtherMin(5 ether);                                                       // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
+            setEtherMin(1 ether);                                                       // Set the min eth needed for a node coinbase account to cover gas costs associated with checkins
             setCheckinInterval(24 hours);                                               // The interval that a node should check in at in seconds
             setInactiveAutomatic(true);                                                 // Can nodes be set inactive automatically by the contract? they won't receive new users
             setInactiveDuration(48 hours);                                              // The duration needed by a node not checking in to disable it, needs to be manually reanabled when fixed
