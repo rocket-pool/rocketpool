@@ -1,7 +1,7 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
-import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
+import { createNodeContract, createNodeMinipools, nodeWithdrawMinipoolDeposit } from '../_helpers/rocket-node';
 import { stakeSingleMinipool, logoutMinipool, withdrawMinipool, enableMinipoolBackupCollect } from '../_helpers/rocket-minipool';
 import { scenarioDeposit, scenarioWithdrawMinipoolDeposit, scenarioAPIWithdrawMinipoolDeposit, scenarioSetBackupWithdrawalAddress, scenarioAPISetBackupWithdrawalAddress } from './rocket-deposit-api-scenarios';
 
@@ -348,6 +348,13 @@ export default function() {
 
         // Staker can withdraw using a backup withdrawal address
         it(printTitle('staker', 'can withdraw using a backup withdrawal address'), async () => {
+
+            // Withdraw node deposit from minipool to force minipool to close
+            await nodeWithdrawMinipoolDeposit({nodeContract, minipoolAddress: minipool.address, nodeOperator});
+
+            // Check minipool node deposit
+            let nodeDepositExists = await minipool.getNodeDepositExists.call();
+            assert.isFalse(nodeDepositExists, 'Pre-check failed: minipool has node deposit');
 
             // Withdraw
             await scenarioWithdrawMinipoolDeposit({

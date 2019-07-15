@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
-import { userDeposit } from '../_helpers/rocket-deposit';
+import { getDepositIDs, userDeposit, userWithdrawMinipoolDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { timeoutMinipool, stakeSingleMinipool, logoutMinipool, withdrawMinipool } from '../_helpers/rocket-minipool';
@@ -18,6 +18,7 @@ export default function() {
         const operatorOther = accounts[2];
         const groupOwner = accounts[3];
         const staker = accounts[4];
+        const staker2 = accounts[5];
 
 
         // Setup
@@ -227,7 +228,7 @@ export default function() {
             let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker});
+            await stakeSingleMinipool({groupAccessorContract, staker: staker2});
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
@@ -274,6 +275,19 @@ export default function() {
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
             assert.equal(status, 4, 'Pre-check failed: minipool is not at Withdrawn status');
+
+            // Withdraw all user deposits from minipool to force minipool to close
+            let depositIDs = await getDepositIDs({groupID: groupContract.address, userID: staker2, durationID: '3m'});
+            for (var di = 0; di < depositIDs.length; ++di) await userWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID: depositIDs[di],
+                minipoolAddress: minipool.address,
+                userAddress: staker2
+            });
+
+            // Check minipool deposits
+            let depositCount = parseInt(await minipool.getDepositCount.call());
+            assert.equal(depositCount, 0, 'Pre-check failed: minipool has user deposits');
 
             // Withdraw node deposit
             await scenarioWithdrawMinipoolDeposit({
