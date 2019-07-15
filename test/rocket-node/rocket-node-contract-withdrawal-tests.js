@@ -3,7 +3,7 @@ import { RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings,
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { timeoutMinipool, stakeSingleMinipool } from '../_helpers/rocket-minipool';
+import { timeoutMinipool, stakeSingleMinipool, logoutMinipool, withdrawMinipool } from '../_helpers/rocket-minipool';
 import { mintRpl } from '../_helpers/rocket-pool-token';
 import { scenarioWithdrawMinipoolDeposit } from './rocket-node-contract-scenarios';
 
@@ -245,11 +245,45 @@ export default function() {
 
 
         // Node operator cannot withdraw from a logged out minipool
-        it(printTitle('node operator', 'cannot withdraw from a logged out minipool'));
+        it(printTitle('node operator', 'cannot withdraw from a logged out minipool'), async () => {
+
+            // Log out minipool
+            await logoutMinipool({minipoolAddress: minipool.address, nodeOperator: operator, owner});
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 3, 'Pre-check failed: minipool is not at LoggedOut status');
+
+            // Withdraw node deposit
+            await assertThrows(scenarioWithdrawMinipoolDeposit({
+                nodeContract,
+                minipoolAddress: minipool.address,
+                fromAddress: operator,
+                gas: 5000000,
+            }), 'Withdrew from a logged out minipool');
+
+        });
 
 
         // Node operator can withdraw from a withdrawn minipool
-        it(printTitle('node operator', 'can withdraw from a withdrawn minipool'));
+        it(printTitle('node operator', 'can withdraw from a withdrawn minipool'), async () => {
+
+            // Log out minipool
+            await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator, owner});
+
+            // Check minipool status
+            let status = parseInt(await minipool.getStatus.call());
+            assert.equal(status, 4, 'Pre-check failed: minipool is not at Withdrawn status');
+
+            // Withdraw node deposit
+            await scenarioWithdrawMinipoolDeposit({
+                nodeContract,
+                minipoolAddress: minipool.address,
+                fromAddress: operator,
+                gas: 5000000,
+            });
+
+        });
 
 
         // Node operator cannot withdraw from another node's minipool

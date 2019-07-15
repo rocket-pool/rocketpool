@@ -1,7 +1,7 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketPoolToken } from '../_lib/artifacts';
+import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketBETHToken, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
@@ -115,6 +115,10 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 
 // Withdraw a deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
+    const rocketBETHToken = await RocketBETHToken.deployed();
+
+    // Get node contract rewards address
+    let rewardsAddress = await nodeContract.getRewardsAddress.call();
 
     // Check if minipool exists
     let minipoolCode = await web3.eth.getCode(minipoolAddress);
@@ -124,14 +128,17 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     let minipool;
     let minipoolNodeDepositExists1 = false;
     let minipoolNodeBalance1 = 0;
+    let minipoolStatus1 = 0;
     if (minipoolExists) {
         minipool = await RocketMinipool.at(minipoolAddress);
         minipoolNodeDepositExists1 = await minipool.getNodeDepositExists.call();
         minipoolNodeBalance1 = parseInt(await minipool.getNodeBalance.call());
+        minipoolStatus1 = parseInt(await minipool.getStatus.call());
     }
 
-    // Get initial node contract status
+    // Get initial node contract & account balances
     let nodeContractBalance1 = parseInt(await web3.eth.getBalance(nodeContract.address));
+    let nodeAccountBalance1 = parseInt(await rocketBETHToken.balanceOf.call(rewardsAddress));
 
     // Withdraw
     await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: fromAddress, gas: gas});
@@ -143,19 +150,29 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     // Get updated minipool status
     let minipoolNodeDepositExists2 = false;
     let minipoolNodeBalance2 = 0;
+    let minipoolStatus2 = 0;
     if (minipoolExists) {
         minipoolNodeDepositExists2 = await minipool.getNodeDepositExists.call();
         minipoolNodeBalance2 = parseInt(await minipool.getNodeBalance.call());
+        minipoolStatus2 = parseInt(await minipool.getStatus.call());
     }
 
-    // Get updated node contract status
+    // Get updated node contract & account balances
     let nodeContractBalance2 = parseInt(await web3.eth.getBalance(nodeContract.address));
+    let nodeAccountBalance2 = parseInt(await rocketBETHToken.balanceOf.call(rewardsAddress));
 
     // Asserts
     assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
     assert.equal(minipoolNodeDepositExists2, false, 'Incorrect updated minipool node deposit exists status');
     assert.equal(minipoolNodeBalance2, 0, 'Incorrect updated minipool node balance');
-    assert.equal(nodeContractBalance2, nodeContractBalance1 + minipoolNodeBalance1, 'Node contract ether balance was not updated correctly');
+    if (minipoolStatus1 == 4) { // Withdrawn
+        assert.equal(nodeContractBalance2, nodeContractBalance1, 'Node contract ether balance changed and should not have');
+        assert.isTrue(nodeAccountBalance2 > nodeAccountBalance1, 'Node rewards address RPB balance was not updated correctly');
+    }
+    else {
+        assert.equal(nodeContractBalance2, nodeContractBalance1 + minipoolNodeBalance1, 'Node contract ether balance was not updated correctly');
+        assert.equal(nodeAccountBalance2, nodeAccountBalance1, 'Node rewards address RPB balance changed and should not have');
+    }
 
 }
 
