@@ -62,3 +62,9 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
 
 }
 
+
+// Withdraw a node deposit from a minipool
+export async function nodeWithdrawMinipoolDeposit({nodeContract, minipoolAddress, nodeOperator}) {
+    await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: nodeOperator});
+}
+

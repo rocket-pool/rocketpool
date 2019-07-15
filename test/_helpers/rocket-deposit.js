@@ -27,8 +27,9 @@ export async function userDeposit({depositorContract, durationID, fromAddress, v
     await depositorContract.deposit(durationID, {from: fromAddress, value: value});
 }
 
+
 // Withdraw a user deposit from a withdrawn minipool
-export async function userWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, fromAddress}) {
-	await withdrawerContract.depositWithdrawMinipool(depositID, minipoolAddress, {from: fromAddress});
+export async function userWithdrawMinipoolDeposit({withdrawerContract, depositID, minipoolAddress, userAddress}) {
+	await withdrawerContract.depositWithdrawMinipool(depositID, minipoolAddress, {from: userAddress});
 }
 
