@@ -2,7 +2,7 @@ import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { stakeSingleMinipool, withdrawMinipool, enableMinipoolBackupCollect } from '../_helpers/rocket-minipool';
+import { stakeSingleMinipool, logoutMinipool, withdrawMinipool, enableMinipoolBackupCollect } from '../_helpers/rocket-minipool';
 import { scenarioDeposit, scenarioWithdrawMinipoolDeposit, scenarioAPIWithdrawMinipoolDeposit, scenarioSetBackupWithdrawalAddress, scenarioAPISetBackupWithdrawalAddress } from './rocket-deposit-api-scenarios';
 
 export default function() {
@@ -188,6 +188,7 @@ export default function() {
         it(printTitle('staker', 'can withdraw from a withdrawn minipool'), async () => {
 
             // Withdraw minipool
+            await logoutMinipool({minipoolAddress: minipool.address, nodeOperator, owner});
             await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator, owner});
 
             // Check minipool status

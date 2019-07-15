@@ -66,6 +66,24 @@ export async function stakeSingleMinipool({groupAccessorContract, staker}) {
 }
 
 
+// Make minipool log out
+export async function logoutMinipool({minipoolAddress, nodeOperator, owner}) {
+
+    // Get contracts
+    let rocketNodeWatchtower = await RocketNodeWatchtower.deployed();
+    let rocketAdmin = await RocketAdmin.deployed();
+    let rocketNodeAPI = await RocketNodeAPI.deployed();
+
+    // Set node status
+    let nodeTrusted = await rocketNodeAPI.getTrusted.call(nodeOperator);
+    if (!nodeTrusted) await rocketAdmin.setNodeTrusted(nodeOperator, true, {from: owner});
+
+    // Logout minipool
+    await rocketNodeWatchtower.logoutMinipool(minipoolAddress, {from: nodeOperator});
+
+}
+
+
 // Make minipool withdraw with balance
 export async function withdrawMinipool({minipoolAddress, balance, nodeOperator, owner}) {
 
@@ -78,8 +96,7 @@ export async function withdrawMinipool({minipoolAddress, balance, nodeOperator, 
     let nodeTrusted = await rocketNodeAPI.getTrusted.call(nodeOperator);
     if (!nodeTrusted) await rocketAdmin.setNodeTrusted(nodeOperator, true, {from: owner});
 
-    // Logout & withdraw minipool
-    await rocketNodeWatchtower.logoutMinipool(minipoolAddress, {from: nodeOperator});
+    // Withdraw minipool
     await rocketNodeWatchtower.withdrawMinipool(minipoolAddress, balance, {from: nodeOperator});
 
 }
