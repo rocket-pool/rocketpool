@@ -162,7 +162,6 @@ contract RocketPool is RocketBase {
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list")), minipoolAddress); 
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node", _nodeOwner)), minipoolAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.duration", _durationID)), minipoolAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.status", uint8(0))), minipoolAddress);
         // Set minipool available
         minipoolAvailable(minipoolAddress, true);
         // Increase total network ether capacity
@@ -188,7 +187,6 @@ contract RocketPool is RocketBase {
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list")), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node", rocketMinipool.getNodeOwner())), msg.sender);
             addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.duration", rocketMinipool.getStakingDurationID())), msg.sender);
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.status", rocketMinipool.getStatus())), msg.sender);
             // Set minipool unavailable
             minipoolAvailable(msg.sender, false);
             // Decrease total network ether capacity if minipool was initialised
@@ -232,6 +230,9 @@ contract RocketPool is RocketBase {
         address nodeOwner = rocketMinipool.getNodeOwner();
         bool trusted = rocketMinipool.getNodeTrusted();
         string memory durationID = rocketMinipool.getStakingDurationID();
+        // Check current minipool available status
+        int256 minipoolIndex = addressSetStorage.getIndexOf(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool);
+        if (_available && minipoolIndex != -1 || !_available && minipoolIndex == -1) { return false; }
         // Add minipool to / remove from node's available set
         if (_available) { addressSetStorage.addItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
         else { addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools", "list.node.available", nodeOwner, trusted, durationID)), _minipool); }
