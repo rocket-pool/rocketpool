@@ -349,13 +349,6 @@ export default function() {
         // Staker can withdraw using a backup withdrawal address
         it(printTitle('staker', 'can withdraw using a backup withdrawal address'), async () => {
 
-            // Withdraw node deposit from minipool to force minipool to close
-            await nodeWithdrawMinipoolDeposit({nodeContract, minipoolAddress: minipool.address, nodeOperator});
-
-            // Check minipool node deposit
-            let nodeDepositExists = await minipool.getNodeDepositExists.call();
-            assert.isFalse(nodeDepositExists, 'Pre-check failed: minipool has node deposit');
-
             // Withdraw
             await scenarioWithdrawMinipoolDeposit({
                 withdrawerContract: groupAccessorContract,
@@ -367,6 +360,34 @@ export default function() {
 
             // Reset backup collect duration
             await rocketMinipoolSettings.setMinipoolBackupCollectDuration(526000, {from: owner, gas: 500000});
+
+        });
+
+
+        // Staker can close a withdrawn minipool with final withdrawal
+        it(printTitle('staker', 'can close a withdrawn minipool with final withdrawal'), async () => {
+
+            // Withdraw node deposit from minipool to force minipool to close
+            await nodeWithdrawMinipoolDeposit({nodeContract, minipoolAddress: minipool.address, nodeOperator});
+
+            // Check minipool node deposit
+            let nodeDepositExists = await minipool.getNodeDepositExists.call();
+            assert.isFalse(nodeDepositExists, 'Pre-check failed: minipool has node deposit');
+
+            // Withdraw final user deposit from minipool
+            let depositID = await rocketDepositIndex.getUserDepositAt.call(groupContract.address, user3, '3m', 0);
+            await scenarioWithdrawMinipoolDeposit({
+                withdrawerContract: groupAccessorContract,
+                depositID: depositID,
+                minipoolAddress: minipool.address,
+                fromAddress: user3,
+                gas: 5000000,
+            });
+
+            // Check if minipool is destroyed
+            let minipoolCode = await web3.eth.getCode(minipool.address);
+            let minipoolExists = (minipoolCode != '0x0' && minipoolCode != '0x');
+            assert.isFalse(minipoolExists, 'Post-check failed: Minipool was not destroyed');
 
         });
 

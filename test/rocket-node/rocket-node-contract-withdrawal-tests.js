@@ -297,6 +297,11 @@ export default function() {
                 gas: 5000000,
             });
 
+            // Check if minipool is destroyed
+            let minipoolCode = await web3.eth.getCode(minipool.address);
+            let minipoolExists = (minipoolCode != '0x0' && minipoolCode != '0x');
+            assert.isFalse(minipoolExists, 'Post-check failed: Minipool was not destroyed');
+
         });
 
 
