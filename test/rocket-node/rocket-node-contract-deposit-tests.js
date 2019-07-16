@@ -15,8 +15,9 @@ export default function() {
         // Accounts
         const owner = accounts[0];
         const operator = accounts[1];
-        const groupOwner = accounts[2];
-        const staker = accounts[3];
+        const operator2 = accounts[2];
+        const groupOwner = accounts[3];
+        const staker = accounts[4];
 
 
         // Setup
@@ -39,6 +40,7 @@ export default function() {
 
             // Create node contract
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
+            await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator2});
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -65,7 +67,7 @@ export default function() {
                 durationID: '3m',
                 validatorPubkey: getValidatorPubkey(),
                 validatorSignature: getValidatorSignature(),
-                fromAddress: accounts[2],
+                fromAddress: operator2,
             }), 'Random account reserved a deposit');
         });
 

@@ -204,7 +204,7 @@ contract RocketNodeContract {
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
-    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public returns(bool) { 
+    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public onlyNodeOwner() returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
