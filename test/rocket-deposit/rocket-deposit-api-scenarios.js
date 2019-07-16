@@ -427,6 +427,10 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let result = await withdrawerContract.depositWithdrawMinipool(depositID, minipoolAddress, {from: fromAddress, gas: gas});
     profileGasUsage('RocketGroupAccessorContract.depositWithdrawMinipool', result);
 
+    // Check if minipool still exists after withdrawal
+    let minipoolCode = await web3.eth.getCode(minipoolAddress);
+    let minipoolExists = (minipoolCode != '0x0' && minipoolCode != '0x');
+
     // Get updated balances
     let minipoolEthBalance2 = parseInt(await web3.eth.getBalance(minipoolAddress));
     let minipoolRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(minipoolAddress));
@@ -436,9 +440,14 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let groupRpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(groupFeeAddress));
 
     // Get updated minipool deposit status
-    let depositCount2 = parseInt(await minipool.getDepositCount.call());
-    let depositExists2 = await minipool.getDepositExists.call(depositID);
-    let depositBalance2 = parseInt(await minipool.getDepositBalance.call(depositID));
+    let depositCount2 = 0;
+    let depositExists2 = false;
+    let depositBalance2 = 0;
+    if (minipoolExists) {
+        depositCount2 = parseInt(await minipool.getDepositCount.call());
+        depositExists2 = await minipool.getDepositExists.call(depositID);
+        depositBalance2 = parseInt(await minipool.getDepositBalance.call(depositID));
+    }
 
     // Get updated deposit details
     let depositDetails2 = await getDepositDetails(depositID);
