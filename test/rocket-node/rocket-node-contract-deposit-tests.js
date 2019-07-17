@@ -1,6 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { getValidatorPubkey, getValidatorSignature } from '../_lib/utils/beacon';
-import { RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
+import { RocketAdmin, RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract } from '../_helpers/rocket-node';
@@ -26,6 +26,7 @@ export default function() {
         let rocketMinipoolSettings;
         let rocketPool;
         let nodeContract;
+        let nodeContract2;
         let groupContract;
         let groupAccessorContract;
         let depositAmount;
@@ -40,7 +41,11 @@ export default function() {
 
             // Create node contract
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
-            await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator2});
+            nodeContract2 = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator2});
+
+            // Make node operator trusted
+            let rocketAdmin = await RocketAdmin.deployed();
+            await rocketAdmin.setNodeTrusted(operator2, true, {from: owner, gas: 5000000});
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -119,7 +124,7 @@ export default function() {
             await scenarioDeposit({
                 nodeContract,
                 value: depositAmount,
-                fromAddress: accounts[2], // Allowed from any address
+                fromAddress: accounts[9], // Allowed from any address
             });
 
             // Attempt to reserve deposit with used pubkey
@@ -136,6 +141,8 @@ export default function() {
 
         // Node operator can reserve a deposit
         it(printTitle('node operator', 'can reserve a deposit'), async () => {
+
+            // Operator 1
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
@@ -143,6 +150,16 @@ export default function() {
                 validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             });
+
+            // Operator 2
+            await scenarioDepositReserve({
+                nodeContract: nodeContract2,
+                durationID: '3m',
+                validatorPubkey: getValidatorPubkey(),
+                validatorSignature: getValidatorSignature(),
+                fromAddress: operator2,
+            });
+
         });
 
 
@@ -162,7 +179,7 @@ export default function() {
         it(printTitle('random account', 'cannot cancel a deposit reservation'), async () => {
             await assertThrows(scenarioDepositReserveCancel({
                 nodeContract,
-                fromAddress: accounts[2],
+                fromAddress: accounts[9],
                 gas: 5000000,
             }), 'Random account cancelled a deposit reservation');
         });
@@ -170,11 +187,21 @@ export default function() {
 
         // Node operator can cancel a deposit reservation
         it(printTitle('node operator', 'can cancel a deposit reservation'), async () => {
+
+            // Operator 1
             await scenarioDepositReserveCancel({
                 nodeContract,
                 fromAddress: operator,
                 gas: 5000000,
             });
+
+            // Operator 2
+            await scenarioDepositReserveCancel({
+                nodeContract: nodeContract2,
+                fromAddress: operator2,
+                gas: 5000000,
+            });
+
         });
 
 
@@ -277,7 +304,7 @@ export default function() {
             await scenarioDeposit({
                 nodeContract,
                 value: depositAmount,
-                fromAddress: accounts[2], // Allowed from any address
+                fromAddress: accounts[9], // Allowed from any address
             });
 
             // Perform user deposits to assign ether & lower RPL ratio from maximum to 0
@@ -324,7 +351,7 @@ export default function() {
             await scenarioDeposit({
                 nodeContract,
                 value: depositAmount,
-                fromAddress: accounts[2], // Allowed from any address
+                fromAddress: accounts[9], // Allowed from any address
             });
 
         });
@@ -359,6 +386,8 @@ export default function() {
         // Node operator can deposit after depositing required RPL
         it(printTitle('node operator', 'can deposit with required RPL'), async () => {
 
+            // Operator 1:
+
             // Get required RPL amount
             let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();
             assert.isTrue(rplRequired > 0, 'Pre-check failed: required RPL amount is 0');
@@ -374,7 +403,36 @@ export default function() {
             await scenarioDeposit({
                 nodeContract,
                 value: depositAmount,
-                fromAddress: accounts[2], // Allowed from any address
+                fromAddress: accounts[9], // Allowed from any address
+            });
+
+            // Operator 2:
+
+            // Reserve deposit
+            await scenarioDepositReserve({
+                nodeContract: nodeContract2,
+                durationID: '3m',
+                validatorPubkey: getValidatorPubkey(),
+                validatorSignature: getValidatorSignature(),
+                fromAddress: operator2,
+            });
+
+            // Get required RPL amount
+            let rplRequired2 = await nodeContract2.getDepositReserveRPLRequired.call();
+            assert.isTrue(rplRequired2 > 0, 'Pre-check failed: required RPL amount is 0');
+
+            // Deposit required RPL
+            await mintRpl({
+                toAddress: nodeContract2.address,
+                rplAmount: rplRequired2,
+                fromAddress: owner,
+            });
+
+            // Deposit
+            await scenarioDeposit({
+                nodeContract: nodeContract2,
+                value: 0,
+                fromAddress: accounts[9], // Allowed from any address
             });
 
         });
