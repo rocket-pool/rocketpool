@@ -204,7 +204,7 @@ contract RocketNodeContract {
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
-    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public returns(bool) { 
+    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public onlyNodeOwner() returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
@@ -215,10 +215,13 @@ contract RocketNodeContract {
         rocketNodeKeys.validatePubkey(_validatorPubkey);
         // Verify the deposit is acceptable
         rocketNodeAPI.checkDepositReservationIsValid(msg.sender, _durationID, depositReservation.created);
+        // Get the ether requirement for an untrusted node
+        uint256 etherRequirement = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
         // Get the required ether amount
-        uint256 etherAmount = rocketMinipoolSettings.getMinipoolLaunchAmount().div(2);
+        uint256 etherAmount = 0;
+        if (!rocketNodeAPI.getTrusted(msg.sender)) { etherAmount = etherRequirement; }
         // Get the RPL amount and ratio for the deposit
-        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(etherAmount, _durationID);
+        (uint256 rplAmount, uint256 rplRatio) = rocketNodeAPI.getRPLRequired(etherRequirement, _durationID);
         // Record the reservation now
         depositReservation = DepositReservation({
             durationID: _durationID,

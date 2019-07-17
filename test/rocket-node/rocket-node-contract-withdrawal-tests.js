@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
+import { RocketAdmin, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeSettings } from '../_lib/artifacts';
 import { getDepositIDs, userDeposit, userWithdrawMinipoolDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
@@ -15,10 +15,11 @@ export default function() {
         // Accounts
         const owner = accounts[0];
         const operator = accounts[1];
-        const operatorOther = accounts[2];
+        const operator2 = accounts[2];
         const groupOwner = accounts[3];
         const staker = accounts[4];
         const staker2 = accounts[5];
+        const staker3 = accounts[6];
 
 
         // Setup
@@ -26,10 +27,11 @@ export default function() {
         let rocketMinipoolSettings;
         let rocketNodeSettings;
         let nodeContract;
-        let nodeContractOther;
+        let nodeContract2;
         let groupContract;
         let groupAccessorContract;
         let minipool;
+        let minipool2;
         before(async () => {
 
             // Get contracts
@@ -39,7 +41,11 @@ export default function() {
 
             // Create node contracts
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
-            nodeContractOther = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operatorOther});
+            nodeContract2 = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator2});
+
+            // Make node operator trusted
+            let rocketAdmin = await RocketAdmin.deployed();
+            await rocketAdmin.setNodeTrusted(operator2, true, {from: owner, gas: 5000000});
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -54,13 +60,19 @@ export default function() {
         // Node operator cannot withdraw from a minipool while node withdrawals are disabled
         it(printTitle('node operator', 'cannot withdraw from a minipool while node withdrawals are disabled'), async () => {
 
-            // Create single minipool
+            // Operator 1: create single minipool
             let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
             minipool = await RocketMinipoolInterface.at(minipoolAddress);
 
-            // Check minipool status
+            // Operator 2: create single minipool
+            let minipoolAddress2 = (await createNodeMinipools({nodeContract: nodeContract2, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator2, owner}))[0];
+            minipool2 = await RocketMinipoolInterface.at(minipoolAddress2);
+
+            // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 0, 'Pre-check failed: minipool is not at Initialised status');
+            let status2 = parseInt(await minipool2.getStatus.call());
+            assert.equal(status, 0, 'Pre-check failed: minipool 1 is not at Initialised status');
+            assert.equal(status2, 0, 'Pre-check failed: minipool 2 is not at Initialised status');
 
             // Disable node withdrawals
             await rocketNodeSettings.setWithdrawalAllowed(false, {from: owner, gas: 500000});
@@ -96,11 +108,19 @@ export default function() {
         // Node operator can withdraw from an initialised minipool
         it(printTitle('node operator', 'can withdraw from an initialised minipool'), async () => {
 
-            // Withdraw node deposit (destroys minipool)
+            // Operator 1: withdraw node deposit (destroys minipool)
             await scenarioWithdrawMinipoolDeposit({
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
+                gas: 5000000,
+            });
+
+            // Operator 2: withdraw node deposit (destroys minipool)
+            await scenarioWithdrawMinipoolDeposit({
+                nodeContract: nodeContract2,
+                minipoolAddress: minipool2.address,
+                fromAddress: operator2,
                 gas: 5000000,
             });
 
@@ -220,19 +240,26 @@ export default function() {
         // Node operator cannot withdraw from a staking minipool
         it(printTitle('node operator', 'cannot withdraw from a staking minipool'), async () => {
 
-            // Create single minipool
+            // Operator 1: create single minipool
             let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
             minipool = await RocketMinipoolInterface.at(minipoolAddress);
-
-            // Get deposit settings
-            let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
 
             // Progress minipool to staking
             await stakeSingleMinipool({groupAccessorContract, staker: staker2});
 
-            // Check minipool status
+            // Operator 2: create single minipool
+            let minipoolAddress2 = (await createNodeMinipools({nodeContract: nodeContract2, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator2, owner}))[0];
+            minipool2 = await RocketMinipoolInterface.at(minipoolAddress2);
+
+            // Progress minipool to staking
+            await stakeSingleMinipool({groupAccessorContract, staker: staker3});
+            await stakeSingleMinipool({groupAccessorContract, staker: staker3});
+
+            // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+            let status2 = parseInt(await minipool2.getStatus.call());
+            assert.equal(status, 2, 'Pre-check failed: minipool 1 is not at Staking status');
+            assert.equal(status2, 2, 'Pre-check failed: minipool 2 is not at Staking status');
 
             // Withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -248,12 +275,15 @@ export default function() {
         // Node operator cannot withdraw from a logged out minipool
         it(printTitle('node operator', 'cannot withdraw from a logged out minipool'), async () => {
 
-            // Log out minipool
-            await logoutMinipool({minipoolAddress: minipool.address, nodeOperator: operator, owner});
+            // Log out minipools
+            await logoutMinipool({minipoolAddress: minipool.address, nodeOperator: operator2, owner});
+            await logoutMinipool({minipoolAddress: minipool2.address, nodeOperator: operator2, owner});
 
-            // Check minipool status
+            // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 3, 'Pre-check failed: minipool is not at LoggedOut status');
+            let status2 = parseInt(await minipool2.getStatus.call());
+            assert.equal(status, 3, 'Pre-check failed: minipool 1 is not at LoggedOut status');
+            assert.equal(status2, 3, 'Pre-check failed: minipool 2 is not at LoggedOut status');
 
             // Withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -269,12 +299,15 @@ export default function() {
         // Node operator can withdraw from a withdrawn minipool
         it(printTitle('node operator', 'can withdraw from a withdrawn minipool'), async () => {
 
-            // Log out minipool
-            await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator, owner});
+            // Withdraw minipools
+            await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator2, owner});
+            await withdrawMinipool({minipoolAddress: minipool2.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator2, owner});
 
-            // Check minipool status
+            // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 4, 'Pre-check failed: minipool is not at Withdrawn status');
+            let status2 = parseInt(await minipool2.getStatus.call());
+            assert.equal(status, 4, 'Pre-check failed: minipool 1 is not at Withdrawn status');
+            assert.equal(status2, 4, 'Pre-check failed: minipool 2 is not at Withdrawn status');
 
             // Withdraw all user deposits from minipool to force minipool to close
             let depositIDs = await getDepositIDs({groupID: groupContract.address, userID: staker2, durationID: '3m'});
@@ -289,11 +322,19 @@ export default function() {
             let depositCount = parseInt(await minipool.getDepositCount.call());
             assert.equal(depositCount, 0, 'Pre-check failed: minipool has user deposits');
 
-            // Withdraw node deposit
+            // Operator 1: withdraw node deposit
             await scenarioWithdrawMinipoolDeposit({
                 nodeContract,
                 minipoolAddress: minipool.address,
                 fromAddress: operator,
+                gas: 5000000,
+            });
+
+            // Operator 2: withdraw node deposit
+            await scenarioWithdrawMinipoolDeposit({
+                nodeContract: nodeContract2,
+                minipoolAddress: minipool2.address,
+                fromAddress: operator2,
                 gas: 5000000,
             });
 
@@ -309,17 +350,17 @@ export default function() {
         it(printTitle('node operator', 'cannot withdraw from another node\'s minipool'), async () => {
 
             // Create single minipool
-            let minipoolOtherAddress = (await createNodeMinipools({nodeContract: nodeContractOther, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operatorOther, owner}))[0];
-            let minipoolOther = await RocketMinipoolInterface.at(minipoolOtherAddress);
+            let minipoolAddress2 = (await createNodeMinipools({nodeContract: nodeContract2, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator2, owner}))[0];
+            minipool2 = await RocketMinipoolInterface.at(minipoolAddress2);
 
             // Check minipool status
-            let status = parseInt(await minipoolOther.getStatus.call());
+            let status = parseInt(await minipool2.getStatus.call());
             assert.equal(status, 0, 'Pre-check failed: minipool is not at Initialised status');
 
             // Attempt to withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
                 nodeContract,
-                minipoolAddress: minipoolOther.address,
+                minipoolAddress: minipool2.address,
                 fromAddress: operator,
                 gas: 5000000,
             }), 'Withdrew from another node\'s minipool');
