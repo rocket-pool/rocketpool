@@ -3,7 +3,7 @@ pragma solidity 0.5.8;
 
 import "../../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/token/RocketBETHTokenInterface.sol";
+import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
 
 
@@ -22,7 +22,7 @@ contract RocketNodeWatchtower is RocketBase {
     /*** Contracts **************/
 
 
-    RocketBETHTokenInterface rocketBETHToken = RocketBETHTokenInterface(0);
+    RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(0);
 
 
     /*** Modifiers **************/
@@ -58,9 +58,9 @@ contract RocketNodeWatchtower is RocketBase {
     }
 
 
-    /// @dev Set a minipool to Withdrawn status and mint RPB tokens to it
+    /// @dev Set a minipool to Withdrawn status and mint rETH tokens to it
     /// @param _minipool The address of the minipool to withdraw
-    /// @param _balance The balance of the minipool to mint as RPB tokens
+    /// @param _balance The balance of the minipool to mint as rETH tokens
     function withdrawMinipool(address _minipool, uint256 _balance) public onlyTrustedNode returns (bool) {
         // Get minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
@@ -69,10 +69,10 @@ contract RocketNodeWatchtower is RocketBase {
         // Get token amount to mint - subtract deposits withdrawn while staking
         uint256 stakingUserDepositsWithdrawn = minipool.getStakingUserDepositsWithdrawn();
         uint256 tokenAmount = (stakingUserDepositsWithdrawn > _balance) ? 0 : _balance.sub(stakingUserDepositsWithdrawn);
-        // Mint RPB tokens to minipool
+        // Mint rETH tokens to minipool
         if (tokenAmount > 0) {
-            rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-            rocketBETHToken.mint(_minipool, tokenAmount);
+            rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+            rocketETHToken.mint(_minipool, tokenAmount);
         }
         // Success
         return true;

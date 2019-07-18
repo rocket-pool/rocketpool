@@ -165,7 +165,7 @@ contract RocketMinipool is RocketMinipoolBase {
         return deposits[_depositID].balance;
     }
 
-    /// @dev Returns the amount of the deposit withdrawn as RPB
+    /// @dev Returns the amount of the deposit withdrawn as rETH
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256) {
         return deposits[_depositID].stakingTokensWithdrawn;
     }
@@ -198,10 +198,10 @@ contract RocketMinipool is RocketMinipoolBase {
     }
 
 
-    /// @dev Withdraw some amount of a deposit as RPB tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
+    /// @dev Withdraw some amount of a deposit as rETH tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
     /// @param _depositID The ID of the deposit
     /// @param _withdrawnAmount The amount of the deposit withdrawn
-    /// @param _tokenAmount The amount of RPB tokens withdrawn
+    /// @param _tokenAmount The amount of rETH tokens withdrawn
     /// @param _withdrawnAddress The address the deposit was withdrawn to
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Will throw if conditions are not met in delegate or call fails
@@ -212,7 +212,7 @@ contract RocketMinipool is RocketMinipoolBase {
     }
 
 
-    /// @dev Withdraw a deposit as RPB tokens and remove it from this contract (if minipool withdrawn).
+    /// @dev Withdraw a deposit as rETH tokens and remove it from this contract (if minipool withdrawn).
     /// @param _depositID The ID of the deposit
     /// @param _withdrawalAddress The address to withdraw the deposit to
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
@@ -274,7 +274,7 @@ contract RocketMinipool is RocketMinipoolBase {
         return userDepositTotal;
     }
 
-    /// @dev Gets the total RPB tokens withdrawn during staking
+    /// @dev Gets the total rETH tokens withdrawn during staking
     function getStakingUserDepositsWithdrawn() public view returns(uint256) {
         return stakingUserDepositsWithdrawn;
     }

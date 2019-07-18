@@ -26,7 +26,7 @@ contract RocketGroupAccessorContract {
 
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);           // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketDepositAPIInterface rocketDepositAPI = RocketDepositAPIInterface(0);  // The Rocket Pool Deposit API
-    ERC20 rocketBETHToken = ERC20(0);
+    ERC20 rocketETHToken = ERC20(0);
 
 
     /*** Constructor *************/
@@ -99,46 +99,46 @@ contract RocketGroupAccessorContract {
     }
 
 
-    /// @dev Withdraw a deposit fragment from a withdrawn minipool as RPB tokens through the Rocket Pool Deposit API
-    /// @dev Withdrawn RPB tokens are minted to this contract's address, then transferred to the user
+    /// @dev Withdraw a deposit fragment from a withdrawn minipool as rETH tokens through the Rocket Pool Deposit API
+    /// @dev Withdrawn rETH tokens are minted to this contract's address, then transferred to the user
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
     function depositWithdrawMinipool(bytes32 _depositID, address _minipool) public returns (bool) {
         // Get contracts
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
-        rocketBETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketBETHToken"))));
+        rocketETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketETHToken"))));
         // Get balance before withdrawal
-        uint256 initialBalance = rocketBETHToken.balanceOf(address(this));
+        uint256 initialBalance = rocketETHToken.balanceOf(address(this));
         // Perform withdrawal
         uint256 amountWithdrawn = rocketDepositAPI.depositWithdrawMinipool(groupID, msg.sender, _depositID, _minipool);
         require(amountWithdrawn > 0, "The minipool deposit was not withdrawn successfully");
-        require(amountWithdrawn == rocketBETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
-        // Transfer RPB tokens to user
-        require(rocketBETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn RPB tokens to user");
+        require(amountWithdrawn == rocketETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
+        // Transfer rETH tokens to user
+        require(rocketETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn rETH tokens to user");
         // Return success flag
         return true;
     }
 
 
-    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as RPB tokens, forfeiting rewards for that amount, through the Rocket Pool Deposit API
-    /// @dev Withdrawn RPB tokens are minted to this contract's address, then transferred to the user
+    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as rETH tokens, forfeiting rewards for that amount, through the Rocket Pool Deposit API
+    /// @dev Withdrawn rETH tokens are minted to this contract's address, then transferred to the user
     /// @param _depositID The ID of the deposit to withdraw from
     /// @param _minipool The address of the minipool to withdraw from
-    /// @param _amount The amount of the deposit to withdraw as RPB tokens
+    /// @param _amount The amount of the deposit to withdraw as rETH tokens
     function depositWithdrawMinipoolStaking(bytes32 _depositID, address _minipool, uint256 _amount) public returns (bool) {
         // Check amount
         require(_amount > 0, "Invalid withdrawal amount");
         // Get contracts
         rocketDepositAPI = RocketDepositAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDepositAPI"))));
-        rocketBETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketBETHToken"))));
+        rocketETHToken = ERC20(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketETHToken"))));
         // Get balance before withdrawal
-        uint256 initialBalance = rocketBETHToken.balanceOf(address(this));
+        uint256 initialBalance = rocketETHToken.balanceOf(address(this));
         // Perform withdrawal
         uint256 amountWithdrawn = rocketDepositAPI.depositWithdrawMinipoolStaking(groupID, msg.sender, _depositID, _minipool, _amount);
         require(amountWithdrawn > 0, "The minipool was not withdrawn from successfully");
-        require(amountWithdrawn == rocketBETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
-        // Transfer RPB tokens to user
-        require(rocketBETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn RPB tokens to user");
+        require(amountWithdrawn == rocketETHToken.balanceOf(address(this)) - initialBalance, "Amount withdrawn is incorrect");
+        // Transfer rETH tokens to user
+        require(rocketETHToken.transfer(msg.sender, amountWithdrawn), "Unable to send withdrawn rETH tokens to user");
         // Return success flag
         return true;
     }

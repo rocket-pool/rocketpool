@@ -9,7 +9,7 @@ import "../../interface/group/RocketGroupAccessorContractInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/token/RocketBETHTokenInterface.sol";
+import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
@@ -40,7 +40,7 @@ contract RocketDeposit is RocketBase {
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
-    RocketBETHTokenInterface rocketBETHToken = RocketBETHTokenInterface(0);
+    RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
 
@@ -153,7 +153,7 @@ contract RocketDeposit is RocketBase {
     }
 
 
-    // Withdraw some amount of a deposit fragment from a staking minipool as RPB tokens
+    // Withdraw some amount of a deposit fragment from a staking minipool as rETH tokens
     function withdrawFromStakingMinipool(address _userID, address _groupID, bytes32 _depositID, address _minipool, uint256 _amount, address _withdrawerAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
         // Check deposit details
@@ -162,13 +162,13 @@ contract RocketDeposit is RocketBase {
         require(_userID == minipool.getDepositUserID(_depositID), "Incorrect minipool deposit user ID");
         require(_groupID == minipool.getDepositGroupID(_depositID), "Incorrect minipool deposit group ID");
 
-        // Get RPB token amount to withdraw
+        // Get rETH token amount to withdraw
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         uint256 tokenAmount = _amount.mul(calcBase.sub(rocketDepositSettings.getStakingWithdrawalFeePerc())).div(calcBase);
 
-        // Mint RPB tokens to withdrawer address
-        rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-        rocketBETHToken.mint(_withdrawerAddress, tokenAmount);
+        // Mint rETH tokens to withdrawer address
+        rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        rocketETHToken.mint(_withdrawerAddress, tokenAmount);
 
         // Withdraw amount from minipool
         minipool.withdrawStaking(_depositID, _amount, tokenAmount, _withdrawerAddress);
@@ -183,7 +183,7 @@ contract RocketDeposit is RocketBase {
     }
 
 
-    // Withdraw a deposit fragment from a withdrawn minipool as RPB tokens
+    // Withdraw a deposit fragment from a withdrawn minipool as rETH tokens
     function withdrawFromWithdrawnMinipool(address _userID, address _groupID, bytes32 _depositID, address _minipool, address _withdrawerAddress) public onlyLatestContract("rocketDepositAPI", msg.sender) returns (uint256) {
 
         // Get minipool deposit addresses
@@ -207,8 +207,8 @@ contract RocketDeposit is RocketBase {
         }
 
         // Get initial withdrawer address balance
-        rocketBETHToken = RocketBETHTokenInterface(getContractAddress("rocketBETHToken"));
-        uint256 initialBalance = rocketBETHToken.balanceOf(_withdrawerAddress);
+        rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        uint256 initialBalance = rocketETHToken.balanceOf(_withdrawerAddress);
 
         // Get user deposit amount
         uint256 userDepositAmount = minipool.getDepositBalance(_depositID);
@@ -217,7 +217,7 @@ contract RocketDeposit is RocketBase {
         minipool.withdraw(_depositID, _withdrawerAddress);
 
         // Get amount withdrawn
-        uint256 withdrawalAmount = rocketBETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
+        uint256 withdrawalAmount = rocketETHToken.balanceOf(_withdrawerAddress).sub(initialBalance);
 
         // Update deposit details
         rocketDepositIndex = RocketDepositIndexInterface(getContractAddress("rocketDepositIndex"));

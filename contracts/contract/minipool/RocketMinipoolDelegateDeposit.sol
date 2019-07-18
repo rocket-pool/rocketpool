@@ -114,10 +114,10 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
         return true;
     }
 
-    /// @dev Withdraw some amount of a deposit as RPB tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
+    /// @dev Withdraw some amount of a deposit as rETH tokens, forfeiting rewards for that amount, and remove it if the entire deposit is withdrawn (if minipool staking).
     /// @param _depositID The ID of the deposit
     /// @param _withdrawnAmount The amount of the deposit withdrawn
-    /// @param _tokenAmount The amount of RPB tokens withdrawn
+    /// @param _tokenAmount The amount of rETH tokens withdrawn
     /// @param _withdrawnAddress The address the deposit was withdrawn to
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
@@ -159,7 +159,7 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
         return true;
     }
 
-    /// @dev Withdraw a deposit as RPB tokens and remove it from this contract (if minipool withdrawn).
+    /// @dev Withdraw a deposit as rETH tokens and remove it from this contract (if minipool withdrawn).
     /// @param _depositID The ID of the deposit
     /// @param _withdrawalAddress The address to withdraw the deposit to
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
@@ -189,12 +189,12 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
             // Update withdrawal amount
             amount = amount.sub(rpFeeAmount).sub(nodeFeeAmount).sub(groupFeeAmount);
             // Transfer fees
-            if (rpFeeAmount > 0) { require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
-            if (nodeFeeAmount > 0) { require(rpbContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
-            if (groupFeeAmount > 0) { require(rpbContract.transfer(rocketGroupContract.getFeeAddress(), groupFeeAmount), "Group fee could not be transferred to group contract address"); }
+            if (rpFeeAmount > 0) { require(rethContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpFeeAmount), "Rocket Pool fee could not be transferred to RP fee address"); }
+            if (nodeFeeAmount > 0) { require(rethContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeAmount), "Node operator fee could not be transferred to node contract address"); }
+            if (groupFeeAmount > 0) { require(rethContract.transfer(rocketGroupContract.getFeeAddress(), groupFeeAmount), "Group fee could not be transferred to group contract address"); }
         }
-        // Transfer withdrawal amount to withdrawal address as RPB tokens
-        if (amount > 0) { require(rpbContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
+        // Transfer withdrawal amount to withdrawal address as rETH tokens
+        if (amount > 0) { require(rethContract.transfer(_withdrawalAddress, amount), "Withdrawal amount could not be transferred to withdrawal address"); }
         // Remove deposit
         removeDeposit(_depositID);
         // Publish withdrawal event

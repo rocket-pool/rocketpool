@@ -122,7 +122,7 @@ contract RocketUpgrade is RocketBase {
         require(oldContractAddress != _upgradedContractAddress, "Upgraded contract address must not be existing contract address");
         // Check contract is not a token contract
         require(oldContractAddress != getContractAddress("rocketPoolToken"), "Cannot upgrade token contracts");
-        require(oldContractAddress != getContractAddress("rocketBETHToken"), "Cannot upgrade token contracts");
+        require(oldContractAddress != getContractAddress("rocketETHToken"), "Cannot upgrade token contracts");
         // Firstly check the contract being upgraded does not have a balance, if it does, it needs to transfer it to the upgraded contract through a local upgrade method first
         // Ether can be forcefully sent to any contract though (even if it doesn't have a payable method), so to prevent contracts that need upgrading and for some reason have a balance, use the force method to upgrade them
         if (!_forceEther) {
@@ -133,9 +133,9 @@ contract RocketUpgrade is RocketBase {
             // Check for RPL
             tokenContract = ERC20(getContractAddress("rocketPoolToken"));
             require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPL balance");
-            // Check for RPB
-            tokenContract = ERC20(getContractAddress("rocketBETHToken"));
-            require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an RPB balance");
+            // Check for rETH
+            tokenContract = ERC20(getContractAddress("rocketETHToken"));
+            require(tokenContract.balanceOf(oldContractAddress) == 0, "Existing contract has an rETH balance");
         }
         // Check for initialisation of this upgrade
         address upgradeInitialisedBy = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.upgrade.init", _name, _upgradedContractAddress, _upgradedContractAbi, _forceEther, _forceTokens)));

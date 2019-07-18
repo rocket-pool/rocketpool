@@ -31,7 +31,7 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
     event NodeWithdrawal (
         address indexed _to,                                    // Transferred to
         uint256 etherAmount,                                    // Amount of ETH
-        uint256 rpbAmount,                                      // Amount of RPB
+        uint256 rethAmount,                                      // Amount of rETH
         uint256 rplAmount,                                      // Amount of RPL
         uint256 created                                         // Creation timestamp
     );
@@ -75,7 +75,7 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
         // Get withdrawal amounts
         uint256 nodeBalance = node.balance;
         uint256 etherAmount = 0;
-        uint256 rpbAmount = 0;
+        uint256 rethAmount = 0;
         uint256 rplAmount = rplContract.balanceOf(address(this));
         // Update node operator deposit flag & balance
         node.depositExists = false;
@@ -87,13 +87,13 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
             etherAmount = nodeBalance;
             if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
         }
-        // Transferring RPB to node contract if withdrawn
+        // Transferring rETH to node contract if withdrawn
         else if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
-            rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
-            if (rpbAmount > 0) { require(rpbContract.transfer(rocketNodeContract.getRewardsAddress(), rpbAmount), "RPB balance transfer error."); }
+            rethAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
+            if (rethAmount > 0) { require(rethContract.transfer(rocketNodeContract.getRewardsAddress(), rethAmount), "rETH balance transfer error."); }
         }
         // Fire withdrawal event
-        emit NodeWithdrawal(msg.sender, etherAmount, rpbAmount, rplAmount, now);
+        emit NodeWithdrawal(msg.sender, etherAmount, rethAmount, rplAmount, now);
         // Update the status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
         minipool.updateStatus();

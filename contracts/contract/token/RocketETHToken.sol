@@ -5,14 +5,14 @@ import "../../RocketBase.sol";
 import "./StandardToken.sol";
 
 
-contract RocketBETHToken is StandardToken, RocketBase {
+contract RocketETHToken is StandardToken, RocketBase {
 
 
     /**** Properties ************/
 
 
-    string public name = "Rocket Pool BETH";
-    string public symbol = "RPB";
+    string public name = "Rocket Pool ETH";
+    string public symbol = "rETH";
     string public version = "1.0";
     uint8 public constant decimals = 18;
     uint256 public totalSupply = 0;
@@ -57,7 +57,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
     /*** Methods ****************/
 
 
-    /// @dev RocketBETHToken constructor
+    /// @dev RocketETHToken constructor
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {}
 
 
@@ -68,7 +68,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
 
 
     /**
-     * @dev Mint RPB Tokens
+     * @dev Mint rETH Tokens
      * @param _to The address that will recieve the minted tokens
      * @param _amount The amount of tokens to mint
      * @return A boolean that indicates if the operation was successful
@@ -88,7 +88,7 @@ contract RocketBETHToken is StandardToken, RocketBase {
 
 
     /**
-     * @dev Burn RPB tokens in exchange for ether
+     * @dev Burn rETH tokens in exchange for ether
      * @param _amount The amount of tokens to burn
      * @return A boolean that indicates if the operation was successful
      */

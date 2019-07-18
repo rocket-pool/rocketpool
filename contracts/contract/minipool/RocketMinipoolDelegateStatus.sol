@@ -168,17 +168,17 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
                         rewardsForfeited -= int256(rpFeeAmount + nodeFeeAmount);
                         // Calculate group fee from remaining rewards and transfer
                         uint256 groupFeeAmount = uint256(rewardsForfeited).mul(withdrawal.feeGroup).div(calcBase);
-                        if (groupFeeAmount > 0) { require(rpbContract.transfer(withdrawal.groupFeeAddress, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
+                        if (groupFeeAmount > 0) { require(rethContract.transfer(withdrawal.groupFeeAddress, groupFeeAmount), "Group fee could not be transferred to group contract address"); }
                     }
                 }
                 // Transfer total node fees
-                if (nodeFeeTotal > 0) { require(rpbContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeTotal), "Node operator fee could not be transferred to node contract address"); }
+                if (nodeFeeTotal > 0) { require(rethContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeTotal), "Node operator fee could not be transferred to node contract address"); }
             }
-            // Transfer remaining RPB balance to rocket pool
-            uint256 rpbBalance = rpbContract.balanceOf(address(this));
-            if (rpbBalance > 0) {
+            // Transfer remaining rETH balance to rocket pool
+            uint256 rethBalance = rethContract.balanceOf(address(this));
+            if (rethBalance > 0) {
                 rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-                require(rpbContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rpbBalance), "RPB balance transfer error.");
+                require(rethContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rethBalance), "rETH balance transfer error.");
             }
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);

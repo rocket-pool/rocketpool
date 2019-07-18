@@ -16,7 +16,7 @@ contract RocketGroupContract {
     uint8   public version;                                                     // Version of this contract
     uint256 private feePerc = 0;                                                // The fee this groups charges their users given as a % of 1 Ether (eg 0.02 ether = 2%)
     uint256 private feePercRocketPool = 0;                                      // The fee Rocket Pool charges this group's users given as a % of 1 Ether (eg 0.02 ether = 2%)
-    address private feeAddress;                                                 // The address to send group fees to as RPB
+    address private feeAddress;                                                 // The address to send group fees to as rETH
 
     mapping(address => bool) private depositors;                                // Valid depositor contracts for the group
     uint256 private depositorCount = 0;
@@ -129,7 +129,7 @@ contract RocketGroupContract {
         return feePercRocketPool;
     }
 
-    /// @dev Get the address to send group fees to as RPB
+    /// @dev Get the address to send group fees to as rETH
     function getFeeAddress() public view returns(address) {
         return feeAddress;
     }
@@ -153,7 +153,7 @@ contract RocketGroupContract {
         return true;
     }
 
-    /// @dev Set the address to send group fees to as RPB
+    /// @dev Set the address to send group fees to as rETH
     function setFeeAddress(address _feeAddress) public onlyGroupOwner returns(bool) {
         require(_feeAddress != address(0x0), "Invalid fee address");
         feeAddress = _feeAddress;
