@@ -340,6 +340,15 @@ export default function() {
         });
 
 
+        // Random account cannot process the deposit queue with an invalid staking duration
+        it(printTitle('random account', 'cannot process the deposit queue with an invalid staking duration'), async () => {
+            await assertThrows(scenarioProcessDepositQueue({
+                durationID: 'beer',
+                fromAddress: accounts[9],
+            }), 'Processed the deposit queue with an invalid staking duration');
+        });
+
+
     });
 
 }
