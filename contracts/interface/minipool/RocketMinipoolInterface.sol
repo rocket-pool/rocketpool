@@ -21,6 +21,8 @@ contract RocketMinipoolInterface {
     function getStatusChangedBlock() public view returns(uint256);
     function getStakingDurationID() public view returns (string memory);
     function getStakingDuration() public view returns(uint256);
+    function getStakingBalanceStart() public view returns(uint256);
+    function getStakingBalanceEnd() public view returns(uint256);
     function getValidatorPubkey() public view returns (bytes memory);
     function getValidatorSignature() public view returns (bytes memory);
     function getUserDepositCapacity() public view returns(uint256);

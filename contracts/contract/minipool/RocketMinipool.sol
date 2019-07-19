@@ -254,6 +254,16 @@ contract RocketMinipool is RocketMinipoolBase {
         return staking.duration;
     }
 
+    /// @dev Returns the ether balance of the minipool when it began staking
+    function getStakingBalanceStart() public view returns(uint256) {
+        return staking.balanceStart;
+    }
+
+    /// @dev Returns the rETH balance of the minipool when it finished staking
+    function getStakingBalanceEnd() public view returns(uint256) {
+        return staking.balanceEnd;
+    }
+
     /// @dev Returns the minipool's validator pubkey to be submitted to casper
     function getValidatorPubkey() public view returns (bytes memory) {
         return staking.validatorPubkey;

@@ -76,7 +76,7 @@ contract RocketMinipoolBase {
         string  id;                                             // Duration ID
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
-        uint256 balanceEnd;                                     // Ether balance of this minipool when it completes staking
+        uint256 balanceEnd;                                     // rETH balance of this minipool when it completes staking
         bytes   validatorPubkey;                                // Validator pubkey to be submitted to the casper deposit contract
         bytes   validatorSignature;                             // Validator signature to be submitted to the casper deposit contract
     }
