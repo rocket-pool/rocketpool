@@ -5,6 +5,7 @@ pragma solidity 0.5.8;
 contract RocketDepositSettingsInterface {
     // Getters
     function getDepositAllowed() public view returns (bool);
+    function getProcessDepositQueueAllowed() public view returns (bool);
     function getDepositChunkSize() public view returns (uint256);
     function getDepositMin() public view returns (uint256);
     function getDepositMax() public view returns (uint256);

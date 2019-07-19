@@ -37,20 +37,6 @@ contract RocketDepositQueue is RocketBase {
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
-    /*** Modifiers **************/
-
-
-    // Sender must be a super user or RocketDeposit
-    modifier onlySuperUserOrDeposit() {
-        require(
-            (roleHas("owner", msg.sender) || roleHas("admin", msg.sender)) ||
-            msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))),
-            "Sender is not a super user or RocketDeposit"
-        );
-        _;
-    }
-
-
     /*** Events *****************/
 
 
@@ -169,11 +155,14 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Assign chunks while able
-    function assignChunks(string memory _durationID) public onlySuperUserOrDeposit() {
+    function assignChunks(string memory _durationID) public {
 
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+
+        // Check queue processing is enabled
+        require(rocketDepositSettings.getProcessDepositQueueAllowed(), "Deposit queue processing is currently disabled");
 
         // Deposit settings
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
