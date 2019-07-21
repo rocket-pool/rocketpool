@@ -1,8 +1,8 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketDepositIndex, RocketDepositSettings, RocketMinipoolSettings } from '../_lib/artifacts';
+import { RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketMinipoolSettings, RocketNode } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
-import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit } from './rocket-deposit-api-scenarios';
+import { scenarioDeposit, scenarioRefundQueuedDeposit, scenarioRocketpoolEtherDeposit, scenarioAPIDeposit, scenarioProcessDepositQueue } from './rocket-deposit-api-scenarios';
 
 export default function() {
 
@@ -307,6 +307,45 @@ export default function() {
                 value: web3.utils.toWei('16', 'ether'),
             }), 'Deposited directly via RocketDepositAPI');
 
+        });
+
+
+        // Random account can process the deposit queue
+        it(printTitle('random account', 'can process the deposit queue'), async () => {
+
+            // Check queue status
+            let rocketDepositQueue = await RocketDepositQueue.deployed();
+            let rocketNode = await RocketNode.deployed();
+            let queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
+            let availableNodeCount = parseInt(await rocketNode.getAvailableNodeCount.call('3m'));
+            assert.isTrue(queueBalance > 0, 'Pre-check failed: deposit queue is empty');
+            assert.isTrue(availableNodeCount > 0, 'Pre-check failed: no nodes available for assignment');
+
+            // Process queue
+            await scenarioProcessDepositQueue({
+                durationID: '3m',
+                fromAddress: accounts[9],
+            });
+
+            // Check queue status
+            queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
+            assert.equal(queueBalance,  0, 'Pre-check failed: deposit queue is not empty');
+
+            // Process queue
+            await scenarioProcessDepositQueue({
+                durationID: '3m',
+                fromAddress: accounts[9],
+            });
+
+        });
+
+
+        // Random account cannot process the deposit queue with an invalid staking duration
+        it(printTitle('random account', 'cannot process the deposit queue with an invalid staking duration'), async () => {
+            await assertThrows(scenarioProcessDepositQueue({
+                durationID: 'beer',
+                fromAddress: accounts[9],
+            }), 'Processed the deposit queue with an invalid staking duration');
         });
 
 

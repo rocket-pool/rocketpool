@@ -2,7 +2,7 @@
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketETHToken, RocketDepositAPI, RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNodeContract, RocketPool } from '../_lib/artifacts';
+import { RocketETHToken, RocketDepositAPI, RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNode, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 
 
 // Get all available minipools
@@ -493,6 +493,30 @@ export async function scenarioSetBackupWithdrawalAddress({withdrawerContract, de
     // Asserts
     assert.equal(backupAddress1, '0x0000000000000000000000000000000000000000', 'Backup withdrawal address was already set');
     assert.equal(backupAddress2.toLowerCase(), backupWithdrawalAddress.toLowerCase(), 'Backup withdrawal address was not set successfully');
+
+}
+
+
+// Process the deposit queue
+export async function scenarioProcessDepositQueue({durationID, fromAddress, gas}) {
+    const rocketDepositQueue = await RocketDepositQueue.deployed();
+    const rocketNode = await RocketNode.deployed();
+
+    // Get available node count
+    let availableNodeCount = parseInt(await rocketNode.getAvailableNodeCount.call(durationID));
+
+    // Get initial queue balance
+    let queueBalance1 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
+
+    // Process queue
+    await rocketDepositQueue.assignChunks(durationID, {from: fromAddress, gas: gas});
+
+    // Get updated queue balance
+    let queueBalance2 = parseInt(await rocketDepositQueue.getBalance.call(durationID));
+
+    // Asserts
+    if (availableNodeCount > 0 && queueBalance1 > 0) assert.isTrue(queueBalance2 < queueBalance1, 'Queue balance was not updated correctly');
+    else assert.equal(queueBalance2, queueBalance1, 'Queue balance was updated and should not have');
 
 }
 

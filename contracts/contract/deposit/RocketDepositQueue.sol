@@ -8,6 +8,7 @@ import "../../interface/deposit/RocketDepositVaultInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolSetInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/Bytes32SetStorageInterface.sol";
 import "../../interface/utils/lists/Bytes32QueueStorageInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -33,20 +34,18 @@ contract RocketDepositQueue is RocketBase {
     RocketDepositVaultInterface rocketDepositVault = RocketDepositVaultInterface(0);
     RocketMinipoolSetInterface rocketMinipoolSet = RocketMinipoolSetInterface(0);
     RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(0);
+    RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     Bytes32SetStorageInterface bytes32SetStorage = Bytes32SetStorageInterface(0);
     Bytes32QueueStorageInterface bytes32QueueStorage = Bytes32QueueStorageInterface(0);
 
 
-    /*** Modifiers **************/
+    /*** Modifiers *************/
 
-
-    // Sender must be a super user or RocketDeposit
-    modifier onlySuperUserOrDeposit() {
-        require(
-            (roleHas("owner", msg.sender) || roleHas("admin", msg.sender)) ||
-            msg.sender == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketDeposit"))),
-            "Sender is not a super user or RocketDeposit"
-        );
+    /// @dev Only passes if the supplied minipool duration is valid
+    /// @param _durationID The ID that determines the minipool duration
+    modifier onlyValidDuration(string memory _durationID) {
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
         _;
     }
 
@@ -169,11 +168,14 @@ contract RocketDepositQueue is RocketBase {
 
 
     // Assign chunks while able
-    function assignChunks(string memory _durationID) public onlySuperUserOrDeposit() {
+    function assignChunks(string memory _durationID) public onlyValidDuration(_durationID) {
 
         // Get contracts
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+
+        // Check queue processing is enabled
+        require(rocketDepositSettings.getProcessDepositQueueAllowed(), "Deposit queue processing is currently disabled");
 
         // Deposit settings
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();

@@ -31,6 +31,7 @@ contract RocketDepositSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.init")))) {
             // API Settings
             setDepositAllowed(true);                                                        // Are user deposits currently allowed?
+            setProcessDepositQueueAllowed(true);                                            // Is processing the deposit queue currently allowed?
             setDepositChunkSize(4 ether);                                                   // The size of a deposit chunk
             setDepositMin(1 ether);                                                         // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
@@ -54,6 +55,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Are deposits currently allowed?                                                 
     function getDepositAllowed() public view returns (bool) {
         return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.allowed"))); 
+    }
+
+    /// @dev Is processing the deposit queue currently allowed?
+    function getProcessDepositQueueAllowed() public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.deposit.queue.process.allowed")));
     }
 
     /// @dev The size of deposit chunks
@@ -130,6 +136,11 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Are user deposits currently allowed?                                                 
     function setDepositAllowed(bool _enabled) public onlySuperUser {
         rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.allowed")), _enabled); 
+    }
+
+    /// @dev Is processing the deposit queue currently allowed?
+    function setProcessDepositQueueAllowed(bool _enabled) public onlySuperUser {
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.deposit.queue.process.allowed")), _enabled);
     }
 
     /// @dev Deposit chunk size - must be evenly divisible on the minipool size
