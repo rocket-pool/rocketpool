@@ -415,6 +415,10 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     let nodeRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(nodeFeeAddress));
     let groupRpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(groupFeeAddress));
 
+    // Get minipool staking balances
+    let stakingBalanceStart = parseInt(await minipool.getStakingBalanceStart.call());
+    let stakingBalanceEnd = parseInt(await minipool.getStakingBalanceEnd.call());
+
     // Get initial minipool deposit status
     let depositCount1 = parseInt(await minipool.getDepositCount.call());
     let depositExists1 = await minipool.getDepositExists.call(depositID);
@@ -468,9 +472,15 @@ export async function scenarioWithdrawMinipoolDeposit({withdrawerContract, depos
     assert.equal(depositExists2, false, 'Minipool deposit was not removed correctly');
     assert.equal(depositBalance2, 0, 'Minipool deposit balance was not updated correctly');
     assert.isTrue(userRpbBalance2 > userRpbBalance1, 'User RPB balance was not updated correctly');
-    assert.isTrue(rpRpbBalance2 > rpRpbBalance1, 'RP RPB balance was not updated correctly');
-    assert.isTrue(nodeRpbBalance2 > nodeRpbBalance1, 'Node RPB balance was not updated correctly');
-    assert.isTrue(groupRpbBalance2 > groupRpbBalance1, 'Group RPB balance was not updated correctly');
+    if (stakingBalanceEnd > stakingBalanceStart) {
+        assert.isTrue(rpRpbBalance2 > rpRpbBalance1, 'RP RPB balance was not updated correctly');
+        assert.isTrue(nodeRpbBalance2 > nodeRpbBalance1, 'Node RPB balance was not updated correctly');
+        assert.isTrue(groupRpbBalance2 > groupRpbBalance1, 'Group RPB balance was not updated correctly');
+    } else {
+        assert.equal(rpRpbBalance2, rpRpbBalance1, 'RP RPB balance changed and should not have');
+        assert.equal(nodeRpbBalance2, nodeRpbBalance1, 'Node RPB balance changed and should not have');
+        assert.equal(groupRpbBalance2, groupRpbBalance1, 'Group RPB balance changed and should not have');
+    }
     assert.equal(minipoolRpbBalance2, minipoolRpbBalance1 - totalRpbSent, 'Minipool RPB balance was not updated correctly');
     assert.equal(minipoolEthBalance2, minipoolEthBalance1, 'Minipool ether balance changed and should not have');
 
