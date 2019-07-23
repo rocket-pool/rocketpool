@@ -89,7 +89,15 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
         }
         // Transferring RPB to node contract if withdrawn
         else if (staking.balanceStart > 0 && staking.balanceEnd > 0) {
-            rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
+            // Calculate transfer amount including penalty incurred by node for losses
+            if (staking.balanceStart > staking.balanceEnd) {
+                uint256 nodePenalty = staking.balanceStart.sub(staking.balanceEnd);
+                if (nodeBalance > nodePenalty) { rpbAmount = nodeBalance.sub(nodePenalty); }
+            }
+            else {
+                rpbAmount = nodeBalance.mul(staking.balanceEnd).div(staking.balanceStart);
+            }
+            // Transfer
             if (rpbAmount > 0) { require(rpbContract.transfer(rocketNodeContract.getRewardsAddress(), rpbAmount), "RPB balance transfer error."); }
         }
         // Fire withdrawal event
