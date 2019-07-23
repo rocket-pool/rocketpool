@@ -171,8 +171,15 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
         require(deposits[_depositID].balance > 0, "Deposit does not have remaining balance in minipool.");
         // Get contracts
         publisher = PublisherInterface(getContractAddress("utilPublisher"));
+        // Calculate starting balance excluding penalty incurred by node for losses
+        uint256 balanceStart = staking.balanceStart;
+        if (staking.balanceStart > staking.balanceEnd) {
+            uint256 nodePenalty = staking.balanceStart.sub(staking.balanceEnd);
+            if (nodePenalty > node.depositEther) { nodePenalty = node.depositEther; }
+            balanceStart = balanceStart.sub(nodePenalty);
+        }
         // Calculate rewards earned by deposit
-        int256 rewardsEarned = int256(deposits[_depositID].balance.mul(staking.balanceEnd).div(staking.balanceStart)) - int256(deposits[_depositID].balance);
+        int256 rewardsEarned = int256(deposits[_depositID].balance.mul(staking.balanceEnd).div(balanceStart)) - int256(deposits[_depositID].balance);
         // Withdrawal amount
         uint256 amount = uint256(int256(deposits[_depositID].balance) + rewardsEarned);
         // Pay fees if rewards were earned

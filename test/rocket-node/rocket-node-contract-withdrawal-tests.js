@@ -301,7 +301,7 @@ export default function() {
 
             // Withdraw minipools
             await withdrawMinipool({minipoolAddress: minipool.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator2, owner});
-            await withdrawMinipool({minipoolAddress: minipool2.address, balance: web3.utils.toWei('36', 'ether'), nodeOperator: operator2, owner});
+            await withdrawMinipool({minipoolAddress: minipool2.address, balance: web3.utils.toWei('14', 'ether'), nodeOperator: operator2, owner});
 
             // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
