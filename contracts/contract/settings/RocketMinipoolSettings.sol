@@ -41,7 +41,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolBackupCollectDuration(526000);                                           // The block count limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit - 3months default
             setMinipoolNewEnabled(true);                                                        // Minipools allowed to be created?
             setMinipoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
-            setMinipoolMax(20);                                                                 // Maximum amount of minipool contracts allowed
+            setMinipoolMax(0);                                                                  // Maximum amount of minipool contracts allowed - 0 = unlimited
             setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
@@ -65,7 +65,7 @@ contract RocketMinipoolSettings is RocketBase {
         // Get the main Rocket Pool contract
         RocketPoolInterface rocketPool = RocketPoolInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool"))));
         // New pools allowed to be created?
-        if (!getMinipoolNewEnabled() || rocketPool.getPoolsCount() >= getMinipoolMax()) {
+        if (!getMinipoolNewEnabled() || (getMinipoolMax() > 0 && rocketPool.getPoolsCount() >= getMinipoolMax())) {
             return false;
         }
         return true;
