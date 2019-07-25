@@ -1,7 +1,7 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
 import { profileGasUsage } from '../_lib/utils/profiling';
-import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketBETHToken, RocketPoolToken } from '../_lib/artifacts';
+import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketETHToken, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
@@ -115,7 +115,7 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 
 // Withdraw a deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
-    const rocketBETHToken = await RocketBETHToken.deployed();
+    const rocketETHToken = await RocketETHToken.deployed();
 
     // Get node contract rewards address
     let rewardsAddress = await nodeContract.getRewardsAddress.call();
@@ -138,7 +138,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
 
     // Get initial node contract & account balances
     let nodeContractBalance1 = parseInt(await web3.eth.getBalance(nodeContract.address));
-    let nodeAccountBalance1 = parseInt(await rocketBETHToken.balanceOf.call(rewardsAddress));
+    let nodeAccountBalance1 = parseInt(await rocketETHToken.balanceOf.call(rewardsAddress));
 
     // Withdraw
     await nodeContract.withdrawMinipoolDeposit(minipoolAddress, {from: fromAddress, gas: gas});
@@ -159,7 +159,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
 
     // Get updated node contract & account balances
     let nodeContractBalance2 = parseInt(await web3.eth.getBalance(nodeContract.address));
-    let nodeAccountBalance2 = parseInt(await rocketBETHToken.balanceOf.call(rewardsAddress));
+    let nodeAccountBalance2 = parseInt(await rocketETHToken.balanceOf.call(rewardsAddress));
 
     // Asserts
     assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
@@ -167,11 +167,11 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     assert.equal(minipoolNodeBalance2, 0, 'Incorrect updated minipool node balance');
     if (minipoolStatus1 == 4) { // Withdrawn
         assert.equal(nodeContractBalance2, nodeContractBalance1, 'Node contract ether balance changed and should not have');
-        if (minipoolNodeBalance1 > 0) assert.isTrue(nodeAccountBalance2 > nodeAccountBalance1, 'Node rewards address RPB balance was not updated correctly');
+        if (minipoolNodeBalance1 > 0) assert.isTrue(nodeAccountBalance2 > nodeAccountBalance1, 'Node rewards address rETH balance was not updated correctly');
     }
     else {
         assert.equal(nodeContractBalance2, nodeContractBalance1 + minipoolNodeBalance1, 'Node contract ether balance was not updated correctly');
-        assert.equal(nodeAccountBalance2, nodeAccountBalance1, 'Node rewards address RPB balance changed and should not have');
+        assert.equal(nodeAccountBalance2, nodeAccountBalance1, 'Node rewards address rETH balance changed and should not have');
     }
 
 }

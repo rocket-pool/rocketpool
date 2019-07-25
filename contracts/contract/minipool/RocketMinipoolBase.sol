@@ -41,7 +41,7 @@ contract RocketMinipoolBase {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ERC20 rpbContract = ERC20(0);                                                                   // The address of our RPB ERC20 token contract
+    ERC20 rethContract = ERC20(0);                                                                   // The address of our rETH ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong to
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                // The node contract for the node which owns this minipool
@@ -85,7 +85,7 @@ contract RocketMinipoolBase {
         address userID;                                         // Address ID of the user
         address groupID;                                        // Address ID of the user's group
         uint256 balance;                                        // Chunk balance deposited
-        uint256 stakingTokensWithdrawn;                         // RPB tokens withdrawn by the user during staking
+        uint256 stakingTokensWithdrawn;                         // rETH tokens withdrawn by the user during staking
         uint256 feeRP;                                          // Rocket Pool's fee
         uint256 feeGroup;                                       // Group fee
         uint256 created;                                        // Creation timestamp
@@ -129,7 +129,7 @@ contract RocketMinipoolBase {
         casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         // Add the token contract addresses
         rplContract = ERC20(getContractAddress("rocketPoolToken"));
-        rpbContract = ERC20(getContractAddress("rocketBETHToken"));
+        rethContract = ERC20(getContractAddress("rocketETHToken"));
     }
 
 

@@ -226,16 +226,16 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as RPB tokens, forfeiting rewards for that amount
+    /// @dev Withdraw some amount of a deposit fragment from a staking minipool as rETH tokens, forfeiting rewards for that amount
     /// @param _groupID The ID of the group in control of the deposit
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _depositID The ID of the deposit to withdraw
     /// @param _minipool The address of the minipool to withdraw from
-    /// @param _amount The amount of the deposit to withdraw as RPB tokens
+    /// @param _amount The amount of the deposit to withdraw as rETH tokens
     function depositWithdrawMinipoolStaking(address _groupID, address _userID, bytes32 _depositID, address _minipool, uint256 _amount) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
         checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID, true);
-        // Withdraw deposit amount as RPB tokens
+        // Withdraw deposit amount as rETH tokens
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
         uint256 amountWithdrawn = rocketDeposit.withdrawFromStakingMinipool(_userID, _groupID, _depositID, _minipool, _amount, msg.sender);
         require(amountWithdrawn > 0, "Minipool deposit amount could not be withdrawn");
@@ -246,7 +246,7 @@ contract RocketDepositAPI is RocketBase {
     }
 
 
-    /// @dev Withdraw a deposit fragment from a withdrawn minipool as RPB tokens
+    /// @dev Withdraw a deposit fragment from a withdrawn minipool as rETH tokens
     /// @param _groupID The ID of the group in control of the deposit
     /// @param _userID The address of the user who the deposit belongs to
     /// @param _depositID The ID of the deposit to withdraw
@@ -254,7 +254,7 @@ contract RocketDepositAPI is RocketBase {
     function depositWithdrawMinipool(address _groupID, address _userID, bytes32 _depositID, address _minipool) public onlyLatestContract("rocketDepositAPI", address(this)) returns(uint256) {
         // Verify the withdrawal is acceptable
         checkDepositWithdrawalIsValid(msg.sender, _groupID, _userID, _depositID, false);
-        // Withdraw deposit as RPB tokens
+        // Withdraw deposit as rETH tokens
         rocketDeposit = RocketDepositInterface(getContractAddress("rocketDeposit"));
         uint256 amountWithdrawn = rocketDeposit.withdrawFromWithdrawnMinipool(_userID, _groupID, _depositID, _minipool, msg.sender);
         require(amountWithdrawn > 0, "Minipool deposit could not be withdrawn");

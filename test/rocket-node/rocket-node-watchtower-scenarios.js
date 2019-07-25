@@ -1,5 +1,5 @@
 // Dependencies
-import { RocketBETHToken, RocketNodeWatchtower } from '../_lib/artifacts';
+import { RocketETHToken, RocketNodeWatchtower } from '../_lib/artifacts';
 
 
 // Logout minipool
@@ -25,11 +25,11 @@ export async function scenarioLogoutMinipool({minipool, fromAddress, gas}) {
 // Withdraw minipool
 export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, gas}) {
     const rocketNodeWatchtower = await RocketNodeWatchtower.deployed();
-    const rocketBETHToken = await RocketBETHToken.deployed();
+    const rocketETHToken = await RocketETHToken.deployed();
 
     // Get initial minipool status
     let status1 = parseInt(await minipool.getStatus.call());
-    let rpbBalance1 = parseInt(await rocketBETHToken.balanceOf.call(minipool.address));
+    let rethBalance1 = parseInt(await rocketETHToken.balanceOf.call(minipool.address));
     let stakingUserDepositsWithdrawn = parseInt(await minipool.getStakingUserDepositsWithdrawn.call());
 
     // Withdraw
@@ -37,15 +37,15 @@ export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, 
 
     // Get updated minipool status
     let status2 = parseInt(await minipool.getStatus.call());
-    let rpbBalance2 = parseInt(await rocketBETHToken.balanceOf.call(minipool.address));
+    let rethBalance2 = parseInt(await rocketETHToken.balanceOf.call(minipool.address));
 
-    // Get expected RPB increase
-    let expectedRpbIncrease = (stakingUserDepositsWithdrawn > parseInt(balance)) ? 0 : parseInt(balance) - stakingUserDepositsWithdrawn;
+    // Get expected rETH increase
+    let expectedRethIncrease = (stakingUserDepositsWithdrawn > parseInt(balance)) ? 0 : parseInt(balance) - stakingUserDepositsWithdrawn;
 
     // Asserts
     assert.equal(status1, 3, 'Minipool was not at LoggedOut status before withdrawal');
     assert.equal(status2, 4, 'Minipool was not set to Withdrawn status successfully');
-    assert.equal(rpbBalance2, rpbBalance1 + expectedRpbIncrease, 'Minipool RPB balance was not increased correctly');
+    assert.equal(rethBalance2, rethBalance1 + expectedRethIncrease, 'Minipool rETH balance was not increased correctly');
 
 }
 

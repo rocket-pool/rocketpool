@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketStorage, RocketBETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
+import { RocketStorage, RocketETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
@@ -24,7 +24,7 @@ export default function() {
 
         // Setup
         let rocketStorage;
-        let rocketBETHToken;
+        let rocketETHToken;
         let rocketDepositIndex;
         let rocketDepositSettings;
         let rocketDepositVault;
@@ -48,7 +48,7 @@ export default function() {
 
             // Initialise contracts
             rocketStorage = await RocketStorage.deployed();
-            rocketBETHToken = await RocketBETHToken.deployed();
+            rocketETHToken = await RocketETHToken.deployed();
             rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
             rocketDepositVault = await RocketDepositVault.deployed();
@@ -178,8 +178,8 @@ export default function() {
         });
 
 
-        // Upgrade approver cannot upgrade a contract with an RPB balance
-        it(printTitle('upgrade approver', 'cannot upgrade a contract with an RPB balance'), async () => {
+        // Upgrade approver cannot upgrade a contract with an rETH balance
+        it(printTitle('upgrade approver', 'cannot upgrade a contract with an rETH balance'), async () => {
 
             // Deposit to minipool
             await userDeposit({depositorContract: groupAccessorContract, durationID: '3m', fromAddress: user1, value: web3.utils.toWei('1', 'ether')});
@@ -188,13 +188,13 @@ export default function() {
             // Progress minipool to staking
             await stakeSingleMinipool({groupAccessorContract, staker: user1});
 
-            // Withdraw user from minipool while staking to get RPB tokens
+            // Withdraw user from minipool while staking to get rETH tokens
             await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});
             await groupAccessorContract.depositWithdrawMinipoolStaking(depositID, minipool.address, web3.utils.toWei('1', 'ether'), {from: user1, gas: 5000000});
             await rocketDepositSettings.setStakingWithdrawalAllowed(false, {from: owner, gas: 500000});
 
-            // Send RPB to RocketPool contract
-            await rocketBETHToken.transfer(rocketPool.address, web3.utils.toWei('0.5', 'ether'), {from: user1});
+            // Send rETH to RocketPool contract
+            await rocketETHToken.transfer(rocketPool.address, web3.utils.toWei('0.5', 'ether'), {from: user1});
 
             // Attempt to upgrade RocketPool contract
             await assertThrows(scenarioUpgradeContract({
@@ -202,13 +202,13 @@ export default function() {
                 upgradedContractAddress: rocketPoolNew.address,
                 upgradedContractAbi: rocketPoolNew.abi,
                 fromAddress: approver1,
-            }), 'Upgraded a contract with an RPB balance');
+            }), 'Upgraded a contract with an rETH balance');
 
         });
 
 
-        // Upgrade approver can upgrade a contract with an RPB balance by force
-        it(printTitle('upgrade approver', 'can upgrade a contract with an RPB balance by force'), async () => {
+        // Upgrade approver can upgrade a contract with an rETH balance by force
+        it(printTitle('upgrade approver', 'can upgrade a contract with an rETH balance by force'), async () => {
 
             // Upgrade RocketPool contract
             await scenarioUpgradeContract({

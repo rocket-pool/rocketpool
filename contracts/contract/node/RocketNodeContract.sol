@@ -26,7 +26,7 @@ contract RocketNodeContract {
 
     address private owner;                                                          // The node that created the contract
     uint8   public version;                                                         // Version of this contract
-    address private rewardsAddress;                                                  // The address to send node operator rewards and fees to as RPB
+    address private rewardsAddress;                                                  // The address to send node operator rewards and fees to as rETH
 
     DepositReservation private depositReservation;                                  // Node operator's deposit reservation
 
@@ -128,7 +128,7 @@ contract RocketNodeContract {
         return owner;
     }
 
-    /// @dev Returns the address to send node operator rewards and fees to as RPB
+    /// @dev Returns the address to send node operator rewards and fees to as rETH
     function getRewardsAddress() public view returns(address) {
         return rewardsAddress;
     }
@@ -185,7 +185,7 @@ contract RocketNodeContract {
     /*** Setters *************/
 
 
-    /// @dev Set the address to send node operator rewards and fees to as RPB
+    /// @dev Set the address to send node operator rewards and fees to as rETH
     function setRewardsAddress(address _rewardsAddress) public onlyNodeOwner returns(bool) {
         require(_rewardsAddress != address(0x0), "Invalid reward address");
         rewardsAddress = _rewardsAddress;
