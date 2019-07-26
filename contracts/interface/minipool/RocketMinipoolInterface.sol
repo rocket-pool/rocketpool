@@ -10,12 +10,16 @@ contract RocketMinipoolInterface {
     function getNodeTrusted() public view returns(bool);
     function getNodeDepositExists() public view returns(bool);
     function getNodeBalance() public view returns(uint256);
+    function getNodeUserFee() public view returns(uint256);
     function getDepositCount() public view returns(uint256);
     function getDepositExists(bytes32 _depositID) public view returns(bool);
     function getDepositUserID(bytes32 _depositID) public view returns(address);
     function getDepositGroupID(bytes32 _depositID) public view returns(address);
     function getDepositBalance(bytes32 _depositID) public view returns(uint256);
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256);
+    function getDepositFeeRP(bytes32 _depositID) public view returns(uint256);
+    function getDepositFeeGroup(bytes32 _depositID) public view returns(uint256);
+    function getDepositCreated(bytes32 _depositID) public view returns(uint256);
     function getStatus() public view returns(uint8);
     function getStatusChangedTime() public view returns(uint256);
     function getStatusChangedBlock() public view returns(uint256);

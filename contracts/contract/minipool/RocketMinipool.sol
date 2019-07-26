@@ -114,6 +114,11 @@ contract RocketMinipool is RocketMinipoolBase {
         return node.balance;
     }
 
+    /// @dev Gets the node operator's user fee percentage
+    function getNodeUserFee() public view returns(uint256) {
+        return node.userFee;
+    }
+
 
     // Methods
 
@@ -168,6 +173,21 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @dev Returns the amount of the deposit withdrawn as rETH
     function getDepositStakingTokensWithdrawn(bytes32 _depositID) public view returns(uint256) {
         return deposits[_depositID].stakingTokensWithdrawn;
+    }
+
+    /// @dev Returns the deposit's Rocket Pool fee percentage
+    function getDepositFeeRP(bytes32 _depositID) public view returns(uint256) {
+        return deposits[_depositID].feeRP;
+    }
+
+    /// @dev Returns the deposit's group fee percentage
+    function getDepositFeeGroup(bytes32 _depositID) public view returns(uint256) {
+        return deposits[_depositID].feeGroup;
+    }
+
+    /// @dev Returns the deposit's creation time
+    function getDepositCreated(bytes32 _depositID) public view returns(uint256) {
+        return deposits[_depositID].created;
     }
 
 
