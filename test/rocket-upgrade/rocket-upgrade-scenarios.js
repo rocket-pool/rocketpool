@@ -172,3 +172,90 @@ export async function scenarioAddContract({contractName, contractAddress, contra
 
 };
 
+
+// Runs upgrade ABI scenario
+export async function scenarioUpgradeABI({contractName, upgradedContractAbi, fromAddress}) {
+    const rocketUpgrade = await RocketUpgrade.deployed();
+    const rocketStorage = await RocketStorage.deployed();
+
+    // Add test method to ABI
+    let upgradedContractAbiTest = upgradedContractAbi.slice();
+    upgradedContractAbiTest.push({
+        "constant": true,
+        "inputs": [],
+        "name": "testMethod",
+        "outputs": [{
+            "name": "",
+            "type": "uint8"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function",
+    });
+    let upgradedContractAbiCompressed = compressAbi(upgradedContractAbiTest);
+
+    // Check if upgrade is already initialised
+    let initialisedBy = await rocketStorage.getAddress.call(web3.utils.soliditySha3("abi.upgrade.init", contractName, upgradedContractAbiCompressed));
+    let expectComplete = (initialisedBy != '0x0000000000000000000000000000000000000000');
+
+    // Get initial contract data
+    let contractAbi1 = await rocketStorage.getString.call(web3.utils.soliditySha3('contract.abi', contractName));
+
+    // Upgrade ABI
+    await rocketUpgrade.upgradeABI(contractName, upgradedContractAbiCompressed, {from: fromAddress});
+
+    // Get updated contract data
+    let contractAbi2 = await rocketStorage.getString.call(web3.utils.soliditySha3('contract.abi', contractName));
+
+    // Initialise new contract from stored data
+    let newContract = new web3.eth.Contract(decompressAbi(contractAbi2));
+
+    // Asserts
+    if (expectComplete) {
+        assert.notEqual(newContract.methods.testMethod, undefined, 'Contract ABI was not successfully upgraded');
+    } else {
+        assert.equal(contractAbi1, contractAbi2, 'Contract ABI changed and should not have');
+    }
+
+};
+
+
+// Runs add ABI scenario
+export async function scenarioAddABI({contractName, contractAbi, fromAddress}) {
+    const rocketUpgrade = await RocketUpgrade.deployed();
+    const rocketStorage = await RocketStorage.deployed();
+
+    // Add test method to ABI
+    let contractAbiTest = contractAbi.slice();
+    contractAbiTest.push({
+        "constant": true,
+        "inputs": [],
+        "name": "testMethod",
+        "outputs": [{
+            "name": "",
+            "type": "uint8"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function",
+    });
+    let contractAbiCompressed = compressAbi(contractAbiTest);
+
+    // Get initial contract data
+    let contractAbi1 = await rocketStorage.getString.call(web3.utils.soliditySha3('contract.abi', contractName));
+
+    // Add ABI
+    await rocketUpgrade.addABI(contractName, contractAbiCompressed, {from: fromAddress});
+
+    // Get updated contract data
+    let contractAbi2 = await rocketStorage.getString.call(web3.utils.soliditySha3('contract.abi', contractName));
+
+    // Initialise new contract from stored data
+    let newContract = new web3.eth.Contract(decompressAbi(contractAbi2));
+
+    // Asserts
+    assert.equal(contractAbi1, '', 'Contract ABI already existed');
+    assert.notEqual(newContract.methods.testMethod, undefined, 'Contract ABI was not successfully set');
+
+};
+
