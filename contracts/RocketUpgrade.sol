@@ -65,6 +65,8 @@ contract RocketUpgrade is RocketBase {
 
     /**** Contract Upgrade Methods ***********/
 
+    // For adding & upgrading Rocket Pool network contracts, e.g. RocketPool, RocketNode
+
 
     /// @param _name The name of an existing contract in the network
     /// @param _upgradedContractAddress The new contracts address that will replace the current one
@@ -144,6 +146,8 @@ contract RocketUpgrade is RocketBase {
 
 
     /**** ABI Upgrade Methods ****************/
+
+    // For adding & upgrading dynamically created contract ABIs, e.g. RocketMinipool, RocketNodeContract, RocketGroupContract
 
 
     /// @param _name The name of an existing contract ABI in the network
