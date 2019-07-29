@@ -19,20 +19,26 @@ contract RocketUpgrade is RocketBase {
 
     /*** Events ****************/
 
-    event ApproverTransferred (
-        address indexed _oldApproverAddress,
-        address indexed _newApproverAddress,
-        uint256 created
-    );
-
     event ContractUpgraded (
         address indexed _oldContractAddress,                    // Address of the contract being upgraded
         address indexed _newContractAddress,                    // Address of the new contract
+        bytes32 indexed _name,                                  // Name of the contract
         uint256 created                                         // Creation timestamp
     );
 
     event ContractAdded (
         address indexed _contractAddress,                       // Address of the contract added
+        bytes32 indexed _name,                                  // Name of the contract
+        uint256 created                                         // Creation timestamp
+    );
+
+    event ABIUpgraded (
+        bytes32 indexed _name,                                  // Name of the contract ABI
+        uint256 created                                         // Creation timestamp
+    );
+
+    event ABIAdded (
+        bytes32 indexed _name,                                  // Name of the contract ABI
         uint256 created                                         // Creation timestamp
     );
 
@@ -54,54 +60,6 @@ contract RocketUpgrade is RocketBase {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Set the version
         version = 1;
-    }
-
-
-    /**** Approval Account Methods ***********/
-
-
-    /// @dev Initialise the upgrade approvers
-    /// @param _approvers A list of upgrade approver addresses
-    function initialiseUpgradeApprovers(address[] memory _approvers) onlySuperUser public {
-        // Initialise contracts
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        // Check initialisation status
-        require(addressSetStorage.getCount(keccak256(abi.encodePacked("upgrade.approvers"))) == 0, "Upgrade approvers have already been initialised");
-        // Check and initialise upgrade approvers
-        require(_approvers.length == 3, "Exactly 3 upgrade approvers are required");
-        for (uint256 i = 0; i < _approvers.length; ++i) {
-            require(_approvers[i] != address(0x0), "Invalid upgrade approver address");
-            require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("upgrade.approvers")), _approvers[i]) == -1, "Upgrade approver address already used");
-            addressSetStorage.addItem(keccak256(abi.encodePacked("upgrade.approvers")), _approvers[i]);
-        }
-    }
-
-
-    /// @dev Transfer upgrade approver privileges to another address
-    /// @dev Requires confirmation by 2/3 of upgrade approvers
-    function transferUpgradeApprover(address _oldAddress, address _newAddress) onlyUpgradeApprover public {
-        // Initialise contracts
-        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
-        // Check addresses
-        require(_newAddress != address(0x0), "Invalid new upgrade approver address");
-        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("upgrade.approvers")), _newAddress) == -1, "New upgrade approver address already in use");
-        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("upgrade.approvers")), _oldAddress) != -1, "Old upgrade approver address not found");
-        // Check for initialisation of this transfer
-        address transferInitialisedBy = rocketStorage.getAddress(keccak256(abi.encodePacked("upgrade.approver.transfer.init", _oldAddress, _newAddress)));
-        require(transferInitialisedBy != msg.sender, "Transfer was initialised by this approver");
-        // Complete transfer if already initialised
-        if (transferInitialisedBy != address(0x0)) {
-            rocketStorage.deleteAddress(keccak256(abi.encodePacked("upgrade.approver.transfer.init", _oldAddress, _newAddress)));
-            // Transfer approver privileges
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("upgrade.approvers")), _oldAddress);
-            addressSetStorage.addItem(keccak256(abi.encodePacked("upgrade.approvers")), _newAddress);
-            // Emit transfer event
-            emit ApproverTransferred(_oldAddress, _newAddress, now);
-        }
-        // Initialise transfer if not initialised yet
-        else {
-            rocketStorage.setAddress(keccak256(abi.encodePacked("upgrade.approver.transfer.init", _oldAddress, _newAddress)), msg.sender);
-        }
     }
 
 
@@ -152,7 +110,7 @@ contract RocketUpgrade is RocketBase {
             // Remove the old contract address verification
             rocketStorage.deleteAddress(keccak256(abi.encodePacked("contract.address", oldContractAddress)));
             // Log it
-            emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, now);
+            emit ContractUpgraded(oldContractAddress, _upgradedContractAddress, keccak256(abi.encodePacked(_name)), now);
         }
         // Initialise upgrade if not initialised yet
         else {
@@ -173,12 +131,61 @@ contract RocketUpgrade is RocketBase {
         // Check the address is not already in use
         address existingContractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractAddress)));
         require(existingContractAddress == address(0x0), "Contract address is already in use");
+        // Check the name is not for an existing ABI
+        string memory existingAbi = rocketStorage.getString(keccak256(abi.encodePacked("contract.abi", _name)));
+        require(keccak256(abi.encodePacked(existingAbi)) == keccak256(abi.encodePacked("")), "ABI with name already exists");
         // Set contract name, address and ABI in storage
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.name", _name)), _contractAddress);
         rocketStorage.setAddress(keccak256(abi.encodePacked("contract.address", _contractAddress)), _contractAddress);
         rocketStorage.setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Log it
-        emit ContractAdded(_contractAddress, now);
+        emit ContractAdded(_contractAddress, keccak256(abi.encodePacked(_name)), now);
+    }
+
+
+    /**** ABI Upgrade Methods ****************/
+
+
+    /// @param _name The name of an existing contract ABI in the network
+    /// @param _upgradedContractAbi The zlib compressed, base64 encoded ABI
+    function upgradeABI(string memory _name, string memory _upgradedContractAbi) onlyUpgradeApprover public {
+        // Check the name is not for an existing contract
+        address existingContractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _name)));
+        require(existingContractAddress == address(0x0), "Contract with name already exists");
+        // Check ABI exists
+        string memory existingAbi = rocketStorage.getString(keccak256(abi.encodePacked("contract.abi", _name)));
+        require(keccak256(abi.encodePacked(existingAbi)) != keccak256(abi.encodePacked("")), "ABI name does not exist");
+        // Check for initialisation of this upgrade
+        address upgradeInitialisedBy = rocketStorage.getAddress(keccak256(abi.encodePacked("abi.upgrade.init", _name, _upgradedContractAbi)));
+        require(upgradeInitialisedBy != msg.sender, "Upgrade was initialised by this approver");
+        // Complete upgrade if already initialised
+        if (upgradeInitialisedBy != address(0x0)) {
+            rocketStorage.deleteAddress(keccak256(abi.encodePacked("abi.upgrade.init", _name, _upgradedContractAbi)));
+            // Replace the stored contract ABI
+            rocketStorage.setString(keccak256(abi.encodePacked("contract.abi", _name)), _upgradedContractAbi);
+            // Log it
+            emit ABIUpgraded(keccak256(abi.encodePacked(_name)), now);
+        }
+        // Initialise upgrade if not initialised yet
+        else {
+            rocketStorage.setAddress(keccak256(abi.encodePacked("abi.upgrade.init", _name, _upgradedContractAbi)), msg.sender);
+        }
+    }
+
+
+    /// @param _name The name of the new contract ABI
+    /// @param _contractAbi The zlib compressed, base64 encoded ABI
+    function addABI(string memory _name, string memory _contractAbi) onlyUpgradeApprover public {
+        // Check the name is not for an existing contract
+        address existingContractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _name)));
+        require(existingContractAddress == address(0x0), "Contract with name already exists");
+        // Check the name is not already in use
+        string memory existingAbi = rocketStorage.getString(keccak256(abi.encodePacked("contract.abi", _name)));
+        require(keccak256(abi.encodePacked(existingAbi)) == keccak256(abi.encodePacked("")), "ABI with name already exists");
+        // Set contract ABI in storage
+        rocketStorage.setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
+        // Log it
+        emit ABIAdded(keccak256(abi.encodePacked(_name)), now);
     }
 
 

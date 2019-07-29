@@ -1,4 +1,4 @@
-import { RocketUpgrade, RocketStorage, UtilAddressSetStorage } from "../_lib/artifacts";
+import { RocketUpgrade, RocketUpgradeApproval, RocketStorage, UtilAddressSetStorage } from "../_lib/artifacts";
 import { compressAbi, decompressAbi } from '../_lib/utils/contract';
 
 
@@ -23,13 +23,13 @@ async function getUpgradeApprovers() {
 
 // Initialise upgrade approvers
 export async function scenarioInitialiseUpgradeApprovers({approvers, fromAddress}) {
-    const rocketUpgrade = await RocketUpgrade.deployed();
+    const rocketUpgradeApproval = await RocketUpgradeApproval.deployed();
 
     // Get initial upgrade approvers
     let upgradeApprovers1 = await getUpgradeApprovers();
 
     // Initialise approvers
-    await rocketUpgrade.initialiseUpgradeApprovers(approvers, {from: fromAddress});
+    await rocketUpgradeApproval.initialiseUpgradeApprovers(approvers, {from: fromAddress});
 
     // Get updated upgrade approvers
     let upgradeApprovers2 = await getUpgradeApprovers();
@@ -46,7 +46,7 @@ export async function scenarioInitialiseUpgradeApprovers({approvers, fromAddress
 
 // Transfer upgrade approver permissions
 export async function scenarioTransferUpgradeApprover({oldAddress, newAddress, fromAddress}) {
-    const rocketUpgrade = await RocketUpgrade.deployed();
+    const rocketUpgradeApproval = await RocketUpgradeApproval.deployed();
     const rocketStorage = await RocketStorage.deployed();
 
     // Check if transfer is already initialised
@@ -57,7 +57,7 @@ export async function scenarioTransferUpgradeApprover({oldAddress, newAddress, f
     let upgradeApprovers1 = await getUpgradeApprovers();
 
     // Transfer approver
-    await rocketUpgrade.transferUpgradeApprover(oldAddress, newAddress, {from: fromAddress});
+    await rocketUpgradeApproval.transferUpgradeApprover(oldAddress, newAddress, {from: fromAddress});
 
     // Get updated upgrade approvers
     let upgradeApprovers2 = await getUpgradeApprovers();

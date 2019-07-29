@@ -316,6 +316,17 @@ export default function() {
         });
 
 
+        // Upgrade approver cannot add a contract with a name in use by an ABI
+        it(printTitle('upgrade approver', 'cannot add a contract with a name in use by an ABI'), async () => {
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketMinipool',
+                contractAddress: accounts[9],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with a name in use by an ABI');
+        });
+
+
         // Random account cannot add a contract
         it(printTitle('random account', 'account cannot add a contract'), async () => {
             await assertThrows(scenarioAddContract({
