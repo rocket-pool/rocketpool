@@ -27,6 +27,7 @@ export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToke
 export const RocketRole = artifacts.require('./contract/RocketRole');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
 export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
+export const RocketUpgradeApproval = artifacts.require('./contract/RocketUpgradeApproval');
 export const UtilAddressSetStorage = artifacts.require('./contract/AddressSetStorage');
 
 export const TestLists = artifacts.require('./test/TestLists');

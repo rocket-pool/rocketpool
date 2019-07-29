@@ -1,11 +1,11 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { RocketStorage, RocketETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
+import { RocketStorage, RocketETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipool, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
 import { userDeposit } from '../_helpers/rocket-deposit';
 import { mintRpl } from '../_helpers/rocket-pool-token';
-import { scenarioUpgradeContract, scenarioAddContract, scenarioInitialiseUpgradeApprovers } from './rocket-upgrade-scenarios';
+import { scenarioUpgradeContract, scenarioAddContract, scenarioUpgradeABI, scenarioAddABI, scenarioInitialiseUpgradeApprovers } from './rocket-upgrade-scenarios';
 
 export default function() {
 
@@ -316,14 +316,125 @@ export default function() {
         });
 
 
+        // Upgrade approver cannot add a contract with a name in use by an ABI
+        it(printTitle('upgrade approver', 'cannot add a contract with a name in use by an ABI'), async () => {
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketMinipool',
+                contractAddress: accounts[9],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with a name in use by an ABI');
+        });
+
+
         // Random account cannot add a contract
-        it(printTitle('random account', 'account cannot add a contract'), async () => {
+        it(printTitle('random account', 'cannot add a contract'), async () => {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest2',
                 contractAddress: accounts[9],
                 contractAbi: rocketPIP.abi,
                 fromAddress: user1,
             }), 'Random account added a contract');
+        });
+
+
+        // Upgrade approver cannot initialise an upgrade to a nonexistent ABI
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to a nonexistent ABI'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'nonexistentContract',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to a nonexistent ABI');
+        });
+
+
+        // Upgrade approver cannot initialise an upgrade to a stored contract's ABI
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to a stored contract\'s ABI'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketPool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to a stored contract\'s ABI');
+        });
+
+
+        // Random account cannot initialise an ABI upgrade
+        it(printTitle('random account', 'cannot initialise an ABI upgrade'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: user1,
+            }), 'Random account initialised an ABI upgrade');
+        });
+
+
+        // Upgrade approver can initialise an ABI upgrade
+        it(printTitle('upgrade approver', 'can initialise an ABI upgrade'), async () => {
+            await scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            });
+        });
+
+
+        // Upgrade approver cannot complete their own ABI upgrade
+        it(printTitle('upgrade approver', 'cannot complete their own ABI upgrade'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Approver completed their own ABI upgrade');
+        });
+
+
+        // Upgrade approver can complete another approver's ABI upgrade
+        it(printTitle('upgrade approver', 'can complete another approver\'s ABI upgrade'), async () => {
+            await scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver2,
+            });
+        });
+
+
+        // Upgrade approver can add an ABI
+        it(printTitle('upgrade approver', 'can add an ABI'), async () => {
+            await scenarioAddABI({
+                contractName: 'rocketABITest1',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            });
+        });
+
+
+        // Upgrade approver cannot add an ABI with an existing name
+        it(printTitle('upgrade approver', 'cannot add an ABI with an existing name'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketABITest1',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added an ABI with an existing name');
+        });
+
+
+        // Upgrade approver cannot add an ABI with a name in use by a stored contract
+        it(printTitle('upgrade approver', 'cannot add an ABI with a name in use by a stored contract'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketPool',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added an ABI with a name in use by a stored contract');
+        });
+
+
+        // Random account cannot add an ABI
+        it(printTitle('random account', 'cannot add an ABI'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketABITest2',
+                contractAbi: rocketPIP.abi,
+                fromAddress: user1,
+            }), 'Random account added an ABI');
         });
 
 
