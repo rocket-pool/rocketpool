@@ -36,6 +36,7 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
             setMinipoolStakingDuration("6m",  1052000);                                         // 6 Months
             setMinipoolStakingDuration("12m", 2104000);                                         // 12 Months
+            setMinipoolCheckInterval(1 hours);                                                  // The interval that a watchtower should check active minipools in seconds
             setMinipoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
             setMinipoolBackupCollectDuration(526000);                                           // The block count limit of which after a deposit is received back from Casper, that the user backup address can get access to the deposit - 3months default
@@ -96,12 +97,17 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256("settings.minipool.deposit.gas"));
     }
 
-     /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
+    /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
     function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256) {
         // Make sure the staking ID exists
         uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
         require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
         return stakingTime;
+    }
+
+    /// @dev The interval that a watchtower should check active minipools in seconds
+    function getMinipoolCheckInterval() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.check.interval")));
     }
 
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address
@@ -144,6 +150,11 @@ contract RocketMinipoolSettings is RocketBase {
     function setMinipoolStakingDuration(string memory _duration, uint256 _blocks) public onlySuperUser {
         require(_blocks > 0, "Amount of blocks for staking duration not specified.");
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _duration)), _blocks);  
+    }
+
+    /// @dev The interval that a watchtower should check active minipools in seconds
+    function setMinipoolCheckInterval(uint256 _interval) public onlySuperUser {
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.check.interval")), _interval);
     }
 
     /// @dev The account to send Rocket Pool Fees too, must be an account, not a contract address

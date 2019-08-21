@@ -12,6 +12,7 @@ contract RocketMinipoolSettingsInterface {
     function getMinipoolNewGas() public view returns (uint256);
     function getMinipoolDepositGas() public view returns (uint256);
     function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256);
+    function getMinipoolCheckInterval() public view returns (uint256);
     function getMinipoolWithdrawalFeeDepositAddress() public view returns (address);
     function getMinipoolBackupCollectEnabled() public view returns (bool);
     function getMinipoolBackupCollectDuration() public view returns (uint256);
