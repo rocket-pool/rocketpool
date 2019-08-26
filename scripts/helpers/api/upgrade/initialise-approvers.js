@@ -1,5 +1,5 @@
 // Artifacts
-const RocketUpgrade = artifacts.require('./RocketUpgrade');
+const RocketUpgradeApproval = artifacts.require('./RocketUpgradeApproval');
 
 // Initialise upgrade approvers
 module.exports = async (done) => {
@@ -18,10 +18,10 @@ module.exports = async (done) => {
         const owner = accounts[0];
 
         // Initialise contracts
-        const rocketUpgrade = await RocketUpgrade.deployed();
+        const rocketUpgradeApproval = await RocketUpgradeApproval.deployed();
 
         // Initialise approvers
-        await rocketUpgrade.initialiseUpgradeApprovers(approvers, {from: owner});
+        await rocketUpgradeApproval.initialiseUpgradeApprovers(approvers, {from: owner});
 
         // Success
         done('Upgrade approvers initialised successfully: ' + approvers.join(' '));
