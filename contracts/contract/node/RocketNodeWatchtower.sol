@@ -35,7 +35,25 @@ contract RocketNodeWatchtower is RocketBase {
     }
 
 
-    /*** Constructor *************/
+    /*** Events *****************/
+
+
+    event PoolLoggedOut (
+        address indexed _minipool,
+        address indexed _from,
+        uint256 created
+    );
+
+    event PoolWithdrawn (
+        address indexed _minipool,
+        address indexed _from,
+        uint256 balanceStart,
+        uint256 balanceEnd,
+        uint256 created
+    );
+
+
+    /*** Constructor ************/
 
 
     /// @dev RocketNodeWatchtower constructor
@@ -53,6 +71,8 @@ contract RocketNodeWatchtower is RocketBase {
         // Log minipool out, reverts if not allowed
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         minipool.logoutMinipool();
+        // Emit logout event
+        emit PoolLoggedOut(_minipool, msg.sender, now);
         // Success
         return true;
     }
@@ -74,6 +94,8 @@ contract RocketNodeWatchtower is RocketBase {
             rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
             rocketETHToken.mint(_minipool, tokenAmount);
         }
+        // Emit withdrawal event
+        emit PoolWithdrawn(_minipool, msg.sender, minipool.getStakingBalanceStart(), minipool.getStakingBalanceEnd(), now);
         // Success
         return true;
     }
