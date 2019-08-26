@@ -26,7 +26,7 @@ fi
 # Beacon chain simulator config
 beacon_port=9545
 deposit_contract_address=0xb50eA9565646e5Ed39688694b283cb185A3CC130
-withdrawal_contract_address=0x5631A31aC732c334cD0a4d69963995e0BFDE251C
+withdrawal_contract_address=0xb8fb210F8857Cb814D36eef7f6a8A05CABB8B4A1
 withdrawal_from_address=0xe6ed92d26573c67af5eca7fb2a49a807fb8f88db
 
 ganache_running() {

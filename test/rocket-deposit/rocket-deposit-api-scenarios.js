@@ -202,6 +202,9 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
             let minipool = await RocketMinipool.at(address);
             let pubkey = (await minipool.getValidatorPubkey.call()).substr(2);
 
+            // Wait for beacon chain simulator
+            await new Promise(resolve => { setTimeout(() => { resolve(true); }, 10000); });
+
             // Check for validator on beacon chain
             let validatorExists = true;
             try { await getValidatorStatus(pubkey); }
