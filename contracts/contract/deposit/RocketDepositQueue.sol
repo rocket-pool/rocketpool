@@ -171,6 +171,7 @@ contract RocketDepositQueue is RocketBase {
     function assignChunks(string memory _durationID) public onlyValidDuration(_durationID) {
 
         // Get contracts
+        rocketMinipoolSet = RocketMinipoolSetInterface(getContractAddress("rocketMinipoolSet"));
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
         rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
 
@@ -180,6 +181,9 @@ contract RocketDepositQueue is RocketBase {
         // Deposit settings
         uint256 chunkSize = rocketDepositSettings.getDepositChunkSize();
         uint256 maxChunkAssignments = rocketDepositSettings.getChunkAssignMax();
+
+        // Update active minipools
+        rocketMinipoolSet.updateActiveMinipools(_durationID);
 
         // Assign chunks while able
         uint256 chunkAssignments = 0;

@@ -4,6 +4,7 @@ pragma solidity 0.5.8;
 import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/RocketPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 
@@ -19,6 +20,7 @@ contract RocketMinipoolSet is RocketBase {
 
     RocketNodeInterface rocketNode = RocketNodeInterface(0);
     RocketPoolInterface rocketPool = RocketPoolInterface(0);
+    RocketMinipoolInterface minipool = RocketMinipoolInterface(0);
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
@@ -65,6 +67,23 @@ contract RocketMinipoolSet is RocketBase {
 
         // Return active minipool
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.active", _durationID)), offset);
+
+    }
+
+
+    // Update all active minipools to ensure correct status
+    function updateActiveMinipools(string memory _durationID) public onlyLatestContract("rocketDepositQueue", msg.sender) {
+
+        // Get contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+
+        // Update active minipools
+        uint256 activeMinipoolCount = addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.active", _durationID)));
+        for (uint256 mi = 0; mi < activeMinipoolCount; ++mi) {
+            address minipoolAddress = addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.active", _durationID)), mi);
+            minipool = RocketMinipoolInterface(minipoolAddress);
+            minipool.updateStatus();
+        }
 
     }
 
