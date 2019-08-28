@@ -1,6 +1,7 @@
 // Artifacts
 const AddressSetStorage = artifacts.require('./AddressSetStorage');
 const RocketMinipool = artifacts.require('./RocketMinipool');
+const RocketMinipoolSettings = artifacts.require('./RocketMinipoolSettings');
 
 // Get active minipools
 module.exports = async (done) => {
@@ -13,6 +14,7 @@ module.exports = async (done) => {
 
         // Initialise contracts
         const addressSetStorage = await AddressSetStorage.deployed();
+        const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
 
         // Get active minipool addresses
         let key = web3.utils.soliditySha3('minipools.active', durationID);
@@ -28,8 +30,10 @@ module.exports = async (done) => {
         for (let mi = 0; mi < minipoolCount; ++mi) {
             let address = minipoolAddresses[mi];
             let minipool = await RocketMinipool.at(address);
-            let [status, stakingDurationID, depositCount, userDepositCapacity, userDepositTotal, nodeOwner, nodeContract, nodeTrusted] = await Promise.all([
+            let [status, statusTime, statusBlock, stakingDurationID, depositCount, userDepositCapacity, userDepositTotal, nodeOwner, nodeContract, nodeTrusted] = await Promise.all([
                 minipool.getStatus.call(),
+                minipool.getStatusChangedTime.call(),
+                minipool.getStatusChangedBlock.call(),
                 minipool.getStakingDurationID.call(),
                 minipool.getDepositCount.call(),
                 minipool.getUserDepositCapacity.call(),
@@ -41,6 +45,8 @@ module.exports = async (done) => {
             minipools.push({
                 address,
                 status: parseInt(status),
+                statusTime: parseInt(statusTime),
+                statusBlock: parseInt(statusBlock),
                 stakingDurationID,
                 depositCount: parseInt(depositCount),
                 userDepositCapacity: parseFloat(web3.utils.fromWei(userDepositCapacity, 'ether')),
@@ -51,11 +57,17 @@ module.exports = async (done) => {
             });
         }
 
+        // Get minipool settings
+        let minipoolTimeout = parseInt(await rocketMinipoolSettings.getMinipoolTimeout.call());
+
         // Log
         minipools.forEach(minipool => {
             console.log('----------');
             console.log('Address:              ', minipool.address);
             console.log('Status:               ', minipool.status);
+            console.log('Status change time:   ', new Date(minipool.statusTime * 1000));
+            console.log('Timeout time:         ', new Date((minipool.statusTime + minipoolTimeout) * 1000));
+            console.log('Status change block:  ', minipool.statusBlock);
             console.log('Staking duration:     ', minipool.stakingDurationID);
             console.log('Deposit count:        ', minipool.depositCount);
             console.log('User deposit capacity:', minipool.userDepositCapacity);
