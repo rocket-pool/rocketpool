@@ -43,7 +43,8 @@ Once you've registered successfully, you can check your status again::
 
     rocketpool node status
 
-This should now display additional information like: ``Node registered with Rocket Pool with contract at 0xcdef...cdef, timezone 'Etc/Etc' and a balance of 2.00 ETH and 0.00 RPL``
+This should now display additional information like: ``Node registered with Rocket Pool with contract at 0xcdef...cdef,``
+``timezone 'Etc/Etc' and a balance of 2.00 ETH and 0.00 RPL``
 
 Registering your node will create a new node contract which is used to interact with the Rocket Pool network.
 Some operations (such as depositing to Rocket Pool or withdrawing from minipools which have finished staking) will affect the ETH and token balances of this contract.
