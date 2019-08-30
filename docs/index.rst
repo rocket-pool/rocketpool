@@ -12,7 +12,7 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   intro/introduction-to-rocket-pool.rst
-   smart-node/introduction.rst
+    rocket-pool/introduction.rst
+    smart-node/introduction.rst
