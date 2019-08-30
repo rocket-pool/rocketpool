@@ -19,6 +19,7 @@ Contents
     :maxdepth: 2
 
     getting-started.rst
+    service.rst
     node-setup.rst
     fee-voting.rst
     deposits.rst
