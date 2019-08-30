@@ -11,6 +11,10 @@ The Rocket Pool Smart Node software stack provides all of the necessary infrastr
 The software stack consists of a number of `Docker <https://www.docker.com/>`_ containers, as well as a command-line utility for performing tasks such as starting and stopping the Rocket Pool service.
 
 
+********
+Contents
+********
+
 .. toctree::
     :maxdepth: 2
 

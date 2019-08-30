@@ -35,25 +35,25 @@ Then, the Smart Node stack can be installed by running the following command::
 
     curl -L https://github.com/rocket-pool/smartnode-install/releases/download/0.0.1/setup.sh -o setup.sh && chmod 755 setup.sh && ./setup.sh && rm setup.sh
 
-This will download the installation shell script, run it, and remove it once complete. For verbose output, add a `-v` flag to the setup command::
+This will download the installation shell script, run it, and remove it once complete. For verbose output, add a ``-v`` flag to the setup command::
 
     curl -L https://github.com/rocket-pool/smartnode-install/releases/download/0.0.1/setup.sh -o setup.sh && chmod 755 setup.sh && ./setup.sh -v && rm setup.sh
 
 The installation script will perform the following actions:
 
-    * Install the following OS-level dependencies via `apt-get`:
+    * Install the following OS-level dependencies via ``apt-get``:
 
-        * `apt-transport-https`
-        * `ca-certificates`
-        * `gnupg-agent`
-        * `software-properties-common`
-        * `docker-ce`
+        * ``apt-transport-https``
+        * ``ca-certificates``
+        * ``gnupg-agent``
+        * ``software-properties-common``
+        * ``docker-ce``
 
-    * Install the `docker-compose` tool via cURL
-    * Install the `rocketpool` command-line utility
+    * Install the ``docker-compose`` tool via cURL
+    * Install the ``rocketpool`` command-line utility
     * Download all Docker images required by the Smart Node stack
-    * Create a Rocket Pool data folder at `~/.rocketpool`
-    * Set the `RP_PATH` environment variable to the data folder
+    * Create a Rocket Pool data folder at ``~/.rocketpool``
+    * Set the ``RP_PATH`` environment variable to the data folder
     * Download various configuration files used by Docker to the data folder
 
 The installation script can be run safely if any of the listed software is already installed; these items will be skipped.
