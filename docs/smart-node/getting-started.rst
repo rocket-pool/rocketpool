@@ -23,9 +23,13 @@ Note that a node operator must have **root** access to their node in order to in
 Installation
 ************
 
-First, if you don't already have cURL installed on your system, run the following command in your terminal::
+Firstly, check if you have cURL installed on your system by running the following command in your terminal::
 
-    sudo apt-get install url
+    curl --version
+
+If you don't, install it::
+
+    sudo apt-get install curl
 
 Then, the Smart Node stack can be installed by running the following command::
 
