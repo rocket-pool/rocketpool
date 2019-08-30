@@ -4,10 +4,19 @@ group: beta
 language: node_js
 node_js:
   - 9
+before_install:
+  - npm i -g npm@6.9.0
+install:
+  - npm ci
 cache:
   yarn: true
-before_script:
-  - truffle version
-  - yarn list
 script:
   - yarn test
+after_success:
+  - wget https://raw.githubusercontent.com/k3rn31p4nic/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh success $WEBHOOK_URL
+after_failure:
+  - wget https://raw.githubusercontent.com/k3rn31p4nic/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh failure $WEBHOOK_URL

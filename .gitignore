@@ -2,6 +2,10 @@ app
 bin
 build
 app/config
-node/
 node_modules
+scTopics
+coverage.json
+coverage/
+coverageEnv/
 .vscode
+1.0

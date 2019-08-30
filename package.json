@@ -1,28 +1,30 @@
 {
   "name": "rocketpool",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A next generation decentralised Ethereum proof of stake pool",
-  "repository": "git@github.com:darcius/rocketpool.git",
-  "author": "David Rugendyke <david@mail.rocketpool.net>",
+  "repository": "git@github.com:rocket-pool/rocketpool.git",
+  "author": "David Rugendyke <contact@rocketpool.net>",
   "scripts": {
     "console": "truffle console",
     "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "scripts/test.sh test/rocketPool-tests.js",
+    "test-cov": "./node_modules/.bin/solidity-coverage",
+    "test-utils": "scripts/test.sh test/rocketUtil-tests.js",
     "format": "prettier --write '**/*.js'"
   },
   "devDependencies": {
-    "ganache-cli": "^6.1.0",
-    "prettier": "^1.10.2",
-    "truffle": "4.1.8",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
-    "truffle-contract": "^3.0.4",
-    "web3": "github:rocket-pool/web3.js#decimal10-support"
+    "ganache-cli": "^6.4.1",
+    "prettier": "^1.10.2",
+    "solidity-coverage": "^0.5.11",
+    "truffle": "^5.0.1",
+    "truffle-contract": "^3.*"
   },
   "prettier": {
     "singleQuote": true,
@@ -30,13 +32,19 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "ethereumjs-util": "^5.2.0",
+    "@chainsafesystems/ssz": "^1.6.0",
+    "beacon-chain-simulator": "github:rocket-pool/beacon-chain-simulator#240e8a8c6b25d4d1e3388ae3ed53e04feeebad78",
+    "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",
+    "ethereumjs-util": "^5.2.0",
     "lerna": "^2.10.1",
+    "moment": "^2.22.2",
     "pako": "^1.0.6",
     "rlp": "^2.0.0",
     "scrypt": "^6.0.3",
     "secp256k1": "^3.5.0",
-    "underscore": "^1.9.0"
+    "underscore": "^1.9.0",
+    "web3": "^1.0.0-beta.37",
+    "ws": "^6.1.3"
   }
 }

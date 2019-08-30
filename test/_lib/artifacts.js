@@ -1,20 +1,36 @@
 const $Web3 = require('web3');
 const $web3 = new $Web3('http://localhost:8545');
 
-import { getABI, getContractAddressFromStorage } from './utils/general';
-
+export const RocketAdmin = artifacts.require('./contract/RocketAdmin');
+export const RocketETHToken = artifacts.require('./contract/RocketETHToken');
+export const RocketDepositAPI = artifacts.require('./contract/RocketDepositAPI');
+export const RocketDepositIndex = artifacts.require('./contract/RocketDepositIndex');
+export const RocketDepositSettings = artifacts.require('./contract/RocketDepositSettings');
+export const RocketDepositQueue = artifacts.require('./contract/RocketDepositQueue');
+export const RocketDepositVault = artifacts.require('./contract/RocketDepositVault');
+export const RocketGroupAPI = artifacts.require('./contract/RocketGroupAPI');
+export const RocketGroupAccessorContract = artifacts.require('./contract/RocketGroupAccessorContract');
+export const RocketGroupContract = artifacts.require('./contract/RocketGroupContract');
+export const RocketGroupSettings = artifacts.require('./contract/RocketGroupSettings');
+export const RocketMinipool = artifacts.require('./contract/RocketMinipool');
+export const RocketMinipoolInterface = artifacts.require('./contract/RocketMinipoolInterface');
+export const RocketMinipoolSettings = artifacts.require('./contract/RocketMinipoolSettings');
+export const RocketNode = artifacts.require('./contract/RocketNode');
+export const RocketNodeAPI = artifacts.require('./contract/RocketNodeAPI');
+export const RocketNodeContract = artifacts.require('./contract/RocketNodeContract');
+export const RocketNodeSettings = artifacts.require('./contract/RocketNodeSettings');
+export const RocketNodeTasks = artifacts.require('./contract/RocketNodeTasks');
+export const RocketNodeWatchtower = artifacts.require('./contract/RocketNodeWatchtower');
+export const RocketPIP = artifacts.require('./contract/RocketPIP');
 export const RocketPool = artifacts.require('./contract/RocketPool');
-export const RocketUser = artifacts.require('./contract/RocketUser');
-export const RocketNodeAdmin = artifacts.require('./contract/RocketNodeAdmin');
-export const RocketNodeStatus = artifacts.require('./contract/RocketNodeStatus');
-export const RocketNodeValidator = artifacts.require('./contract/RocketNodeValidator');
-export const RocketPoolMini = artifacts.require('./contract/RocketPoolMini');
-export const RocketDepositToken = artifacts.require('./contract/RocketDepositToken');
-export const RocketPartnerAPI = artifacts.require('./contract/RocketPartnerAPI');
-export const RocketVault = artifacts.require('./contract/RocketVault');
-export const RocketVaultStore = artifacts.require('./contract/RocketVaultStore');
+export const RocketPoolToken = artifacts.require('./contract/DummyRocketPoolToken');
 export const RocketRole = artifacts.require('./contract/RocketRole');
-export const RocketSettings = artifacts.require('./contract/RocketSettings');
 export const RocketStorage = artifacts.require('./contract/RocketStorage');
 export const RocketUpgrade = artifacts.require('./contract/RocketUpgrade');
+export const RocketUpgradeApproval = artifacts.require('./contract/RocketUpgradeApproval');
+export const UtilAddressSetStorage = artifacts.require('./contract/AddressSetStorage');
 
+export const TestLists = artifacts.require('./test/TestLists');
+export const TestQueues = artifacts.require('./test/TestQueues');
+export const TestSets = artifacts.require('./test/TestSets');
+export const TestNodeTask = artifacts.require('./test/TestNodeTask');

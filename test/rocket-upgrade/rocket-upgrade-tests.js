@@ -1,380 +1,440 @@
-// Dependencies
-const Web3 = require('web3');
-const $web3 = new Web3('http://localhost:8545');
+import { printTitle, assertThrows } from '../_lib/utils/general';
+import { RocketStorage, RocketETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipool, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
+import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
+import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
+import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
+import { userDeposit } from '../_helpers/rocket-deposit';
+import { mintRpl } from '../_helpers/rocket-pool-token';
+import { scenarioUpgradeContract, scenarioAddContract, scenarioUpgradeABI, scenarioAddABI, scenarioInitialiseUpgradeApprovers } from './rocket-upgrade-scenarios';
 
-import { printTitle, assertThrows, soliditySha3 } from '../_lib/utils/general';
-import { compressAbi, decompressAbi } from '../_lib/utils/contract';
-import { RocketStorage, RocketDepositToken, RocketUser } from '../_lib/artifacts'
-import { initialiseRPDBalance } from '../rocket-deposit/rocket-deposit-utils';
-import { scenarioUpgradeContract, scenarioAddContract } from './rocket-upgrade-scenarios';
+export default function() {
 
-export default function({owner}) {
-
-    contract('RocketUpgrade', async (accounts) => {
-
-
-        /**
-         * Config
-         */
-
-        // User addresses
-        const userFirst = accounts[1];
-        const userThird = accounts[3];
-
-        // Node addresses
-        const nodeFirst = accounts[8];
+    contract('RocketUpgrade - Upgrades', async (accounts) => {
 
 
-        /**
-         * Tests
-         */
+        // Accounts
+        const owner = accounts[0];
+        const groupOwner = accounts[1];
+        const nodeOperator = accounts[2];
+        const approver1 = accounts[0];
+        const approver2 = accounts[3];
+        const approver3 = accounts[4];
+        const user1 = accounts[5];
 
 
-        // Contract dependencies
+        // Setup
         let rocketStorage;
-        let rocketDepositToken;
-        let rocketDepositTokenNew;
-        let rocketUser;
-        let rocketUserNew;
+        let rocketETHToken;
+        let rocketDepositIndex;
+        let rocketDepositSettings;
+        let rocketDepositVault;
+        let rocketDepositVaultNew;
+        let rocketNode;
+        let rocketNodeNew;
+        let rocketPool;
+        let rocketPoolNew;
+        let rocketPIP;
+        let rocketPIPNew;
+        let groupContract;
+        let groupAccessorContract;
+        let minipool;
         before(async () => {
+
+            // Initialise upgrade approvers
+            await scenarioInitialiseUpgradeApprovers({
+                approvers: [approver1, approver2, approver3],
+                fromAddress: owner,
+            });
+
+            // Initialise contracts
             rocketStorage = await RocketStorage.deployed();
-            rocketDepositToken = await RocketDepositToken.deployed();
-            rocketDepositTokenNew = await RocketDepositToken.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
-            rocketUser = await RocketUser.deployed();
-            rocketUserNew = await RocketUser.new(rocketStorage.address, {gas: 5000000, gasPrice: 10000000000, from: owner});
-        });
+            rocketETHToken = await RocketETHToken.deployed();
+            rocketDepositIndex = await RocketDepositIndex.deployed();
+            rocketDepositSettings = await RocketDepositSettings.deployed();
+            rocketDepositVault = await RocketDepositVault.deployed();
+            rocketDepositVaultNew = await RocketDepositVault.new(rocketStorage.address, {from: owner});
+            rocketNode = await RocketNode.deployed();
+            rocketNodeNew = await RocketNode.new(rocketStorage.address, {from: owner});
+            rocketPool = await RocketPool.deployed();
+            rocketPoolNew = await RocketPool.new(rocketStorage.address, {from: owner});
+            rocketPIP = await RocketPIP.deployed();
+            rocketPIPNew = await RocketPIP.new(rocketStorage.address, {from: owner});
 
+            // Create group & accessor contracts
+            groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
+            groupAccessorContract = await createGroupAccessorContract({groupContractAddress: groupContract.address, groupOwner});
+            await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
-        // Initialise RPD balances
-        before(async () => {
-            await initialiseRPDBalance({
-                accountAddress: userThird,
-                nodeAddress: nodeFirst,
-                nodeRegisterAddress: owner,
-            });
-        });
-
-
-        // Owner can upgrade a regular contract with no ether / token balance
-        it(printTitle('owner', 'can upgrade a regular contract'), async () => {
-
-            // Old rocketUser contract address
-            let rocketUserAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
-
-            // Add test method to abi
-            let rocketUserNewAbi = rocketUserNew.abi.slice();
-            rocketUserNewAbi.push({
-                "constant": true,
-                "inputs": [],
-                "name": "testMethod",
-                "outputs": [{
-                    "name": "",
-                    "type": "uint8"
-                }],
-                "payable": false,
-                "stateMutability": "view",
-                "type": "function"
-            });
-
-            // Upgrade rocketUser contract address
-            await scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew.address,
-                upgradedContractAbi: compressAbi(rocketUserNewAbi),
-                fromAddress: owner,
-            });
-            
-            // New rocketUser contract address and ABI
-            let rocketUserAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
-            let rocketUserAbiNew = await rocketStorage.getString(soliditySha3('contract.abi', 'rocketUser'));
-
-            // Initialise new RocketUser contract from stored data
-            let rocketUserNewContract = new $web3.eth.Contract(decompressAbi(rocketUserAbiNew), rocketUserAddressNew);
-
-            // Reset rocketUser contract address
-            await scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUser.address,
-                upgradedContractAbi: compressAbi(rocketUser.abi),
-                fromAddress: owner,
-            });
-
-            // Assert contract address has been updated
-            assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'regular contract was not upgraded');
-
-            // Check that test method added to ABI exists on new contract instance
-            assert.notEqual(rocketUserNewContract.methods.testMethod, undefined, 'contract ABI was not successfully upgraded');
+            // Create node contract & minipool
+            let nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
+            let minipoolAddresses = await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
+            minipool = await RocketMinipoolInterface.at(minipoolAddresses[0]);
 
         });
 
 
-        // Cannot upgrade a regular contract that does not exist
-        it(printTitle('owner', 'cannot upgrade a nonexistent contract'), async () => {
-
-            // Upgrade nonexistent contract address
+        // Upgrade approver cannot initialise an upgrade to a nonexistent contract
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to a nonexistent contract'), async () => {
             await assertThrows(scenarioUpgradeContract({
                 contractName: 'nonexistentContract',
-                upgradedContractAddress: rocketUser.address,
-                upgradedContractAbi: compressAbi(rocketUser.abi),
-                fromAddress: owner,
-            }), 'nonexistent contract was upgraded');
-
+                upgradedContractAddress: rocketPIPNew.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to a nonexistent contract');
         });
 
 
-        // Cannot upgrade a regular contract to its current address
-        it(printTitle('owner', 'cannot upgrade a contract to its current address'), async () => {
-
-            // Upgrade rocketUser contract to its own address
+        // Upgrade approver cannot initialise an upgrade to update a contract to its current address
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to update a contract to its current address'), async () => {
             await assertThrows(scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUser.address,
-                upgradedContractAbi: compressAbi(rocketUser.abi),
-                fromAddress: owner,
-            }), 'contract was upgraded to its current address');
-
+                contractName: 'rocketPIP',
+                upgradedContractAddress: rocketPIP.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to update a contract to its current address');
         });
 
 
-        // Cannot upgrade a regular contract with an ether balance
-        it(printTitle('owner', 'cannot upgrade a contract with an ether balance'), async () => {
-
-            // Send ether to rocketDepositToken contract
-            let tx = await web3.eth.sendTransaction({
-                from: userFirst,
-                to: rocketDepositToken.address,
-                value: web3.toWei('1', 'ether'),
-            });
-
-            // Check rocketDepositToken contract ether balance
-            assert.notEqual(web3.eth.getBalance(rocketDepositToken.address).valueOf(), 0, 'contract does not have an ether balance');
-
-            // Upgrade rocketDepositToken contract address
+        // Random account cannot initialise a contract upgrade
+        it(printTitle('random account', 'cannot initialise a contract upgrade'), async () => {
             await assertThrows(scenarioUpgradeContract({
-                contractName: 'rocketDepositToken',
-                upgradedContractAddress: rocketDepositTokenNew.address,
-                upgradedContractAbi: compressAbi(rocketDepositTokenNew.abi),
-                fromAddress: owner,
-            }), 'contract with an ether balance was upgraded');
-
+                contractName: 'rocketPIP',
+                upgradedContractAddress: rocketPIPNew.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: user1,
+            }), 'Random account initialised a contract upgrade');
         });
 
 
-        // Can upgrade a regular contract with an ether balance by force
-        it(printTitle('owner', 'can upgrade a contract with an ether balance by force'), async () => {
-
-            // Check rocketDepositToken contract ether balance
-            assert.notEqual(web3.eth.getBalance(rocketDepositToken.address).valueOf(), 0, 'contract does not have an ether balance');
-
-            // Old rocketDepositToken contract address
-            let rocketDepositTokenAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken'));
-
-            // Upgrade rocketDepositToken contract address
+        // Upgrade approver can initialise a contract upgrade
+        it(printTitle('upgrade approver', 'can initialise a contract upgrade'), async () => {
             await scenarioUpgradeContract({
-                contractName: 'rocketDepositToken',
-                upgradedContractAddress: rocketDepositTokenNew.address,
-                upgradedContractAbi: compressAbi(rocketDepositTokenNew.abi),
-                fromAddress: owner,
-                forceEther: true,
+                contractName: 'rocketPIP',
+                upgradedContractAddress: rocketPIPNew.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: approver1,
             });
-
-            // New rocketDepositToken contract address
-            let rocketDepositTokenAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketDepositToken'));
-
-            // Reset rocketDepositToken contract address
-            await scenarioUpgradeContract({
-                contractName: 'rocketDepositToken',
-                upgradedContractAddress: rocketDepositToken.address,
-                upgradedContractAbi: compressAbi(rocketDepositToken.abi),
-                fromAddress: owner,
-            });
-
-            // Assert contract address has been updated
-            assert.notEqual(rocketDepositTokenAddressOld, rocketDepositTokenAddressNew, 'contract with an ether balance was not upgraded by force');
-
         });
 
 
-        // TODO: create RPL system unit tests:
-        it(printTitle('owner', 'cannot upgrade a contract with an RPL balance'));
-        it(printTitle('owner', 'can upgrade a contract with an RPL balance by force'));
-
-
-        // Cannot upgrade a regular contract with an RPD balance
-        it(printTitle('owner', 'cannot upgrade a contract with an RPD balance'), async () => {
-
-            // Third user has an RPD balance
-            let rpdFromAccount = userThird;
-            let rpdFromBalance = await rocketDepositToken.balanceOf(rpdFromAccount);
-
-            // Send 50% of RPD to rocketUser contract
-            let rpdSendAmount = parseInt(rpdFromBalance.valueOf() / 2);
-            await rocketDepositToken.transfer(rocketUser.address, rpdSendAmount, {from: rpdFromAccount});
-
-            // Check rocketUser contract RPD balance
-            let rocketUserRpdBalance = await rocketDepositToken.balanceOf(rocketUser.address);
-            assert.notEqual(rocketUserRpdBalance.valueOf(), 0, 'contract does not have an RPD balance');
-
-            // Upgrade rocketUser contract address
+        // Upgrade approver cannot complete their own contract upgrade
+        it(printTitle('upgrade approver', 'cannot complete their own contract upgrade'), async () => {
             await assertThrows(scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew.address,
-                upgradedContractAbi: compressAbi(rocketUserNew.abi),
-                fromAddress: owner,
-            }), 'contract with an RPD balance was upgraded');
+                contractName: 'rocketPIP',
+                upgradedContractAddress: rocketPIPNew.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: approver1,
+            }), 'Approver completed their own contract upgrade');
+        });
+
+
+        // Upgrade approver can complete another approver's contract upgrade
+        it(printTitle('upgrade approver', 'can complete another approver\'s contract upgrade'), async () => {
+            await scenarioUpgradeContract({
+                contractName: 'rocketPIP',
+                upgradedContractAddress: rocketPIPNew.address,
+                upgradedContractAbi: rocketPIPNew.abi,
+                fromAddress: approver2,
+            });
+        });
+
+
+        // Upgrade approver cannot upgrade a contract with an RPL balance
+        it(printTitle('upgrade approver', 'cannot upgrade a contract with an RPL balance'), async () => {
+
+            // Mint RPL to RocketNode contract
+            await mintRpl({toAddress: rocketNode.address, rplAmount: web3.utils.toWei('1', 'ether'), fromAddress: owner});
+
+            // Attempt to upgrade RocketNode contract
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketNode',
+                upgradedContractAddress: rocketNodeNew.address,
+                upgradedContractAbi: rocketNodeNew.abi,
+                fromAddress: approver1,
+            }), 'Upgraded a contract with an RPL balance');
 
         });
 
 
-        // Can upgrade a regular contract with an RPD balance by force
-        it(printTitle('owner', 'can upgrade a contract with an RPD balance by force'), async () => {
+        // Upgrade approver can upgrade a contract with an RPL balance by force
+        it(printTitle('upgrade approver', 'can upgrade a contract with an RPL balance by force'), async () => {
 
-            // Check rocketUser contract RPD balance
-            let rocketUserRpdBalance = await rocketDepositToken.balanceOf(rocketUser.address);
-            assert.notEqual(rocketUserRpdBalance.valueOf(), 0, 'contract does not have an RPD balance');
-
-            // Old rocketUser contract address
-            let rocketUserAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
-
-            // Upgrade rocketUser contract address
+            // Upgrade RocketNode contract
             await scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew.address,
-                upgradedContractAbi: compressAbi(rocketUserNew.abi),
-                fromAddress: owner,
+                contractName: 'rocketNode',
+                upgradedContractAddress: rocketNodeNew.address,
+                upgradedContractAbi: rocketNodeNew.abi,
                 forceTokens: true,
+                fromAddress: approver1,
             });
-
-            // New rocketUser contract address
-            let rocketUserAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketUser'));
-
-            // Reset rocketUser contract address
             await scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUser.address,
-                upgradedContractAbi: compressAbi(rocketUser.abi),
-                fromAddress: owner,
+                contractName: 'rocketNode',
+                upgradedContractAddress: rocketNodeNew.address,
+                upgradedContractAbi: rocketNodeNew.abi,
+                forceTokens: true,
+                fromAddress: approver2,
             });
-
-            // Assert contract address has been updated
-            assert.notEqual(rocketUserAddressOld, rocketUserAddressNew, 'contract with an RPD balance was not upgraded by force');
 
         });
 
 
-        // Non-owner cannot upgrade a regular contract
-        it(printTitle('non owner', 'cannot upgrade a regular contract'), async () => {
+        // Upgrade approver cannot upgrade a contract with an rETH balance
+        it(printTitle('upgrade approver', 'cannot upgrade a contract with an rETH balance'), async () => {
 
-            // Upgrade rocketUser contract address
+            // Deposit to minipool
+            await userDeposit({depositorContract: groupAccessorContract, durationID: '3m', fromAddress: user1, value: web3.utils.toWei('1', 'ether')});
+            let depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
+
+            // Progress minipool to staking
+            await stakeSingleMinipool({groupAccessorContract, staker: user1});
+
+            // Withdraw user from minipool while staking to get rETH tokens
+            await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});
+            await groupAccessorContract.depositWithdrawMinipoolStaking(depositID, minipool.address, web3.utils.toWei('1', 'ether'), {from: user1, gas: 5000000});
+            await rocketDepositSettings.setStakingWithdrawalAllowed(false, {from: owner, gas: 500000});
+
+            // Send rETH to RocketPool contract
+            await rocketETHToken.transfer(rocketPool.address, web3.utils.toWei('0.5', 'ether'), {from: user1});
+
+            // Attempt to upgrade RocketPool contract
             await assertThrows(scenarioUpgradeContract({
-                contractName: 'rocketUser',
-                upgradedContractAddress: rocketUserNew.address,
-                upgradedContractAbi: compressAbi(rocketUserNew.abi),
-                fromAddress: userFirst,
-            }), 'regular contract was upgraded by non owner');
+                contractName: 'rocketPool',
+                upgradedContractAddress: rocketPoolNew.address,
+                upgradedContractAbi: rocketPoolNew.abi,
+                fromAddress: approver1,
+            }), 'Upgraded a contract with an rETH balance');
 
         });
 
 
-        // Owner can add a contract
-        it(printTitle('owner', 'can add a contract'), async () => {
+        // Upgrade approver can upgrade a contract with an rETH balance by force
+        it(printTitle('upgrade approver', 'can upgrade a contract with an rETH balance by force'), async () => {
 
-            // Old rocketUser contract address
-            let rocketTestAddressOld = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
-
-            // Add test method to abi
-            let rocketUserNewAbi = rocketUserNew.abi.slice();
-            rocketUserNewAbi.push({
-                "constant": true,
-                "inputs": [],
-                "name": "testMethod",
-                "outputs": [{
-                    "name": "",
-                    "type": "uint8"
-                }],
-                "payable": false,
-                "stateMutability": "view",
-                "type": "function"
+            // Upgrade RocketPool contract
+            await scenarioUpgradeContract({
+                contractName: 'rocketPool',
+                upgradedContractAddress: rocketPoolNew.address,
+                upgradedContractAbi: rocketPoolNew.abi,
+                forceTokens: true,
+                fromAddress: approver1,
+            });
+            await scenarioUpgradeContract({
+                contractName: 'rocketPool',
+                upgradedContractAddress: rocketPoolNew.address,
+                upgradedContractAbi: rocketPoolNew.abi,
+                forceTokens: true,
+                fromAddress: approver2,
             });
 
-            // Add rocketTest1 contract
+        });
+
+
+        // Upgrade approver cannot upgrade a contract with an ether balance
+        it(printTitle('upgrade approver', 'cannot upgrade a contract with an ether balance'), async () => {
+
+            // Make user deposit to increase deposit vault balance
+            await userDeposit({depositorContract: groupAccessorContract, durationID: '3m', fromAddress: user1, value: web3.utils.toWei('32', 'ether')});
+
+            // Check deposit vault balance
+            let depositVaultBalance = parseInt(await web3.eth.getBalance(rocketDepositVault.address));
+            assert.isTrue(depositVaultBalance > 0, 'Pre-check failed: RocketDepositVault does not have an ether balance');
+
+            // Attempt to upgrade RocketDepositVault contract
+            await assertThrows(scenarioUpgradeContract({
+                contractName: 'rocketDepositVault',
+                upgradedContractAddress: rocketDepositVaultNew.address,
+                upgradedContractAbi: rocketDepositVault.abi,
+                fromAddress: approver1,
+            }), 'Upgraded a contract with an ether balance');
+
+        });
+
+
+        // Upgrade approver can upgrade a contract with an ether balance by force
+        it(printTitle('upgrade approver', 'can upgrade a contract with an ether balance by force'), async () => {
+
+            // Upgrade RocketDepositVault contract
+            await scenarioUpgradeContract({
+                contractName: 'rocketDepositVault',
+                upgradedContractAddress: rocketDepositVaultNew.address,
+                upgradedContractAbi: rocketDepositVault.abi,
+                forceEther: true,
+                fromAddress: approver1,
+            });
+            await scenarioUpgradeContract({
+                contractName: 'rocketDepositVault',
+                upgradedContractAddress: rocketDepositVaultNew.address,
+                upgradedContractAbi: rocketDepositVault.abi,
+                forceEther: true,
+                fromAddress: approver2,
+            });
+
+        });
+
+
+        // Upgrade approver can add a contract
+        it(printTitle('upgrade approver', 'can add a contract'), async () => {
             await scenarioAddContract({
                 contractName: 'rocketTest1',
-                contractAddress: rocketUserNew.address,
-                contractAbi: compressAbi(rocketUserNewAbi),
-                fromAddress: owner,
+                contractAddress: accounts[8],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
             });
-
-            // New rocketUser contract address and ABI
-            let rocketTestAddressNew = await rocketStorage.getAddress(soliditySha3('contract.name', 'rocketTest1'));
-            let rocketTestAbiNew = await rocketStorage.getString(soliditySha3('contract.abi', 'rocketTest1'));
-
-            // Initialise new RocketUser contract from stored data
-            let rocketTestContract = new $web3.eth.Contract(decompressAbi(rocketTestAbiNew), rocketTestAddressNew);
-
-            // Assert contract has been added
-            assert.equal(rocketTestAddressOld, '0x0000000000000000000000000000000000000000', 'contract already existed');
-            assert.notEqual(rocketTestAddressNew, '0x0000000000000000000000000000000000000000', 'contract was not added');
-
-            // Check that test method added to ABI exists on new contract instance
-            assert.notEqual(rocketTestContract.methods.testMethod, undefined, 'contract ABI was not successfully set');
-
         });
 
 
-        // Owner cannot add a contract with a null address
-        it(printTitle('owner', 'cannot add a contract with a null address'), async () => {
-
-            // Add test contract
+        // Upgrade approver cannot add a contract with a null address
+        it(printTitle('upgrade approver', 'cannot add a contract with a null address'), async () => {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest2',
                 contractAddress: '0x0000000000000000000000000000000000000000',
-                contractAbi: compressAbi(rocketUserNew.abi),
-                fromAddress: owner,
-            }), 'contract with a null address was added');
-
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with a null address');
         });
 
 
-        // Owner cannot add a contract with an existing name
-        it(printTitle('owner', 'cannot add a contract with an existing name'), async () => {
-
-            // Add test contract
+        // Upgrade approver cannot add a contract with an existing name
+        it(printTitle('upgrade approver', 'cannot add a contract with an existing name'), async () => {
             await assertThrows(scenarioAddContract({
                 contractName: 'rocketTest1',
-                contractAddress: rocketDepositTokenNew.address,
-                contractAbi: compressAbi(rocketDepositTokenNew.abi),
-                fromAddress: owner,
-            }), 'contract with an existing name was added');
-
+                contractAddress: accounts[9],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with an existing name');
         });
 
 
-        // Owner cannot add a contract with an existing address
-        it(printTitle('owner', 'cannot add a contract with an existing address'), async () => {
-
-            // Add test contract
+        // Upgrade approver cannot add a contract with an existing address
+        it(printTitle('upgrade approver', 'cannot add a contract with an existing address'), async () => {
             await assertThrows(scenarioAddContract({
-                contractName: 'rocketTest3',
-                contractAddress: rocketUserNew.address,
-                contractAbi: compressAbi(rocketUserNew.abi),
-                fromAddress: owner,
-            }), 'contract with an existing address was added');
-
+                contractName: 'rocketTest2',
+                contractAddress: accounts[8],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with an existing address');
         });
 
 
-        // Non-owner cannot add a contract
-        it(printTitle('non owner', 'cannot add a contract'), async () => {
-
-            // Add rocketTest1 contract
+        // Upgrade approver cannot add a contract with a name in use by an ABI
+        it(printTitle('upgrade approver', 'cannot add a contract with a name in use by an ABI'), async () => {
             await assertThrows(scenarioAddContract({
-                contractName: 'rocketTest4',
-                contractAddress: rocketDepositTokenNew.address,
-                contractAbi: compressAbi(rocketDepositTokenNew.abi),
-                fromAddress: userFirst,
-            }), 'contract was added by non owner');
+                contractName: 'rocketMinipool',
+                contractAddress: accounts[9],
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added a contract with a name in use by an ABI');
+        });
 
+
+        // Random account cannot add a contract
+        it(printTitle('random account', 'cannot add a contract'), async () => {
+            await assertThrows(scenarioAddContract({
+                contractName: 'rocketTest2',
+                contractAddress: accounts[9],
+                contractAbi: rocketPIP.abi,
+                fromAddress: user1,
+            }), 'Random account added a contract');
+        });
+
+
+        // Upgrade approver cannot initialise an upgrade to a nonexistent ABI
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to a nonexistent ABI'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'nonexistentContract',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to a nonexistent ABI');
+        });
+
+
+        // Upgrade approver cannot initialise an upgrade to a stored contract's ABI
+        it(printTitle('upgrade approver', 'cannot initialise an upgrade to a stored contract\'s ABI'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketPool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Initialised an upgrade to a stored contract\'s ABI');
+        });
+
+
+        // Random account cannot initialise an ABI upgrade
+        it(printTitle('random account', 'cannot initialise an ABI upgrade'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: user1,
+            }), 'Random account initialised an ABI upgrade');
+        });
+
+
+        // Upgrade approver can initialise an ABI upgrade
+        it(printTitle('upgrade approver', 'can initialise an ABI upgrade'), async () => {
+            await scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            });
+        });
+
+
+        // Upgrade approver cannot complete their own ABI upgrade
+        it(printTitle('upgrade approver', 'cannot complete their own ABI upgrade'), async () => {
+            await assertThrows(scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver1,
+            }), 'Approver completed their own ABI upgrade');
+        });
+
+
+        // Upgrade approver can complete another approver's ABI upgrade
+        it(printTitle('upgrade approver', 'can complete another approver\'s ABI upgrade'), async () => {
+            await scenarioUpgradeABI({
+                contractName: 'rocketMinipool',
+                upgradedContractAbi: RocketMinipool.abi,
+                fromAddress: approver2,
+            });
+        });
+
+
+        // Upgrade approver can add an ABI
+        it(printTitle('upgrade approver', 'can add an ABI'), async () => {
+            await scenarioAddABI({
+                contractName: 'rocketABITest1',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            });
+        });
+
+
+        // Upgrade approver cannot add an ABI with an existing name
+        it(printTitle('upgrade approver', 'cannot add an ABI with an existing name'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketABITest1',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added an ABI with an existing name');
+        });
+
+
+        // Upgrade approver cannot add an ABI with a name in use by a stored contract
+        it(printTitle('upgrade approver', 'cannot add an ABI with a name in use by a stored contract'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketPool',
+                contractAbi: rocketPIP.abi,
+                fromAddress: approver1,
+            }), 'Added an ABI with a name in use by a stored contract');
+        });
+
+
+        // Random account cannot add an ABI
+        it(printTitle('random account', 'cannot add an ABI'), async () => {
+            await assertThrows(scenarioAddABI({
+                contractName: 'rocketABITest2',
+                contractAbi: rocketPIP.abi,
+                fromAddress: user1,
+            }), 'Random account added an ABI');
         });
 
 

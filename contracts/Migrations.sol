@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.5.8;
 
 // Note: For some reason Migrations.sol needs to be in the root or they run everytime
 

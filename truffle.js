@@ -1,8 +1,8 @@
 /**
   Rocket Pool
   @author David Rugendyke
-  @email david@mail.rocketpool.net
-  @version 0.1 
+  @email david@rocketpool.net
+  @version 0.2 
 */
 
 const Web3 = require('web3');
@@ -24,22 +24,35 @@ require("babel-polyfill");
 
 module.exports = {
   web3: Web3,
-    fs: FS,
-contract: Contract,
+  fs: FS,
+  contract: Contract,
+  compilers: {
+      solc: {
+          version: "0.5.8",
+      }
+  },
   networks: {
     development: {
-      host: 'localhost',
+      host: '127.0.0.1',
       port: 8545,
       network_id: '*', // Match any network id
       gas: 8000000,
     },
-    // Local Parity Development 
-    dev: {
+    // Solidity coverage test
+    coverage: {
+      host: '127.0.0.1',
+      port: 8555,
+      network_id: '*', // Match any network id
+      gas: 0xfffffffffff,
+      gasPrice: 0x01,
+    },
+    // Geth RP Testnet Development
+    'betatest': {
         host: "127.0.0.1",
-        port: 8545,
-        network_id: "*", 
-        from: "0x00a329c0648769A73afAc7F9381E08FB43dBEA72",
+        port: 8999,
+        network_id: "77", 
+        from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
         gas: 8000000,
-    }   
+    },
   },
 };

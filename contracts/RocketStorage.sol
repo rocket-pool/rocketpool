@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.5.8;
 
 
 /// @title The primary persistent storage for Rocket Pool
@@ -13,6 +13,7 @@ contract RocketStorage {
     mapping(bytes32 => bytes)      private bytesStorage;
     mapping(bytes32 => bool)       private boolStorage;
     mapping(bytes32 => int256)     private intStorage;
+    mapping(bytes32 => bytes32)    private bytes32Storage;
 
 
     /*** Modifiers ************/
@@ -20,9 +21,9 @@ contract RocketStorage {
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
         // The owner and other contracts are only allowed to set the storage upon deployment to register the initial contracts/settings, afterwards their direct access is disabled
-        if (boolStorage[keccak256("contract.storage.initialised")] == true) {
+        if (boolStorage[keccak256(abi.encodePacked("contract.storage.initialised"))] == true) {
             // Make sure the access is permitted to only contracts in our Dapp
-            require(addressStorage[keccak256("contract.address", msg.sender)] != 0x0);
+            require(addressStorage[keccak256(abi.encodePacked("contract.address", msg.sender))] != address(0x0));
         }
         _;
     }
@@ -31,7 +32,7 @@ contract RocketStorage {
     /// @dev constructor
     constructor() public {
         // Set the main owner upon deployment
-        boolStorage[keccak256("access.role", "owner", msg.sender)] = true;
+        boolStorage[keccak256(abi.encodePacked("access.role", "owner", msg.sender))] = true;
     }
 
 
@@ -48,12 +49,12 @@ contract RocketStorage {
     }
 
     /// @param _key The key for the record
-    function getString(bytes32 _key) external view returns (string) {
+    function getString(bytes32 _key) external view returns (string memory) {
         return stringStorage[_key];
     }
 
     /// @param _key The key for the record
-    function getBytes(bytes32 _key) external view returns (bytes) {
+    function getBytes(bytes32 _key) external view returns (bytes memory) {
         return bytesStorage[_key];
     }
 
@@ -65,6 +66,11 @@ contract RocketStorage {
     /// @param _key The key for the record
     function getInt(bytes32 _key) external view returns (int) {
         return intStorage[_key];
+    }
+
+    /// @param _key The key for the record
+    function getBytes32(bytes32 _key) external view returns (bytes32) {
+        return bytes32Storage[_key];
     }
 
     /**** Set Methods ***********/
@@ -80,12 +86,12 @@ contract RocketStorage {
     }
 
     /// @param _key The key for the record
-    function setString(bytes32 _key, string _value) onlyLatestRocketNetworkContract external {
+    function setString(bytes32 _key, string memory _value) onlyLatestRocketNetworkContract public {
         stringStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
-    function setBytes(bytes32 _key, bytes _value) onlyLatestRocketNetworkContract external {
+    function setBytes(bytes32 _key, bytes memory _value) onlyLatestRocketNetworkContract public {
         bytesStorage[_key] = _value;
     }
     
@@ -97,6 +103,11 @@ contract RocketStorage {
     /// @param _key The key for the record
     function setInt(bytes32 _key, int _value) onlyLatestRocketNetworkContract external {
         intStorage[_key] = _value;
+    }
+
+    /// @param _key The key for the record
+    function setBytes32(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract external {
+        bytes32Storage[_key] = _value;
     }
 
     /**** Delete Methods ***********/
@@ -129,5 +140,10 @@ contract RocketStorage {
     /// @param _key The key for the record
     function deleteInt(bytes32 _key) onlyLatestRocketNetworkContract external {
         delete intStorage[_key];
+    }
+
+    /// @param _key The key for the record
+    function deleteBytes32(bytes32 _key) onlyLatestRocketNetworkContract external {
+        delete bytes32Storage[_key];
     }
 }
