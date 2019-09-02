@@ -31,7 +31,7 @@ Reserve a deposit with::
 where ``[duration]`` is the time period you want to stake for.
 After successfully reserving a deposit, its ETH & RPL requirements, staking duration and expiry time will be displayed.
 
-You can check this information again later with:
+You can check this information again later with::
 
     rocketpool deposit status
 
