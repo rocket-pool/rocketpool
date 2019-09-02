@@ -9,7 +9,7 @@ Checking Deposit Requirements
 
 Before making a deposit, you'll need to load your node account up with the required ETH and RPL.
 Deposits always require 16 ETH, but the amount of RPL varies depending on current Rocket Pool network utilisation.
-To check on the current RPL requirement, run:
+To check on the current RPL requirement, run::
 
     rocketpool deposit required [duration]
 
@@ -24,7 +24,7 @@ Reserving a Deposit
 Because of the dynamic nature of the RPL requirement, deposits are performed in two steps.
 First of all, they are "reserved", which locks in the RPL requirement for the deposit for 24 hours.
 This gives you time to acquire the necessary ETH and RPL without having to worry about fluctuating prices.
-Reserve a deposit with:
+Reserve a deposit with::
 
     rocketpool deposit reserve [duration]
 
@@ -40,7 +40,7 @@ You can check this information again later with:
 Canceling a Deposit
 *******************
 
-You may cancel your deposit reservation for any reason with:
+You may cancel your deposit reservation for any reason with::
 
     rocketpool deposit cancel
 
@@ -51,7 +51,7 @@ This may be useful if, for example, the RPL requirement has dropped since you ma
 Completing a Deposit
 ********************
 
-You can complete the deposit process to create a minipool ready to accept user deposits with:
+You can complete the deposit process to create a minipool ready to accept user deposits with::
 
     rocketpool deposit complete
 
