@@ -16,4 +16,5 @@ Contents
     :maxdepth: 2
 
     rocket-pool/introduction.rst
+    contracts/introduction.rst
     smart-node/introduction.rst
