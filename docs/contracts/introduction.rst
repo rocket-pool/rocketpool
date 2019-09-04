@@ -12,6 +12,7 @@ They are the base layer of infrastructure which all other elements of the networ
 
 Direct interaction with the contracts is usually not necessary, and is facilitated through the use of other sofware (such as the JavaScript library).
 This section provides a detailed description of the contract design, and information on how to build on top of Rocket Pool via the API, for developers wishing to extend it.
+All code examples are given as Solidity v0.5.0.
 
 
 ********
