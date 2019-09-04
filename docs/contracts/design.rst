@@ -103,4 +103,4 @@ The names of the Rocket Pool contracts, as defined in ``RocketStorage``, are:
     * ``utilStringSetStorage``
 
 Many of these are used for internal processing, and only a few are likely to be useful for extension, specifically the API contracts (``rocketGroupAPI``, ``rocketNodeAPI``, and ``rocketDepositAPI``).
-The following sections cover the various API methods available; for information on other contract methods, consult the interface in the `Rocket Pool repository <https://github.com/rocket-pool/rocketpool/tree/master/contracts/interface>`_.
+The following sections cover the various API methods available; for information on methods of other contracts, consult their interfaces in the `Rocket Pool repository <https://github.com/rocket-pool/rocketpool/tree/master/contracts/interface>`_.
