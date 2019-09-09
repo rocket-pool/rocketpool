@@ -45,7 +45,7 @@ export default function() {
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
-                value: web3.utils.toWei('500', 'ether'),
+                value: web3.utils.toWei('300', 'ether'),
             });
 
             // Get deposit ID
@@ -71,7 +71,7 @@ export default function() {
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user1,
-                value: web3.utils.toWei('500', 'ether'),
+                value: web3.utils.toWei('300', 'ether'),
             });
 
             // Get deposit ID
