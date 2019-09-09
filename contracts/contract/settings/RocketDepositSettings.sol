@@ -104,11 +104,11 @@ contract RocketDepositSettings is RocketBase {
 
         // Max size deposits (or deposits <= remaining queue capacity) allowed if deposit queue is under max size
         rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));
-        int256 queueCapacity = int256(getDepositQueueSizeMax().sub(rocketDepositQueue.getBalance(_durationID)));
-        if (queueCapacity > 0) {
-            int256 maxDepositSize = int256(getDepositMax());
-            if (queueCapacity < maxDepositSize) { return uint256(queueCapacity); }
-            else { return uint256(maxDepositSize); }
+        if (rocketDepositQueue.getBalance(_durationID) < getDepositQueueSizeMax()) {
+            uint256 queueCapacity = getDepositQueueSizeMax().sub(rocketDepositQueue.getBalance(_durationID));
+            uint256 maxDepositSize = getDepositMax();
+            if (queueCapacity < maxDepositSize) { return queueCapacity; }
+            else { return maxDepositSize; }
         }
 
         // Deposits up to ( (max chunk assignments - 1) * chunk size ) allowed if nodes are available
