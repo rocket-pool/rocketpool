@@ -20,6 +20,7 @@ export default function() {
         // Setup
         let rocketDepositIndex;
         let rocketDepositSettings;
+        let rocketDepositQueue;
         let rocketMinipoolSettings;
         let groupContract;
         let groupAccessorContract;
@@ -30,6 +31,7 @@ export default function() {
             rocketDepositIndex = await RocketDepositIndex.deployed();
             rocketDepositSettings = await RocketDepositSettings.deployed();
             rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+            rocketDepositQueue = await RocketDepositQueue.deployed();
 
             // Create group contract
             groupContract = await createGroupContract({name: 'Group 1', stakingFee: web3.utils.toWei('0.05', 'ether'), groupOwner});
@@ -96,9 +98,17 @@ export default function() {
                     depositorContract: groupAccessorContract,
                     durationID: '3m',
                     fromAddress: user1,
-                    value: selfAssignableDepositSize,
+                    value: selfAssignableDepositSize - parseInt(web3.utils.toWei('0.01', 'ether')),
                 });
             }
+
+            // Fill remaining minipool capacity
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user1,
+                value: selfAssignableDepositSize - parseInt(web3.utils.toWei('0.01', 'ether')),
+            });
 
         });
 
@@ -113,16 +123,17 @@ export default function() {
             let chunksPerDepositTx = parseInt(await rocketDepositSettings.getChunkAssignMax.call());
             let maxDepositSize;
 
-            // Check current max deposit size is equal to maximum limit
+            // Check current max deposit size
             maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
-            assert.equal(maxDepositSize, maxDepositSizeLimit, 'Pre-check failed: current max deposit size is not the maximum limit');
+            let queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
+            assert.equal(maxDepositSize, Math.min(maxQueueSize - queueBalance, maxDepositSizeLimit), 'Pre-check failed: current max deposit size is not the maximum limit');
 
             // Make deposit to fill queue
             await scenarioDeposit({
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
                 fromAddress: user2,
-                value: maxQueueSize,
+                value: maxDepositSize,
             });
 
             // Get ID of deposit made to fill queue
@@ -314,7 +325,6 @@ export default function() {
         it(printTitle('random account', 'can process the deposit queue'), async () => {
 
             // Check queue status
-            let rocketDepositQueue = await RocketDepositQueue.deployed();
             let rocketNode = await RocketNode.deployed();
             let queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
             let availableNodeCount = parseInt(await rocketNode.getAvailableNodeCount.call('3m'));

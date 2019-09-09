@@ -6,11 +6,18 @@ import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/deposit/RocketDepositQueueInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+// Libraries
+import "../../lib/SafeMath.sol";
 
 
 /// @title Settings for API in Rocket Pool
 /// @author David Rugendyke
 contract RocketDepositSettings is RocketBase {
+
+
+    /*** Libs  *****************/
+
+    using SafeMath for uint;
 
 
     /*** Contracts **************/
@@ -95,13 +102,20 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Get the current max allowed deposit in Wei (based on queue size and node availability)
     function getCurrentDepositMax(string memory _durationID) public returns (uint256) {
 
-        // Max size deposits allowed if deposit queue is under max size
+        // Max size deposits (or deposits <= remaining queue capacity) allowed if deposit queue is under max size
         rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));
-        if (rocketDepositQueue.getBalance(_durationID) < getDepositQueueSizeMax()) { return getDepositMax(); }
+        if (rocketDepositQueue.getBalance(_durationID) < getDepositQueueSizeMax()) {
+            uint256 queueCapacity = getDepositQueueSizeMax().sub(rocketDepositQueue.getBalance(_durationID));
+            uint256 maxDepositSize = getDepositMax();
+            if (queueCapacity < maxDepositSize) { return queueCapacity; }
+            else { return maxDepositSize; }
+        }
 
         // Deposits up to ( (max chunk assignments - 1) * chunk size ) allowed if nodes are available
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
-        if (rocketNode.getAvailableNodeCount(_durationID) > 0) { return ((getChunkAssignMax() - 1) * getDepositChunkSize()); }
+        if (rocketNode.getAvailableNodeCount(_durationID) > 0) {
+            return (getChunkAssignMax() - 1) * getDepositChunkSize();
+        }
 
         // Deposits disabled if no nodes are available
         return 0;
