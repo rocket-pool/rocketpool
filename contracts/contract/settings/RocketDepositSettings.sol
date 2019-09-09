@@ -6,11 +6,18 @@ import "../../RocketBase.sol";
 import "../../interface/RocketNodeInterface.sol";
 import "../../interface/deposit/RocketDepositQueueInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+// Libraries
+import "../../lib/SafeMath.sol";
 
 
 /// @title Settings for API in Rocket Pool
 /// @author David Rugendyke
 contract RocketDepositSettings is RocketBase {
+
+
+    /*** Libs  *****************/
+
+    using SafeMath for uint;
 
 
     /*** Contracts **************/
