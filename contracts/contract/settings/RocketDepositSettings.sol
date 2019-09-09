@@ -95,13 +95,20 @@ contract RocketDepositSettings is RocketBase {
     /// @dev Get the current max allowed deposit in Wei (based on queue size and node availability)
     function getCurrentDepositMax(string memory _durationID) public returns (uint256) {
 
-        // Max size deposits allowed if deposit queue is under max size
+        // Max size deposits (or deposits <= remaining queue capacity) allowed if deposit queue is under max size
         rocketDepositQueue = RocketDepositQueueInterface(getContractAddress("rocketDepositQueue"));
-        if (rocketDepositQueue.getBalance(_durationID) < getDepositQueueSizeMax()) { return getDepositMax(); }
+        int256 queueCapacity = int256(getDepositQueueSizeMax() - rocketDepositQueue.getBalance(_durationID));
+        if (queueCapacity > 0) {
+            int256 maxDepositSize = int256(getDepositMax());
+            if (queueCapacity < maxDepositSize) { return uint256(queueCapacity); }
+            else { return uint256(maxDepositSize); }
+        }
 
         // Deposits up to ( (max chunk assignments - 1) * chunk size ) allowed if nodes are available
         rocketNode = RocketNodeInterface(getContractAddress("rocketNode"));
-        if (rocketNode.getAvailableNodeCount(_durationID) > 0) { return ((getChunkAssignMax() - 1) * getDepositChunkSize()); }
+        if (rocketNode.getAvailableNodeCount(_durationID) > 0) {
+            return (getChunkAssignMax() - 1) * getDepositChunkSize();
+        }
 
         // Deposits disabled if no nodes are available
         return 0;
