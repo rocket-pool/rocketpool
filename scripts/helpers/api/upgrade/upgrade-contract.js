@@ -43,7 +43,7 @@ module.exports = async (done) => {
         }
 
         // Success
-        done('Contract upgraded successfully: ' + contractName);
+        done('Contract upgraded successfully - ' + contractName + ': ' + upgradeContract.address);
 
     }
     catch (e) {
