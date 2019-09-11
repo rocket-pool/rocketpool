@@ -45,7 +45,7 @@ If the node contract's balances are insufficient, you will be prompted to send E
 After successfully completing the deposit, your new minipool's address will be displayed.
 
 Canceling the deposit will cancel the reservation so that you can create a new one later.
-This may be useful if, for example, the RPL requirement has dropped since you made your reservation and you want to deposit at a lower RPL cost.
+This may be useful if, for example, you want to wait for the RPL requirement to drop and deposit at a lower RPL cost.
 
 Finishing later simply stops the deposit process until you run the command again at a later time.
 When you do, it will pick up where you left off.
