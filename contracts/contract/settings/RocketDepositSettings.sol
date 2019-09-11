@@ -43,7 +43,7 @@ contract RocketDepositSettings is RocketBase {
             setDepositMin(1 ether);                                                         // Min required deposit in Wei 
             setDepositMax(1000 ether);                                                      // Max allowed deposit in Wei 
             setChunkAssignMax(2);                                                           // Max chunk assignments per transaction
-            setDepositQueueSizeMax(320 ether);                                              // Maximum deposit queue size in Wei
+            setDepositQueueSizeMax(1600 ether);                                             // Maximum deposit queue size in Wei
             setRefundDepositAllowed(true);                                                  // Are user deposit refunds currently allowed?
             setStakingWithdrawalAllowed(false);                                             // Are withdrawals from staking minipools allowed?
             setWithdrawalAllowed(true);                                                     // Are withdrawals from exited minipools allowed?
