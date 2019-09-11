@@ -71,14 +71,20 @@ export default function() {
             // Get send amount
             let minBalance = parseInt(await rocketNodeSettings.getEtherMin());
             let operatorBalance = parseInt(await web3.eth.getBalance(operator2));
-            let sendAmount = Math.floor(operatorBalance - minBalance / 2);
+            let sendAmount = Math.floor(operatorBalance - minBalance / 2) / 2;
 
             // Empty account
             await web3.eth.sendTransaction({
                 from: operator2,
                 to: operator1,
                 value: sendAmount,
-                gas: 500000,
+                gas: 100000,
+            });
+            await web3.eth.sendTransaction({
+                from: operator2,
+                to: operator1,
+                value: sendAmount,
+                gas: 100000,
             });
 
             // Add node
@@ -92,7 +98,13 @@ export default function() {
                 from: operator1,
                 to: operator2,
                 value: sendAmount,
-                gas: 500000,
+                gas: 100000,
+            });
+            await web3.eth.sendTransaction({
+                from: operator1,
+                to: operator2,
+                value: sendAmount,
+                gas: 100000,
             });
 
         });
