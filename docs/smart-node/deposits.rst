@@ -17,44 +17,35 @@ where ``[duration]`` is the time period you want to stake for (e.g. "3m", "6m" o
 This will display a message like ``32.00 RPL required to cover a deposit amount of 16.00 ETH for 3m @ 2.00 RPL / ETH``.
 
 
-*******************
-Reserving a Deposit
-*******************
+****************
+Making a Deposit
+****************
+
+You can make a deposit with::
+
+    rocketpool deposit make [duration]
+
+where ``[duration]`` is the time period you want to stake for.
 
 Because of the dynamic nature of the RPL requirement, deposits are performed in two steps.
 First of all, they are "reserved", which locks in the RPL requirement for the deposit for 24 hours.
+Then, they are completed with a second transaction.
 This gives you time to acquire the necessary ETH and RPL without having to worry about fluctuating prices.
-Reserve a deposit with::
 
-    rocketpool deposit reserve [duration]
+After your deposit is reserved, its ETH & RPL requirements, staking duration and expiry time will be displayed.
+Then, you will be prompted to select one of the following options:
 
-where ``[duration]`` is the time period you want to stake for.
-After successfully reserving a deposit, its ETH & RPL requirements, staking duration and expiry time will be displayed.
+	#. Complete the deposit
+	#. Cancel the deposit
+	#. Finish later
 
-You can check this information again later with::
-
-    rocketpool deposit status
-
-
-*******************
-Canceling a Deposit
-*******************
-
-You may cancel your deposit reservation for any reason with::
-
-    rocketpool deposit cancel
-
-This may be useful if, for example, the RPL requirement has dropped since you made your reservation and you want to deposit at a lower RPL cost.
-
-
-********************
-Completing a Deposit
-********************
-
-You can complete the deposit process to create a minipool ready to accept user deposits with::
-
-    rocketpool deposit complete
-
-Completing the deposit requires the necessary ETH and RPL to be sent to the node contract.
+Completing the deposit will immediately complete the process and deposit your ETH and RPL into Rocket Pool.
+This requires the necessary ETH and RPL to be sent to the node contract.
 If the node contract's balances are insufficient, you will be prompted to send ETH and/or RPL to it from your node account.
 After successfully completing the deposit, your new minipool's address will be displayed.
+
+Canceling the deposit will cancel the reservation so that you can create a new one later.
+This may be useful if, for example, the RPL requirement has dropped since you made your reservation and you want to deposit at a lower RPL cost.
+
+Finishing later simply stops the deposit process until you run the command again at a later time.
+When you do, it will pick up where you left off.

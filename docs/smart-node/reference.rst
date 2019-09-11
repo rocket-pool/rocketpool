@@ -27,6 +27,14 @@ Node Commands
     * ``rocketpool node timezone``: Change the timezone location the node is registered under
 
 
+***************
+Faucet Commands
+***************
+
+    * ``rocketpool faucet allowance``: Check your ETH and RPL faucet allowances
+    * ``rocketpool faucet withdraw [amount] [unit]``: Withdraw the specified amount of ETH or RPL from the faucet to your node account
+
+
 *****************
 Node Fee Commands
 *****************
@@ -39,11 +47,8 @@ Node Fee Commands
 Deposit Commands
 ****************
 
-    * ``rocketpool deposit status``: View the status of the current deposit reservation, if any
     * ``rocketpool deposit required [duration]``: View the current RPL requirement for the specified staking duration
-    * ``rocketpool deposit reserve [duration]``: Reserve a deposit for the specified staking duration
-    * ``rocketpool deposit cancel``: Cancel an active deposit reservation
-    * ``rocketpool deposit complete``: Complete a deposit to create a minipool for staking
+    * ``rocketpool deposit make [duration]``: Make a deposit for the specified staking duration
 
 
 *****************
