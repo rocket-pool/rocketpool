@@ -124,11 +124,10 @@ export default function() {
             let maxDepositSize;
 
             // Check current max deposit size
-            maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
-            let queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
-            assert.equal(maxDepositSize, Math.min(maxQueueSize - queueBalance, maxDepositSizeLimit), 'Pre-check failed: current max deposit size is not the maximum limit');
+            maxDepositSize = await rocketDepositSettings.getCurrentDepositMax.call('3m');
+            assert.equal(parseInt(maxDepositSize), maxDepositSizeLimit, 'Pre-check failed: current max deposit size is not the maximum limit');
 
-            // Make deposit to fill queue
+            // Make deposit to fill queue 62.5%
             await scenarioDeposit({
                 depositorContract: groupAccessorContract,
                 durationID: '3m',
@@ -136,9 +135,23 @@ export default function() {
                 value: maxDepositSize,
             });
 
-            // Get ID of deposit made to fill queue
+            // Check current max deposit size
+            let queueBalance = parseInt(await rocketDepositQueue.getBalance.call('3m'));
+            maxDepositSize = await rocketDepositSettings.getCurrentDepositMax.call('3m');
+            assert.equal(parseInt(maxDepositSize), maxQueueSize - queueBalance, 'Pre-check failed: current max deposit size is not the remaining queue capacity');
+
+            // Make deposit to fill queue 100%
+            await scenarioDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: user2,
+                value: maxDepositSize,
+            });
+
+            // Get IDs of deposits made to fill queue
             let depositCount = parseInt(await rocketDepositIndex.getUserQueuedDepositCount.call(groupContract.address, user2, '3m'));
-            let fillQueueDepositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
+            let fillQueueDepositID1 = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 1);
+            let fillQueueDepositID2 = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user2, '3m', depositCount - 2);
 
             // Check current max deposit size is equal to locked limit
             maxDepositSize = parseInt(await rocketDepositSettings.getCurrentDepositMax.call('3m'));
@@ -175,12 +188,19 @@ export default function() {
                 value: maxDepositSize,
             });
 
-            // Refund deposit made to fill queue
+            // Refund deposits made to fill queue
             await scenarioRefundQueuedDeposit({
                 depositorContract: groupAccessorContract,
                 groupID: groupContract.address,
                 durationID: '3m',
-                depositID: fillQueueDepositID,
+                depositID: fillQueueDepositID1,
+                fromAddress: user2,
+            });
+            await scenarioRefundQueuedDeposit({
+                depositorContract: groupAccessorContract,
+                groupID: groupContract.address,
+                durationID: '3m',
+                depositID: fillQueueDepositID2,
                 fromAddress: user2,
             });
 
