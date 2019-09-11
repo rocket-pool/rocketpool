@@ -24,7 +24,7 @@ You should see (in any order) entries for containers with ``IMAGE`` names simila
     * ``rocketpool/smartnode-node:v0.0.1``
     * ``rocketpool/smartnode-minipools:v0.0.1``
     * ``rocketpool/smartnode-watchtower:v0.0.1``
-    * ``ethereum/client-go:latest``
+    * ``ethereum/client-go:stable``
     * ``traefik``
 
 
