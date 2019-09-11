@@ -24,12 +24,32 @@ You can make sure your account was created successfully with::
 This should display something like: ``Node account 0x0123...0123 has a balance of 00.00 ETH, 00.00 rETH and 00.00 RPL``.
 
 
+*************************
+Seeding Your Node Account
+*************************
+
+Next, you'll need to load your node account up with ETH and RPL to deposit into Rocket Pool.
+You'll also need at least 1 ETH in order to register with Rocket Pool.
+This isn't paid to Rocket Pool - we simply ensure that node operators have enough to cover their gas costs.
+
+Special commands are available to withdraw ETH and RPL from faucets to your node account, for the Rocket Pool beta only.
+You can check your current faucet allowances with::
+
+	rocketpool faucet allowance
+
+Then, withdraw resources with::
+
+	rocketpool faucet withdraw [amount] [unit]
+
+where ``[amount]`` and ``[unit]`` specify how much of which resource ("ETH" or "RPL") to withdraw.
+Note that it may take a couple of minutes for tokens to be minted to your node account; you can check its balances again with::
+
+	rocketpool node status
+
+
 *********************
 Registering Your Node
 *********************
-
-Firstly, you'll need to load your node account up with at least 1 ETH in order to register with Rocket Pool.
-This ETH isn't paid to Rocket Pool - we simply ensure that node operators have enough to cover their gas costs.
 
 Once you're ready, register with::
 
