@@ -1,3 +1,5 @@
+.. _contracts-deposits:
+
 ########
 Deposits
 ########

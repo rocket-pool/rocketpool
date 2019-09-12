@@ -62,7 +62,7 @@ There are no other strict requirements for Depositor and Withdrawer contracts, b
     * A "withdraw during staking" method to handle (penalised) withdrawals of funds from staking minipools
     * A "set backup withdrawal address" method to set a backup withdrawal address for a deposit
 
-These methods should all interact with the ``RocketDepositAPI`` contract; refer to :doc:`deposits.rst` or to the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
+These methods should all interact with the ``RocketDepositAPI`` contract; refer to :ref:`its documentation <contracts-deposits>` or to the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
 
 **Note:** the ``RocketDepositAPI`` contract address should *not* be hard-coded in custom Group Accessor contracts, but retrieved from ``RocketStorage`` dynamically.
 
