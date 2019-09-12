@@ -24,10 +24,10 @@ Registration
 
 Registering a Group is performed via the ``RocketGroupAPI.add`` method, accepting the following parameters:
 
-    * ``name`` (*string*): A unique name for the Group (must not be in use)
+    * ``name`` (*string*): A unique name for the Group (must not already be in use)
     * ``stakingFee`` (*uint256*): A percentage of rewards to charge the Group's users, given as a fraction of 1 ether, in wei (e.g. 50000000000000000 = 5%)
 
-This method also requires a transaction value of 0.05 ETH; this amount is charged to prevent excessive Group registrations.
+This method also requires a transaction value of 0.05 ETH; this amount is charged to discourage excessive Group registrations.
 Registering a Group creates a new ``RocketGroupContract``, registers it with the network, and emits a ``GroupAdd`` event with an ``ID`` property corresponding to its address.
 
 The ``RocketGroupContract`` provides the following methods:
@@ -48,7 +48,7 @@ A "default" Group Accessor contract can be created via the ``RocketGroupAPI.crea
 
 This emits a ``GroupCreateDefaultAccessor`` event with an ``accessorAddress`` property corresponding to the created contract's address.
 
-Otherwise, custom Depositor and Withdrawer contracts may be created and deployed to the network.
+Alternatively, custom Depositor and Withdrawer contracts may be created and deployed to the network.
 
 All custom Depositor contracts *must* implement the `RocketGroupAccessorContractInterface <https://github.com/rocket-pool/rocketpool/blob/master/contracts/interface/group/RocketGroupAccessorContractInterface.sol>`_.
 Specifically, they must have an external, payable ``rocketpoolEtherDeposit`` method which returns ``true`` to indicate success.
@@ -69,5 +69,6 @@ Withdrawer:
     * A "set backup withdrawal address" method to set a backup withdrawal address for a deposit
 
 These methods should all interact with the ``RocketDepositAPI`` contract; refer to `its documentation <https://example.com>`_ or the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
+*Note: the ``RocketDepositAPI`` contract address should **not** be hard-coded, but retrieved from ``RocketStorage`` dynamically.*
 
 Once Accessor contracts have been created, they can be registered with the Group via the ``RocketGroupContract.addDepositor`` and ``RocketGroupContract.addWithdrawer`` methods.
