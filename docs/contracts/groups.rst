@@ -28,19 +28,13 @@ Registering a Group is performed via the ``RocketGroupAPI.add`` method, acceptin
     * ``stakingFee`` (*uint256*): A percentage of rewards to charge the Group's users, given as a fraction of 1 ether, in wei (e.g. 50000000000000000 = 5%)
 
 This method also requires a transaction value of 0.05 ETH; this amount is charged to discourage excessive Group registrations.
-Registering a Group creates a new ``RocketGroupContract``, registers it with the network, and emits a ``GroupAdd`` event with an ``ID`` property corresponding to its address.
-
-The ``RocketGroupContract`` provides the following methods:
-
-    * ``setFeePerc(uint256 value)``: Update the percentage of rewards to charge the Group's users (does not affect any currently assigned deposits)
-    * ``setFeeAddress(address value)``: Update the address to send the Group's fees to (set to the account which registered the Group by default)
-    * ``addDepositor(address value)`` / ``removeDepositor(address value)``: Add a Depositor contract to, or remove it from, the Group
-    * ``addWithdrawer(address value)`` / ``removeWithdrawer(address value)``: Add a Withdrawer contract to, or remove it from, the Group
+Registering a Group creates a new ``RocketGroupContract`` instance, registers it with the network, and emits a ``GroupAdd`` event with an ``ID`` property corresponding to its address.
+The "owner" of the Group is considered to be the address which registered it.
 
 
-********************************
-Accessor Creation & Registration
-********************************
+*****************
+Accessor Creation
+*****************
 
 A "default" Group Accessor contract can be created via the ``RocketGroupAPI.createDefaultAccessor`` method, accepting a single parameter:
 
@@ -56,20 +50,28 @@ This allows them to receive ether being sent back from refunded deposits.
 
 There are no other strict requirements for Depositor and Withdrawer contracts, but they should provide the following functionality:
 
-Depositor:
+**Depositor:**
 
     * A payable "deposit" method to accept payments and transfer them to Rocket Pool
     * A "refund queued deposit" method to handle refunds of deposits which are still queued
     * A "refund stalled deposit" method to handle refunds of deposits assigned to stalled minipools
 
-Withdrawer:
+**Withdrawer:**
 
     * A "withdraw" method to handle withdrawals of funds from minipools which have completed staking
     * A "withdraw during staking" method to handle (penalised) withdrawals of funds from staking minipools
     * A "set backup withdrawal address" method to set a backup withdrawal address for a deposit
 
-These methods should all interact with the ``RocketDepositAPI`` contract; refer to `its documentation <https://example.com>`_ or the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
+These methods should all interact with the ``RocketDepositAPI`` contract; refer to :doc:`its documentation <deposits.rst>` or to the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
 
-    Note: the ``RocketDepositAPI`` contract address should *not* be hard-coded, but retrieved from ``RocketStorage`` dynamically.
+**Note:** the ``RocketDepositAPI`` contract address should *not* be hard-coded in custom Group Accessor contracts, but retrieved from ``RocketStorage`` dynamically.
 
-Once Accessor contracts have been created, they can be registered with the Group via the ``RocketGroupContract.addDepositor`` and ``RocketGroupContract.addWithdrawer`` methods.
+
+*********************
+Accessor Registration
+*********************
+
+Once Group Accessor contracts have been created, they can be registered with the Group via the ``RocketGroupContract.addDepositor`` and ``RocketGroupContract.addWithdrawer`` methods.
+These methods are both restricted to the owner of the Group contract, and accept a single parameter:
+
+    * ``address`` (*address*): The address of the Accessor contract to register with the Group

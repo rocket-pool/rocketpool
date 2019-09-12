@@ -24,5 +24,6 @@ Contents
 
     design.rst
     groups.rst
-    nodes.rst
     deposits.rst
+    nodes.rst
+    reference.rst
