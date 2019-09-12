@@ -69,6 +69,7 @@ Withdrawer:
     * A "set backup withdrawal address" method to set a backup withdrawal address for a deposit
 
 These methods should all interact with the ``RocketDepositAPI`` contract; refer to `its documentation <https://example.com>`_ or the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
-*Note: the ``RocketDepositAPI`` contract address should **not** be hard-coded, but retrieved from ``RocketStorage`` dynamically.*
+
+    Note: the ``RocketDepositAPI`` contract address should *not* be hard-coded, but retrieved from ``RocketStorage`` dynamically.
 
 Once Accessor contracts have been created, they can be registered with the Group via the ``RocketGroupContract.addDepositor`` and ``RocketGroupContract.addWithdrawer`` methods.
