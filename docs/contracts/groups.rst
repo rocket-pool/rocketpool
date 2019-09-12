@@ -29,7 +29,7 @@ Registering a Group is performed via the ``RocketGroupAPI.add`` method, acceptin
 
 This method also requires a transaction value of 0.05 ETH; this amount is charged to discourage excessive Group registrations.
 Registering a Group creates a new ``RocketGroupContract`` instance, registers it with the network, and emits a ``GroupAdd`` event with an ``ID`` property corresponding to its address.
-The "owner" of the Group is considered to be the address which registered it.
+The *owner* of the Group is considered to be the address which registered it.
 
 
 *****************
@@ -62,7 +62,7 @@ There are no other strict requirements for Depositor and Withdrawer contracts, b
     * A "withdraw during staking" method to handle (penalised) withdrawals of funds from staking minipools
     * A "set backup withdrawal address" method to set a backup withdrawal address for a deposit
 
-These methods should all interact with the ``RocketDepositAPI`` contract; refer to :doc:`its documentation <deposits.rst>` or to the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
+These methods should all interact with the ``RocketDepositAPI`` contract; refer to :doc:`its documentation <deposits.rst>`_ or to the `"default" Group Accessor contract <https://github.com/rocket-pool/rocketpool/blob/master/contracts/contract/group/RocketGroupAccessorContract.sol>`_ for implementation examples.
 
 **Note:** the ``RocketDepositAPI`` contract address should *not* be hard-coded in custom Group Accessor contracts, but retrieved from ``RocketStorage`` dynamically.
 
