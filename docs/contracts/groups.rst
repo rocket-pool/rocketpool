@@ -40,7 +40,7 @@ Accessor Creation
 
 A "default" Group Accessor contract can be created via the ``RocketGroupAPI.createDefaultAccessor`` method, accepting a single parameter:
 
-    * ``ID`` (*string*): The ID of the Group (its ``RocketGroupContract`` instance address)
+    * ``ID`` (*address*): The ID of the Group (its ``RocketGroupContract`` instance address)
 
 This emits a ``GroupCreateDefaultAccessor`` event with an ``accessorAddress`` property corresponding to the created contract's address.
 
