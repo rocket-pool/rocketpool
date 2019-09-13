@@ -48,10 +48,13 @@ RocketDepositAPI
 
     * ``deposit(address groupID, address userID, string durationID)``: Deposit into Rocket Pool for the specified staking duration; emits ``Deposit``
     * ``depositRefundQueued(address groupID, address userID, string durationID, bytes32 depositID)``: Refund a queued deposit or portion of a deposit; emits ``DepositRefund``
-    * ``depositRefundMinipoolStalled(address groupID, address userID, bytes32 depositID, address minipool)``: Refund a deposit from a stalled minipool; emits ``DepositRefund``
+    * ``depositRefundMinipoolStalled``
+      ``(address groupID, address userID, bytes32 depositID, address minipool)``: Refund a deposit from a stalled minipool; emits ``DepositRefund``
 
 **Mutators (restricted to group withdrawers):**
 
-    * ``depositWithdrawMinipoolStaking(address groupID, address userID, bytes32 depositID, address minipool, uint256 amount)``: Withdraw early from a staking minipool; emits ``DepositWithdraw``
+    * ``depositWithdrawMinipoolStaking``
+      ``(address groupID, address userID, bytes32 depositID, address minipool, uint256 amount)``: Withdraw early from a staking minipool; emits ``DepositWithdraw``
     * ``depositWithdrawMinipool(address groupID, address userID, bytes32 depositID, address minipool)``: Withdraw from a minipool which has finished staking; emits ``DepositWithdraw``
-    * ``setDepositBackupWithdrawalAddress(address groupID, address userID, bytes32 depositID, address backup)``: Set a backup withdrawal address for a deposit; emits ``DepositSetBackupAddress``
+    * ``setDepositBackupWithdrawalAddress``
+      ``(address groupID, address userID, bytes32 depositID, address backup)``: Set a backup withdrawal address for a deposit; emits ``DepositSetBackupAddress``
