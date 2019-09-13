@@ -17,4 +17,5 @@ Contents
 
     rocket-pool/introduction.rst
     contracts/introduction.rst
+    js-library/introduction.rst
     smart-node/introduction.rst
