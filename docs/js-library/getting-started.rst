@@ -17,7 +17,7 @@ The Rocket Pool JavaScript library can be added to your application via NPM, and
 Initialisation
 **************
 
-The library must be initialised with a web3 instance and a ``RocketStorage`` truffle contract artifact::
+The library must be initialised with a web3 instance and a `Truffle <https://github.com/trufflesuite/truffle>`_ ``RocketStorage`` contract artifact::
 
     import Web3 from 'web3';
     import RocketPool from 'rocketpool';
