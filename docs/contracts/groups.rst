@@ -1,3 +1,5 @@
+.. _contracts-groups:
+
 ##################
 Groups & Accessors
 ##################
