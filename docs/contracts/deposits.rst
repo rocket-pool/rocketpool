@@ -93,4 +93,4 @@ This is performed via the ``RocketDepositAPI.setDepositBackupWithdrawalAddress``
     * ``backup`` (*address*): The backup withdrawal address to set for the deposit
 
 This method returns a boolean flag to indicate success, and emits a ``DepositSetBackupAddress`` event with the deposit's updated details.
-After assigning a backup withdrawal address, users should be able to withdraw their deposit by sending a transaction from it to the Withdrawer contract's "withdraw" method.
+After assigning a backup withdrawal address, users should be able to withdraw their deposit by sending a transaction from it to the Withdrawer contract's withdrawal method.
