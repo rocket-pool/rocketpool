@@ -43,8 +43,10 @@ Methods
 
     * ``deposit.getDeposits(groupId, userId, durationId)``:
       Get all deposits made by the specified user, via the specified group (addresses), for the specified staking duration ID (string); returns ``Promise<DepositDetails[]>``
+
     * ``deposit.getQueuedDeposits(groupId, userId, durationId)``:
       As above, but only returns deposits which are still at least partially queued
+
     * ``deposit.getDeposit(depositId)``:
       Get the details of the deposit with the specified ID (string); returns ``Promise<DepositDetails>``
     * ``deposit.getDepositStakingPools(depositId)``:
