@@ -7,7 +7,7 @@ Contracts
 Overview
 ********
 
-The ``contracts`` module manages loading Rocket Pool contract ABIs and addresses from ``RocketStorage``, where all network contracts are registered.
+The ``contracts`` module loads Rocket Pool contract ABIs and addresses from ``RocketStorage``, where all network contracts are registered.
 Contract ABIs and addresses are loaded from the chain, the ABIs are decompressed and decoded, and then web3 contract instances are created from them.
 This is performed dynamically because Rocket Pool contracts can be upgraded and their ABIs and addresses may change.
 
@@ -31,7 +31,7 @@ This returns a promise resolving to an ABI as a JavaScript object, or an array o
 Creating Contract Instances
 ***************************
 
-Some network contracts, such as ``RocketGroup``, ``RocketNode`` and ``RocketMinipool`` have multiple instances deployed at a number of different addresses.
+Some network contracts, such as ``RocketGroupContract``, ``RocketNodeContract`` and ``RocketMinipool`` have multiple instances deployed at a number of different addresses.
 To create an instance of one of these contracts, use the ``contracts.make(name, address)`` method.
 It accepts the name of the contract and the address of the specific instance required, both as strings, and returns a promise resolving to a web3 contract instance.
 
@@ -41,7 +41,7 @@ Alternate Contract Versions
 ***************************
 
 When Rocket Pool network contracts are upgraded, old versions remain on the chain and can still be accessed if required.
-A "contract version set", consisting of all versions of a contract by name, can be loaded with ``contracts.versions(name)`` method.
+A "contract version set", consisting of all versions of a contract by name, can be loaded with the ``contracts.versions(name)`` method.
 This method accepts the name of the contract to load, and returns a promise resolving to the version set object.
 
 Contract version sets are primarily used for accessing old event data.
