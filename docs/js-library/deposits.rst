@@ -58,4 +58,3 @@ Methods
     * ``deposit.getDepositStakingPoolAt(depositId, index)``: Get the address of a minipool with the specified index (number) that the deposit with the specified ID (string) is staking under; returns ``Promise<string>``
     * ``deposit.getDepositStakingPoolAmount(depositId, minipoolAddress)``: Get the amount of a deposit by ID (string) that has been assigned to the minipool with the specified address (string) for staking, in wei; returns ``Promise<string>``
     * ``deposit.getDepositBackupAddress(depositId)``: Get the backup withdrawal address of a deposit by ID (string); returns ``Promise<string | null>``
-
