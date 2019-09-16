@@ -49,31 +49,45 @@ Methods
 
     * ``deposit.getDeposit(depositId)``:
       Get the details of the deposit with the specified ID (string); returns ``Promise<DepositDetails>``
+
     * ``deposit.getDepositStakingPools(depositId)``:
       Get the details of the minipools the deposit with the specified ID (string) is assigned to; returns ``Promise<DepositPoolDetails[]>``
+
     * ``deposit.getDepositCount(groupId, userId, durationId)``:
       Get the number of deposits made by the specified user, via the specified group (addresses), for the specified staking duration ID (string); returns ``Promise<number>``
+
     * ``deposit.getDepositAt(groupId, userId, durationId, index)``:
       Get the ID of the deposit made by the specified user, via the specified group (addresses), for the specified staking duration ID (string), at the specified index (number); returns ``Promise<string>``
+
     * ``deposit.getQueuedDepositCount(groupId, userId, durationId)``:
       As above, but only returns the number of deposits which are still at least partially queued
+
     * ``deposit.getQueuedDepositAt(groupId, userId, durationId, index)``:
       As above, but only returns the ID if a deposit which is still at least partially queued
+
     * ``deposit.getDepositTotalAmount(depositId)``:
       Get the total amount of a deposit by ID (string) in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositQueuedAmount(depositId)``:
       Get the amount of a deposit by ID (string) still remaining in the queue, in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositStakingAmount(depositId)``:
       Get the amount of a deposit by ID (string) assigned to minipools for staking, in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositRefundedAmount(depositId)``:
       Get the amount of a deposit by ID (string) which has been refunded, in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositWithdrawnAmount(depositId)``:
       Get the amount of a deposit by ID (string) which has been withdrawn, in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositStakingPoolCount(depositId)``:
       Get the number of minipools a deposit is staking under by ID (string); returns ``Promise<number>``
+
     * ``deposit.getDepositStakingPoolAt(depositId, index)``:
       Get the address of a minipool with the specified index (number) that the deposit with the specified ID (string) is staking under; returns ``Promise<string>``
+
     * ``deposit.getDepositStakingPoolAmount(depositId, minipoolAddress)``:
       Get the amount of a deposit by ID (string) that has been assigned to the minipool with the specified address (string) for staking, in wei; returns ``Promise<string>``
+
     * ``deposit.getDepositBackupAddress(depositId)``:
       Get the backup withdrawal address of a deposit by ID (string); returns ``Promise<string | null>``
