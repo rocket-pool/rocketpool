@@ -7,7 +7,7 @@ Deposits
 Overview
 ********
 
-The ``deposits`` module loads user deposit data from the chain.
+The ``deposit`` module loads user deposit data from the chain.
 This includes user deposits made via any group (Rocket Pool or other third party groups).
 It does not include node deposits (made by node operators to create minipools).
 
@@ -41,4 +41,8 @@ Data Types
 Methods
 *******
 
-
+    * ``deposit.getDeposits(groupId, userId, durationId)``: Get all deposits made by the specified user, via the specified group (addresses), for the specified staking duration ID (string); returns ``Promise<DepositDetails[]>``
+    * ``deposit.getQueuedDeposits(groupId, userId, durationId)``: As above, but only returns deposits which are still at least partially queued.
+    * ``deposit.getDeposit(depositId)``: Get the details for deposit with the specified ID (string); returns ``Promise<DepositDetails>``
+    * ``deposit.getDepositStakingPools(depositId)``: Get the details of the minipools the deposit with the specified ID (string) is assigned to; returns ``Promise<DepositPoolDetails[]>``
+    * ``deposit.getDepositCount(groupId, userId, durationId)``: Get the number of deposits made by the specified user, via the specified group (addresses), for the specified staking duration ID (string); returns ``Promise<number>``
