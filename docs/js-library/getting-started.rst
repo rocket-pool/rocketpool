@@ -34,17 +34,17 @@ Usage
 
 The Rocket Pool library is divided into several modules, each for interacting with a different aspect of the network:
 
-    * ``rp.contracts``: Handles dynamic loading of the Rocket Pool contracts
-    * ``rp.deposit``: Manages user deposits
-    * ``rp.group``: Manages groups registered with Rocket Pool
-    * ``rp.node``: Manages the nodes making up the Rocket Pool network
-    * ``rp.pool``: Manages the main minipool registry and individual minipools
-    * ``rp.settings.deposit``: Provides information on user deposit settings
-    * ``rp.settings.group``: Provides information on group settings
-    * ``rp.settings.minipool``: Provides information on minipool settings
-    * ``rp.settings.node``: Provides information on smart node settings
-    * ``rp.tokens.reth``: Manages rETH token interactions
-    * ``rp.tokens.rpl``: Manages RPL token interactions
+    * ``contracts``: Handles dynamic loading of the Rocket Pool contracts
+    * ``deposit``: Manages user deposits
+    * ``group``: Manages groups registered with Rocket Pool
+    * ``node``: Manages the nodes making up the Rocket Pool network
+    * ``pool``: Manages the main minipool registry and individual minipools
+    * ``settings.deposit``: Provides information on user deposit settings
+    * ``settings.group``: Provides information on group settings
+    * ``settings.minipool``: Provides information on minipool settings
+    * ``settings.node``: Provides information on smart node settings
+    * ``tokens.reth``: Manages rETH token interactions
+    * ``tokens.rpl``: Manages RPL token interactions
 
 All methods typically return promises due to the asynchronous nature of working with the Ethereum network.
 Getters return promises which resolve to their value, while mutators (methods which send transactions) return promises which resolve to a transaction receipt.
