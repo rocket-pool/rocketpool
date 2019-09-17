@@ -48,7 +48,7 @@ The Rocket Pool library is divided into several modules, each for interacting wi
 
 All methods typically return promises due to the asynchronous nature of working with the Ethereum network.
 Getters return promises which resolve to their value, while mutators (methods which send transactions) return promises which resolve to a transaction receipt.
-Mutators also accept an ``onConfirmation`` callback handler to handle specific confirmation numbers on transactions.
+Mutators also accept a transaction options object, and an ``onConfirmation`` callback handler to handle specific confirmation numbers on transactions.
 
 When using the Rocket Pool library in your project, you may handle the promises returned in the traditional way, or use async/await syntax if supported, e.g.::
 
