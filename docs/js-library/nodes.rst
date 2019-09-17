@@ -118,7 +118,8 @@ Methods
     * ``NodeContract.setRewardsAddress(address, options, onConfirmation)``:
       Set the address which node fees and rewards are paid to; returns ``Promise<TransactionReceipt>``
 
-    * ``NodeContract.reserveDeposit(durationId, validatorPubkey, validatorSignature, options, onConfirmation)``:
+    * ``NodeContract.reserveDeposit``
+      ``(durationId, validatorPubkey, validatorSignature, options, onConfirmation)``:
       Reserve a deposit for the specified staking duration (string), with the specified validator public key and signature (strings); returns ``Promise<TransactionReceipt>``
 
     * ``NodeContract.cancelDepositReservation(options, onConfirmation)``:
