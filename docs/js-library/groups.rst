@@ -26,7 +26,7 @@ Data Types
     }
 
 ``GroupContract`` objects wrap a web3 contract instance and provide methods for managing a group.
-These methods are restricted to the group's owner.
+Mutator methods are restricted to the group's owner.
 
 ``GroupAccessorContract`` objects wrap a web3 contract instance and provide methods for managing user deposits through the group.
 Deposit refund and withdrawal methods are restricted to the user who made the deposit.
