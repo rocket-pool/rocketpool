@@ -96,14 +96,18 @@ Methods
     * ``GroupAccessorContract.refundQueuedDeposit(durationId, depositId, options, onConfirmation)``:
       Refund the portion of a deposit by ID (string) staking for the specified staking duration (string) which is still in the deposit queue; returns ``Promise<TransactionReceipt>``
 
-    * ``GroupAccessorContract.refundStalledMinipoolDeposit(depositId, minipoolAddress, options, onConfirmation)``:
+    * ``GroupAccessorContract.refundStalledMinipoolDeposit``
+      ``(depositId, minipoolAddress, options, onConfirmation)``:
       Refund the portion of a deposit by ID (string) assigned to the stalled minipool at minipoolAddress (string); returns ``Promise<TransactionReceipt>``
 
-    * ``GroupAccessorContract.withdrawStakingMinipoolDeposit(depositId, minipoolAddress, weiAmount, options, onConfirmation)``:
+    * ``GroupAccessorContract.withdrawStakingMinipoolDeposit``
+      ``(depositId, minipoolAddress, weiAmount, options, onConfirmation)``:
       Withdraw weiAmount (string) wei of a deposit by ID (string) from the staking minipool at minipoolAddress (string); returns ``Promise<TransactionReceipt>``
 
-    * ``GroupAccessorContract.withdrawMinipoolDeposit(depositId, minipoolAddress, options, onConfirmation)``:
+    * ``GroupAccessorContract.withdrawMinipoolDeposit``
+      ``(depositId, minipoolAddress, options, onConfirmation)``:
       Withdraw the portion of a deposit by ID (string) assigned to the minipool at minipoolAddress (string) which has finished staking; returns ``Promise<TransactionReceipt>``
 
-    * ``GroupAccessorContract.setDepositBackupAddress(depositId, backupAddress, options, onConfirmation)``:
+    * ``GroupAccessorContract.setDepositBackupAddress``
+      ``(depositId, backupAddress, options, onConfirmation)``:
       Set a backup withdrawal address for a deposit by ID (string); returns ``Promise<TransactionReceipt>``
