@@ -12,7 +12,7 @@ Overview
 All user deposits into the Rocket Pool network are made through a Group.
 An organisation can register as a Group with Rocket Pool, allowing them to move funds into the network for staking.
 This effectively allows them to use Rocket Pool as staking infrastructure, using their own deposit processes and application front-ends.
-Rocket Pool uses an `"eat your own dog food" <https://en.wikipedia.org/wiki/Eating_your_own_dog_food>`_ approach, with its own registered Group for processing user interactions.
+Rocket Pool employs an `"eat your own dog food" <https://en.wikipedia.org/wiki/Eating_your_own_dog_food>`_ approach, using its own registered Group for processing user interactions.
 
 After registering with Rocket Pool, a Group must create and deploy one or more Depositor and Withdrawer contracts to handle user deposits and withdrawals.
 These contracts must be registered with the Group, and then user deposits and withdrawals for the Group can be made via them.
