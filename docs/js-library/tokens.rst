@@ -21,10 +21,10 @@ Methods
 *******
 
     * ``tokens.[token].balanceOf(account)``:
-      Get the token balance of the specified account (address); returns ``Promise<string>``
+      Get the token balance of the specified account (address) in wei; returns ``Promise<string>``
 
     * ``tokens.[token].allowance(account, spender)``:
-      Get the allowance of the specified account, for the specified spender (addresses); returns ``Promise<string>``
+      Get the allowance of the specified account, for the specified spender (addresses) in wei; returns ``Promise<string>``
 
     * ``tokens.[token].transfer(to, amount, options, onConfirmation)``:
       Transfer the specified amount of tokens in wei (string) to the 'to' address; returns ``Promise<TransactionReceipt>``
