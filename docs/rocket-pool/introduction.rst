@@ -21,7 +21,12 @@ It has several objectives within the Ethereum landscape, each relevant to a diff
 Contents
 ********
 
+The following sections give a high-level overview of the various concepts used in Rocket Pool and how they work:
+
 .. toctree::
     :maxdepth: 2
 
-    concepts.rst
+    deposits.rst
+    groups.rst
+    nodes.rst
+    minipools.rst
