@@ -26,6 +26,7 @@ The following sections give a high-level overview of the various concepts used i
 .. toctree::
     :maxdepth: 2
 
+    staking.rst
     deposits.rst
     groups.rst
     nodes.rst
