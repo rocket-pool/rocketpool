@@ -62,7 +62,15 @@ If the minipool did not earn a profit, no fees are taken and the user is reimbur
 Rewards & the rETH Token
 ************************
 
+During Phases 0 and 1 of the `Ethereum 2.0 rollout <https://docs.ethhub.io/ethereum-roadmap/ethereum-2.0/eth-2.0-phases/>`_, withdrawals from the Beacon Chain will not be implemented.
+Rocket Pool aims to provide liquidity to node operators and users through the design of the rETH token, so they can access their rewards before Phase 2 is launched in the future.
 
+When a minipool's validator finishes staking on the Beacon Chain, the minipool is marked as ready for withdrawal, and rETH tokens equal to the validator's final balance are minted to it.
+The node operator and users staking in that minipool can then withdraw their share of rETH tokens from it and spend them as they wish.
+rETH tokens are backed by Beacon Chain ether 1:1, and should trade on the open market for slightly less than 1 ETH in value.
+
+When Phase 2 of the Ethereum 2.0 rollout is launched, users holding rETH will be able to swap it for Beacon Chain ether via a contract on a shard.
+This effectively burns the rETH, removing it from circulation.
 
 
 ***************************
