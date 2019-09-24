@@ -11,10 +11,7 @@ Currently, the Rocket Pool Smart Node software stack is only officially supporte
 Support for additional operating systems will be added incrementally, after successful testing of the existing version.
 However, the majority of the stack runs within Docker containers, so running it on other Unix-based operating systems should require minimal customization.
 
-Hardware resources are consumed primarily by the Proof of Work (PoW) client container; resource usage from other containers is negligible.
-Currently, the only PoW client supported is `Geth <https://geth.ethereum.org/>`_.
-Therefore, the hardware requirements for a node will be determined by its Docker configuration (namely, how many PoW client containers it runs in parallel).
-By default, this is a single Geth container, so without customization, the Smart Node stack should require the same hardware resources as Geth itself.
+The Smart Node stack requires at least 3GB of memory and 8GB of (SSD) hard disk space in order to run.
 
 Note that a node operator must have **root** access to their node in order to install the dependencies and register the services required by the Smart Node stack.
 
