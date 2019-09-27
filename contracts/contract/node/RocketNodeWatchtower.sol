@@ -47,6 +47,7 @@ contract RocketNodeWatchtower is RocketBase {
     event PoolWithdrawn (
         address indexed _minipool,
         address indexed _from,
+        string  indexed _duration,
         uint256 balanceStart,
         uint256 balanceEnd,
         uint256 created
@@ -95,7 +96,7 @@ contract RocketNodeWatchtower is RocketBase {
             rocketETHToken.mint(_minipool, tokenAmount);
         }
         // Emit withdrawal event
-        emit PoolWithdrawn(_minipool, msg.sender, minipool.getStakingBalanceStart(), minipool.getStakingBalanceEnd(), now);
+        emit PoolWithdrawn(_minipool, msg.sender, minipool.getStakingDurationID(), minipool.getStakingBalanceStart(), minipool.getStakingBalanceEnd(), now);
         // Success
         return true;
     }
