@@ -92,3 +92,14 @@ You can simply leave these to be used for future deposits, or to withdraw them t
     rocketpool node withdraw [amount] [unit]
 
 where ``[amount]`` and ``[unit]`` specify how much of which resource ("ETH" or "RPL") to withdraw.
+
+
+******************************
+Sending From Your Node Account
+******************************
+
+If you want to send ETH or tokens from your node account to another Ethereum address at any time, use::
+
+	rocketpool node send [address] [amount] [unit]
+
+This will send the specified amount of ETH, rETH or RPL from the node account to the specified address.

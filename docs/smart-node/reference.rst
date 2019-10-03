@@ -24,6 +24,7 @@ Node Commands
     * ``rocketpool node init``: Initialise the node with a password and an account
     * ``rocketpool node register``: Register the node with Rocket Pool
     * ``rocketpool node withdraw [amount] [unit]``: Withdraw the specified amount of ETH or RPL from the node contract
+    * ``rocketpool node send [address] [amount] [unit]``: Send the specified amount of ETH, rETH or RPL from the node account to the specified address
     * ``rocketpool node timezone``: Change the timezone location the node is registered under
 
 
@@ -47,7 +48,7 @@ Node Fee Commands
 Deposit Commands
 ****************
 
-    * ``rocketpool deposit required [duration]``: View the current RPL requirement for the specified staking duration
+    * ``rocketpool deposit required``: View the current network RPL requirements and utilization stats
     * ``rocketpool deposit make [duration]``: Make a deposit for the specified staking duration
 
 
@@ -55,5 +56,5 @@ Deposit Commands
 Minipool Commands
 *****************
 
-    * ``rocketpool minipool status``: Check the status of all minipools owned by the node
+    * ``rocketpool minipool status [filter]``: Check the status of all minipools owned by the node, optionally filtered by status
     * ``rocketpool minipool withdraw``: Withdraw ETH or rETH and RPL from withdrawn or stalled minipools

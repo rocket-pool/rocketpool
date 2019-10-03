@@ -9,12 +9,11 @@ Checking Deposit Requirements
 
 Before making a deposit, you'll need to load your node account up with the required ETH and RPL.
 Deposits always require 16 ETH, but the amount of RPL varies depending on current Rocket Pool network utilisation.
-To check on the current RPL requirement, run::
+To check on the current RPL requirements and network utilisation, run::
 
-    rocketpool deposit required [duration]
+    rocketpool deposit required
 
-where ``[duration]`` is the time period you want to stake for (e.g. "3m", "6m" or "12m").
-This will display a message like ``32.00 RPL required to cover a deposit amount of 16.00 ETH for 3m @ 2.00 RPL / ETH``.
+This will display a series of message like ``Depositing 16.00 ETH for 3m requires 32.00 RPL @ 2.00 RPL / ETH. Current network utilisation for 3m is 30%.``.
 
 
 ****************
