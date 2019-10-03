@@ -13,7 +13,9 @@ To check on the current RPL requirements and network utilisation, run::
 
     rocketpool deposit required
 
-This will display a series of message like ``Depositing 16.00 ETH for 3m requires 32.00 RPL @ 2.00 RPL / ETH. Current network utilisation for 3m is 30%.``.
+This will display a series of message like:
+``Depositing 16.00 ETH for 3m requires 32.00 RPL @ 2.00 RPL / ETH.``
+``Current network utilisation for 3m is 30%.``.
 
 
 ****************
