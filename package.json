@@ -20,11 +20,12 @@
     "babel-preset-stage-2": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
-    "ganache-cli": "^6.4.1",
+    "ganache-cli": "^6.7",
     "prettier": "^1.10.2",
     "solidity-coverage": "^0.5.11",
     "truffle": "^5.0.1",
-    "truffle-contract": "^3.*"
+    "truffle-contract": "^3.*",
+    "typedarray-to-buffer": "^3.1.5"
   },
   "prettier": {
     "singleQuote": true,
