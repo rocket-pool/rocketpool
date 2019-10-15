@@ -21,7 +21,7 @@ import rocketDepositAPIRefundQueueTests from './rocket-deposit/rocket-deposit-ap
 import rocketDepositAPIRefundMinipoolTests from './rocket-deposit/rocket-deposit-api-refund-minipool-tests';
 import rocketDepositAPIWithdrawalStakingTests from './rocket-deposit/rocket-deposit-api-withdrawal-staking-tests';
 import rocketDepositAPIWithdrawalTests from './rocket-deposit/rocket-deposit-api-withdrawal-tests';
-import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests';
+import rocketRPIPTests from './rocket-rpip/rocket-rpip-tests'; 
 import rocketUpgradeApproverTests from './rocket-upgrade/rocket-upgrade-approver-tests';
 import rocketUpgradeTests from './rocket-upgrade/rocket-upgrade-tests';
 
@@ -58,7 +58,7 @@ rocketDepositAPIRefundQueueTests();
 rocketDepositAPIRefundMinipoolTests();
 rocketDepositAPIWithdrawalStakingTests();
 rocketDepositAPIWithdrawalTests();
-rocketRPIPTests();
+// rocketRPIPTests(); Reenable later when PiP is implemented
 rocketUpgradeApproverTests();
 rocketUpgradeTests();
 
