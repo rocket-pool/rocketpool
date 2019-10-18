@@ -174,16 +174,16 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
                 // Transfer total node fees
                 if (nodeFeeTotal > 0) { require(rethContract.transfer(rocketNodeContract.getRewardsAddress(), nodeFeeTotal), "Node operator fee could not be transferred to node contract address"); }
             }
-            // Transfer remaining rETH balance to rocket pool
+            // Get Rocket Pool fee address
+            rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+            address payable rocketPoolFeeAddress = address(uint160(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress()));
+            // Transfer remaining rETH balance to Rocket Pool
             uint256 rethBalance = rethContract.balanceOf(address(this));
-            if (rethBalance > 0) {
-                rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-                require(rethContract.transfer(rocketMinipoolSettings.getMinipoolWithdrawalFeeDepositAddress(), rethBalance), "rETH balance transfer error.");
-            }
+            if (rethBalance > 0) { require(rethContract.transfer(rocketPoolFeeAddress, rethBalance), "rETH balance transfer error."); }
             // Log it
             emit PoolDestroyed(msg.sender, address(this), now);
-            // Close now and send any unclaimed ether back to the node contract
-            selfdestruct(address(uint160(node.contractAddress)));
+            // Close now and send any unclaimed ether back to Rocket Pool
+            selfdestruct(rocketPoolFeeAddress);
         }
     }
 

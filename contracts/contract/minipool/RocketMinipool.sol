@@ -20,16 +20,6 @@ contract RocketMinipool is RocketMinipoolBase {
     using SafeMath for uint;
 
 
-    /*** Events ****************/
-
-
-    event DepositReceived (
-        address indexed _fromAddress,                           // From address
-        uint256 amount,                                         // Amount of the deposit
-        uint256 created                                         // Creation timestamp
-    );
-
-
     /*** Methods *************/
    
     /// @dev minipool constructor
@@ -63,15 +53,6 @@ contract RocketMinipool is RocketMinipoolBase {
         staking.validatorSignature = _validatorSignature;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
-    }
-
-
-    // Payable
-    
-    /// @dev Fallback function where our deposit + rewards will be received after requesting withdrawal from Casper
-    function() external payable { 
-        // Log the deposit received
-        emit DepositReceived(msg.sender, msg.value, now);       
     }
 
 
