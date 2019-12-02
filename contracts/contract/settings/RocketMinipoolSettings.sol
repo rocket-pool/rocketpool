@@ -34,9 +34,6 @@ contract RocketMinipoolSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
             setMinipoolLaunchAmount(32 ether);                                                  // The exact Wei required for a pool to launch
-            //setMinipoolStakingDuration("3m", 526000);                                         // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-            //setMinipoolStakingDuration("6m",  1052000);                                       // 6 Months
-            //setMinipoolStakingDuration("12m", 2104000);                                       // 12 Months
             setMinipoolCheckInterval(1 hours);                                                  // The interval that a watchtower should check active minipools in seconds
             setMinipoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
