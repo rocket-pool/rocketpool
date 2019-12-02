@@ -45,16 +45,12 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
             setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
-            /*** Staking Durations ***/
-            addMinipoolStakingDuration("3m", 20250);
-            addMinipoolStakingDuration("6m", 40500);
-            addMinipoolStakingDuration("12m", 81000);
             // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
     }
 
-    
+
     /*** Getters **********************/
 
 

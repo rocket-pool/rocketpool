@@ -93,6 +93,13 @@ abis.rocketGroupAccessorContract = artifacts.require('./group/RocketGroupAccesso
 abis.rocketNodeContract = artifacts.require('./node/RocketNodeContract.sol');
 abis.rocketMinipool = artifacts.require('./minipool/RocketMinipool.sol');
 
+// Minipool staking durations
+const stakingDurations = {
+  '3m': 20250,
+  '6m': 40500,
+  '12m': 81000,
+};
+
 // Pubsub event subscriptions
 const subscriptions = {
   'minipool.status.change': ['rocketPool'],
@@ -255,6 +262,17 @@ module.exports = async (deployer, network) => {
       }
     }
   };
+
+  // Register staking durations
+  const registerStakingDurations = async function() {
+    let minipoolSettingsInstance = await contracts.rocketMinipoolSettings.deployed();
+    for (let duration in stakingDurations) {
+      // Log it
+      console.log('\x1b[31m%s\x1b[0m:', '   Register staking duration');
+      console.log('     '+duration+': '+stakingDurations[duration]);
+      await minipoolSettingsInstance.addMinipoolStakingDuration(duration, stakingDurations[duration]);
+    }
+  }
   
   // Register event subscriptions
   const registerSubscriptions = async function() {
@@ -312,6 +330,10 @@ module.exports = async (deployer, network) => {
   console.log('\x1b[34m%s\x1b[0m', '  Set ABI Only Storage');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addABIs();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Register Staking Durations');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
+  await registerStakingDurations();
   console.log('\n');
   console.log('\x1b[34m%s\x1b[0m', '  Register Event Subscribers');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
