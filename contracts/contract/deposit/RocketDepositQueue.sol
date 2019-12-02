@@ -41,11 +41,11 @@ contract RocketDepositQueue is RocketBase {
 
     /*** Modifiers *************/
 
-    /// @dev Only passes if the supplied minipool duration is valid
-    /// @param _durationID The ID that determines the minipool duration
+    /// @dev Only passes if the supplied minipool staking duration is valid
+    /// @param _durationID The minipool staking duration ID
     modifier onlyValidDuration(string memory _durationID) {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        require(rocketMinipoolSettings.getMinipoolStakingDurationExists(_durationID), "Invalid staking duration");
         _;
     }
 
