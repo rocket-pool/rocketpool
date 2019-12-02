@@ -3,6 +3,7 @@ pragma solidity 0.5.8;
 
 import "../../RocketBase.sol";
 import "../../interface/RocketPoolInterface.sol";
+import "../../interface/utils/lists/StringSetStorageInterface.sol";
 
 
 /// @title Settings for Minipools in Rocket Pool
@@ -33,9 +34,9 @@ contract RocketMinipoolSettings is RocketBase {
         if (!rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.init")))) {
             /*** Minipools ***/
             setMinipoolLaunchAmount(32 ether);                                                  // The exact Wei required for a pool to launch
-            setMinipoolStakingDuration("3m", 526000);                                           // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
-            setMinipoolStakingDuration("6m",  1052000);                                         // 6 Months
-            setMinipoolStakingDuration("12m", 2104000);                                         // 12 Months
+            //setMinipoolStakingDuration("3m", 526000);                                         // Set the possible staking times for minipools in blocks given avg 15sec blocktime, 3 months (the withdrawal time from Casper is added onto this, it is not included) 
+            //setMinipoolStakingDuration("6m",  1052000);                                       // 6 Months
+            //setMinipoolStakingDuration("12m", 2104000);                                       // 12 Months
             setMinipoolCheckInterval(1 hours);                                                  // The interval that a watchtower should check active minipools in seconds
             setMinipoolWithdrawalFeeDepositAddress(msg.sender);                                 // The account to send Rocket Pool Fees too, must be an account, not a contract address
             setMinipoolBackupCollectEnabled(true);                                              // Are user backup addresses allowed to collect on behalf of the user after a certain time limit
@@ -47,6 +48,10 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
             setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
+            /*** Staking Durations ***/
+            addMinipoolStakingDuration("3m", 20250);
+            addMinipoolStakingDuration("6m", 40500);
+            addMinipoolStakingDuration("12m", 81000);
             // Set init as complete
             rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.init")), true);
         }
@@ -97,14 +102,6 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256("settings.minipool.deposit.gas"));
     }
 
-    /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
-    function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256) {
-        // Make sure the staking ID exists
-        uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
-        require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
-        return stakingTime;
-    }
-
     /// @dev The interval that a watchtower should check active minipools in seconds
     function getMinipoolCheckInterval() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.check.interval")));
@@ -144,12 +141,6 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev Set the minimum Wei required for a pool to launch
     function setMinipoolLaunchAmount(uint256 _weiAmount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.launch.wei")), _weiAmount);  
-    }
-
-    /// @dev Set the possible staking durations for minipools (the withdrawal time from Casper is added onto this, it is not included) 
-    function setMinipoolStakingDuration(string memory _duration, uint256 _blocks) public onlySuperUser {
-        require(_blocks > 0, "Amount of blocks for staking duration not specified.");
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _duration)), _blocks);  
     }
 
     /// @dev The interval that a watchtower should check active minipools in seconds
@@ -205,6 +196,91 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev The number of minipools in the active set
     function setMinipoolActiveSetSize(uint256 _size) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.activeset.size")), _size);
+    }
+
+
+    /*** Staking Durations ************/
+
+
+    /// @dev Get the total number of staking durations
+    function getMinipoolStakingDurationCount() public view returns (uint256) {
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        return stringSetStorage.getCount(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")));
+    }
+
+
+    /// @dev Get a staking duration ID by index
+    /// @param _index The index of the staking duration to get
+    function getMinipoolStakingDurationAt(uint256 _index) public view returns (string memory) {
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        return stringSetStorage.getItem(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _index);
+    }
+
+
+    /// @dev Get whether a staking duration exists
+    /// @param _duration The duration ID
+    function getMinipoolStakingDurationExists(string memory _duration) public view returns (bool) {
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        return (stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids"))) != -1);
+    }
+
+
+    /// @dev Get a staking duration's epochs
+    /// @param _duration The duration ID
+    function getMinipoolStakingDurationEpochs(string memory _duration) public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration)));
+    }
+
+
+    /// @dev Get whether a staking duration is enabled
+    /// @param _duration The duration ID
+    function getMinipoolStakingDurationEnabled(string memory _duration) public view returns (bool) {
+        return rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.enabled", _duration)));
+    }
+
+
+    /// @dev Add a staking duration
+    /// @param _duration The duration ID
+    /// @param _epochs The number of beacon chain epochs to stake for
+    function addMinipoolStakingDuration(string memory _duration, uint256 _epochs) public onlySuperUser {
+        // Get contracts
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        // Validate args
+        require(stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) == -1, "Staking duration already exists.");
+        require(_epochs > 0, "Number of epochs for staking duration not specified.");
+        // Add staking duration ID
+        stringSetStorage.addItem(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration);
+        // Set staking duration and enable
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration)), _epochs);
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.enabled", _duration)), true);
+    }
+
+
+    /// @dev Set a staking duration's epochs
+    /// @param _duration The duration ID
+    /// @param _epochs The number of beacon chain epochs to stake for
+    function setMinipoolStakingDurationEpochs(string memory _duration, uint256 _epochs) public onlySuperUser {
+        // Get contracts
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        // Validate args
+        require(stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) != -1, "Staking duration does not exist.");
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration))) != _epochs, "Staking duration epochs already set.");
+        // Set staking duration
+        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration)), _epochs);
+    }
+
+
+    /// @dev Set a staking duration's enabled status
+    /// @param _duration The duration ID
+    /// @param _enabled The staking duration's enabled status
+    function setMinipoolStakingDurationEnabled(string memory _duration, bool _enabled) public onlySuperUser {
+        // Get contracts
+        StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
+        // Validate args
+        require(stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) != -1, "Staking duration does not exist.");
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.enabled", _duration))) != _enabled, "Staking duration enabled status already set.");
+        // Set staking duration enabled status
+        rocketStorage.setBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.enabled", _duration)), _enabled);
     }
 
 
