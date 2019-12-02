@@ -218,7 +218,7 @@ contract RocketMinipoolSettings is RocketBase {
     /// @param _duration The duration ID
     function getMinipoolStakingDurationExists(string memory _duration) public view returns (bool) {
         StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
-        return (stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids"))) != -1);
+        return (stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) != -1);
     }
 
 
@@ -261,7 +261,7 @@ contract RocketMinipoolSettings is RocketBase {
         StringSetStorageInterface stringSetStorage = StringSetStorageInterface(getContractAddress("utilStringSetStorage"));
         // Validate args
         require(stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) != -1, "Staking duration does not exist.");
-        require(rocketStorage.getBool(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration))) != _epochs, "Staking duration epochs already set.");
+        require(rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration))) != _epochs, "Staking duration epochs already set.");
         // Set staking duration
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration)), _epochs);
     }
