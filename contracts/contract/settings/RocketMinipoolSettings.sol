@@ -258,6 +258,7 @@ contract RocketMinipoolSettings is RocketBase {
         // Validate args
         require(stringSetStorage.getIndexOf(keccak256(abi.encodePacked("settings.minipool.staking.duration.ids")), _duration) != -1, "Staking duration does not exist.");
         require(rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration))) != _epochs, "Staking duration epochs already set.");
+        require(_epochs > 0, "Number of epochs for staking duration not specified.");
         // Set staking duration
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.staking.duration.epochs", _duration)), _epochs);
     }
