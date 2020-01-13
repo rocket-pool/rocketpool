@@ -255,6 +255,50 @@ module.exports = async (deployer, network) => {
       }
     }
   };
+
+  // Register uniswap contracts
+  const addUniswap = async function() {
+    if (network != 'live') {
+
+      // Load contract data
+      const FactoryABI = loadABI('./contracts/contract/uniswap/compiled/factory.abi');
+      const FactoryBytecode = config.fs.readFileSync('./contracts/contract/uniswap/compiled/factory.bin');
+      const ExchangeABI = loadABI('./contracts/contract/uniswap/compiled/exchange.abi');
+      const ExchangeBytecode = config.fs.readFileSync('./contracts/contract/uniswap/compiled/exchange.bin');
+
+      // Get RP token contract addresses
+      let rplAddress = contracts.rocketPoolToken.address;
+      let rethAddress = contracts.rocketETHToken.address;
+
+      // Initialise contracts
+      let ExchangeContract = new $web3.eth.Contract(ExchangeABI);
+      let FactoryContract = new $web3.eth.Contract(FactoryABI);
+
+      // Deploy contracts
+      let exchange = await ExchangeContract.deploy({data: ExchangeBytecode}).send({from: accounts[0], gas: 8000000});
+      let factory = await FactoryContract.deploy({data: FactoryBytecode}).send({from: accounts[0], gas: 8000000});
+
+      // Initialise factory
+      await factory.methods.initializeFactory(exchange.options.address).send({from: accounts[0], gas: 8000000});
+
+      // Create token exchanges
+      await factory.methods.createExchange(rplAddress).send({from: accounts[0], gas: 8000000});
+      await factory.methods.createExchange(rethAddress).send({from: accounts[0], gas: 8000000});
+
+      // Get exchange addresses
+      let rplExchangeAddress = await factory.methods.getExchange(rplAddress).call();
+      let rethExchangeAddress = await factory.methods.getExchange(rethAddress).call();
+
+      // Log
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap factory address:');
+      console.log('     ' + factory.options.address);
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap RPL exchange address:');
+      console.log('     ' + rplExchangeAddress);
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap rETH exchange address:');
+      console.log('     ' + rethExchangeAddress);
+
+    }
+  };
   
   // Register event subscriptions
   const registerSubscriptions = async function() {
@@ -312,6 +356,10 @@ module.exports = async (deployer, network) => {
   console.log('\x1b[34m%s\x1b[0m', '  Set ABI Only Storage');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addABIs();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Deploy Uniswap contracts');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
+  await addUniswap();
   console.log('\n');
   console.log('\x1b[34m%s\x1b[0m', '  Register Event Subscribers');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
