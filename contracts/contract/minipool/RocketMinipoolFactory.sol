@@ -58,6 +58,8 @@ contract RocketMinipoolFactory is RocketBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
         require(rocketMinipoolSettings.getMinipoolCanBeCreated() == true, "Minipool creation is currently disabled.");
+        // Check if node is enabled
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.active", _nodeOwner))), "Node is inactive and cannot create minipools.");
         // Always requires some ether if not trusted
         if (_trusted) { require(_etherDeposited == 0, "Ether deposit size must be 0 for a trusted node."); }
         else { require(_etherDeposited == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half of the Casper deposit size for an untrusted node."); }
