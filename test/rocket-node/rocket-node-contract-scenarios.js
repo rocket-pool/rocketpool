@@ -87,7 +87,7 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
     let rplBalance = parseInt(await rocketPoolToken.balanceOf.call(minipoolAddress));
 
     // Get settings
-    let expectedStakingDuration = parseInt(await rocketMinipoolSettings.getMinipoolStakingDuration.call(minipoolStakingDurationID));
+    let expectedStakingDuration = parseInt(await rocketMinipoolSettings.getMinipoolStakingDurationEpochs.call(minipoolStakingDurationID));
 
     // Asserts
     assert.isTrue(minipoolExists, 'Created minipool does not exist');

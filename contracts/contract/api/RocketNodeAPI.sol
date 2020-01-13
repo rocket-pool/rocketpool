@@ -67,7 +67,6 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Only passes if the user calling it is a registered node owner
     modifier onlyValidNodeOwner(address _nodeOwner) {
-        // Verify it
         require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeOwner))) == true, "Node owner is not valid.");
         _;
     }
@@ -80,17 +79,24 @@ contract RocketNodeAPI is RocketBase {
     }
 
 
-    /// @dev Only passes if the supplied minipool duration is valid
-    /// @param _durationID The ID that determines the minipool duration
+    /// @dev Only passes if the supplied minipool staking duration is valid
+    /// @param _durationID The minipool staking duration ID
     modifier onlyValidDuration(string memory _durationID) {
-        // Get our minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Check to verify the supplied mini pool staking time id is legit, it will revert if not
-        rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        require(rocketMinipoolSettings.getMinipoolStakingDurationExists(_durationID), "Invalid staking duration");
         _;
     }
-  
-       
+
+
+    /// @dev Only passes if the supplied minipool staking duration is valid & enabled
+    /// @param _durationID The minipool staking duration ID
+    modifier onlyEnabledDuration(string memory _durationID) {
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        require(rocketMinipoolSettings.getMinipoolStakingDurationEnabled(_durationID), "Invalid or disabled staking duration");
+        _;
+    }
+
+
     /*** Constructor *************/
 
     /// @dev rocketNode constructor
@@ -153,7 +159,7 @@ contract RocketNodeAPI is RocketBase {
     /// @param _nodeOwner  The address of the nodes owner
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _lastDepositReservedTime  Time of the last reserved deposit
-    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyValidDuration(_durationID) {
+    function checkDepositReservationIsValid(address _nodeOwner, string memory _durationID, uint256 _lastDepositReservedTime) public onlyValidNodeOwner(_nodeOwner) onlyEnabledDuration(_durationID) {
         // Get the settings
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Deposits turned on? 

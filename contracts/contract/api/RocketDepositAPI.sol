@@ -25,16 +25,24 @@ contract RocketDepositAPI is RocketBase {
 
     /*** Modifiers *************/
 
-    /// @dev Only passes if the supplied minipool duration is valid
-    /// @param _durationID The ID that determines the minipool duration
+    /// @dev Only passes if the supplied minipool staking duration is valid
+    /// @param _durationID The minipool staking duration ID
     modifier onlyValidDuration(string memory _durationID) {
-        // Check to verify the supplied mini pool staking time id is legit, it will revert if not
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        require(rocketMinipoolSettings.getMinipoolStakingDurationExists(_durationID), "Invalid staking duration");
         _;
     }
 
-  
+
+    /// @dev Only passes if the supplied minipool staking duration is valid & enabled
+    /// @param _durationID The minipool staking duration ID
+    modifier onlyEnabledDuration(string memory _durationID) {
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        require(rocketMinipoolSettings.getMinipoolStakingDurationEnabled(_durationID), "Invalid or disabled staking duration");
+        _;
+    }
+
+
     /*** Events ****************/
 
     event Deposit (
@@ -174,7 +182,7 @@ contract RocketDepositAPI is RocketBase {
     /// @param _groupID The ID of the group / 3rd party partner contract whom is in control of the supplid user account that the deposit belongs too
     /// @param _userID The address of the user whom the deposit belongs too
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
-    function deposit(address _groupID, address _userID, string memory _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) onlyValidDuration(_durationID) returns(bool) { 
+    function deposit(address _groupID, address _userID, string memory _durationID) public payable onlyLatestContract("rocketDepositAPI", address(this)) onlyEnabledDuration(_durationID) returns(bool) { 
         // Verify the deposit is acceptable
         checkDepositIsValid(msg.value, msg.sender, _groupID, _userID, _durationID);
         // Send and create deposit

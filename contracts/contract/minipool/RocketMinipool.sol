@@ -48,7 +48,7 @@ contract RocketMinipool is RocketMinipoolBase {
         rocketNodeContract = RocketNodeContractInterface(node.contractAddress);
         // Set the initial staking properties
         staking.id = _durationID;
-        staking.duration = rocketMinipoolSettings.getMinipoolStakingDuration(_durationID);
+        staking.duration = rocketMinipoolSettings.getMinipoolStakingDurationEpochs(_durationID);
         staking.validatorPubkey = _validatorPubkey;
         staking.validatorSignature = _validatorSignature;
         // Set the user deposit capacity
