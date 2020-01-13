@@ -41,8 +41,6 @@ contract RocketMinipoolSettings is RocketBase {
             setMinipoolNewEnabled(true);                                                        // Minipools allowed to be created?
             setMinipoolClosingEnabled(true);                                                    // Minipools allowed to be closed?
             setMinipoolMax(0);                                                                  // Maximum amount of minipool contracts allowed - 0 = unlimited
-            setMinipoolNewGasLimit(4800000);                                                    // This is the minipool creation gas limit, makes a whole new contract, so has to be high (can be optimised also)
-            setMinipoolDepositGas(400000);                                                      // The gas required for depositing with Casper and being added as a validator
             setMinipoolTimeout(4 weeks);                                                        // If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
             setMinipoolActiveSetSize(4);                                                        // The number of minipools in the active set
             // Set init as complete
@@ -85,14 +83,12 @@ contract RocketMinipoolSettings is RocketBase {
         return rocketStorage.getUint(keccak256("settings.minipool.maxamount"));
     }
 
-    /// @dev This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-    function getMinipoolNewGas() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.minipool.new.gas"));
-    }
-
-    /// @dev The gas required for depositing with Casper and being added as a validator
-    function getMinipoolDepositGas() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256("settings.minipool.deposit.gas"));
+    /// @dev Get staking duration blocks for a given staking time ID, throw if its not a valid ID
+    function getMinipoolStakingDuration(string memory _durationID) public view returns (uint256) {
+        // Make sure the staking ID exists
+        uint256 stakingTime = rocketStorage.getUint(keccak256(abi.encodePacked("settings.minipool.staking.option", _durationID)));
+        require(stakingTime > 0, "Minipool staking duration ID specified does not match any current staking durations.");
+        return stakingTime;
     }
 
     /// @dev The interval that a watchtower should check active minipools in seconds
@@ -169,16 +165,6 @@ contract RocketMinipoolSettings is RocketBase {
     /// @dev Maximum amount of minipool contracts allowed
     function setMinipoolMax(uint256 _amount) public onlySuperUser {
         rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.maxamount")), _amount); 
-    }
-
-    /// @dev This is the minipool creation gas, makes a whole new contract, so has to be high (can be optimised also)
-    function setMinipoolNewGasLimit(uint256 _gas) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.new.gas")), _gas); 
-    }
-
-    /// @dev The gas required for depositing with Casper and being added as a validator
-    function setMinipoolDepositGas(uint256 _gas) public onlySuperUser {
-        rocketStorage.setUint(keccak256(abi.encodePacked("settings.minipool.deposit.gas")), _gas); 
     }
 
     /// @dev If a minipool has users, but has not begun staking for this time period, it is classed as timed out and can be closed with users refunded
