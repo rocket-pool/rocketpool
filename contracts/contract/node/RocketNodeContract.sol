@@ -48,7 +48,7 @@ contract RocketNodeContract {
         string  durationID;                 // The deposit duration (eg 3m, 6m etc)
         bytes   validatorPubkey;            // The validator's pubkey
         bytes   validatorSignature;         // The validator's signature for the deposit (pubkey + withdrawal credentials + amount)
-        bytes   validatorDepositDataRoot    // The validator's deposit data SSZ hash tree root
+        bytes   validatorDepositDataRoot;   // The validator's deposit data SSZ hash tree root
         uint256 etherAmount;                // Amount of ether required
         uint256 rplAmount;                  // Amount of RPL required
         uint256 rplRatio;                   // Amount of RPL required per ether deposited
