@@ -258,6 +258,7 @@ contract RocketNodeAPI is RocketBase {
         // Get the deposit data
         bytes memory validatorPubkey = rocketNodeContract.getDepositReserveValidatorPubkey();
         bytes memory validatorSignature = rocketNodeContract.getDepositReserveValidatorSignature();
+        bytes memory validatorDepositDataRoot = rocketNodeContract.getDepositReserveValidatorDepositDataRoot();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
@@ -265,7 +266,7 @@ contract RocketNodeAPI is RocketBase {
         // Node trusted status
         bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
         // Create minipool and return address
-        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, etherDeposited, rplDeposited, nodeTrusted);
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, validatorDepositDataRoot, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 

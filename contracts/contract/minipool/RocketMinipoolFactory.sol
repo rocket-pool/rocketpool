@@ -50,10 +50,11 @@ contract RocketMinipoolFactory is RocketBase {
     /// @param _durationID Staking duration ID
     /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
     /// @param _etherDeposited Ether amount deposited by the node owner
     /// @param _rplDeposited RPL amount deposited by the node owner
     /// @param _trusted Is this node trusted?
-    function createRocketMinipool(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
+    function createRocketMinipool(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes memory _validatorDepositDataRoot, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
         // Do some initial checks
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
@@ -64,7 +65,7 @@ contract RocketMinipoolFactory is RocketBase {
         if (_trusted) { require(_etherDeposited == 0, "Ether deposit size must be 0 for a trusted node."); }
         else { require(_etherDeposited == rocketMinipoolSettings.getMinipoolLaunchAmount().div(2), "Ether deposit size must be half of the Casper deposit size for an untrusted node."); }
         // Ok create the nodes contract now, this is the address where their ether/rpl deposits will reside 
-        address newContractAddress = address(new RocketMinipool(address(rocketStorage), _nodeOwner, _durationID, _validatorPubkey, _validatorSignature, _etherDeposited, _rplDeposited, _trusted));
+        address newContractAddress = address(new RocketMinipool(address(rocketStorage), _nodeOwner, _durationID, _validatorPubkey, _validatorSignature, _validatorDepositDataRoot, _etherDeposited, _rplDeposited, _trusted));
         // Emit created event
         emit ContractCreated(keccak256(abi.encodePacked("rocketMinipool")), newContractAddress);
         // Return contract address
