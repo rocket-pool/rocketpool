@@ -1,5 +1,5 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature } from '../_lib/utils/beacon';
+import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { scenarioValidatorDeposit } from './casper-deposit-scenarios';
 
 
@@ -15,27 +15,55 @@ export default function() {
 
         // Cannot deposit less than the minimum deposit amount
         it(printTitle('validator', 'cannot deposit less than the minimum deposit amount into Casper'), async () => {
-            await assertThrows(scenarioValidatorDeposit({
+
+            // Get deposit data
+            let depositAmount = web3.utils.toWei('0.5', 'ether');
+            let depositData = {
                 pubkey: getValidatorPubkey(),
-                withdrawalCredentials: getWithdrawalCredentials(),
+                withdrawal_credentials: getWithdrawalCredentials(),
+                amount: (parseInt(depositAmount) / 1000000000), // to gwei
                 signature: getValidatorSignature(),
+            };
+            let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
+            // Deposit
+            await assertThrows(scenarioValidatorDeposit({
+                pubkey: depositData.pubkey,
+                withdrawalCredentials: depositData.withdrawal_credentials,
+                signature: depositData.signature,
+                depositDataRoot,
                 fromAddress: user1,
-                value: web3.utils.toWei('0.5', 'ether'),
+                value: depositAmount,
                 gas: 5000000,
             }), 'Deposited less than the minimum deposit amount into Casper.');
+
         });
 
 
         // Can deposit a valid deposit amount
         it(printTitle('validator', 'can deposit a valid deposit amount into Casper'), async () => {
-            await scenarioValidatorDeposit({
+
+            // Get deposit data
+            let depositAmount = web3.utils.toWei('32', 'ether');
+            let depositData = {
                 pubkey: getValidatorPubkey(),
-                withdrawalCredentials: getWithdrawalCredentials(),
+                withdrawal_credentials: getWithdrawalCredentials(),
+                amount: (parseInt(depositAmount) / 1000000000), // to gwei
                 signature: getValidatorSignature(),
+            };
+            let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
+            // Deposit
+            await scenarioValidatorDeposit({
+                pubkey: depositData.pubkey,
+                withdrawalCredentials: depositData.withdrawal_credentials,
+                signature: depositData.signature,
+                depositDataRoot,
                 fromAddress: user1,
-                value: web3.utils.toWei('32', 'ether'),
+                value: depositAmount,
                 gas: 5000000,
             });
+
         });
 
 
