@@ -278,7 +278,7 @@ contract RocketMinipool is RocketMinipoolBase {
     }
 
     /// @dev Returns the minipool's validator deposit data SSZ hash tree root to be submitted to casper
-    function getValidatorDepositDataRoot() public view returns (bytes memory) {
+    function getValidatorDepositDataRoot() public view returns (bytes32) {
         return staking.validatorDepositDataRoot;
     }
 

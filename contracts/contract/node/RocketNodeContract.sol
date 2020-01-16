@@ -183,7 +183,7 @@ contract RocketNodeContract {
     }
 
     /// @dev Returns the current deposit reservation validator deposit data root
-    function getDepositReserveValidatorDepositDataRoot() public hasDepositReserved() returns (bytes memory) {
+    function getDepositReserveValidatorDepositDataRoot() public hasDepositReserved() returns (bytes32) {
         return depositReservation.validatorDepositDataRoot;
     }
 
