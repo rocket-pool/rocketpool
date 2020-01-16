@@ -243,7 +243,7 @@ contract RocketNodeAPI is RocketBase {
         // Get the deposit data
         bytes memory validatorPubkey = rocketNodeContract.getDepositReserveValidatorPubkey();
         bytes memory validatorSignature = rocketNodeContract.getDepositReserveValidatorSignature();
-        bytes memory validatorDepositDataRoot = rocketNodeContract.getDepositReserveValidatorDepositDataRoot();
+        bytes32 validatorDepositDataRoot = rocketNodeContract.getDepositReserveValidatorDepositDataRoot();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited

@@ -32,7 +32,7 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes memory _validatorDepositDataRoot, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the initial status

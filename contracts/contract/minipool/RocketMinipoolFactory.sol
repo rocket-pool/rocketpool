@@ -54,7 +54,7 @@ contract RocketMinipoolFactory is RocketBase {
     /// @param _etherDeposited Ether amount deposited by the node owner
     /// @param _rplDeposited RPL amount deposited by the node owner
     /// @param _trusted Is this node trusted?
-    function createRocketMinipool(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes memory _validatorDepositDataRoot, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
+    function createRocketMinipool(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _etherDeposited, uint256 _rplDeposited, bool _trusted) public onlyLatestContract("rocketPool", msg.sender) returns(address) {
         // Do some initial checks
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Can we create one?
