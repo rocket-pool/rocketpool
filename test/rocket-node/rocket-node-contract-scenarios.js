@@ -9,11 +9,10 @@ import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, Rock
 export async function scenarioDepositReserve({nodeContract, durationID, validatorPubkey, validatorSignature, fromAddress, gas}) {
 
     // Get deposit data
-    let depositAmount = web3.utils.toWei('32', 'ether');
     let depositData = {
         pubkey: validatorPubkey,
         withdrawal_credentials: getWithdrawalCredentials(),
-        amount: (parseInt(depositAmount) / 1000000000), // to gwei
+        amount: 32000000000, // gwei
         signature: validatorSignature,
     };
     let depositDataRoot = getValidatorDepositDataRoot(depositData);

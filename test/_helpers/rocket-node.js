@@ -36,11 +36,10 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
         // Get deposit data
-        let depositAmount = web3.utils.toWei('32', 'ether');
         let depositData = {
             pubkey: getValidatorPubkey(),
             withdrawal_credentials: getWithdrawalCredentials(),
-            amount: (parseInt(depositAmount) / 1000000000), // to gwei
+            amount: 32000000000, // gwei
             signature: getValidatorSignature(),
         };
         let depositDataRoot = getValidatorDepositDataRoot(depositData);
