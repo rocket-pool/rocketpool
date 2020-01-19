@@ -12,7 +12,6 @@ import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/lists/AddressQueueStorageInterface.sol";
 import "../../interface/utils/lists/AddressSetStorageInterface.sol";
-import "../../interface/utils/lists/BytesSetStorageInterface.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
 // Libraries
 import "../../lib/SafeMath.sol";
@@ -40,7 +39,6 @@ contract RocketNodeAPI is RocketBase {
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);            // Settings for the minipools
     AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(0);                     // Address list utility
     AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);                           // Address list utility
-    BytesSetStorageInterface bytesSetStorage = BytesSetStorageInterface(0);                                 // Bytes list utility
     PublisherInterface publisher = PublisherInterface(0);                                                   // Main pubsub system event publisher
 
 
@@ -169,25 +167,6 @@ contract RocketNodeAPI is RocketBase {
     }
 
 
-    /// @dev Checks if the deposit parameters are correct for a successful ether deposit
-    /// @param _nodeOwner  The address of the nodes owner
-    function checkDepositIsValid(address _nodeOwner) private onlyValidNodeOwner(_nodeOwner) {
-        // Get the RPL contract 
-        rplContract = ERC20(getContractAddress("rocketPoolToken"));
-        // Get the node contract
-        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
-        // Get the settings
-        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        // Deposits turned on? 
-        require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
-        // Does the node contract have sufficient ether to cover the reserved deposit?
-        require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
-        // Does the node contract have sufficient RPL to cover the reserved deposit?
-        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved deposit.");
-    }
-
-
-
     /*** Setters *************/
 
 
@@ -244,20 +223,27 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Process a deposit into a nodes contract
     /// @param _nodeOwner  The address of the nodes owner
-    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address) { 
-        // Check the deposit is ready to go first
-        checkDepositIsValid(_nodeOwner);
-        // Get the minipool settings contract
-        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Get the node contract
-        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
+    function deposit(address _nodeOwner) public onlyValidNodeOwner(_nodeOwner) onlyValidNodeContract(_nodeOwner, msg.sender) returns(address) {
+        // Get the settings
+        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Get Rocket Pool contract
         rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        // Get the RPL contract
+        rplContract = ERC20(getContractAddress("rocketPoolToken")); 
+        // Get the node contract
+        rocketNodeContract = RocketNodeContractInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeOwner))));
+        // Deposits turned on?
+        require(rocketNodeSettings.getDepositAllowed(), "Deposits are currently disabled for nodes.");
+        // Does the node contract have sufficient ether to cover the reserved deposit?
+        require(rocketNodeContract.getDepositReserveEtherRequired() <= address(rocketNodeContract).balance, "Node contract does not have enough ether to cover the reserved deposit.");
+        // Does the node contract have sufficient RPL to cover the reserved deposit?
+        require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved deposit.");
         // Get the deposit duration ID
         string memory durationID = rocketNodeContract.getDepositReserveDurationID();
         // Get the deposit data
         bytes memory validatorPubkey = rocketNodeContract.getDepositReserveValidatorPubkey();
         bytes memory validatorSignature = rocketNodeContract.getDepositReserveValidatorSignature();
+        bytes32 validatorDepositDataRoot = rocketNodeContract.getDepositReserveValidatorDepositDataRoot();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
@@ -265,7 +251,7 @@ contract RocketNodeAPI is RocketBase {
         // Node trusted status
         bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
         // Create minipool and return address
-        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, etherDeposited, rplDeposited, nodeTrusted);
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, validatorDepositDataRoot, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 

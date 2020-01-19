@@ -1,6 +1,6 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
-import { getValidatorPubkey, getValidatorSignature } from '../_lib/utils/beacon';
+import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { RocketMinipoolSettings, RocketNodeAPI, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 import { mintRpl } from './rocket-pool-token';
 
@@ -35,8 +35,17 @@ export async function createNodeMinipools({nodeContract, stakingDurationID, mini
     let minipoolAddresses = [];
     for (let mi = 0; mi < minipoolCount; ++mi) {
 
+        // Get deposit data
+        let depositData = {
+            pubkey: getValidatorPubkey(),
+            withdrawal_credentials: getWithdrawalCredentials(),
+            amount: 32000000000, // gwei
+            signature: getValidatorSignature(),
+        };
+        let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
         // Reserve node deposit
-        await nodeContract.depositReserve(stakingDurationID, getValidatorPubkey(), getValidatorSignature(), {from: nodeOperator});
+        await nodeContract.depositReserve(stakingDurationID, depositData.pubkey, depositData.signature, depositDataRoot, {from: nodeOperator});
 
         // Deposit RPL
         let rplRequired = await nodeContract.getDepositReserveRPLRequired.call();

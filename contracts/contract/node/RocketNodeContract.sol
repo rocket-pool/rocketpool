@@ -45,13 +45,14 @@ contract RocketNodeContract {
     /*** Structs ***************/
 
     struct DepositReservation {
-        string  durationID;             // The deposit duration (eg 3m, 6m etc)
-        bytes   validatorPubkey;        // The validator's pubkey
-        bytes   validatorSignature;     // The validator's signature for the deposit (pubkey + withdrawal credentials + amount)
-        uint256 etherAmount;            // Amount of ether required
-        uint256 rplAmount;              // Amount of RPL required
-        uint256 rplRatio;               // Amount of RPL required per ether deposited
-        uint256 created;                // The time this reservation was made
+        string  durationID;                 // The deposit duration (eg 3m, 6m etc)
+        bytes   validatorPubkey;            // The validator's pubkey
+        bytes   validatorSignature;         // The validator's signature for the deposit (pubkey + withdrawal credentials + amount)
+        bytes32 validatorDepositDataRoot;   // The validator's deposit data SSZ hash tree root
+        uint256 etherAmount;                // Amount of ether required
+        uint256 rplAmount;                  // Amount of RPL required
+        uint256 rplRatio;                   // Amount of RPL required per ether deposited
+        uint256 created;                    // The time this reservation was made
         bool exists;
     }
 
@@ -181,6 +182,11 @@ contract RocketNodeContract {
         return depositReservation.validatorSignature;
     }
 
+    /// @dev Returns the current deposit reservation validator deposit data root
+    function getDepositReserveValidatorDepositDataRoot() public hasDepositReserved() returns (bytes32) {
+        return depositReservation.validatorDepositDataRoot;
+    }
+
     
     /*** Setters *************/
 
@@ -204,7 +210,8 @@ contract RocketNodeContract {
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)
     /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
-    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature) public onlyNodeOwner() returns(bool) { 
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
+    function depositReserve(string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public onlyNodeOwner() returns(bool) { 
         // Get the node API
         rocketNodeAPI = RocketNodeAPIInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeAPI"))));
         // Get the minipool settings
@@ -227,6 +234,7 @@ contract RocketNodeContract {
             durationID: _durationID,
             validatorPubkey: _validatorPubkey,
             validatorSignature: _validatorSignature,
+            validatorDepositDataRoot: _validatorDepositDataRoot,
             etherAmount: etherAmount,
             rplAmount: rplAmount,
             rplRatio: rplRatio,

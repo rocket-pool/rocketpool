@@ -79,6 +79,7 @@ contract RocketMinipoolBase {
         uint256 balanceEnd;                                     // rETH balance of this minipool when it completes staking
         bytes   validatorPubkey;                                // Validator pubkey to be submitted to the casper deposit contract
         bytes   validatorSignature;                             // Validator signature to be submitted to the casper deposit contract
+        bytes32 validatorDepositDataRoot;                       // Validator deposit data SSZ hash tree root to be submitted to the casper deposit contract
     }
 
     struct Deposit {

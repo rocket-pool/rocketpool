@@ -94,7 +94,7 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
             // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
             bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
             // Send deposit to casper deposit contract
-            casperDeposit.deposit.value(launchAmount)(staking.validatorPubkey, rpWithdrawalCredentials, staking.validatorSignature);
+            casperDeposit.deposit.value(launchAmount)(staking.validatorPubkey, rpWithdrawalCredentials, staking.validatorSignature, staking.validatorDepositDataRoot);
             // Set staking start balance
             staking.balanceStart = launchAmount;
             // Set node user fee

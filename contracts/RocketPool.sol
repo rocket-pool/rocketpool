@@ -149,13 +149,13 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Create a minipool
-    function minipoolCreate(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+    function minipoolCreate(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Create minipool contract
-        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _validatorPubkey, _validatorSignature, _etherAmount, _rplAmount, _isTrustedNode);
+        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _validatorPubkey, _validatorSignature, _validatorDepositDataRoot, _etherAmount, _rplAmount, _isTrustedNode);
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes 

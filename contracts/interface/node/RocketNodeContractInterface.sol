@@ -11,4 +11,5 @@ contract RocketNodeContractInterface {
     function getDepositReserveDurationID() public returns (string memory);
     function getDepositReserveValidatorPubkey() public returns (bytes memory);
     function getDepositReserveValidatorSignature() public returns (bytes memory);
+    function getDepositReserveValidatorDepositDataRoot() public returns (bytes32);
 }

@@ -33,7 +33,7 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "@chainsafesystems/ssz": "^1.6.0",
+    "@chainsafe/ssz": "^0.5.2",
     "beacon-chain-simulator": "github:rocket-pool/beacon-chain-simulator#240e8a8c6b25d4d1e3388ae3ed53e04feeebad78",
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.1.0",

@@ -1,4 +1,4 @@
-const ssz = require('@chainsafesystems/ssz');
+const ssz = require('@chainsafe/ssz');
 const WebSocket = require('ws');
 
 
@@ -88,5 +88,16 @@ export function getValidatorSignature() {
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' +
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     'hex');
+}
+
+
+// Create validator deposit data root
+export function getValidatorDepositDataRoot(depositData) {
+    return ssz.hashTreeRoot(depositData, {fields: [
+        ['pubkey', 'bytes48'],
+        ['withdrawal_credentials', 'bytes32'],
+        ['amount', 'uint64'],
+        ['signature', 'bytes96'],
+    ]});
 }
 

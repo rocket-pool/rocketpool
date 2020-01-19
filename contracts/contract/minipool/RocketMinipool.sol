@@ -28,10 +28,11 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
     /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
     /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the initial status
@@ -51,6 +52,7 @@ contract RocketMinipool is RocketMinipoolBase {
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDurationEpochs(_durationID);
         staking.validatorPubkey = _validatorPubkey;
         staking.validatorSignature = _validatorSignature;
+        staking.validatorDepositDataRoot = _validatorDepositDataRoot;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
@@ -273,6 +275,11 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @dev Returns the minipool's validator signature to be submitted to casper
     function getValidatorSignature() public view returns (bytes memory) {
         return staking.validatorSignature;
+    }
+
+    /// @dev Returns the minipool's validator deposit data SSZ hash tree root to be submitted to casper
+    function getValidatorDepositDataRoot() public view returns (bytes32) {
+        return staking.validatorDepositDataRoot;
     }
 
     /// @dev Gets the total user deposit capacity

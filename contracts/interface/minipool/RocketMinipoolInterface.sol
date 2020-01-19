@@ -29,6 +29,7 @@ contract RocketMinipoolInterface {
     function getStakingBalanceEnd() public view returns(uint256);
     function getValidatorPubkey() public view returns (bytes memory);
     function getValidatorSignature() public view returns (bytes memory);
+    function getValidatorDepositDataRoot() public view returns (bytes32);
     function getUserDepositCapacity() public view returns(uint256);
     function getUserDepositTotal() public view returns(uint256);
     function getStakingUserDepositsWithdrawn() public view returns(uint256);
