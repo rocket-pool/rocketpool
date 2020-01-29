@@ -54,5 +54,13 @@ module.exports = {
         from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
         gas: 8000000,
     },
+    // Workshop network
+    'workshop': {
+        host: "127.0.0.1",
+        port: 8545,
+        network_id: "88", 
+        from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
+        gas: 8000000,
+    },
   },
 };
