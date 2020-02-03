@@ -62,5 +62,12 @@ module.exports = {
         from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
         gas: 8000000,
     },
+    // Goerli testnet
+    'goerli': {
+      host: '127.0.0.1',
+      port: 8545,
+      network_id: '5',
+      gas: 8000000,
+    },
   },
 };

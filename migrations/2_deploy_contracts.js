@@ -159,6 +159,20 @@ module.exports = async (deployer, network) => {
     contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
+  // Goerli test network
+  else if (network == 'goerli') {
+
+    // Casper deposit contract details
+    const casperDepositAddress = '0x4689a3C63CE249355C8a573B5974db21D2d1b8Ef';
+    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
+    contracts.casperDeposit = {
+          address: casperDepositAddress,
+              abi: casperDepositABI,
+      precompiled: true
+    };
+
+  }
+
   // Test network deployment
   else {
 
