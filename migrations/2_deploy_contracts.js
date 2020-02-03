@@ -378,6 +378,7 @@ module.exports = async (deployer, network) => {
   console.log('\x1b[34m%s\x1b[0m', '  Register Staking Durations');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await registerStakingDurations();
+  console.log('\n');
   console.log('\x1b[34m%s\x1b[0m', '  Deploy Uniswap contracts');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addUniswap();
