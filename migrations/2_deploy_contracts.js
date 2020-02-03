@@ -308,11 +308,11 @@ module.exports = async (deployer, network) => {
       let rethExchangeAddress = await factory.methods.getExchange(rethAddress).call();
 
       // Log
-      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap factory address:');
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap factory address');
       console.log('     ' + factory.options.address);
-      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap RPL exchange address:');
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap RPL exchange address');
       console.log('     ' + rplExchangeAddress);
-      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap rETH exchange address:');
+      console.log('\x1b[31m%s\x1b[0m:', '   Uniswap rETH exchange address');
       console.log('     ' + rethExchangeAddress);
 
     }
