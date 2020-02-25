@@ -155,13 +155,13 @@ contract RocketNodeAPI is RocketBase {
 
     /// @dev Returns the current Rocket Pool withdrawal key
     function getWithdrawalKey() public view returns (bytes memory) {
-        return rocketStorage.getBytes(keccak256(abi.encodePacked("withdrawalKey")))
+        return rocketStorage.getBytes(keccak256(abi.encodePacked("withdrawalKey")));
     }
 
 
     /// @dev Returns the current Rocket Pool withdrawal key
     function getWithdrawalCredentials() public view returns (bytes32) {
-        return rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")))
+        return rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
     }
 
 

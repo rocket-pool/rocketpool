@@ -123,7 +123,7 @@ contract RocketNodeWatchtower is RocketBase {
         // Approve update
         addressSetStorage.addItem(keccak256(abi.encodePacked("withdrawalKey.update.approvals", _withdrawalKey, _withdrawalCredentials)), msg.sender);
         // Complete update if approved by >= 50% of nodes
-        trusteNodeCount = addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted")));
+        uint256 trusteNodeCount = addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted")));
         if (addressSetStorage.getCount(keccak256(abi.encodePacked("withdrawalKey.update.approvals", _withdrawalKey, _withdrawalCredentials))) >= trusteNodeCount.div(2)) {
             // Set withdrawal key & credentials
             rocketStorage.setBytes(keccak256(abi.encodePacked("withdrawalKey")), _withdrawalKey);
