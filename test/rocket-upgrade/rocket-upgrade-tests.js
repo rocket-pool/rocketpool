@@ -1,5 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketStorage, RocketETHToken, RocketDepositIndex, RocketDepositSettings, RocketDepositVault, RocketMinipool, RocketMinipoolInterface, RocketNode, RocketPool, RocketPIP } from '../_lib/artifacts';
+import { setRocketPoolWithdrawalKey } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
@@ -20,6 +21,7 @@ export default function() {
         const approver2 = accounts[3];
         const approver3 = accounts[4];
         const user1 = accounts[5];
+        const withdrawalKeyOperator = accounts[6];
 
 
         // Setup
@@ -39,6 +41,9 @@ export default function() {
         let groupAccessorContract;
         let minipool;
         before(async () => {
+
+            // Set Rocket Pool withdrawal key
+            await setRocketPoolWithdrawalKey({nodeOperator: withdrawalKeyOperator, owner});
 
             // Initialise upgrade approvers
             await scenarioInitialiseUpgradeApprovers({

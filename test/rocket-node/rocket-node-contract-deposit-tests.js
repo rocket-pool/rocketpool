@@ -16,9 +16,9 @@ export default function() {
         const owner = accounts[0];
         const operator = accounts[1];
         const operator2 = accounts[2];
-        const operator3 = accounts[3];
-        const groupOwner = accounts[4];
-        const staker = accounts[5];
+        const groupOwner = accounts[3];
+        const staker = accounts[4];
+        const withdrawalKeyOperator = accounts[5];
 
 
         // Setup
@@ -34,14 +34,14 @@ export default function() {
         let chunkSize;
         before(async () => {
 
+            // Set Rocket Pool withdrawal key
+            await setRocketPoolWithdrawalKey({nodeOperator: withdrawalKeyOperator, owner});
+
             // Initialise contracts
             rocketNodeAPI = await RocketNodeAPI.deployed();
             rocketNodeSettings = await RocketNodeSettings.deployed();
             rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
             rocketPool = await RocketPool.deployed();
-
-            // Set Rocket Pool withdrawal key
-            await setRocketPoolWithdrawalKey({nodeOperator: operator3, owner});
 
             // Create node contract
             nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: operator});
