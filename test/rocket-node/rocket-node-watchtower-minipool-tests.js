@@ -8,7 +8,7 @@ import { scenarioLogoutMinipool, scenarioWithdrawMinipool } from './rocket-node-
 
 export default function() {
 
-    contract('RocketNodeWatchtower', async (accounts) => {
+    contract('RocketNodeWatchtower - Minipools', async (accounts) => {
 
 
         // Accounts
