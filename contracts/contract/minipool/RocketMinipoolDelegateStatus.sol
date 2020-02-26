@@ -72,36 +72,14 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
 
     /// @dev Sets the status of the pool based on its current parameters 
     function updateStatus() public returns(bool) {
-        // Set our status now - see RocketMinipoolSettings.sol for pool statuses and keys
+        // Load contracts
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        // Get minipool settings
-        uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         // Check to see if we can close the pool - stops execution if closed
         closePool();
         // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
         if (getDepositCount() == 1 && status.current == 0) {
             // Prelaunch
             setStatus(1);
-            // Done
-            return true;
-        }
-        // Set to Staking - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration. Do not enforce the required ether, just send the right amount.
-        if (getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
-            // If the node is not trusted, double check to make sure it has the correct RPL balance
-            if(!node.trusted) {
-                require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
-            }
-            // Get Rocket Pool withdrawal credentials
-            bytes32 withdrawalCredentials = rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
-            // Send deposit to casper deposit contract
-            casperDeposit.deposit.value(launchAmount)(staking.validatorPubkey, abi.encodePacked(withdrawalCredentials), staking.validatorSignature, staking.validatorDepositDataRoot);
-            // Set staking start balance
-            staking.balanceStart = launchAmount;
-            // Set node user fee
-            rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-            node.userFee = rocketNodeSettings.getFeePerc();
-            // Staking
-            setStatus(2);
             // Done
             return true;
         }
@@ -123,10 +101,32 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
     /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
     function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public isNodeContract(msg.sender) returns(bool) {
         // Load contracts
+        rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
+        rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Get minipool settings
+        uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
+        // Check minipool is ready for staking
+        require(getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount, "Minipool is not ready to proceed to staking.");
+        // Check node RPL balance
+        if (!node.trusted) require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
         // Check and reserve the pubkey
         rocketNodeKeys.validatePubkey(_validatorPubkey);
         rocketNodeKeys.reservePubkey(node.owner, _validatorPubkey, true);
+        // Get current Rocket Pool withdrawal credentials
+        bytes32 withdrawalCredentials = rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
+        // Set staking properties
+        staking.balanceStart = launchAmount;
+        staking.validatorPubkey = _validatorPubkey;
+        staking.validatorSignature = _validatorSignature;
+        staking.validatorDepositDataRoot = _validatorDepositDataRoot;
+        staking.withdrawalCredentials = withdrawalCredentials;
+        // Set node user fee
+        node.userFee = rocketNodeSettings.getFeePerc();
+        // Send deposit to casper deposit contract
+        casperDeposit.deposit.value(launchAmount)(_validatorPubkey, abi.encodePacked(withdrawalCredentials), _validatorSignature, _validatorDepositDataRoot);
+        // Set Staking status
+        setStatus(2);
         // Success
         return true;
     }
