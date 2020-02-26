@@ -30,6 +30,7 @@ contract RocketMinipoolInterface {
     function getValidatorPubkey() public view returns (bytes memory);
     function getValidatorSignature() public view returns (bytes memory);
     function getValidatorDepositDataRoot() public view returns (bytes32);
+    function getWithdrawalCredentials() public view returns (bytes32);
     function getUserDepositCapacity() public view returns(uint256);
     function getUserDepositTotal() public view returns(uint256);
     function getStakingUserDepositsWithdrawn() public view returns(uint256);
@@ -41,6 +42,7 @@ contract RocketMinipoolInterface {
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public returns(bool);
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public returns(bool);
     function updateStatus() public returns(bool);
+    function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public returns(bool);
     function logoutMinipool() public returns (bool);
     function withdrawMinipool(uint256 _withdrawalBalance) public returns (bool);
 }

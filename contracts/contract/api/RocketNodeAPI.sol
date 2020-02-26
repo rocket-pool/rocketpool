@@ -252,10 +252,6 @@ contract RocketNodeAPI is RocketBase {
         require(rocketNodeContract.getDepositReserveRPLRequired() <= rplContract.balanceOf(address(rocketNodeContract)), "Node contract does not have enough RPL to cover the reserved deposit.");
         // Get the deposit duration ID
         string memory durationID = rocketNodeContract.getDepositReserveDurationID();
-        // Get the deposit data
-        bytes memory validatorPubkey = rocketNodeContract.getDepositReserveValidatorPubkey();
-        bytes memory validatorSignature = rocketNodeContract.getDepositReserveValidatorSignature();
-        bytes32 validatorDepositDataRoot = rocketNodeContract.getDepositReserveValidatorDepositDataRoot();
         // Ether deposited
         uint256 etherDeposited = rocketNodeContract.getDepositReserveEtherRequired();
         // RPL deposited
@@ -263,7 +259,7 @@ contract RocketNodeAPI is RocketBase {
         // Node trusted status
         bool nodeTrusted = rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeOwner)));
         // Create minipool and return address
-        return rocketPool.minipoolCreate(_nodeOwner, durationID, validatorPubkey, validatorSignature, validatorDepositDataRoot, etherDeposited, rplDeposited, nodeTrusted);
+        return rocketPool.minipoolCreate(_nodeOwner, durationID, etherDeposited, rplDeposited, nodeTrusted);
     }
 
 

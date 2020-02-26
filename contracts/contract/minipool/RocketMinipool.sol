@@ -26,13 +26,10 @@ contract RocketMinipool is RocketMinipoolBase {
     /// @param _rocketStorageAddress Address of Rocket Pools storage.
     /// @param _nodeOwner The address of the nodes etherbase account that owns this minipool.
     /// @param _durationID Staking duration ID (eg 3m, 6m etc)
-    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
-    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
-    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
     /// @param _depositEther Ether amount deposited by the node owner
     /// @param _depositRPL RPL amount deposited by the node owner
     /// @param _trusted Is the node trusted at the time of minipool creation?
-    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeOwner, string memory _durationID, uint256 _depositEther, uint256 _depositRPL, bool _trusted) RocketMinipoolBase(_rocketStorageAddress) public {
         // Get minipool settings
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set the initial status
@@ -50,9 +47,6 @@ contract RocketMinipool is RocketMinipoolBase {
         // Set the initial staking properties
         staking.id = _durationID;
         staking.duration = rocketMinipoolSettings.getMinipoolStakingDurationEpochs(_durationID);
-        staking.validatorPubkey = _validatorPubkey;
-        staking.validatorSignature = _validatorSignature;
-        staking.validatorDepositDataRoot = _validatorDepositDataRoot;
         // Set the user deposit capacity
         userDepositCapacity = rocketMinipoolSettings.getMinipoolLaunchAmount().sub(_depositEther);
     }
@@ -267,19 +261,24 @@ contract RocketMinipool is RocketMinipoolBase {
         return staking.balanceEnd;
     }
 
-    /// @dev Returns the minipool's validator pubkey to be submitted to casper
+    /// @dev Returns the minipool's validator pubkey submitted to casper
     function getValidatorPubkey() public view returns (bytes memory) {
         return staking.validatorPubkey;
     }
 
-    /// @dev Returns the minipool's validator signature to be submitted to casper
+    /// @dev Returns the minipool's validator signature submitted to casper
     function getValidatorSignature() public view returns (bytes memory) {
         return staking.validatorSignature;
     }
 
-    /// @dev Returns the minipool's validator deposit data SSZ hash tree root to be submitted to casper
+    /// @dev Returns the minipool's validator deposit data SSZ hash tree root submitted to casper
     function getValidatorDepositDataRoot() public view returns (bytes32) {
         return staking.validatorDepositDataRoot;
+    }
+
+    /// @dev Returns the minipool's withdrawal credentials submitted to casper
+    function getWithdrawalCredentials() public view returns (bytes32) {
+        return staking.withdrawalCredentials;
     }
 
     /// @dev Gets the total user deposit capacity
@@ -304,6 +303,18 @@ contract RocketMinipool is RocketMinipoolBase {
     function updateStatus() public returns(bool) {
         // Will update the status of the pool if conditions are correct
         (bool success, bytes memory returnData) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("updateStatus()"));
+        require(success, string(returnData));
+        // Success
+        return true;
+    }
+
+    /// @dev Sets the minipool status to staking and sends the deposit to casper
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
+    function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public isNodeContract(msg.sender) returns(bool) {
+        // Will update the status of the pool if conditions are correct
+        (bool success, bytes memory returnData) = getContractAddress("rocketMinipoolDelegateStatus").delegatecall(abi.encodeWithSignature("stakeMinipool(bytes,bytes,bytes32)", _validatorPubkey, _validatorSignature, _validatorDepositDataRoot));
         require(success, string(returnData));
         // Success
         return true;

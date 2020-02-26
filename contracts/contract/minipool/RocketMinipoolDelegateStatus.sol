@@ -4,6 +4,7 @@ pragma solidity 0.5.8;
 // Interfaces
 import "./RocketMinipoolBase.sol";
 import "../../interface/RocketPoolInterface.sol";
+import "../../interface/node/RocketNodeKeysInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -113,6 +114,21 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         }
         // Done
         return true; 
+    }
+
+
+    /// @dev Sets the minipool status to staking and sends the deposit to casper
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
+    function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public isNodeContract(msg.sender) returns(bool) {
+        // Load contracts
+        rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
+        // Check and reserve the pubkey
+        rocketNodeKeys.validatePubkey(_validatorPubkey);
+        rocketNodeKeys.reservePubkey(node.owner, _validatorPubkey, true);
+        // Success
+        return true;
     }
 
 
