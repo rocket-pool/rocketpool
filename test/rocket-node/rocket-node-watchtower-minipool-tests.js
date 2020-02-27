@@ -91,7 +91,13 @@ export default function() {
         it(printTitle('untrusted node', 'cannot logout a staking minipool'), async () => {
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker});
+            await stakeSingleMinipool({
+                minipoolAddress: minipool.address,
+                nodeContract: untrustedNodeContract,
+                nodeOperator: untrustedNodeOperator,
+                groupAccessorContract,
+                staker,
+            });
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());

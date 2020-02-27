@@ -83,7 +83,13 @@ export default function() {
             });
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker: user3});
+            await stakeSingleMinipool({
+                minipoolAddress: minipool.address,
+                nodeContract,
+                nodeOperator,
+                groupAccessorContract,
+                staker: user3,
+            });
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
