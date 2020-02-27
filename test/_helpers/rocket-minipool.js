@@ -1,5 +1,6 @@
 // Dependencies
 import { TimeController } from '../_lib/utils/general'
+import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { RocketAdmin, RocketNodeAPI, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeWatchtower } from '../_lib/artifacts';
 import { userDeposit } from './rocket-deposit';
 
@@ -35,11 +36,12 @@ export async function timeoutMinipool({minipoolAddress, owner}) {
 
 
 // Make a single minipool progress to staking
-export async function stakeSingleMinipool({groupAccessorContract, staker}) {
+export async function stakeSingleMinipool({minipoolAddress, nodeContract, nodeOperator, groupAccessorContract, staker, depositLoops}) {
 
     // Get contracts
     let rocketDepositSettings = await RocketDepositSettings.deployed();
     let rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
+    let rocketNodeAPI = await RocketNodeAPI.deployed();
 
     // Get deposit settings
     let chunkSize = parseInt(await rocketDepositSettings.getDepositChunkSize.call());
@@ -53,15 +55,34 @@ export async function stakeSingleMinipool({groupAccessorContract, staker}) {
     let selfAssignableDepositSize = chunkSize * chunksPerDepositTx;
     let selfAssignableDepositsPerMinipool = Math.floor(miniPoolAssignAmount / selfAssignableDepositSize);
 
-    // Fill minipool
-    for (let di = 0; di < selfAssignableDepositsPerMinipool; ++di) {
-        await userDeposit({
-            depositorContract: groupAccessorContract,
-            durationID: '3m',
-            fromAddress: staker,
-            value: selfAssignableDepositSize,
-        });
+    // Perform multiple sets of deposits if required
+    if (!depositLoops) depositLoops = 1;
+    for (let i = 0; i < depositLoops; ++i) {
+
+        // Fill minipool
+        for (let di = 0; di < selfAssignableDepositsPerMinipool; ++di) {
+            await userDeposit({
+                depositorContract: groupAccessorContract,
+                durationID: '3m',
+                fromAddress: staker,
+                value: selfAssignableDepositSize,
+            });
+        }
+
     }
+
+    // Get casper deposit data
+    let withdrawalCredentials = await rocketNodeAPI.getWithdrawalCredentials.call();
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawal_credentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: 32000000000, // gwei
+        signature: getValidatorSignature(),
+    };
+    let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
+    // Stake minipool
+    await nodeContract.stakeMinipool(minipoolAddress, depositData.pubkey, depositData.signature, depositDataRoot, {from: nodeOperator});
 
 }
 

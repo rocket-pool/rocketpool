@@ -245,19 +245,31 @@ export default function() {
         it(printTitle('node operator', 'cannot withdraw from a staking minipool'), async () => {
 
             // Operator 1: create single minipool
-            let minipoolAddress = (await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
+            let minipoolAddress = (await createNodeMinipools({nodeContract: nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator, owner}))[0];
             minipool = await RocketMinipoolInterface.at(minipoolAddress);
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker: staker2});
+            await stakeSingleMinipool({
+                minipoolAddress: minipoolAddress,
+                nodeContract: nodeContract,
+                nodeOperator: operator,
+                groupAccessorContract,
+                staker: staker2,
+            });
 
             // Operator 2: create single minipool
             let minipoolAddress2 = (await createNodeMinipools({nodeContract: nodeContract2, stakingDurationID: '3m', minipoolCount: 1, nodeOperator: operator2, owner}))[0];
             minipool2 = await RocketMinipoolInterface.at(minipoolAddress2);
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker: staker3});
-            await stakeSingleMinipool({groupAccessorContract, staker: staker3});
+            await stakeSingleMinipool({
+                minipoolAddress: minipoolAddress2,
+                nodeContract: nodeContract2,
+                nodeOperator: operator2,
+                groupAccessorContract,
+                staker: staker3,
+                depositLoops: 2,
+            });
 
             // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
