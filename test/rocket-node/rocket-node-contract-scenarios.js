@@ -165,7 +165,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
     assert.equal(minipoolNodeDepositExists2, false, 'Incorrect updated minipool node deposit exists status');
     assert.equal(minipoolNodeBalance2, 0, 'Incorrect updated minipool node balance');
-    if (minipoolStatus1 == 4) { // Withdrawn
+    if (minipoolStatus1 == 5) { // Withdrawn
         assert.equal(nodeContractBalance2, nodeContractBalance1, 'Node contract ether balance changed and should not have');
         if (minipoolNodeBalance1 > 0) assert.isTrue(nodeAccountBalance2 > nodeAccountBalance1, 'Node rewards address rETH balance was not updated correctly');
     }

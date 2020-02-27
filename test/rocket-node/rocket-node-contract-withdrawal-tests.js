@@ -207,7 +207,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 1, 'Pre-check failed: minipool is not at PreLaunch status');
+            assert.equal(status, 1, 'Pre-check failed: minipool is not at DepositAssigned status');
 
             // Attempt to withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -228,7 +228,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 6, 'Pre-check failed: minipool is not at TimedOut status');
+            assert.equal(status, 7, 'Pre-check failed: minipool is not at TimedOut status');
 
             // Withdraw node deposit
             await scenarioWithdrawMinipoolDeposit({
@@ -274,8 +274,8 @@ export default function() {
             // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
             let status2 = parseInt(await minipool2.getStatus.call());
-            assert.equal(status, 2, 'Pre-check failed: minipool 1 is not at Staking status');
-            assert.equal(status2, 2, 'Pre-check failed: minipool 2 is not at Staking status');
+            assert.equal(status, 3, 'Pre-check failed: minipool 1 is not at Staking status');
+            assert.equal(status2, 3, 'Pre-check failed: minipool 2 is not at Staking status');
 
             // Withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -298,8 +298,8 @@ export default function() {
             // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
             let status2 = parseInt(await minipool2.getStatus.call());
-            assert.equal(status, 3, 'Pre-check failed: minipool 1 is not at LoggedOut status');
-            assert.equal(status2, 3, 'Pre-check failed: minipool 2 is not at LoggedOut status');
+            assert.equal(status, 4, 'Pre-check failed: minipool 1 is not at LoggedOut status');
+            assert.equal(status2, 4, 'Pre-check failed: minipool 2 is not at LoggedOut status');
 
             // Withdraw node deposit
             await assertThrows(scenarioWithdrawMinipoolDeposit({
@@ -322,8 +322,8 @@ export default function() {
             // Check minipool statuses
             let status = parseInt(await minipool.getStatus.call());
             let status2 = parseInt(await minipool2.getStatus.call());
-            assert.equal(status, 4, 'Pre-check failed: minipool 1 is not at Withdrawn status');
-            assert.equal(status2, 4, 'Pre-check failed: minipool 2 is not at Withdrawn status');
+            assert.equal(status, 5, 'Pre-check failed: minipool 1 is not at Withdrawn status');
+            assert.equal(status2, 5, 'Pre-check failed: minipool 2 is not at Withdrawn status');
 
             // Withdraw all user deposits from minipool to force minipool to close
             let depositIDs = await getDepositIDs({groupID: groupContract.address, userID: staker2, durationID: '3m'});

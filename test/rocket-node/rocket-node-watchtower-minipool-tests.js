@@ -57,7 +57,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.notEqual(status, 2, 'Pre-check failed: minipool is at Staking status');
+            assert.notEqual(status, 3, 'Pre-check failed: minipool is at Staking status');
 
             // Attempt logout
             await assertThrows(scenarioLogoutMinipool({
@@ -74,7 +74,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.notEqual(status, 3, 'Pre-check failed: minipool is at LoggedOut status');
+            assert.notEqual(status, 4, 'Pre-check failed: minipool is at LoggedOut status');
 
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawMinipool({
@@ -101,7 +101,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+            assert.equal(status, 3, 'Pre-check failed: minipool is not at Staking status');
 
             // Attempt logout
             await assertThrows(scenarioLogoutMinipool({
@@ -118,7 +118,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+            assert.equal(status, 3, 'Pre-check failed: minipool is not at Staking status');
 
             // Logout
             await scenarioLogoutMinipool({
@@ -135,7 +135,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 3, 'Pre-check failed: minipool is not at LoggedOut status');
+            assert.equal(status, 4, 'Pre-check failed: minipool is not at LoggedOut status');
 
             // Attempt withdrawal
             await assertThrows(scenarioWithdrawMinipool({
@@ -153,7 +153,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 3, 'Pre-check failed: minipool is not at LoggedOut status');
+            assert.equal(status, 4, 'Pre-check failed: minipool is not at LoggedOut status');
 
             // Withdraw
             await scenarioWithdrawMinipool({
