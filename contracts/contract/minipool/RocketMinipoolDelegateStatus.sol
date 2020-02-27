@@ -73,6 +73,8 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
     function updateStatus() public returns(bool) {
         // Load contracts
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get minipool settings
+        uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         // Check to see if we can close the pool - stops execution if closed
         closePool();
         // Set to DepositAssigned - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
