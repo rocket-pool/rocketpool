@@ -112,7 +112,7 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         // Check minipool is ready for staking
-        require(, "Minipool is not ready to proceed to staking.");
+        require(status.current == 2, "Minipool may only be staked while in prelaunch");
         // Check node RPL balance
         if (!node.trusted) require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
         // Get and check current Rocket Pool withdrawal credentials
