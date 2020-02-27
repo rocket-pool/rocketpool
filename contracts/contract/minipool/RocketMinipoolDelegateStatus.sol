@@ -4,7 +4,6 @@ pragma solidity 0.5.8;
 // Interfaces
 import "./RocketMinipoolBase.sol";
 import "../../interface/RocketPoolInterface.sol";
-import "../../interface/node/RocketNodeKeysInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/utils/pubsub/PublisherInterface.sol";
@@ -102,7 +101,6 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
     function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public isNodeContract(msg.sender) returns(bool) {
         // Load contracts
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        rocketNodeKeys = RocketNodeKeysInterface(getContractAddress("rocketNodeKeys"));
         rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
@@ -110,11 +108,9 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         require(getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount, "Minipool is not ready to proceed to staking.");
         // Check node RPL balance
         if (!node.trusted) require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
-        // Check and reserve the pubkey
-        rocketNodeKeys.validatePubkey(_validatorPubkey);
-        rocketNodeKeys.reservePubkey(node.owner, _validatorPubkey, true);
-        // Get current Rocket Pool withdrawal credentials
+        // Get and check current Rocket Pool withdrawal credentials
         bytes32 withdrawalCredentials = rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
+        require(withdrawalCredentials != 0x0, "Rocket Pool withdrawal pubkey has not been initialized.");
         // Set staking properties
         staking.balanceStart = launchAmount;
         staking.validatorPubkey = _validatorPubkey;

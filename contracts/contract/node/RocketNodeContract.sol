@@ -4,6 +4,7 @@ pragma solidity 0.5.8;
 import "../../interface/token/ERC20.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/api/RocketNodeAPIInterface.sol";
+import "../../interface/node/RocketNodeKeysInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -35,6 +36,7 @@ contract RocketNodeContract {
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);                               // The main Rocket Pool storage contract where primary persistant storage is maintained
     RocketNodeAPIInterface rocketNodeAPI = RocketNodeAPIInterface(0);                               // The main node API
+    RocketNodeKeysInterface rocketNodeKeys = RocketNodeKeysInterface(0);                            // The node key management contract
     RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(0);                            // Minipool contract
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);                // The main node settings
     RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(0);    // The main minipool settings
@@ -253,6 +255,25 @@ contract RocketNodeContract {
         }
         // Delete the deposit reservation
         delete depositReservation;
+        // Done
+        return true;
+    }
+
+
+    /// @dev Sets a minipool's status to staking and sends its deposit to casper
+    /// @param _minipool The address of the minipool to stake
+    /// @param _validatorPubkey The validator's pubkey to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorSignature The validator's signature to be submitted to the casper deposit contract for the deposit
+    /// @param _validatorDepositDataRoot The validator's deposit data SSZ hash tree root to be submitted to the casper deposit contract for the deposit
+    function stakeMinipool(address _minipool, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot) public onlyNodeOwner() returns(bool) {
+        // Get contracts
+        rocketMinipool = RocketMinipoolInterface(_minipool);
+        rocketNodeKeys = RocketNodeKeysInterface(rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketNodeKeys"))));
+        // Check and reserve the pubkey
+        rocketNodeKeys.validatePubkey(_validatorPubkey);
+        rocketNodeKeys.reservePubkey(owner, _validatorPubkey, true);
+        // Stake minipool
+        require(rocketMinipool.stakeMinipool(_validatorPubkey, _validatorSignature, _validatorDepositDataRoot), "The minipool did not stake successfully");
         // Done
         return true;
     }
