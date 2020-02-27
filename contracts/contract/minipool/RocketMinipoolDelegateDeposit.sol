@@ -89,7 +89,7 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
     /// @param _refundAddress The address to refund the deposit to
     function refund(bytes32 _depositID, address _refundAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
-        require(status.current == 6, "Minipool is not currently allowing refunds.");
+        require(status.current == 7, "Minipool is not currently allowing refunds.");
         // Check deposit ID and balance
         require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
         require(deposits[_depositID].balance > 0, "Deposit does not have remaining balance in minipool.");
@@ -121,7 +121,7 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
     /// @param _withdrawnAddress The address the deposit was withdrawn to
     function withdrawStaking(bytes32 _depositID, uint256 _withdrawnAmount, uint256 _tokenAmount, address _withdrawnAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
-        require(status.current == 2 || status.current == 3, "Minipool is not currently allowing early withdrawals.");
+        require(status.current == 2 || status.current == 3 || status.current == 4, "Minipool is not currently allowing early withdrawals.");
         // Check deposit ID and withdrawn amount
         require(deposits[_depositID].exists, "Deposit does not exist in minipool.");
         require(deposits[_depositID].balance >= _withdrawnAmount, "Insufficient balance for withdrawal.");
@@ -164,7 +164,7 @@ contract RocketMinipoolDelegateDeposit is RocketMinipoolBase {
     /// @param _withdrawalAddress The address to withdraw the deposit to
     function withdraw(bytes32 _depositID, address _withdrawalAddress) public onlyLatestContract("rocketDeposit") returns(bool) {
         // Check current status
-        require(status.current == 4, "Minipool is not currently allowing withdrawals.");
+        require(status.current == 5, "Minipool is not currently allowing withdrawals.");
         require(staking.balanceStart > 0, "Invalid balance at staking start");
         // Check deposit ID and balance
         require(deposits[_depositID].exists, "Deposit does not exist in minipool.");

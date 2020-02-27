@@ -75,17 +75,24 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check to see if we can close the pool - stops execution if closed
         closePool();
-        // Set to Prelaunch - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
-        if (getDepositCount() == 1 && status.current == 0) {
-            // Prelaunch
+        // Set to DepositAssigned - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
+        if (getDepositCount() > 0 && status.current == 0) {
+            // DepositAssigned
             setStatus(1);
+            // Done
+            return true;
+        }
+        // Set to PreLaunch - Minipool is ready to begin staking
+        if (getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount) {
+            // PreLaunch
+            setStatus(2);
             // Done
             return true;
         }
         // Set to TimedOut - If a minipool is widowed or stuck for a long time, it is classed as timed out (it has users, not enough to begin staking, but the node owner cannot close it)
         if (status.current == 1 && status.time <= (now - rocketMinipoolSettings.getMinipoolTimeout())) {
             // TimedOut
-            setStatus(6);
+            setStatus(7);
             // Done
             return true;
         }
@@ -105,7 +112,7 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         // Get minipool settings
         uint256 launchAmount = rocketMinipoolSettings.getMinipoolLaunchAmount();
         // Check minipool is ready for staking
-        require(getDepositCount() > 0 && status.current == 1 && address(this).balance >= launchAmount, "Minipool is not ready to proceed to staking.");
+        require(, "Minipool is not ready to proceed to staking.");
         // Check node RPL balance
         if (!node.trusted) require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
         // Get and check current Rocket Pool withdrawal credentials
@@ -122,7 +129,7 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
         // Send deposit to casper deposit contract
         casperDeposit.deposit.value(launchAmount)(_validatorPubkey, abi.encodePacked(withdrawalCredentials), _validatorSignature, _validatorDepositDataRoot);
         // Set Staking status
-        setStatus(2);
+        setStatus(3);
         // Success
         return true;
     }
@@ -131,9 +138,9 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
     /// @dev Sets the minipool to logged out
     function logoutMinipool() public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
         // Check current status
-        require(status.current == 2, "Minipool may only be logged out while staking");
+        require(status.current == 3, "Minipool may only be logged out while staking");
         // Set LoggedOut status
-        setStatus(3);
+        setStatus(4);
         // Success
         return true;
     }
@@ -143,9 +150,9 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
     /// @param _withdrawalBalance The minipool's balance at withdrawal
     function withdrawMinipool(uint256 _withdrawalBalance) public onlyLatestContract("rocketNodeWatchtower") returns (bool) {
         // Check current status
-        require(status.current == 3, "Minipool may only be withdrawn while logged out");
+        require(status.current == 4, "Minipool may only be withdrawn while logged out");
         // Set Withdrawn status
-        setStatus(4);
+        setStatus(5);
         // Set staking end balance
         staking.balanceEnd = _withdrawalBalance;
         // Success

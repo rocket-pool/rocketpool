@@ -69,7 +69,7 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
     /// @dev Withdraw ether / rpl deposit from the minipool if initialised, timed out or withdrawn
     function nodeWithdraw() public isNodeContract(msg.sender) returns(bool) {
         // Check current status
-        require(status.current == 0 || status.current == 4 || status.current == 6, "Minipool is not currently allowing node withdrawals.");
+        require(status.current == 0 || status.current == 5 || status.current == 7, "Minipool is not currently allowing node withdrawals.");
         // Check node operator's deposit exists
         require(node.depositExists == true, "Node operator does not have a deposit in minipool.");
         // Get withdrawal amounts
@@ -83,7 +83,7 @@ contract RocketMinipoolDelegateNode is RocketMinipoolBase {
         // Transfer RPL balance to node contract
         if (rplAmount > 0) { require(rplContract.transfer(node.contractAddress, rplAmount), "RPL balance transfer error."); }
         // Refunding ether to node contract if initialised or timed out
-        if (status.current == 0 || status.current == 6) {
+        if (status.current == 0 || status.current == 7) {
             etherAmount = nodeBalance;
             if (etherAmount > 0) { address(uint160(node.contractAddress)).transfer(etherAmount); }
         }

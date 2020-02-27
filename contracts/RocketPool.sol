@@ -70,11 +70,11 @@ contract RocketPool is RocketBase {
     /// @dev Minipool status changed
     function onMinipoolStatusChange(address _minipoolAddress, uint8 _newStatus) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Staking / timed out - set minipool unavailable
-        if (_newStatus == uint8(2) || _newStatus == uint8(6)) { minipoolAvailable(_minipoolAddress, false); }
+        // Prelaunch / timed out - set minipool unavailable
+        if (_newStatus == uint8(2) || _newStatus == uint8(7)) { minipoolAvailable(_minipoolAddress, false); }
 
         // Withdrawn / timed out - decrease total network ether capacity & assigned ether
-        if (_newStatus == uint8(4) || _newStatus == uint8(6)) {
+        if (_newStatus == uint8(5) || _newStatus == uint8(7)) {
             rocketMinipool = RocketMinipoolInterface(_minipoolAddress);
             networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
             networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
