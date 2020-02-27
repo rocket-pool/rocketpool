@@ -1,6 +1,6 @@
 // Dependencies
 import { TimeController } from '../_lib/utils/general'
-import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
+import { getValidatorPubkey, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { RocketAdmin, RocketNodeAPI, RocketDepositSettings, RocketMinipoolInterface, RocketMinipoolSettings, RocketNodeWatchtower } from '../_lib/artifacts';
 import { userDeposit } from './rocket-deposit';
 
