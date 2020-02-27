@@ -1,24 +1,14 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
-import { getWithdrawalCredentials, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketETHToken, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
-export async function scenarioDepositReserve({nodeContract, durationID, validatorPubkey, validatorSignature, fromAddress, gas}) {
-
-    // Get deposit data
-    let depositData = {
-        pubkey: validatorPubkey,
-        withdrawal_credentials: getWithdrawalCredentials(),
-        amount: 32000000000, // gwei
-        signature: validatorSignature,
-    };
-    let depositDataRoot = getValidatorDepositDataRoot(depositData);
+export async function scenarioDepositReserve({nodeContract, durationID, fromAddress, gas}) {
 
     // Reserve deposit
-    let result = await nodeContract.depositReserve(durationID, validatorPubkey, validatorSignature, depositDataRoot, {from: fromAddress, gas: gas});
+    let result = await nodeContract.depositReserve(durationID, {from: fromAddress, gas: gas});
 
     // Get deposit reservation event
     let depositReservationEvents = result.logs.filter(log => (log.event == 'NodeDepositReservation' && log.args._from.toLowerCase() == fromAddress.toLowerCase()));
