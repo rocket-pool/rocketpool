@@ -1,5 +1,6 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
+import { getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketETHToken, RocketPoolToken } from '../_lib/artifacts';
 
@@ -109,6 +110,37 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
             assert.equal(depositMiniPoolRPLLogs[index].args._minipool, depositMiniPoolETHLogs[index].args._minipool, 'Deposited minipool addresses do not match');
         });
     }
+
+}
+
+
+// Stake a prelaunch minipool
+export async function scenarioStakeMinipool({nodeContract, minipoolAddress, validatorPubkey, withdrawalCredentials, fromAddress, gas}) {
+
+    // Get minipool contract
+    let minipool = await RocketMinipool.at(minipoolAddress);
+
+    // Get initial minipool status
+    let minipoolStatus1 = parseInt(await minipool.getStatus.call());
+
+    // Get casper deposit data
+    let depositData = {
+        pubkey: validatorPubkey,
+        withdrawal_credentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: 32000000000, // gwei
+        signature: getValidatorSignature(),
+    };
+    let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
+    // Stake minipool
+    await nodeContract.stakeMinipool(minipoolAddress, depositData.pubkey, depositData.signature, depositDataRoot, {from: fromAddress, gas: gas});
+
+    // Get updated minipool status
+    let minipoolStatus2 = parseInt(await minipool.getStatus.call());
+
+    // Asserts
+    assert.equal(minipoolStatus1, 2, 'Minipool was not at prelaunch status');
+    assert.equal(minipoolStatus2, 3, 'Minipool was not successfully progressed to staking status');
 
 }
 
