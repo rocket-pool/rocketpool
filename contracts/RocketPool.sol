@@ -45,6 +45,14 @@ contract RocketPool is RocketBase {
         uint256 created
     );
 
+    event NetworkUtilisationChanged (
+        bytes32 indexed _durationID,
+        uint256 capacity,
+        uint256 assigned,
+        uint256 utilisation,
+        uint256 created
+    );
+
 
     /*** Modifiers *************/
 
@@ -254,6 +262,7 @@ contract RocketPool is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).add(_value)
         );
+        emit NetworkUtilisationChanged(keccak256(abi.encodePacked(_durationID)), getTotalEther("capacity", _durationID), getTotalEther("assigned", _durationID), getNetworkUtilisation(_durationID), now);
     }
 
 
@@ -265,6 +274,7 @@ contract RocketPool is RocketBase {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID)),
             rocketStorage.getUint(keccak256(abi.encodePacked("network.ether.total", _type, _durationID))).sub(_value)
         );
+        emit NetworkUtilisationChanged(keccak256(abi.encodePacked(_durationID)), getTotalEther("capacity", _durationID), getTotalEther("assigned", _durationID), getNetworkUtilisation(_durationID), now);
     }
 
 
