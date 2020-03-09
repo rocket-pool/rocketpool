@@ -191,29 +191,8 @@ export async function scenarioDeposit({depositorContract, durationID, fromAddres
     for (let address in minipoolEtherAssigned) {
         let amount = minipoolEtherAssigned[address];
 
-        // Get expected minipool balance
-        let expectedBalance = minipoolBalances1[address] + amount;
-
-        // Minipool launching
-        if (expectedBalance >= launchAmount) {
-            expectedBalance = 0;
-
-            // Get minipool's validator pubkey
-            let minipool = await RocketMinipool.at(address);
-            let pubkey = (await minipool.getValidatorPubkey.call()).substr(2);
-
-            // Wait for beacon chain simulator
-            await new Promise(resolve => { setTimeout(() => { resolve(true); }, 10000); });
-
-            // Check for validator on beacon chain
-            let validatorExists = true;
-            try { await getValidatorStatus(pubkey); }
-            catch (e) { validatorExists = false; }
-            assert.isTrue(validatorExists, 'Launched minipool validator does not exist on beacon chain');
-
-        }
-
         // Check minipool balance
+        let expectedBalance = minipoolBalances1[address] + amount;
         assert.equal(minipoolBalances2[address], expectedBalance, 'Assigned minipool balance was not updated correctly');
 
     }

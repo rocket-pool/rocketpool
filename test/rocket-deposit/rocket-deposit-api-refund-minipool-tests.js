@@ -73,7 +73,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 1, 'Pre-check failed: minipool is not at PreLaunch status');
+            assert.equal(status, 1, 'Pre-check failed: minipool is not at DepositAssigned status');
 
             // Get deposit ID
             depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
@@ -98,7 +98,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 6, 'Pre-check failed: minipool is not at TimedOut status');
+            assert.equal(status, 7, 'Pre-check failed: minipool is not at TimedOut status');
 
             // Refund minipool deposit
             await scenarioRefundStalledMinipoolDeposit({

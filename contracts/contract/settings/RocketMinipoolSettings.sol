@@ -16,12 +16,13 @@ contract RocketMinipoolSettings is RocketBase {
     // Pool statuses are defined here and converted to uint when setting, their corresponding uint value is commented below
     enum MinipoolStatuses { 
         Initialised,                // 0 - A new minipool instance created by a node with their ether/rpl on it, has not been assigned any users yet and can be removed by the node owner if desired.
-        PreLaunch,                  // 1 - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
-        Staking,                    // 2 - Minipool has received enough ether to begin staking, it's users and node owners ether is combined and sent to stake with Casper for the desired duration.
-        LoggedOut,                  // 3 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
-        Withdrawn,                  // 4 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
-        Closed,                     // 5 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
-        TimedOut                    // 6 - The minipool has been assigned user(s) but has still not begun staking within the timeout period. The minipool will not progress to staking, and all users can withdraw.
+        DepositAssigned,            // 1 - Minipool has been assigned user(s) ether but not enough to begin staking yet. Node owners cannot withdraw their ether/rpl.
+        PreLaunch,                  // 2 - Minipool has received enough ether to begin staking
+        Staking,                    // 3 - The minipool's ether is sent to stake with Casper for the desired duration.
+        LoggedOut,                  // 4 - The pool has now requested logout from the casper validator contract, it will stay in this status until it can withdraw
+        Withdrawn,                  // 5 - The pool has requested it's deposit from Casper and received its deposit +rewards || -penalties
+        Closed,                     // 6 - Pool has had all its balance withdrawn by its users and no longer contains any users or balance
+        TimedOut                    // 7 - The minipool has been assigned user(s) but has still not begun staking within the timeout period. The minipool will not progress to staking, and all users can withdraw.
     }
 
 

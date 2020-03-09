@@ -83,11 +83,17 @@ export default function() {
             });
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker: user3});
+            await stakeSingleMinipool({
+                minipoolAddress: minipool.address,
+                nodeContract,
+                nodeOperator,
+                groupAccessorContract,
+                staker: user3,
+            });
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 2, 'Pre-check failed: minipool is not at Staking status');
+            assert.equal(status, 3, 'Pre-check failed: minipool is not at Staking status');
 
             // Get deposit ID
             depositID1 = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
@@ -198,7 +204,7 @@ export default function() {
 
             // Check minipool status
             let status = parseInt(await minipool.getStatus.call());
-            assert.equal(status, 4, 'Pre-check failed: minipool is not at Withdrawn status');
+            assert.equal(status, 5, 'Pre-check failed: minipool is not at Withdrawn status');
 
             // Withdraw minipool deposit
             await scenarioWithdrawMinipoolDeposit({

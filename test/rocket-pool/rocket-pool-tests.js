@@ -1,5 +1,4 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { getValidatorPubkey, getWithdrawalCredentials, getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { scenarioGetContractAddress, scenarioCreateMinipool, scenarioRemoveMinipool } from './rocket-pool-scenarios';
 
 export default function() {
@@ -21,22 +20,10 @@ export default function() {
         // Cannot create a minipool directly
         it(printTitle('-----', 'cannot create a minipool directly'), async () => {
 
-            // Get deposit data
-            let depositData = {
-                pubkey: getValidatorPubkey(),
-                withdrawal_credentials: getWithdrawalCredentials(),
-                amount: 32000000000, // gwei
-                signature: getValidatorSignature(),
-            };
-            let depositDataRoot = getValidatorDepositDataRoot(depositData);
-
             // Create minipool
             await assertThrows(scenarioCreateMinipool({
                 nodeOwner: nodeOwner,
                 durationID: '3m',
-                validatorPubkey: depositData.pubkey,
-                validatorSignature: depositData.signature,
-                validatorDepositDataRoot: depositDataRoot,
                 etherAmount: web3.utils.toWei('1', 'ether'),
                 rplAmount: web3.utils.toWei('1', 'ether'),
                 isTrusted: false,
