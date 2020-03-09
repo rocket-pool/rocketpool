@@ -24,6 +24,15 @@ contract CalculateNodeFee is RocketBase {
     RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(0);
 
 
+    /*** Events *****************/
+
+
+    event NodeFeeChanged (
+        uint256 feePerc,
+        uint256 created
+    );
+
+
     /*** Methods ****************/
 
 
@@ -56,9 +65,11 @@ contract CalculateNodeFee is RocketBase {
             uint256 maxFeePerc = rocketNodeSettings.getMaxFeePerc();
             if (increaseVotes > decreaseVotes && increaseVotes > noChangeVotes && feePerc <= maxFeePerc.sub(feeVoteCyclePercChange)) {
                 rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), feePerc.add(feeVoteCyclePercChange));
+                emit NodeFeeChanged(rocketNodeSettings.getFeePerc(), now);
             }
             else if (decreaseVotes > increaseVotes && decreaseVotes > noChangeVotes && feePerc >= minFeePerc.add(feeVoteCyclePercChange)) {
                 rocketStorage.setUint(keccak256(abi.encodePacked("settings.node.fee.perc")), feePerc.sub(feeVoteCyclePercChange));
+                emit NodeFeeChanged(rocketNodeSettings.getFeePerc(), now);
             }
             // Reset voting cycle
             rocketStorage.setUint(keccak256(abi.encodePacked("nodes.fee.voting.cycle")), currentVotingCycle);
