@@ -1,5 +1,6 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
 import { RocketAdmin, RocketMinipoolInterface } from '../_lib/artifacts';
+import { setRocketPoolWithdrawalKey } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
 import { createNodeContract, createNodeMinipools } from '../_helpers/rocket-node';
 import { stakeSingleMinipool } from '../_helpers/rocket-minipool';
@@ -7,7 +8,7 @@ import { scenarioLogoutMinipool, scenarioWithdrawMinipool } from './rocket-node-
 
 export default function() {
 
-    contract('RocketNodeWatchtower', async (accounts) => {
+    contract('RocketNodeWatchtower - Minipools', async (accounts) => {
 
 
         // Accounts
@@ -16,6 +17,7 @@ export default function() {
         const untrustedNodeOperator = accounts[2];
         const trustedNodeOperator = accounts[3];
         const staker = accounts[4];
+        const withdrawalKeyOperator = accounts[5];
 
 
         // Setup
@@ -24,6 +26,9 @@ export default function() {
         let minipool;
         let groupAccessorContract;
         before(async () => {
+
+            // Set Rocket Pool withdrawal key
+            await setRocketPoolWithdrawalKey({nodeOperator: withdrawalKeyOperator, owner});
 
             // Create node contracts
             untrustedNodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator: untrustedNodeOperator});

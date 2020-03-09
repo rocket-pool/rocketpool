@@ -1,5 +1,5 @@
 // Dependencies
-import { RocketETHToken, RocketNodeWatchtower } from '../_lib/artifacts';
+import { RocketETHToken, RocketNodeAPI, RocketNodeWatchtower } from '../_lib/artifacts';
 
 
 // Logout minipool
@@ -46,6 +46,23 @@ export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, 
     assert.equal(status1, 3, 'Minipool was not at LoggedOut status before withdrawal');
     assert.equal(status2, 4, 'Minipool was not set to Withdrawn status successfully');
     assert.equal(rethBalance2, rethBalance1 + expectedRethIncrease, 'Minipool rETH balance was not increased correctly');
+
+}
+
+
+// Update Rocket Pool withdrawal key
+export async function scenarioUpdateWithdrawalKey({withdrawalKey, withdrawalCredentials, fromAddress, gas, expectUpdate}) {
+    const rocketNodeAPI = await RocketNodeAPI.deployed();
+    const rocketNodeWatchtower = await RocketNodeWatchtower.deployed();
+
+    // Update withdrawal key
+    await rocketNodeWatchtower.updateWithdrawalKey(withdrawalKey, withdrawalCredentials, {from: fromAddress, gas: gas});
+
+    // Get current withdrawal key
+    let currentWithdrawalKey = await rocketNodeAPI.getWithdrawalKey.call();
+
+    // Asserts
+    if (expectUpdate) assert.equal(currentWithdrawalKey, '0x' + withdrawalKey.toString('hex'), 'Withdrawal key was not updated successfully');
 
 }
 

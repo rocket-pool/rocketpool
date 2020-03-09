@@ -153,6 +153,18 @@ contract RocketNodeAPI is RocketBase {
     }
 
 
+    /// @dev Returns the current Rocket Pool withdrawal key
+    function getWithdrawalKey() public view returns (bytes memory) {
+        return rocketStorage.getBytes(keccak256(abi.encodePacked("withdrawalKey")));
+    }
+
+
+    /// @dev Returns the current Rocket Pool withdrawal key
+    function getWithdrawalCredentials() public view returns (bytes32) {
+        return rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
+    }
+
+
     /// @dev Checks if the deposit reservations parameters are correct for a successful reservation
     /// @param _nodeOwner  The address of the nodes owner
     /// @param _durationID The ID that determines which pool the user intends to join based on the staking blocks of that pool (3 months, 6 months etc)

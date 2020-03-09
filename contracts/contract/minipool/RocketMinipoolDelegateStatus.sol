@@ -90,11 +90,10 @@ contract RocketMinipoolDelegateStatus is RocketMinipoolBase {
             if(!node.trusted) {
                 require(rplContract.balanceOf(address(this)) >= node.depositRPL, "Nodes RPL balance does not match its intended staking balance.");
             }
-            // Rocket Pool withdrawal credentials
-            // TODO: replace with real value; this uses a hash of pubkey 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-            bytes memory rpWithdrawalCredentials = hex"00d234647c45290c9884ba3aceccc7da5cfd19cfa5ccfed70fe75712578d3bb1";
+            // Get Rocket Pool withdrawal credentials
+            bytes32 withdrawalCredentials = rocketStorage.getBytes32(keccak256(abi.encodePacked("withdrawalCredentials")));
             // Send deposit to casper deposit contract
-            casperDeposit.deposit.value(launchAmount)(staking.validatorPubkey, rpWithdrawalCredentials, staking.validatorSignature, staking.validatorDepositDataRoot);
+            casperDeposit.deposit.value(launchAmount)(staking.validatorPubkey, abi.encodePacked(withdrawalCredentials), staking.validatorSignature, staking.validatorDepositDataRoot);
             // Set staking start balance
             staking.balanceStart = launchAmount;
             // Set node user fee

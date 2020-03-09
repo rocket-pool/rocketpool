@@ -4,6 +4,7 @@ pragma solidity 0.5.8;
 import "../../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
+import "../../interface/utils/lists/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 
 
@@ -23,6 +24,7 @@ contract RocketNodeWatchtower is RocketBase {
 
 
     RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(0);
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
 
     /*** Modifiers **************/
@@ -50,6 +52,12 @@ contract RocketNodeWatchtower is RocketBase {
         string  indexed _duration,
         uint256 balanceStart,
         uint256 balanceEnd,
+        uint256 created
+    );
+
+    event WithdrawalKeyUpdated (
+        bytes   indexed _withdrawalKey,
+        bytes32 indexed _withdrawalCredentials,
         uint256 created
     );
 
@@ -97,6 +105,32 @@ contract RocketNodeWatchtower is RocketBase {
         }
         // Emit withdrawal event
         emit PoolWithdrawn(_minipool, msg.sender, minipool.getStakingDurationID(), minipool.getStakingBalanceStart(), minipool.getStakingBalanceEnd(), now);
+        // Success
+        return true;
+    }
+
+
+    /// @dev Update the Rocket Pool withdrawal key & credentials
+    /// @param _withdrawalKey The new withdrawal key to use
+    /// @param _withdrawalCredentials The new withdrawal credentials to use
+    function updateWithdrawalKey(bytes memory _withdrawalKey, bytes32 _withdrawalCredentials) public onlyTrustedNode returns (bool) {
+        // Check withdrawal key length
+        require(_withdrawalKey.length == 48, "Invalid withdrawal key length");
+        // Initialise contracts
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        // Check node has not already approved update
+        require(addressSetStorage.getIndexOf(keccak256(abi.encodePacked("withdrawalKey.update.approvals", _withdrawalKey, _withdrawalCredentials)), msg.sender) == -1, "Node has already approved this withdrawal key update.");
+        // Approve update
+        addressSetStorage.addItem(keccak256(abi.encodePacked("withdrawalKey.update.approvals", _withdrawalKey, _withdrawalCredentials)), msg.sender);
+        // Complete update if approved by >= 50% of nodes
+        uint256 trusteNodeCount = addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted")));
+        if (addressSetStorage.getCount(keccak256(abi.encodePacked("withdrawalKey.update.approvals", _withdrawalKey, _withdrawalCredentials))).mul(2) >= trusteNodeCount) {
+            // Set withdrawal key & credentials
+            rocketStorage.setBytes(keccak256(abi.encodePacked("withdrawalKey")), _withdrawalKey);
+            rocketStorage.setBytes32(keccak256(abi.encodePacked("withdrawalCredentials")), _withdrawalCredentials);
+            // Emit update event
+            emit WithdrawalKeyUpdated(_withdrawalKey, _withdrawalCredentials, now);
+        }
         // Success
         return true;
     }

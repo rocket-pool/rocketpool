@@ -4,6 +4,7 @@ pragma solidity 0.5.8;
 import "./RocketBase.sol";
 // Interfaces
 import "./interface/group/RocketGroupContractInterface.sol";
+import "./interface/utils/lists/AddressSetStorageInterface.sol";
 
 
 /// @title Admin only methods for Rocket Pool owner and admins
@@ -11,6 +12,8 @@ import "./interface/group/RocketGroupContractInterface.sol";
 contract RocketAdmin is RocketBase {
 
     /*** Contracts **************/
+
+    AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(0);
 
   
     /*** Events ****************/
@@ -40,6 +43,10 @@ contract RocketAdmin is RocketBase {
         require(rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "Node trusted status already set.");
         // Set now
         rocketStorage.setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
+        // Update trusted node set
+        addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
+        if (_trusted) { addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted")), _nodeAddress); }
+        else { addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted")), _nodeAddress); }
         // Return success flag
         return true;
     }

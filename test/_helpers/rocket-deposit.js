@@ -1,5 +1,24 @@
 // Dependencies
-import { RocketDepositIndex } from '../_lib/artifacts';
+import { RocketAdmin, RocketDepositIndex, RocketNodeAPI, RocketNodeWatchtower } from '../_lib/artifacts';
+import { getWithdrawalPubkey, getWithdrawalCredentials } from '../_lib/utils/beacon';
+
+
+// Set the Rocket Pool withdrawal key & credentials
+export async function setRocketPoolWithdrawalKey({nodeOperator, owner}) {
+
+    // Register node
+    let rocketNodeAPI = await RocketNodeAPI.deployed();
+    await rocketNodeAPI.add('Australia/Brisbane', {from: nodeOperator});
+
+    // Set node status
+    let rocketAdmin = await RocketAdmin.deployed();
+    await rocketAdmin.setNodeTrusted(nodeOperator, true, {from: owner});
+
+    // Set withdrawal credentials
+    let rocketNodeWatchtower = await RocketNodeWatchtower.deployed();
+    await rocketNodeWatchtower.updateWithdrawalKey(getWithdrawalPubkey(), getWithdrawalCredentials(), {from: nodeOperator});
+
+}
 
 
 // Get a user's queued deposit IDs
