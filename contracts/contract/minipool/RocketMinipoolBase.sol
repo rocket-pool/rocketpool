@@ -41,7 +41,7 @@ contract RocketMinipoolBase {
     /*** Contracts **************/
 
     ERC20 rplContract = ERC20(0);                                                                   // The address of our RPL ERC20 token contract
-    ERC20 rethContract = ERC20(0);                                                                   // The address of our rETH ERC20 token contract
+    ERC20 rethContract = ERC20(0);                                                                  // The address of our rETH ERC20 token contract
     DepositInterface casperDeposit = DepositInterface(0);                                           // Interface of the Casper deposit contract
     RocketGroupContractInterface rocketGroupContract = RocketGroupContractInterface(0);             // The users group contract that they belong to
     RocketNodeContractInterface rocketNodeContract = RocketNodeContractInterface(0);                // The node contract for the node which owns this minipool
@@ -77,9 +77,10 @@ contract RocketMinipoolBase {
         uint256 duration;                                       // Duration in blocks
         uint256 balanceStart;                                   // Ether balance of this minipool when it begins staking
         uint256 balanceEnd;                                     // rETH balance of this minipool when it completes staking
-        bytes   validatorPubkey;                                // Validator pubkey to be submitted to the casper deposit contract
-        bytes   validatorSignature;                             // Validator signature to be submitted to the casper deposit contract
-        bytes32 validatorDepositDataRoot;                       // Validator deposit data SSZ hash tree root to be submitted to the casper deposit contract
+        bytes   validatorPubkey;                                // Validator pubkey submitted to the casper deposit contract
+        bytes   validatorSignature;                             // Validator signature submitted to the casper deposit contract
+        bytes32 validatorDepositDataRoot;                       // Validator deposit data SSZ hash tree root submitted to the casper deposit contract
+        bytes32 withdrawalCredentials;                          // Withdrawal credentials submitted to the casper deposit contract
     }
 
     struct Deposit {

@@ -1,5 +1,4 @@
 import { printTitle, assertThrows } from '../_lib/utils/general';
-import { getValidatorPubkey, getValidatorSignature } from '../_lib/utils/beacon';
 import { RocketAdmin, RocketDepositSettings, RocketMinipoolSettings, RocketNodeAPI, RocketNodeSettings, RocketPool } from '../_lib/artifacts';
 import { setRocketPoolWithdrawalKey, userDeposit } from '../_helpers/rocket-deposit';
 import { createGroupContract, createGroupAccessorContract, addGroupAccessor } from '../_helpers/rocket-group';
@@ -74,8 +73,6 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator2,
             }), 'Random account reserved a deposit');
         });
@@ -86,8 +83,6 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: 'beer',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             }), 'Reserved a deposit with an invalid staking duration ID');
         });
@@ -103,42 +98,11 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             }), 'Reserved a deposit while deposits are disabled');
 
             // Re-enable deposits
             await rocketNodeSettings.setDepositAllowed(true, {from: owner});
-
-        });
-
-
-        // Node operator cannot reserve a deposit with a used validator pubkey
-        it(printTitle('node operator', 'cannot reserve a deposit with a used validator pubkey'), async () => {
-
-            // Reserve and complete deposit
-            await scenarioDepositReserve({
-                nodeContract,
-                durationID: '6m',
-                validatorPubkey: Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex'),
-                validatorSignature: getValidatorSignature(),
-                fromAddress: operator,
-            });
-            await scenarioDeposit({
-                nodeContract,
-                value: depositAmount,
-                fromAddress: accounts[9], // Allowed from any address
-            });
-
-            // Attempt to reserve deposit with used pubkey
-            await assertThrows(scenarioDepositReserve({
-                nodeContract,
-                durationID: '6m',
-                validatorPubkey: Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex'),
-                validatorSignature: getValidatorSignature(),
-                fromAddress: operator,
-            }), 'Reserved a deposit with a used validator pubkey');
 
         });
 
@@ -150,8 +114,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             });
 
@@ -159,8 +121,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract: nodeContract2,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator2,
             });
 
@@ -172,8 +132,6 @@ export default function() {
             await assertThrows(scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             }), 'Reserved multiple simultaneous deposits');
         });
@@ -233,8 +191,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             });
 
@@ -348,8 +304,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             });
             await scenarioDeposit({
@@ -368,8 +322,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator,
             });
 
@@ -416,8 +368,6 @@ export default function() {
             await scenarioDepositReserve({
                 nodeContract: nodeContract2,
                 durationID: '3m',
-                validatorPubkey: getValidatorPubkey(),
-                validatorSignature: getValidatorSignature(),
                 fromAddress: operator2,
             });
 

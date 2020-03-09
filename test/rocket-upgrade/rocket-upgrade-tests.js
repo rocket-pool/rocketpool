@@ -39,6 +39,7 @@ export default function() {
         let rocketPIPNew;
         let groupContract;
         let groupAccessorContract;
+        let nodeContract;
         let minipool;
         before(async () => {
 
@@ -71,7 +72,7 @@ export default function() {
             await addGroupAccessor({groupContract, groupAccessorContractAddress: groupAccessorContract.address, groupOwner});
 
             // Create node contract & minipool
-            let nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
+            nodeContract = await createNodeContract({timezone: 'Australia/Brisbane', nodeOperator});
             let minipoolAddresses = await createNodeMinipools({nodeContract, stakingDurationID: '3m', minipoolCount: 1, nodeOperator, owner});
             minipool = await RocketMinipoolInterface.at(minipoolAddresses[0]);
 
@@ -191,7 +192,13 @@ export default function() {
             let depositID = await rocketDepositIndex.getUserQueuedDepositAt.call(groupContract.address, user1, '3m', 0);
 
             // Progress minipool to staking
-            await stakeSingleMinipool({groupAccessorContract, staker: user1});
+            await stakeSingleMinipool({
+                minipoolAddress: minipool.address,
+                nodeContract,
+                nodeOperator,
+                groupAccessorContract,
+                staker: user1,
+            });
 
             // Withdraw user from minipool while staking to get rETH tokens
             await rocketDepositSettings.setStakingWithdrawalAllowed(true, {from: owner, gas: 500000});

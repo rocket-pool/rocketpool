@@ -78,11 +78,11 @@ contract RocketPool is RocketBase {
     /// @dev Minipool status changed
     function onMinipoolStatusChange(address _minipoolAddress, uint8 _newStatus) public onlyLatestContract("utilPublisher", msg.sender) {
 
-        // Staking / timed out - set minipool unavailable
-        if (_newStatus == uint8(2) || _newStatus == uint8(6)) { minipoolAvailable(_minipoolAddress, false); }
+        // Prelaunch / timed out - set minipool unavailable
+        if (_newStatus == uint8(2) || _newStatus == uint8(7)) { minipoolAvailable(_minipoolAddress, false); }
 
         // Withdrawn / timed out - decrease total network ether capacity & assigned ether
-        if (_newStatus == uint8(4) || _newStatus == uint8(6)) {
+        if (_newStatus == uint8(5) || _newStatus == uint8(7)) {
             rocketMinipool = RocketMinipoolInterface(_minipoolAddress);
             networkDecreaseTotalEther("capacity", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositCapacity());
             networkDecreaseTotalEther("assigned", rocketMinipool.getStakingDurationID(), rocketMinipool.getUserDepositTotal());
@@ -157,13 +157,13 @@ contract RocketPool is RocketBase {
 
 
     /// @dev Create a minipool
-    function minipoolCreate(address _nodeOwner, string memory _durationID, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _validatorDepositDataRoot, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
+    function minipoolCreate(address _nodeOwner, string memory _durationID, uint256 _etherAmount, uint256 _rplAmount, bool _isTrustedNode) public onlyLatestContract("rocketNodeAPI", msg.sender) returns (address) {
         // Get contracts
         rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         addressSetStorage = AddressSetStorageInterface(getContractAddress("utilAddressSetStorage"));
         // Create minipool contract
-        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _validatorPubkey, _validatorSignature, _validatorDepositDataRoot, _etherAmount, _rplAmount, _isTrustedNode);
+        address minipoolAddress = rocketMinipoolFactory.createRocketMinipool(_nodeOwner, _durationID, _etherAmount, _rplAmount, _isTrustedNode);
         // Ok now set our data to key/value pair storage
         rocketStorage.setBool(keccak256(abi.encodePacked("minipool.exists", minipoolAddress)), true);
         // Update minipool indexes 

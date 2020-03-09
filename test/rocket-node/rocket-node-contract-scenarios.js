@@ -1,24 +1,15 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
-import { getWithdrawalCredentials, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
+import { getValidatorSignature, getValidatorDepositDataRoot } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketMinipool, RocketMinipoolSettings, RocketNodeAPI, RocketPool, RocketETHToken, RocketPoolToken } from '../_lib/artifacts';
 
 
 // Reserve a deposit
-export async function scenarioDepositReserve({nodeContract, durationID, validatorPubkey, validatorSignature, fromAddress, gas}) {
-
-    // Get deposit data
-    let depositData = {
-        pubkey: validatorPubkey,
-        withdrawal_credentials: getWithdrawalCredentials(),
-        amount: 32000000000, // gwei
-        signature: validatorSignature,
-    };
-    let depositDataRoot = getValidatorDepositDataRoot(depositData);
+export async function scenarioDepositReserve({nodeContract, durationID, fromAddress, gas}) {
 
     // Reserve deposit
-    let result = await nodeContract.depositReserve(durationID, validatorPubkey, validatorSignature, depositDataRoot, {from: fromAddress, gas: gas});
+    let result = await nodeContract.depositReserve(durationID, {from: fromAddress, gas: gas});
 
     // Get deposit reservation event
     let depositReservationEvents = result.logs.filter(log => (log.event == 'NodeDepositReservation' && log.args._from.toLowerCase() == fromAddress.toLowerCase()));
@@ -123,6 +114,37 @@ export async function scenarioDeposit({nodeContract, value, fromAddress, gas}) {
 }
 
 
+// Stake a prelaunch minipool
+export async function scenarioStakeMinipool({nodeContract, minipoolAddress, validatorPubkey, withdrawalCredentials, fromAddress, gas}) {
+
+    // Get minipool contract
+    let minipool = await RocketMinipool.at(minipoolAddress);
+
+    // Get initial minipool status
+    let minipoolStatus1 = parseInt(await minipool.getStatus.call());
+
+    // Get casper deposit data
+    let depositData = {
+        pubkey: validatorPubkey,
+        withdrawal_credentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: 32000000000, // gwei
+        signature: getValidatorSignature(),
+    };
+    let depositDataRoot = getValidatorDepositDataRoot(depositData);
+
+    // Stake minipool
+    await nodeContract.stakeMinipool(minipoolAddress, depositData.pubkey, depositData.signature, depositDataRoot, {from: fromAddress, gas: gas});
+
+    // Get updated minipool status
+    let minipoolStatus2 = parseInt(await minipool.getStatus.call());
+
+    // Asserts
+    assert.equal(minipoolStatus1, 2, 'Minipool was not at prelaunch status');
+    assert.equal(minipoolStatus2, 3, 'Minipool was not successfully progressed to staking status');
+
+}
+
+
 // Withdraw a deposit from a minipool
 export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAddress, fromAddress, gas}) {
     const rocketETHToken = await RocketETHToken.deployed();
@@ -175,7 +197,7 @@ export async function scenarioWithdrawMinipoolDeposit({nodeContract, minipoolAdd
     assert.equal(minipoolNodeDepositExists1, true, 'Incorrect initial minipool node deposit exists status');
     assert.equal(minipoolNodeDepositExists2, false, 'Incorrect updated minipool node deposit exists status');
     assert.equal(minipoolNodeBalance2, 0, 'Incorrect updated minipool node balance');
-    if (minipoolStatus1 == 4) { // Withdrawn
+    if (minipoolStatus1 == 5) { // Withdrawn
         assert.equal(nodeContractBalance2, nodeContractBalance1, 'Node contract ether balance changed and should not have');
         if (minipoolNodeBalance1 > 0) assert.isTrue(nodeAccountBalance2 > nodeAccountBalance1, 'Node rewards address rETH balance was not updated correctly');
     }

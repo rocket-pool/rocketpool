@@ -16,8 +16,8 @@ export async function scenarioLogoutMinipool({minipool, fromAddress, gas}) {
     let status2 = parseInt(await minipool.getStatus.call());
 
     // Asserts
-    assert.equal(status1, 2, 'Minipool was not at Staking status before logout');
-    assert.equal(status2, 3, 'Minipool was not set to LoggedOut status successfully');
+    assert.equal(status1, 3, 'Minipool was not at Staking status before logout');
+    assert.equal(status2, 4, 'Minipool was not set to LoggedOut status successfully');
 
 }
 
@@ -43,8 +43,8 @@ export async function scenarioWithdrawMinipool({minipool, balance, fromAddress, 
     let expectedRethIncrease = (stakingUserDepositsWithdrawn > parseInt(balance)) ? 0 : parseInt(balance) - stakingUserDepositsWithdrawn;
 
     // Asserts
-    assert.equal(status1, 3, 'Minipool was not at LoggedOut status before withdrawal');
-    assert.equal(status2, 4, 'Minipool was not set to Withdrawn status successfully');
+    assert.equal(status1, 4, 'Minipool was not at LoggedOut status before withdrawal');
+    assert.equal(status2, 5, 'Minipool was not set to Withdrawn status successfully');
     assert.equal(rethBalance2, rethBalance1 + expectedRethIncrease, 'Minipool rETH balance was not increased correctly');
 
 }
