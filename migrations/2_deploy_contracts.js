@@ -163,7 +163,7 @@ module.exports = async (deployer, network) => {
   else if (network == 'goerli') {
 
     // Casper deposit contract details
-    const casperDepositAddress = '0x4689a3C63CE249355C8a573B5974db21D2d1b8Ef';
+    const casperDepositAddress = '0xa4d8bee071d57ccf47d2bf9f2cc8dd9151e21ec5';
     const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     contracts.casperDeposit = {
           address: casperDepositAddress,
