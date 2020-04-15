@@ -20,8 +20,8 @@ export default function() {
             let depositAmount = web3.utils.toWei('0.5', 'ether');
             let depositData = {
                 pubkey: getValidatorPubkey(),
-                withdrawal_credentials: getWithdrawalCredentials(),
-                amount: (parseInt(depositAmount) / 1000000000), // to gwei
+                withdrawalCredentials: getWithdrawalCredentials(),
+                amount: BigInt(parseInt(depositAmount) / 1000000000), // to gwei
                 signature: getValidatorSignature(),
             };
             let depositDataRoot = getValidatorDepositDataRoot(depositData);
@@ -29,7 +29,7 @@ export default function() {
             // Deposit
             await assertThrows(scenarioValidatorDeposit({
                 pubkey: depositData.pubkey,
-                withdrawalCredentials: depositData.withdrawal_credentials,
+                withdrawalCredentials: depositData.withdrawalCredentials,
                 signature: depositData.signature,
                 depositDataRoot,
                 fromAddress: user1,
@@ -47,8 +47,8 @@ export default function() {
             let depositAmount = web3.utils.toWei('32', 'ether');
             let depositData = {
                 pubkey: getValidatorPubkey(),
-                withdrawal_credentials: getWithdrawalCredentials(),
-                amount: (parseInt(depositAmount) / 1000000000), // to gwei
+                withdrawalCredentials: getWithdrawalCredentials(),
+                amount: BigInt(parseInt(depositAmount) / 1000000000), // to gwei
                 signature: getValidatorSignature(),
             };
             let depositDataRoot = getValidatorDepositDataRoot(depositData);
@@ -56,7 +56,7 @@ export default function() {
             // Deposit
             await scenarioValidatorDeposit({
                 pubkey: depositData.pubkey,
-                withdrawalCredentials: depositData.withdrawal_credentials,
+                withdrawalCredentials: depositData.withdrawalCredentials,
                 signature: depositData.signature,
                 depositDataRoot,
                 fromAddress: user1,

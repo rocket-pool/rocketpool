@@ -1,4 +1,5 @@
 const ssz = require('@chainsafe/ssz');
+const types = require('@chainsafe/lodestar-types/lib/ssz/presets/mainnet').types;
 
 
 // Current default pubkey index
@@ -40,11 +41,6 @@ export function getValidatorSignature() {
 
 // Create validator deposit data root
 export function getValidatorDepositDataRoot(depositData) {
-    return ssz.hashTreeRoot(depositData, {fields: [
-        ['pubkey', 'bytes48'],
-        ['withdrawal_credentials', 'bytes32'],
-        ['amount', 'uint64'],
-        ['signature', 'bytes96'],
-    ]});
+    return types.DepositData.hashTreeRoot(depositData);
 }
 

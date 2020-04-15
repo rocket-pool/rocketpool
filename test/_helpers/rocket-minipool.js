@@ -75,8 +75,8 @@ export async function stakeSingleMinipool({minipoolAddress, nodeContract, nodeOp
     let withdrawalCredentials = await rocketNodeAPI.getWithdrawalCredentials.call();
     let depositData = {
         pubkey: getValidatorPubkey(),
-        withdrawal_credentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: 32000000000, // gwei
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(32000000000), // gwei
         signature: getValidatorSignature(),
     };
     let depositDataRoot = getValidatorDepositDataRoot(depositData);
