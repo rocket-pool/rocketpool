@@ -1,6 +1,5 @@
 // Dependencies
 import { getTransactionContractEvents } from '../_lib/utils/general';
-import { getValidatorStatus } from '../_lib/utils/beacon';
 import { profileGasUsage } from '../_lib/utils/profiling';
 import { RocketETHToken, RocketDepositAPI, RocketDepositIndex, RocketDepositQueue, RocketDepositSettings, RocketGroupContract, RocketMinipool, RocketMinipoolSettings, RocketNode, RocketNodeContract, RocketPool } from '../_lib/artifacts';
 
