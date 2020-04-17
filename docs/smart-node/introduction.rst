@@ -25,3 +25,4 @@ Contents
     deposits.rst
     minipools.rst
     reference.rst
+    api.rst
