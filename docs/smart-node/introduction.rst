@@ -26,3 +26,4 @@ Contents
     minipools.rst
     reference.rst
     api.rst
+    metrics.rst
