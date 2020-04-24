@@ -83,3 +83,12 @@ Token Exchange Commands
     * ``rocketpool api exchange price [amount] [token]``: Check the current price for an amount of a token on Uniswap
     * ``rocketpool api exchange buy [ethAmount] [tokenAmount] [token]``: Purchase tokens on Uniswap at a maximum ETH price
 
+
+*************
+Misc Commands
+*************
+
+    * ``rocketpool api storage [dataType] [key]``: Retreive a value from the RocketStorage contract.
+    Valid data types are 'address', 'bool', 'bytes', 'bytes32', 'int', 'string' and 'uint'.
+    The key is a hex-encoded keccak hash with the ``0x`` prefix.
+
