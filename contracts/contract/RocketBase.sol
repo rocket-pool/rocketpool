@@ -1,25 +1,28 @@
-pragma solidity 0.5.8;
+pragma solidity 0.6.8;
 
 import "./interface/RocketStorageInterface.sol";
 
 /// @title Base settings / modifiers for each contract in Rocket Pool
 /// @author David Rugendyke
+
 contract RocketBase {
 
 
     /**** Properties ************/
+
 
     uint8 public version;                                                   // Version of this contract
 
 
     /*** Contracts **************/
 
+
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained
 
 
-    /*** Modifiers ************/
+    /*** Modifiers **************/
 
-    
+
     /**
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
@@ -29,8 +32,6 @@ contract RocketBase {
     }
 
 
-    // Permissions
-
     /**
     * @dev Throws if called by any account other than the owner.
     */
@@ -38,6 +39,7 @@ contract RocketBase {
         roleCheck("owner", msg.sender);
         _;
     }
+
 
     /**
     * @dev Modifier to scope access to admins
@@ -47,6 +49,7 @@ contract RocketBase {
         _;
     }
 
+
     /**
     * @dev Modifier to scope access to admins
     */
@@ -54,6 +57,7 @@ contract RocketBase {
         require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender), "User is not a super user");
         _;
     }
+
 
     /**
     * @dev Reverts if the address doesn't have this role
@@ -63,9 +67,10 @@ contract RocketBase {
         _;
     }
 
-  
-    /*** Constructor **********/
-   
+
+    /*** Constructor ************/
+
+
     /// @dev Set the main Rocket Storage address
     constructor(address _rocketStorageAddress) public {
         // Update the contract address
@@ -73,11 +78,12 @@ contract RocketBase {
     }
 
 
-    /*** Contract Utilities */
+    /*** Contract Utilities *****/
+
 
     /// @dev Get the the contracts address - This method should be called before interacting with any API contracts to ensure the latest address is used
-    function getContractAddress(string memory _contractName) public view returns(address) { 
-        // Get the current API contract address 
+    function getContractAddress(string memory _contractName) public view returns(address) {
+        // Get the current API contract address
         address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
         // Check it
         require(address(contractAddress) != address(0x0), "Rocket Pool - Contract not found.");
@@ -86,7 +92,8 @@ contract RocketBase {
     }
 
 
-    /*** Role Utilities */
+    /*** Role Utilities *********/
+
 
     /**
     * @dev Check if an address has this role
@@ -96,13 +103,13 @@ contract RocketBase {
         return rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
     }
 
-     /**
+
+    /**
     * @dev Check if an address has this role, reverts if it doesn't
     */
     function roleCheck(string memory _role, address _address) view internal {
         require(roleHas(_role, _address) == true, "User does not have correct role");
     }
 
-    
-    
+
 }

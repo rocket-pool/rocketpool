@@ -1,11 +1,13 @@
-pragma solidity 0.5.8;
-
+pragma solidity 0.6.8;
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
+
 contract RocketStorage {
 
-    /**** Storage Types *******/
+
+    /**** Storage Types *********/
+
 
     mapping(bytes32 => uint256)    private uIntStorage;
     mapping(bytes32 => string)     private stringStorage;
@@ -16,7 +18,8 @@ contract RocketStorage {
     mapping(bytes32 => bytes32)    private bytes32Storage;
 
 
-    /*** Modifiers ************/
+    /*** Modifiers **************/
+
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
@@ -29,7 +32,9 @@ contract RocketStorage {
     }
 
 
-    /// @dev constructor
+    /*** Constructor ************/
+
+
     constructor() public {
         // Set the main owner upon deployment
         boolStorage[keccak256(abi.encodePacked("access.role", "owner", msg.sender))] = true;
@@ -37,7 +42,8 @@ contract RocketStorage {
 
 
     /**** Get Methods ***********/
-   
+
+
     /// @param _key The key for the record
     function getAddress(bytes32 _key) external view returns (address) {
         return addressStorage[_key];
@@ -73,7 +79,9 @@ contract RocketStorage {
         return bytes32Storage[_key];
     }
 
+
     /**** Set Methods ***********/
+
 
     /// @param _key The key for the record
     function setAddress(bytes32 _key, address _value) onlyLatestRocketNetworkContract external {
@@ -110,8 +118,10 @@ contract RocketStorage {
         bytes32Storage[_key] = _value;
     }
 
+
     /**** Delete Methods ***********/
-    
+
+
     /// @param _key The key for the record
     function deleteAddress(bytes32 _key) onlyLatestRocketNetworkContract external {
         delete addressStorage[_key];
@@ -146,4 +156,6 @@ contract RocketStorage {
     function deleteBytes32(bytes32 _key) onlyLatestRocketNetworkContract external {
         delete bytes32Storage[_key];
     }
+
+
 }
