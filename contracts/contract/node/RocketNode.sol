@@ -1,16 +1,14 @@
 pragma solidity 0.6.8;
 
-// Node registration and management
+// An individual node in the Rocket Pool network
 
 contract RocketNode {
 
-    // Register a new node with Rocket Pool
-    function register(string memory _timezoneLocation) public {}
+    // Make a deposit to create a new minipool
+    function deposit() public payable {}
 
-    // Get the number of available nodes in the network
-    function getAvailableNodeCount() public returns (uint256) {}
-
-    // Get a random available node in the network
-    function getRandomAvailableNode() public returns (address) {}
+    // Perform a node checkin
+    // Only accepts calls from the node owner address
+    function checkin() public {}
 
 }
