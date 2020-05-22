@@ -7,9 +7,9 @@ pragma solidity 0.6.8;
 contract RocketDeposit {
 
     // Accept a deposit from a user
-    // The user specifies the maximum fee they are willing to pay as a fraction of 1 eth
+    // The user specifies the maximum fee % they are willing to pay as a fraction of 1 eth
     function deposit(uint256 _maxFee) payable {
-        // 1. Check the current network fees do not exceed the max fee specified
+        // 1. Check the current combined network fees do not exceed the max fee specified
         // 2. Mint RPX equivalent to the deposit amount
         // 3. Transfer ETH & fees to the deposit vault
         // 4. Transfer remaining RPX to the user
