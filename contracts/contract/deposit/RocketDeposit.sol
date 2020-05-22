@@ -11,8 +11,16 @@ contract RocketDeposit {
     function deposit(uint256 _maxFee) payable {
         // 1. Check the current network fees do not exceed the max fee specified
         // 2. Mint RPX equivalent to the deposit amount
-        // 3. Transfer fees to the deposit vault
+        // 3. Transfer ETH & fees to the deposit vault
         // 4. Transfer remaining RPX to the staker
+        // 5. Assign deposits
+    }
+
+    // Assign deposits to available minipools
+    function assignDeposits() {
+        // 1. Check there is an available minipool and >= 16 ETH in deposits
+        // 2. Select a pseudo-random minipool from the available set
+        // 3. Transfer 16 ETH and a proportional share of the node fee pool to the minipool
     }
 
 }
