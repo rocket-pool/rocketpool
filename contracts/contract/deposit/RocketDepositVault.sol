@@ -1,15 +1,19 @@
 pragma solidity 0.6.8;
 
-// Ether and RPX (node fees) from staker deposits are stored here until assigned to minipools
+// ETH and RPX (fees) from staker deposits are stored here
 
 contract RocketDepositVault {
 
-    // Accepts Ether deposits
+    // Accepts ETH deposits
     // Only accepts calls from the RocketDeposit contract
-    function depositEther() {}
+    function depositEther() payable {}
 
-    // Withdraws an amount of Ether to a specified address
+    // Withdraws an amount of ETH to a specified address
     // Only accepts calls from the RocketDeposit contract
     function withdrawEther(address _withdrawalAddress, uint256 _amount) {}
+
+    // Withdraws an amount of RPX to a specified address
+    // Only accepts calls from the RocketDeposit and RocketStaking contracts
+    function withdrawRPX(address _withdrawalAddress, uint256 _amount) {}
 
 }
