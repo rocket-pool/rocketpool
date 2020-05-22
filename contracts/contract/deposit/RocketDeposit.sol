@@ -20,7 +20,7 @@ contract RocketDeposit {
     function assignDeposits() {
         // 1. Check there is an available minipool and >= 16 ETH in deposits
         // 2. Select a pseudo-random minipool from the available set
-        // 3. Transfer 16 ETH and a proportional share of the node fee pool to the minipool
+        // 3. Transfer 16 ETH and a proportional share of the node fee pool from the deposit vault to the minipool
     }
 
 }
