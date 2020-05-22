@@ -1,18 +1,18 @@
 pragma solidity 0.6.8;
 
-// The main entry point for staker deposits
-// Accepts staker deposits and mints RPX; fees are deducted and the remainder is sent to the staker
+// The main entry point for user deposits
+// Accepts user deposits and mints RPX; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
 contract RocketDeposit {
 
-    // Accept a deposit from a staker
-    // The staker specifies the maximum fee they are willing to pay as a fraction of 1 eth
+    // Accept a deposit from a user
+    // The user specifies the maximum fee they are willing to pay as a fraction of 1 eth
     function deposit(uint256 _maxFee) payable {
         // 1. Check the current network fees do not exceed the max fee specified
         // 2. Mint RPX equivalent to the deposit amount
         // 3. Transfer ETH & fees to the deposit vault
-        // 4. Transfer remaining RPX to the staker
+        // 4. Transfer remaining RPX to the user
         // 5. Assign deposits
     }
 

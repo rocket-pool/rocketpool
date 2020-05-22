@@ -1,6 +1,6 @@
 pragma solidity 0.6.8;
 
-// ETH and RPX (fees) from staker deposits are stored here
+// ETH and RPX (fees) from user deposits are stored here
 
 contract RocketDepositVault {
 
