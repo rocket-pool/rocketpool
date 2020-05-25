@@ -1,6 +1,6 @@
 pragma solidity 0.6.8;
 
-// ETH and RPX (fees) from user deposits are stored here
+// ETH and rETH (fees) from user deposits are stored here
 
 contract RocketDepositVault {
 
@@ -12,8 +12,8 @@ contract RocketDepositVault {
     // Only accepts calls from the RocketDeposit contract
     function withdrawEther(address _withdrawalAddress, uint256 _amount) public {}
 
-    // Withdraw an amount of RPX to a specified address
+    // Withdraw an amount of rETH to a specified address
     // Only accepts calls from the RocketDeposit and RocketStaking contracts
-    function withdrawRPX(address _withdrawalAddress, uint256 _amount) public {}
+    function withdrawReth(address _withdrawalAddress, uint256 _amount) public {}
 
 }

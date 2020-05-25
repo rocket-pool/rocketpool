@@ -1,7 +1,7 @@
 pragma solidity 0.6.8;
 
 // The main entry point for user deposits
-// Accepts user deposits and mints RPX; fees are deducted and the remainder is sent to the user
+// Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
 contract RocketDeposit {
@@ -10,9 +10,9 @@ contract RocketDeposit {
     // The user specifies the maximum fee % they are willing to pay as a fraction of 1 eth
     function deposit(uint256 _maxFee) public payable {
         // 1. Check the current combined network fees do not exceed the max fee specified
-        // 2. Mint RPX equivalent to the deposit amount
+        // 2. Mint rETH equivalent to the deposit amount
         // 3. Transfer ETH & fees to the deposit vault
-        // 4. Transfer remaining RPX to the user
+        // 4. Transfer remaining rETH to the user
         // 5. Assign deposits
     }
 
