@@ -13,7 +13,7 @@ contract RocketDepositVault {
     function withdrawEther(address _withdrawalAddress, uint256 _amount) public {}
 
     // Withdraw an amount of rETH to a specified address
-    // Only accepts calls from the RocketDeposit and RocketStaking contracts
+    // Only accepts calls from the RocketNodeRewards contract
     function withdrawReth(address _withdrawalAddress, uint256 _amount) public {}
 
 }
