@@ -13,4 +13,8 @@ contract RocketNodeManager {
     // Register a new node with Rocket Pool
     function registerNode(string memory _timezoneLocation) public {}
 
+    // Perform a node checkin
+    // Only accepts calls from registered nodes
+    function checkin() public {}
+
 }
