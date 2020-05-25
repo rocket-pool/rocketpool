@@ -5,7 +5,7 @@ pragma solidity 0.6.8;
 contract RocketMinipool {
 
     // Assign deposited ETH to the minipool and mark it as prelaunch
-    // Only accepts calls from the RocketDeposit contract
+    // Only accepts calls from the RocketDepositVault contract
     function assignDeposit() public payable {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
