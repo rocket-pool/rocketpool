@@ -9,7 +9,7 @@ contract RocketETHToken {
 
     // Get the current rETH : ETH exchange rate
     function getExchangeRate() public {
-        // Total RP network ETH balance / total rETH supply
+        // RP network total ETH balance / total rETH supply
     }
 
     // Mint rETH

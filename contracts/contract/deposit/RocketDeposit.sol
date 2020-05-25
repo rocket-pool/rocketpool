@@ -7,13 +7,14 @@ pragma solidity 0.6.8;
 contract RocketDeposit {
 
     // Accept a deposit from a user
-    // The user specifies the maximum fee % they are willing to pay as a fraction of 1 eth
+    // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH
     function deposit(uint256 _maxFee) public payable {
         // 1. Check the current network fee does not exceed the max fee specified
         // 2. Mint rETH equivalent to the deposit amount
-        // 3. Transfer ETH & fee to the deposit vault
-        // 4. Transfer remaining rETH to the user
-        // 5. Assign deposits
+        // 3. Update the RP network total ETH balance
+        // 4. Transfer ETH & fee to the deposit vault
+        // 5. Transfer remaining rETH to the user
+        // 6. Assign deposits
     }
 
     // Assign deposits to available minipools
