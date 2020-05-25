@@ -13,10 +13,15 @@ contract RocketETHToken {
     }
 
     // Mint rETH
-    // Only accepts calls from the RocketDeposit and RocketMinipool contracts
+    // Only accepts calls from the RocketDeposit contract
     function mint(uint256 _amount, address _to) public {}
 
     // Burn rETH for ETH
-    function burn(uint256 _amount) public {}
+    function burn(uint256 _amount) public {
+        // 1. Calculate ETH amount and check contract ETH balance
+        // 2. Decrease total supply and account balance
+        // 3. Update the RP network total ETH balance
+        // 4. Transfer ETH to account
+    }
 
 }
