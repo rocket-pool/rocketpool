@@ -1,23 +1,23 @@
 pragma solidity 0.6.8;
 
-import "./interface/RocketStorageInterface.sol";
+import "../interface/RocketStorage.sol";
 
 /// @title Base settings / modifiers for each contract in Rocket Pool
 /// @author David Rugendyke
 
-contract RocketBase {
+abstract contract RocketBase {
 
 
     /**** Properties ************/
 
 
-    uint8 public version;                                                   // Version of this contract
+    uint8 public version;                               // Version of this contract
 
 
     /*** Contracts **************/
 
 
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained
+    RocketStorage rocketStorage = RocketStorage(0);     // The main storage contract where primary persistant storage is maintained
 
 
     /*** Modifiers **************/
@@ -74,7 +74,7 @@ contract RocketBase {
     /// @dev Set the main Rocket Storage address
     constructor(address _rocketStorageAddress) public {
         // Update the contract address
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        rocketStorage = RocketStorage(_rocketStorageAddress);
     }
 
 

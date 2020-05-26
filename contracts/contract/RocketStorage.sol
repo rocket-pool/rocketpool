@@ -94,12 +94,12 @@ contract RocketStorage {
     }
 
     /// @param _key The key for the record
-    function setString(bytes32 _key, string memory _value) onlyLatestRocketNetworkContract public {
+    function setString(bytes32 _key, string calldata _value) onlyLatestRocketNetworkContract external {
         stringStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
-    function setBytes(bytes32 _key, bytes memory _value) onlyLatestRocketNetworkContract public {
+    function setBytes(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract external {
         bytesStorage[_key] = _value;
     }
     
