@@ -1,15 +1,15 @@
 pragma solidity 0.6.8;
 
-// ETH and rETH (fees) from user deposits are stored here
+// ETH and rETH are stored here to prevent contract upgrades from affecting balances
 
-contract RocketDepositVault {
+contract RocketVault {
 
     // Accept an ETH deposit
-    // Only accepts calls from the RocketDeposit contract
+    // Only accepts calls from the RocketUser contract
     function depositEther() public payable {}
 
     // Withdraw an amount of ETH to a specified address
-    // Only accepts calls from the RocketDeposit contract
+    // Only accepts calls from the RocketUser contract
     function withdrawEther(address _withdrawalAddress, uint256 _amount) public {}
 
     // Withdraw an amount of rETH to a specified address

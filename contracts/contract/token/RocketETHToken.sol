@@ -13,7 +13,7 @@ contract RocketETHToken {
     }
 
     // Mint rETH
-    // Only accepts calls from the RocketDeposit contract
+    // Only accepts calls from the RocketUser contract
     function mint(uint256 _amount, address _to) public {}
 
     // Burn rETH for ETH

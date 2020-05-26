@@ -17,7 +17,7 @@ contract RocketPool {
     }
 
     // Set the current RP network total ETH balance
-    // Only accepts calls from the RocketDeposit & RocketETHToken contracts, or trusted (oracle) nodes
+    // Only accepts calls from the RocketUser & RocketETHToken contracts, or trusted (oracle) nodes
     function setTotalETHBalance(uint256 _balance) public {}
 
     // Set the current RP network staking ETH balance

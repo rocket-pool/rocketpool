@@ -1,10 +1,10 @@
 pragma solidity 0.6.8;
 
-// The main entry point for user deposits
+// The main entry point for users
 // Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
-contract RocketDeposit {
+contract RocketUser {
 
     // Accept a deposit from a user
     // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH
