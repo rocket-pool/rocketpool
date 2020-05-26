@@ -9,19 +9,19 @@ contract RocketMinipool {
     function assignDeposit() public payable {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
-    // Only accepts calls from the node owner address
+    // Only accepts calls from the RocketMinipoolManager contract
     function stakeMinipool(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _depositDataRoot) public {}
 
     // Mark the minipool as exited
-    // Only accepts calls from trusted (oracle) nodes
+    // Only accepts calls from the RocketMinipoolManager contract
     function exitMinipool() public {}
 
     // Mark the minipool as withdrawable and record its final balance
-    // Only accepts calls from trusted (oracle) nodes
+    // Only accepts calls from the RocketMinipoolManager contract
     function withdrawMinipool(uint256 _withdrawalBalance) public {}
 
     // Withdraw rewards from the minipool and close it
-    // Only accepts calls from the node owner address
+    // Only accepts calls from the RocketMinipoolManager contract
     function closeMinipool() public {}
 
 }
