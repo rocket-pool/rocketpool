@@ -1,5 +1,7 @@
 pragma solidity 0.6.8;
 
+// SPDX-License-Identifier: GPL-3.0-only
+
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 

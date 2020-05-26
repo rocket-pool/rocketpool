@@ -1,5 +1,7 @@
 pragma solidity 0.6.8;
 
+// SPDX-License-Identifier: GPL-3.0-only
+
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools

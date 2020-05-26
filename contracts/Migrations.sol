@@ -1,5 +1,7 @@
 pragma solidity 0.6.8;
 
+// SPDX-License-Identifier: GPL-3.0-only
+
 // Note: For some reason Migrations.sol needs to be in the root or they run everytime
 
 contract Migrations {

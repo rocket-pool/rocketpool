@@ -1,5 +1,7 @@
 pragma solidity 0.6.8;
 
+// SPDX-License-Identifier: GPL-3.0-only
+
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 
 contract RocketVault {

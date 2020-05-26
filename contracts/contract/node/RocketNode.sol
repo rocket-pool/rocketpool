@@ -1,5 +1,7 @@
 pragma solidity 0.6.8;
 
+// SPDX-License-Identifier: GPL-3.0-only
+
 // An individual node in the Rocket Pool network
 
 contract RocketNode {
