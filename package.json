@@ -8,9 +8,8 @@
     "console": "truffle console",
     "compile": "truffle compile",
     "migrate": "truffle migrate",
-    "test": "scripts/test.sh test/rocketPool-tests.js",
+    "test": "scripts/test.sh test/rocket-pool-tests.js",
     "test-cov": "./node_modules/.bin/solidity-coverage",
-    "test-utils": "scripts/test.sh test/rocketUtil-tests.js",
     "format": "prettier --write '**/*.js'"
   },
   "devDependencies": {
