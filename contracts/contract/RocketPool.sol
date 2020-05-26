@@ -50,7 +50,7 @@ contract RocketPool is RocketBase {
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
-    function beaconWithdrawal() public {
+    function beaconWithdrawal(bytes memory _validatorPubkey) public {
         // 1. Calculate the share of the validator balance for node operators vs users
         // 2. Transfer the node operators' share to the nETH contract
         // 3. Transfer the users' share:
