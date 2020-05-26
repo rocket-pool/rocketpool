@@ -2,10 +2,17 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../RocketBase.sol";
+
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
-contract RocketETHToken {
+contract RocketETHToken is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Various ERC20 methods
 

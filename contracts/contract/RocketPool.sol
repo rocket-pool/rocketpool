@@ -2,9 +2,16 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "./RocketBase.sol";
+
 // Global network information and functions
 
-contract RocketPool {
+contract RocketPool is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Get the current RP network total ETH balance
     function getTotalETHBalance() public returns (uint256) {}

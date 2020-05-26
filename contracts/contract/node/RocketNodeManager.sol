@@ -2,9 +2,16 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../RocketBase.sol";
+
 // Node registration and management
 
-contract RocketNodeManager {
+contract RocketNodeManager is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Get the number of available nodes in the network
     function getAvailableNodeCount() public returns (uint256) {}

@@ -2,11 +2,18 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../RocketBase.sol";
+
 // nETH is paid to node operators when their eth 2.0 validators become withdrawable
 // nETH is backed by ETH (subject to liquidity) 1:1
 // nETH will be replaced by direct BETH payments after eth 2.0 phase 2
 
-contract RocketNodeETHToken {
+contract RocketNodeETHToken is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Various ERC20 methods
 

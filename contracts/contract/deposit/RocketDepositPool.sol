@@ -2,11 +2,18 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../RocketBase.sol";
+
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
-contract RocketDepositPool {
+contract RocketDepositPool is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Accept a deposit from a user
     // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH

@@ -2,9 +2,16 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../RocketBase.sol";
+
 // Minipool creation, removal and management
 
-contract RocketMinipoolManager {
+contract RocketMinipoolManager is RocketBase {
+
+    // Construct
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+        version = 1;
+    }
 
     // Get the number of available minipools in the network
     function getAvailableMinipoolCount() public returns (uint256) {}
