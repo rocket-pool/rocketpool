@@ -18,6 +18,9 @@ contract RocketPool {
         // Staking ETH balance / total ETH balance
     }
 
+    // Get the current RP network deposit fee as a fraction of 1 ETH
+    function getDepositFee() public returns (uint256) {}
+
     // Calculate the share of a final validator balance owned by its node operator
     function getValidatorNodeShare(uint256 _balance) public {
         // balance >= 32 ETH : balance / 2
