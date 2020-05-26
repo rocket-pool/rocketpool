@@ -14,6 +14,10 @@ contract RocketMinipoolManager {
     // Only accepts calls from registered nodes
     function createMinipool() public {}
 
+    // Assign deposited ETH to a minipool and mark it as prelaunch
+    // Only accepts calls from the RocketDeposit contract
+    function assignMinipoolDeposit(address _minipool) public payable {}
+
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from registered nodes
     function stakeMinipool(address _minipool, bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _depositDataRoot) public {}

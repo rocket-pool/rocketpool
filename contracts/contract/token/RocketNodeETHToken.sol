@@ -9,7 +9,7 @@ contract RocketNodeETHToken {
     // Various ERC20 methods
 
     // Mint nETH
-    // Only accepts calls from registered minipools
+    // Only accepts calls from the RocketMinipoolManager contract
     function mint(uint256 _amount, address _to) public {}
 
     // Burn nETH for ETH
