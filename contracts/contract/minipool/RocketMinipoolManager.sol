@@ -15,7 +15,7 @@ contract RocketMinipoolManager {
     function createMinipool() public {}
 
     // Assign deposited ETH to a minipool and mark it as prelaunch
-    // Only accepts calls from the RocketUser contract
+    // Only accepts calls from the RocketDepositPool contract
     function assignMinipoolDeposit(address _minipool) public payable {}
 
     // Progress a minipool to staking, sending its ETH deposit to the VRC
@@ -28,7 +28,11 @@ contract RocketMinipoolManager {
 
     // Mark a minipool as withdrawable and record its final balance
     // Only accepts calls from trusted (oracle) nodes
-    function withdrawMinipool(address _minipool, uint256 _withdrawalBalance) public {}
+    function withdrawMinipool(address _minipool, uint256 _withdrawalBalance) public {
+        // 1. Calculate the share of the validator balance for the node operator
+        // 2. Mint nETH equal to the node operator's share to the minipool contract
+        // 3. Mark the minipool as withdrawable
+    }
 
     // Withdraw rewards from a minipool and close it
     // Only accepts calls from registered nodes

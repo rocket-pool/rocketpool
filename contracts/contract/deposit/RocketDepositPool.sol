@@ -1,10 +1,10 @@
 pragma solidity 0.6.8;
 
-// The main entry point for users
+// The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
-contract RocketUser {
+contract RocketDepositPool {
 
     // Accept a deposit from a user
     // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH
@@ -12,9 +12,16 @@ contract RocketUser {
         // 1. Check the current network fee does not exceed the max fee specified
         // 2. Mint rETH equivalent to the deposit amount
         // 3. Update the RP network total ETH balance
-        // 4. Transfer ETH & fee to the deposit vault
+        // 4. Transfer ETH & fee to the vault
         // 5. Transfer remaining rETH to the user
         // 6. Assign deposits
+    }
+
+    // Recycle a deposit from a withdrawn minipool
+    // Only accepts calls from the RocketPool contract
+    function recycleDeposit() public payable {
+        // 1. Transfer ETH to the vault
+        // 2. Assign deposits
     }
 
     // Assign deposits to available minipools

@@ -5,11 +5,11 @@ pragma solidity 0.6.8;
 contract RocketVault {
 
     // Accept an ETH deposit
-    // Only accepts calls from the RocketUser contract
+    // Only accepts calls from the RocketDepositPool contract
     function depositEther() public payable {}
 
     // Withdraw an amount of ETH to a specified address
-    // Only accepts calls from the RocketUser contract
+    // Only accepts calls from the RocketDepositPool contract
     function withdrawEther(address _withdrawalAddress, uint256 _amount) public {}
 
     // Withdraw an amount of rETH to a specified address
