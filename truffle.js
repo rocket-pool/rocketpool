@@ -28,7 +28,7 @@ module.exports = {
   contract: Contract,
   compilers: {
       solc: {
-          version: "0.5.8",
+          version: "0.6.8",
       }
   },
   networks: {
