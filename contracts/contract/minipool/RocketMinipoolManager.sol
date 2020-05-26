@@ -14,10 +14,10 @@ contract RocketMinipoolManager is RocketBase {
     }
 
     // Get the number of available minipools in the network
-    function getAvailableMinipoolCount() public returns (uint256) {}
+    function getAvailableMinipoolCount() public view returns (uint256) {}
 
     // Get a random available minipool in the network
-    function getRandomAvailableMinipool() public returns (address) {}
+    function getRandomAvailableMinipool() public view returns (address) {}
 
     // Create a minipool
     // Only accepts calls from registered nodes

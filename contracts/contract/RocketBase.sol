@@ -109,7 +109,7 @@ abstract contract RocketBase {
     /**
     * @dev Check if an address has this role, reverts if it doesn't
     */
-    function roleCheck(string memory _role, address _address) view internal {
+    function roleCheck(string memory _role, address _address) internal view {
         require(roleHas(_role, _address) == true, "User does not have correct role");
     }
 

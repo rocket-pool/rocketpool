@@ -14,10 +14,10 @@ contract RocketNodeManager is RocketBase {
     }
 
     // Get the number of available nodes in the network
-    function getAvailableNodeCount() public returns (uint256) {}
+    function getAvailableNodeCount() public view returns (uint256) {}
 
     // Get a random available node in the network
-    function getRandomAvailableNode() public returns (address) {}
+    function getRandomAvailableNode() public view returns (address) {}
 
     // Register a new node with Rocket Pool
     function registerNode(string memory _timezoneLocation) public {}

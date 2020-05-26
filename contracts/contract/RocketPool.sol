@@ -14,27 +14,27 @@ contract RocketPool is RocketBase {
     }
 
     // Get the current RP network total ETH balance
-    function getTotalETHBalance() public returns (uint256) {}
+    function getTotalETHBalance() public view returns (uint256) {}
 
     // Get the current RP network staking ETH balance
-    function getStakingETHBalance() public returns (uint256) {}
+    function getStakingETHBalance() public view returns (uint256) {}
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
-    function getETHUtilizationRate() public returns (uint256) {
+    function getETHUtilizationRate() public view returns (uint256) {
         // Staking ETH balance / total ETH balance
     }
 
     // Get the current RP network node demand in ETH
     // Node demand is negative if the size of the deposit pool is lower than waiting minipool capacity
     // Node demand is positive if the size of the deposit pool is higher than waiting minipool capacity
-    function getNodeDemand() public returns (uint256) {}
+    function getNodeDemand() public view returns (uint256) {}
 
     // Get the current RP network deposit fee as a fraction of 1 ETH
-    function getDepositFee() public returns (uint256) {}
+    function getDepositFee() public view returns (uint256) {}
 
     // Calculate the share of a final validator balance owned by its node operator
-    function getValidatorNodeShare(uint256 _balance) public {
+    function getValidatorNodeShare(uint256 _balance) public view returns (uint256) {
         // balance >= 32 ETH : balance / 2
         // balance >= 16 ETH & < 32 ETH : balance - 16
         // balance < 16 ETH : 0
