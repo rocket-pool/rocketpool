@@ -19,7 +19,7 @@ contract RocketPool {
     // Calculate the share of a final validator balance owned by its node operator
     function getValidatorNodeShare(uint256 _balance) public {
         // balance >= 32 ETH : balance / 2
-        // balance >= 16 ETH & < 32 ETH: balance - 16
+        // balance >= 16 ETH & < 32 ETH : balance - 16
         // balance < 16 ETH : 0
     }
 
