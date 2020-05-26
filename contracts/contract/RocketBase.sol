@@ -2,7 +2,7 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "../interface/RocketStorage.sol";
+import "../interface/RocketStorageInterface.sol";
 
 /// @title Base settings / modifiers for each contract in Rocket Pool
 /// @author David Rugendyke
@@ -13,13 +13,13 @@ abstract contract RocketBase {
     /**** Properties ************/
 
 
-    uint8 public version;                               // Version of this contract
+    uint8 public version;                                                   // Version of this contract
 
 
     /*** Contracts **************/
 
 
-    RocketStorage rocketStorage = RocketStorage(0);     // The main storage contract where primary persistant storage is maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained
 
 
     /*** Modifiers **************/
@@ -76,7 +76,7 @@ abstract contract RocketBase {
     /// @dev Set the main Rocket Storage address
     constructor(address _rocketStorageAddress) public {
         // Update the contract address
-        rocketStorage = RocketStorage(_rocketStorageAddress);
+        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
 
 

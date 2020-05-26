@@ -2,7 +2,7 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-interface RocketStorage {
+interface RocketStorageInterface {
 
     // Getters
     function getAddress(bytes32 _key) external view returns (address);

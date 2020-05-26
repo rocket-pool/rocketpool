@@ -31,29 +31,31 @@ function loadABI(abiFilePath) {
 
 
 // Storage
-const rocketStorage = artifacts.require('./RocketStorage.sol');
+const rocketStorage = artifacts.require('RocketStorage.sol');
 
 // Network contracts
 const contracts = {
   // Core
-  rocketPool:             artifacts.require('./RocketPool.sol'),
-  rocketVault:            artifacts.require('./RocketVault.sol'),
+  rocketPool:             artifacts.require('RocketPool.sol'),
+  rocketVault:            artifacts.require('RocketVault.sol'),
   // Deposit
-  rocketDepositPool:      artifacts.require('./RocketDepositPool.sol'),
+  rocketDepositPool:      artifacts.require('RocketDepositPool.sol'),
   // Minipool
-  rocketMinipoolManager:  artifacts.require('./RocketMinipoolManager.sol'),
+  rocketMinipoolManager:  artifacts.require('RocketMinipoolManager.sol'),
   // Node
-  rocketNodeManager:      artifacts.require('./RocketNodeManager.sol'),
-  rocketNodeRewards:      artifacts.require('./RocketNodeRewards.sol'),
+  rocketNodeManager:      artifacts.require('RocketNodeManager.sol'),
+  rocketNodeRewards:      artifacts.require('RocketNodeRewards.sol'),
   // Tokens
-  rocketETHToken:         artifacts.require('./RocketETHToken.sol'),
-  rocketNodeETHToken:     artifacts.require('./RocketNodeETHToken.sol'),
+  rocketETHToken:         artifacts.require('RocketETHToken.sol'),
+  rocketNodeETHToken:     artifacts.require('RocketNodeETHToken.sol'),
 };
 
 // Instance contract ABIs
 const abis = {
-  rocketMinipool:         artifacts.require('./RocketMinipool.sol'),
-  rocketNode:             artifacts.require('./RocketNode.sol'),
+  // Minipool
+  rocketMinipool:         artifacts.require('RocketMinipool.sol'),
+  // Node
+  rocketNode:             artifacts.require('RocketNode.sol'),
 };
 
 
