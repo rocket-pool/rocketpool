@@ -30,7 +30,7 @@ contract RocketPool is RocketBase {
     function getTotalETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.total")));
     }
-    function setTotalETHBalance(uint256 _value) public {
+    function setTotalETHBalance(uint256 _value) external {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _value);
     }
 
@@ -39,7 +39,7 @@ contract RocketPool is RocketBase {
     function getStakingETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.staking")));
     }
-    function setStakingETHBalance(uint256 _value) public {
+    function setStakingETHBalance(uint256 _value) external {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _value);
     }
 
@@ -84,7 +84,7 @@ contract RocketPool is RocketBase {
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
-    function beaconWithdrawal(bytes memory _validatorPubkey) public {
+    function beaconWithdrawal(bytes calldata _validatorPubkey) external {
         // 1. Calculate the share of the validator balance for node operators vs users
         // 2. Transfer the node operators' share to the nETH contract
         // 3. Transfer the users' share:

@@ -21,10 +21,10 @@ contract RocketMinipoolManager is RocketBase {
 
     // Create a minipool
     // Only accepts calls from registered nodes
-    function createMinipool() public {}
+    function createMinipool() external {}
 
     // Destroy a minipool
     // Only accepts calls from the RocketMinipoolStatus contract
-    function destroyMinipool() public {}
+    function destroyMinipool() external {}
 
 }

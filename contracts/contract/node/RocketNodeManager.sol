@@ -20,6 +20,6 @@ contract RocketNodeManager is RocketBase {
     function getRandomAvailableNode() public view returns (address) {}
 
     // Register a new node with Rocket Pool
-    function registerNode(string memory _timezoneLocation) public {}
+    function registerNode(string calldata _timezoneLocation) external {}
 
 }

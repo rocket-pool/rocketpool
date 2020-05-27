@@ -8,22 +8,22 @@ contract RocketMinipool {
 
     // Assign deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketMinipoolStatus contract
-    function assignDeposit() public payable {}
+    function assignDeposit() external payable {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract
-    function stake(bytes memory _validatorPubkey, bytes memory _validatorSignature, bytes32 _depositDataRoot) public {}
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external {}
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
-    function exit() public {}
+    function exit() external {}
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function withdraw(uint256 _withdrawalBalance) public {}
+    function withdraw(uint256 _withdrawalBalance) external {}
 
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
-    function close() public {}
+    function close() external {}
 
 }

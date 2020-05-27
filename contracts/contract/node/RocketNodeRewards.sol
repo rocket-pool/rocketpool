@@ -27,9 +27,9 @@ contract RocketNodeRewards is RocketBase {
 
     // Claim rewards for a node and transfer them to its owner address
     // Only accepts calls from registered nodes
-    function claimRewards() public {}
+    function claimRewards() external {}
 
     // Check the current reward period and increment if due
-    function updateRewardPeriod() public {}
+    function updateRewardPeriod() external {}
 
 }

@@ -34,7 +34,7 @@ contract RocketDepositPool is RocketBase {
 
     // Accept a deposit from a user
     // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH
-    function deposit(uint256 _maxFee) public payable {
+    function deposit(uint256 _maxFee) external payable {
         // Calculation base value
         uint256 calcBase = 1 ether;
         // Load contracts
@@ -77,7 +77,7 @@ contract RocketDepositPool is RocketBase {
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketPool contract
-    function recycleDeposit() public payable {
+    function recycleDeposit() external payable {
         // 1. Transfer ETH to the vault
         // 2. Assign deposits
     }

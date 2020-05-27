@@ -18,7 +18,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken {
 
     // Mint nETH
     // Only accepts calls from the RocketMinipoolStatus contract
-    function mint(uint256 _amount, address _to) public {
+    function mint(uint256 _amount, address _to) external {
         // Check amount
         require(_amount > 0, "Invalid token mint amount");
         // Update balance & supply
@@ -27,7 +27,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken {
     }
 
     // Burn nETH for ETH
-    function burn(uint256 _amount) public {
+    function burn(uint256 _amount) external {
         // 1. Check contract ETH balance
         // 2. Decrease total supply and account balance
         // 3. Transfer ETH to account
