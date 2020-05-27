@@ -26,21 +26,40 @@ contract RocketPool is RocketBase {
     //
 
     // The current RP network total ETH balance
-    // Can only be set by the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
     function getTotalETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.total")));
     }
-    function setTotalETHBalance(uint256 _value) external {
+    function setTotalETHBalance(uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _value);
     }
 
     // The current RP network staking ETH balance
-    // Can only be set by trusted (oracle) nodes
     function getStakingETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.staking")));
     }
-    function setStakingETHBalance(uint256 _value) external {
+    function setStakingETHBalance(uint256 _value) private {
         rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _value);
+    }
+
+    // Update network ETH balances
+    // Only accepts calls from trusted (oracle) nodes
+    function updateTotalETHBalance(uint256 _balance) external {
+        setTotalETHBalance(_balance);
+    }
+    function updateStakingETHBalance(uint256 _balance) external {
+        setStakingETHBalance(_balance);
+    }
+
+    // Increase total ETH balance
+    // Only accepts calls from the RocketDepositPool contract
+    function increaseTotalETHBalance(uint256 _amount) external {
+        setTotalETHBalance(getTotalETHBalance().add(_amount));
+    }
+
+    // Decrease total ETH balance
+    // Only accepts calls from the RocketETHToken contract
+    function decreaseTotalETHBalance(uint256 _amount) external {
+        setTotalETHBalance(getTotalETHBalance().sub(_amount));
     }
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH

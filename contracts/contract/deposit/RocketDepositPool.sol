@@ -60,7 +60,7 @@ contract RocketDepositPool is RocketBase {
         // Mint rETH here
         rocketETHToken.mint(rethAmount, address(this));
         // Update network ETH balance
-        rocketPool.setTotalETHBalance(rocketPool.getTotalETHBalance().add(msg.value));
+        rocketPool.increaseTotalETHBalance(msg.value);
         // Calculate deposit fee amount and user share of rETH
         uint256 feeAmount = rethAmount.mul(depositFee).div(calcBase);
         uint256 userAmount = rethAmount.sub(feeAmount);

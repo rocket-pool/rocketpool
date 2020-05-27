@@ -4,8 +4,9 @@ pragma solidity 0.6.8;
 
 interface RocketPoolInterface {
     function getTotalETHBalance() external view returns (uint256);
-    function setTotalETHBalance(uint256 _value) external;
     function getStakingETHBalance() external view returns (uint256);
+    function increaseTotalETHBalance(uint256 _amount) external;
+	function decreaseTotalETHBalance(uint256 _amount) external;
     function getETHUtilizationRate() external view returns (uint256);
     function getNodeDemand() external view returns (uint256);
     function getDepositFee() external view returns (uint256);
