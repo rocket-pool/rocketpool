@@ -30,7 +30,7 @@ contract RocketNodeRewards is RocketBase {
 
     // Increase the reward pool balance by an amount
     // Only accepts calls from the RocketDepositPool contract
-    function increaseBalance(uint256 _amount) external {
+    function increaseBalance(uint256 _amount) external onlyLatestContract("rocketDepositPool", msg.sender) {
         setBalance(getBalance().add(_amount));
     }
 

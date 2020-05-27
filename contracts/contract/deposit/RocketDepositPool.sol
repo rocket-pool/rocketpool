@@ -77,7 +77,7 @@ contract RocketDepositPool is RocketBase {
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketPool contract
-    function recycleDeposit() external payable {
+    function recycleDeposit() external payable onlyLatestContract("rocketPool", msg.sender) {
         // 1. Transfer ETH to the vault
         // 2. Assign deposits
     }

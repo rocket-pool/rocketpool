@@ -33,7 +33,7 @@ contract RocketETHToken is RocketBase, StandardToken {
 
     // Mint rETH
     // Only accepts calls from the RocketDepositPool contract
-    function mint(uint256 _amount, address _to) external {
+    function mint(uint256 _amount, address _to) external onlyLatestContract("rocketDepositPool", msg.sender) {
         // Check amount
         require(_amount > 0, "Invalid token mint amount");
         // Update balance & supply

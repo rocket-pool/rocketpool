@@ -52,13 +52,13 @@ contract RocketPool is RocketBase {
 
     // Increase total ETH balance
     // Only accepts calls from the RocketDepositPool contract
-    function increaseTotalETHBalance(uint256 _amount) external {
+    function increaseTotalETHBalance(uint256 _amount) external onlyLatestContract("rocketDepositPool", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().add(_amount));
     }
 
     // Decrease total ETH balance
     // Only accepts calls from the RocketETHToken contract
-    function decreaseTotalETHBalance(uint256 _amount) external {
+    function decreaseTotalETHBalance(uint256 _amount) external onlyLatestContract("rocketETHToken", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().sub(_amount));
     }
 

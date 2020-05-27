@@ -15,14 +15,14 @@ contract RocketVault is RocketBase {
 
     // Accept an ETH deposit
     // Only accepts calls from the RocketDepositPool contract
-    function depositEther() external payable {}
+    function depositEther() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     // Withdraw an amount of ETH to a specified address
     // Only accepts calls from the RocketDepositPool contract
-    function withdrawEther(address _withdrawalAddress, uint256 _amount) external {}
+    function withdrawEther(address _withdrawalAddress, uint256 _amount) external onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     // Withdraw an amount of rETH to a specified address
     // Only accepts calls from the RocketNodeRewards contract
-    function withdrawReth(address _withdrawalAddress, uint256 _amount) external {}
+    function withdrawReth(address _withdrawalAddress, uint256 _amount) external onlyLatestContract("rocketNodeRewards", msg.sender) {}
 
 }

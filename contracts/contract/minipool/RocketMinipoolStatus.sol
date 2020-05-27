@@ -16,7 +16,7 @@ contract RocketMinipoolStatus is RocketBase {
 
     // Assign deposited ETH to a minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
-    function assignMinipoolDeposit(address _minipool) external payable {}
+    function assignMinipoolDeposit(address _minipool) external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from registered nodes

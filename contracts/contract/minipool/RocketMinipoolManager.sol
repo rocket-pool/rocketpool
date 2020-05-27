@@ -25,6 +25,6 @@ contract RocketMinipoolManager is RocketBase {
 
     // Destroy a minipool
     // Only accepts calls from the RocketMinipoolStatus contract
-    function destroyMinipool() external {}
+    function destroyMinipool() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }
