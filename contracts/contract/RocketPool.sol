@@ -25,14 +25,22 @@ contract RocketPool is RocketBase {
     // Network balances and ETH utilization
     //
 
-    // Get the current RP network total ETH balance
+    // The current RP network total ETH balance
+    // Can only be set by the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
     function getTotalETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.total")));
     }
+    function setTotalETHBalance(uint256 _value) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _value);
+    }
 
-    // Get the current RP network staking ETH balance
+    // The current RP network staking ETH balance
+    // Can only be set by trusted (oracle) nodes
     function getStakingETHBalance() public view returns (uint256) {
         return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.staking")));
+    }
+    function setStakingETHBalance(uint256 _value) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _value);
     }
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
@@ -43,18 +51,6 @@ contract RocketPool is RocketBase {
         uint256 stakingEthBalance = getStakingETHBalance();
         if (totalEthBalance == 0) { return calcBase; }
         return calcBase.mul(stakingEthBalance).div(totalEthBalance);
-    }
-
-    // Set the current RP network total ETH balance
-    // Only accepts calls from the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
-    function setTotalETHBalance(uint256 _balance) public {
-        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _balance);
-    }
-
-    // Set the current RP network staking ETH balance
-    // Only accepts calls from trusted (oracle) nodes
-    function setStakingETHBalance(uint256 _balance) public {
-        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _balance);
     }
 
 
