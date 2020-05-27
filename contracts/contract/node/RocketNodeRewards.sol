@@ -16,6 +16,15 @@ contract RocketNodeRewards is RocketBase {
         version = 1;
     }
 
+    // Current reward pool balance
+    // Can only be set internally or by the RocketDepositPool contract
+    function getBalance() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("reward.pool.balance")));
+    }
+    function setBalance(uint256 _value) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("reward.pool.balance")), _value);
+    }
+
     // Claim rewards for a node and transfer them to its owner address
     // Only accepts calls from registered nodes
     function claimRewards() public {}
