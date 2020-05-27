@@ -8,10 +8,16 @@ import "./RocketBase.sol";
 
 contract RocketPool is RocketBase {
 
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
     }
+
+
+    //
+    // Network balances and ETH utilization
+    //
 
     // Get the current RP network total ETH balance
     function getTotalETHBalance() public view returns (uint256) {}
@@ -25,6 +31,19 @@ contract RocketPool is RocketBase {
         // Staking ETH balance / total ETH balance
     }
 
+    // Set the current RP network total ETH balance
+    // Only accepts calls from the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
+    function setTotalETHBalance(uint256 _balance) public {}
+
+    // Set the current RP network staking ETH balance
+    // Only accepts calls from trusted (oracle) nodes
+    function setStakingETHBalance(uint256 _balance) public {}
+
+
+    //
+    // Network demand and deposit fees
+    //
+
     // Get the current RP network node demand in ETH
     // Node demand is negative if the size of the deposit pool is lower than waiting minipool capacity
     // Node demand is positive if the size of the deposit pool is higher than waiting minipool capacity
@@ -33,20 +52,17 @@ contract RocketPool is RocketBase {
     // Get the current RP network deposit fee as a fraction of 1 ETH
     function getDepositFee() public view returns (uint256) {}
 
+
+    //
+    // Validator withdrawals
+    //
+
     // Calculate the share of a final validator balance owned by its node operator
     function getValidatorNodeShare(uint256 _balance) public view returns (uint256) {
         // balance >= 32 ETH : balance / 2
         // balance >= 16 ETH & < 32 ETH : balance - 16
         // balance < 16 ETH : 0
     }
-
-    // Set the current RP network total ETH balance
-    // Only accepts calls from the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
-    function setTotalETHBalance(uint256 _balance) public {}
-
-    // Set the current RP network staking ETH balance
-    // Only accepts calls from trusted (oracle) nodes
-    function setStakingETHBalance(uint256 _balance) public {}
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
@@ -57,5 +73,6 @@ contract RocketPool is RocketBase {
         //    - to the rETH contract if ETH utilization rate is >= minimum
         //    - to the deposit pool if ETH utilization rate is < minimum
     }
+
 
 }
