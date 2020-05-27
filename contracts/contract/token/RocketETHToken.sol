@@ -4,11 +4,15 @@ pragma solidity 0.6.8;
 
 import "../RocketBase.sol";
 import "./StandardToken.sol";
+import "../../interface/RocketPoolInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
 contract RocketETHToken is RocketBase, StandardToken {
+
+    // Libs
+    using SafeMath for uint;
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -18,7 +22,13 @@ contract RocketETHToken is RocketBase, StandardToken {
     // Get the current ETH : rETH exchange rate
     // Returns the amount of ETH backing 1 rETH
     function getExchangeRate() public view returns (uint256) {
-        // RP network total ETH balance / total rETH supply
+        // Get network total ETH balance
+        RocketPoolInterface rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        uint256 totalEthBalance = rocketPool.getTotalETHBalance();
+        // Calculate exchange rate
+        uint256 calcBase = 1 ether;
+        if (totalSupply == 0) { return calcBase; }
+        return calcBase.mul(totalEthBalance).div(totalSupply);
     }
 
     // Mint rETH
