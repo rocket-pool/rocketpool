@@ -68,7 +68,7 @@ contract RocketDepositPool is RocketBase {
         require(rocketETHToken.transfer(address(rocketVault), feeAmount), "rETH was not transferred to the vault successfully");
         require(rocketETHToken.transfer(msg.sender, userAmount), "rETH was not transferred to the user successfully");
         // Update node reward pool balance
-        rocketNodeRewards.setBalance(rocketNodeRewards.getBalance().add(feeAmount));
+        rocketNodeRewards.increaseBalance(feeAmount);
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits

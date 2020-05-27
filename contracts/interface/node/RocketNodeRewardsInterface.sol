@@ -4,6 +4,6 @@ pragma solidity 0.6.8;
 
 interface RocketNodeRewardsInterface {
     function getBalance() external view returns (uint256);
-    function setBalance(uint256 _value) external;
+    function increaseBalance(uint256 _amount) external;
     function updateRewardPeriod() external;
 }
