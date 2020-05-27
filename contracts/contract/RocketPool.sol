@@ -4,10 +4,15 @@ pragma solidity 0.6.8;
 
 import "./RocketBase.sol";
 import "../interface/settings/RocketDepositSettingsInterface.sol";
+import "../lib/SafeMath.sol";
 
 // Global network information and functions
 
 contract RocketPool is RocketBase {
+
+
+    // Libs
+    using SafeMath for uint;
 
 
     // Construct
@@ -21,24 +26,36 @@ contract RocketPool is RocketBase {
     //
 
     // Get the current RP network total ETH balance
-    function getTotalETHBalance() public view returns (uint256) {}
+    function getTotalETHBalance() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.total")));
+    }
 
     // Get the current RP network staking ETH balance
-    function getStakingETHBalance() public view returns (uint256) {}
+    function getStakingETHBalance() public view returns (uint256) {
+        return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.staking")));
+    }
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() public view returns (uint256) {
-        // Staking ETH balance / total ETH balance
+        uint256 calcBase = 1 ether;
+        uint256 totalEthBalance = getTotalETHBalance();
+        uint256 stakingEthBalance = getStakingETHBalance();
+        if (totalEthBalance == 0) { return calcBase; }
+        return calcBase.mul(stakingEthBalance).div(totalEthBalance);
     }
 
     // Set the current RP network total ETH balance
     // Only accepts calls from the RocketDepositPool & RocketETHToken contracts, or trusted (oracle) nodes
-    function setTotalETHBalance(uint256 _balance) public {}
+    function setTotalETHBalance(uint256 _balance) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _balance);
+    }
 
     // Set the current RP network staking ETH balance
     // Only accepts calls from trusted (oracle) nodes
-    function setStakingETHBalance(uint256 _balance) public {}
+    function setStakingETHBalance(uint256 _balance) public {
+        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _balance);
+    }
 
 
     //
