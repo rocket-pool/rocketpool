@@ -3,21 +3,21 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "./StandardToken.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
-contract RocketETHToken is RocketBase {
+contract RocketETHToken is RocketBase, StandardToken {
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
     }
 
-    // Various ERC20 methods
-
-    // Get the current rETH : ETH exchange rate
-    function getExchangeRate() public {
+    // Get the current ETH : rETH exchange rate
+    // Returns the amount of ETH backing 1 rETH
+    function getExchangeRate() public view returns (uint256) {
         // RP network total ETH balance / total rETH supply
     }
 
