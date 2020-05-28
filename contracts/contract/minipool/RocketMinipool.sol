@@ -17,8 +17,8 @@ contract RocketMinipool {
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract
-    modifier onlyLatestContract(string memory _contractName) {
-        require(msg.sender == getContractAddress(_contractName), "Only the latest specified Rocket Pool contract can access this method");
+    modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
+        require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Invalid or outdated contract");
         _;
     }
 
@@ -29,22 +29,22 @@ contract RocketMinipool {
 
     // Assign deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketMinipoolStatus contract
-    function assignDeposit() external payable onlyLatestContract("rocketMinipoolStatus") {}
+    function assignDeposit() external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyLatestContract("rocketMinipoolStatus") {}
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
-    function exit() external onlyLatestContract("rocketMinipoolStatus") {}
+    function exit() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function withdraw(uint256 _withdrawalBalance) external onlyLatestContract("rocketMinipoolStatus") {}
+    function withdraw(uint256 _withdrawalBalance) external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
-    function close() external onlyLatestContract("rocketMinipoolStatus") {}
+    function close() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }

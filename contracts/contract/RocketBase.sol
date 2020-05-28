@@ -29,7 +29,34 @@ abstract contract RocketBase {
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
-        require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Incorrect or outdated contract access used.");
+        require(_contractAddress == rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName))), "Invalid or outdated contract");
+        _;
+    }
+
+
+    /**
+    * @dev Throws if called by any sender that isn't a registered node
+    */
+    modifier onlyRegisteredNode(address _nodeAddress) {
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))) == true, "Invalid node");
+        _;
+    }
+
+
+    /**
+    * @dev Throws if called by any sender that isn't a registered node contract
+    */
+    modifier onlyRegisteredNodeContract(address _nodeAddress, address _nodeContract) {
+        require(rocketStorage.getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress))) == _nodeContract, "Invalid node contract");
+        _;
+    }
+
+
+    /**
+    * @dev Throws if called by any sender that isn't a trusted node
+    */
+    modifier onlyTrustedNode(address _nodeAddress) {
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) == true, "Invalid trusted node");
         _;
     }
 
@@ -38,7 +65,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyOwner() {
-        roleCheck("owner", msg.sender);
+        require(roleHas("owner", msg.sender), "Account is not the owner");
         _;
     }
 
@@ -47,7 +74,7 @@ abstract contract RocketBase {
     * @dev Modifier to scope access to admins
     */
     modifier onlyAdmin() {
-        roleCheck("admin", msg.sender);
+        require(roleHas("admin", msg.sender), "Account is not an admin");
         _;
     }
 
@@ -56,7 +83,7 @@ abstract contract RocketBase {
     * @dev Modifier to scope access to admins
     */
     modifier onlySuperUser() {
-        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender), "User is not a super user");
+        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender), "Account is not a super user");
         _;
     }
 
@@ -65,7 +92,7 @@ abstract contract RocketBase {
     * @dev Reverts if the address doesn't have this role
     */
     modifier onlyRole(string memory _role) {
-        roleCheck(_role, msg.sender);
+        require(roleHas(_role, msg.sender), "Account does not match the specified role");
         _;
     }
 
@@ -99,18 +126,9 @@ abstract contract RocketBase {
 
     /**
     * @dev Check if an address has this role
-    * @return bool
     */
     function roleHas(string memory _role, address _address) internal view returns (bool) {
         return rocketStorage.getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
-    }
-
-
-    /**
-    * @dev Check if an address has this role, reverts if it doesn't
-    */
-    function roleCheck(string memory _role, address _address) internal view {
-        require(roleHas(_role, _address) == true, "User does not have correct role");
     }
 
 

@@ -43,10 +43,10 @@ contract RocketPool is RocketBase {
 
     // Update network ETH balances
     // Only accepts calls from trusted (oracle) nodes
-    function updateTotalETHBalance(uint256 _balance) external {
+    function updateTotalETHBalance(uint256 _balance) external onlyTrustedNode(msg.sender) {
         setTotalETHBalance(_balance);
     }
-    function updateStakingETHBalance(uint256 _balance) external {
+    function updateStakingETHBalance(uint256 _balance) external onlyTrustedNode(msg.sender) {
         setStakingETHBalance(_balance);
     }
 
@@ -103,7 +103,7 @@ contract RocketPool is RocketBase {
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
-    function beaconWithdrawal(bytes calldata _validatorPubkey) external {
+    function beaconWithdrawal(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
         // 1. Calculate the share of the validator balance for node operators vs users
         // 2. Transfer the node operators' share to the nETH contract
         // 3. Transfer the users' share:

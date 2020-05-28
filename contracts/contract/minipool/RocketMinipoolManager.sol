@@ -20,8 +20,8 @@ contract RocketMinipoolManager is RocketBase {
     function getRandomAvailableMinipool() public view returns (address) {}
 
     // Create a minipool
-    // Only accepts calls from registered nodes
-    function createMinipool() external {}
+    // Only accepts calls from registered node contracts
+    function createMinipool(address _nodeAddress) external onlyRegisteredNodeContract(_nodeAddress, msg.sender) {}
 
     // Destroy a minipool
     // Only accepts calls from the RocketMinipoolStatus contract
