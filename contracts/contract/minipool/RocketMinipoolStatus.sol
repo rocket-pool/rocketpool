@@ -14,13 +14,19 @@ contract RocketMinipoolStatus is RocketBase {
         version = 1;
     }
 
+    // Only allow access from the registered owner of a minipool
+    modifier onlyMinipoolOwner(address _minipoolAddress, address _nodeAddress) {
+        // TODO: implement
+        _;
+    }
+
     // Assign deposited ETH to a minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
     function assignMinipoolDeposit(address _minipool) external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the registered owner (node) of the minipool
-    function stakeMinipool(address _minipool, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external {}
+    function stakeMinipool(address _minipool, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyMinipoolOwner(_minipool, msg.sender) {}
 
     // Mark a minipool as exited
     // Only accepts calls from trusted (oracle) nodes
@@ -36,6 +42,6 @@ contract RocketMinipoolStatus is RocketBase {
 
     // Withdraw rewards from a minipool and close it
     // Only accepts calls from the registered owner (node) of the minipool
-    function closeMinipool(address _minipool) external {}
+    function closeMinipool(address _minipool) external onlyMinipoolOwner(_minipool, msg.sender) {}
 
 }
