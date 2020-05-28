@@ -19,15 +19,15 @@ abstract contract StandardToken is ERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    function balanceOf(address _owner) external override view returns (uint256 balance) {
+    function balanceOf(address _owner) override external view returns (uint256 balance) {
         return balances[_owner];
     }
 
-    function allowance(address _owner, address _spender) external override view returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) override external view returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 
-    function transfer(address _to, uint256 _value) external override returns (bool success) {
+    function transfer(address _to, uint256 _value) override external returns (bool success) {
         if (balances[msg.sender] >= _value && _value > 0) {
             balances[msg.sender] = balances[msg.sender].sub(_value);
             balances[_to] = balances[_to].add(_value);
@@ -38,7 +38,7 @@ abstract contract StandardToken is ERC20 {
         }
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) external override returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _value) override external returns (bool success) {
         if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && _value > 0) {
             balances[_to] = balances[_to].add(_value);
             balances[_from] = balances[_from].sub(_value);
@@ -50,7 +50,7 @@ abstract contract StandardToken is ERC20 {
         }
     }
 
-    function approve(address _spender, uint256 _value) external override returns (bool success) {
+    function approve(address _spender, uint256 _value) override external returns (bool success) {
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;
