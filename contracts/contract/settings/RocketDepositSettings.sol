@@ -18,9 +18,7 @@ contract RocketDepositSettings is RocketBase {
             setDepositEnabled(true);
             setAssignDepositsEnabled(true);
             setMinimumDeposit(0.01 ether);
-            setMinimumDepositFee(0.001 ether); // 10 basis points
-            setMaximumDepositFee(0.005 ether); // 50 basis points
-            setNodeDemandFeeRange(1000 ether);
+            setDepositFee(0.001 ether); // 10 basis points
             // Settings initialized
             setBoolS("settings.deposit.init", true);
         }
@@ -50,29 +48,12 @@ contract RocketDepositSettings is RocketBase {
         setUintS("settings.deposit.minimum", _value);
     }
 
-    // The minimum network deposit fee as a fraction of 1 ETH
-    function getMinimumDepositFee() public view returns (uint256) {
-        return getUintS("settings.deposit.fee.minimum");
+    // The deposit fee as a fraction of 1 ETH
+    function getDepositFee() public view returns (uint256) {
+        return getUintS("settings.deposit.fee");
     }
-    function setMinimumDepositFee(uint256 _value) public onlySuperUser {
-        setUintS("settings.deposit.fee.minimum", _value);
-    }
-
-    // The maximum network deposit fee as a fraction of 1 ETH
-    function getMaximumDepositFee() public view returns (uint256) {
-        return getUintS("settings.deposit.fee.maximum");
-    }
-    function setMaximumDepositFee(uint256 _value) public onlySuperUser {
-        setUintS("settings.deposit.fee.maximum", _value);
-    }
-
-    // The node demand range to scale the deposit fee by
-    // The deposit fee is scaled based on a range of -1 to +1 multiplied by this value
-    function getNodeDemandFeeRange() public view returns (uint256) {
-        return getUintS("settings.deposit.fee.range");
-    }
-    function setNodeDemandFeeRange(uint256 _value) public onlySuperUser {
-        setUintS("settings.deposit.fee.range", _value);
+    function setDepositFee(uint256 _value) public onlySuperUser {
+        setUintS("settings.deposit.fee", _value);
     }
 
 }

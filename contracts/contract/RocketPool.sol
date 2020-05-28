@@ -3,7 +3,6 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./RocketBase.sol";
-import "../interface/settings/RocketDepositSettingsInterface.sol";
 import "../lib/SafeMath.sol";
 
 // Global network information and functions
@@ -74,7 +73,7 @@ contract RocketPool is RocketBase {
 
 
     //
-    // Network demand and deposit fees
+    // Network node demand and fees
     //
 
     // Get the current RP network node demand in ETH
@@ -82,12 +81,8 @@ contract RocketPool is RocketBase {
     // Node demand is positive if the size of the deposit pool is higher than waiting minipool capacity
     function getNodeDemand() public view returns (uint256) {}
 
-    // Get the current RP network deposit fee as a fraction of 1 ETH
-    function getDepositFee() public view returns (uint256) {
-        // TODO: replace with dynamic deposit fee formula based on node demand
-        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        return rocketDepositSettings.getMinimumDepositFee();
-    }
+    // Get the current RP network node fee as a fraction of 1 ETH
+    function getNodeFee() public view returns (uint256) {}
 
 
     //

@@ -33,8 +33,7 @@ contract RocketDepositPool is RocketBase {
     }
 
     // Accept a deposit from a user
-    // The user specifies the maximum fee % they are willing to pay as a fraction of 1 ETH
-    function deposit(uint256 _maxFee) external payable {
+    function deposit() external payable {
         // Calculation base value
         uint256 calcBase = 1 ether;
         // Load contracts
@@ -46,12 +45,8 @@ contract RocketDepositPool is RocketBase {
         // Check deposit settings
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
-        // Update deposit pool balance to include deposited amount
+        // Update deposit pool balance
         setBalance(getBalance().add(msg.value));
-        // Get current deposit fee
-        uint256 depositFee = rocketPool.getDepositFee();
-        // Check current deposit fee against max specified
-        require(depositFee <= _maxFee, "The current network deposit fee exceeds the maximum fee specified");
         // Calculate amount of rETH to mint
         uint256 rethExchangeRate = rocketETHToken.getExchangeRate();
         uint256 rethAmount;
@@ -62,7 +57,7 @@ contract RocketDepositPool is RocketBase {
         // Update network ETH balance
         rocketPool.increaseTotalETHBalance(msg.value);
         // Calculate deposit fee amount and user share of rETH
-        uint256 feeAmount = rethAmount.mul(depositFee).div(calcBase);
+        uint256 feeAmount = rethAmount.mul(rocketDepositSettings.getDepositFee()).div(calcBase);
         uint256 userAmount = rethAmount.sub(feeAmount);
         // Transfer rETH to vault & user
         require(rocketETHToken.transfer(address(rocketVault), feeAmount), "rETH was not transferred to the vault successfully");
