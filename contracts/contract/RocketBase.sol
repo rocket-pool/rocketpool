@@ -110,13 +110,13 @@ abstract contract RocketBase {
     /*** Contract Utilities *****/
 
 
-    /// @dev Get the the contracts address - This method should be called before interacting with any API contracts to ensure the latest address is used
-    function getContractAddress(string memory _contractName) public view returns(address) {
-        // Get the current API contract address
+    /// @dev Get the address of a network contract
+    function getContractAddress(string memory _contractName) internal view returns (address) {
+        // Get the current contract address
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
         // Check it
-        require(address(contractAddress) != address(0x0), "Rocket Pool - Contract not found.");
-        // Done
+        require(contractAddress != address(0x0), "Contract not found");
+        // Return
         return contractAddress;
     }
 
