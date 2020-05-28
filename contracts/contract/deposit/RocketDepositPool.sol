@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "../RocketBase.sol";
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/node/RocketNodeRewardsInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
@@ -14,7 +15,7 @@ import "../../lib/SafeMath.sol";
 // Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
 // Handles assignment of deposited ETH to minipools
 
-contract RocketDepositPool is RocketBase {
+contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Libs
     using SafeMath for uint;

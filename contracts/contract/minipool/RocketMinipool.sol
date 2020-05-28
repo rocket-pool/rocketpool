@@ -3,10 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipool {
+contract RocketMinipool is RocketMinipoolInterface {
 
     // Main Rocket Pool storage contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);

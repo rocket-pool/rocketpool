@@ -3,10 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 
 // Minipool creation, removal and management
 
-contract RocketMinipoolManager is RocketBase {
+contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {

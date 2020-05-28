@@ -3,10 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 
 // Node registration and management
 
-contract RocketNodeManager is RocketBase {
+contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {

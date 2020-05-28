@@ -3,11 +3,12 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 
 // Handles updates to minipool status
 // Includes status updates initiated by RP network contracts, the minipool owner, and trusted (oracle) nodes
 
-contract RocketMinipoolStatus is RocketBase {
+contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
