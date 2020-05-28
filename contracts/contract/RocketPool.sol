@@ -27,18 +27,18 @@ contract RocketPool is RocketBase {
 
     // The current RP network total ETH balance
     function getTotalETHBalance() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.total")));
+        return getUintS("network.balance.total");
     }
     function setTotalETHBalance(uint256 _value) private {
-        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.total")), _value);
+        setUintS("network.balance.total", _value);
     }
 
     // The current RP network staking ETH balance
     function getStakingETHBalance() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("network.balance.staking")));
+        return getUintS("network.balance.staking");
     }
     function setStakingETHBalance(uint256 _value) private {
-        rocketStorage.setUint(keccak256(abi.encodePacked("network.balance.staking")), _value);
+        setUintS("network.balance.staking", _value);
     }
 
     // Update network ETH balances

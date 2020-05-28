@@ -22,10 +22,10 @@ contract RocketNodeRewards is RocketBase {
 
     // Current reward pool balance
     function getBalance() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("reward.pool.balance")));
+        return getUintS("reward.pool.balance");
     }
     function setBalance(uint256 _value) private {
-        rocketStorage.setUint(keccak256(abi.encodePacked("reward.pool.balance")), _value);
+        setUintS("reward.pool.balance", _value);
     }
 
     // Increase the reward pool balance by an amount

@@ -26,10 +26,10 @@ contract RocketDepositPool is RocketBase {
 
     // Current deposit pool balance
     function getBalance() public view returns (uint256) {
-        return rocketStorage.getUint(keccak256(abi.encodePacked("deposit.pool.balance")));
+        return getUintS("deposit.pool.balance");
     }
     function setBalance(uint256 _value) private {
-        rocketStorage.setUint(keccak256(abi.encodePacked("deposit.pool.balance")), _value);
+        setUintS("deposit.pool.balance", _value);
     }
 
     // Accept a deposit from a user
