@@ -3,10 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/settings/RocketDepositSettingsInterface.sol";
 
 // Network deposit settings
 
-contract RocketDepositSettings is RocketBase {
+contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -25,7 +26,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     // Deposits currently enabled
-    function getDepositEnabled() public view returns (bool) {
+    function getDepositEnabled() override public view returns (bool) {
         return getBoolS("settings.deposit.enabled");
     }
     function setDepositEnabled(bool _value) public onlySuperUser {
@@ -33,7 +34,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     // Deposit assignments currently enabled
-    function getAssignDepositsEnabled() public view returns (bool) {
+    function getAssignDepositsEnabled() override public view returns (bool) {
         return getBoolS("settings.deposit.assign.enabled");
     }
     function setAssignDepositsEnabled(bool _value) public onlySuperUser {
@@ -41,7 +42,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     // Minimum deposit size
-    function getMinimumDeposit() public view returns (uint256) {
+    function getMinimumDeposit() override public view returns (uint256) {
         return getUintS("settings.deposit.minimum");
     }
     function setMinimumDeposit(uint256 _value) public onlySuperUser {
@@ -49,7 +50,7 @@ contract RocketDepositSettings is RocketBase {
     }
 
     // The deposit fee as a fraction of 1 ETH
-    function getDepositFee() public view returns (uint256) {
+    function getDepositFee() override public view returns (uint256) {
         return getUintS("settings.deposit.fee");
     }
     function setDepositFee(uint256 _value) public onlySuperUser {

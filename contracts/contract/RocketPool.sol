@@ -3,11 +3,12 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./RocketBase.sol";
+import "../interface/RocketPoolInterface.sol";
 import "../lib/SafeMath.sol";
 
 // Global network information and functions
 
-contract RocketPool is RocketBase {
+contract RocketPool is RocketBase, RocketPoolInterface {
 
 
     // Libs
@@ -25,7 +26,7 @@ contract RocketPool is RocketBase {
     //
 
     // The current RP network total ETH balance
-    function getTotalETHBalance() public view returns (uint256) {
+    function getTotalETHBalance() override public view returns (uint256) {
         return getUintS("network.balance.total");
     }
     function setTotalETHBalance(uint256 _value) private {
@@ -33,7 +34,7 @@ contract RocketPool is RocketBase {
     }
 
     // The current RP network staking ETH balance
-    function getStakingETHBalance() public view returns (uint256) {
+    function getStakingETHBalance() override public view returns (uint256) {
         return getUintS("network.balance.staking");
     }
     function setStakingETHBalance(uint256 _value) private {
@@ -51,19 +52,19 @@ contract RocketPool is RocketBase {
 
     // Increase total ETH balance
     // Only accepts calls from the RocketDepositPool contract
-    function increaseTotalETHBalance(uint256 _amount) external onlyLatestContract("rocketDepositPool", msg.sender) {
+    function increaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().add(_amount));
     }
 
     // Decrease total ETH balance
     // Only accepts calls from the RocketETHToken contract
-    function decreaseTotalETHBalance(uint256 _amount) external onlyLatestContract("rocketETHToken", msg.sender) {
+    function decreaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketETHToken", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().sub(_amount));
     }
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
-    function getETHUtilizationRate() public view returns (uint256) {
+    function getETHUtilizationRate() override public view returns (uint256) {
         uint256 calcBase = 1 ether;
         uint256 totalEthBalance = getTotalETHBalance();
         uint256 stakingEthBalance = getStakingETHBalance();
@@ -79,10 +80,10 @@ contract RocketPool is RocketBase {
     // Get the current RP network node demand in ETH
     // Node demand is negative if the size of the deposit pool is lower than waiting minipool capacity
     // Node demand is positive if the size of the deposit pool is higher than waiting minipool capacity
-    function getNodeDemand() public view returns (uint256) {}
+    function getNodeDemand() override public view returns (uint256) {}
 
     // Get the current RP network node fee as a fraction of 1 ETH
-    function getNodeFee() public view returns (uint256) {}
+    function getNodeFee() override public view returns (uint256) {}
 
 
     //
@@ -90,7 +91,7 @@ contract RocketPool is RocketBase {
     //
 
     // Calculate the share of a final validator balance owned by its node operator
-    function getValidatorNodeShare(uint256 _balance) public view returns (uint256) {
+    function getValidatorNodeShare(uint256 _balance) override public view returns (uint256) {
         // balance >= 32 ETH : balance / 2
         // balance >= 16 ETH & < 32 ETH : balance - 16
         // balance < 16 ETH : 0

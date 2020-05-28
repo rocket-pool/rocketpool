@@ -2,14 +2,15 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "../RocketBase.sol";
 import "./StandardToken.sol";
+import "../RocketBase.sol";
 import "../../interface/RocketPoolInterface.sol";
+import "../../interface/token/RocketETHTokenInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
-contract RocketETHToken is RocketBase, StandardToken {
+contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
 
     // Libs
     using SafeMath for uint;
@@ -21,7 +22,7 @@ contract RocketETHToken is RocketBase, StandardToken {
 
     // Get the current ETH : rETH exchange rate
     // Returns the amount of ETH backing 1 rETH
-    function getExchangeRate() public view returns (uint256) {
+    function getExchangeRate() override public view returns (uint256) {
         // Get network total ETH balance
         RocketPoolInterface rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         uint256 totalEthBalance = rocketPool.getTotalETHBalance();
@@ -33,7 +34,7 @@ contract RocketETHToken is RocketBase, StandardToken {
 
     // Mint rETH
     // Only accepts calls from the RocketDepositPool contract
-    function mint(uint256 _amount, address _to) external onlyLatestContract("rocketDepositPool", msg.sender) {
+    function mint(uint256 _amount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
         // Check amount
         require(_amount > 0, "Invalid token mint amount");
         // Update balance & supply
