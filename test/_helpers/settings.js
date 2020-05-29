@@ -1,8 +1,13 @@
 import { RocketDepositSettings } from '../_utils/artifacts';
 
 
-// Update a deposit setting
-export async function setDepositSetting({setting, value, from}) {
+// Deposit settings
+export async function getDepositSetting(setting) {
+	const rocketDepositSettings = await RocketDepositSettings.deployed();
+	let value = await rocketDepositSettings['get' + setting].call();
+	return value;
+}
+export async function setDepositSetting(setting, value, txOptions) {
     const rocketDepositSettings = await RocketDepositSettings.deployed();
-    await rocketDepositSettings['set' + setting](value, {from});
+    await rocketDepositSettings['set' + setting](value, txOptions);
 }
