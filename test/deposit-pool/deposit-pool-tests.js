@@ -9,8 +9,10 @@ export default function() {
 
 
         // Accounts
-        const owner = accounts[0];
-        const staker = accounts[1];
+        const [
+            owner,
+            staker,
+        ] = accounts;
 
 
         // State snapshotting
