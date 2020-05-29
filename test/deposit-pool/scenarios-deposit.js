@@ -1,15 +1,17 @@
-import { RocketDepositPool, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketPool, RocketVault } from '../_utils/artifacts';
 
 
 // Make a deposit into the deposit pool
-export async function deposit({from, value}) {
+export async function deposit(txOptions) {
 
     // Load contracts
     const [
         rocketDepositPool,
+        rocketPool,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
+        RocketPool.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -17,10 +19,11 @@ export async function deposit({from, value}) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
+            rocketPool.getTotalETHBalance.call(),
             web3.eth.getBalance(rocketVault.address),
         ]).then(
-            ([depositPool, vault]) =>
-            ({depositPool, vault})
+            ([depositPoolEth, networkEth, vaultEth]) =>
+            ({depositPoolEth, networkEth, vaultEth: web3.utils.toBN(vaultEth)})
         );
     }
 
@@ -28,14 +31,16 @@ export async function deposit({from, value}) {
     let balances1 = await getBalances();
 
     // Deposit
-    await rocketDepositPool.deposit({from, value});
+    await rocketDepositPool.deposit(txOptions);
 
     // Get updated balances
     let balances2 = await getBalances();
 
     // Check balances
-    assert.equal(parseInt(balances2.depositPool), parseInt(balances1.depositPool) + parseInt(value), 'Incorrect updated deposit pool balance');
-    assert.equal(parseInt(balances2.vault), parseInt(balances1.vault) + parseInt(value), 'Incorrect updated vault balance');
+    let txValue = web3.utils.toBN(txOptions.value);
+    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(txValue)), 'Incorrect updated deposit pool ETH balance');
+    assert(balances2.networkEth.eq(balances1.networkEth.add(txValue)), 'Incorrect updated network total ETH balance');
+    assert(balances2.vaultEth.eq(balances1.vaultEth.add(txValue)), 'Incorrect updated vault ETH balance');
 
 }
 

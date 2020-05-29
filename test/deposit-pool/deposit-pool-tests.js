@@ -46,9 +46,9 @@ export default function() {
         it(printTitle('staker', 'cannot make a deposit below the minimum deposit amount'), async () => {
 
             // Get & check deposit amount
-            let depositAmount = web3.utils.toWei('0.0001', 'ether');
             let minimumDeposit = await getDepositSetting('MinimumDeposit');
-            assert.isBelow(parseInt(depositAmount), parseInt(minimumDeposit), 'Deposit amount is not less than the minimum deposit');
+            let depositAmount = minimumDeposit.div(web3.utils.toBN(2));
+            assert(depositAmount.lt(minimumDeposit), 'Deposit amount is not less than the minimum deposit');
 
             // Attempt deposit
             await shouldRevert(deposit({
