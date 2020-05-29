@@ -22,10 +22,15 @@ export default function() {
 
 
         it(printTitle('staker', 'can make a deposit'), async () => {
+
+            // Deposit
             await deposit({
                 from: staker,
                 value: web3.utils.toWei('10', 'ether'),
             });
+
+            // TODO: update network ETH total to alter rETH exchange rate and deposit again
+
         });
 
 
