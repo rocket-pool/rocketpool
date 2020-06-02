@@ -5,5 +5,4 @@ pragma solidity 0.6.8;
 interface RocketVaultInterface {
     function depositEther() external payable;
     function withdrawEther(address _withdrawalAddress, uint256 _amount) external;
-    function withdrawReth(address _withdrawalAddress, uint256 _amount) external;
 }

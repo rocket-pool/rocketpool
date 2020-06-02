@@ -30,8 +30,8 @@ contract RocketNodeRewards is RocketBase, RocketNodeRewardsInterface {
     }
 
     // Increase the reward pool balance by an amount
-    // Only accepts calls from the RocketDepositPool contract
-    function increaseBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", msg.sender) {
+    // Only accepts calls from the ??? contract
+    function increaseBalance(uint256 _amount) override external {
         setBalance(getBalance().add(_amount));
     }
 

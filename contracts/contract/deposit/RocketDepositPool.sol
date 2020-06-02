@@ -6,14 +6,12 @@ import "../RocketBase.sol";
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/node/RocketNodeRewardsInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
 
 // The main entry point for deposits into the RP network
-// Accepts user deposits and mints rETH; fees are deducted and the remainder is sent to the user
-// Handles assignment of deposited ETH to minipools
+// Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 
 contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
@@ -40,7 +38,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
-        RocketNodeRewardsInterface rocketNodeRewards = RocketNodeRewardsInterface(getContractAddress("rocketNodeRewards"));
         RocketPoolInterface rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
@@ -53,18 +50,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         uint256 rethAmount;
         if (rethExchangeRate == 0) { rethAmount = msg.value; }
         else { rethAmount = calcBase.mul(msg.value).div(rethExchangeRate); }
-        // Mint rETH here
-        rocketETHToken.mint(rethAmount, address(this));
+        // Mint rETH to user account
+        rocketETHToken.mint(rethAmount, msg.sender);
         // Update network ETH balance
+        // MUST be done *after* rETH amount calculation
         rocketPool.increaseTotalETHBalance(msg.value);
-        // Calculate deposit fee amount and user share of rETH
-        uint256 feeAmount = rethAmount.mul(rocketDepositSettings.getDepositFee()).div(calcBase);
-        uint256 userAmount = rethAmount.sub(feeAmount);
-        // Transfer rETH to vault & user
-        require(rocketETHToken.transfer(address(rocketVault), feeAmount), "rETH was not transferred to the vault successfully");
-        require(rocketETHToken.transfer(msg.sender, userAmount), "rETH was not transferred to the user successfully");
-        // Update node reward pool balance
-        rocketNodeRewards.increaseBalance(feeAmount);
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits

@@ -19,7 +19,6 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
             setDepositEnabled(true);
             setAssignDepositsEnabled(true);
             setMinimumDeposit(0.01 ether);
-            setDepositFee(0.001 ether); // 10 basis points
             // Settings initialized
             setBoolS("settings.deposit.init", true);
         }
@@ -47,14 +46,6 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     }
     function setMinimumDeposit(uint256 _value) public onlySuperUser {
         setUintS("settings.deposit.minimum", _value);
-    }
-
-    // The deposit fee as a fraction of 1 ETH
-    function getDepositFee() override public view returns (uint256) {
-        return getUintS("settings.deposit.fee");
-    }
-    function setDepositFee(uint256 _value) public onlySuperUser {
-        setUintS("settings.deposit.fee", _value);
     }
 
 }

@@ -22,8 +22,4 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     // Only accepts calls from the RocketDepositPool contract
     function withdrawEther(address _withdrawalAddress, uint256 _amount) override external onlyLatestContract("rocketDepositPool", msg.sender) {}
 
-    // Withdraw an amount of rETH to a specified address
-    // Only accepts calls from the RocketNodeRewards contract
-    function withdrawReth(address _withdrawalAddress, uint256 _amount) override external onlyLatestContract("rocketNodeRewards", msg.sender) {}
-
 }
