@@ -3,7 +3,9 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/settings/RocketNodeSettingsInterface.sol";
 
 // Node registration and management
 
@@ -21,6 +23,27 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getRandomAvailableNode() public view returns (address) {}
 
     // Register a new node with Rocket Pool
-    function registerNode(string calldata _timezoneLocation) external {}
+    function registerNode(string calldata _timezoneLocation) external {
+        // Load contracts
+        RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
+        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Check node settings
+        require(rocketNodeSettings.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
+        require(msg.sender.balance >= rocketNodeSettings.getMinimumBalance(), "The node account balance is less than the minimum registration balance");
+        // Check timezone location
+        require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
+        // Check node is not registered
+        require(!getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "The node is already registered in the Rocket Pool network");
+        // Create node contract
+        address contractAddress = rocketNodeFactory.createNode(msg.sender);
+        // Initialise node data
+        setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
+        setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
+        setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
+        setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), contractAddress);
+        setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
+        setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), now);
+        setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
+    }
 
 }
