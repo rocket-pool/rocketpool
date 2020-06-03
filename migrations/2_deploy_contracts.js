@@ -46,7 +46,6 @@ const contracts = {
   // Node
   rocketNodeCheckin:      artifacts.require('RocketNodeCheckin.sol'),
   rocketNodeManager:      artifacts.require('RocketNodeManager.sol'),
-  rocketNodeRewards:      artifacts.require('RocketNodeRewards.sol'),
   // Settings
   rocketDepositSettings:  artifacts.require('RocketDepositSettings.sol'),
   // Tokens
