@@ -1,6 +1,8 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { getTotalETHBalance, updateTotalETHBalance } from '../_helpers/network';
+import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
 import { deposit } from './scenarios-deposit';
 
@@ -12,6 +14,7 @@ export default function() {
         const [
             owner,
             staker,
+            node,
         ] = accounts;
 
 
@@ -29,7 +32,20 @@ export default function() {
                 value: web3.utils.toWei('10', 'ether'),
             });
 
-            // TODO: update network ETH total to alter rETH exchange rate and deposit again
+            // Create trusted node
+            await registerNode({from: node});
+            await setNodeTrusted(node, {from: owner});
+
+            // Update network ETH total to 133% to alter rETH exchange rate
+            let balance = await getTotalETHBalance();
+            balance = balance.mul(web3.utils.toBN(4)).div(web3.utils.toBN(3));
+            await updateTotalETHBalance(balance, {from: node});
+
+            // Deposit again with updated rETH exchange rate
+            await deposit({
+                from: staker,
+                value: web3.utils.toWei('10', 'ether'),
+            });
 
         });
 
