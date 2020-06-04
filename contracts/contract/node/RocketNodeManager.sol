@@ -38,12 +38,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         address contractAddress = rocketNodeFactory.createNode(msg.sender);
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
-        setBool(keccak256(abi.encodePacked("node.active", msg.sender)), true);
         setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), contractAddress);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
-        setUint(keccak256(abi.encodePacked("node.lastCheckin", msg.sender)), now);
-        setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
     }
 
     // Set a node's trusted status
