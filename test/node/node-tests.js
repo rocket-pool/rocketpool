@@ -3,6 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { setNodeSetting } from '../_helpers/settings';
 import { registerNode } from './scenarios-register';
+import { setNodeTrusted } from './scenarios-trusted';
 
 export default function() {
     contract('RocketNodeManager', async (accounts) => {
@@ -12,6 +13,7 @@ export default function() {
         const [
             owner,
             node,
+            random,
         ] = accounts;
 
 
@@ -74,6 +76,61 @@ export default function() {
             await shouldRevert(registerNode('Australia/Brisbane', {
                 from: node,
             }), 'Registered a node which is already registered');
+
+        });
+
+
+        it(printTitle('admin', 'can set a node\'s trusted status'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Set trusted status
+            await setNodeTrusted(node, true, {from: owner});
+            await setNodeTrusted(node, false, {from: owner});
+
+        });
+
+
+        it(printTitle('admin', 'cannot set trusted status for an invalid node'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Attempt to set trusted status
+            await shouldRevert(setNodeTrusted(random, true, {
+                from: owner,
+            }), 'Set trusted status for an invalid node');
+
+        });
+
+
+        it(printTitle('admin', 'cannot set a node\'s trusted status to its current trusted status'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Attempt to set trusted status
+            await shouldRevert(setNodeTrusted(node, false, {
+                from: owner,
+            }), 'Set a node\'s trusted status to its current trusted status');
+            await setNodeTrusted(node, true, {from: owner});
+            await shouldRevert(setNodeTrusted(node, true, {
+                from: owner,
+            }), 'Set a node\'s trusted status to its current trusted status');
+
+        });
+
+
+        it(printTitle('random address', 'cannot set a node\'s trusted status'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Attempt to set trusted status
+            await shouldRevert(setNodeTrusted(node, true, {
+                from: random,
+            }), 'Random address set a node\'s trusted status');
 
         });
 

@@ -46,4 +46,14 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setUint(keccak256(abi.encodePacked("node.averageLoad", msg.sender)), 0);
     }
 
+    // Set a node's trusted status
+    function setNodeTrusted(address _nodeAddress, bool _trusted) external onlySuperUser {
+        // Check node exists
+        require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
+        // Check current node status
+        require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "The node's trusted status is already set");
+        // Set status
+        setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
+    }
+
 }
