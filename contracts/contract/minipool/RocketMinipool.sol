@@ -12,9 +12,15 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Main Rocket Pool storage contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
+    // Node owning the minipool contract
+    address public owner;
+
     // Construct
-    constructor(address _rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeAddress) public {
+        // Initialise RocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        // Set owning node address
+        owner = _nodeAddress;
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract

@@ -41,10 +41,12 @@ const contracts = {
   // Deposit
   rocketDepositPool:      artifacts.require('RocketDepositPool.sol'),
   // Minipool
+  rocketMinipoolFactory:  artifacts.require('RocketMinipoolFactory.sol'),
   rocketMinipoolManager:  artifacts.require('RocketMinipoolManager.sol'),
   rocketMinipoolStatus:   artifacts.require('RocketMinipoolStatus.sol'),
   // Node
   rocketNodeCheckin:      artifacts.require('RocketNodeCheckin.sol'),
+  rocketNodeDeposit:      artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeFactory:      artifacts.require('RocketNodeFactory.sol'),
   rocketNodeManager:      artifacts.require('RocketNodeManager.sol'),
   // Settings

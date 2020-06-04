@@ -44,15 +44,6 @@ abstract contract RocketBase {
 
 
     /**
-    * @dev Throws if called by any sender that isn't a registered node contract
-    */
-    modifier onlyRegisteredNodeContract(address _nodeAddress, address _nodeContract) {
-        require(getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress))) == _nodeContract, "Invalid node contract");
-        _;
-    }
-
-
-    /**
     * @dev Throws if called by any sender that isn't a trusted node
     */
     modifier onlyTrustedNode(address _nodeAddress) {
