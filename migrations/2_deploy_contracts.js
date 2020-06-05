@@ -56,6 +56,9 @@ const contracts = {
   // Tokens
   rocketETHToken:         artifacts.require('RocketETHToken.sol'),
   rocketNodeETHToken:     artifacts.require('RocketNodeETHToken.sol'),
+  // Utils
+  addressSetStorage:      artifacts.require('AddressSetStorage.sol'),
+  addressQueueStorage:    artifacts.require('AddressQueueStorage.sol'),
 };
 
 // Instance contract ABIs

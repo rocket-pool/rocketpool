@@ -26,6 +26,15 @@ abstract contract RocketBase {
 
 
     /**
+    * @dev Throws if called by any sender that doesn't match a Rocket Pool network contract
+    */
+    modifier onlyLatestNetworkContract() {
+        require(getAddress(keccak256(abi.encodePacked("contract.address", msg.sender))) != address(0x0), "Invalid or outdated network contract");
+        _;
+    }
+
+
+    /**
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
