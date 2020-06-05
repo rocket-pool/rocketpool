@@ -6,6 +6,7 @@ import "../RocketBase.sol";
 import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Node registration and management
 
@@ -16,17 +17,24 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         version = 1;
     }
 
-    // Get the number of available nodes in the network
-    function getAvailableNodeCount() public view returns (uint256) {}
+    // Get the number of nodes in the network
+    function getNodeCount() public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.index")));
+    }
 
-    // Get a random available node in the network
-    function getRandomAvailableNode() public view returns (address) {}
+    // Get a node address by index
+    function getNodeAt(uint256 _index) public view returns (address) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.index")), _index);
+    }
 
     // Register a new node with Rocket Pool
     function registerNode(string calldata _timezoneLocation) external {
         // Load contracts
         RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
         require(rocketNodeSettings.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
         require(msg.sender.balance >= rocketNodeSettings.getMinimumBalance(), "The node account balance is less than the minimum registration balance");
@@ -41,6 +49,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), contractAddress);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
+        // Add node to index
+        addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
     }
 
     // Set a node's trusted status

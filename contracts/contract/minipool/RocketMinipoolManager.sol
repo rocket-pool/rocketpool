@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Minipool creation, removal and management
 
@@ -15,19 +16,28 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         version = 1;
     }
 
-    // Get the number of available minipools in the network
-    function getAvailableMinipoolCount() public view returns (uint256) {}
+    // Get the number of minipools in the network
+    function getMinipoolCount() public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.index")));
+    }
 
-    // Get a random available minipool in the network
-    function getRandomAvailableMinipool() public view returns (address) {}
+    // Get a minipool address by index
+    function getMinipoolAt(uint256 _index) public view returns (address) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.index")), _index);
+    }
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
         // Load contracts
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Create minipool contract
         address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _nodeDepositAmount);
+        // Add minipool to index
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         // Return created minipool address
         return contractAddress;
     }
