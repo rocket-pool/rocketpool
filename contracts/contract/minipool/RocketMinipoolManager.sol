@@ -23,15 +23,17 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function createMinipool(address _nodeAddress) external onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
         // Load contracts
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         // Create minipool contract
-        address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress);
+        address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _nodeDepositAmount);
+        // Return created minipool address
+        return contractAddress;
     }
 
     // Destroy a minipool
     // Only accepts calls from the RocketMinipoolStatus contract
-    function destroyMinipool() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function destroyMinipool() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }

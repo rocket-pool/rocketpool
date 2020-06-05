@@ -3,5 +3,5 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketMinipoolFactoryInterface {
-    function createMinipool(address _nodeAddress) external returns (address);
+    function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) external returns (address);
 }

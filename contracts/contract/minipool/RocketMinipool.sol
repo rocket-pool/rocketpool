@@ -15,12 +15,16 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Node owning the minipool contract
     address public owner;
 
+    // Node deposit amount required
+    uint256 public nodeDepositAmount;
+
     // Construct
-    constructor(address _rocketStorageAddress, address _nodeAddress) public {
+    constructor(address _rocketStorageAddress, address _nodeAddress, uint256 _nodeDepositAmount) public {
         // Initialise RocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Set owning node address
+        // Set parameters
         owner = _nodeAddress;
+        nodeDepositAmount = _nodeDepositAmount;
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract
@@ -34,24 +38,31 @@ contract RocketMinipool is RocketMinipoolInterface {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
     }
 
+    // Assign the node deposit to the minipool
+    // Only accepts calls from the RocketNodeDeposit contract
+    function nodeDeposit() override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
+        // Check deposit amount
+        require(msg.value == nodeDepositAmount, "Invalid node deposit amount");
+    }
+
     // Assign deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketMinipoolStatus contract
-    function assignDeposit() external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function assignDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
-    function exit() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function exit() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function withdraw(uint256 _withdrawalBalance) external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function withdraw(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
-    function close() external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function close() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }
