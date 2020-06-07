@@ -45,4 +45,15 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         return 0;
     }
 
+    // Required user deposit amounts
+    function getActivePoolUserDeposit() override public view returns (uint256) {
+        return getLaunchBalance().div(2);
+    }
+    function getIdlePoolUserDeposit() override public view returns (uint256) {
+        return getLaunchBalance().div(2);
+    }
+    function getEmptyPoolUserDeposit() override public view returns (uint256) {
+        return getLaunchBalance();
+    }
+
 }
