@@ -29,6 +29,26 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.index")), _index);
     }
 
+    // Check whether a node exists
+    function getNodeExists(address _nodeAddress) public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)));
+    }
+
+    // Check whether a node is trusted
+    function getNodeTrusted(address _nodeAddress) public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
+    }
+
+    // Get a node's contract address
+    function getNodeContract(address _nodeAddress) public view returns (address) {
+        return getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress)));
+    }
+
+    // Get a node's timezone location
+    function getNodeTimezoneLocation(address _nodeAddress) public view returns (string memory) {
+        return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
+    }
+
     // Register a new node with Rocket Pool
     function registerNode(string calldata _timezoneLocation) external {
         // Load contracts
@@ -61,6 +81,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "The node's trusted status is already set");
         // Set status
         setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
+    }
+
+    // Set a node's timezone location
+    function setTimezoneLocation(string calldata _timezoneLocation) external onlyRegisteredNode(msg.sender) {
+        require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
+        setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
     }
 
 }
