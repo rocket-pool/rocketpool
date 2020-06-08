@@ -6,6 +6,8 @@ import "../RocketBase.sol";
 import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -57,8 +59,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         rocketPool.increaseTotalETHBalance(msg.value);
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
-        // Assign deposits
-        assignDeposits();
+        // Assign deposits if enabled
+        if (rocketDepositSettings.getAssignDepositsEnabled()) { assignDeposits(); }
     }
 
     // Recycle a deposit from a withdrawn minipool
@@ -70,10 +72,27 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Assign deposits to available minipools
     function assignDeposits() public {
-        // Repeat N times:
-        // 1. Check there is an available minipool and >= 16 ETH in deposits
-        // 2. Select a pseudo-random minipool from the available set
-        // 3. Transfer 16 ETH from the deposit vault to the minipool
+        // Load contracts
+        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        RocketMinipoolStatusInterface rocketMinipoolStatus = RocketMinipoolStatusInterface(getContractAddress("rocketMinipoolStatus"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        // Check deposit settings
+        require(rocketDepositSettings.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
+        // Assign deposits
+        for (uint256 i = 0; i < rocketDepositSettings.getMaximumDepositAssignments(); ++i) {
+            // Get & check next available minipool capacity
+            uint256 minipoolCapacity = rocketMinipoolQueue.getNextCapacity();
+            if (minipoolCapacity == 0 || getBalance() < minipoolCapacity) { break; }
+            // Dequeue next available minipool
+            address minipoolAddress = rocketMinipoolQueue.dequeueMinipool();
+            // Update deposit pool balance
+            setBalance(getBalance().sub(minipoolCapacity));
+            // Withdraw ETH from vault
+            rocketVault.withdrawEther(address(this), minipoolCapacity);
+            // Assign deposit to minipool
+            rocketMinipoolStatus.assignMinipoolDeposit{value: minipoolCapacity}(minipoolAddress);
+        }
     }
 
 }
