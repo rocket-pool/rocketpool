@@ -28,10 +28,12 @@ export async function registerNode(timezoneLocation, txOptions) {
 
     // Get updated node count & node details
     let nodeCount2 = await rocketNodeManager.getNodeCount.call();
+    let lastNodeAddress = await rocketNodeManager.getNodeAt.call(nodeCount2.sub(web3.utils.toBN(1)));
     let details = await getDetails(txOptions.from);
 
     // Check details
     assert(nodeCount2.eq(nodeCount1.add(web3.utils.toBN(1))), 'Incorrect updated node count');
+    assert.equal(lastNodeAddress, txOptions.from, 'Incorrect updated node index');
     assert.isTrue(details.exists, 'Incorrect node exists flag');
     assert.isFalse(details.trusted, 'Incorrect node trusted flag');
     assert.notEqual(details.contractAddress, '0x0000000000000000000000000000000000000000', 'Incorrect node contract address');
