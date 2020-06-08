@@ -1,6 +1,7 @@
 // Import tests
 import depositPoolTests from './deposit/deposit-pool-tests';
-import nodeTests from './node/node-manager-tests';
+import nodeManagerTests from './node/node-manager-tests';
+import nodeDepositTests from './node/node-deposit-tests';
 
 // Header
 console.log('\n');
@@ -13,4 +14,5 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
 depositPoolTests();
-nodeTests();
+nodeManagerTests();
+nodeDepositTests();

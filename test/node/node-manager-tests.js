@@ -121,7 +121,7 @@ export default function() {
 
             // Attempt to set timezone location
             await shouldRevert(setTimezoneLocation('Australia/Brisbane', {
-                from: node,
+                from: random,
             }), 'Random address set a timezone location');
 
         });
