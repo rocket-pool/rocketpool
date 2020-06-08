@@ -8,7 +8,7 @@ export async function registerNode(timezoneLocation, txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();
 
     // Get node details
-    function getDetails(nodeAddress) {
+    function getNodeDetails(nodeAddress) {
         return Promise.all([
             rocketNodeManager.getNodeExists.call(nodeAddress),
             rocketNodeManager.getNodeTrusted.call(nodeAddress),
@@ -29,7 +29,7 @@ export async function registerNode(timezoneLocation, txOptions) {
     // Get updated node count & node details
     let nodeCount2 = await rocketNodeManager.getNodeCount.call();
     let lastNodeAddress = await rocketNodeManager.getNodeAt.call(nodeCount2.sub(web3.utils.toBN(1)));
-    let details = await getDetails(txOptions.from);
+    let details = await getNodeDetails(txOptions.from);
 
     // Check details
     assert(nodeCount2.eq(nodeCount1.add(web3.utils.toBN(1))), 'Incorrect updated node count');
