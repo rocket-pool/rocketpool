@@ -3,9 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
+import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 
 // Handles node deposits and minipool creation
@@ -21,6 +23,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     // Only accepts calls from registered nodes
     function deposit() external payable onlyRegisteredNode(msg.sender) {
         // Load contracts
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check node settings
@@ -32,6 +36,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
         // Transfer deposit to minipool
         minipool.nodeDeposit{value: msg.value}();
+        // Assign deposits if enabled
+        if (rocketDepositSettings.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
     }
 
 }

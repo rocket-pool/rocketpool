@@ -26,7 +26,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     }
 
     // Current deposit pool balance
-    function getBalance() public view returns (uint256) {
+    function getBalance() override public view returns (uint256) {
         return getUintS("deposit.pool.balance");
     }
     function setBalance(uint256 _value) private {
@@ -65,13 +65,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketPool contract
-    function recycleDeposit() external payable onlyLatestContract("rocketPool", msg.sender) {
+    function recycleDeposit() override external payable onlyLatestContract("rocketPool", msg.sender) {
         // 1. Transfer ETH to the vault
         // 2. Assign deposits
     }
 
     // Assign deposits to available minipools
-    function assignDeposits() public {
+    function assignDeposits() override public {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
