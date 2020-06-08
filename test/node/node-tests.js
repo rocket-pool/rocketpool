@@ -3,6 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { setNodeSetting } from '../_helpers/settings';
 import { registerNode } from './scenarios-register';
+import { setTimezoneLocation } from './scenarios-timezone';
 import { setNodeTrusted } from './scenarios-trusted';
 
 export default function() {
@@ -21,6 +22,11 @@ export default function() {
         let snapshotId;
         beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
+
+
+        //
+        // Registration
+        //
 
 
         it(printTitle('node operator', 'can register a node'), async () => {
@@ -78,6 +84,52 @@ export default function() {
             }), 'Registered a node which is already registered');
 
         });
+
+
+        //
+        // Timezone location
+        //
+
+
+        it(printTitle('node operator', 'can set their timezone location'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Set timezone location
+            await setTimezoneLocation('Australia/Sydney', {
+                from: node,
+            });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot set their timezone location to an invalid value'), async () => {
+
+            // Register
+            await registerNode('Australia/Brisbane', {from: node});
+
+            // Attempt to set timezone location
+            await shouldRevert(setTimezoneLocation('a', {
+                from: node,
+            }), 'Set a timezone location to an invalid value');
+
+        });
+
+
+        it(printTitle('random address', 'cannot set a timezone location'), async () => {
+
+            // Attempt to set timezone location
+            await shouldRevert(setTimezoneLocation('Australia/Brisbane', {
+                from: node,
+            }), 'Random address set a timezone location');
+
+        });
+
+
+        //
+        // Trusted status
+        //
 
 
         it(printTitle('admin', 'can set a node\'s trusted status'), async () => {
