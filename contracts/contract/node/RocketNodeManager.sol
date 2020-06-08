@@ -74,6 +74,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Set a node's trusted status
+    // Only accepts calls from super users
     function setNodeTrusted(address _nodeAddress, bool _trusted) external onlySuperUser {
         // Check node exists
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
@@ -84,6 +85,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Set a node's timezone location
+    // Only accepts calls from registered nodes
     function setTimezoneLocation(string calldata _timezoneLocation) external onlyRegisteredNode(msg.sender) {
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
