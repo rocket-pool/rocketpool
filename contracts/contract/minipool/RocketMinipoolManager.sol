@@ -29,6 +29,18 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.index")), _index);
     }
 
+    // Get the number of minipools owned by a node
+    function getNodeMinipoolCount(address _nodeAddress) public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
+    }
+
+    // Get a node minipool address by index
+    function getNodeMinipoolAt(address _nodeAddress, uint256 _index) public view returns (address) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _index);
+    }
+
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
@@ -38,8 +50,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Create minipool contract
         address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _nodeDepositAmount);
-        // Add minipool to index
+        // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
         // Add minipool to queue
         rocketMinipoolQueue.enqueueMinipool(contractAddress, _nodeDepositAmount);
         // Return created minipool address
