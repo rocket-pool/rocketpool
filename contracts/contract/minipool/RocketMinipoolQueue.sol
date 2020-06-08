@@ -77,6 +77,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Remove the first available minipool from the highest priority queue and return its address
+    // Reverts if no minipools are available
     // Only accepts calls from the RocketDepositPool contract
     function dequeueMinipool() override external onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
         if (getIdleLength() > 0) { return dequeueMinipool("minipools.available.idle"); }
