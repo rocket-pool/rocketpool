@@ -40,9 +40,9 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             "Invalid node deposit amount"
         );
         // Create minipool
-        address minipool = rocketMinipoolManager.createMinipool(msg.sender, msg.value);
+        address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, msg.value);
         // Transfer deposit to minipool
-        rocketMinipoolStatus.nodeDepositMinipool{value: msg.value}(minipool);
+        rocketMinipoolStatus.nodeDepositMinipool{value: msg.value}(minipoolAddress);
         // Assign deposits if enabled
         if (rocketDepositSettings.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
     }
