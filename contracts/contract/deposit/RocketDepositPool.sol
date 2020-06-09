@@ -91,7 +91,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
             // Withdraw ETH from vault
             rocketVault.withdrawEther(address(this), minipoolCapacity);
             // Assign deposit to minipool
-            rocketMinipoolStatus.assignMinipoolDeposit{value: minipoolCapacity}(minipoolAddress);
+            rocketMinipoolStatus.userDepositMinipool{value: minipoolCapacity}(minipoolAddress);
         }
     }
 

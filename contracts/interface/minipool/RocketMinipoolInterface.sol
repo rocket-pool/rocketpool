@@ -4,9 +4,10 @@ pragma solidity 0.6.8;
 
 interface RocketMinipoolInterface {
     function nodeDeposit() external payable;
-    function assignDeposit() external payable;
+    function userDeposit() external payable;
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
     function exit() external;
     function withdraw(uint256 _withdrawalBalance) external;
     function close() external;
+    function timeout() external;
 }

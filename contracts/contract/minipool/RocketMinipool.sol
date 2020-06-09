@@ -37,15 +37,15 @@ contract RocketMinipool is RocketMinipoolInterface {
     }
 
     // Assign the node deposit to the minipool
-    // Only accepts calls from the RocketNodeDeposit contract
-    function nodeDeposit() override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    // Only accepts calls from the RocketMinipoolStatus contract
+    function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check deposit amount
         require(msg.value == nodeDepositAmount, "Invalid node deposit amount");
     }
 
-    // Assign deposited ETH to the minipool and mark it as prelaunch
+    // Assign user deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketMinipoolStatus contract
-    function assignDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function userDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract
@@ -62,5 +62,9 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
     function close() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+
+    // Time the minipool out, closing it and returning all balances to the node operator and the deposit pool
+    // Only accepts calls from the RocketMinipoolStatus contract
+    function timeout() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }
