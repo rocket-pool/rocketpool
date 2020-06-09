@@ -41,6 +41,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     }
 
     // Minimum node balance for registration (to cover gas fees)
+    // TODO: check whether this setting is required anymore (depends on whether node checkins exist still)
     function getMinimumBalance() override public view returns (uint256) {
         return getUintS("settings.node.balance.minimum");
     }
