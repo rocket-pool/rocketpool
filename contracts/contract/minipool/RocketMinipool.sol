@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../types/MinipoolStatus.sol";
 
 // An individual minipool in the Rocket Pool network
 
@@ -12,17 +13,38 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Main Rocket Pool storage contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-    // Node properties
-    address public node;
+    // Status
+    MinipoolStatus public status;
+    uint256 public statusBlock;
+
+    // Node details
+    address public nodeAddress;
     uint256 public nodeDepositAmount;
+    uint256 public nodeDepositBalance;
+
+    // User deposit details
+    uint256 public userDepositAmount;
+    uint256 public userDepositBalance;
+    uint256 public userDepositBlock;
+
+    // Staking details
+    uint256 public stakingStartBalance;
+    uint256 public stakingStartBlock;
+    uint256 public stakingEndBalance;
+    uint256 public stakingEndBlock;
 
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, uint256 _nodeDepositAmount) public {
         // Initialise RocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Set properties
-        node = _nodeAddress;
+        // Set status
+        status = MinipoolStatus.Initialized;
+        statusBlock = block.number;
+        // Set node details
+        nodeAddress = _nodeAddress;
         nodeDepositAmount = _nodeDepositAmount;
+        // Set user deposit details
+        // TODO: implement
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract
