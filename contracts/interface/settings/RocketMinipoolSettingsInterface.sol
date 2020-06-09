@@ -10,4 +10,5 @@ interface RocketMinipoolSettingsInterface {
     function getActivePoolUserDeposit() external view returns (uint256);
     function getIdlePoolUserDeposit() external view returns (uint256);
     function getEmptyPoolUserDeposit() external view returns (uint256);
+    function getLaunchTimeout() external view returns (uint256);
 }
