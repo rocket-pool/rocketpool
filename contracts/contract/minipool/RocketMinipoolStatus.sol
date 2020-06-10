@@ -45,7 +45,10 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the registered owner (node) of the minipool
-    function stakeMinipool(address _minipool, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyMinipoolOwner(_minipool, msg.sender) {}
+    function stakeMinipool(address _minipool, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyMinipoolOwner(_minipool, msg.sender) {
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        minipool.stake(_validatorPubkey, _validatorSignature, _depositDataRoot);
+    }
 
     // Mark a minipool as exited
     // Only accepts calls from trusted (oracle) nodes

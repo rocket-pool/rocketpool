@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/casper/DepositInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -75,8 +76,9 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketMinipoolStatus contract
     function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
-        // Check current status & node deposit balance
+        // Check current status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
+        // Check current node deposit balance
         require(nodeDepositBalance == 0, "The node deposit has already been assigned");
         // Check deposit amount
         require(msg.value == nodeDepositRequired, "Invalid node deposit amount");
@@ -116,7 +118,22 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
+        // Load contracts
+        DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Get launch amount
+        uint256 launchAmount = rocketMinipoolSettings.getLaunchBalance();
+        // Check minipool balance
+        require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
+        // Send staking deposit to casper
+        // TODO: implement
+        //casperDeposit.deposit{value: launchAmount}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
+        // Progress to staking
+        setStatus(MinipoolStatus.Staking);
+    }
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
