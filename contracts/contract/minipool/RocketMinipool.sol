@@ -74,17 +74,34 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Only accepts calls from the RocketMinipoolStatus contract
     function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status & node deposit balance
-        require(status == MinipoolStatus.Initialized, "The node deposit can only be made while initialized");
-        require(nodeDepositBalance == 0, "The node deposit has already been made");
+        require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
+        require(nodeDepositBalance == 0, "The node deposit has already been assigned");
         // Check deposit amount
         require(msg.value == nodeDepositRequired, "Invalid node deposit amount");
         // Update node deposit balance
         nodeDepositBalance = msg.value;
+        // Progress full deposit minipool to prelaunch
+        if (depositType == MinipoolDeposit.Full) { status = MinipoolStatus.Prelaunch; }
     }
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketMinipoolStatus contract
-    function userDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function userDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        if (depositType == MinipoolDeposit.Full) {
+            require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
+        } else {
+            require(status == MinipoolStatus.Initialized, "The user deposit can only be assigned while initialized");
+        }
+        // Check current user deposit balance
+        require(userDepositBalance == 0, "The user deposit has already been assigned");
+        // Check deposit amount
+        require(msg.value == userDepositRequired, "Invalid user deposit amount");
+        // Update user deposit balance
+        userDepositBalance = msg.value;
+        // Progress half / empty deposit minipool to prelaunch
+        if (status == MinipoolStatus.Initialized) { status = MinipoolStatus.Prelaunch; }
+    }
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the RocketMinipoolStatus contract

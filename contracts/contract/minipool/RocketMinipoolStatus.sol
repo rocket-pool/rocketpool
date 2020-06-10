@@ -3,7 +3,9 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Handles updates to minipool status
 // Includes status updates initiated by RP network contracts, the minipool owner, and trusted (oracle) nodes
@@ -17,17 +19,29 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Only allow access from the registered owner of a minipool
     modifier onlyMinipoolOwner(address _minipoolAddress, address _nodeAddress) {
-        // TODO: implement
+        require(isMinipoolOwner(_minipoolAddress, _nodeAddress), "Invalid minipool owner");
         _;
+    }
+
+    // Check whether a node is the registered owner of a minipool
+    function isMinipoolOwner(address _minipoolAddress, address _nodeAddress) private view returns (bool) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _minipoolAddress) != -1);
     }
 
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function nodeDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {}
+    function nodeDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        minipool.nodeDeposit{value: msg.value}();
+    }
 
     // Assign user deposited ETH to a minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
-    function userDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
+    function userDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        minipool.userDeposit{value: msg.value}();
+    }
 
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the registered owner (node) of the minipool
