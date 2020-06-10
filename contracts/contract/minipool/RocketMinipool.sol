@@ -5,12 +5,16 @@ pragma solidity 0.6.8;
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../lib/SafeMath.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
 // An individual minipool in the Rocket Pool network
 
 contract RocketMinipool is RocketMinipoolInterface {
+
+    // Libs
+    using SafeMath for uint;
 
     // Main Rocket Pool storage contract
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);
@@ -19,23 +23,23 @@ contract RocketMinipool is RocketMinipoolInterface {
     MinipoolStatus public status;
     uint256 public statusBlock;
 
-    // Deposit details
+    // Deposit type
     MinipoolDeposit public depositType;
-    uint256 public nodeDepositRequired;
-    uint256 public userDepositRequired;
 
     // Node details
     address public nodeAddress;
+    uint256 public nodeDepositRequired;
     uint256 public nodeDepositBalance;
 
     // User deposit details
+    uint256 public userDepositRequired;
     uint256 public userDepositBalance;
-    uint256 public userDepositBlock;
 
     // Staking details
     uint256 public stakingStartBalance;
-    uint256 public stakingStartBlock;
     uint256 public stakingEndBalance;
+    uint256 public stakingStartBlock;
+    uint256 public stakingUserBlock;
     uint256 public stakingEndBlock;
 
     // Construct
@@ -49,14 +53,12 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set status
-        status = MinipoolStatus.Initialized;
-        statusBlock = block.number;
-        // Set deposit details
+        setStatus(MinipoolStatus.Initialized);
+        // Set details
         depositType = _depositType;
+        nodeAddress = _nodeAddress;
         nodeDepositRequired = rocketMinipoolSettings.getDepositNodeAmount(_depositType);
         userDepositRequired = rocketMinipoolSettings.getDepositUserAmount(_depositType);
-        // Set node details
-        nodeAddress = _nodeAddress;
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract
@@ -80,8 +82,8 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(msg.value == nodeDepositRequired, "Invalid node deposit amount");
         // Update node deposit balance
         nodeDepositBalance = msg.value;
-        // Progress full deposit minipool to prelaunch
-        if (depositType == MinipoolDeposit.Full) { status = MinipoolStatus.Prelaunch; }
+        // Progress full minipool to prelaunch
+        if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch
@@ -99,8 +101,17 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(msg.value == userDepositRequired, "Invalid user deposit amount");
         // Update user deposit balance
         userDepositBalance = msg.value;
-        // Progress half / empty deposit minipool to prelaunch
-        if (status == MinipoolStatus.Initialized) { status = MinipoolStatus.Prelaunch; }
+        // Refinance full minipool
+        if (depositType == MinipoolDeposit.Full) {
+            // Set user staking start block
+            stakingUserBlock = block.number;
+            // Update node deposit balance
+            nodeDepositBalance = nodeDepositBalance.sub(msg.value);
+            // Transfer deposited ETH to node
+            payable(nodeAddress).transfer(msg.value);
+        }
+        // Progress initialized minipool to prelaunch
+        if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
@@ -122,5 +133,11 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Dissolve the minipool, closing it and returning all balances to the node operator and the deposit pool
     // Only accepts calls from the RocketMinipoolStatus contract
     function dissolve() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+
+    // Set the minipool's current status
+    function setStatus(MinipoolStatus _status) private {
+        status = _status;
+        statusBlock = block.number;
+    }
 
 }
