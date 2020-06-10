@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
@@ -18,13 +19,16 @@ contract RocketMinipool is RocketMinipoolInterface {
     MinipoolStatus public status;
     uint256 public statusBlock;
 
+    // Deposit details
+    MinipoolDeposit public depositType;
+    uint256 public nodeDepositRequired;
+    uint256 public userDepositRequired;
+
     // Node details
     address public nodeAddress;
-    uint256 public nodeDepositAmount;
     uint256 public nodeDepositBalance;
 
     // User deposit details
-    uint256 public userDepositAmount;
     uint256 public userDepositBalance;
     uint256 public userDepositBlock;
 
@@ -36,15 +40,23 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) public {
+        // Check parameters
+        require(_rocketStorageAddress != address(0x0), "Invalid storage address");
+        require(_nodeAddress != address(0x0), "Invalid node address");
+        require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
         // Initialise RocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        // Load contracts
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Set status
         status = MinipoolStatus.Initialized;
         statusBlock = block.number;
+        // Set deposit details
+        depositType = _depositType;
+        nodeDepositRequired = rocketMinipoolSettings.getDepositNodeAmount(_depositType);
+        userDepositRequired = rocketMinipoolSettings.getDepositUserAmount(_depositType);
         // Set node details
         nodeAddress = _nodeAddress;
-        // Set user deposit details
-        // TODO: implement
     }
 
     // Only allow access from the latest version of the specified Rocket Pool contract
@@ -61,8 +73,13 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketMinipoolStatus contract
     function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status & node deposit balance
+        require(status == MinipoolStatus.Initialized, "The node deposit can only be made while initialized");
+        require(nodeDepositBalance == 0, "The node deposit has already been made");
         // Check deposit amount
-        require(msg.value == nodeDepositAmount, "Invalid node deposit amount");
+        require(msg.value == nodeDepositRequired, "Invalid node deposit amount");
+        // Update node deposit balance
+        nodeDepositBalance = msg.value;
     }
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch

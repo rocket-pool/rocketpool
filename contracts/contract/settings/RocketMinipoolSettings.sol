@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "../RocketBase.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
+import "../../types/MinipoolDeposit.sol";
 
 // Network minipool settings
 
@@ -36,6 +37,12 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
 
     // Required node deposit amounts
+    function getDepositNodeAmount(MinipoolDeposit _depositType) override public view returns (uint256) {
+        if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
+        if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
+        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
+        return 0;
+    }
     function getFullDepositNodeAmount() override public view returns (uint256) {
         return getLaunchBalance();
     }
@@ -47,6 +54,12 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
 
     // Required user deposit amounts
+    function getDepositUserAmount(MinipoolDeposit _depositType) override public view returns (uint256) {
+        if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
+        if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
+        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
+        return 0;
+    }
     function getFullDepositUserAmount() override public view returns (uint256) {
         return getLaunchBalance().div(2);
     }
