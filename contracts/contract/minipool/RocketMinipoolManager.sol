@@ -7,6 +7,7 @@ import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
+import "../../types/MinipoolDeposit.sol";
 
 // Minipool creation, removal and management
 
@@ -43,18 +44,18 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
         // Load contracts
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Create minipool contract
-        address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _nodeDepositAmount);
+        address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType);
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
         // Add minipool to queue
-        rocketMinipoolQueue.enqueueMinipool(contractAddress, _nodeDepositAmount);
+        rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
         return contractAddress;
     }

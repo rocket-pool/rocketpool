@@ -21,7 +21,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         if (!getBoolS("settings.minipool.init")) {
             // Apply settings
             setLaunchBalance(32 ether);
-            setLaunchTimeout(24 hours);
+            setLaunchTimeout(5760); // ~24 hours
             // Settings initialized
             setBoolS("settings.minipool.init", true);
         }
@@ -36,28 +36,28 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
 
     // Required node deposit amounts
-    function getActivePoolNodeDeposit() override public view returns (uint256) {
+    function getFullDepositNodeAmount() override public view returns (uint256) {
         return getLaunchBalance();
     }
-    function getIdlePoolNodeDeposit() override public view returns (uint256) {
+    function getHalfDepositNodeAmount() override public view returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyPoolNodeDeposit() override public view returns (uint256) {
+    function getEmptyDepositNodeAmount() override public view returns (uint256) {
         return 0;
     }
 
     // Required user deposit amounts
-    function getActivePoolUserDeposit() override public view returns (uint256) {
+    function getFullDepositUserAmount() override public view returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getIdlePoolUserDeposit() override public view returns (uint256) {
+    function getHalfDepositUserAmount() override public view returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyPoolUserDeposit() override public view returns (uint256) {
+    function getEmptyDepositUserAmount() override public view returns (uint256) {
         return getLaunchBalance();
     }
 
-    // Timeout period for prelaunch minipools to launch
+    // Timeout period in blocks for prelaunch minipools to launch
     function getLaunchTimeout() override public view returns (uint256) {
         return getUintS("settings.minipool.launch.timeout");
     }

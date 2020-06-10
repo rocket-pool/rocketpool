@@ -10,6 +10,7 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../types/MinipoolDeposit.sol";
 
 // Handles node deposits and minipool creation
 
@@ -32,15 +33,16 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
-        // Check node deposit amount; only trusted nodes can create empty minipools
-        require(
-            msg.value == rocketMinipoolSettings.getActivePoolNodeDeposit() ||
-            msg.value == rocketMinipoolSettings.getIdlePoolNodeDeposit() ||
-            (msg.value == rocketMinipoolSettings.getEmptyPoolNodeDeposit() && getBool(keccak256(abi.encodePacked("node.trusted", msg.sender)))),
-            "Invalid node deposit amount"
-        );
+        // Get deposit type by node deposit amount
+        MinipoolDeposit depositType = MinipoolDeposit.None;
+        if (msg.value == rocketMinipoolSettings.getFullDepositNodeAmount()) { depositType = MinipoolDeposit.Full; }
+        else if (msg.value == rocketMinipoolSettings.getHalfDepositNodeAmount()) { depositType = MinipoolDeposit.Half; }
+        else if (msg.value == rocketMinipoolSettings.getEmptyDepositNodeAmount()) { depositType = MinipoolDeposit.Empty; }
+        // Check deposit type; only trusted nodes can create empty minipools
+        require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
+        require(depositType != MinipoolDeposit.Empty || getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))), "Invalid node deposit amount");
         // Create minipool
-        address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, msg.value);
+        address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
         // Transfer deposit to minipool
         rocketMinipoolStatus.nodeDepositMinipool{value: msg.value}(minipoolAddress);
         // Assign deposits if enabled

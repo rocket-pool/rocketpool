@@ -24,17 +24,17 @@ export default function() {
 
 
         // Get minipool settings
-        let activePoolNodeDepositAmount;
-        let idlePoolNodeDepositAmount;
-        let emptyPoolNodeDepositAmount;
+        let fullDepositNodeAmount;
+        let halfDepositNodeAmount;
+        let emptyDepositNodeAmount;
         before(async () => {
-            activePoolNodeDepositAmount = await getMinipoolSetting('ActivePoolNodeDeposit');
-            idlePoolNodeDepositAmount = await getMinipoolSetting('IdlePoolNodeDeposit');
-            emptyPoolNodeDepositAmount = await getMinipoolSetting('EmptyPoolNodeDeposit');
+            fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');
+            halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount');
+            emptyDepositNodeAmount = await getMinipoolSetting('EmptyDepositNodeAmount');
         });
 
 
-        it(printTitle('node operator', 'can make a deposit to create an active or idle minipool'), async () => {
+        it(printTitle('node operator', 'can make a deposit to create a minipool'), async () => {
 
             // Register node
             await registerNode({from: node});
@@ -42,11 +42,11 @@ export default function() {
             // Deposit
             await deposit({
                 from: node,
-                value: activePoolNodeDepositAmount,
+                value: fullDepositNodeAmount,
             });
             await deposit({
                 from: node,
-                value: idlePoolNodeDepositAmount,
+                value: halfDepositNodeAmount,
             });
 
         });
@@ -63,11 +63,11 @@ export default function() {
             // Attempt deposit
             await shouldRevert(deposit({
                 from: node,
-                value: activePoolNodeDepositAmount,
+                value: fullDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
             await shouldRevert(deposit({
                 from: node,
-                value: idlePoolNodeDepositAmount,
+                value: halfDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
 
         });
@@ -80,9 +80,9 @@ export default function() {
 
             // Get deposit amount
             let depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
-            assert(!depositAmount.eq(activePoolNodeDepositAmount), 'Deposit amount is not invalid');
-            assert(!depositAmount.eq(idlePoolNodeDepositAmount), 'Deposit amount is not invalid');
-            assert(!depositAmount.eq(emptyPoolNodeDepositAmount), 'Deposit amount is not invalid');
+            assert(!depositAmount.eq(fullDepositNodeAmount), 'Deposit amount is not invalid');
+            assert(!depositAmount.eq(halfDepositNodeAmount), 'Deposit amount is not invalid');
+            assert(!depositAmount.eq(emptyDepositNodeAmount), 'Deposit amount is not invalid');
 
             // Attempt deposit
             await shouldRevert(deposit({
@@ -102,7 +102,7 @@ export default function() {
             // Deposit
             await deposit({
                 from: node,
-                value: emptyPoolNodeDepositAmount,
+                value: emptyDepositNodeAmount,
             });
 
         });
@@ -116,7 +116,7 @@ export default function() {
             // Deposit
             await shouldRevert(deposit({
                 from: node,
-                value: emptyPoolNodeDepositAmount,
+                value: emptyDepositNodeAmount,
             }), 'Regular node created an empty minipool');
 
         });
@@ -127,11 +127,11 @@ export default function() {
             // Deposit
             await shouldRevert(deposit({
                 from: random,
-                value: activePoolNodeDepositAmount,
+                value: fullDepositNodeAmount,
             }), 'Random address made a deposit');
             await shouldRevert(deposit({
                 from: random,
-                value: idlePoolNodeDepositAmount,
+                value: halfDepositNodeAmount,
             }), 'Random address made a deposit');
 
         });

@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "./RocketMinipool.sol";
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "../../types/MinipoolDeposit.sol";
 
 // Minipool contract factory
 
@@ -16,9 +17,9 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
     }
 
     // Create a new RocketMinipool contract
-    function createMinipool(address _nodeAddress, uint256 _nodeDepositAmount) override external onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
         // Create RocketMinipool contract
-        address contractAddress = address(new RocketMinipool(address(rocketStorage), _nodeAddress, _nodeDepositAmount));
+        address contractAddress = address(new RocketMinipool(address(rocketStorage), _nodeAddress, _depositType));
         // Return
         return contractAddress;
     }

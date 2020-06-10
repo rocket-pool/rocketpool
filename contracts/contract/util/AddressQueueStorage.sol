@@ -61,9 +61,9 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
         setUint(keccak256(abi.encodePacked(_key, ".end")), index);
     }
 
-    // Remove an item from the start of a queue
+    // Remove an item from the start of a queue and return it
     // Requires that the queue is not empty
-    function dequeueItem(bytes32 _key) override external onlyLatestNetworkContract {
+    function dequeueItem(bytes32 _key) override external onlyLatestNetworkContract returns (address) {
         require(getLength(_key) > 0, "Queue is empty");
         uint start = getUint(keccak256(abi.encodePacked(_key, ".start")));
         address item = getAddress(keccak256(abi.encodePacked(_key, ".item", start)));
@@ -71,6 +71,7 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
         if (start >= capacity) { start = start.sub(capacity); }
         setUint(keccak256(abi.encodePacked(_key, ".index", item)), 0);
         setUint(keccak256(abi.encodePacked(_key, ".start")), start);
+        return item;
     }
 
     // Remove an item from a queue

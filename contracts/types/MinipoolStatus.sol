@@ -2,6 +2,8 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+// Represents a minipool's status within the network
+
 enum MinipoolStatus {
     Initialized,    // The minipool has been initialized and is awaiting a deposit of user ETH
     Prelaunch,      // The minipool has enough ETH to begin staking and is awaiting launch by the node operator
