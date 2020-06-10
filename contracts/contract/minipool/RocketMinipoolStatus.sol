@@ -49,8 +49,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Only accepts calls from the registered owner (node) of the minipool
     function closeMinipool(address _minipool) external onlyMinipoolOwner(_minipool, msg.sender) {}
 
-    // Time a minipool out, closing it and returning all balances to the node operator and the deposit pool
-    // Callable by any address
-    function timeoutMinipool(address _minipool) external {}
+    // Dissolve a minipool, closing it and returning all balances to the node operator and the deposit pool
+    // Only accepts calls from the registered owner (node) of the minipool, or from any address if the minipool has timed out
+    function dissolveMinipool(address _minipool) external {}
 
 }

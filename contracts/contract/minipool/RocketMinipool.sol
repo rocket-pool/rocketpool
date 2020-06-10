@@ -85,8 +85,8 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Only accepts calls from the RocketMinipoolStatus contract
     function close() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
-    // Time the minipool out, closing it and returning all balances to the node operator and the deposit pool
+    // Dissolve the minipool, closing it and returning all balances to the node operator and the deposit pool
     // Only accepts calls from the RocketMinipoolStatus contract
-    function timeout() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function dissolve() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
 
 }

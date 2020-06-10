@@ -9,5 +9,5 @@ interface RocketMinipoolInterface {
     function exit() external;
     function withdraw(uint256 _withdrawalBalance) external;
     function close() external;
-    function timeout() external;
+    function dissolve() external;
 }
