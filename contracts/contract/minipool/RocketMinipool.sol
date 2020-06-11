@@ -32,16 +32,18 @@ contract RocketMinipool is RocketMinipoolInterface {
     address public nodeAddress;
     uint256 public nodeDepositRequired;
     uint256 public nodeDepositBalance;
+    bool public nodeDepositAssigned;
 
     // User deposit details
     uint256 public userDepositRequired;
     uint256 public userDepositBalance;
+    bool public userDepositAssigned;
 
     // Staking details
     uint256 public stakingStartBalance;
     uint256 public stakingEndBalance;
     uint256 public stakingStartBlock;
-    uint256 public stakingUserBlock;
+    uint256 public stakingUserStartBlock;
     uint256 public stakingEndBlock;
 
     // Construct
@@ -79,12 +81,13 @@ contract RocketMinipool is RocketMinipoolInterface {
     function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
-        // Check current node deposit balance
-        require(nodeDepositBalance == 0, "The node deposit has already been assigned");
+        // Check node deposit status
+        require(!nodeDepositAssigned, "The node deposit has already been assigned");
         // Check deposit amount
         require(msg.value == nodeDepositRequired, "Invalid node deposit amount");
-        // Update node deposit balance
+        // Update node deposit details
         nodeDepositBalance = msg.value;
+        nodeDepositAssigned = true;
         // Progress full minipool to prelaunch
         if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
     }
@@ -93,21 +96,18 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Only accepts calls from the RocketMinipoolStatus contract
     function userDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
-        if (depositType == MinipoolDeposit.Full) {
-            require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
-        } else {
-            require(status == MinipoolStatus.Initialized, "The user deposit can only be assigned while initialized");
-        }
-        // Check current user deposit balance
-        require(userDepositBalance == 0, "The user deposit has already been assigned");
+        require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
+        // Check user deposit status
+        require(!userDepositAssigned, "The user deposit has already been assigned");
         // Check deposit amount
         require(msg.value == userDepositRequired, "Invalid user deposit amount");
-        // Update user deposit balance
+        // Update user deposit details
         userDepositBalance = msg.value;
+        userDepositAssigned = true;
+        // Update staking details
+        if (status == MinipoolStatus.Staking) { stakingUserStartBlock = block.number; }
         // Refinance full minipool
         if (depositType == MinipoolDeposit.Full) {
-            // Set user staking start block
-            stakingUserBlock = block.number;
             // Update node deposit balance
             nodeDepositBalance = nodeDepositBalance.sub(msg.value);
             // Transfer deposited ETH to node
@@ -130,6 +130,10 @@ contract RocketMinipool is RocketMinipoolInterface {
         uint256 launchAmount = rocketMinipoolSettings.getLaunchBalance();
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
+        // Set staking details
+        stakingStartBalance = launchAmount;
+        stakingStartBlock = block.number;
+        if (userDepositAssigned) { stakingUserStartBlock = block.number; }
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, rocketNetworkWithdrawal.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
         // Progress to staking
@@ -138,11 +142,24 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
-    function exit() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function exit() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        require(status == MinipoolStatus.Staking, "The minipool can only exit while staking");
+        // Progress to exited
+        setStatus(MinipoolStatus.Exited);
+    }
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function withdraw(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function withdraw(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        require(status == MinipoolStatus.Exited, "The minipool can only withdraw while exited");
+        // Update staking details
+        stakingEndBalance = _withdrawalBalance;
+        stakingEndBlock = block.number;
+        // Progress to withdrawable
+        setStatus(MinipoolStatus.Withdrawable);
+    }
 
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
