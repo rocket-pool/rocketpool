@@ -52,7 +52,10 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Mark a minipool as exited
     // Only accepts calls from trusted (oracle) nodes
-    function exitMinipool(address _minipool) external onlyTrustedNode(msg.sender) {}
+    function exitMinipool(address _minipool) external onlyTrustedNode(msg.sender) {
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        minipool.exit();
+    }
 
     // Mark a minipool as withdrawable and record its final balance
     // Only accepts calls from trusted (oracle) nodes
@@ -60,6 +63,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // 1. Calculate the share of the validator balance for the node operator
         // 2. Mint nETH equal to the node operator's share to the minipool contract
         // 3. Mark the minipool as withdrawable
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
+        minipool.withdraw(_withdrawalBalance);
     }
 
     // Withdraw rewards from a minipool and close it
