@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -124,13 +125,13 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         // Get launch amount
         uint256 launchAmount = rocketMinipoolSettings.getLaunchBalance();
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
         // Send staking deposit to casper
-        // TODO: implement
-        //casperDeposit.deposit{value: launchAmount}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value: launchAmount}(_validatorPubkey, rocketNetworkWithdrawal.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
     }

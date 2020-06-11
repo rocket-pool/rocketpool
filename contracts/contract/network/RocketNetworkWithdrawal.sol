@@ -18,6 +18,12 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
+    // Get the validator withdrawal credentials
+    function getWithdrawalCredentials() override public view returns (bytes memory) {
+        // TODO: implement
+        return hex"0000000000000000000000000000000000000000000000000000000000000000";
+    }
+
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
     function withdraw(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
