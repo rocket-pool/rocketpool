@@ -62,6 +62,15 @@ abstract contract RocketBase {
 
 
     /**
+    * @dev Throws if called by any sender that isn't a registered minipool
+    */
+    modifier onlyRegisteredMinipool(address _minipoolAddress) {
+        require(getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Invalid minipool");
+        _;
+    }
+
+
+    /**
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyOwner() {

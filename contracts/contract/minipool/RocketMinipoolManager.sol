@@ -42,6 +42,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _index);
     }
 
+    // Check whether a minipool exists
+    function getMinipoolExists(address _minipoolAddress) public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress)));
+    }
+
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
@@ -51,6 +56,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Create minipool contract
         address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType);
+        // Initialize minipool data
+        setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
