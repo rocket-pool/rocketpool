@@ -3,7 +3,6 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
-import "../../interface/node/RocketNodeFactoryInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
@@ -39,11 +38,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
     }
 
-    // Get a node's contract address
-    function getNodeContract(address _nodeAddress) public view returns (address) {
-        return getAddress(keccak256(abi.encodePacked("node.contract", _nodeAddress)));
-    }
-
     // Get a node's timezone location
     function getNodeTimezoneLocation(address _nodeAddress) public view returns (string memory) {
         return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
@@ -52,7 +46,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     // Register a new node with Rocket Pool
     function registerNode(string calldata _timezoneLocation) external {
         // Load contracts
-        RocketNodeFactoryInterface rocketNodeFactory = RocketNodeFactoryInterface(getContractAddress("rocketNodeFactory"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
@@ -61,12 +54,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Check node is not registered
         require(!getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "The node is already registered in the Rocket Pool network");
-        // Create node contract
-        address contractAddress = rocketNodeFactory.createNode(msg.sender);
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
         setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
-        setAddress(keccak256(abi.encodePacked("node.contract", msg.sender)), contractAddress);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);

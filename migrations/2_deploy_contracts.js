@@ -50,7 +50,6 @@ const contracts = {
   rocketNetworkWithdrawal:  artifacts.require('RocketNetworkWithdrawal.sol'),
   // Node
   rocketNodeDeposit:        artifacts.require('RocketNodeDeposit.sol'),
-  rocketNodeFactory:        artifacts.require('RocketNodeFactory.sol'),
   rocketNodeManager:        artifacts.require('RocketNodeManager.sol'),
   // Settings
   rocketDepositSettings:    artifacts.require('RocketDepositSettings.sol'),
@@ -60,16 +59,14 @@ const contracts = {
   rocketETHToken:           artifacts.require('RocketETHToken.sol'),
   rocketNodeETHToken:       artifacts.require('RocketNodeETHToken.sol'),
   // Utils
-  addressSetStorage:        artifacts.require('AddressSetStorage.sol'),
   addressQueueStorage:      artifacts.require('AddressQueueStorage.sol'),
+  addressSetStorage:        artifacts.require('AddressSetStorage.sol'),
 };
 
 // Instance contract ABIs
 const abis = {
   // Minipool
   rocketMinipool:           artifacts.require('RocketMinipool.sol'),
-  // Node
-  rocketNode:               artifacts.require('RocketNode.sol'),
 };
 
 
