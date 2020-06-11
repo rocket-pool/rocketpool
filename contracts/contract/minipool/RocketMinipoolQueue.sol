@@ -97,8 +97,8 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove a minipool from a queue
     // Reverts for invalid queues
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function removeMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    // Only accepts calls from the RocketMinipoolManager contract
+    function removeMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolManager", msg.sender) {
         if (_depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", _minipool); }
         if (_depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", _minipool); }
         if (_depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", _minipool); }

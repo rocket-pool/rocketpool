@@ -68,7 +68,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Destroy a minipool
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function destroyMinipool() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    // Only accepts calls from the registered minipools
+    function destroyMinipool() override external onlyRegisteredMinipool(msg.sender) {}
 
 }
