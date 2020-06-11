@@ -20,7 +20,9 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     // Get the current RP network node demand in ETH
     // Node demand is equal to deposit pool size minus available minipool capacity
-    function getNodeDemand() override public view returns (uint256) {}
+    function getNodeDemand() override public view returns (uint256) {
+        // TODO: implement
+    }
 
     // Get the current RP network node fee as a fraction of 1 ETH
     function getNodeFee() override public view returns (uint256) {

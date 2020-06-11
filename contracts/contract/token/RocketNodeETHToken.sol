@@ -29,6 +29,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
 
     // Burn nETH for ETH
     function burn(uint256 _amount) external {
+        // TODO: implement
         // 1. Check contract ETH balance
         // 2. Decrease total supply and account balance
         // 3. Transfer ETH to account

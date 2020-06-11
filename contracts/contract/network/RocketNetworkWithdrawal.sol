@@ -27,6 +27,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
     function withdraw(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
+        // TODO: implement
         // 1. Calculate the share of the validator balance for node operators vs users
         // 2. Transfer the node operators' share to the nETH contract
         // 3. Transfer the users' share:
