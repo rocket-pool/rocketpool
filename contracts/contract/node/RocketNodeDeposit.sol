@@ -4,8 +4,8 @@ pragma solidity 0.6.8;
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -29,7 +29,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        RocketMinipoolStatusInterface rocketMinipoolStatus = RocketMinipoolStatusInterface(getContractAddress("rocketMinipoolStatus"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
@@ -43,8 +42,9 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(depositType != MinipoolDeposit.Empty || getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))), "Invalid node deposit amount");
         // Create minipool
         address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
         // Transfer deposit to minipool
-        rocketMinipoolStatus.nodeDepositMinipool{value: msg.value}(minipoolAddress);
+        minipool.nodeDeposit{value: msg.value}();
         // Assign deposits if enabled
         if (rocketDepositSettings.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
     }

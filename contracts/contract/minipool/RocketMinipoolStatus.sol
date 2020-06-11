@@ -29,20 +29,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         return (addressSetStorage.getIndexOf(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _minipoolAddress) != -1);
     }
 
-    // Assign the node deposit to the minipool
-    // Only accepts calls from the RocketNodeDeposit contract
-    function nodeDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        minipool.nodeDeposit{value: msg.value}();
-    }
-
-    // Assign user deposited ETH to a minipool and mark it as prelaunch
-    // Only accepts calls from the RocketDepositPool contract
-    function userDepositMinipool(address _minipool) override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
-        minipool.userDeposit{value: msg.value}();
-    }
-
     // Progress a minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the registered owner (node) of the minipool
     function stakeMinipool(address _minipool, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyMinipoolOwner(_minipool, msg.sender) {

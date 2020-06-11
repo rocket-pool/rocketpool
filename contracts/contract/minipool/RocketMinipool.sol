@@ -77,8 +77,8 @@ contract RocketMinipool is RocketMinipoolInterface {
     }
 
     // Assign the node deposit to the minipool
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function nodeDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    // Only accepts calls from the RocketNodeDeposit contract
+    function nodeDeposit() override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
         // Check node deposit status
@@ -93,8 +93,8 @@ contract RocketMinipool is RocketMinipoolInterface {
     }
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function userDeposit() override external payable onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    // Only accepts calls from the RocketDepositPool contract
+    function userDeposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
         // Check current status
         require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
         // Check user deposit status

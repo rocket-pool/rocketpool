@@ -5,8 +5,8 @@ pragma solidity 0.6.8;
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
@@ -75,7 +75,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        RocketMinipoolStatusInterface rocketMinipoolStatus = RocketMinipoolStatusInterface(getContractAddress("rocketMinipoolStatus"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
         require(rocketDepositSettings.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
@@ -86,12 +85,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
             if (minipoolCapacity == 0 || getBalance() < minipoolCapacity) { break; }
             // Dequeue next available minipool
             address minipoolAddress = rocketMinipoolQueue.dequeueMinipool();
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
             // Update deposit pool balance
             setBalance(getBalance().sub(minipoolCapacity));
             // Withdraw ETH from vault
             rocketVault.withdrawEther(address(this), minipoolCapacity);
             // Assign deposit to minipool
-            rocketMinipoolStatus.userDepositMinipool{value: minipoolCapacity}(minipoolAddress);
+            minipool.userDeposit{value: minipoolCapacity}();
         }
     }
 
