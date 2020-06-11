@@ -30,7 +30,7 @@ contract RocketNode is RocketNodeInterface {
     }
 
     // Get the address of a Rocket Pool network contract
-    function getContractAddress(string memory _contractName) internal view returns(address) {
+    function getContractAddress(string memory _contractName) private view returns (address) {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", _contractName)));
     }
 

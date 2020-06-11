@@ -41,12 +41,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
-        // Update deposit pool balance
-        setBalance(getBalance().add(msg.value));
         // Calculate amount of rETH to mint
         uint256 rethExchangeRate = rocketETHToken.getExchangeRate();
         uint256 rethAmount;
@@ -57,17 +54,29 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         // Update network ETH balance
         // MUST be done *after* rETH amount calculation
         rocketNetworkBalances.increaseTotalETHBalance(msg.value);
+        // Process deposit
+        processDeposit();
+    }
+
+    // Recycle a deposit from a dissolved minipool
+    // Only accepts calls from registered minipools
+    function recycleDissolvedDeposit() override external payable onlyRegisteredMinipool(msg.sender) { processDeposit(); }
+
+    // Recycle a deposit from a withdrawn minipool
+    // Only accepts calls from the RocketNetworkWithdrawal contract
+    function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) { processDeposit(); }
+
+    // Process a deposit
+    function processDeposit() private {
+        // Load contracts
+        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        // Update deposit pool balance
+        setBalance(getBalance().add(msg.value));
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits if enabled
         if (rocketDepositSettings.getAssignDepositsEnabled()) { assignDeposits(); }
-    }
-
-    // Recycle a deposit from a withdrawn minipool
-    // Only accepts calls from the RocketNetworkWithdrawal contract
-    function recycleDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        // 1. Transfer ETH to the vault
-        // 2. Assign deposits
     }
 
     // Assign deposits to available minipools
