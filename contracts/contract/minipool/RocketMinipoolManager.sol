@@ -3,6 +3,7 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
@@ -69,6 +70,19 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Destroy a minipool
     // Only accepts calls from the registered minipools
-    function destroyMinipool() override external onlyRegisteredMinipool(msg.sender) {}
+    function destroyMinipool() override external onlyRegisteredMinipool(msg.sender) {
+        // Load contracts
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Initialize minipool
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        // Update minipool data
+        setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
+        // Remove minipool from indexes
+        addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
+        addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", minipool.getNodeAddress())), msg.sender);
+        // Remove minipool from queue
+        if (minipool.getUserDepositAssigned()) { rocketMinipoolQueue.removeMinipool(minipool.getDepositType(), msg.sender); }
+    }
 
 }

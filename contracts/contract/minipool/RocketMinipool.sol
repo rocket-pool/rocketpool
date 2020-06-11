@@ -5,6 +5,7 @@ pragma solidity 0.6.8;
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -22,27 +23,50 @@ contract RocketMinipool is RocketMinipoolInterface {
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
     // Status
-    MinipoolStatus public status;
-    uint256 public statusBlock;
+    MinipoolStatus private status;
+    uint256 private statusBlock;
 
     // Deposit type
-    MinipoolDeposit public depositType;
+    MinipoolDeposit private depositType;
 
     // Node details
-    address public nodeAddress;
-    uint256 public nodeDepositBalance;
-    bool public nodeDepositAssigned;
+    address private nodeAddress;
+    uint256 private nodeDepositBalance;
+    bool private nodeDepositAssigned;
 
     // User deposit details
-    uint256 public userDepositBalance;
-    bool public userDepositAssigned;
+    uint256 private userDepositBalance;
+    bool private userDepositAssigned;
 
     // Staking details
-    uint256 public stakingStartBalance;
-    uint256 public stakingEndBalance;
-    uint256 public stakingStartBlock;
-    uint256 public stakingUserStartBlock;
-    uint256 public stakingEndBlock;
+    uint256 private stakingStartBalance;
+    uint256 private stakingEndBalance;
+    uint256 private stakingStartBlock;
+    uint256 private stakingUserStartBlock;
+    uint256 private stakingEndBlock;
+
+    // Status getters
+    function getStatus() override public view returns (MinipoolStatus) { return status; }
+    function getStatusBlock() override public view returns (uint256) { return statusBlock; }
+
+    // Deposit type getter
+    function getDepositType() override public view returns (MinipoolDeposit) { return depositType; }
+
+    // Node detail getters
+    function getNodeAddress() override public view returns (address) { return nodeAddress; }
+    function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
+    function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
+
+    // User deposit detail getters
+    function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
+    function getUserDepositAssigned() override public view returns (bool) { return userDepositAssigned; }
+
+    // Staking detail getters
+    function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
+    function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
+    function getStakingStartBlock() override public view returns (uint256) { return stakingStartBlock; }
+    function getStakingUserStartBlock() override public view returns (uint256) { return stakingUserStartBlock; }
+    function getStakingEndBlock() override public view returns (uint256) { return stakingEndBlock; }
 
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) public {
@@ -168,6 +192,12 @@ contract RocketMinipool is RocketMinipoolInterface {
     function close() external onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be closed while withdrawable");
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Destroy minipool
+        rocketMinipoolManager.destroyMinipool();
+        // Self destruct & send remaining balance to node
+        selfdestruct(payable(nodeAddress));
     }
 
     // Dissolve the minipool, closing it and returning all balances to the node operator and the deposit pool
@@ -176,6 +206,7 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Check current status
         require(status == MinipoolStatus.Initialized || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialized or in prelaunch");
         // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         // Check if being dissolved by minipool owner or minipool is timed out
         require(
@@ -183,6 +214,10 @@ contract RocketMinipool is RocketMinipoolInterface {
             (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketMinipoolSettings.getLaunchTimeout()),
             "The minipool can only be dissolved by its owner unless it has timed out"
         );
+        // Destroy minipool
+        rocketMinipoolManager.destroyMinipool();
+        // Self destruct & send remaining balance to node
+        selfdestruct(payable(nodeAddress));
     }
 
     // Set the minipool's current status
