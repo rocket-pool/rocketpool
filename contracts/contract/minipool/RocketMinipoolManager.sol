@@ -82,7 +82,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", minipool.getNodeAddress())), msg.sender);
         // Remove minipool from queue
-        if (minipool.getUserDepositAssigned()) { rocketMinipoolQueue.removeMinipool(minipool.getDepositType(), msg.sender); }
+        if (!minipool.getUserDepositAssigned()) { rocketMinipoolQueue.removeMinipool(minipool.getDepositType(), msg.sender); }
     }
 
 }
