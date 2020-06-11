@@ -7,6 +7,7 @@ import "../../interface/casper/DepositInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
@@ -34,6 +35,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Node details
     address private nodeAddress;
+    uint256 private nodeFee;
     uint256 private nodeDepositBalance;
     bool private nodeDepositAssigned;
 
@@ -58,6 +60,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Node detail getters
     function getNodeAddress() override public view returns (address) { return nodeAddress; }
+    function getNodeFee() override public view returns (uint256) { return nodeFee; }
     function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
     function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
 
@@ -80,11 +83,14 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
         // Initialise RocketStorage
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+        // Load contracts
+        RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         // Set status
         setStatus(MinipoolStatus.Initialized);
         // Set details
         depositType = _depositType;
         nodeAddress = _nodeAddress;
+        nodeFee = rocketNetworkFees.getNodeFee();
     }
 
     // Only allow access from the owning node address

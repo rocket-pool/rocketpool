@@ -11,6 +11,7 @@ interface RocketMinipoolInterface {
     function getStatusTime() external view returns (uint256);
 	function getDepositType() external view returns (MinipoolDeposit);
 	function getNodeAddress() external view returns (address);
+    function getNodeFee() external view returns (uint256);
     function getNodeDepositBalance() external view returns (uint256);
     function getNodeDepositAssigned() external view returns (bool);
 	function getUserDepositBalance() external view returns (uint256);
