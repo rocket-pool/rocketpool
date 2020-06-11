@@ -16,7 +16,6 @@ export default function() {
 
         // Settings
         const settings = {
-            'LaunchBalance':  web3.utils.toBN(web3.utils.toWei('100', 'ether')),
             'LaunchTimeout':  web3.utils.toBN(3600),
         };
 

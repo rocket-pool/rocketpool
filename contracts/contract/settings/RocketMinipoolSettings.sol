@@ -21,7 +21,6 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.minipool.init")) {
             // Apply settings
-            setLaunchBalance(32 ether);
             setLaunchTimeout(5760); // ~24 hours
             // Settings initialized
             setBoolS("settings.minipool.init", true);
@@ -30,10 +29,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
 
     // Balance required to launch minipool
     function getLaunchBalance() override public view returns (uint256) {
-        return getUintS("settings.minipool.launch.balance");
-    }
-    function setLaunchBalance(uint256 _value) public onlySuperUser {
-        setUintS("settings.minipool.launch.balance", _value);
+        return 32 ether;
     }
 
     // Required node deposit amounts
@@ -50,7 +46,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         return getLaunchBalance().div(2);
     }
     function getEmptyDepositNodeAmount() override public view returns (uint256) {
-        return 0;
+        return 0 ether;
     }
 
     // Required user deposit amounts
