@@ -184,7 +184,7 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Check if being dissolved by minipool owner or minipool is timed out
         require(
             msg.sender == nodeAddress ||
-            (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketMinipoolSettings.setLaunchTimeout()),
+            (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketMinipoolSettings.getLaunchTimeout()),
             "The minipool can only be dissolved by its owner unless it has timed out"
         );
     }
