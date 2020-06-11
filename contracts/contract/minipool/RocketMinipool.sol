@@ -163,11 +163,17 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
-    function close() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function close() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        require(status == MinipoolStatus.Withdrawable, "The minipool can only be closed while withdrawable");
+    }
 
     // Dissolve the minipool, closing it and returning all balances to the node operator and the deposit pool
     // Only accepts calls from the RocketMinipoolStatus contract
-    function dissolve() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {}
+    function dissolve() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Check current status
+        require(status == MinipoolStatus.Initialized || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialized or in prelaunch");
+    }
 
     // Set the minipool's current status
     function setStatus(MinipoolStatus _status) private {
