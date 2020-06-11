@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketETHToken, RocketPool, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketETHToken, RocketNetworkBalances, RocketVault } from '../_utils/artifacts';
 
 
 // Make a deposit into the deposit pool
@@ -8,12 +8,12 @@ export async function deposit(txOptions) {
     const [
         rocketDepositPool,
         rocketETHToken,
-        rocketPool,
+        rocketNetworkBalances,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
         RocketETHToken.deployed(),
-        RocketPool.deployed(),
+        RocketNetworkBalances.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -24,7 +24,7 @@ export async function deposit(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
-            rocketPool.getTotalETHBalance.call(),
+            rocketNetworkBalances.getTotalETHBalance.call(),
             web3.eth.getBalance(rocketVault.address),
             rocketETHToken.balanceOf.call(txOptions.from),
         ]).then(

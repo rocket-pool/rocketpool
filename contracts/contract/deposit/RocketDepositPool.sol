@@ -3,11 +3,11 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
-import "../../interface/RocketPoolInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
+import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -40,7 +40,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
-        RocketPoolInterface rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
@@ -56,7 +56,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         rocketETHToken.mint(rethAmount, msg.sender);
         // Update network ETH balance
         // MUST be done *after* rETH amount calculation
-        rocketPool.increaseTotalETHBalance(msg.value);
+        rocketNetworkBalances.increaseTotalETHBalance(msg.value);
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits if enabled
@@ -64,8 +64,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     }
 
     // Recycle a deposit from a withdrawn minipool
-    // Only accepts calls from the RocketPool contract
-    function recycleDeposit() override external payable onlyLatestContract("rocketPool", msg.sender) {
+    // Only accepts calls from the RocketNetworkWithdrawal contract
+    function recycleDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // 1. Transfer ETH to the vault
         // 2. Assign deposits
     }

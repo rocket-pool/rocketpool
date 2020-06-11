@@ -4,7 +4,7 @@ pragma solidity 0.6.8;
 
 import "./StandardToken.sol";
 import "../RocketBase.sol";
-import "../../interface/RocketPoolInterface.sol";
+import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
@@ -24,8 +24,8 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
     // Returns the amount of ETH backing 1 rETH
     function getExchangeRate() override public view returns (uint256) {
         // Get network total ETH balance
-        RocketPoolInterface rocketPool = RocketPoolInterface(getContractAddress("rocketPool"));
-        uint256 totalEthBalance = rocketPool.getTotalETHBalance();
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
+        uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
         // Calculate exchange rate
         uint256 calcBase = 1 ether;
         if (totalSupply == 0) { return calcBase; }

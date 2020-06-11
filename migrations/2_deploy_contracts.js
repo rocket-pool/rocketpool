@@ -36,37 +36,40 @@ const rocketStorage = artifacts.require('RocketStorage.sol');
 // Network contracts
 const contracts = {
   // Core
-  rocketPool:             artifacts.require('RocketPool.sol'),
-  rocketVault:            artifacts.require('RocketVault.sol'),
+  rocketVault:              artifacts.require('RocketVault.sol'),
   // Deposit
-  rocketDepositPool:      artifacts.require('RocketDepositPool.sol'),
+  rocketDepositPool:        artifacts.require('RocketDepositPool.sol'),
   // Minipool
-  rocketMinipoolFactory:  artifacts.require('RocketMinipoolFactory.sol'),
-  rocketMinipoolManager:  artifacts.require('RocketMinipoolManager.sol'),
-  rocketMinipoolQueue:    artifacts.require('RocketMinipoolQueue.sol'),
-  rocketMinipoolStatus:   artifacts.require('RocketMinipoolStatus.sol'),
+  rocketMinipoolFactory:    artifacts.require('RocketMinipoolFactory.sol'),
+  rocketMinipoolManager:    artifacts.require('RocketMinipoolManager.sol'),
+  rocketMinipoolQueue:      artifacts.require('RocketMinipoolQueue.sol'),
+  rocketMinipoolStatus:     artifacts.require('RocketMinipoolStatus.sol'),
+  // Network
+  rocketNetworkBalances:    artifacts.require('RocketNetworkBalances.sol'),
+  rocketNetworkFees:        artifacts.require('RocketNetworkFees.sol'),
+  rocketNetworkWithdrawal:  artifacts.require('RocketNetworkWithdrawal.sol'),
   // Node
-  rocketNodeDeposit:      artifacts.require('RocketNodeDeposit.sol'),
-  rocketNodeFactory:      artifacts.require('RocketNodeFactory.sol'),
-  rocketNodeManager:      artifacts.require('RocketNodeManager.sol'),
+  rocketNodeDeposit:        artifacts.require('RocketNodeDeposit.sol'),
+  rocketNodeFactory:        artifacts.require('RocketNodeFactory.sol'),
+  rocketNodeManager:        artifacts.require('RocketNodeManager.sol'),
   // Settings
-  rocketDepositSettings:  artifacts.require('RocketDepositSettings.sol'),
-  rocketMinipoolSettings: artifacts.require('RocketMinipoolSettings.sol'),
-  rocketNodeSettings:     artifacts.require('RocketNodeSettings.sol'),
+  rocketDepositSettings:    artifacts.require('RocketDepositSettings.sol'),
+  rocketMinipoolSettings:   artifacts.require('RocketMinipoolSettings.sol'),
+  rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
   // Tokens
-  rocketETHToken:         artifacts.require('RocketETHToken.sol'),
-  rocketNodeETHToken:     artifacts.require('RocketNodeETHToken.sol'),
+  rocketETHToken:           artifacts.require('RocketETHToken.sol'),
+  rocketNodeETHToken:       artifacts.require('RocketNodeETHToken.sol'),
   // Utils
-  addressSetStorage:      artifacts.require('AddressSetStorage.sol'),
-  addressQueueStorage:    artifacts.require('AddressQueueStorage.sol'),
+  addressSetStorage:        artifacts.require('AddressSetStorage.sol'),
+  addressQueueStorage:      artifacts.require('AddressQueueStorage.sol'),
 };
 
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:         artifacts.require('RocketMinipool.sol'),
+  rocketMinipool:           artifacts.require('RocketMinipool.sol'),
   // Node
-  rocketNode:             artifacts.require('RocketNode.sol'),
+  rocketNode:               artifacts.require('RocketNode.sol'),
 };
 
 

@@ -2,28 +2,21 @@ pragma solidity 0.6.8;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketBase.sol";
-import "../interface/RocketPoolInterface.sol";
-import "../lib/SafeMath.sol";
+import "../RocketBase.sol";
+import "../../interface/network/RocketNetworkBalancesInterface.sol";
+import "../../lib/SafeMath.sol";
 
-// Global network information and functions
+// Network ETH balances
 
-contract RocketPool is RocketBase, RocketPoolInterface {
-
+contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Libs
     using SafeMath for uint;
-
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
     }
-
-
-    //
-    // Network balances and ETH utilization
-    //
 
     // The current RP network total ETH balance
     function getTotalETHBalance() override public view returns (uint256) {
@@ -71,41 +64,5 @@ contract RocketPool is RocketBase, RocketPoolInterface {
         if (totalEthBalance == 0) { return calcBase; }
         return calcBase.mul(stakingEthBalance).div(totalEthBalance);
     }
-
-
-    //
-    // Network node demand and fees
-    //
-
-    // Get the current RP network node demand in ETH
-    // Node demand is negative if the size of the deposit pool is lower than waiting minipool capacity
-    // Node demand is positive if the size of the deposit pool is higher than waiting minipool capacity
-    function getNodeDemand() override public view returns (uint256) {}
-
-    // Get the current RP network node fee as a fraction of 1 ETH
-    function getNodeFee() override public view returns (uint256) {}
-
-
-    //
-    // Validator withdrawals
-    //
-
-    // Calculate the share of a final validator balance owned by its node operator
-    function getValidatorNodeShare(uint256 _balance) override public view returns (uint256) {
-        // balance >= 32 ETH : balance / 2
-        // balance >= 16 ETH & < 32 ETH : balance - 16
-        // balance < 16 ETH : 0
-    }
-
-    // Process a validator withdrawal from the beacon chain
-    // Only accepts calls from trusted (withdrawer) nodes (TBA)
-    function beaconWithdrawal(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
-        // 1. Calculate the share of the validator balance for node operators vs users
-        // 2. Transfer the node operators' share to the nETH contract
-        // 3. Transfer the users' share:
-        //    - to the rETH contract if ETH utilization rate is >= minimum
-        //    - to the deposit pool if ETH utilization rate is < minimum
-    }
-
 
 }
