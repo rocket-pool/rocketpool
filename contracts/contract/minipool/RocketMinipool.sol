@@ -179,6 +179,14 @@ contract RocketMinipool is RocketMinipoolInterface {
     function dissolve() override external {
         // Check current status
         require(status == MinipoolStatus.Initialized || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialized or in prelaunch");
+        // Load contracts
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        // Check if being dissolved by minipool owner or minipool is timed out
+        require(
+            msg.sender == nodeAddress ||
+            (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketMinipoolSettings.setLaunchTimeout()),
+            "The minipool can only be dissolved by its owner unless it has timed out"
+        );
     }
 
     // Set the minipool's current status
