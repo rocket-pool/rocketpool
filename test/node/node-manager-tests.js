@@ -49,21 +49,6 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot register a node with a balance below the minimum'), async () => {
-
-            // Set minimum balance above account balance
-            let nodeBalance = await web3.eth.getBalance(node);
-            let minimumBalance = web3.utils.toBN(nodeBalance).mul(web3.utils.toBN(2));
-            await setNodeSetting('MinimumBalance', minimumBalance, {from: owner});
-
-            // Attempt registration
-            await shouldRevert(registerNode('Australia/Brisbane', {
-                from: node,
-            }), 'Registered a node with a balance below the minimum');
-
-        });
-
-
         it(printTitle('node operator', 'cannot register a node with an invalid timezone location'), async () => {
             await shouldRevert(registerNode('a', {
                 from: node,

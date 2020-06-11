@@ -57,7 +57,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
         require(rocketNodeSettings.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
-        require(msg.sender.balance >= rocketNodeSettings.getMinimumBalance(), "The node account balance is less than the minimum registration balance");
         // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Check node is not registered

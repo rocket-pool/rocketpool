@@ -5,5 +5,4 @@ pragma solidity 0.6.8;
 interface RocketNodeSettingsInterface {
     function getRegistrationEnabled() external view returns (bool);
     function getDepositEnabled() external view returns (bool);
-    function getMinimumBalance() external view returns (uint256);
 }

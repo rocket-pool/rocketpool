@@ -18,7 +18,6 @@ export default function() {
         const settings = {
             'RegistrationEnabled':  false,
             'DepositEnabled':       false,
-            'MinimumBalance':       web3.utils.toBN(web3.utils.toWei('100', 'ether')),
         };
 
 

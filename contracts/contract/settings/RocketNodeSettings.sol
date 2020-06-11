@@ -18,7 +18,6 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
             // Apply settings
             setRegistrationEnabled(true);
             setDepositEnabled(true);
-            setMinimumBalance(1 ether);
             // Settings initialized
             setBoolS("settings.node.init", true);
         }
@@ -38,15 +37,6 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     }
     function setDepositEnabled(bool _value) public onlySuperUser {
         setBoolS("settings.node.deposit.enabled", _value);
-    }
-
-    // Minimum node balance for registration (to cover gas fees)
-    // TODO: check whether this setting is required anymore (depends on whether node checkins exist still)
-    function getMinimumBalance() override public view returns (uint256) {
-        return getUintS("settings.node.balance.minimum");
-    }
-    function setMinimumBalance(uint256 _value) public onlySuperUser {
-        setUintS("settings.node.balance.minimum", _value);
     }
 
 }
