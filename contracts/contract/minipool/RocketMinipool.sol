@@ -27,6 +27,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Status
     MinipoolStatus private status;
     uint256 private statusBlock;
+    uint256 private statusTime;
 
     // Deposit type
     MinipoolDeposit private depositType;
@@ -50,6 +51,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Status getters
     function getStatus() override public view returns (MinipoolStatus) { return status; }
     function getStatusBlock() override public view returns (uint256) { return statusBlock; }
+    function getStatusTime() override public view returns (uint256) { return statusTime; }
 
     // Deposit type getter
     function getDepositType() override public view returns (MinipoolDeposit) { return depositType; }
@@ -234,6 +236,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     function setStatus(MinipoolStatus _status) private {
         status = _status;
         statusBlock = block.number;
+        statusTime = now;
     }
 
 }
