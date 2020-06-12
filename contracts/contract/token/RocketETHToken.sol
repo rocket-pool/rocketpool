@@ -48,11 +48,22 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
 
     // Burn rETH for ETH
     function burn(uint256 _amount) external {
-        // TODO: implement
-        // 1. Calculate ETH amount and check contract ETH balance
-        // 2. Decrease total supply and account balance
-        // 3. Update the RP network total ETH balance
-        // 4. Transfer ETH to account
+        // Check amount
+        require(_amount > 0, "Invalid token burn amount");
+        // Calculate ETH amount
+        uint256 calcBase = 1 ether;
+        uint256 ethAmount = _amount.mul(getExchangeRate()).div(calcBase);
+        // Check ETH balance
+        require(address(this).balance >= ethAmount, "Insufficient ETH balance for exchange");
+        // Load contracts
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
+        // Update balance & supply
+        balances[msg.sender] = balances[msg.sender].sub(_amount);
+        totalSupply = totalSupply.sub(_amount);
+        // Update network ETH balance
+        rocketNetworkBalances.decreaseTotalETHBalance(ethAmount);
+        // Transfer ETH to sender
+        msg.sender.transfer(ethAmount);
     }
 
 }
