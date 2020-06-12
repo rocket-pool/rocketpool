@@ -35,8 +35,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Accept a deposit from a user
     function deposit() external payable {
-        // Calculation base value
-        uint256 calcBase = 1 ether;
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
@@ -45,10 +43,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         // Calculate amount of rETH to mint
-        uint256 rethExchangeRate = rocketETHToken.getExchangeRate();
         uint256 rethAmount;
+        uint256 calcBase = 1 ether;
+        uint256 rethExchangeRate = rocketETHToken.getExchangeRate();
         if (rethExchangeRate == 0) { rethAmount = msg.value; }
-        else { rethAmount = calcBase.mul(msg.value).div(rethExchangeRate); }
+        else { rethAmount = msg.value.mul(calcBase).div(rethExchangeRate); }
         // Mint rETH to user account
         rocketETHToken.mint(rethAmount, msg.sender);
         // Update network ETH balance
