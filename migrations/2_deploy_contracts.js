@@ -54,6 +54,7 @@ const contracts = {
   // Settings
   rocketDepositSettings:    artifacts.require('RocketDepositSettings.sol'),
   rocketMinipoolSettings:   artifacts.require('RocketMinipoolSettings.sol'),
+  rocketNetworkSettings:    artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
   // Tokens
   rocketETHToken:           artifacts.require('RocketETHToken.sol'),

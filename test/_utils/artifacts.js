@@ -8,6 +8,7 @@ export const RocketMinipoolSettings = artifacts.require('RocketMinipoolSettings.
 export const RocketMinipoolStatus = artifacts.require('RocketMinipoolStatus.sol');
 export const RocketNetworkBalances = artifacts.require('RocketNetworkBalances.sol');
 export const RocketNetworkFees = artifacts.require('RocketNetworkFees.sol');
+export const RocketNetworkSettings = artifacts.require('RocketNetworkSettings.sol');
 export const RocketNetworkWithdrawal = artifacts.require('RocketNetworkWithdrawal.sol');
 export const RocketNodeDeposit = artifacts.require('RocketNodeDeposit.sol');
 export const RocketNodeETHToken = artifacts.require('RocketNodeETHToken.sol');
