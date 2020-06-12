@@ -28,11 +28,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
     function withdraw(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
         // TODO: implement
-        // 1. Calculate the share of the validator balance for node operators vs users
-        // 2. Transfer the node operators' share to the nETH contract
-        // 3. Transfer the users' share:
-        //    - to the rETH contract if ETH utilization rate is >= minimum
-        //    - to the deposit pool if ETH utilization rate is < minimum
+        // 1. Get the amount of nETH minted to the node operator
+        // 2. Transfer the node operator's share to the nETH contract
+        // 3. Transfer the user share:
+        //    - to the rETH contract if rETH collateral ratio is < minimum
+        //    - to the deposit pool if rETH collateral ratio is >= minimum
     }
 
 }
