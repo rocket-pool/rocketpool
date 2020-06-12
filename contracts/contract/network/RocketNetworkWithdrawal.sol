@@ -3,8 +3,10 @@ pragma solidity 0.6.8;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
+import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -31,8 +33,10 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Only accepts calls from trusted (withdrawer) nodes (TBA)
     function withdraw(bytes calldata _validatorPubkey) external payable onlyTrustedNode(msg.sender) {
         // Load contracts
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
         // Check validator minipool
         address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
@@ -44,9 +48,14 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         uint256 userAmount = msg.value.sub(nodeAmount);
         // Transfer node balance to nETH contract
         if (nodeAmount > 0) { rocketNodeETHToken.deposit{value: nodeAmount}(); }
-        // Transfer user balance to rETH contract
-        // TODO: transfer to the deposit pool instead if rETH collateral ratio is >= minimum
-        if (userAmount > 0) { rocketETHToken.deposit{value: userAmount}(); }
+        // Transfer user balance to rETH contract or deposit pool
+        if (userAmount > 0) {
+            if (rocketETHToken.getCollateralRate() < rocketNetworkSettings.getTargetRethCollateralRate()) {
+                rocketETHToken.deposit{value: userAmount}();
+            } else {
+                rocketDepositPool.recycleWithdrawnDeposit{value: userAmount}();
+            }
+        }
     }
 
 }
