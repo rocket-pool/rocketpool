@@ -57,6 +57,16 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         );
     }
 
+    // Get the total effective capacity of the queues (used in node demand calculation)
+    function getEffectiveCapacity() override public view returns (uint256) {
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        return (
+            getLength(MinipoolDeposit.Full).mul(rocketMinipoolSettings.getFullDepositUserAmount())
+        ).add(
+            getLength(MinipoolDeposit.Half).mul(rocketMinipoolSettings.getHalfDepositUserAmount())
+        );
+    }
+
     // Get the capacity of the next available minipool
     // Returns 0 if no minipools are available
     function getNextCapacity() override public view returns (uint256) {

@@ -27,8 +27,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         // Calculate & return
-        // TODO: check if minipool queue capacity should include empty minipools
-        return int256(rocketDepositPool.getBalance()) - int256(rocketMinipoolQueue.getTotalCapacity());
+        return int256(rocketDepositPool.getBalance()) - int256(rocketMinipoolQueue.getEffectiveCapacity());
     }
 
     // Get the current RP network node fee as a fraction of 1 ETH
