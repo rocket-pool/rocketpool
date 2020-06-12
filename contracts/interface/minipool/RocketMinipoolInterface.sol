@@ -6,17 +6,17 @@ import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
 interface RocketMinipoolInterface {
-	function getStatus() external view returns (MinipoolStatus);
+    function getStatus() external view returns (MinipoolStatus);
     function getStatusBlock() external view returns (uint256);
     function getStatusTime() external view returns (uint256);
-	function getDepositType() external view returns (MinipoolDeposit);
-	function getNodeAddress() external view returns (address);
+    function getDepositType() external view returns (MinipoolDeposit);
+    function getNodeAddress() external view returns (address);
     function getNodeFee() external view returns (uint256);
     function getNodeDepositBalance() external view returns (uint256);
     function getNodeDepositAssigned() external view returns (bool);
-	function getUserDepositBalance() external view returns (uint256);
+    function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
-	function getStakingStartBalance() external view returns (uint256);
+    function getStakingStartBalance() external view returns (uint256);
     function getStakingEndBalance() external view returns (uint256);
     function getStakingStartBlock() external view returns (uint256);
     function getStakingUserStartBlock() external view returns (uint256);

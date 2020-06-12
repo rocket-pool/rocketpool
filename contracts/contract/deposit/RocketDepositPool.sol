@@ -34,7 +34,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     }
 
     // Accept a deposit from a user
-    function deposit() external payable {
+    function deposit() override external payable {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
