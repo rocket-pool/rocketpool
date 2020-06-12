@@ -17,6 +17,10 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
         version = 1;
     }
 
+    // Deposit ETH
+    // Only accepts calls from the RocketNetworkWithdrawal contract
+    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {}
+
     // Mint nETH
     // Only accepts calls from the RocketMinipoolStatus contract
     function mint(uint256 _amount, address _to) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {

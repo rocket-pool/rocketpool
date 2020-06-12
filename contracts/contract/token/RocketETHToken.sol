@@ -32,6 +32,10 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         return calcBase.mul(totalEthBalance).div(totalSupply);
     }
 
+    // Deposit ETH
+    // Only accepts calls from the RocketNetworkWithdrawal contract
+    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {}
+
     // Mint rETH
     // Only accepts calls from the RocketDepositPool contract
     function mint(uint256 _amount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
