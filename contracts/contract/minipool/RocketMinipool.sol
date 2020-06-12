@@ -160,18 +160,23 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         // Get launch amount
         uint256 launchAmount = rocketMinipoolSettings.getLaunchBalance();
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
+        // Check validator pubkey is not in use
+        require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is already in use");
         // Set staking details
         stakingStartBalance = launchAmount;
         stakingStartBlock = block.number;
         if (userDepositAssigned) { stakingUserStartBlock = block.number; }
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, rocketNetworkWithdrawal.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        // Set minipool pubkey
+        rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
     }

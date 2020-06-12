@@ -4,6 +4,7 @@ pragma solidity 0.6.8;
 
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
@@ -32,6 +33,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Only accepts calls from trusted (oracle) nodes
     function withdrawMinipool(address _minipoolAddress, uint256 _withdrawalBalance) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
@@ -41,6 +43,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 nodeAmount = getNodeRewardAmount(minipool);
         // Mint nETH to minipool contract
         if (nodeAmount > 0) { rocketNodeETHToken.mint(nodeAmount, _minipoolAddress); }
+        // Set minipool withdrawal balances
+        rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _withdrawalBalance, nodeAmount);
     }
 
     // Get the node reward amount for a withdrawn minipool
