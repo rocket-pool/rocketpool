@@ -32,6 +32,15 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         return calcBase.mul(totalEthBalance).div(totalSupply);
     }
 
+    // Get the current ETH collateral rate
+    // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
+    function getCollateralRate() override public view returns (uint256) {
+        uint256 calcBase = 1 ether;
+        uint256 totalEthValue = totalSupply.mul(getExchangeRate()).div(calcBase);
+        if (totalEthValue == 0) { return calcBase; }
+        return calcBase.mul(address(this).balance).div(totalEthValue);
+    }
+
     // Deposit ETH
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {}
