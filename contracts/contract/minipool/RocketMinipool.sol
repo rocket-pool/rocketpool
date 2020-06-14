@@ -205,12 +205,14 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
     function close() external onlyMinipoolOwner(msg.sender) {
-        // TODO: implement withdrawal delay period
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be closed while withdrawable");
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
+        // Check withdrawal delay has passed
+        require(block.number.sub(statusBlock) >= rocketMinipoolSettings.getWithdrawalDelay(), "The minipool cannot be closed until after the withdrawal delay period");
         // Transfer nETH balance to node operator
         uint256 nethBalance = rocketNodeETHToken.balanceOf(address(this));
         require(rocketNodeETHToken.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator");

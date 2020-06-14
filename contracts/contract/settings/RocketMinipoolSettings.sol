@@ -22,6 +22,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         if (!getBoolS("settings.minipool.init")) {
             // Apply settings
             setLaunchTimeout(5760); // ~24 hours
+            setWithdrawalDelay(172800); // ~30 days
             // Settings initialized
             setBoolS("settings.minipool.init", true);
         }
@@ -72,6 +73,14 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
     function setLaunchTimeout(uint256 _value) public onlySuperUser {
         setUintS("settings.minipool.launch.timeout", _value);
+    }
+
+    // Withdrawal delay in blocks before withdrawable minipools can be closed
+    function getWithdrawalDelay() override public view returns (uint256) {
+        return getUintS("settings.minipool.withdrawal.delay");
+    }
+    function setWithdrawalDelay(uint256 _value) public onlySuperUser {
+        setUintS("settings.minipool.withdrawal.delay", _value);
     }
 
 }
