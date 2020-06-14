@@ -205,6 +205,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Withdraw rewards from the minipool and close it
     // Only accepts calls from the RocketMinipoolStatus contract
     function close() external onlyMinipoolOwner(msg.sender) {
+        // TODO: implement withdrawal delay period
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be closed while withdrawable");
         // Load contracts

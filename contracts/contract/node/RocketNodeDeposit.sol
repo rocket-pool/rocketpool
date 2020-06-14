@@ -24,6 +24,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
     function deposit() external payable onlyRegisteredNode(msg.sender) {
+        // TODO: implement minimum fee parameter for created minipool
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
