@@ -1,10 +1,13 @@
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool } from '../_helpers/minipool';
+import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
 import { dissolve } from './scenarios-dissolve';
+import { stake } from './scenarios-stake';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -24,10 +27,12 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-        // Set settings
+        // Get / set settings
         let launchTimeout = 10;
+        let withdrawalCredentials;
         before(async () => {
             await setMinipoolSetting('LaunchTimeout', launchTimeout, {from: owner});
+            withdrawalCredentials = await getWithdrawalCredentials();
         });
 
 
@@ -110,6 +115,16 @@ export default function() {
         //
         // Stake
         //
+
+
+        it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
+
+            // Stake minipool
+            await stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
+                from: node,
+            });
+
+        });
 
 
         //
