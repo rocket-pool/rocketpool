@@ -1,13 +1,14 @@
 // Assert that a transaction reverts
 export async function shouldRevert(txPromise, message) {
+    let txSuccess = false;
     try {
         await txPromise;
-        throw new Error('tx_success');
+        txSuccess = true;
     } catch (e) {
-        if (e.message == 'tx_success') {
-            assert.fail(message);
-        } else if (e.message.indexOf('VM Exception') == -1) {
+        if (e.message.indexOf('VM Exception') == -1) {
             throw e;
         }
+    } finally {
+        if (txSuccess) assert.fail(message);
     }
 }
