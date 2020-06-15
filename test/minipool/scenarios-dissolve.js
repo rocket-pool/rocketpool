@@ -5,7 +5,7 @@ import {  } from '../_utils/artifacts';
 export async function dissolve(minipool, txOptions) {
 
     // Dissolve
-    minipool.dissolve(txOptions);
+    await minipool.dissolve(txOptions);
 
 }
 
