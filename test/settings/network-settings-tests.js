@@ -1,10 +1,10 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { setMinipoolSetting } from './scenarios-settings';
+import { setNetworkSetting } from './scenarios-settings';
 
 export default function() {
-    contract('RocketMinipoolSettings', async (accounts) => {
+    contract('RocketNetworkSettings', async (accounts) => {
 
 
         // Accounts
@@ -16,8 +16,7 @@ export default function() {
 
         // Settings
         const settings = {
-            'LaunchTimeout':    web3.utils.toBN(240),
-            'WithdrawalDelay':  web3.utils.toBN(5760),
+            'TargetRethCollateralRate':  web3.utils.toBN(web3.utils.toWei('0.5', 'ether')),
         };
 
 
@@ -27,22 +26,22 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-        it(printTitle('admin', 'can update the minipool settings'), async () => {
+        it(printTitle('admin', 'can update the network settings'), async () => {
             for (let setting in settings) {
                 let value = settings[setting];
-                await setMinipoolSetting(setting, value, {
+                await setNetworkSetting(setting, value, {
                     from: owner,
                 });
             }
         });
 
 
-        it(printTitle('random address', 'cannot update the minipool settings'), async () => {
+        it(printTitle('random address', 'cannot update the network settings'), async () => {
             for (let setting in settings) {
                 let value = settings[setting];
-                await shouldRevert(setMinipoolSetting(setting, value, {
+                await shouldRevert(setNetworkSetting(setting, value, {
                     from: random,
-                }), 'Random address updated a minipool setting');
+                }), 'Random address updated a network setting');
             }
         });
 
