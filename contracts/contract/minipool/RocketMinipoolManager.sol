@@ -19,6 +19,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         version = 1;
     }
 
+    // Events
+    event MinipoolCreated(address indexed minipool, address indexed node, uint256 created);
+    event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 destroyed);
+
     // Get the number of minipools in the network
     function getMinipoolCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -84,6 +88,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
         // Add minipool to queue
         rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
+        // Emit minipool created event
+        emit MinipoolCreated(contractAddress, _nodeAddress, now);
         // Return created minipool address
         return contractAddress;
     }
@@ -94,15 +100,18 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Load contracts
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Initialize minipool
+        // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        address nodeAddress = minipool.getNodeAddress();
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
-        addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", minipool.getNodeAddress())), msg.sender);
+        addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
         // Remove minipool from queue
         if (!minipool.getUserDepositAssigned()) { rocketMinipoolQueue.removeMinipool(minipool.getDepositType(), msg.sender); }
+        // Emit minipool destroyed event
+        emit MinipoolDestroyed(msg.sender, nodeAddress, now);
     }
 
     // Set a minipool's validator pubkey
