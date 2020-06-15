@@ -257,7 +257,7 @@ export default function() {
         });
 
 
-        it(printTitle('random address', 'cannot close a withdrawable minipool'), async () => {
+        it(printTitle('random address', 'cannot close a minipool'), async () => {
 
             // Wait for withdrawal delay
             await mineBlocks(web3, withdrawalDelay);
