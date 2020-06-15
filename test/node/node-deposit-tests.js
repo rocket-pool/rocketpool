@@ -1,6 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getMinipoolSetting, setNodeSetting } from '../_helpers/settings';
 import { deposit } from './scenarios-deposit';
@@ -23,10 +24,11 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-        // Get minipool settings
+        // Get settings
         let fullDepositNodeAmount;
         let halfDepositNodeAmount;
         let emptyDepositNodeAmount;
+        let nodeFee;
         before(async () => {
             fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');
             halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount');
@@ -40,11 +42,15 @@ export default function() {
             await registerNode({from: node});
 
             // Deposit
-            await deposit({
+            nodeFee = await getNodeFee();
+            await deposit(nodeFee, {
                 from: node,
                 value: fullDepositNodeAmount,
             });
-            await deposit({
+
+            // Deposit
+            nodeFee = await getNodeFee();
+            await deposit(nodeFee, {
                 from: node,
                 value: halfDepositNodeAmount,
             });
@@ -61,14 +67,40 @@ export default function() {
             await setNodeSetting('DepositEnabled', false, {from: owner});
 
             // Attempt deposit
-            await shouldRevert(deposit({
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: node,
                 value: fullDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
-            await shouldRevert(deposit({
+
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
+
+        });
+
+
+        it(printTitle('node operator', 'cannot make a deposit with a minimum node fee exceeding the current network node fee'), async () => {
+
+            // Register node
+            await registerNode({from: node});
+
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee.add(web3.utils.toBN(web3.utils.toWei('0.01', 'ether'))), {
+                from: node,
+                value: fullDepositNodeAmount,
+            }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
+
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee.add(web3.utils.toBN(web3.utils.toWei('0.01', 'ether'))), {
+                from: node,
+                value: halfDepositNodeAmount,
+            }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
 
         });
 
@@ -85,7 +117,8 @@ export default function() {
             assert(!depositAmount.eq(emptyDepositNodeAmount), 'Deposit amount is not invalid');
 
             // Attempt deposit
-            await shouldRevert(deposit({
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: node,
                 value: depositAmount,
             }), 'Made a deposit with an invalid deposit amount');
@@ -100,7 +133,8 @@ export default function() {
             await setNodeTrusted(node, {from: owner});
 
             // Deposit
-            await deposit({
+            nodeFee = await getNodeFee();
+            await deposit(nodeFee, {
                 from: node,
                 value: emptyDepositNodeAmount,
             });
@@ -113,8 +147,9 @@ export default function() {
             // Register node
             await registerNode({from: node});
 
-            // Deposit
-            await shouldRevert(deposit({
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: node,
                 value: emptyDepositNodeAmount,
             }), 'Regular node created an empty minipool');
@@ -124,12 +159,16 @@ export default function() {
 
         it(printTitle('random address', 'cannot make a deposit'), async () => {
 
-            // Deposit
-            await shouldRevert(deposit({
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: random,
                 value: fullDepositNodeAmount,
             }), 'Random address made a deposit');
-            await shouldRevert(deposit({
+
+            // Attempt deposit
+            nodeFee = await getNodeFee();
+            await shouldRevert(deposit(nodeFee, {
                 from: random,
                 value: halfDepositNodeAmount,
             }), 'Random address made a deposit');

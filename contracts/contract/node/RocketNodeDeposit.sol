@@ -6,6 +6,7 @@ import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
@@ -23,16 +24,18 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
-    function deposit() external payable onlyRegisteredNode(msg.sender) {
-        // TODO: implement minimum fee parameter for created minipool
+    function deposit(uint256 _minimumNodeFee) external payable onlyRegisteredNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
+        // Check current node fee
+        require(rocketNetworkFees.getNodeFee() >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
         // Get deposit type by node deposit amount
         MinipoolDeposit depositType = MinipoolDeposit.None;
         if (msg.value == rocketMinipoolSettings.getFullDepositNodeAmount()) { depositType = MinipoolDeposit.Full; }

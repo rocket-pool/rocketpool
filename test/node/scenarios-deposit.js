@@ -2,7 +2,7 @@ import { RocketMinipoolManager, RocketNodeDeposit } from '../_utils/artifacts';
 
 
 // Make a node deposit
-export async function deposit(txOptions) {
+export async function deposit(minimumNodeFee, txOptions) {
 
     // Load contracts
     const [
@@ -28,7 +28,7 @@ export async function deposit(txOptions) {
     let minipoolCounts1 = await getMinipoolCounts(txOptions.from);
 
     // Deposit
-    await rocketNodeDeposit.deposit(txOptions);
+    await rocketNodeDeposit.deposit(minimumNodeFee, txOptions);
 
     // Get updated minipool counts
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
