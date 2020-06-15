@@ -28,7 +28,6 @@ export default function() {
         let fullDepositNodeAmount;
         let halfDepositNodeAmount;
         let emptyDepositNodeAmount;
-        let nodeFee;
         before(async () => {
             fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');
             halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount');
@@ -42,15 +41,13 @@ export default function() {
             await registerNode({from: node});
 
             // Deposit
-            nodeFee = await getNodeFee();
-            await deposit(nodeFee, {
+            await deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: fullDepositNodeAmount,
             });
 
             // Deposit
-            nodeFee = await getNodeFee();
-            await deposit(nodeFee, {
+            await deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: halfDepositNodeAmount,
             });
@@ -67,15 +64,13 @@ export default function() {
             await setNodeSetting('DepositEnabled', false, {from: owner});
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: fullDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
@@ -84,6 +79,9 @@ export default function() {
 
 
         it(printTitle('node operator', 'cannot make a deposit with a minimum node fee exceeding the current network node fee'), async () => {
+
+            // Settings
+            let nodeFee;
 
             // Register node
             await registerNode({from: node});
@@ -117,8 +115,7 @@ export default function() {
             assert(!depositAmount.eq(emptyDepositNodeAmount), 'Deposit amount is not invalid');
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: depositAmount,
             }), 'Made a deposit with an invalid deposit amount');
@@ -133,8 +130,7 @@ export default function() {
             await setNodeTrusted(node, {from: owner});
 
             // Deposit
-            nodeFee = await getNodeFee();
-            await deposit(nodeFee, {
+            await deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: emptyDepositNodeAmount,
             });
@@ -148,8 +144,7 @@ export default function() {
             await registerNode({from: node});
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: node,
                 value: emptyDepositNodeAmount,
             }), 'Regular node created an empty minipool');
@@ -160,15 +155,13 @@ export default function() {
         it(printTitle('random address', 'cannot make a deposit'), async () => {
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: random,
                 value: fullDepositNodeAmount,
             }), 'Random address made a deposit');
 
             // Attempt deposit
-            nodeFee = await getNodeFee();
-            await shouldRevert(deposit(nodeFee, {
+            await shouldRevert(deposit(web3.utils.toWei('0', 'ether'), {
                 from: random,
                 value: halfDepositNodeAmount,
             }), 'Random address made a deposit');
