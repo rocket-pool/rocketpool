@@ -1,9 +1,11 @@
 // Import tests
 import depositPoolTests from './deposit/deposit-pool-tests';
-import nodeManagerTests from './node/node-manager-tests';
+import networkBalancesTests from './network/network-balances-tests';
 import nodeDepositTests from './node/node-deposit-tests';
+import nodeManagerTests from './node/node-manager-tests';
 import depositSettingsTests from './settings/deposit-settings-tests';
 import minipoolSettingsTests from './settings/minipool-settings-tests';
+import networkSettingsTests from './settings/network-settings-tests';
 import nodeSettingsTests from './settings/node-settings-tests';
 
 // Header
@@ -17,8 +19,10 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
 depositPoolTests();
-nodeManagerTests();
+networkBalancesTests();
 nodeDepositTests();
+nodeManagerTests();
 depositSettingsTests();
 minipoolSettingsTests();
+networkSettingsTests();
 nodeSettingsTests();

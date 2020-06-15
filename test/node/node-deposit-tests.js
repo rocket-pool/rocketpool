@@ -128,7 +128,7 @@ export default function() {
 
         it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
 
-            // Register trustes node
+            // Register trusted node
             await registerNode({from: node});
             await setNodeTrusted(node, {from: owner});
 
