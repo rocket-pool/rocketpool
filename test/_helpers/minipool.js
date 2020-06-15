@@ -1,4 +1,5 @@
-import { RocketMinipool, RocketMinipoolManager, RocketMinipoolStatus, RocketNodeDeposit } from '../_utils/artifacts';
+import { RocketMinipool, RocketMinipoolManager, RocketMinipoolStatus, RocketNetworkWithdrawal, RocketNodeDeposit } from '../_utils/artifacts';
+import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
 
 
@@ -27,6 +28,30 @@ export async function createMinipool(txOptions) {
     // Return minipool instance
     if (!minipoolCreatedEvents.length) return;
     return RocketMinipool.at(minipoolCreatedEvents[0].minipool);
+
+}
+
+
+// Progress a minipool to staking
+export async function stakeMinipool(minipool, txOptions) {
+
+    // Load contracts
+    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
+
+    // Get withdrawal credentials
+    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(32000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Stake
+    await minipool.stake(depositData.pubkey, depositData.signature, depositDataRoot, txOptions);
 
 }
 
