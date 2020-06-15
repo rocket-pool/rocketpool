@@ -208,7 +208,7 @@ export default function() {
 
         it(printTitle('random address', 'cannot stake a minipool'), async () => {
 
-            // Stake prelaunch minipool
+            // Attempt to stake prelaunch minipool
             await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
                 from: random,
             }), 'Random address staked a minipool');
@@ -221,15 +221,51 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can close a withdrawn minipool after withdrawal delay'), async () => {
+        it(printTitle('node operator', 'can close a withdrawable minipool after withdrawal delay'), async () => {
 
             // Wait for withdrawal delay
             await mineBlocks(web3, withdrawalDelay);
 
-            // Close withdrawn minipool
+            // Close withdrawable minipool
             await close(withdrawableMinipool, {
                 from: node,
             });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot close a minipool which is not withdrawable'), async () => {
+
+            // Wait for withdrawal delay
+            await mineBlocks(web3, withdrawalDelay);
+
+            // Attempt to close staking minipool
+            await shouldRevert(close(stakingMinipool, {
+                from: node,
+            }), 'Closed a minipool which is not withdrawable');
+
+        });
+
+
+        it(printTitle('node operator', 'cannot close a withdrawable minipool before withdrawal delay'), async () => {
+
+            // Attempt to close withdrawable minipool
+            await shouldRevert(close(withdrawableMinipool, {
+                from: node,
+            }), 'Closed a minipool before withdrawal delay');
+
+        });
+
+
+        it(printTitle('random address', 'cannot close a withdrawable minipool'), async () => {
+
+            // Wait for withdrawal delay
+            await mineBlocks(web3, withdrawalDelay);
+
+            // Attempt to close withdrawable minipool
+            await shouldRevert(close(withdrawableMinipool, {
+                from: random,
+            }), 'Random address closed a minipool');
 
         });
 
