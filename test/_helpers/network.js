@@ -1,4 +1,4 @@
-import { RocketNetworkBalances, RocketNetworkFees } from '../_utils/artifacts';
+import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkWithdrawal } from '../_utils/artifacts';
 
 
 // Get the network total ETH balance
@@ -21,5 +21,13 @@ export async function getNodeFee() {
     const rocketNetworkFees = await RocketNetworkFees.deployed();
     let nodeFee = await rocketNetworkFees.getNodeFee.call();
     return nodeFee;
+}
+
+
+// Get the network withdrawal credentials
+export async function getWithdrawalCredentials() {
+    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
+    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
+    return withdrawalCredentials;
 }
 
