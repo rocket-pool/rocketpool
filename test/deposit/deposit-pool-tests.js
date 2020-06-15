@@ -5,6 +5,7 @@ import { getTotalETHBalance, updateTotalETHBalance } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getRethExchangeRate } from '../_helpers/tokens';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
+import { assignDeposits } from './scenarios-assign';
 import { deposit } from './scenarios-deposit';
 
 export default function() {
@@ -14,8 +15,9 @@ export default function() {
         // Accounts
         const [
             owner,
-            staker,
             node,
+            staker,
+            random,
         ] = accounts;
 
 
@@ -23,6 +25,11 @@ export default function() {
         let snapshotId;
         beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
+
+
+        //
+        // Deposit
+        //
 
 
         it(printTitle('staker', 'can make a deposit'), async () => {
@@ -84,6 +91,34 @@ export default function() {
                 from: staker,
                 value: depositAmount,
             }), 'Made a deposit below the minimum deposit amount');
+
+        });
+
+
+        //
+        // Assign deposits
+        //
+
+
+        it(printTitle('random address', 'can assign deposits'), async () => {
+
+            // Assign deposits
+            await assignDeposits({
+                from: staker,
+            });
+
+        });
+
+
+        it(printTitle('random address', 'cannot assign deposits while deposit assignment is disabled'), async () => {
+
+            // Disable deposits
+            await setDepositSetting('AssignDepositsEnabled', false, {from: owner});
+
+            // Attempt to assign deposits
+            await shouldRevert(assignDeposits({
+                from: staker,
+            }), 'Assigned deposits while deposit assignment is disabled');
 
         });
 
