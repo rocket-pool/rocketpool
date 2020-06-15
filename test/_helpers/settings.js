@@ -1,4 +1,4 @@
-import { RocketDepositSettings, RocketMinipoolSettings, RocketNodeSettings } from '../_utils/artifacts';
+import { RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
 
 
 // Deposit settings
@@ -22,6 +22,18 @@ export async function getMinipoolSetting(setting) {
 export async function setMinipoolSetting(setting, value, txOptions) {
     const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
     await rocketMinipoolSettings['set' + setting](value, txOptions);
+}
+
+
+// Network settings
+export async function getNetworkSetting(setting) {
+    const rocketNetworkSettings = await RocketNetworkSettings.deployed();
+    let value = await rocketNetworkSettings['get' + setting].call();
+    return value;
+}
+export async function setNetworkSetting(setting, value, txOptions) {
+    const rocketNetworkSettings = await RocketNetworkSettings.deployed();
+    await rocketNetworkSettings['set' + setting](value, txOptions);
 }
 
 
