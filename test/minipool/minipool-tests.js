@@ -73,7 +73,17 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot dissolve their own minipool which has begun staking'));
+        it(printTitle('node operator', 'cannot dissolve their own minipool which has begun staking'), async () => {
+
+            // Stake prelaunch minipool
+            await stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {from: node});
+
+            // Attempt to dissolve staking minipool
+            await shouldRevert(dissolve(prelaunchMinipool, {
+                from: node,
+            }), 'Dissolved a minipool which had begun staking');
+
+        });
 
 
         it(printTitle('random address', 'can dissolve a timed out minipool at prelaunch'), async () => {
@@ -119,10 +129,59 @@ export default function() {
 
         it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
 
-            // Stake minipool
+            // Stake prelaunch minipool
             await stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
                 from: node,
             });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
+
+            // Attempt to stake initialized minipool
+            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), withdrawalCredentials, {
+                from: node,
+            }), 'Staked a minipool which is not at prelaunch');
+
+        });
+
+
+        it(printTitle('node operator', 'cannot stake a minipool with a reused validator pubkey'), async () => {
+
+            // Get pubkey
+            let pubkey = getValidatorPubkey();
+
+            // Stake prelaunch minipool
+            await stake(prelaunchMinipool, pubkey, withdrawalCredentials, {
+                from: node,
+            });
+
+            // Create new prelaunch minipool
+            let newPrelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+
+            // Check created prelaunch minipool status
+            let newPrelaunchStatus = await newPrelaunchMinipool.getStatus.call();
+            assert(newPrelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
+
+            // Attempt to stake new prelaunch minipool with same validator pubkey
+            await shouldRevert(stake(newPrelaunchMinipool, pubkey, withdrawalCredentials, {
+                from: node,
+            }), 'Staked a minipool with a reused validator pubkey');
+
+        });
+
+
+        it(printTitle('node operator', 'cannot stake a minipool with incorrect withdrawal credentials'), async () => {
+
+            // Get withdrawal credentials
+            let invalidWithdrawalCredentials = '0x1111111111111111111111111111111111111111111111111111111111111111';
+            assert.notEqual(invalidWithdrawalCredentials, withdrawalCredentials, 'Withdrawal credentials are not incorrect');
+
+            // Attempt to stake prelaunch minipool
+            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), invalidWithdrawalCredentials, {
+                from: node,
+            }), 'Staked a minipool with incorrect withdrawal credentials');
 
         });
 
