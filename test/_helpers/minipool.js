@@ -33,17 +33,20 @@ export async function createMinipool(txOptions) {
 
 
 // Progress a minipool to staking
-export async function stakeMinipool(minipool, txOptions) {
+export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
     // Load contracts
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
+
+    // Create validator pubkey
+    if (!validatorPubkey) validatorPubkey = getValidatorPubkey();
 
     // Get withdrawal credentials
     let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
 
     // Get validator deposit data
     let depositData = {
-        pubkey: getValidatorPubkey(),
+        pubkey: validatorPubkey,
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
         amount: BigInt(32000000000), // gwei
         signature: getValidatorSignature(),
