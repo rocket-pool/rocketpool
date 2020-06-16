@@ -31,3 +31,10 @@ export async function getWithdrawalCredentials() {
     return withdrawalCredentials;
 }
 
+
+// Process a validator withdrawal
+export async function withdrawValidator(validatorPubkey, txOptions) {
+    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
+    await rocketNetworkWithdrawal.withdraw(validatorPubkey, txOptions);
+}
+

@@ -72,3 +72,9 @@ export async function withdrawMinipool(minipoolAddress, withdrawalBalance, txOpt
     await rocketMinipoolStatus.withdrawMinipool(minipoolAddress, withdrawalBalance, txOptions);
 }
 
+
+// Close a minipool and send its nETH balance to the node
+export async function closeMinipool(minipool, txOptions) {
+    await minipool.close(txOptions);
+}
+
