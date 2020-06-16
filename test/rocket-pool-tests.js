@@ -1,6 +1,7 @@
 // Import tests
 import depositPoolTests from './deposit/deposit-pool-tests';
 import minipoolTests from './minipool/minipool-tests';
+import minipoolStatusTests from './minipool/minipool-status-tests';
 import networkBalancesTests from './network/network-balances-tests';
 import nodeDepositTests from './node/node-deposit-tests';
 import nodeManagerTests from './node/node-manager-tests';
@@ -21,6 +22,7 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 // Run tests
 depositPoolTests();
 minipoolTests();
+minipoolStatusTests();
 networkBalancesTests();
 nodeDepositTests();
 nodeManagerTests();
