@@ -69,5 +69,38 @@ export default function() {
         });
 
 
+        it(printTitle('nETH holder', 'cannot burn an invalid amount of nETH'), async () => {
+
+            // Withdraw minipool validator balance to nETH contract
+            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+
+            // Get burn amounts
+            let burnZero = web3.utils.toWei('0', 'ether');
+            let burnExcess = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
+            assert(burnExcess.gt(withdrawalBalance), 'Burn amount does not exceed nETH balance');
+
+            // Attempt to burn 0 nETH
+            await shouldRevert(burnNeth(burnZero, {
+                from: node,
+            }), 'Burned an invalid amount of nETH');
+
+            // Attempt to burn too much nETH
+            await shouldRevert(burnNeth(burnExcess, {
+                from: node,
+            }), 'Burned an amount of nETH greater than the token balance');
+
+        });
+
+
+        it(printTitle('nETH holder', 'cannot burn nETH with an insufficient contract ETH balance'), async () => {
+
+            // Attempt to burn nETH
+            await shouldRevert(burnNeth(withdrawalBalance, {
+                from: node,
+            }), 'Burned nETH with an insufficient contract ETH balance');
+
+        });
+
+
     });
 }
