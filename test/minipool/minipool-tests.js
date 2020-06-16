@@ -35,6 +35,7 @@ export default function() {
         let withdrawalCredentials;
         let initializedMinipool;
         let prelaunchMinipool;
+        let prelaunchMinipool2;
         let stakingMinipool;
         let withdrawableMinipool;
         before(async () => {
@@ -56,6 +57,7 @@ export default function() {
             // Create minipools
             initializedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
 
@@ -70,10 +72,12 @@ export default function() {
             // Check minipool statuses
             let initializedStatus = await initializedMinipool.getStatus.call();
             let prelaunchStatus = await prelaunchMinipool.getStatus.call();
+            let prelaunch2Status = await prelaunchMinipool2.getStatus.call();
             let stakingStatus = await stakingMinipool.getStatus.call();
             let withdrawableStatus = await withdrawableMinipool.getStatus.call();
             assert(initializedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialized minipool status');
             assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
+            assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
             assert(withdrawableStatus.eq(web3.utils.toBN(4)), 'Incorrect withdrawable minipool status');
 
@@ -177,15 +181,8 @@ export default function() {
             // Stake prelaunch minipool
             await stake(prelaunchMinipool, pubkey, withdrawalCredentials, {from: node});
 
-            // Create new prelaunch minipool
-            let newPrelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-
-            // Check created prelaunch minipool status
-            let newPrelaunchStatus = await newPrelaunchMinipool.getStatus.call();
-            assert(newPrelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
-
-            // Attempt to stake new prelaunch minipool with same validator pubkey
-            await shouldRevert(stake(newPrelaunchMinipool, pubkey, withdrawalCredentials, {
+            // Attempt to stake second prelaunch minipool with same pubkey
+            await shouldRevert(stake(prelaunchMinipool2, pubkey, withdrawalCredentials, {
                 from: node,
             }), 'Staked a minipool with a reused validator pubkey');
 
