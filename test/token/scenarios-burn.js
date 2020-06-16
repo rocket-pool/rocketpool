@@ -1,4 +1,16 @@
-import { RocketNodeETHToken } from '../_utils/artifacts';
+import { RocketETHToken, RocketNodeETHToken } from '../_utils/artifacts';
+
+
+// Burn rETH for ETH
+export async function burnReth(amount, txOptions) {
+
+    // Load contracts
+    const rocketETHToken = await RocketETHToken.deployed();
+
+    // Burn tokens
+    await rocketETHToken.burn(amount, txOptions);
+
+}
 
 
 // Burn nETH for ETH

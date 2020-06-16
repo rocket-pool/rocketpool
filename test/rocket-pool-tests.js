@@ -11,6 +11,7 @@ import minipoolSettingsTests from './settings/minipool-settings-tests';
 import networkSettingsTests from './settings/network-settings-tests';
 import nodeSettingsTests from './settings/node-settings-tests';
 import nethTests from './token/neth-tests';
+import rethTests from './token/reth-tests';
 
 // Header
 console.log('\n');
@@ -34,3 +35,4 @@ minipoolSettingsTests();
 networkSettingsTests();
 nodeSettingsTests();
 nethTests();
+rethTests();
