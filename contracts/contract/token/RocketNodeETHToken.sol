@@ -35,6 +35,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
     function burn(uint256 _amount) override external {
         // Check amount
         require(_amount > 0, "Invalid token burn amount");
+        require(balances[msg.sender] >= _amount, "Insufficient nETH balance");
         // Check ETH balance
         require(address(this).balance >= _amount, "Insufficient ETH balance for exchange");
         // Update balance & supply

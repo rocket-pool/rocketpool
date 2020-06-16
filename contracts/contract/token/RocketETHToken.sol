@@ -59,6 +59,7 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
     function burn(uint256 _amount) override external {
         // Check amount
         require(_amount > 0, "Invalid token burn amount");
+        require(balances[msg.sender] >= _amount, "Insufficient rETH balance");
         // Calculate ETH amount
         uint256 calcBase = 1 ether;
         uint256 ethAmount = _amount.mul(getExchangeRate()).div(calcBase);
