@@ -33,6 +33,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         setUintS("deposit.pool.balance", _value);
     }
 
+    // Default payable function - for vault withdrawals
+    // Only accepts calls from the RocketVault contract
+    receive() external payable onlyLatestContract("rocketVault", msg.sender) {}
+
     // Accept a deposit from a user
     function deposit() override external payable {
         // Load contracts
