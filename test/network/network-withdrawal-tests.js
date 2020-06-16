@@ -67,13 +67,13 @@ export default function() {
         });
 
 
-        it(printTitle('trusted node', 'cannot process a withdrawal with an incorrect withdrawal balance'), async () => {
+        it(printTitle('trusted node', 'cannot process a validator withdrawal with an incorrect withdrawal balance'), async () => {
 
             // Attempt to process withdrawal
             await shouldRevert(withdraw(validatorPubkey, {
                 from: trustedNode,
                 value: web3.utils.toWei('10', 'ether'),
-            }), 'Processed a withdrawal with an incorrect withdrawal balance');
+            }), 'Processed a validator withdrawal with an incorrect withdrawal balance');
 
         });
 
@@ -84,7 +84,7 @@ export default function() {
             await shouldRevert(withdraw(validatorPubkey, {
                 from: node,
                 value: withdrawalBalance,
-            }), 'Regular node processed a withdrawal');
+            }), 'Regular node processed a validator withdrawal');
 
         });
 
