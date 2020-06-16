@@ -10,6 +10,7 @@ import depositSettingsTests from './settings/deposit-settings-tests';
 import minipoolSettingsTests from './settings/minipool-settings-tests';
 import networkSettingsTests from './settings/network-settings-tests';
 import nodeSettingsTests from './settings/node-settings-tests';
+import nethTests from './token/neth-tests';
 
 // Header
 console.log('\n');
@@ -32,3 +33,4 @@ depositSettingsTests();
 minipoolSettingsTests();
 networkSettingsTests();
 nodeSettingsTests();
+nethTests();
