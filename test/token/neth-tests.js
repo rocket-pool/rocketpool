@@ -29,7 +29,8 @@ export default function() {
 
         // Setup
         let validatorPubkey = getValidatorPubkey();
-        let withdrawalBalance = web3.utils.toBN(web3.utils.toWei('36', 'ether'));
+        let withdrawalBalance = web3.utils.toWei('36', 'ether');
+        let nethBalance;
         before(async () => {
 
             // Register node
@@ -49,9 +50,9 @@ export default function() {
             await withdrawMinipool(minipool.address, withdrawalBalance, {from: trustedNode});
             await closeMinipool(minipool, {from: node});
 
-            // Check node nETH balance
-            let nethBalance = await getNethBalance(node);
-            assert(nethBalance.eq(withdrawalBalance), 'Incorrect node nETH balance');
+            // Get & check node nETH balance
+            nethBalance = await getNethBalance(node);
+            assert(nethBalance.gt(web3.utils.toBN(0)), 'Incorrect node nETH balance');
 
         });
 
@@ -62,7 +63,7 @@ export default function() {
             await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
 
             // Burn nETH
-            await burnNeth(withdrawalBalance, {
+            await burnNeth(nethBalance, {
                 from: node,
             });
 
@@ -77,7 +78,7 @@ export default function() {
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');
             let burnExcess = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
-            assert(burnExcess.gt(withdrawalBalance), 'Burn amount does not exceed nETH balance');
+            assert(burnExcess.gt(nethBalance), 'Burn amount does not exceed nETH balance');
 
             // Attempt to burn 0 nETH
             await shouldRevert(burnNeth(burnZero, {
@@ -95,7 +96,7 @@ export default function() {
         it(printTitle('nETH holder', 'cannot burn nETH with an insufficient contract ETH balance'), async () => {
 
             // Attempt to burn nETH
-            await shouldRevert(burnNeth(withdrawalBalance, {
+            await shouldRevert(burnNeth(nethBalance, {
                 from: node,
             }), 'Burned nETH with an insufficient contract ETH balance');
 
