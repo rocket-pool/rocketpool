@@ -56,5 +56,38 @@ export default function() {
         });
 
 
+        it(printTitle('trusted node', 'cannot process a withdrawal for an invalid validator'), async () => {
+
+            // Attempt to process withdrawal
+            await shouldRevert(withdraw(getValidatorPubkey(), {
+                from: trustedNode,
+                value: withdrawalBalance,
+            }), 'Processed a withdrawal for an invalid validator');
+
+        });
+
+
+        it(printTitle('trusted node', 'cannot process a withdrawal with an incorrect withdrawal balance'), async () => {
+
+            // Attempt to process withdrawal
+            await shouldRevert(withdraw(validatorPubkey, {
+                from: trustedNode,
+                value: web3.utils.toWei('10', 'ether'),
+            }), 'Processed a withdrawal with an incorrect withdrawal balance');
+
+        });
+
+
+        it(printTitle('regular node', 'cannot process a validator withdrawal'), async () => {
+
+            // Attempt to process withdrawal
+            await shouldRevert(withdraw(validatorPubkey, {
+                from: node,
+                value: withdrawalBalance,
+            }), 'Regular node processed a withdrawal');
+
+        });
+
+
     });
 }
