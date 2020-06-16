@@ -1,4 +1,4 @@
-pragma solidity 0.6.8;
+pragma solidity 0.6.9;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -10,19 +10,11 @@ import "../interface/RocketStorageInterface.sol";
 abstract contract RocketBase {
 
 
-    /**** Properties ************/
+    // Version of the contract
+    uint8 public version;
 
-
-    uint8 public version;                                                   // Version of this contract
-
-
-    /*** Contracts **************/
-
-
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);       // The main storage contract where primary persistant storage is maintained
-
-
-    /*** Modifiers **************/
+    // The main storage contract where primary persistant storage is maintained
+    RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
 
     /**
@@ -106,17 +98,11 @@ abstract contract RocketBase {
     }
 
 
-    /*** Constructor ************/
-
-
     /// @dev Set the main Rocket Storage address
     constructor(address _rocketStorageAddress) public {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }
-
-
-    /*** Contract Utilities *****/
 
 
     /// @dev Get the address of a network contract
@@ -177,9 +163,6 @@ abstract contract RocketBase {
     function deleteBoolS(string memory _key) internal { rocketStorage.deleteBool(keccak256(abi.encodePacked(_key))); }
     function deleteIntS(string memory _key) internal { rocketStorage.deleteInt(keccak256(abi.encodePacked(_key))); }
     function deleteBytes32S(string memory _key) internal { rocketStorage.deleteBytes32(keccak256(abi.encodePacked(_key))); }
-
-
-    /*** Role Utilities *********/
 
 
     /**

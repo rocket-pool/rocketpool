@@ -1,4 +1,4 @@
-pragma solidity 0.6.8;
+pragma solidity 0.6.9;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -10,9 +10,7 @@ import "../interface/RocketStorageInterface.sol";
 contract RocketStorage is RocketStorageInterface {
 
 
-    /**** Storage Types *********/
-
-
+    // Storage types
     mapping(bytes32 => uint256)    private uIntStorage;
     mapping(bytes32 => string)     private stringStorage;
     mapping(bytes32 => address)    private addressStorage;
@@ -20,9 +18,6 @@ contract RocketStorage is RocketStorageInterface {
     mapping(bytes32 => bool)       private boolStorage;
     mapping(bytes32 => int256)     private intStorage;
     mapping(bytes32 => bytes32)    private bytes32Storage;
-
-
-    /*** Modifiers **************/
 
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
@@ -36,16 +31,11 @@ contract RocketStorage is RocketStorageInterface {
     }
 
 
-    /*** Constructor ************/
-
-
+    /// @dev Construct RocketStorage
     constructor() public {
         // Set the main owner upon deployment
         boolStorage[keccak256(abi.encodePacked("access.role", "owner", msg.sender))] = true;
     }
-
-
-    /**** Get Methods ***********/
 
 
     /// @param _key The key for the record
@@ -84,9 +74,6 @@ contract RocketStorage is RocketStorageInterface {
     }
 
 
-    /**** Set Methods ***********/
-
-
     /// @param _key The key for the record
     function setAddress(bytes32 _key, address _value) onlyLatestRocketNetworkContract override external {
         addressStorage[_key] = _value;
@@ -121,9 +108,6 @@ contract RocketStorage is RocketStorageInterface {
     function setBytes32(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract override external {
         bytes32Storage[_key] = _value;
     }
-
-
-    /**** Delete Methods ***********/
 
 
     /// @param _key The key for the record
