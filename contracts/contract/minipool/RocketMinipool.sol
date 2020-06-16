@@ -147,6 +147,7 @@ contract RocketMinipool is RocketMinipoolInterface {
             // Update node deposit balance
             nodeDepositBalance = nodeDepositBalance.sub(msg.value);
             // Transfer deposited ETH to node
+            // TODO: check transfer logic is safe
             payable(nodeAddress).transfer(msg.value);
         }
         // Progress initialized minipool to prelaunch
@@ -238,6 +239,7 @@ contract RocketMinipool is RocketMinipoolInterface {
             "The minipool can only be dissolved by its owner unless it has timed out"
         );
         // Transfer balances to node operator & deposit pool
+        // TODO: check transfer logic is safe
         if (nodeDepositBalance > 0) { payable(nodeAddress).transfer(nodeDepositBalance); }
         if (userDepositBalance > 0) { rocketDepositPool.recycleDissolvedDeposit{value: userDepositBalance}(); }
         // Destroy minipool
