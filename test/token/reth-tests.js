@@ -74,5 +74,38 @@ export default function() {
         });
 
 
+        it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
+
+            // Withdraw minipool validator balance to rETH contract
+            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+
+            // Get burn amounts
+            let burnZero = web3.utils.toWei('0', 'ether');
+            let burnExcess = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
+            assert(burnExcess.gt(rethBalance), 'Burn amount does not exceed rETH balance');
+
+            // Attempt to burn 0 rETH
+            await shouldRevert(burnReth(burnZero, {
+                from: staker,
+            }), 'Burned an invalid amount of rETH');
+
+            // Attempt to burn too much rETH
+            await shouldRevert(burnReth(burnExcess, {
+                from: staker,
+            }), 'Burned an amount of rETH greater than the token balance');
+
+        });
+
+
+        it(printTitle('rETH holder', 'cannot burn rETH with an insufficient contract ETH balance'), async () => {
+
+            // Attempt to burn rETH
+            await shouldRevert(burnReth(rethBalance, {
+                from: staker,
+            }), 'Burned rETH with an insufficient contract ETH balance');
+
+        });
+
+
     });
 }
