@@ -64,6 +64,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 nodeAmount = 0;
         // Rewards earned
         if (endBalance > startBalance) {
+            // Apply node deposit amount
+            nodeAmount = nodeDeposit;
             // Get total rewards earned
             uint256 rewards = endBalance.sub(startBalance);
             // Calculate total and node-only staking durations
