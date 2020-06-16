@@ -2,7 +2,7 @@ import { RocketNodeManager } from '../_utils/artifacts';
 
 
 // Register a node
-export async function registerNode(timezoneLocation, txOptions) {
+export async function register(timezoneLocation, txOptions) {
 
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();

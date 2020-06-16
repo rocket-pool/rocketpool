@@ -12,6 +12,7 @@ export default function() {
         const [
             owner,
             node,
+            trustedNode,
         ] = accounts;
 
 
@@ -21,29 +22,35 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-        it(printTitle('trusted node', 'can update the network ETH balances'), async () => {
+        // Setup
+        before(async () => {
+
+            // Register node
+            await registerNode({from: node});
 
             // Register trusted node
-            await registerNode({from: node});
-            await setNodeTrusted(node, {from: owner});
+            await registerNode({from: trustedNode});
+            await setNodeTrusted(trustedNode, {from: owner});
+
+        });
+
+
+        it(printTitle('trusted node', 'can update the network ETH balances'), async () => {
 
             // Update total ETH balance
             await updateTotalETHBalance(web3.utils.toBN(web3.utils.toWei('10', 'ether')), {
-                from: node,
+                from: trustedNode,
             });
 
             // Update staking ETH balance
             await updateStakingETHBalance(web3.utils.toBN(web3.utils.toWei('9', 'ether')), {
-                from: node,
+                from: trustedNode,
             });
 
         });
 
 
         it(printTitle('regular node', 'cannot update the network ETH balances'), async () => {
-
-            // Register node
-            await registerNode({from: node});
 
             // Attempt to update total ETH balance
             await shouldRevert(updateTotalETHBalance(web3.utils.toBN(web3.utils.toWei('10', 'ether')), {
