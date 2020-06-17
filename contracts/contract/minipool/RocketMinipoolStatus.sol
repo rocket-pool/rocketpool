@@ -38,7 +38,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable and record its final balance
-        minipool.withdraw(_withdrawalBalance);
+        minipool.withdrawable(_withdrawalBalance);
         // Get node reward amount
         uint256 nodeAmount = getNodeRewardAmount(minipool);
         // Mint nETH to minipool contract

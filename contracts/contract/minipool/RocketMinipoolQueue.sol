@@ -3,6 +3,7 @@ pragma solidity 0.6.9;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/util/AddressQueueStorageInterface.sol";
@@ -106,12 +107,16 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Remove a minipool from a queue
-    // Reverts for invalid queues
-    // Only accepts calls from the RocketMinipoolManager contract
-    function removeMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolManager", msg.sender) {
-        if (_depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", _minipool); }
-        if (_depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", _minipool); }
-        if (_depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", _minipool); }
+    // Reverts for invalid minipool deposit types
+    // Only accepts calls from registered minipools
+    function removeMinipool() override external onlyRegisteredMinipool(msg.sender) {
+        // Initialize minipool & get properties
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        MinipoolDeposit depositType = minipool.getDepositType();
+        // Remove minipool from queue
+        if (depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", msg.sender); }
+        if (depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", msg.sender); }
+        if (depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", msg.sender); }
         assert(false);
     }
     function removeMinipool(string memory _queueId, address _minipool) private {

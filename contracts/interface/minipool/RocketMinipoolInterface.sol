@@ -13,6 +13,7 @@ interface RocketMinipoolInterface {
     function getNodeAddress() external view returns (address);
     function getNodeFee() external view returns (uint256);
     function getNodeDepositBalance() external view returns (uint256);
+    function getNodeRefundBalance() external view returns (uint256);
     function getNodeDepositAssigned() external view returns (bool);
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
@@ -24,5 +25,5 @@ interface RocketMinipoolInterface {
     function nodeDeposit() external payable;
     function userDeposit() external payable;
     function exit() external;
-    function withdraw(uint256 _withdrawalBalance) external;
+    function withdrawable(uint256 _withdrawalBalance) external;
 }

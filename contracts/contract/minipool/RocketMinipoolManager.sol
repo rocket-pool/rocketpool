@@ -98,7 +98,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Only accepts calls from registered minipools
     function destroyMinipool() override external onlyRegisteredMinipool(msg.sender) {
         // Load contracts
-        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
@@ -108,8 +107,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
-        // Remove minipool from queue
-        if (!minipool.getUserDepositAssigned()) { rocketMinipoolQueue.removeMinipool(minipool.getDepositType(), msg.sender); }
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, now);
     }
