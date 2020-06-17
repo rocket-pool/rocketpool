@@ -8,6 +8,7 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
@@ -31,6 +32,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
@@ -43,7 +45,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         else if (msg.value == rocketMinipoolSettings.getEmptyDepositNodeAmount()) { depositType = MinipoolDeposit.Empty; }
         // Check deposit type; only trusted nodes can create empty minipools
         require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
-        require(depositType != MinipoolDeposit.Empty || getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))), "Invalid node deposit amount");
+        require(depositType != MinipoolDeposit.Empty || rocketNodeManager.getNodeTrusted(msg.sender), "Invalid node deposit amount");
         // Create minipool
         address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
         RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
