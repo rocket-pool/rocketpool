@@ -81,6 +81,11 @@ export default function() {
 
 
         //
+        // Refund
+        //
+
+
+        //
         // Dissolve
         //
 
@@ -261,6 +266,11 @@ export default function() {
             }), 'Random address withdrew a minipool');
 
         });
+
+
+        //
+        // Close
+        //
 
 
     });
