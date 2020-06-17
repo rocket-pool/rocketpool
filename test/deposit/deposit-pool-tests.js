@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { getTotalETHBalance, updateTotalETHBalance } from '../_helpers/network';
+import { getTotalETHBalance, updateETHBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getRethExchangeRate } from '../_helpers/tokens';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
@@ -15,7 +15,7 @@ export default function() {
         // Accounts
         const [
             owner,
-            node,
+            trustedNode,
             staker,
             random,
         ] = accounts;
@@ -25,6 +25,16 @@ export default function() {
         let snapshotId;
         beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
+
+
+        // Setup
+        before(async () => {
+
+            // Register trusted node
+            await registerNode({from: trustedNode});
+            await setNodeTrusted(trustedNode, {from: owner});
+
+        });
 
 
         //
@@ -43,14 +53,10 @@ export default function() {
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 
-            // Create trusted node
-            await registerNode({from: node});
-            await setNodeTrusted(node, {from: owner});
-
             // Update network ETH total to 133% to alter rETH exchange rate
             let balance = await getTotalETHBalance();
             balance = balance.mul(web3.utils.toBN(4)).div(web3.utils.toBN(3));
-            await updateTotalETHBalance(balance, {from: node});
+            await updateETHBalances(balance, 0, {from: trustedNode});
 
             // Get & check updated rETH exchange rate
             let exchangeRate2 = await getRethExchangeRate();

@@ -36,11 +36,9 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Update network ETH balances
     // Only accepts calls from trusted (oracle) nodes
-    function updateTotalETHBalance(uint256 _balance) external onlyTrustedNode(msg.sender) {
-        setTotalETHBalance(_balance);
-    }
-    function updateStakingETHBalance(uint256 _balance) external onlyTrustedNode(msg.sender) {
-        setStakingETHBalance(_balance);
+    function updateETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) external onlyTrustedNode(msg.sender) {
+        setTotalETHBalance(_total);
+        setStakingETHBalance(_staking);
     }
 
     // Increase total ETH balance

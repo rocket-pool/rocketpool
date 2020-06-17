@@ -9,10 +9,18 @@ export async function getTotalETHBalance() {
 }
 
 
-// Update the network total ETH balance
-export async function updateTotalETHBalance(balance, txOptions) {
+// Get the network staking ETH balance
+export async function getStakingETHBalance() {
     const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-    await rocketNetworkBalances.updateTotalETHBalance(balance, txOptions);
+    let balance = await rocketNetworkBalances.getStakingETHBalance.call();
+    return balance;
+}
+
+
+// Update the network ETH balances
+export async function updateETHBalances(total, staking, txOptions) {
+    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
+    await rocketNetworkBalances.updateETHBalances(0, total, staking, txOptions);
 }
 
 

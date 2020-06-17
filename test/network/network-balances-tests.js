@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { updateTotalETHBalance, updateStakingETHBalance } from './scenarios-balances';
+import { updateETHBalances } from './scenarios-balances';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {
@@ -12,7 +12,9 @@ export default function() {
         const [
             owner,
             node,
-            trustedNode,
+            trustedNode1,
+            trustedNode2,
+            trustedNode3,
         ] = accounts;
 
 
@@ -28,23 +30,27 @@ export default function() {
             // Register node
             await registerNode({from: node});
 
-            // Register trusted node
-            await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            // Register trusted nodes
+            await registerNode({from: trustedNode1});
+            await registerNode({from: trustedNode2});
+            await registerNode({from: trustedNode3});
+            await setNodeTrusted(trustedNode1, {from: owner});
+            await setNodeTrusted(trustedNode2, {from: owner});
+            await setNodeTrusted(trustedNode3, {from: owner});
 
         });
 
 
         it(printTitle('trusted node', 'can update the network ETH balances'), async () => {
 
-            // Update total ETH balance
-            await updateTotalETHBalance(web3.utils.toBN(web3.utils.toWei('10', 'ether')), {
-                from: trustedNode,
-            });
+            // Get parameters
+            let epoch = 1;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Update staking ETH balance
-            await updateStakingETHBalance(web3.utils.toBN(web3.utils.toWei('9', 'ether')), {
-                from: trustedNode,
+            // Update ETH balances
+            await updateETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
             });
 
         });
@@ -52,15 +58,15 @@ export default function() {
 
         it(printTitle('regular node', 'cannot update the network ETH balances'), async () => {
 
-            // Attempt to update total ETH balance
-            await shouldRevert(updateTotalETHBalance(web3.utils.toBN(web3.utils.toWei('10', 'ether')), {
-                from: node,
-            }), 'Regular node updated the network total ETH balance');
+            // Get parameters
+            let epoch = 1;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Attempt to update staking ETH balance
-            await shouldRevert(updateStakingETHBalance(web3.utils.toBN(web3.utils.toWei('9', 'ether')), {
+            // Attempt to update ETH balances
+            await shouldRevert(updateETHBalances(epoch, totalBalance, stakingBalance, {
                 from: node,
-            }), 'Regular node updated the network staking ETH balance');
+            }), 'Regular node updated the network ETH balances');
 
         });
 
