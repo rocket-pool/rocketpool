@@ -15,14 +15,14 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     }
 
     // Accept an ETH deposit
-    // Only accepts calls from the RocketDepositPool contract
-    function depositEther() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
+    // Only accepts calls from Rocket Pool network contracts
+    function depositEther() override external payable onlyLatestNetworkContract {}
 
     // Withdraw an amount of ETH to a specified address
-    // Only accepts calls from the RocketDepositPool contract
-    function withdrawEther(address _withdrawalAddress, uint256 _amount) override external onlyLatestContract("rocketDepositPool", msg.sender) {
+    // Only accepts calls from Rocket Pool network contracts
+    function withdrawEther(address _withdrawalAddress, uint256 _amount) override external onlyLatestNetworkContract {
         (bool success,) = _withdrawalAddress.call{value: _amount}("");
-        require(success, "Ether could not be transferred to the withdrawal address");
+        require(success, "ETH amount could not be transferred to the withdrawal address");
     }
 
 }

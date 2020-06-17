@@ -12,10 +12,12 @@ interface RocketMinipoolManagerInterface {
     function getMinipoolByPubkey(bytes calldata _pubkey) external view returns (address);
     function getMinipoolExists(address _minipoolAddress) external view returns (bool);
     function getMinipoolPubkey(address _minipoolAddress) external view returns (bytes memory);
-    function getMinipoolTotalWithdrawalBalance(address _minipoolAddress) external view returns (uint256);
-    function getMinipoolNodeWithdrawalBalance(address _minipoolAddress) external view returns (uint256);
+    function getMinipoolWithdrawalTotalBalance(address _minipoolAddress) external view returns (uint256);
+    function getMinipoolWithdrawalNodeBalance(address _minipoolAddress) external view returns (uint256);
+    function getMinipoolWithdrawalProcessed(address _minipoolAddress) external view returns (bool);
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) external returns (address);
     function destroyMinipool() external;
     function setMinipoolPubkey(bytes calldata _pubkey) external;
     function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) external;
+    function setMinipoolWithdrawalProcessed(address _minipoolAddress, bool _processed) external;
 }

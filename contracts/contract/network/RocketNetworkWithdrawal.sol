@@ -3,6 +3,7 @@ pragma solidity 0.6.9;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/RocketVaultInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
@@ -23,29 +24,64 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
+    // Default payable function - for vault withdrawals
+    // Only accepts calls from the RocketVault contract
+    receive() external payable onlyLatestContract("rocketVault", msg.sender) {}
+
     // Get the validator withdrawal credentials
     function getWithdrawalCredentials() override public view returns (bytes memory) {
         // TODO: implement
         return hex"0000000000000000000000000000000000000000000000000000000000000000";
     }
 
+    // Current withdrawal pool balance
+    function getBalance() override public view returns (uint256) {
+        return getUintS("withdrawal.pool.balance");
+    }
+    function setBalance(uint256 _value) private {
+        setUintS("withdrawal.pool.balance", _value);
+    }
+
+    // Accept a validator withdrawal from the beacon chain
+    function acceptWithdrawal() override external payable {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        // Update withdrawal pool balance
+        setBalance(getBalance().add(msg.value));
+        // Transfer ETH to vault
+        rocketVault.depositEther{value: msg.value}();
+    }
+
     // Process a validator withdrawal from the beacon chain
-    // Only accepts calls from trusted (withdrawer) nodes (TBA)
-    function withdraw(bytes calldata _validatorPubkey) external payable onlyTrustedNode(msg.sender) {
+    // Only accepts calls from trusted (oracle) nodes
+    function processWithdrawal(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check validator minipool
         address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
         require(minipool != address(0x0), "Invalid minipool validator");
-        // Check withdrawal amount
-        require(msg.value == rocketMinipoolManager.getMinipoolTotalWithdrawalBalance(minipool), "Invalid withdrawal amount");
-        // Get node & user amounts
-        uint256 nodeAmount = rocketMinipoolManager.getMinipoolNodeWithdrawalBalance(minipool);
-        uint256 userAmount = msg.value.sub(nodeAmount);
+        // Check withdrawal processed status
+        require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(minipool), "Withdrawal has already been processed for validator");
+        // Get withdrawal amounts
+        uint256 totalAmount = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(minipool);
+        uint256 nodeAmount = rocketMinipoolManager.getMinipoolWithdrawalNodeBalance(minipool);
+        uint256 userAmount = totalAmount.sub(nodeAmount);
+        // Check balance
+        require(getBalance() >= totalAmount, "Insufficient withdrawal pool balance to process validator withdrawal");
+        // Set withdrawal processed status
+        rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool, true);
+        // Withdraw ETH from vault
+        if (totalAmount > 0) {
+            // Update withdrawal pool balance
+            setBalance(getBalance().sub(totalAmount));
+            // Withdraw
+            rocketVault.withdrawEther(address(this), totalAmount);
+        }
         // Transfer node balance to nETH contract
         if (nodeAmount > 0) { rocketNodeETHToken.deposit{value: nodeAmount}(); }
         // Transfer user balance to rETH contract or deposit pool
