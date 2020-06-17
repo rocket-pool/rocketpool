@@ -28,6 +28,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.index")), _index);
     }
 
+    // Get the number of trusted nodes in the network
+    function getTrustedNodeCount() override public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
+    }
+
+    // Get a trusted node address by index
+    function getTrustedNodeAt(uint256 _index) override public view returns (address) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.trusted.index")), _index);
+    }
+
     // Check whether a node exists
     function getNodeExists(address _nodeAddress) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)));
@@ -69,8 +81,13 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
         // Check current node status
         require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "The node's trusted status is already set");
+        // Load contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Set status
         setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
+        // Add node to / remove node from trusted index
+        if (_trusted) { addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
+        else { addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
     }
 
     // Set a node's timezone location
