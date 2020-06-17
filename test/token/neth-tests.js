@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, exitMinipool, withdrawMinipool, closeMinipool } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable, withdrawMinipool } from '../_helpers/minipool';
 import { withdrawValidator } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
@@ -43,12 +43,12 @@ export default function() {
             // Set settings
             await setMinipoolSetting('WithdrawalDelay', 0, {from: owner});
 
-            // Create, stake, exit, withdraw & close minipool
+            // Create and withdraw from withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await exitMinipool(minipool.address, {from: trustedNode});
-            await withdrawMinipool(minipool.address, withdrawalBalance, {from: trustedNode});
-            await closeMinipool(minipool, {from: node});
+            await setMinipoolExited(minipool.address, {from: trustedNode});
+            await setMinipoolWithdrawable(minipool.address, withdrawalBalance, {from: trustedNode});
+            await withdrawMinipool(minipool, {from: node});
 
             // Get & check node nETH balance
             nethBalance = await getNethBalance(node);

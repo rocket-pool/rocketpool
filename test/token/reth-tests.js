@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { deposit } from '../_helpers/deposit';
-import { createMinipool, stakeMinipool, exitMinipool, withdrawMinipool } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
 import { withdrawValidator } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
@@ -48,11 +48,11 @@ export default function() {
             // Set settings
             await setNetworkSetting('TargetRethCollateralRate', web3.utils.toWei('1', 'ether'), {from: owner});
 
-            // Create, stake, exit and withdraw minipool
+            // Create withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await exitMinipool(minipool.address, {from: trustedNode});
-            await withdrawMinipool(minipool.address, withdrawalBalance, {from: trustedNode});
+            await setMinipoolExited(minipool.address, {from: trustedNode});
+            await setMinipoolWithdrawable(minipool.address, withdrawalBalance, {from: trustedNode});
 
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker);

@@ -60,21 +60,27 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
 
 // Mark a minipool as exited
-export async function exitMinipool(minipoolAddress, txOptions) {
+export async function setMinipoolExited(minipoolAddress, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.exitMinipool(minipoolAddress, txOptions);
+    await rocketMinipoolStatus.setMinipoolExited(minipoolAddress, txOptions);
 }
 
 
 // Mark a minipool as withdrawable and record its final balance
-export async function withdrawMinipool(minipoolAddress, withdrawalBalance, txOptions) {
+export async function setMinipoolWithdrawable(minipoolAddress, withdrawalBalance, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.withdrawMinipool(minipoolAddress, withdrawalBalance, txOptions);
+    await rocketMinipoolStatus.setMinipoolWithdrawable(minipoolAddress, withdrawalBalance, txOptions);
 }
 
 
-// Close a minipool and send its nETH balance to the node
-export async function closeMinipool(minipool, txOptions) {
-    await minipool.close(txOptions);
+// Withdraw node balances & rewards from a minipool and destroy it
+export async function withdrawMinipool(minipool, txOptions) {
+    await minipool.withdraw(txOptions);
+}
+
+
+// Dissolve a minipool
+export async function dissolveMinipool(minipool, txOptions) {
+    await minipool.dissolve(txOptions);
 }
 

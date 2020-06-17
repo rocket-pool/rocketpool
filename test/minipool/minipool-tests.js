@@ -2,13 +2,13 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, exitMinipool, withdrawMinipool } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
-import { close } from './scenarios-close';
 import { dissolve } from './scenarios-dissolve';
 import { stake } from './scenarios-stake';
+import { withdraw } from './scenarios-withdraw';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -60,14 +60,10 @@ export default function() {
             prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-
-            // Stake minipools
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
-
-            // Withdraw minipool
-            await exitMinipool(withdrawableMinipool.address, {from: trustedNode});
-            await withdrawMinipool(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), {from: trustedNode});
+            await setMinipoolExited(withdrawableMinipool.address, {from: trustedNode});
+            await setMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), {from: trustedNode});
 
             // Check minipool statuses
             let initializedStatus = await initializedMinipool.getStatus.call();
@@ -214,55 +210,55 @@ export default function() {
 
 
         //
-        // Close
+        // Withdraw
         //
 
 
-        it(printTitle('node operator', 'can close a withdrawable minipool after withdrawal delay'), async () => {
+        it(printTitle('node operator', 'can withdraw a withdrawable minipool after withdrawal delay'), async () => {
 
             // Wait for withdrawal delay
             await mineBlocks(web3, withdrawalDelay);
 
-            // Close withdrawable minipool
-            await close(withdrawableMinipool, {
+            // Withdraw withdrawable minipool
+            await withdraw(withdrawableMinipool, {
                 from: node,
             });
 
         });
 
 
-        it(printTitle('node operator', 'cannot close a minipool which is not withdrawable'), async () => {
+        it(printTitle('node operator', 'cannot withdraw a minipool which is not withdrawable'), async () => {
 
             // Wait for withdrawal delay
             await mineBlocks(web3, withdrawalDelay);
 
-            // Attempt to close staking minipool
-            await shouldRevert(close(stakingMinipool, {
+            // Attempt to withdraw staking minipool
+            await shouldRevert(withdraw(stakingMinipool, {
                 from: node,
-            }), 'Closed a minipool which is not withdrawable');
+            }), 'Withdrew a minipool which is not withdrawable');
 
         });
 
 
-        it(printTitle('node operator', 'cannot close a withdrawable minipool before withdrawal delay'), async () => {
+        it(printTitle('node operator', 'cannot withdraw a withdrawable minipool before withdrawal delay'), async () => {
 
-            // Attempt to close withdrawable minipool
-            await shouldRevert(close(withdrawableMinipool, {
+            // Attempt to withdraw withdrawable minipool
+            await shouldRevert(withdraw(withdrawableMinipool, {
                 from: node,
-            }), 'Closed a minipool before withdrawal delay');
+            }), 'Withdrew a minipool before withdrawal delay');
 
         });
 
 
-        it(printTitle('random address', 'cannot close a minipool'), async () => {
+        it(printTitle('random address', 'cannot withdraw a minipool'), async () => {
 
             // Wait for withdrawal delay
             await mineBlocks(web3, withdrawalDelay);
 
-            // Attempt to close withdrawable minipool
-            await shouldRevert(close(withdrawableMinipool, {
+            // Attempt to withdraw withdrawable minipool
+            await shouldRevert(withdraw(withdrawableMinipool, {
                 from: random,
-            }), 'Random address closed a minipool');
+            }), 'Random address withdrew a minipool');
 
         });
 

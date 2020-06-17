@@ -1,14 +1,11 @@
-import { RocketMinipoolStatus } from '../_utils/artifacts';
+import {  } from '../_utils/artifacts';
 
 
-// Mark a minipool as withdrawable
-export async function withdraw(minipoolAddress, withdrawalBalance, txOptions) {
+// Withdraw from a minipool
+export async function withdraw(minipool, txOptions) {
 
-    // Load contracts
-    const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-
-    // Exit
-    await rocketMinipoolStatus.withdrawMinipool(minipoolAddress, withdrawalBalance, txOptions);
+    // Withdraw
+    await minipool.withdraw(txOptions);
 
 }
 
