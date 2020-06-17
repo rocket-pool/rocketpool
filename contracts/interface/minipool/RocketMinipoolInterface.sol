@@ -24,6 +24,6 @@ interface RocketMinipoolInterface {
     function getStakingEndBlock() external view returns (uint256);
     function nodeDeposit() external payable;
     function userDeposit() external payable;
-    function exit() external;
-    function withdrawable(uint256 _withdrawalBalance) external;
+    function setExited() external;
+    function setWithdrawable(uint256 _withdrawalBalance) external;
 }

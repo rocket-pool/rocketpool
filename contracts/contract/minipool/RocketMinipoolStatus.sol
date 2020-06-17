@@ -24,21 +24,21 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Mark a minipool as exited
     // Only accepts calls from trusted (oracle) nodes
-    function exitMinipool(address _minipoolAddress) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function setMinipoolExited(address _minipoolAddress) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        minipool.exit();
+        minipool.setExited();
     }
 
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
     // Only accepts calls from trusted (oracle) nodes
-    function withdrawMinipool(address _minipoolAddress, uint256 _withdrawalBalance) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable and record its final balance
-        minipool.withdrawable(_withdrawalBalance);
+        minipool.setWithdrawable(_withdrawalBalance);
         // Get node reward amount
         uint256 nodeAmount = getNodeRewardAmount(minipool);
         // Mint nETH to minipool contract

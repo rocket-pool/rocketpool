@@ -193,7 +193,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Mark the minipool as exited
     // Only accepts calls from the RocketMinipoolStatus contract
-    function exit() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    function setExited() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Staking, "The minipool can only exit while staking");
         // Load contracts
@@ -206,9 +206,9 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function withdrawable(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    function setWithdrawable(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
-        require(status == MinipoolStatus.Exited, "The minipool can only withdraw while exited");
+        require(status == MinipoolStatus.Exited, "The minipool can only become withdrawable while exited");
         // Update staking details
         stakingEndBalance = _withdrawalBalance;
         stakingEndBlock = block.number;
