@@ -65,6 +65,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Check validator minipool
         address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
         require(minipool != address(0x0), "Invalid minipool validator");
+        // TODO: check minipool has been marked as withdrawable
         // Check withdrawal processed status
         require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(minipool), "Withdrawal has already been processed for validator");
         // Get withdrawal amounts
