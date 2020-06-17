@@ -65,15 +65,15 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Check validator minipool
         address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
         require(minipool != address(0x0), "Invalid minipool validator");
-        // TODO: check minipool has been marked as withdrawable
-        // Check withdrawal processed status
-        require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(minipool), "Withdrawal has already been processed for validator");
+        // Check minipool withdrawal status
+        require(rocketMinipoolManager.getMinipoolWithdrawalFinal(minipool), "Minipool withdrawal has not been finalized");
+        require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(minipool), "Withdrawal has already been processed for minipool");
         // Get withdrawal amounts
         uint256 totalAmount = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(minipool);
         uint256 nodeAmount = rocketMinipoolManager.getMinipoolWithdrawalNodeBalance(minipool);
         uint256 userAmount = totalAmount.sub(nodeAmount);
         // Check balance
-        require(getBalance() >= totalAmount, "Insufficient withdrawal pool balance to process validator withdrawal");
+        require(getBalance() >= totalAmount, "Insufficient withdrawal pool balance");
         // Set withdrawal processed status
         rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool, true);
         // Withdraw ETH from vault

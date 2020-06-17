@@ -72,6 +72,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)));
     }
 
+    // Get a minipool's withdrawal finalized status
+    function getMinipoolWithdrawalFinal(address _minipoolAddress) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("minipool.withdrawal.final", _minipoolAddress)));
+    }
+
     // Get a minipool's withdrawal processed status
     function getMinipoolWithdrawalProcessed(address _minipoolAddress) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)));
@@ -123,11 +128,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), msg.sender);
     }
 
-    // Set a minipool's withdrawal balances
+    // Set a minipool's withdrawal balances and finalize withdrawal
     // Only accepts calls from the RocketMinipoolStatus contract
     function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.total", _minipoolAddress)), _total);
         setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)), _node);
+        setBool(keccak256(abi.encodePacked("minipool.withdrawal.final", _minipoolAddress)), true);
     }
 
     // Set a minipool's withdrawal processed status

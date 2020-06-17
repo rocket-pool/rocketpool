@@ -72,6 +72,9 @@ export default function() {
         });
 
 
+        it(printTitle('trusted node', 'cannot process a validator withdrawal for a minipool which is not withdrawable'));
+
+
         it(printTitle('trusted node', 'cannot process a validator withdrawal which has already been processed'), async () => {
 
             // Accept withdrawals
