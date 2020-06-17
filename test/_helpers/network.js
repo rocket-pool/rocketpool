@@ -32,9 +32,16 @@ export async function getWithdrawalCredentials() {
 }
 
 
-// Process a validator withdrawal
-export async function withdrawValidator(validatorPubkey, txOptions) {
+// Accept a validator withdrawal
+export async function acceptValidatorWithdrawal(txOptions) {
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.withdraw(validatorPubkey, txOptions);
+    await rocketNetworkWithdrawal.acceptWithdrawal(txOptions);
+}
+
+
+// Process a validator withdrawal
+export async function processValidatorWithdrawal(validatorPubkey, txOptions) {
+    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
+    await rocketNetworkWithdrawal.processWithdrawal(validatorPubkey, txOptions);
 }
 

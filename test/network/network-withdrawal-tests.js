@@ -3,8 +3,9 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
+import { acceptValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { withdraw } from './scenarios-withdraw';
+import { processWithdrawal } from './scenarios-withdrawal';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {
@@ -47,10 +48,12 @@ export default function() {
 
         it(printTitle('trusted node', 'can process a validator withdrawal'), async () => {
 
+            // Accept withdrawal
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
             // Process withdrawal
-            await withdraw(validatorPubkey, {
+            await processWithdrawal(validatorPubkey, {
                 from: trustedNode,
-                value: withdrawalBalance,
             });
 
         });
@@ -58,32 +61,52 @@ export default function() {
 
         it(printTitle('trusted node', 'cannot process a withdrawal for an invalid validator'), async () => {
 
+            // Accept withdrawal
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
             // Attempt to process withdrawal
-            await shouldRevert(withdraw(getValidatorPubkey(), {
+            await shouldRevert(processWithdrawal(getValidatorPubkey(), {
                 from: trustedNode,
-                value: withdrawalBalance,
             }), 'Processed a withdrawal for an invalid validator');
 
         });
 
 
-        it(printTitle('trusted node', 'cannot process a validator withdrawal with an incorrect withdrawal balance'), async () => {
+        it(printTitle('trusted node', 'cannot process a validator withdrawal which has already been processed'), async () => {
+
+            // Accept withdrawals
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
+            // Process withdrawal
+            await processWithdrawal(validatorPubkey, {from: trustedNode});
+
+            // Attempt to process withdrawal again
+            await shouldRevert(processWithdrawal(validatorPubkey, {
+                from: trustedNode,
+            }), 'Processed a validator withdrawal which had already been processed');
+
+        });
+
+
+        it(printTitle('trusted node', 'cannot process a validator withdrawal with an insufficient withdrawal pool balance'), async () => {
 
             // Attempt to process withdrawal
-            await shouldRevert(withdraw(validatorPubkey, {
+            await shouldRevert(processWithdrawal(validatorPubkey, {
                 from: trustedNode,
-                value: web3.utils.toWei('10', 'ether'),
-            }), 'Processed a validator withdrawal with an incorrect withdrawal balance');
+            }), 'Processed a validator withdrawal with an insufficient withdrawal pool balance');
 
         });
 
 
         it(printTitle('regular node', 'cannot process a validator withdrawal'), async () => {
 
+            // Accept withdrawal
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
             // Attempt to process withdrawal
-            await shouldRevert(withdraw(validatorPubkey, {
+            await shouldRevert(processWithdrawal(validatorPubkey, {
                 from: node,
-                value: withdrawalBalance,
             }), 'Regular node processed a validator withdrawal');
 
         });

@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable, withdrawMinipool } from '../_helpers/minipool';
-import { withdrawValidator } from '../_helpers/network';
+import { acceptValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
 import { getNethBalance } from '../_helpers/tokens';
@@ -60,7 +60,8 @@ export default function() {
         it(printTitle('nETH holder', 'can burn nETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Burn nETH
             await burnNeth(nethBalance, {
@@ -73,7 +74,8 @@ export default function() {
         it(printTitle('nETH holder', 'cannot burn an invalid amount of nETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');

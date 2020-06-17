@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { deposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
-import { withdrawValidator } from '../_helpers/network';
+import { acceptValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
 import { getRethBalance } from '../_helpers/tokens';
@@ -64,7 +64,8 @@ export default function() {
         it(printTitle('rETH holder', 'can burn rETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Burn rETH
             await burnReth(rethBalance, {
@@ -77,7 +78,8 @@ export default function() {
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await withdrawValidator(validatorPubkey, {from: trustedNode, value: withdrawalBalance});
+            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');
