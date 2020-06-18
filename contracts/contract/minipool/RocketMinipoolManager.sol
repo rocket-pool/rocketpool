@@ -15,8 +15,8 @@ import "../../types/MinipoolDeposit.sol";
 contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Events
-    event MinipoolCreated(address indexed minipool, address indexed node, uint256 created);
-    event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 destroyed);
+    event MinipoolCreated(address indexed minipool, address indexed node, uint256 time);
+    event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {

@@ -20,6 +20,11 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event DepositReceived(address indexed from, uint256 amount, uint256 rethAmount, uint256 time);
+    event DepositRecycled(address indexed from, uint256 amount, uint256 time);
+    event DepositAssigned(address indexed minipool, uint256 amount, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -59,15 +64,27 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         rocketNetworkBalances.increaseTotalETHBalance(msg.value);
         // Process deposit
         processDeposit();
+        // Emit deposit received event
+        emit DepositReceived(msg.sender, msg.value, rethAmount, now);
     }
 
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
-    function recycleDissolvedDeposit() override external payable onlyRegisteredMinipool(msg.sender) { processDeposit(); }
+    function recycleDissolvedDeposit() override external payable onlyRegisteredMinipool(msg.sender) {
+        // Process deposit
+        processDeposit();
+        // Emit deposit recycled event
+        emit DepositRecycled(msg.sender, msg.value, now);
+    }
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) { processDeposit(); }
+    function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+        // Process deposit
+        processDeposit();
+        // Emit deposit recycled event
+        emit DepositRecycled(msg.sender, msg.value, now);
+    }
 
     // Process a deposit
     function processDeposit() private {
@@ -104,6 +121,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
             rocketVault.withdrawEther(address(this), minipoolCapacity);
             // Assign deposit to minipool
             minipool.userDeposit{value: minipoolCapacity}();
+            // Emit deposit assigned event
+            emit DepositAssigned(minipoolAddress, minipoolCapacity, now);
         }
     }
 
