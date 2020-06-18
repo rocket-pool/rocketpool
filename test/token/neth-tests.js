@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable, withdrawMinipool } from '../_helpers/minipool';
-import { acceptValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
+import { depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
 import { getNethBalance } from '../_helpers/tokens';
@@ -60,7 +60,7 @@ export default function() {
         it(printTitle('nETH holder', 'can burn nETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Burn nETH
@@ -74,7 +74,7 @@ export default function() {
         it(printTitle('nETH holder', 'cannot burn an invalid amount of nETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Get burn amounts

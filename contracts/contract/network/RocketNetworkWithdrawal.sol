@@ -28,12 +28,6 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Only accepts calls from the RocketVault contract
     receive() external payable onlyLatestContract("rocketVault", msg.sender) {}
 
-    // Get the validator withdrawal credentials
-    function getWithdrawalCredentials() override public view returns (bytes memory) {
-        // TODO: implement
-        return hex"0000000000000000000000000000000000000000000000000000000000000000";
-    }
-
     // Current withdrawal pool balance
     function getBalance() override public view returns (uint256) {
         return getUintS("withdrawal.pool.balance");
@@ -42,8 +36,14 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         setUintS("withdrawal.pool.balance", _value);
     }
 
-    // Accept a validator withdrawal from the beacon chain
-    function acceptWithdrawal() override external payable {
+    // Get the validator withdrawal credentials
+    function getWithdrawalCredentials() override public view returns (bytes memory) {
+        // TODO: implement
+        return hex"0000000000000000000000000000000000000000000000000000000000000000";
+    }
+
+    // Deposit a validator withdrawal from the beacon chain
+    function depositWithdrawal() override external payable {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Update withdrawal pool balance

@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
-import { acceptValidatorWithdrawal } from '../_helpers/network';
+import { depositValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { processWithdrawal } from './scenarios-withdrawal';
 
@@ -48,8 +48,8 @@ export default function() {
 
         it(printTitle('trusted node', 'can process a validator withdrawal'), async () => {
 
-            // Accept withdrawal
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            // Deposit withdrawal
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Process withdrawal
             await processWithdrawal(validatorPubkey, {
@@ -61,8 +61,8 @@ export default function() {
 
         it(printTitle('trusted node', 'cannot process a withdrawal for an invalid validator'), async () => {
 
-            // Accept withdrawal
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            // Deposit withdrawal
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Attempt to process withdrawal
             await shouldRevert(processWithdrawal(getValidatorPubkey(), {
@@ -77,9 +77,9 @@ export default function() {
 
         it(printTitle('trusted node', 'cannot process a validator withdrawal which has already been processed'), async () => {
 
-            // Accept withdrawals
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            // Deposit withdrawals
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Process withdrawal
             await processWithdrawal(validatorPubkey, {from: trustedNode});
@@ -104,8 +104,8 @@ export default function() {
 
         it(printTitle('regular node', 'cannot process a validator withdrawal'), async () => {
 
-            // Accept withdrawal
-            await acceptValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            // Deposit withdrawal
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Attempt to process withdrawal
             await shouldRevert(processWithdrawal(validatorPubkey, {

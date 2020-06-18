@@ -41,9 +41,9 @@ export async function getWithdrawalCredentials() {
 
 
 // Accept a validator withdrawal
-export async function acceptValidatorWithdrawal(txOptions) {
+export async function depositValidatorWithdrawal(txOptions) {
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.acceptWithdrawal(txOptions);
+    await rocketNetworkWithdrawal.depositWithdrawal(txOptions);
 }
 
 
