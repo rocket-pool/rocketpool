@@ -52,6 +52,12 @@ contract RocketMinipool is RocketMinipoolInterface {
     uint256 private stakingUserStartBlock;
     uint256 private stakingEndBlock;
 
+    // Events
+    event StatusUpdated(uint8 indexed status, uint256 time);
+    event EtherDeposited(address indexed from, uint256 amount, uint256 time);
+    event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
+    event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
+
     // Status getters
     function getStatus() override public view returns (MinipoolStatus) { return status; }
     function getStatusBlock() override public view returns (uint256) { return statusBlock; }
@@ -126,6 +132,8 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Update node deposit details
         nodeDepositBalance = msg.value;
         nodeDepositAssigned = true;
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, now);
         // Progress full minipool to prelaunch
         if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
     }
@@ -151,6 +159,8 @@ contract RocketMinipool is RocketMinipoolInterface {
             nodeDepositBalance = nodeDepositBalance.sub(msg.value);
             nodeRefundBalance = nodeRefundBalance.add(msg.value);
         }
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, now);
         // Progress initialized minipool to prelaunch
         if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
     }
@@ -228,7 +238,12 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(block.number.sub(statusBlock) >= rocketMinipoolSettings.getWithdrawalDelay(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
         // Transfer nETH balance to node operator
         uint256 nethBalance = rocketNodeETHToken.balanceOf(address(this));
-        if (nethBalance > 0) { require(rocketNodeETHToken.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator"); }
+        if (nethBalance > 0) {
+            // Transfer
+            require(rocketNodeETHToken.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator");
+            // Emit nETH withdrawn event
+            emit NethWithdrawn(nodeAddress, nethBalance, now);
+        }
         // Transfer refunded ETH to node operator
         if (nodeRefundBalance > 0) { refundNode(); }
         // Destroy minipool
@@ -252,8 +267,11 @@ contract RocketMinipool is RocketMinipoolInterface {
         );
         // Transfer user balance to deposit pool
         if (userDepositBalance > 0) {
+            // Transfer
             rocketDepositPool.recycleDissolvedDeposit{value: userDepositBalance}();
             userDepositBalance = 0;
+            // Emit ether withdrawn event
+            emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, now);
         }
         // Remove minipool from queue
         if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(); }
@@ -275,6 +293,8 @@ contract RocketMinipool is RocketMinipoolInterface {
             // Transfer balance
             (bool success,) = nodeAddress.call{value: nodeBalance}("");
             require(success, "Node ETH balance was not successfully transferred to node operator");
+            // Emit ether withdrawn event
+            emit EtherWithdrawn(nodeAddress, nodeBalance, now);
         }
         // Destroy minipool
         destroy();
@@ -282,9 +302,12 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Set the minipool's current status
     function setStatus(MinipoolStatus _status) private {
+        // Update status
         status = _status;
         statusBlock = block.number;
         statusTime = now;
+        // Emit status updated event
+        emit StatusUpdated(uint8(_status), now);
     }
 
     // Transfer refunded ETH balance to the node operator
@@ -295,6 +318,8 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Transfer refund amount
         (bool success,) = nodeAddress.call{value: refundAmount}("");
         require(success, "ETH refund amount was not successfully transferred to node operator");
+        // Emit ether withdrawn event
+        emit EtherWithdrawn(nodeAddress, refundAmount, now);
     }
 
     // Destroy the minipool
