@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
@@ -62,8 +62,8 @@ export default function() {
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
-            await setMinipoolExited(withdrawableMinipool.address, {from: trustedNode});
-            await setMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), {from: trustedNode});
+            await submitMinipoolExited(withdrawableMinipool.address, 1, {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), 1, {from: trustedNode});
 
             // Check minipool statuses
             let initializedStatus = await initializedMinipool.getStatus.call();

@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, setMinipoolExited, setMinipoolWithdrawable } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { acceptValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { processWithdrawal } from './scenarios-withdrawal';
@@ -40,8 +40,8 @@ export default function() {
             // Create withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await setMinipoolExited(minipool.address, {from: trustedNode});
-            await setMinipoolWithdrawable(minipool.address, withdrawalBalance, {from: trustedNode});
+            await submitMinipoolExited(minipool.address, 1, {from: trustedNode});
+            await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 1, {from: trustedNode});
 
         });
 

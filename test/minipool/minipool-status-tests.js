@@ -1,10 +1,10 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { createMinipool, stakeMinipool, setMinipoolExited } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, submitMinipoolExited } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { setExited } from './scenarios-exited';
-import { setWithdrawable } from './scenarios-withdrawable';
+import { submitExited } from './scenarios-exited';
+import { submitWithdrawable } from './scenarios-withdrawable';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
@@ -44,7 +44,7 @@ export default function() {
             exitedMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(exitedMinipool, null, {from: node});
-            await setMinipoolExited(exitedMinipool.address, {from: trustedNode});
+            await submitMinipoolExited(exitedMinipool.address, 1, {from: trustedNode});
 
             // Check minipool statuses
             let prelaunchStatus = await prelaunchMinipool.getStatus.call();
@@ -58,91 +58,91 @@ export default function() {
 
 
         //
-        // Set exited
+        // Submit exited
         //
 
 
-        it(printTitle('trusted node', 'can set a staking minipool to exited'), async () => {
+        it(printTitle('trusted node', 'can submit an exited event for a staking minipool'), async () => {
 
-            // Set staking minipool to exited
-            await setExited(stakingMinipool.address, {
+            // Submit staking minipool exited event
+            await submitExited(stakingMinipool.address, 1, {
                 from: trustedNode,
             });
 
         });
 
 
-        it(printTitle('trusted node', 'cannot set a minipool which is not staking to exited'), async () => {
+        it(printTitle('trusted node', 'cannot submit an exited event for a minipool which is not staking'), async () => {
 
-            // Attempt to set prelaunch minipool to exited
-            await shouldRevert(setExited(prelaunchMinipool.address, {
+            // Attempt to submit prelaunch minipool exited event
+            await shouldRevert(submitExited(prelaunchMinipool.address, 1, {
                 from: trustedNode,
-            }), 'Set a minipool which was not staking to exited');
+            }), 'Submitted an exited event for a minipool which was not staking');
 
         });
 
 
-        it(printTitle('trusted node', 'cannot set an invalid minipool to exited'), async () => {
+        it(printTitle('trusted node', 'cannot submit an exited event for an invalid minipool'), async () => {
 
-            // Attempt to set invalid minipool to exited
-            await shouldRevert(setExited(random, {
+            // Attempt to submit invalid minipool exited event
+            await shouldRevert(submitExited(random, 1, {
                 from: trustedNode,
-            }), 'Set an invalid minipool to exited');
+            }), 'Submitted an exited event for an invalid minipool');
 
         });
 
 
-        it(printTitle('regular node', 'cannot set a minipool to exited'), async () => {
+        it(printTitle('regular node', 'cannot submit an exited event for a minipool'), async () => {
 
-            // Attempt to set staking minipool to exited
-            await shouldRevert(setExited(stakingMinipool.address, {
+            // Attempt to submit staking minipool exited event
+            await shouldRevert(submitExited(stakingMinipool.address, 1, {
                 from: node,
-            }), 'Regular node set a minipool to exited');
+            }), 'Regular node submitted an exited event for a minipool');
 
         });
 
 
         //
-        // Set withdrawable
+        // Submit withdrawable
         //
 
 
-        it(printTitle('trusted node', 'can set an exited minipool to withdrawable'), async () => {
+        it(printTitle('trusted node', 'can submit a withdrawable event for an exited minipool'), async () => {
 
-            // Set exited minipool to withdrawable
-            await setWithdrawable(exitedMinipool.address, web3.utils.toWei('36', 'ether'), {
+            // Submit exited minipool withdrawable event
+            await submitWithdrawable(exitedMinipool.address, web3.utils.toWei('36', 'ether'), 1, {
                 from: trustedNode,
             });
 
         });
 
 
-        it(printTitle('trusted node', 'cannot set a minipool which is not exited to withdrawable'), async () => {
+        it(printTitle('trusted node', 'cannot submit a withdrawable event for a minipool which is not exited'), async () => {
 
-            // Attempt to set staking minipool to withdrawable
-            await shouldRevert(setWithdrawable(stakingMinipool.address, web3.utils.toWei('36', 'ether'), {
+            // Attempt to submit staking minipool withdrawable event
+            await shouldRevert(submitWithdrawable(stakingMinipool.address, web3.utils.toWei('36', 'ether'), 1, {
                 from: trustedNode,
-            }), 'Set a minipool which was not exited to withdrawable');
+            }), 'Submitted a withdrawable event for a minipool which was not exited');
 
         });
 
 
-        it(printTitle('trusted node', 'cannot set an invalid minipool to withdrawable'), async () => {
+        it(printTitle('trusted node', 'cannot submit a withdrawable event for an invalid minipool'), async () => {
 
-            // Attempt to set invalid minipool to withdrawable
-            await shouldRevert(setWithdrawable(random, web3.utils.toWei('36', 'ether'), {
+            // Attempt to submit invalid minipool withdrawable event
+            await shouldRevert(submitWithdrawable(random, web3.utils.toWei('36', 'ether'), 1, {
                 from: trustedNode,
-            }), 'Set an invalid minipool to withdrawable');
+            }), 'Submitted a withdrawable event for an invalid minipool');
 
         });
 
 
-        it(printTitle('regular node', 'cannot set a minipool to withdrawable'), async () => {
+        it(printTitle('regular node', 'cannot submit a withdrawable event for a minipool'), async () => {
 
-            // Attempt to set exited minipool to withdrawable
-            await shouldRevert(setWithdrawable(exitedMinipool.address, web3.utils.toWei('36', 'ether'), {
+            // Attempt to submit exited minipool withdrawable event
+            await shouldRevert(submitWithdrawable(exitedMinipool.address, web3.utils.toWei('36', 'ether'), 1, {
                 from: node,
-            }), 'Regular node set a minipool to withdrawable');
+            }), 'Regular node submitted a withdrawable event for a minipool');
 
         });
 

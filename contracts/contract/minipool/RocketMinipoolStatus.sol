@@ -6,9 +6,11 @@ import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
+import "../../types/MinipoolStatus.sol";
 
 // Handles updates to minipool status by trusted (oracle) nodes
 
@@ -22,16 +24,54 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         version = 1;
     }
 
-    // Mark a minipool as exited
+    // Submit a minipool exited event
     // Only accepts calls from trusted (oracle) nodes
-    function setMinipoolExited(address _minipoolAddress) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+        // Check minipool status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as exited while staking");
+        // Get submission keys
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.exited.submitted.node", msg.sender, _minipoolAddress, _epoch));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.exited.submitted.count", _minipoolAddress, _epoch));
+        // Check & update node submission status
+        require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
+        setBool(nodeSubmissionKey, true);
+        // Increment submission count
+        uint256 submissionCount = getUint(submissionCountKey).add(1);
+        setUint(submissionCountKey, submissionCount);
+        // Check submission count & set minipool exited
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { setMinipoolExited(_minipoolAddress); }
+    }
+
+    // Mark a minipool as exited
+    function setMinipoolExited(address _minipoolAddress) private {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         minipool.setExited();
     }
 
-    // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
+    // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
-    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+        // Check minipool status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        require(minipool.getStatus() == MinipoolStatus.Exited, "Minipool can only be set as withdrawable while exited");
+        // Get submission keys
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress, _withdrawalBalance, _epoch));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _withdrawalBalance, _epoch));
+        // Check & update node submission status
+        require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
+        setBool(nodeSubmissionKey, true);
+        // Increment submission count
+        uint256 submissionCount = getUint(submissionCountKey).add(1);
+        setUint(submissionCountKey, submissionCount);
+        // Check submission count & set minipool withdrawable
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance); }
+    }
+
+    // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
+    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance) private {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));

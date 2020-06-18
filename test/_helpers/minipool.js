@@ -59,17 +59,17 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 }
 
 
-// Mark a minipool as exited
-export async function setMinipoolExited(minipoolAddress, txOptions) {
+// Submit a minipool exited event
+export async function submitMinipoolExited(minipoolAddress, epoch, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.setMinipoolExited(minipoolAddress, txOptions);
+    await rocketMinipoolStatus.submitMinipoolExited(minipoolAddress, epoch, txOptions);
 }
 
 
-// Mark a minipool as withdrawable and record its final balance
-export async function setMinipoolWithdrawable(minipoolAddress, withdrawalBalance, txOptions) {
+// Submit a minipool withdrawable event
+export async function submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.setMinipoolWithdrawable(minipoolAddress, withdrawalBalance, txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions);
 }
 
 
