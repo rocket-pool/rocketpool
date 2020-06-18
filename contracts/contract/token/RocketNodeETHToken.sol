@@ -12,6 +12,11 @@ import "../../interface/token/RocketNodeETHTokenInterface.sol";
 
 contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInterface {
 
+    // Events
+    event EtherDeposited(address indexed from, uint256 amount, uint256 time);
+    event TokensMinted(address indexed to, uint256 amount, uint256 time);
+    event TokensBurned(address indexed from, uint256 amount, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -19,7 +24,10 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
 
     // Deposit ETH
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {}
+    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, now);
+    }
 
     // Mint nETH
     // Only accepts calls from the RocketMinipoolStatus contract
@@ -29,6 +37,8 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
         // Update balance & supply
         balances[_to] = balances[_to].add(_amount);
         totalSupply = totalSupply.add(_amount);
+        // Emit tokens minted event
+        emit TokensMinted(_to, _amount, now);
     }
 
     // Burn nETH for ETH
@@ -43,6 +53,8 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
         totalSupply = totalSupply.sub(_amount);
         // Transfer ETH to sender
         msg.sender.transfer(_amount);
+        // Emit tokens burned event
+        emit TokensBurned(msg.sender, _amount, now);
     }
 
 }
