@@ -17,10 +17,26 @@ export async function getStakingETHBalance() {
 }
 
 
+// Get the network ETH utilization rate
+export async function getETHUtilizationRate() {
+    const rocketNetworkBalances = await RocketNetworkBalances.deployed();
+    let utilizationRate = await rocketNetworkBalances.getETHUtilizationRate.call();
+    return utilizationRate;
+}
+
+
 // Submit network ETH balances
 export async function submitETHBalances(epoch, total, staking, txOptions) {
     const rocketNetworkBalances = await RocketNetworkBalances.deployed();
     await rocketNetworkBalances.submitETHBalances(epoch, total, staking, txOptions);
+}
+
+
+// Get the network node demand
+export async function getNodeDemand() {
+    const rocketNetworkFees = await RocketNetworkFees.deployed();
+    let nodeDemand = await rocketNetworkFees.getNodeDemand.call();
+    return nodeDemand;
 }
 
 

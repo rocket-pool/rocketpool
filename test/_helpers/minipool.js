@@ -32,6 +32,12 @@ export async function createMinipool(txOptions) {
 }
 
 
+// Refund node ETH from a minipool
+export async function refundMinipoolNodeETH(minipool, txOptions) {
+    await minipool.refund(txOptions);
+}
+
+
 // Progress a minipool to staking
 export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
@@ -82,5 +88,11 @@ export async function withdrawMinipool(minipool, txOptions) {
 // Dissolve a minipool
 export async function dissolveMinipool(minipool, txOptions) {
     await minipool.dissolve(txOptions);
+}
+
+
+// Close a dissolved minipool and destroy it
+export async function closeMinipool(minipool, txOptions) {
+    await minipool.close(txOptions);
 }
 

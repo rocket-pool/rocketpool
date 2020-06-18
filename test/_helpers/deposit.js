@@ -7,3 +7,10 @@ export async function deposit(txOptions) {
     await rocketDepositPool.deposit(txOptions);
 }
 
+
+// Assign deposits
+export async function assignDeposits(txOptions) {
+    const rocketDepositPool = await RocketDepositPool.deployed();
+    await rocketDepositPool.assignDeposits(txOptions);
+}
+
