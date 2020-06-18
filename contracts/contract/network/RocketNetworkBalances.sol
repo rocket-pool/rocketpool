@@ -60,28 +60,27 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Submit network ETH balances for an epoch
     // Only accepts calls from trusted (oracle) nodes
     function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) external onlyTrustedNode(msg.sender) {
-        // Get node epoch submitted key
-        bytes32 nodeEpochSubmittedKey = keccak256(abi.encodePacked("network.balances.submitted.epoch", msg.sender));
+        // Check epoch
+        require(_epoch > getUintS("network.balances.updated.epoch"), "Network balances for an equal or higher epoch are set");
         // Check balances
         require(_staking <= _total, "Invalid network balances");
-        // Check epoch
-        require(_epoch > getUint(nodeEpochSubmittedKey), "Node has submitted network balances for an equal or higher epoch");
-        require(_epoch > getUintS("network.balances.updated.epoch"), "Network balances for an equal or higher epoch are set");
-        // Load contracts
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        // Update node epoch submitted
-        setUint(nodeEpochSubmittedKey, _epoch);
-        // Increment submission count
+        // Get submission keys
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _epoch, _total, _staking));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _epoch, _total, _staking));
+        // Check & update node submission status
+        require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
+        setBool(nodeSubmissionKey, true);
+        // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Check submission count & update network balances
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { updateETHBalances(_epoch, _total, _staking); }
     }
 
     // Update network ETH balances
     function updateETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) private {
-        // Set epoch balances updated at
+        // Set balances updated epoch
         setUintS("network.balances.updated.epoch", _epoch);
         // Update balances
         setTotalETHBalance(_total);
