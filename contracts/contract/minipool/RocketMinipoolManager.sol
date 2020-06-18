@@ -14,14 +14,14 @@ import "../../types/MinipoolDeposit.sol";
 
 contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
+    // Events
+    event MinipoolCreated(address indexed minipool, address indexed node, uint256 created);
+    event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 destroyed);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
     }
-
-    // Events
-    event MinipoolCreated(address indexed minipool, address indexed node, uint256 created);
-    event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 destroyed);
 
     // Get the number of minipools in the network
     function getMinipoolCount() override public view returns (uint256) {
