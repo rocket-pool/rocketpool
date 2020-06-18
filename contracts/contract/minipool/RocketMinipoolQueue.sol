@@ -79,13 +79,12 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Add a minipool to the end of the appropriate queue
-    // Reverts for invalid queues
     // Only accepts calls from the RocketMinipoolManager contract
     function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolManager", msg.sender) {
         if (_depositType == MinipoolDeposit.Full) { return enqueueMinipool("minipools.available.full", _minipool); }
         if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool("minipools.available.half", _minipool); }
         if (_depositType == MinipoolDeposit.Empty) { return enqueueMinipool("minipools.available.empty", _minipool); }
-        assert(false);
+        require(false, "Invalid minipool deposit type");
     }
     function enqueueMinipool(string memory _queueId, address _minipool) private {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
@@ -93,13 +92,12 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Remove the first available minipool from the highest priority queue and return its address
-    // Reverts if no minipools are available
     // Only accepts calls from the RocketDepositPool contract
     function dequeueMinipool() override external onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
         if (getLength(MinipoolDeposit.Half) > 0) { return dequeueMinipool("minipools.available.half"); }
         if (getLength(MinipoolDeposit.Full) > 0) { return dequeueMinipool("minipools.available.full"); }
         if (getLength(MinipoolDeposit.Empty) > 0) { return dequeueMinipool("minipools.available.empty"); }
-        assert(false);
+        require(false, "No minipools are available");
     }
     function dequeueMinipool(string memory _queueId) private returns (address) {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
@@ -107,7 +105,6 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Remove a minipool from a queue
-    // Reverts for invalid minipool deposit types
     // Only accepts calls from registered minipools
     function removeMinipool() override external onlyRegisteredMinipool(msg.sender) {
         // Initialize minipool & get properties
@@ -117,7 +114,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         if (depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", msg.sender); }
         if (depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", msg.sender); }
         if (depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", msg.sender); }
-        assert(false);
+        require(false, "Invalid minipool deposit type");
     }
     function removeMinipool(string memory _queueId, address _minipool) private {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
