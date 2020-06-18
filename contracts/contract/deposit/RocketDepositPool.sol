@@ -62,28 +62,28 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         // Update network ETH balance
         // MUST be done *after* rETH amount calculation
         rocketNetworkBalances.increaseTotalETHBalance(msg.value);
-        // Process deposit
-        processDeposit();
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, rethAmount, now);
+        // Process deposit
+        processDeposit();
     }
 
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
     function recycleDissolvedDeposit() override external payable onlyRegisteredMinipool(msg.sender) {
-        // Process deposit
-        processDeposit();
         // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
+        // Process deposit
+        processDeposit();
     }
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        // Process deposit
-        processDeposit();
         // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
+        // Process deposit
+        processDeposit();
     }
 
     // Process a deposit

@@ -18,6 +18,9 @@ import "../../types/MinipoolDeposit.sol";
 
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
+    // Events
+    event DepositReceived(address indexed from, uint256 amount, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -46,6 +49,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check deposit type; only trusted nodes can create empty minipools
         require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
         require(depositType != MinipoolDeposit.Empty || rocketNodeManager.getNodeTrusted(msg.sender), "Invalid node deposit amount");
+        // Emit deposit received event
+        emit DepositReceived(msg.sender, msg.value, now);
         // Create minipool
         address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
         RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);

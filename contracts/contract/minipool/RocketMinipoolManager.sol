@@ -96,10 +96,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
-        // Add minipool to queue
-        rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, now);
+        // Add minipool to queue
+        rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
         return contractAddress;
     }
