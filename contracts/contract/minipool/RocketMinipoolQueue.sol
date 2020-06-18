@@ -17,6 +17,11 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event MinipoolEnqueued(address indexed minipool, bytes32 indexed queueId, uint256 time);
+    event MinipoolDequeued(address indexed minipool, bytes32 indexed queueId, uint256 time);
+    event MinipoolRemoved(address indexed minipool, bytes32 indexed queueId, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -87,8 +92,11 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         require(false, "Invalid minipool deposit type");
     }
     function enqueueMinipool(string memory _queueId, address _minipool) private {
+        // Enqueue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         addressQueueStorage.enqueueItem(keccak256(abi.encodePacked(_queueId)), _minipool);
+        // Emit enqueued event
+        emit MinipoolEnqueued(_minipool, keccak256(abi.encodePacked(_queueId)), now);
     }
 
     // Remove the first available minipool from the highest priority queue and return its address
@@ -100,8 +108,13 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         require(false, "No minipools are available");
     }
     function dequeueMinipool(string memory _queueId) private returns (address) {
+        // Dequeue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        return addressQueueStorage.dequeueItem(keccak256(abi.encodePacked(_queueId)));
+        address minipool = addressQueueStorage.dequeueItem(keccak256(abi.encodePacked(_queueId)));
+        // Emit dequeued event
+        emit MinipoolDequeued(minipool, keccak256(abi.encodePacked(_queueId)), now);
+        // Return
+        return minipool;
     }
 
     // Remove a minipool from a queue
@@ -117,8 +130,11 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         require(false, "Invalid minipool deposit type");
     }
     function removeMinipool(string memory _queueId, address _minipool) private {
+        // Remove
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         addressQueueStorage.removeItem(keccak256(abi.encodePacked(_queueId)), _minipool);
+        // Emit removed event
+        emit MinipoolRemoved(_minipool, keccak256(abi.encodePacked(_queueId)), now);
     }
 
 }
