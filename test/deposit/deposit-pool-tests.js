@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { getTotalETHBalance, updateETHBalances } from '../_helpers/network';
+import { getTotalETHBalance, submitETHBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getRethExchangeRate } from '../_helpers/tokens';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
@@ -54,9 +54,9 @@ export default function() {
             let exchangeRate1 = await getRethExchangeRate();
 
             // Update network ETH total to 133% to alter rETH exchange rate
-            let balance = await getTotalETHBalance();
-            balance = balance.mul(web3.utils.toBN(4)).div(web3.utils.toBN(3));
-            await updateETHBalances(balance, 0, {from: trustedNode});
+            let totalBalance = await getTotalETHBalance();
+            totalBalance = totalBalance.mul(web3.utils.toBN(4)).div(web3.utils.toBN(3));
+            await submitETHBalances(1, totalBalance, 0, {from: trustedNode});
 
             // Get & check updated rETH exchange rate
             let exchangeRate2 = await getRethExchangeRate();

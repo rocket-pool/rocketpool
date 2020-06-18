@@ -17,10 +17,10 @@ export async function getStakingETHBalance() {
 }
 
 
-// Update the network ETH balances
-export async function updateETHBalances(total, staking, txOptions) {
+// Submit network ETH balances
+export async function submitETHBalances(epoch, total, staking, txOptions) {
     const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-    await rocketNetworkBalances.updateETHBalances(0, total, staking, txOptions);
+    await rocketNetworkBalances.submitETHBalances(epoch, total, staking, txOptions);
 }
 
 

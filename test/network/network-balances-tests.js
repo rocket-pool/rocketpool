@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { updateETHBalances } from './scenarios-balances';
+import { submitETHBalances } from './scenarios-balances';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {
@@ -41,32 +41,32 @@ export default function() {
         });
 
 
-        it(printTitle('trusted node', 'can update the network ETH balances'), async () => {
+        it(printTitle('trusted node', 'can submit network ETH balances'), async () => {
 
             // Get parameters
             let epoch = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Update ETH balances
-            await updateETHBalances(epoch, totalBalance, stakingBalance, {
+            // Submit ETH balances
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode1,
             });
 
         });
 
 
-        it(printTitle('regular node', 'cannot update the network ETH balances'), async () => {
+        it(printTitle('regular node', 'cannot submit network ETH balances'), async () => {
 
             // Get parameters
             let epoch = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Attempt to update ETH balances
-            await shouldRevert(updateETHBalances(epoch, totalBalance, stakingBalance, {
+            // Attempt to submit ETH balances
+            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: node,
-            }), 'Regular node updated the network ETH balances');
+            }), 'Regular node submitted network ETH balances');
 
         });
 
