@@ -19,6 +19,10 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event MinipoolSetExited(address indexed minipool, uint256 time);
+    event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -46,8 +50,11 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Mark a minipool as exited
     function setMinipoolExited(address _minipoolAddress) private {
+        // Set exited
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         minipool.setExited();
+        // Emit set exited event
+        emit MinipoolSetExited(_minipoolAddress, now);
     }
 
     // Submit a minipool withdrawable event
@@ -85,6 +92,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         if (nodeAmount > 0) { rocketNodeETHToken.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
         rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _withdrawalBalance, nodeAmount);
+        // Emit set withdrawable event
+        emit MinipoolSetWithdrawable(_minipoolAddress, _withdrawalBalance, nodeAmount, now);
     }
 
     // Get the node reward amount for a withdrawn minipool
