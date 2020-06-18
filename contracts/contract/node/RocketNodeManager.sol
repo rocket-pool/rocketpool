@@ -11,6 +11,11 @@ import "../../interface/util/AddressSetStorageInterface.sol";
 
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
+    // Events
+    event NodeRegistered(address indexed node, uint256 time);
+    event NodeSetTrusted(address indexed node, bool trusted, uint256 time);
+    event NodeSetTimezoneLocation(address indexed node, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -72,6 +77,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
+        // Emit node registered event
+        emit NodeRegistered(msg.sender, now);
     }
 
     // Set a node's trusted status
@@ -88,13 +95,19 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Add node to / remove node from trusted index
         if (_trusted) { addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
         else { addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
+        // Emit node set trusted event
+        emit NodeSetTrusted(_nodeAddress, _trusted, now);
     }
 
     // Set a node's timezone location
     // Only accepts calls from registered nodes
     function setTimezoneLocation(string calldata _timezoneLocation) external onlyRegisteredNode(msg.sender) {
+        // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
+        // Set timezone location
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
+        // Emit node set timezone location event
+        emit NodeSetTimezoneLocation(msg.sender, now);
     }
 
 }
