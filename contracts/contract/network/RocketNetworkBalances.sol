@@ -14,6 +14,9 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event BalancesUpdated(uint256 epoch, uint256 totalEth, uint256 stakingEth, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -85,6 +88,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Update balances
         setTotalETHBalance(_total);
         setStakingETHBalance(_staking);
+        // Emit balances updated event
+        emit BalancesUpdated(_epoch, _total, _staking, now);
     }
 
 }

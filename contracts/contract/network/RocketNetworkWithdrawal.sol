@@ -19,6 +19,10 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event WithdrawalReceived(uint256 amount, uint256 time);
+    event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 nethAmount, uint256 rethAmount, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -50,6 +54,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         setBalance(getBalance().add(msg.value));
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
+        // Emit withdrawal received event
+        emit WithdrawalReceived(msg.value, now);
     }
 
     // Process a validator withdrawal from the beacon chain
@@ -93,6 +99,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
                 rocketDepositPool.recycleWithdrawnDeposit{value: userAmount}();
             }
         }
+        // Emit withdrawal processed event
+        emit WithdrawalProcessed(keccak256(abi.encodePacked(_validatorPubkey)), minipool, nodeAmount, userAmount, now);
     }
 
 }
