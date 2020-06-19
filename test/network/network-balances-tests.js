@@ -41,24 +41,104 @@ export default function() {
         });
 
 
-        it(printTitle('trusted node', 'can submit network ETH balances'), async () => {
+        it(printTitle('trusted nodes', 'can submit network ETH balances'), async () => {
 
-            // Get parameters
+            // Set parameters
             let epoch = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Submit ETH balances
+            // Submit identical ETH balances
             await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode1,
+            });
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode2,
+            });
+
+            // Set parameters
+            epoch = 2;
+
+            // Submit different ETH balances
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('9', 'ether'), {
+                from: trustedNode1,
+            });
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('8', 'ether'), {
+                from: trustedNode2,
+            });
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('7', 'ether'), {
+                from: trustedNode3,
             });
 
         });
 
 
-        it(printTitle('regular node', 'cannot submit network ETH balances'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network ETH balances for the current epoch or lower'), async () => {
 
-            // Get parameters
+            // Set parameters
+            let epoch = 2;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
+
+            // Submit ETH balances for epoch
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
+            });
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode2,
+            });
+
+            // Attempt to submit ETH balances for current epoch
+            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode3,
+            }), 'Submitted ETH balances for the current epoch');
+
+            // Attempt to submit ETH balances for lower epoch
+            await shouldRevert(submitETHBalances(epoch - 1, totalBalance, stakingBalance, {
+                from: trustedNode3,
+            }), 'Submitted ETH balances for a lower epoch');
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit invalid network ETH balances'), async () => {
+
+            // Set parameters
+            let epoch = 1;
+            let totalBalance = web3.utils.toWei('9', 'ether');
+            let stakingBalance = web3.utils.toWei('10', 'ether');
+
+            // Submit ETH balances for epoch
+            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
+            }), 'Submitted invalid ETH balances');
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit the same network ETH balances twice'), async () => {
+
+            // Set parameters
+            let epoch = 1;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
+
+            // Submit ETH balances for epoch
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
+            });
+
+            // Attempt to submit ETH balances for epoch again
+            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
+            }), 'Submitted the same network ETH balances twice');
+
+        });
+
+
+        it(printTitle('regular nodes', 'cannot submit network ETH balances'), async () => {
+
+            // Set parameters
             let epoch = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
