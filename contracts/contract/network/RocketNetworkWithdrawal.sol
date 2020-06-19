@@ -20,7 +20,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     using SafeMath for uint;
 
     // Events
-    event WithdrawalReceived(uint256 amount, uint256 time);
+    event WithdrawalReceived(address indexed from, uint256 amount, uint256 time);
     event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 nethAmount, uint256 rethAmount, uint256 time);
 
     // Construct
@@ -48,6 +48,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Deposit a validator withdrawal from the beacon chain
     function depositWithdrawal() override external payable {
+        // Check deposit amount
+        require(msg.value > 0, "Invalid deposit amount");
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Update withdrawal pool balance
@@ -55,7 +57,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Emit withdrawal received event
-        emit WithdrawalReceived(msg.value, now);
+        emit WithdrawalReceived(msg.sender, msg.value, now);
     }
 
     // Process a validator withdrawal from the beacon chain

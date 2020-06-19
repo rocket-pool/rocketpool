@@ -23,16 +23,16 @@ console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
-depositPoolTests();
-minipoolTests();
-minipoolStatusTests();
-networkBalancesTests();
+//depositPoolTests();
+//minipoolTests();
+//minipoolStatusTests();
+//networkBalancesTests();
 networkWithdrawalTests();
-nodeDepositTests();
-nodeManagerTests();
-depositSettingsTests();
-minipoolSettingsTests();
-networkSettingsTests();
-nodeSettingsTests();
-nethTests();
-rethTests();
+//nodeDepositTests();
+//nodeManagerTests();
+//depositSettingsTests();
+//minipoolSettingsTests();
+//networkSettingsTests();
+//nodeSettingsTests();
+//nethTests();
+//rethTests();
