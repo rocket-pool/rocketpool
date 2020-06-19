@@ -55,7 +55,26 @@ export default function() {
         //
 
 
-        
+        it(printTitle('random address', 'can deposit a validator withdrawal'), async () => {
+
+            // Deposit withdrawal
+            await depositWithdrawal({
+                from: random,
+                value: withdrawalBalance,
+            });
+
+        });
+
+
+        it(printTitle('random address', 'cannot deposit a validator withdrawal with an invalid balance'), async () => {
+
+            // Attempt to deposit withdrawal with an invalid balance
+            await shouldRevert(depositWithdrawal({
+                from: random,
+                value: web3.utils.toWei('0', 'ether'),
+            }), 'Deposited a validator withdrawal with an invalid balance');
+
+        });
 
 
         //
