@@ -5,7 +5,7 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { processWithdrawal } from './scenarios-withdrawal';
+import { depositWithdrawal, processWithdrawal } from './scenarios-withdrawal';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {
@@ -26,7 +26,8 @@ export default function() {
 
 
         // Setup
-        let validatorPubkey = getValidatorPubkey();
+        let stakingValidatorPubkey = getValidatorPubkey();
+        let withdrawableValidatorPubkey = getValidatorPubkey();
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         before(async () => {
 
@@ -37,13 +38,25 @@ export default function() {
             await registerNode({from: trustedNode});
             await setNodeTrusted(trustedNode, {from: owner});
 
-            // Create withdrawable minipool
-            let minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await submitMinipoolExited(minipool.address, 1, {from: trustedNode});
-            await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 1, {from: trustedNode});
+            // Create minipools
+            let stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            let withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            await stakeMinipool(stakingMinipool, stakingValidatorPubkey, {from: node});
+            await stakeMinipool(withdrawableMinipool, withdrawableValidatorPubkey, {from: node});
+            await submitMinipoolExited(withdrawableMinipool.address, 1, {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, withdrawalBalance, 1, {from: trustedNode});
 
         });
+
+
+        //
+        // Deposit withdrawals
+        //
+
+
+        //
+        // Process withdrawals
+        //
 
 
         it(printTitle('trusted node', 'can process a validator withdrawal'), async () => {
@@ -52,7 +65,7 @@ export default function() {
             await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Process withdrawal
-            await processWithdrawal(validatorPubkey, {
+            await processWithdrawal(withdrawableValidatorPubkey, {
                 from: trustedNode,
             });
 
@@ -72,7 +85,17 @@ export default function() {
         });
 
 
-        it(printTitle('trusted node', 'cannot process a validator withdrawal for a minipool which is not withdrawable'));
+        it(printTitle('trusted node', 'cannot process a validator withdrawal for a minipool which is not withdrawable'), async () => {
+
+            // Deposit withdrawal
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
+            // Process withdrawal
+            await shouldRevert(processWithdrawal(stakingValidatorPubkey, {
+                from: trustedNode,
+            }), 'Processed a validator withdrawal for a minipool which was not withdrawable');
+
+        });
 
 
         it(printTitle('trusted node', 'cannot process a validator withdrawal which has already been processed'), async () => {
@@ -82,10 +105,10 @@ export default function() {
             await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Process withdrawal
-            await processWithdrawal(validatorPubkey, {from: trustedNode});
+            await processWithdrawal(withdrawableValidatorPubkey, {from: trustedNode});
 
             // Attempt to process withdrawal again
-            await shouldRevert(processWithdrawal(validatorPubkey, {
+            await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {
                 from: trustedNode,
             }), 'Processed a validator withdrawal which had already been processed');
 
@@ -95,7 +118,7 @@ export default function() {
         it(printTitle('trusted node', 'cannot process a validator withdrawal with an insufficient withdrawal pool balance'), async () => {
 
             // Attempt to process withdrawal
-            await shouldRevert(processWithdrawal(validatorPubkey, {
+            await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {
                 from: trustedNode,
             }), 'Processed a validator withdrawal with an insufficient withdrawal pool balance');
 
@@ -108,7 +131,7 @@ export default function() {
             await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Attempt to process withdrawal
-            await shouldRevert(processWithdrawal(validatorPubkey, {
+            await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {
                 from: node,
             }), 'Regular node processed a validator withdrawal');
 
