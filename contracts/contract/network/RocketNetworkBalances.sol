@@ -38,6 +38,14 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         setUintS("network.balance.staking", _value);
     }
 
+    // The epoch which balances are current for
+    function getETHBalancesEpoch() override public view returns (uint256) {
+        return getUintS("network.balances.updated.epoch");
+    }
+    function setETHBalancesEpoch(uint256 _value) private {
+        setUintS("network.balances.updated.epoch", _value);
+    }
+
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() override public view returns (uint256) {
@@ -64,7 +72,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Only accepts calls from trusted (oracle) nodes
     function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) external onlyTrustedNode(msg.sender) {
         // Check epoch
-        require(_epoch > getUintS("network.balances.updated.epoch"), "Network balances for an equal or higher epoch are set");
+        require(_epoch > getETHBalancesEpoch(), "Network balances for an equal or higher epoch are set");
         // Check balances
         require(_staking <= _total, "Invalid network balances");
         // Get submission keys
@@ -83,9 +91,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Update network ETH balances
     function updateETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) private {
-        // Set balances updated epoch
-        setUintS("network.balances.updated.epoch", _epoch);
         // Update balances
+        setETHBalancesEpoch(_epoch);
         setTotalETHBalance(_total);
         setStakingETHBalance(_staking);
         // Emit balances updated event
