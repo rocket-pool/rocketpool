@@ -2,11 +2,14 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { deposit } from '../_helpers/deposit';
+import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
+import { close } from './scenarios-close';
 import { dissolve } from './scenarios-dissolve';
+import { refund } from './scenarios-refund';
 import { stake } from './scenarios-stake';
 import { withdraw } from './scenarios-withdraw';
 
@@ -38,6 +41,7 @@ export default function() {
         let prelaunchMinipool2;
         let stakingMinipool;
         let withdrawableMinipool;
+        let dissolvedMinipool;
         before(async () => {
 
             // Register node
@@ -54,16 +58,22 @@ export default function() {
             // Get network settings
             withdrawalCredentials = await getWithdrawalCredentials();
 
+            // Make user deposit to refund first prelaunch minipool
+            let refundAmount = web3.utils.toWei('16', 'ether');
+            await deposit({from: random, value: refundAmount});            
+
             // Create minipools
-            initializedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            initializedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
             await submitMinipoolExited(withdrawableMinipool.address, 1, {from: trustedNode});
             await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), 1, {from: trustedNode});
+            await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
             let initializedStatus = await initializedMinipool.getStatus.call();
@@ -71,11 +81,19 @@ export default function() {
             let prelaunch2Status = await prelaunchMinipool2.getStatus.call();
             let stakingStatus = await stakingMinipool.getStatus.call();
             let withdrawableStatus = await withdrawableMinipool.getStatus.call();
+            let dissolvedStatus = await dissolvedMinipool.getStatus.call();
             assert(initializedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialized minipool status');
             assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
             assert(withdrawableStatus.eq(web3.utils.toBN(4)), 'Incorrect withdrawable minipool status');
+            assert(dissolvedStatus.eq(web3.utils.toBN(5)), 'Incorrect dissolved minipool status');
+
+            // Check minipool refund balances
+            let prelaunchRefundBalance = await prelaunchMinipool.getNodeRefundBalance.call();
+            let prelaunch2RefundBalance = await prelaunchMinipool2.getNodeRefundBalance.call();
+            assert(prelaunchRefundBalance.eq(web3.utils.toBN(refundAmount)), 'Incorrect prelaunch minipool refund balance');
+            assert(prelaunch2RefundBalance.eq(web3.utils.toBN(0)), 'Incorrect prelaunch minipool refund balance');
 
         });
 
@@ -83,6 +101,36 @@ export default function() {
         //
         // Refund
         //
+
+
+        it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
+
+            // Refund from minipool with refund balance
+            await refund(prelaunchMinipool, {
+                from: node,
+            });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot refund with no refinanced node deposit balance'), async () => {
+
+            // Attempt refund from minipool with no refund balance
+            await shouldRevert(refund(prelaunchMinipool2, {
+                from: node,
+            }), 'Refunded from a minipool with no refund balance');
+
+        });
+
+
+        it(printTitle('random address', 'cannot refund a refinanced node deposit balance'), async () => {
+
+            // Attempt refund from minipool with refund balance
+            await shouldRevert(refund(prelaunchMinipool, {
+                from: random,
+            }), 'Random address refunded from a minipool');
+
+        });
 
 
         //
@@ -134,7 +182,7 @@ export default function() {
             // Attempt to dissolve initialized minipool
             await shouldRevert(dissolve(initializedMinipool, {
                 from: random,
-            }), 'Random address dissolved a minipool which is not at prelaunch');
+            }), 'Random address dissolved a minipool which was not at prelaunch');
 
         });
 
@@ -169,7 +217,7 @@ export default function() {
             // Attempt to stake initialized minipool
             await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), withdrawalCredentials, {
                 from: node,
-            }), 'Staked a minipool which is not at prelaunch');
+            }), 'Staked a minipool which was not at prelaunch');
 
         });
 
@@ -240,7 +288,7 @@ export default function() {
             // Attempt to withdraw staking minipool
             await shouldRevert(withdraw(stakingMinipool, {
                 from: node,
-            }), 'Withdrew a minipool which is not withdrawable');
+            }), 'Withdrew a minipool which was not withdrawable');
 
         });
 
@@ -271,6 +319,36 @@ export default function() {
         //
         // Close
         //
+
+
+        it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
+
+            // Close dissolved minipool
+            await close(dissolvedMinipool, {
+                from: node,
+            });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot close a minipool which is not dissolved'), async () => {
+
+            // Attempt to close staking minipool
+            await shouldRevert(close(stakingMinipool, {
+                from: node,
+            }), 'Closed a minipool which was not dissolved');
+
+        });
+
+
+        it(printTitle('random address', 'cannot close a dissolved minipool'), async () => {
+
+            // Attempt to close dissolved minipool
+            await shouldRevert(close(dissolvedMinipool, {
+                from: random,
+            }), 'Random address closed a minipool');
+
+        });
 
 
     });
