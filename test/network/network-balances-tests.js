@@ -48,26 +48,26 @@ export default function() {
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Submit identical ETH balances
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Submit different ETH balances
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('8', 'ether'), {
                 from: trustedNode1,
             });
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('7', 'ether'), {
                 from: trustedNode2,
+            });
+            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('6', 'ether'), {
+                from: trustedNode3,
             });
 
             // Set parameters
             epoch = 2;
 
-            // Submit different ETH balances
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('9', 'ether'), {
+            // Submit identical ETH balances to trigger update
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode1,
             });
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('8', 'ether'), {
+            await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode2,
-            });
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('7', 'ether'), {
-                from: trustedNode3,
             });
 
         });
@@ -80,7 +80,7 @@ export default function() {
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
 
-            // Submit ETH balances for epoch
+            // Submit ETH balances for epoch to trigger update
             await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode1,
             });
