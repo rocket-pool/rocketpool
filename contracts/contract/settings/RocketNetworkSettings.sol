@@ -19,7 +19,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
             setMinimumNodeFee(0.05 ether); // 5%
             setTargetNodeFee(0.10 ether); // 10%
             setMaximumNodeFee(0.20 ether); // 20%
-            setNodeFeeDemandScale(1000 ether);
+            setNodeFeeDemandRange(1000 ether);
             setTargetRethCollateralRate(0.1 ether); // 10%
             // Settings initialized
             setBoolS("settings.network.init", true);
@@ -50,12 +50,12 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
         setUintS("settings.network.node.fee.maximum", _value);
     }
 
-    // The scale of node demand values to base fee calculations on (from negative to positive value)
-    function getNodeFeeDemandScale() override public view returns (uint256) {
-        return getUintS("settings.network.node.fee.demand.scale");
+    // The range of node demand values to base fee calculations on (from negative to positive value)
+    function getNodeFeeDemandRange() override public view returns (uint256) {
+        return getUintS("settings.network.node.fee.demand.range");
     }
-    function setNodeFeeDemandScale(uint256 _value) public onlySuperUser {
-        setUintS("settings.network.node.fee.demand.scale", _value);
+    function setNodeFeeDemandRange(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.node.fee.demand.range", _value);
     }
 
     // Target rETH collateralization rate as a fraction of 1 ether
