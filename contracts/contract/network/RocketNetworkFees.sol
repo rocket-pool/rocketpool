@@ -40,22 +40,35 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     function getNodeFee(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
         uint256 calcBase = 1 ether;
-        int256 demandDivisor = 1000000000000;
+        uint256 demandDivisor = 1000000000000;
         // Get settings
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
         uint256 minFee = rocketNetworkSettings.getMinimumNodeFee();
         uint256 targetFee = rocketNetworkSettings.getTargetNodeFee();
         uint256 maxFee = rocketNetworkSettings.getMaximumNodeFee();
         uint256 demandRange = rocketNetworkSettings.getNodeFeeDemandRange();
+        // Normalize node demand
+        uint256 nNodeDemand;
+        bool nNodeDemandSign;
+        if (_nodeDemand < 0) {
+            nNodeDemand = uint256(-_nodeDemand);
+            nNodeDemandSign = false;
+        } else {
+            nNodeDemand = uint256(_nodeDemand);
+            nNodeDemandSign = true;
+        }
+        nNodeDemand = nNodeDemand.mul(calcBase).div(demandRange);
         // Check range bounds
-        if (_nodeDemand == 0) { return targetFee; }
-        if (_nodeDemand <= int256(demandRange) * -1) { return minFee; }
-        if (_nodeDemand >= int256(demandRange)) { return maxFee; }
+        if (nNodeDemand == 0) { return targetFee; }
+        if (nNodeDemand >= calcBase) {
+            if (nNodeDemandSign) { return maxFee; }
+            return minFee;
+        }
         // Get fee interpolation factor
-        uint256 t = uint256(((_nodeDemand / (demandDivisor * int256(demandRange))) ** 3) + int256(calcBase));
+        uint256 t = nNodeDemand.div(demandDivisor) ** 3;
         // Interpolate between min / target / max fee
-        if (t < calcBase) { return minFee.add(targetFee.sub(minFee).mul(t).div(calcBase)); }
-        else { return targetFee.add(maxFee.sub(targetFee).mul(t.sub(calcBase)).div(calcBase)); }
+        if (nNodeDemandSign) { return targetFee.add(maxFee.sub(targetFee).mul(t).div(calcBase)); }
+        return minFee.add(targetFee.sub(minFee).mul(calcBase.sub(t)).div(calcBase));
     }
 
 }
