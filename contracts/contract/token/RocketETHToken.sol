@@ -72,12 +72,11 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         uint256 ethAmount = _amount.mul(getExchangeRate()).div(calcBase);
         // Check ETH balance
         require(address(this).balance >= ethAmount, "Insufficient ETH balance for exchange");
-        // Load contracts
-        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         // Update balance & supply
         balances[msg.sender] = balances[msg.sender].sub(_amount);
         totalSupply = totalSupply.sub(_amount);
         // Update network ETH balance
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         rocketNetworkBalances.decreaseTotalETHBalance(ethAmount);
         // Transfer ETH to sender
         msg.sender.transfer(ethAmount);
