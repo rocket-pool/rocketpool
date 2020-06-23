@@ -3,6 +3,31 @@ import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '.
 import { getTxContractEvents } from '../_utils/contract';
 
 
+// Get a minipool's total balance at withdrawal
+export async function getMinipoolWithdrawalTotalBalance(minipoolAddress) {
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    let balance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
+    return balance;
+}
+
+
+// Get a minipool's node balance at withdrawal
+export async function getMinipoolWithdrawalNodeBalance(minipoolAddress) {
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    let balance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
+    return balance;
+}
+
+
+// Get a minipool's user balance at withdrawal
+export async function getMinipoolWithdrawalUserBalance(minipoolAddress) {
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    let totalBalance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
+    let nodeBalance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
+    return totalBalance.sub(nodeBalance);
+}
+
+
 // Create a minipool
 export async function createMinipool(txOptions) {
 

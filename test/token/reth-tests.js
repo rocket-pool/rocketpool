@@ -3,11 +3,11 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
-import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
-import { depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
+import { getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { submitETHBalances, depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
-import { getRethBalance } from '../_helpers/tokens';
+import { getRethBalance, getRethExchangeRate } from '../_helpers/tokens';
 import { burnReth } from './scenarios-burn';
 
 export default function() {
@@ -35,6 +35,9 @@ export default function() {
         let rethBalance;
         before(async () => {
 
+            // Get current rETH exchange rate
+            let exchangeRate1 = await getRethExchangeRate();
+
             // Make deposit
             await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
 
@@ -54,9 +57,17 @@ export default function() {
             await submitMinipoolExited(minipool.address, 1, {from: trustedNode});
             await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 1, {from: trustedNode});
 
+            // Update network ETH total to alter rETH exchange rate
+            let minipoolUserBalance = await getMinipoolWithdrawalUserBalance(minipool.address);
+            await submitETHBalances(1, minipoolUserBalance, 0, {from: trustedNode});
+
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker);
             assert(rethBalance.gt(web3.utils.toBN(0)), 'Incorrect staker rETH balance');
+
+            // Get & check updated rETH exchange rate
+            let exchangeRate2 = await getRethExchangeRate();
+            assert(!exchangeRate1.eq(exchangeRate2), 'rETH exchange rate has not changed');
 
         });
 
