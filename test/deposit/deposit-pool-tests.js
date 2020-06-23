@@ -1,8 +1,9 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { userDeposit } from '../_helpers/deposit';
 import { getTotalETHBalance, submitETHBalances } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeDeposit } from '../_helpers/node';
 import { getRethExchangeRate } from '../_helpers/tokens';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
 import { assignDeposits } from './scenarios-assign';
@@ -15,6 +16,7 @@ export default function() {
         // Accounts
         const [
             owner,
+            node,
             trustedNode,
             staker,
             random,
@@ -29,6 +31,9 @@ export default function() {
 
         // Setup
         before(async () => {
+
+            // Register node
+            await registerNode({from: node});
 
             // Register trusted node
             await registerNode({from: trustedNode});
@@ -108,7 +113,25 @@ export default function() {
 
         it(printTitle('random address', 'can assign deposits'), async () => {
 
-            // Assign deposits
+            // Assign deposits with no assignable deposits
+            await assignDeposits({
+                from: staker,
+            });
+
+            // Disable deposit assignment
+            await setDepositSetting('AssignDepositsEnabled', false, {from: owner});
+
+            // Make user & node deposits
+            await userDeposit({from: staker, value: web3.utils.toWei('100', 'ether')});
+            await nodeDeposit({from: node, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: node, value: web3.utils.toWei('32', 'ether')});
+            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('0', 'ether')});
+
+            // Re-enable deposit assignment & set limit
+            await setDepositSetting('AssignDepositsEnabled', true, {from: owner});
+            await setDepositSetting('MaximumDepositAssignments', 3, {from: owner});
+
+            // Assign deposits with assignable deposits
             await assignDeposits({
                 from: staker,
             });
@@ -118,7 +141,7 @@ export default function() {
 
         it(printTitle('random address', 'cannot assign deposits while deposit assignment is disabled'), async () => {
 
-            // Disable deposits
+            // Disable deposit assignment
             await setDepositSetting('AssignDepositsEnabled', false, {from: owner});
 
             // Attempt to assign deposits
