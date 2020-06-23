@@ -64,7 +64,7 @@ export default function() {
         it(printTitle('rETH holder', 'can burn rETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await userDepositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Burn rETH
@@ -78,7 +78,7 @@ export default function() {
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await userDepositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Get burn amounts
