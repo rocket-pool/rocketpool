@@ -19,13 +19,13 @@ export async function register(timezoneLocation, txOptions) {
         );
     }
 
-    // Get initial node count
+    // Get initial node index
     let nodeCount1 = await rocketNodeManager.getNodeCount.call();
 
     // Register
     await rocketNodeManager.registerNode(timezoneLocation, txOptions);
 
-    // Get updated node count & node details
+    // Get updated node index & node details
     let nodeCount2 = await rocketNodeManager.getNodeCount.call();
     let lastNodeAddress = await rocketNodeManager.getNodeAt.call(nodeCount2.sub(web3.utils.toBN(1)));
     let details = await getNodeDetails(txOptions.from);
