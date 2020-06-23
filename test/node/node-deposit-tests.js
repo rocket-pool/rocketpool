@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { getNodeFee } from '../_helpers/network';
+import { getCurrentNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getMinipoolSetting, setNodeSetting } from '../_helpers/settings';
 import { deposit } from './scenarios-deposit';
@@ -87,7 +87,7 @@ export default function() {
         it(printTitle('node operator', 'cannot make a deposit with a minimum node fee exceeding the current network node fee'), async () => {
 
             // Settings
-            let nodeFee = await getNodeFee();
+            let nodeFee = await getCurrentNodeFee();
             let minimumNodeFee = nodeFee.add(web3.utils.toBN(web3.utils.toWei('0.01', 'ether')));
 
             // Attempt deposit
