@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { deposit } from '../_helpers/deposit';
+import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
@@ -36,7 +36,7 @@ export default function() {
         before(async () => {
 
             // Make deposit
-            await deposit({from: staker, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
 
             // Register node
             await registerNode({from: node});
@@ -64,7 +64,7 @@ export default function() {
         it(printTitle('rETH holder', 'can burn rETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await userDepositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Burn rETH
@@ -78,7 +78,7 @@ export default function() {
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+            await userDepositValidatorWithdrawal({from: owner, value: withdrawalBalance});
             await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
 
             // Get burn amounts

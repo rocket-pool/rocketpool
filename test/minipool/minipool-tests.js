@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { deposit } from '../_helpers/deposit';
+import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
@@ -60,7 +60,7 @@ export default function() {
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
-            await deposit({from: random, value: refundAmount});            
+            await userDeposit({from: random, value: refundAmount});            
 
             // Create minipools
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
