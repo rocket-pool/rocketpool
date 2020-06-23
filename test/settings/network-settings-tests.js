@@ -16,6 +16,10 @@ export default function() {
 
         // Settings
         const settings = {
+            'MinimumNodeFee': web3.utils.toBN(web3.utils.toWei('0.30', 'ether')),
+            'TargetNodeFee': web3.utils.toBN(web3.utils.toWei('0.40', 'ether')),
+            'MaximumNodeFee': web3.utils.toBN(web3.utils.toWei('0.50', 'ether')),
+            'NodeFeeDemandScale': web3.utils.toBN(web3.utils.toWei('50', 'ether')),
             'TargetRethCollateralRate':  web3.utils.toBN(web3.utils.toWei('0.5', 'ether')),
         };
 

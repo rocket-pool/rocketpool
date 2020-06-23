@@ -16,10 +16,46 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.network.init")) {
             // Apply settings
-            setTargetRethCollateralRate(0.1 ether);
+            setMinimumNodeFee(0.05 ether); // 5%
+            setTargetNodeFee(0.10 ether); // 10%
+            setMaximumNodeFee(0.20 ether); // 20%
+            setNodeFeeDemandScale(1000 ether);
+            setTargetRethCollateralRate(0.1 ether); // 10%
             // Settings initialized
             setBoolS("settings.network.init", true);
         }
+    }
+
+    // The minimum node commission rate as a fraction of 1 ether
+    function getMinimumNodeFee() override public view returns (uint256) {
+        return getUintS("settings.network.node.fee.minimum");
+    }
+    function setMinimumNodeFee(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.node.fee.minimum", _value);
+    }
+
+    // The target node commission rate as a fraction of 1 ether
+    function getTargetNodeFee() override public view returns (uint256) {
+        return getUintS("settings.network.node.fee.target");
+    }
+    function setTargetNodeFee(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.node.fee.target", _value);
+    }
+
+    // The maximum node commission rate as a fraction of 1 ether
+    function getMaximumNodeFee() override public view returns (uint256) {
+        return getUintS("settings.network.node.fee.maximum");
+    }
+    function setMaximumNodeFee(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.node.fee.maximum", _value);
+    }
+
+    // The scale of node demand values to base fee calculations on (from negative to positive value)
+    function getNodeFeeDemandScale() override public view returns (uint256) {
+        return getUintS("settings.network.node.fee.demand.scale");
+    }
+    function setNodeFeeDemandScale(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.node.fee.demand.scale", _value);
     }
 
     // Target rETH collateralization rate as a fraction of 1 ether
