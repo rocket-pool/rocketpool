@@ -115,7 +115,13 @@ export default function() {
 
         it(printTitle('node operator', 'cannot refund with no refinanced node deposit balance'), async () => {
 
-            // Attempt refund from minipool with no refund balance
+            // Refund
+            await refund(prelaunchMinipool, {from: node});
+
+            // Attempt refund from minipools with no refund balance
+            await shouldRevert(refund(prelaunchMinipool, {
+                from: node,
+            }), 'Refunded from a minipool which was already refunded from');
             await shouldRevert(refund(prelaunchMinipool2, {
                 from: node,
             }), 'Refunded from a minipool with no refund balance');
