@@ -55,10 +55,10 @@ export async function assignDeposits(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
-            web3.eth.getBalance(rocketVault.address),
+            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
         ]).then(
             ([depositPoolEth, vaultEth]) =>
-            ({depositPoolEth, vaultEth: web3.utils.toBN(vaultEth)})
+            ({depositPoolEth, vaultEth})
         );
     }
 

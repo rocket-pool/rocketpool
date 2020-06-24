@@ -20,13 +20,13 @@ export async function burnReth(amount, txOptions) {
     function getBalances() {
         return Promise.all([
             rocketETHToken.totalSupply.call(),
-            web3.eth.getBalance(rocketETHToken.address),
+            web3.eth.getBalance(rocketETHToken.address).then(value => web3.utils.toBN(value)),
             rocketNetworkBalances.getTotalETHBalance.call(),
             rocketETHToken.balanceOf.call(txOptions.from),
-            web3.eth.getBalance(txOptions.from),
+            web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
             ([tokenSupply, tokenEthBalance, networkEthBalance, userTokenBalance, userEthBalance]) =>
-            ({tokenSupply, tokenEthBalance: web3.utils.toBN(tokenEthBalance), networkEthBalance, userTokenBalance, userEthBalance: web3.utils.toBN(userEthBalance)})
+            ({tokenSupply, tokenEthBalance, networkEthBalance, userTokenBalance, userEthBalance})
         );
     }
 

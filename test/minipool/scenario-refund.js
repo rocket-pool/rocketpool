@@ -5,11 +5,11 @@ export async function refund(minipool, txOptions) {
     function getBalances() {
         return Promise.all([
             minipool.getNodeRefundBalance.call(),
-            web3.eth.getBalance(minipool.address),
-            web3.eth.getBalance(txOptions.from),
+            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
             ([nodeRefund, minipoolEth, nodeEth]) =>
-            ({nodeRefund, minipoolEth: web3.utils.toBN(minipoolEth), nodeEth: web3.utils.toBN(nodeEth)})
+            ({nodeRefund, minipoolEth, nodeEth})
         );
     }
 

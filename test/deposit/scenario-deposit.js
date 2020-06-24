@@ -25,11 +25,11 @@ export async function deposit(txOptions) {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
             rocketNetworkBalances.getTotalETHBalance.call(),
-            web3.eth.getBalance(rocketVault.address),
+            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
             rocketETHToken.balanceOf.call(txOptions.from),
         ]).then(
             ([depositPoolEth, networkEth, vaultEth, userReth]) =>
-            ({depositPoolEth, networkEth, vaultEth: web3.utils.toBN(vaultEth), userReth})
+            ({depositPoolEth, networkEth, vaultEth, userReth})
         );
     }
 

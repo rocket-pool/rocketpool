@@ -11,12 +11,12 @@ export async function burnNeth(amount, txOptions) {
     function getBalances() {
         return Promise.all([
             rocketNodeETHToken.totalSupply.call(),
-            web3.eth.getBalance(rocketNodeETHToken.address),
+            web3.eth.getBalance(rocketNodeETHToken.address).then(value => web3.utils.toBN(value)),
             rocketNodeETHToken.balanceOf.call(txOptions.from),
-            web3.eth.getBalance(txOptions.from),
+            web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
             ([tokenSupply, tokenEthBalance, userTokenBalance, userEthBalance]) =>
-            ({tokenSupply, tokenEthBalance: web3.utils.toBN(tokenEthBalance), userTokenBalance, userEthBalance: web3.utils.toBN(userEthBalance)})
+            ({tokenSupply, tokenEthBalance, userTokenBalance, userEthBalance})
         );
     }
 

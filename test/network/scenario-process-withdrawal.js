@@ -48,13 +48,13 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
     function getBalances() {
         return Promise.all([
             rocketNetworkWithdrawal.getBalance.call(),
-            web3.eth.getBalance(rocketVault.address),
-            web3.eth.getBalance(rocketNodeETHToken.address),
-            web3.eth.getBalance(rocketETHToken.address),
+            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketNodeETHToken.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketETHToken.address).then(value => web3.utils.toBN(value)),
             rocketDepositPool.getBalance.call(),
         ]).then(
             ([withdrawalPoolEth, vaultEth, nethContractEth, rethContractEth, depositPoolEth]) =>
-            ({withdrawalPoolEth, vaultEth: web3.utils.toBN(vaultEth), nethContractEth: web3.utils.toBN(nethContractEth), rethContractEth: web3.utils.toBN(rethContractEth), depositPoolEth})
+            ({withdrawalPoolEth, vaultEth, nethContractEth, rethContractEth, depositPoolEth})
         );
     }
 

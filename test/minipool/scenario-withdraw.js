@@ -25,10 +25,10 @@ export async function withdraw(minipool, txOptions) {
     function getNodeBalances() {
         return Promise.all([
             rocketNodeETHToken.balanceOf.call(nodeAddress),
-            web3.eth.getBalance(nodeAddress)
+            web3.eth.getBalance(nodeAddress).then(value => web3.utils.toBN(value)),
         ]).then(
             ([neth, eth]) =>
-            ({neth, eth: web3.utils.toBN(eth)})
+            ({neth, eth})
         );
     }
 

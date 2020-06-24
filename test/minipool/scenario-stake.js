@@ -30,11 +30,11 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
     function getMinipoolDetails() {
         return Promise.all([
             minipool.getStatus.call(),
-            web3.eth.getBalance(minipool.address),
+            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
             minipool.getStakingStartBalance.call(),
         ]).then(
             ([status, balance, stakingStartBalance]) =>
-            ({status, balance: web3.utils.toBN(balance), stakingStartBalance})
+            ({status, balance, stakingStartBalance})
         );
     }
 

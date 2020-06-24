@@ -17,10 +17,10 @@ export async function depositWithdrawal(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketNetworkWithdrawal.getBalance.call(),
-            web3.eth.getBalance(rocketVault.address),
+            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
         ]).then(
             ([withdrawalPoolEth, vaultEth]) =>
-            ({withdrawalPoolEth, vaultEth: web3.utils.toBN(vaultEth)})
+            ({withdrawalPoolEth, vaultEth})
         );
     }
 
