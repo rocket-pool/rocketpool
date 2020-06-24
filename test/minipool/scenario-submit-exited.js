@@ -39,13 +39,10 @@ export async function submitExited(minipoolAddress, epoch, txOptions) {
     // Submit
     await rocketMinipoolStatus.submitMinipoolExited(minipoolAddress, epoch, txOptions);
 
-    // Initialise minipool contract
-    let minipool = await RocketMinipool.at(minipoolAddress);
-
     // Get updated submission details & minipool status
     let [submission2, minipoolStatus] = await Promise.all([
         getSubmissionDetails(),
-        minipool.getStatus.call(),
+        RocketMinipool.at(minipoolAddress).then(minipool => minipool.getStatus.call()),
     ]);
 
     // Check if minipool should be exited

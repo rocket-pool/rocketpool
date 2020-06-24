@@ -55,13 +55,17 @@ export async function deposit(minimumNodeFee, txOptions) {
     assert(minipoolCreatedEvents.length == 1, 'Minipool created event not logged');
     let minipoolAddress = minipoolCreatedEvents[0].minipool;
 
-    // Get updated minipool indexes
+    // Get updated minipool indexes & created minipool details
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
-    let lastMinipoolAddress = await rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub(web3.utils.toBN(1)));
-    let lastNodeMinipoolAddress = await rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.network.sub(web3.utils.toBN(1)));
-
-    // Get created minipool details
-    let minipoolDetails = await getMinipoolDetails(minipoolAddress);
+    let [
+        lastMinipoolAddress,
+        lastNodeMinipoolAddress,
+        minipoolDetails,
+    ] = await Promise.all([
+        rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub(web3.utils.toBN(1))),
+        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.network.sub(web3.utils.toBN(1))),
+        getMinipoolDetails(minipoolAddress),
+    ]);
 
     // Check minipool indexes
     assert(minipoolCounts2.network.eq(minipoolCounts1.network.add(web3.utils.toBN(1))), 'Incorrect updated network minipool count');

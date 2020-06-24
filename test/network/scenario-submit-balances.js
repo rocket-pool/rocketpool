@@ -52,8 +52,10 @@ export async function submitETHBalances(epoch, total, staking, txOptions) {
     await rocketNetworkBalances.submitETHBalances(epoch, total, staking, txOptions);
 
     // Get updated submission details & balances
-    let submission2 = await getSubmissionDetails();
-    let balances = await getBalances();
+    let [submission2, balances] = await Promise.all([
+        getSubmissionDetails(),
+        getBalances(),
+    ]);
 
     // Check if balances should be updated
     let expectUpdatedBalances = submission2.count.mul(web3.utils.toBN(2)).gte(trustedNodeCount);
