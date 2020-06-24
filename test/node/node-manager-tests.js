@@ -3,9 +3,9 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { setNodeSetting } from '../_helpers/settings';
-import { register } from './scenarios-register';
-import { setTimezoneLocation } from './scenarios-timezone';
-import { setNodeTrusted } from './scenarios-trusted';
+import { register } from './scenario-register';
+import { setTimezoneLocation } from './scenario-set-timezone';
+import { setNodeTrusted } from './scenario-set-trusted';
 
 export default function() {
     contract('RocketNodeManager', async (accounts) => {

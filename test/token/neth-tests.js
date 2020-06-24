@@ -7,7 +7,7 @@ import { depositValidatorWithdrawal, processValidatorWithdrawal } from '../_help
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
 import { getNethBalance } from '../_helpers/tokens';
-import { burnNeth } from './scenarios-burn';
+import { burnNeth } from './scenario-burn-neth';
 
 export default function() {
     contract('RocketNodeETHToken', async (accounts) => {

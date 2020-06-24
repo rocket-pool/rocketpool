@@ -3,8 +3,8 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { createMinipool, stakeMinipool, submitMinipoolExited } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { submitExited } from './scenarios-exited';
-import { submitWithdrawable } from './scenarios-withdrawable';
+import { submitExited } from './scenario-submit-exited';
+import { submitWithdrawable } from './scenario-submit-withdrawable';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {

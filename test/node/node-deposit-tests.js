@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { getCurrentNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { getMinipoolSetting, setNodeSetting } from '../_helpers/settings';
-import { deposit } from './scenarios-deposit';
+import { deposit } from './scenario-deposit';
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {

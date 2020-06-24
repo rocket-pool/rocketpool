@@ -7,11 +7,11 @@ import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWith
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
-import { close } from './scenarios-close';
-import { dissolve } from './scenarios-dissolve';
-import { refund } from './scenarios-refund';
-import { stake } from './scenarios-stake';
-import { withdraw } from './scenarios-withdraw';
+import { close } from './scenario-close';
+import { dissolve } from './scenario-dissolve';
+import { refund } from './scenario-refund';
+import { stake } from './scenario-stake';
+import { withdraw } from './scenario-withdraw';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {

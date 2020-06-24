@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { submitETHBalances } from './scenarios-balances';
+import { submitETHBalances } from './scenario-submit-balances';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {

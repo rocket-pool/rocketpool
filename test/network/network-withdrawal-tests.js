@@ -5,7 +5,8 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { depositWithdrawal, processWithdrawal } from './scenarios-withdrawal';
+import { depositWithdrawal } from './scenario-deposit-withdrawal';
+import { processWithdrawal } from './scenario-process-withdrawal';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {

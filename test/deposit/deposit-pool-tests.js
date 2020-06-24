@@ -6,8 +6,8 @@ import { getTotalETHBalance, submitETHBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeDeposit } from '../_helpers/node';
 import { getRethExchangeRate } from '../_helpers/tokens';
 import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
-import { assignDeposits } from './scenarios-assign';
-import { deposit } from './scenarios-deposit';
+import { assignDeposits } from './scenario-assign-deposits';
+import { deposit } from './scenario-deposit';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
