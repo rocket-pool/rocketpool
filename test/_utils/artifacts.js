@@ -14,4 +14,5 @@ export const RocketNodeDeposit = artifacts.require('RocketNodeDeposit.sol');
 export const RocketNodeETHToken = artifacts.require('RocketNodeETHToken.sol');
 export const RocketNodeManager = artifacts.require('RocketNodeManager.sol');
 export const RocketNodeSettings = artifacts.require('RocketNodeSettings.sol');
+export const RocketStorage = artifacts.require('RocketStorage.sol');
 export const RocketVault = artifacts.require('RocketVault.sol');
