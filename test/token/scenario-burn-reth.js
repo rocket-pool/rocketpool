@@ -33,8 +33,13 @@ export async function burnReth(amount, txOptions) {
     // Get initial balances
     let balances1 = await getBalances();
 
-    // Burn tokens
-    await rocketETHToken.burn(amount, txOptions);
+    // Set gas price
+    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    txOptions.gasPrice = gasPrice;
+
+    // Burn tokens & get tx fee
+    let txReceipt = await rocketETHToken.burn(amount, txOptions);
+    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
     // Get updated balances
     let balances2 = await getBalances();
@@ -49,7 +54,7 @@ export async function burnReth(amount, txOptions) {
     assert(balances2.tokenEthBalance.eq(balances1.tokenEthBalance.sub(expectedEthTransferred)), 'Incorrect updated token ETH balance');
     assert(balances2.networkEthBalance.eq(balances1.networkEthBalance.sub(expectedEthTransferred)), 'Incorrect updated token ETH balance');
     assert(balances2.userTokenBalance.eq(balances1.userTokenBalance.sub(burnAmount)), 'Incorrect updated user token balance');
-    assert(balances2.userEthBalance.gt(balances1.userEthBalance), 'Incorrect updated user ETH balance');
+    assert(balances2.userEthBalance.eq(balances1.userEthBalance.add(expectedEthTransferred).sub(txFee)), 'Incorrect updated user ETH balance');
 
 }
 
