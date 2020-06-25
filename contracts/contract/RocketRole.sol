@@ -41,25 +41,9 @@ contract RocketRole is RocketBase, RocketRoleInterface {
 
 
     /**
-     * @dev Add the admin role to an address
-     */
-    function adminRoleAdd(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
-        roleAdd(_role, _address);
-    }
-
-
-    /**
-     * @dev Remove the admin role from an address
-     */
-    function adminRoleRemove(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
-        roleRemove(_role, _address);
-    }
-
-
-    /**
      * @dev Add a role to an address
      */
-    function roleAdd(string memory _role, address _address) internal {
+    function addRole(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
         // Check role
         require(keccak256(abi.encodePacked(_role)) != keccak256(abi.encodePacked("owner")), "The owner role cannot be added to an address");
         // Check address
@@ -76,7 +60,7 @@ contract RocketRole is RocketBase, RocketRoleInterface {
     /**
      * @dev Remove a role from an address
      */
-    function roleRemove(string memory _role, address _address) internal {
+    function removeRole(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
         // Check role is not being removed from owner address
         require(!roleHas("owner", _address), "Roles cannot be removed from the owner address");
         // Check address has role
