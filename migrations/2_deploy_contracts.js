@@ -36,6 +36,7 @@ const rocketStorage = artifacts.require('RocketStorage.sol');
 // Network contracts
 const contracts = {
   // Core
+  rocketRole:               artifacts.require('RocketRole.sol'),
   rocketVault:              artifacts.require('RocketVault.sol'),
   // Deposit
   rocketDepositPool:        artifacts.require('RocketDepositPool.sol'),
