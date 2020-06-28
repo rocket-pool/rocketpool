@@ -62,7 +62,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (oracle) nodes
-    function processWithdrawal(bytes calldata _validatorPubkey) external onlyTrustedNode(msg.sender) {
+    function processWithdrawal(bytes calldata _validatorPubkey) override external onlyTrustedNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));

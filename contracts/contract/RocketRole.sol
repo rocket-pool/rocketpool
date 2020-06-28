@@ -27,7 +27,7 @@ contract RocketRole is RocketBase, RocketRoleInterface {
      * @dev Allows the current owner to transfer control of the network to a new owner
      * @param _newOwner The address to transfer ownership to
      */
-    function transferOwnership(address _newOwner) public onlyLatestContract("rocketRole", address(this)) onlyOwner {
+    function transferOwnership(address _newOwner) override external onlyLatestContract("rocketRole", address(this)) onlyOwner {
         // Check new owner address
         require(_newOwner != address(0x0), "The new owner address is invalid");
         require(_newOwner != msg.sender, "The new owner address must not be the existing owner address");
@@ -43,7 +43,7 @@ contract RocketRole is RocketBase, RocketRoleInterface {
     /**
      * @dev Add a role to an address
      */
-    function addRole(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
+    function addRole(string memory _role, address _address) override external onlyLatestContract("rocketRole", address(this)) onlySuperUser {
         // Check role
         require(keccak256(abi.encodePacked(_role)) != keccak256(abi.encodePacked("owner")), "The owner role cannot be added to an address");
         // Check address
@@ -60,7 +60,7 @@ contract RocketRole is RocketBase, RocketRoleInterface {
     /**
      * @dev Remove a role from an address
      */
-    function removeRole(string memory _role, address _address) public onlyLatestContract("rocketRole", address(this)) onlySuperUser {
+    function removeRole(string memory _role, address _address) override external onlyLatestContract("rocketRole", address(this)) onlySuperUser {
         // Check role is not being removed from owner address
         require(!roleHas("owner", _address), "Roles cannot be removed from the owner address");
         // Check address has role

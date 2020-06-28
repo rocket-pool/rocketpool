@@ -166,7 +166,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     }
 
     // Refund node ETH refinanced from user deposited ETH
-    function refund() external onlyMinipoolOwner(msg.sender) {
+    function refund() override external onlyMinipoolOwner(msg.sender) {
         // Check refund balance
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
         // Refund node
@@ -175,7 +175,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the minipool owner (node)
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external onlyMinipoolOwner(msg.sender) {
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
         // Load contracts
@@ -228,7 +228,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Withdraw node balances & rewards from the minipool and close it
     // Only accepts calls from the minipool owner (node)
-    function withdraw() external onlyMinipoolOwner(msg.sender) {
+    function withdraw() override external onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be withdrawn from while withdrawable");
         // Load contracts
@@ -252,7 +252,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
     // Only accepts calls from the minipool owner (node), or from any address if timed out
-    function dissolve() external {
+    function dissolve() override external {
         // Check current status
         require(status == MinipoolStatus.Initialized || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialized or in prelaunch");
         // Load contracts
@@ -281,7 +281,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Withdraw node balances from the minipool and close it
     // Only accepts calls from the minipool owner (node)
-    function close() external onlyMinipoolOwner(msg.sender) {
+    function close() override external onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Dissolved, "The minipool can only be closed while dissolved");
         // Transfer node balance to node operator

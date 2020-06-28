@@ -30,7 +30,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Submit a minipool exited event
     // Only accepts calls from trusted (oracle) nodes
-    function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) override external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as exited while staking");
@@ -59,7 +59,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
-    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) override external onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Exited, "Minipool can only be set as withdrawable while exited");

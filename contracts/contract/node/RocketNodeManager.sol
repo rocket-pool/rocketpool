@@ -61,7 +61,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Register a new node with Rocket Pool
-    function registerNode(string calldata _timezoneLocation) external {
+    function registerNode(string calldata _timezoneLocation) override external {
         // Load contracts
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -83,7 +83,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Set a node's trusted status
     // Only accepts calls from super users
-    function setNodeTrusted(address _nodeAddress, bool _trusted) external onlySuperUser {
+    function setNodeTrusted(address _nodeAddress, bool _trusted) override external onlySuperUser {
         // Check node exists
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
         // Check current node status
@@ -101,7 +101,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Set a node's timezone location
     // Only accepts calls from registered nodes
-    function setTimezoneLocation(string calldata _timezoneLocation) external onlyRegisteredNode(msg.sender) {
+    function setTimezoneLocation(string calldata _timezoneLocation) override external onlyRegisteredNode(msg.sender) {
         // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Set timezone location

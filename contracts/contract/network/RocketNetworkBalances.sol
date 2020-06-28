@@ -70,7 +70,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Submit network ETH balances for an epoch
     // Only accepts calls from trusted (oracle) nodes
-    function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) external onlyTrustedNode(msg.sender) {
+    function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) override external onlyTrustedNode(msg.sender) {
         // Check epoch
         require(_epoch > getETHBalancesEpoch(), "Network balances for an equal or higher epoch are set");
         // Check balances
