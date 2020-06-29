@@ -84,7 +84,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
         // Load contracts
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
@@ -106,7 +106,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Destroy a minipool
     // Only accepts calls from registered minipools
-    function destroyMinipool() override external onlyRegisteredMinipool(msg.sender) {
+    function destroyMinipool() override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Initialize minipool & get properties
@@ -123,14 +123,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Set a minipool's validator pubkey
     // Only accepts calls from registered minipools
-    function setMinipoolPubkey(bytes calldata _pubkey) override external onlyRegisteredMinipool(msg.sender) {
+    function setMinipoolPubkey(bytes calldata _pubkey) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         setBytes(keccak256(abi.encodePacked("minipool.pubkey", msg.sender)), _pubkey);
         setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), msg.sender);
     }
 
     // Set a minipool's withdrawal balances and withdrawable status
     // Only accepts calls from the RocketMinipoolStatus contract
-    function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.total", _minipoolAddress)), _total);
         setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)), _node);
         setBool(keccak256(abi.encodePacked("minipool.withdrawable", _minipoolAddress)), true);
@@ -138,7 +138,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Set a minipool's withdrawal processed status
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function setMinipoolWithdrawalProcessed(address _minipoolAddress, bool _processed) override external onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    function setMinipoolWithdrawalProcessed(address _minipoolAddress, bool _processed) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         setBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)), _processed);
     }
 

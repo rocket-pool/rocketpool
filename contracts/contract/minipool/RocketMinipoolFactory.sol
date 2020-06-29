@@ -17,7 +17,7 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
     }
 
     // Create a new RocketMinipool contract
-    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
         // Create RocketMinipool contract
         address contractAddress = address(new RocketMinipool(address(rocketStorage), _nodeAddress, _depositType));
         // Return

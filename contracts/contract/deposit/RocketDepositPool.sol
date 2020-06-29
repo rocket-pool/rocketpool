@@ -43,7 +43,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     }
 
     // Accept a deposit from a user
-    function deposit() override external payable {
+    function deposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
@@ -70,7 +70,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
-    function recycleDissolvedDeposit() override external payable onlyRegisteredMinipool(msg.sender) {
+    function recycleDissolvedDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
         // Process deposit
@@ -79,7 +79,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
         // Process deposit
@@ -100,7 +100,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     }
 
     // Assign deposits to available minipools
-    function assignDeposits() override public {
+    function assignDeposits() override public onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));

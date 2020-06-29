@@ -50,7 +50,7 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
     // Add an item to the end of a queue
     // Requires that the queue is not at capacity
     // Requires that the item does not exist in the queue
-    function enqueueItem(bytes32 _key, address _value) override external onlyLatestNetworkContract {
+    function enqueueItem(bytes32 _key, address _value) override external onlyLatestContract("addressQueueStorage", address(this)) onlyLatestNetworkContract {
         require(getLength(_key) < capacity - 1, "Queue is at capacity");
         require(getUint(keccak256(abi.encodePacked(_key, ".index", _value))) == 0, "Item already exists in queue");
         uint index = getUint(keccak256(abi.encodePacked(_key, ".end")));
@@ -63,7 +63,7 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
 
     // Remove an item from the start of a queue and return it
     // Requires that the queue is not empty
-    function dequeueItem(bytes32 _key) override external onlyLatestNetworkContract returns (address) {
+    function dequeueItem(bytes32 _key) override external onlyLatestContract("addressQueueStorage", address(this)) onlyLatestNetworkContract returns (address) {
         require(getLength(_key) > 0, "Queue is empty");
         uint start = getUint(keccak256(abi.encodePacked(_key, ".start")));
         address item = getAddress(keccak256(abi.encodePacked(_key, ".item", start)));
@@ -77,7 +77,7 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
     // Remove an item from a queue
     // Swaps the item with the last item in the queue and truncates it; computationally cheap
     // Requires that the item exists in the queue
-    function removeItem(bytes32 _key, address _value) override external onlyLatestNetworkContract {
+    function removeItem(bytes32 _key, address _value) override external onlyLatestContract("addressQueueStorage", address(this)) onlyLatestNetworkContract {
         uint index = getUint(keccak256(abi.encodePacked(_key, ".index", _value)));
         require(index-- > 0, "Item does not exist in queue");
         uint lastIndex = getUint(keccak256(abi.encodePacked(_key, ".end")));

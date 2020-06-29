@@ -47,7 +47,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     }
 
     // Deposit a validator withdrawal from the beacon chain
-    function depositWithdrawal() override external payable {
+    function depositWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) {
         // Check deposit amount
         require(msg.value > 0, "Invalid deposit amount");
         // Load contracts
@@ -62,7 +62,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from trusted (oracle) nodes
-    function processWithdrawal(bytes calldata _validatorPubkey) override external onlyTrustedNode(msg.sender) {
+    function processWithdrawal(bytes calldata _validatorPubkey) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyTrustedNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));

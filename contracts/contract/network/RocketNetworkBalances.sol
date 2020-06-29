@@ -58,19 +58,19 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Increase total ETH balance
     // Only accepts calls from the RocketDepositPool contract
-    function increaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", msg.sender) {
+    function increaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().add(_amount));
     }
 
     // Decrease total ETH balance
     // Only accepts calls from the RocketETHToken contract
-    function decreaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketETHToken", msg.sender) {
+    function decreaseTotalETHBalance(uint256 _amount) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyLatestContract("rocketETHToken", msg.sender) {
         setTotalETHBalance(getTotalETHBalance().sub(_amount));
     }
 
     // Submit network ETH balances for an epoch
     // Only accepts calls from trusted (oracle) nodes
-    function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) override external onlyTrustedNode(msg.sender) {
+    function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check epoch
         require(_epoch > getETHBalancesEpoch(), "Network balances for an equal or higher epoch are set");
         // Check balances

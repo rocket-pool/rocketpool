@@ -32,7 +32,7 @@ contract AddressSetStorage is RocketBase, AddressSetStorageInterface {
 
     // Add an item to a set
     // Requires that the item does not exist in the set
-    function addItem(bytes32 _key, address _value) override external onlyLatestNetworkContract {
+    function addItem(bytes32 _key, address _value) override external onlyLatestContract("addressSetStorage", address(this)) onlyLatestNetworkContract {
         require(getUint(keccak256(abi.encodePacked(_key, ".index", _value))) == 0, "Item already exists in set");
         uint count = getUint(keccak256(abi.encodePacked(_key, ".count")));
         setAddress(keccak256(abi.encodePacked(_key, ".item", count)), _value);
@@ -43,7 +43,7 @@ contract AddressSetStorage is RocketBase, AddressSetStorageInterface {
     // Remove an item from a set
     // Swaps the item with the last item in the set and truncates it; computationally cheap
     // Requires that the item exists in the set
-    function removeItem(bytes32 _key, address _value) override external onlyLatestNetworkContract {
+    function removeItem(bytes32 _key, address _value) override external onlyLatestContract("addressSetStorage", address(this)) onlyLatestNetworkContract {
         uint256 index = getUint(keccak256(abi.encodePacked(_key, ".index", _value)));
         require(index-- > 0, "Item does not exist in set");
         uint count = getUint(keccak256(abi.encodePacked(_key, ".count")));

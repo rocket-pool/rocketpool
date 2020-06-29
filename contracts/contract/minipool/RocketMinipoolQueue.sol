@@ -85,7 +85,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Add a minipool to the end of the appropriate queue
     // Only accepts calls from the RocketMinipoolManager contract
-    function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolManager", msg.sender) {
+    function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
         if (_depositType == MinipoolDeposit.Full) { return enqueueMinipool("minipools.available.full", _minipool); }
         if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool("minipools.available.half", _minipool); }
         if (_depositType == MinipoolDeposit.Empty) { return enqueueMinipool("minipools.available.empty", _minipool); }
@@ -101,7 +101,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove the first available minipool from the highest priority queue and return its address
     // Only accepts calls from the RocketDepositPool contract
-    function dequeueMinipool() override external onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
+    function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
         if (getLength(MinipoolDeposit.Half) > 0) { return dequeueMinipool("minipools.available.half"); }
         if (getLength(MinipoolDeposit.Full) > 0) { return dequeueMinipool("minipools.available.full"); }
         if (getLength(MinipoolDeposit.Empty) > 0) { return dequeueMinipool("minipools.available.empty"); }
@@ -119,7 +119,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove a minipool from a queue
     // Only accepts calls from registered minipools
-    function removeMinipool() override external onlyRegisteredMinipool(msg.sender) {
+    function removeMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         MinipoolDeposit depositType = minipool.getDepositType();
