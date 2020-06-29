@@ -9,7 +9,7 @@ contract Migrations {
   uint public last_completed_migration;
 
   modifier restricted() {
-    assert(msg.sender == owner);
+    require(msg.sender == owner);
     _;
   }
 
