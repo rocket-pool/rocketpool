@@ -4,6 +4,7 @@ pragma solidity 0.6.10;
 
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
+import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
@@ -15,7 +16,7 @@ import "../../lib/SafeMath.sol";
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 
-contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
+contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
 
     // Libs
     using SafeMath for uint;
@@ -30,10 +31,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
         version = 1;
     }
 
-    // Default payable function - for vault withdrawals
-    // Only accepts calls from the RocketVault contract
-    receive() external payable onlyLatestContract("rocketVault", msg.sender) {}
-
     // Current deposit pool balance
     function getBalance() override public view returns (uint256) {
         return getUintS("deposit.pool.balance");
@@ -41,6 +38,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface {
     function setBalance(uint256 _value) private {
         setUintS("deposit.pool.balance", _value);
     }
+
+    // Receive a vault withdrawal
+    // Only accepts calls from the RocketVault contract
+    function receiveVaultWithdrawal() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     // Accept a deposit from a user
     function deposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) {

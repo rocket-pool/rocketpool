@@ -4,6 +4,7 @@ pragma solidity 0.6.10;
 
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
+import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
@@ -14,7 +15,7 @@ import "../../lib/SafeMath.sol";
 
 // Handles network validator withdrawals
 
-contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface {
+contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface, RocketVaultWithdrawerInterface {
 
     // Libs
     using SafeMath for uint;
@@ -28,10 +29,6 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
-    // Default payable function - for vault withdrawals
-    // Only accepts calls from the RocketVault contract
-    receive() external payable onlyLatestContract("rocketVault", msg.sender) {}
-
     // Current withdrawal pool balance
     function getBalance() override public view returns (uint256) {
         return getUintS("withdrawal.pool.balance");
@@ -40,14 +37,18 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         setUintS("withdrawal.pool.balance", _value);
     }
 
+    // Receive a vault withdrawal
+    // Only accepts calls from the RocketVault contract
+    function receiveVaultWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
+
     // Get the validator withdrawal credentials
     function getWithdrawalCredentials() override public view returns (bytes memory) {
         // TODO: implement
         return hex"0000000000000000000000000000000000000000000000000000000000000000";
     }
 
-    // Deposit a validator withdrawal from the beacon chain
-    function depositWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) {
+    // Accept a validator withdrawal from the beacon chain
+    receive() external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) {
         // Check deposit amount
         require(msg.value > 0, "Invalid deposit amount");
         // Load contracts

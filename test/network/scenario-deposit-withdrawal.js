@@ -28,7 +28,8 @@ export async function depositWithdrawal(txOptions) {
     let balances1 = await getBalances();
 
     // Deposit withdrawal
-    await rocketNetworkWithdrawal.depositWithdrawal(txOptions);
+    txOptions.to = rocketNetworkWithdrawal.address;
+    await web3.eth.sendTransaction(txOptions);
 
     // Get updated balances
     let balances2 = await getBalances();

@@ -4,6 +4,7 @@ pragma solidity 0.6.10;
 
 import "./RocketBase.sol";
 import "../interface/RocketVaultInterface.sol";
+import "../interface/RocketVaultWithdrawerInterface.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 
@@ -29,8 +30,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     // Only accepts calls from Rocket Pool network contracts
     function withdrawEther(address _withdrawalAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Withdraw
-        (bool success,) = _withdrawalAddress.call{value: _amount}("");
-        require(success, "ETH amount could not be transferred to the withdrawal address");
+        RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(_withdrawalAddress);
+        withdrawer.receiveVaultWithdrawal{value: _amount}();
         // Emit ether withdrawn event
         emit EtherWithdrawn(msg.sender, _withdrawalAddress, _amount, now);
     }

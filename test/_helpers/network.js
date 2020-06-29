@@ -67,7 +67,8 @@ export async function getWithdrawalCredentials() {
 // Accept a validator withdrawal
 export async function depositValidatorWithdrawal(txOptions) {
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.depositWithdrawal(txOptions);
+    txOptions.to = rocketNetworkWithdrawal.address;
+    await web3.eth.sendTransaction(txOptions);
 }
 
 
