@@ -8,8 +8,8 @@ contract Migrations {
   address public owner;
   uint public last_completed_migration;
 
-  modifier isOwner(address _address) {
-    require(_address == owner);
+  modifier restricted() {
+    require(msg.sender == owner);
     _;
   }
 
@@ -17,11 +17,11 @@ contract Migrations {
     owner = msg.sender;
   }
 
-  function setCompleted(uint completed) public isOwner(msg.sender) {
+  function setCompleted(uint completed) public restricted {
     last_completed_migration = completed;
   }
 
-  function upgrade(address newAddress) public isOwner(msg.sender) {
+  function upgrade(address newAddress) public restricted {
     Migrations upgraded = Migrations(newAddress);
     upgraded.setCompleted(last_completed_migration);
   }
