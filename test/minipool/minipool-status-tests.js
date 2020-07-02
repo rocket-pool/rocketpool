@@ -3,6 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { createMinipool, stakeMinipool, submitMinipoolExited } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { setMinipoolSetting } from '../_helpers/settings';
 import { submitExited } from './scenario-submit-exited';
 import { submitWithdrawable } from './scenario-submit-withdrawable';
 
@@ -88,6 +89,22 @@ export default function() {
             await submitExited(stakingMinipool.address, epoch, {
                 from: trustedNode2,
             });
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit an exited event for a minipool while exited submissions are disabled'), async () => {
+
+            // Set parameters
+            let epoch = 1;
+
+            // Disable submissions
+            await setMinipoolSetting('SubmitExitedEnabled', false, {from: owner});
+
+            // Attempt to submit exited event for staking minipool
+            await shouldRevert(submitExited(stakingMinipool.address, epoch, {
+                from: trustedNode1,
+            }), 'Submitted an exited event while exited submissions were disabled');
 
         });
 
@@ -186,6 +203,23 @@ export default function() {
             await submitWithdrawable(exitedMinipool.address, withdrawalBalance, epoch, {
                 from: trustedNode2,
             });
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool while withdrawable submissions are disabled'), async () => {
+
+            // Set parameters
+            let epoch = 1;
+            let withdrawalBalance = web3.utils.toWei('36', 'ether');
+
+            // Disable submissions
+            await setMinipoolSetting('SubmitWithdrawableEnabled', false, {from: owner});
+
+            // Attempt to submit withdrawable event for exited minipool
+            await shouldRevert(submitWithdrawable(exitedMinipool.address, withdrawalBalance, epoch, {
+                from: trustedNode1,
+            }), 'Submitted a withdrawable event while withdrawable submissions were disabled');
 
         });
 

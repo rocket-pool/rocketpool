@@ -2,6 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { setNetworkSetting } from '../_helpers/settings';
 import { submitETHBalances } from './scenario-submit-balances';
 
 export default function() {
@@ -69,6 +70,24 @@ export default function() {
             await submitETHBalances(epoch, totalBalance, stakingBalance, {
                 from: trustedNode2,
             });
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit network ETH balances while balance submissions are disabled'), async () => {
+
+            // Set parameters
+            let epoch = 1;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
+
+            // Disable submissions
+            await setNetworkSetting('SubmitBalancesEnabled', false, {from: owner});
+
+            // Attempt to submit ETH balances
+            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+                from: trustedNode1,
+            }), 'Submitted ETH balances while balance submissions were disabled');
 
         });
 

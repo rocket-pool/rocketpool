@@ -5,6 +5,7 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { setNetworkSetting } from '../_helpers/settings';
 import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
 
@@ -92,6 +93,22 @@ export default function() {
             await processWithdrawal(withdrawableValidatorPubkey, {
                 from: trustedNode,
             });
+
+        });
+
+
+        it(printTitle('trusted node', 'cannot process a validator withdrawal while processing withdrawals is disabled'), async () => {
+
+            // Deposit withdrawal
+            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
+
+            // Disable processing withdrawals
+            await setNetworkSetting('ProcessWithdrawalsEnabled', false, {from: owner});
+
+            // Attempt to process withdrawal
+            await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {
+                from: trustedNode,
+            }), 'Processed a withdrawal while processing withdrawals was disabled');
 
         });
 

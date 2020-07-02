@@ -106,6 +106,20 @@ export default function() {
         });
 
 
+        it(printTitle('staker', 'cannot make a deposit which would exceed the maximum deposit pool size'), async () => {
+
+            // Set max deposit pool size
+            await setDepositSetting('MaximumDepositPoolSize', web3.utils.toWei('100', 'ether'), {from: owner});
+
+            // Attempt deposit
+            await shouldRevert(deposit({
+                from: staker,
+                value: web3.utils.toWei('101', 'ether'),
+            }), 'Made a deposit which exceeds the maximum deposit pool size');
+
+        });
+
+
         //
         // Assign deposits
         //
