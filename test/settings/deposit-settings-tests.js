@@ -19,6 +19,7 @@ export default function() {
             'DepositEnabled':             false,
             'AssignDepositsEnabled':      false,
             'MinimumDeposit':             web3.utils.toBN(web3.utils.toWei('10', 'ether')),
+            'MaximumDepositPoolSize':     web3.utils.toBN(web3.utils.toWei('1000000', 'ether')),
             'MaximumDepositAssignments':  web3.utils.toBN(100),
         };
 
