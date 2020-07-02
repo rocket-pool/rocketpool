@@ -7,6 +7,7 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -31,6 +32,9 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Submit a minipool exited event
     // Only accepts calls from trusted (oracle) nodes
     function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+        // Check settings
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        require(rocketMinipoolSettings.getSubmitExitedEnabled(), "Submitting exited status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as exited while staking");
@@ -60,6 +64,9 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
     function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+        // Check settings
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Exited, "Minipool can only be set as withdrawable while exited");

@@ -16,6 +16,8 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.network.init")) {
             // Apply settings
+            setSubmitBalancesEnabled(true);
+            setProcessWithdrawalsEnabled(true);
             setMinimumNodeFee(0.05 ether); // 5%
             setTargetNodeFee(0.10 ether); // 10%
             setMaximumNodeFee(0.20 ether); // 20%
@@ -24,6 +26,22 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
             // Settings initialized
             setBoolS("settings.network.init", true);
         }
+    }
+
+    // Submit ETH balances currently enabled (trusted nodes only)
+    function getSubmitBalancesEnabled() override public view returns (bool) {
+        return getBoolS("settings.network.submit.balances.enabled");
+    }
+    function setSubmitBalancesEnabled(bool _value) public onlySuperUser {
+        setBoolS("settings.network.submit.balances.enabled", _value);
+    }
+
+    // Process withdrawals currently enabled (trusted nodes only)
+    function getProcessWithdrawalsEnabled() override public view returns (bool) {
+        return getBoolS("settings.network.process.withdrawals.enabled");
+    }
+    function setProcessWithdrawalsEnabled(bool _value) public onlySuperUser {
+        setBoolS("settings.network.process.withdrawals.enabled", _value);
     }
 
     // The minimum node commission rate as a fraction of 1 ether

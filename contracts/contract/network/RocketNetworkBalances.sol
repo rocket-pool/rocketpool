@@ -5,6 +5,7 @@ pragma solidity 0.6.10;
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
 
 // Network ETH balances
@@ -71,6 +72,9 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Submit network ETH balances for an epoch
     // Only accepts calls from trusted (oracle) nodes
     function submitETHBalances(uint256 _epoch, uint256 _total, uint256 _staking) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
+        // Check settings
+        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        require(rocketNetworkSettings.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
         // Check epoch
         require(_epoch > getETHBalancesEpoch(), "Network balances for an equal or higher epoch are set");
         // Check balances

@@ -19,6 +19,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
             setDepositEnabled(true);
             setAssignDepositsEnabled(true);
             setMinimumDeposit(0.01 ether);
+            setMaximumDepositPoolSize(1000 ether);
             setMaximumDepositAssignments(2);
             // Settings initialized
             setBoolS("settings.deposit.init", true);
@@ -47,6 +48,14 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     }
     function setMinimumDeposit(uint256 _value) public onlySuperUser {
         setUintS("settings.deposit.minimum", _value);
+    }
+
+    // The maximum size of the deposit pool
+    function getMaximumDepositPoolSize() override public view returns (uint256) {
+        return getUintS("settings.deposit.pool.maximum");
+    }
+    function setMaximumDepositPoolSize(uint256 _value) public onlySuperUser {
+        setUintS("settings.deposit.pool.maximum", _value);
     }
 
     // The maximum number of deposit assignments to perform at once

@@ -14,6 +14,8 @@ interface RocketMinipoolSettingsInterface {
     function getFullDepositUserAmount() external view returns (uint256);
     function getHalfDepositUserAmount() external view returns (uint256);
     function getEmptyDepositUserAmount() external view returns (uint256);
+    function getSubmitExitedEnabled() external view returns (bool);
+    function getSubmitWithdrawableEnabled() external view returns (bool);
     function getLaunchTimeout() external view returns (uint256);
     function getWithdrawalDelay() external view returns (uint256);
 }
