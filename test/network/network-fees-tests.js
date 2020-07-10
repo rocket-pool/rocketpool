@@ -1,6 +1,6 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
-import { getNodeFee } from '../_helpers/network';
+import { getNodeFeeByDemand } from '../_helpers/network';
 import { setNetworkSetting } from '../_helpers/settings';
 
 export default function() {
@@ -59,7 +59,7 @@ export default function() {
             // Check fees
             for (let vi = 0; vi < values.length; ++vi) {
                 let v = values[vi];
-                let nodeFee = await getNodeFee(v.demand);
+                let nodeFee = await getNodeFeeByDemand(v.demand);
                 assert(nodeFee.eq(v.expectedFee), 'Node fee does not match expected fee for node demand value');
             }
 

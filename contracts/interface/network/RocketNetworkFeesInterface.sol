@@ -5,5 +5,5 @@ pragma solidity 0.6.10;
 interface RocketNetworkFeesInterface {
     function getNodeDemand() external view returns (int256);
     function getNodeFee() external view returns (uint256);
-    function getNodeFee(int256 _nodeDemand) external view returns (uint256);
+    function getNodeFeeByDemand(int256 _nodeDemand) external view returns (uint256);
 }

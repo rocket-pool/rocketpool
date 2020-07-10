@@ -41,7 +41,7 @@ export async function getNodeDemand() {
 
 
 // Get the current network node fee
-export async function getCurrentNodeFee() {
+export async function getNodeFee() {
     const rocketNetworkFees = await RocketNetworkFees.deployed();
     let nodeFee = await rocketNetworkFees.getNodeFee.call();
     return nodeFee;
@@ -49,9 +49,9 @@ export async function getCurrentNodeFee() {
 
 
 // Get the network node fee for a node demand value
-export async function getNodeFee(nodeDemand) {
+export async function getNodeFeeByDemand(nodeDemand) {
     const rocketNetworkFees = await RocketNetworkFees.deployed();
-    let nodeFee = await rocketNetworkFees.getNodeFee.call(nodeDemand);
+    let nodeFee = await rocketNetworkFees.getNodeFeeByDemand.call(nodeDemand);
     return nodeFee;
 }
 

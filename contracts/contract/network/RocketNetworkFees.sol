@@ -37,11 +37,11 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     // Get the current RP network node fee as a fraction of 1 ETH
     function getNodeFee() override public view returns (uint256) {
-        return getNodeFee(getNodeDemand());
+        return getNodeFeeByDemand(getNodeDemand());
     }
 
     // Get the RP network node fee for a node demand value
-    function getNodeFee(int256 _nodeDemand) override public view returns (uint256) {
+    function getNodeFeeByDemand(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
         uint256 calcBase = 1 ether;
         uint256 demandDivisor = 1000000000000;
