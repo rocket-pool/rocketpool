@@ -105,7 +105,7 @@ abstract contract RocketBase {
     }
 
 
-    /// @dev Get the address of a network contract
+    /// @dev Get the address of a network contract by name
     function getContractAddress(string memory _contractName) internal view returns (address) {
         // Get the current contract address
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
@@ -113,6 +113,17 @@ abstract contract RocketBase {
         require(contractAddress != address(0x0), "Contract not found");
         // Return
         return contractAddress;
+    }
+
+
+    /// @dev Get the name of a network contract by address
+    function getContractName(address _contractAddress) internal view returns (string memory) {
+        // Get the contract name
+        string memory contractName = getString(keccak256(abi.encodePacked("contract.name", _contractAddress)));
+        // Check it
+        require(keccak256(abi.encodePacked(contractName)) != keccak256(abi.encodePacked("")), "Contract not found");
+        // Return
+        return contractName;
     }
 
 

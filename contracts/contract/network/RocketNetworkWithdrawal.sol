@@ -31,10 +31,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Current withdrawal pool balance
     function getBalance() override public view returns (uint256) {
-        return getUintS("withdrawal.pool.balance");
-    }
-    function setBalance(uint256 _value) private {
-        setUintS("withdrawal.pool.balance", _value);
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        return rocketVault.balanceOf(address(this));
     }
 
     // Receive a vault withdrawal
@@ -53,8 +51,6 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         require(msg.value > 0, "Invalid deposit amount");
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        // Update withdrawal pool balance
-        setBalance(getBalance().add(msg.value));
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Emit withdrawal received event
@@ -89,10 +85,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool, true);
         // Withdraw ETH from vault
         if (totalAmount > 0) {
-            // Update withdrawal pool balance
-            setBalance(getBalance().sub(totalAmount));
             // Withdraw
-            rocketVault.withdrawEther(address(this), totalAmount);
+            rocketVault.withdrawEther(totalAmount);
         }
         // Transfer node balance to nETH contract
         if (nodeAmount > 0) { rocketNodeETHToken.deposit{value: nodeAmount}(); }

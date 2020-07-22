@@ -33,10 +33,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // Current deposit pool balance
     function getBalance() override public view returns (uint256) {
-        return getUintS("deposit.pool.balance");
-    }
-    function setBalance(uint256 _value) private {
-        setUintS("deposit.pool.balance", _value);
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        return rocketVault.balanceOf(address(this));
     }
 
     // Receive a vault withdrawal
@@ -93,8 +91,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        // Update deposit pool balance
-        setBalance(getBalance().add(msg.value));
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits if enabled
@@ -117,10 +113,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             // Dequeue next available minipool
             address minipoolAddress = rocketMinipoolQueue.dequeueMinipool();
             RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
-            // Update deposit pool balance
-            setBalance(getBalance().sub(minipoolCapacity));
             // Withdraw ETH from vault
-            rocketVault.withdrawEther(address(this), minipoolCapacity);
+            rocketVault.withdrawEther(minipoolCapacity);
             // Assign deposit to minipool
             minipool.userDeposit{value: minipoolCapacity}();
             // Emit deposit assigned event
