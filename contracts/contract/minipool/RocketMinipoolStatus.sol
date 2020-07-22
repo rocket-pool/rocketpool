@@ -8,6 +8,7 @@ import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -32,8 +33,10 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Submit a minipool exited event
     // Only accepts calls from trusted (oracle) nodes
     function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
-        // Check settings
+        // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        // Check settings
         require(rocketMinipoolSettings.getSubmitExitedEnabled(), "Submitting exited status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
@@ -48,8 +51,11 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Check submission count & set minipool exited
+        uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { setMinipoolExited(_minipoolAddress); }
+        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+            setMinipoolExited(_minipoolAddress);
+        }
     }
 
     // Mark a minipool as exited
@@ -64,8 +70,10 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
     function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
-        // Check settings
+        // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        // Check settings
         require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
@@ -80,8 +88,11 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Check submission count & set minipool withdrawable
+        uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance); }
+        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+            setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance);
+        }
     }
 
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards

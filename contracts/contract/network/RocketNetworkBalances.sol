@@ -89,8 +89,11 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Check submission count & update network balances
+        uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (submissionCount.mul(2) >= rocketNodeManager.getTrustedNodeCount()) { updateETHBalances(_epoch, _total, _staking); }
+        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+            updateETHBalances(_epoch, _total, _staking);
+        }
     }
 
     // Update network ETH balances

@@ -16,6 +16,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.network.init")) {
             // Apply settings
+            setNodeConsensusThreshold(0.51 ether); // 51%
             setSubmitBalancesEnabled(true);
             setProcessWithdrawalsEnabled(true);
             setMinimumNodeFee(0.05 ether); // 5%
@@ -26,6 +27,14 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
             // Settings initialized
             setBoolS("settings.network.init", true);
         }
+    }
+
+    // The threshold of trusted nodes that must reach consensus on oracle data to commit it
+    function getNodeConsensusThreshold() override public view returns (uint256) {
+        return getUintS("settings.network.consensus.threshold");
+    }
+    function setNodeConsensusThreshold(uint256 _value) public onlySuperUser {
+        setUintS("settings.network.consensus.threshold", _value);
     }
 
     // Submit ETH balances currently enabled (trusted nodes only)
