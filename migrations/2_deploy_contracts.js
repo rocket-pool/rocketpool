@@ -178,17 +178,22 @@ module.exports = async (deployer, network) => {
         // Log it
         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage '+contract+' Address');
         console.log('     '+contracts[contract].address);
-        // First register the contract address as being part of the network so we can do a validation check using just the address
+        // Register the contract address as part of the network
+        await rocketStorageInstance.setBool(
+          $web3.utils.soliditySha3('contract.exists', contracts[contract].address),
+          true
+        );
+        // Register the contract's name by address
+        await rocketStorageInstance.setString(
+          $web3.utils.soliditySha3('contract.name', contracts[contract].address),
+          contract
+        );
+        // Register the contract's address by name
         await rocketStorageInstance.setAddress(
-          $web3.utils.soliditySha3('contract.address', contracts[contract].address),
+          $web3.utils.soliditySha3('contract.address', contract),
           contracts[contract].address
         );
-        // Now register again that contracts name so we can retrieve it by name if needed
-        await rocketStorageInstance.setAddress(
-          $web3.utils.soliditySha3('contract.name', contract),
-          contracts[contract].address
-        );
-        // Compress and store the ABI
+        // Compress and store the ABI by name
         await rocketStorageInstance.setString(
           $web3.utils.soliditySha3('contract.abi', contract),
           compressABI(contracts[contract].abi)
