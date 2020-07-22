@@ -16,7 +16,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     using SafeMath for uint;
 
     // Network contract balances
-    mapping(string => uint256) balances;
+    mapping(bytes32 => uint256) balances;
 
     // Events
     event EtherDeposited(bytes32 indexed by, uint256 amount, uint256 time);
@@ -29,33 +29,33 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Get a contract's ETH balance by address
     function balanceOf(address _contractAddress) override public view returns (uint256) {
-        return balances[getContractName(_contractAddress)];
+        return balances[keccak256(abi.encodePacked(getContractName(_contractAddress)))];
     }
 
     // Accept an ETH deposit from a network contract
     // Only accepts calls from Rocket Pool network contracts
     function depositEther() override external payable onlyLatestNetworkContract {
-        // Get contract name
-        string memory contractName = getContractName(msg.sender);
+        // Get contract key
+        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender)));
         // Update contract balance
-        balances[contractName] = balances[contractName].add(msg.value);
+        balances[contractKey] = balances[contractKey].add(msg.value);
         // Emit ether deposited event
-        emit EtherDeposited(keccak256(abi.encodePacked(contractName)), msg.value, now);
+        emit EtherDeposited(contractKey, msg.value, now);
     }
 
     // Withdraw an amount of ETH to a network contract
     // Only accepts calls from Rocket Pool network contracts
     function withdrawEther(uint256 _amount) override external onlyLatestNetworkContract {
-        // Get contract name
-        string memory contractName = getContractName(msg.sender);
+        // Get contract key
+        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender)));
         // Check and update contract balance
-        require(balances[contractName] >= _amount, "Insufficient contract ETH balance");
-        balances[contractName] = balances[contractName].sub(_amount);
+        require(balances[contractKey] >= _amount, "Insufficient contract ETH balance");
+        balances[contractKey] = balances[contractKey].sub(_amount);
         // Withdraw
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
         withdrawer.receiveVaultWithdrawal{value: _amount}();
         // Emit ether withdrawn event
-        emit EtherWithdrawn(keccak256(abi.encodePacked(contractName)), _amount, now);
+        emit EtherWithdrawn(contractKey, _amount, now);
     }
 
 }
