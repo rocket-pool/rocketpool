@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
-import { createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
+import { createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
@@ -71,8 +71,7 @@ export default function() {
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
-            await submitMinipoolExited(withdrawableMinipool.address, 1, {from: trustedNode});
-            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), 1, {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), 0, 1, 0, {from: trustedNode});
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
@@ -86,8 +85,8 @@ export default function() {
             assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(withdrawableStatus.eq(web3.utils.toBN(4)), 'Incorrect withdrawable minipool status');
-            assert(dissolvedStatus.eq(web3.utils.toBN(5)), 'Incorrect dissolved minipool status');
+            assert(withdrawableStatus.eq(web3.utils.toBN(3)), 'Incorrect withdrawable minipool status');
+            assert(dissolvedStatus.eq(web3.utils.toBN(4)), 'Incorrect dissolved minipool status');
 
             // Check minipool refund balances
             let prelaunchRefundBalance = await prelaunchMinipool.getNodeRefundBalance.call();

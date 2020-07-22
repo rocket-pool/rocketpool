@@ -90,17 +90,10 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 }
 
 
-// Submit a minipool exited event
-export async function submitMinipoolExited(minipoolAddress, epoch, txOptions) {
-    const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.submitMinipoolExited(minipoolAddress, epoch, txOptions);
-}
-
-
 // Submit a minipool withdrawable event
-export async function submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions) {
+export async function submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions);
 }
 
 

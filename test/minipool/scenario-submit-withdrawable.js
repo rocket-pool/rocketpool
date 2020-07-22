@@ -2,7 +2,7 @@ import { RocketMinipool, RocketMinipoolStatus, RocketNodeManager, RocketStorage 
 
 
 // Submit a minipool withdrawable event
-export async function submitWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions) {
+export async function submitWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions) {
 
     // Load contracts
     const [
@@ -19,8 +19,8 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, epo
     let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.node', txOptions.from, minipoolAddress, withdrawalBalance, epoch);
-    let submissionCountKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.count', minipoolAddress, withdrawalBalance, epoch);
+    let nodeSubmissionKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.node', txOptions.from, minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch);
+    let submissionCountKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.count', minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch);
 
     // Get submission details
     function getSubmissionDetails() {
@@ -48,7 +48,7 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, epo
     let submission1 = await getSubmissionDetails();
 
     // Submit
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, epoch, txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions);
 
     // Get updated submission details & minipool details
     let [submission2, minipoolDetails] = await Promise.all([
@@ -65,7 +65,7 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, epo
     assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
 
     // Check minipool details
-    const withdrawable = web3.utils.toBN(4);
+    const withdrawable = web3.utils.toBN(3);
     if (expectWithdrawable) {
         assert(minipoolDetails.status.eq(withdrawable), 'Incorrect updated minipool status');
         assert(minipoolDetails.endBalance.eq(web3.utils.toBN(withdrawalBalance)), 'Incorrect updated minipool end balance');

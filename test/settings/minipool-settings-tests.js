@@ -16,7 +16,6 @@ export default function() {
 
         // Settings
         const settings = {
-            'SubmitExitedEnabled':        false,
             'SubmitWithdrawableEnabled':  false,
             'LaunchTimeout':              web3.utils.toBN(240),
             'WithdrawalDelay':            web3.utils.toBN(5760),

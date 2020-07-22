@@ -21,7 +21,6 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.minipool.init")) {
             // Apply settings
-            setSubmitExitedEnabled(true);
             setSubmitWithdrawableEnabled(true);
             setLaunchTimeout(5760); // ~24 hours
             setWithdrawalDelay(172800); // ~30 days
@@ -67,14 +66,6 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
     function getEmptyDepositUserAmount() override public view returns (uint256) {
         return getLaunchBalance();
-    }
-
-    // Submit minipool exited events currently enabled (trusted nodes only)
-    function getSubmitExitedEnabled() override public view returns (bool) {
-        return getBoolS("settings.minipool.submit.exited.enabled");
-    }
-    function setSubmitExitedEnabled(bool _value) public onlySuperUser {
-        setBoolS("settings.minipool.submit.exited.enabled", _value);
     }
 
     // Submit minipool withdrawable events currently enabled (trusted nodes only)

@@ -22,7 +22,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     using SafeMath for uint;
 
     // Events
-    event MinipoolSetExited(address indexed minipool, uint256 time);
     event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
 
     // Construct
@@ -30,57 +29,17 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         version = 1;
     }
 
-    // Submit a minipool exited event
-    // Only accepts calls from trusted (oracle) nodes
-    function submitMinipoolExited(address _minipoolAddress, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
-        // Load contracts
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        // Check settings
-        require(rocketMinipoolSettings.getSubmitExitedEnabled(), "Submitting exited status is currently disabled");
-        // Check minipool status
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as exited while staking");
-        // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.exited.submitted.node", msg.sender, _minipoolAddress, _epoch));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.exited.submitted.count", _minipoolAddress, _epoch));
-        // Check & update node submission status
-        require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
-        setBool(nodeSubmissionKey, true);
-        // Increment submission count
-        uint256 submissionCount = getUint(submissionCountKey).add(1);
-        setUint(submissionCountKey, submissionCount);
-        // Check submission count & set minipool exited
-        uint256 calcBase = 1 ether;
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
-            setMinipoolExited(_minipoolAddress);
-        }
-    }
-
-    // Mark a minipool as exited
-    function setMinipoolExited(address _minipoolAddress) private {
-        // Set exited
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        minipool.setExited();
-        // Emit set exited event
-        emit MinipoolSetExited(_minipoolAddress, now);
-    }
-
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
-    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _epoch) override external onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) override external
+    onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
+        // Check submission
+        checkCanSetMinipoolWithdrawable(_minipoolAddress, _startEpoch, _endEpoch, _userStartEpoch);
         // Load contracts
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        // Check settings
-        require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
-        // Check minipool status
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(minipool.getStatus() == MinipoolStatus.Exited, "Minipool can only be set as withdrawable while exited");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress, _withdrawalBalance, _epoch));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _withdrawalBalance, _epoch));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
@@ -91,19 +50,32 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
-            setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance);
+            setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch);
         }
     }
 
+    // Check a minipool withdrawable event submission
+    function checkCanSetMinipoolWithdrawable(address _minipoolAddress, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) private view {
+        // Check settings
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
+        // Check minipool status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
+        // Check epochs
+        require(_startEpoch <= _userStartEpoch, "Invalid epochs");
+        require(_userStartEpoch <= _endEpoch, "Invalid epochs");
+    }
+
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
-    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance) private {
+    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) private {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        // Mark minipool as withdrawable and record its final balance
-        minipool.setWithdrawable(_withdrawalBalance);
+        // Mark minipool as withdrawable
+        minipool.setWithdrawable(_withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch);
         // Get node reward amount
         uint256 nodeAmount = getNodeRewardAmount(minipool);
         // Mint nETH to minipool contract
@@ -123,10 +95,9 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 nodeDeposit = minipool.getNodeDepositBalance();
         uint256 startBalance = minipool.getStakingStartBalance();
         uint256 endBalance = minipool.getStakingEndBalance();
-        uint256 stakingStart = minipool.getStakingStartBlock();
-        uint256 stakingUserStart = minipool.getStakingUserStartBlock();
-        uint256 stakingEnd = minipool.getStakingEndBlock();
-        if (stakingUserStart == 0) { stakingUserStart = stakingEnd; }
+        uint256 stakingStart = minipool.getStakingStartEpoch();
+        uint256 stakingEnd = minipool.getStakingEndEpoch();
+        uint256 stakingUserStart = minipool.getStakingUserStartEpoch();
         // Node reward amount
         uint256 nodeAmount = 0;
         // Rewards earned

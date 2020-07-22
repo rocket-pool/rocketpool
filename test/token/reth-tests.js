@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
-import { getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolExited, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { submitETHBalances, depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
@@ -54,8 +54,7 @@ export default function() {
             // Create withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await submitMinipoolExited(minipool.address, 1, {from: trustedNode});
-            await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 1, {from: trustedNode});
+            await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 0, 1, 0, {from: trustedNode});
 
             // Update network ETH total to alter rETH exchange rate
             let minipoolUserBalance = await getMinipoolWithdrawalUserBalance(minipool.address);

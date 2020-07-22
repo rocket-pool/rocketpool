@@ -44,13 +44,14 @@ contract RocketMinipool is RocketMinipoolInterface {
     // User deposit details
     uint256 private userDepositBalance;
     bool private userDepositAssigned;
+    uint256 private userDepositAssignedTime;
 
     // Staking details
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
-    uint256 private stakingStartBlock;
-    uint256 private stakingUserStartBlock;
-    uint256 private stakingEndBlock;
+    uint256 private stakingStartEpoch;
+    uint256 private stakingEndEpoch;
+    uint256 private stakingUserStartEpoch;
 
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);
@@ -76,13 +77,14 @@ contract RocketMinipool is RocketMinipoolInterface {
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
     function getUserDepositAssigned() override public view returns (bool) { return userDepositAssigned; }
+    function getUserDepositAssignedTime() override public view returns (uint256) { return userDepositAssignedTime; }
 
     // Staking detail getters
     function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
     function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
-    function getStakingStartBlock() override public view returns (uint256) { return stakingStartBlock; }
-    function getStakingUserStartBlock() override public view returns (uint256) { return stakingUserStartBlock; }
-    function getStakingEndBlock() override public view returns (uint256) { return stakingEndBlock; }
+    function getStakingStartEpoch() override public view returns (uint256) { return stakingStartEpoch; }
+    function getStakingEndEpoch() override public view returns (uint256) { return stakingEndEpoch; }
+    function getStakingUserStartEpoch() override public view returns (uint256) { return stakingUserStartEpoch; }
 
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) public {
@@ -151,8 +153,7 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Update user deposit details
         userDepositBalance = msg.value;
         userDepositAssigned = true;
-        // Update staking details
-        if (status == MinipoolStatus.Staking) { stakingUserStartBlock = block.number; }
+        userDepositAssignedTime = now;
         // Refinance full minipool
         if (depositType == MinipoolDeposit.Full) {
             // Update node balances
@@ -191,8 +192,6 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is already in use");
         // Set staking details
         stakingStartBalance = launchAmount;
-        stakingStartBlock = block.number;
-        if (userDepositAssigned) { stakingUserStartBlock = block.number; }
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, rocketNetworkWithdrawal.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
         // Set minipool pubkey
@@ -201,27 +200,22 @@ contract RocketMinipool is RocketMinipoolInterface {
         setStatus(MinipoolStatus.Staking);
     }
 
-    // Mark the minipool as exited
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function setExited() override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
-        // Check current status
-        require(status == MinipoolStatus.Staking, "The minipool can only exit while staking");
-        // Load contracts
-        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        // Remove minipool from queue
-        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(); }
-        // Progress to exited
-        setStatus(MinipoolStatus.Exited);
-    }
-
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function setWithdrawable(uint256 _withdrawalBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    function setWithdrawable(uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
-        require(status == MinipoolStatus.Exited, "The minipool can only become withdrawable while exited");
-        // Update staking details
+        require(status == MinipoolStatus.Staking, "The minipool can only become withdrawable while staking");
+        // Check epochs
+        require(_startEpoch <= _userStartEpoch, "Invalid epochs");
+        require(_userStartEpoch <= _endEpoch, "Invalid epochs");
+        // Set staking details
         stakingEndBalance = _withdrawalBalance;
-        stakingEndBlock = block.number;
+        stakingStartEpoch = _startEpoch;
+        stakingEndEpoch = _endEpoch;
+        stakingUserStartEpoch = _userStartEpoch;
+        // Remove minipool from queue
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(); }
         // Progress to withdrawable
         setStatus(MinipoolStatus.Withdrawable);
     }
