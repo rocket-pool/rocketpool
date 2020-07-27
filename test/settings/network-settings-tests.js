@@ -18,6 +18,7 @@ export default function() {
         const settings = {
             'NodeConsensusThreshold':     web3.utils.toBN(web3.utils.toWei('0.76', 'ether')),
             'SubmitBalancesEnabled':      false,
+            'SubmitBalancesFrequency':    web3.utils.toBN(20),
             'ProcessWithdrawalsEnabled':  false,
             'MinimumNodeFee':             web3.utils.toBN(web3.utils.toWei('0.30', 'ether')),
             'TargetNodeFee':              web3.utils.toBN(web3.utils.toWei('0.40', 'ether')),
