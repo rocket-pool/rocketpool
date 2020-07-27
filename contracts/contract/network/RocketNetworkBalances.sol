@@ -81,6 +81,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
+        setBool(keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block)), true);
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
