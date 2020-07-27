@@ -8,7 +8,6 @@ import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../lib/SafeMath.sol";
@@ -46,7 +45,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
         RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
-        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         // Check deposit settings
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
@@ -59,9 +57,6 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         else { rethAmount = msg.value.mul(calcBase).div(rethExchangeRate); }
         // Mint rETH to user account
         rocketETHToken.mint(rethAmount, msg.sender);
-        // Update network ETH balance
-        // MUST be done *after* rETH amount calculation
-        rocketNetworkBalances.increaseTotalETHBalance(msg.value);
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, rethAmount, now);
         // Process deposit

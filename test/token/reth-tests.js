@@ -7,7 +7,7 @@ import { getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submit
 import { submitETHBalances, depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
-import { getRethBalance, getRethExchangeRate } from '../_helpers/tokens';
+import { getRethBalance, getRethExchangeRate, getRethTotalSupply } from '../_helpers/tokens';
 import { burnReth } from './scenario-burn-reth';
 
 export default function() {
@@ -58,7 +58,8 @@ export default function() {
 
             // Update network ETH total to alter rETH exchange rate
             let minipoolUserBalance = await getMinipoolWithdrawalUserBalance(minipool.address);
-            await submitETHBalances(1, minipoolUserBalance, 0, {from: trustedNode});
+            let rethSupply = await getRethTotalSupply();
+            await submitETHBalances(1, minipoolUserBalance, 0, rethSupply, {from: trustedNode});
 
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker);

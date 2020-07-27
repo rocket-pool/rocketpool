@@ -45,29 +45,30 @@ export default function() {
         it(printTitle('trusted nodes', 'can submit network ETH balances'), async () => {
 
             // Set parameters
-            let epoch = 1;
+            let block = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
             // Submit different ETH balances
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('8', 'ether'), {
+            await submitETHBalances(block, totalBalance, stakingBalance, web3.utils.toWei('7', 'ether'), {
                 from: trustedNode1,
             });
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('7', 'ether'), {
+            await submitETHBalances(block, totalBalance, stakingBalance, web3.utils.toWei('6', 'ether'), {
                 from: trustedNode2,
             });
-            await submitETHBalances(epoch, totalBalance, web3.utils.toWei('6', 'ether'), {
+            await submitETHBalances(block, totalBalance, stakingBalance, web3.utils.toWei('5', 'ether'), {
                 from: trustedNode3,
             });
 
             // Set parameters
-            epoch = 2;
+            block = 2;
 
             // Submit identical ETH balances to trigger update
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
 
@@ -77,45 +78,47 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit network ETH balances while balance submissions are disabled'), async () => {
 
             // Set parameters
-            let epoch = 1;
+            let block = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
             // Disable submissions
             await setNetworkSetting('SubmitBalancesEnabled', false, {from: owner});
 
             // Attempt to submit ETH balances
-            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await shouldRevert(submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted ETH balances while balance submissions were disabled');
 
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network ETH balances for the current epoch or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network ETH balances for the current block or lower'), async () => {
 
             // Set parameters
-            let epoch = 2;
+            let block = 2;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
-            // Submit ETH balances for epoch to trigger update
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Submit ETH balances for block to trigger update
+            await submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode2,
             });
 
-            // Attempt to submit ETH balances for current epoch
-            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Attempt to submit ETH balances for current block
+            await shouldRevert(submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
-            }), 'Submitted ETH balances for the current epoch');
+            }), 'Submitted ETH balances for the current block');
 
-            // Attempt to submit ETH balances for lower epoch
-            await shouldRevert(submitETHBalances(epoch - 1, totalBalance, stakingBalance, {
+            // Attempt to submit ETH balances for lower block
+            await shouldRevert(submitETHBalances(block - 1, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode3,
-            }), 'Submitted ETH balances for a lower epoch');
+            }), 'Submitted ETH balances for a lower block');
 
         });
 
@@ -123,12 +126,13 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit invalid network ETH balances'), async () => {
 
             // Set parameters
-            let epoch = 1;
+            let block = 1;
             let totalBalance = web3.utils.toWei('9', 'ether');
             let stakingBalance = web3.utils.toWei('10', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
-            // Submit ETH balances for epoch
-            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Submit ETH balances for block
+            await shouldRevert(submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted invalid ETH balances');
 
@@ -138,17 +142,18 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit the same network ETH balances twice'), async () => {
 
             // Set parameters
-            let epoch = 1;
+            let block = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
-            // Submit ETH balances for epoch
-            await submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Submit ETH balances for block
+            await submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             });
 
-            // Attempt to submit ETH balances for epoch again
-            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+            // Attempt to submit ETH balances for block again
+            await shouldRevert(submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
             }), 'Submitted the same network ETH balances twice');
 
@@ -158,12 +163,13 @@ export default function() {
         it(printTitle('regular nodes', 'cannot submit network ETH balances'), async () => {
 
             // Set parameters
-            let epoch = 1;
+            let block = 1;
             let totalBalance = web3.utils.toWei('10', 'ether');
             let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
 
             // Attempt to submit ETH balances
-            await shouldRevert(submitETHBalances(epoch, totalBalance, stakingBalance, {
+            await shouldRevert(submitETHBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: node,
             }), 'Regular node submitted network ETH balances');
 

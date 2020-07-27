@@ -2,7 +2,7 @@ import { RocketNetworkBalances, RocketNodeManager, RocketStorage } from '../_uti
 
 
 // Submit network ETH balances
-export async function submitETHBalances(epoch, total, staking, txOptions) {
+export async function submitETHBalances(block, total, staking, rethSupply, txOptions) {
 
     // Load contracts
     const [
@@ -19,8 +19,8 @@ export async function submitETHBalances(epoch, total, staking, txOptions) {
     let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.balances.submitted.node', txOptions.from, epoch, total, staking);
-    let submissionCountKey = web3.utils.soliditySha3('network.balances.submitted.count', epoch, total, staking);
+    let nodeSubmissionKey = web3.utils.soliditySha3('network.balances.submitted.node', txOptions.from, block, total, staking, rethSupply);
+    let submissionCountKey = web3.utils.soliditySha3('network.balances.submitted.count', block, total, staking, rethSupply);
 
     // Get submission details
     function getSubmissionDetails() {
@@ -36,12 +36,13 @@ export async function submitETHBalances(epoch, total, staking, txOptions) {
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketNetworkBalances.getETHBalancesEpoch.call(),
+            rocketNetworkBalances.getETHBalancesBlock.call(),
             rocketNetworkBalances.getTotalETHBalance.call(),
             rocketNetworkBalances.getStakingETHBalance.call(),
+            rocketNetworkBalances.getTotalRETHSupply.call(),
         ]).then(
-            ([epoch, total, staking]) =>
-            ({epoch, total, staking})
+            ([block, total, staking, rethSupply]) =>
+            ({block, total, staking, rethSupply})
         );
     }
 
@@ -49,7 +50,7 @@ export async function submitETHBalances(epoch, total, staking, txOptions) {
     let submission1 = await getSubmissionDetails();
 
     // Submit balance
-    await rocketNetworkBalances.submitETHBalances(epoch, total, staking, txOptions);
+    await rocketNetworkBalances.submitETHBalances(block, total, staking, rethSupply, txOptions);
 
     // Get updated submission details & balances
     let [submission2, balances] = await Promise.all([
@@ -67,13 +68,15 @@ export async function submitETHBalances(epoch, total, staking, txOptions) {
 
     // Check balances
     if (expectUpdatedBalances) {
-        assert(balances.epoch.eq(web3.utils.toBN(epoch)), 'Incorrect updated network balances epoch');
+        assert(balances.block.eq(web3.utils.toBN(block)), 'Incorrect updated network balances block');
         assert(balances.total.eq(web3.utils.toBN(total)), 'Incorrect updated network total ETH balance');
         assert(balances.staking.eq(web3.utils.toBN(staking)), 'Incorrect updated network staking ETH balance');
+        assert(balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrect updated network total rETH supply');
     } else {
-        assert(!balances.epoch.eq(web3.utils.toBN(epoch)), 'Incorrectly updated network balances epoch');
+        assert(!balances.block.eq(web3.utils.toBN(block)), 'Incorrectly updated network balances block');
         assert(!balances.total.eq(web3.utils.toBN(total)), 'Incorrectly updated network total ETH balance');
         assert(!balances.staking.eq(web3.utils.toBN(staking)), 'Incorrectly updated network staking ETH balance');
+        assert(!balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrectly updated network total rETH supply');
     }
 
 }

@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketETHToken, RocketNetworkBalances, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketETHToken, RocketVault } from '../_utils/artifacts';
 
 
 // Make a deposit into the deposit pool
@@ -8,12 +8,10 @@ export async function deposit(txOptions) {
     const [
         rocketDepositPool,
         rocketETHToken,
-        rocketNetworkBalances,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
         RocketETHToken.deployed(),
-        RocketNetworkBalances.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -24,12 +22,11 @@ export async function deposit(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
-            rocketNetworkBalances.getTotalETHBalance.call(),
             web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
             rocketETHToken.balanceOf.call(txOptions.from),
         ]).then(
-            ([depositPoolEth, networkEth, vaultEth, userReth]) =>
-            ({depositPoolEth, networkEth, vaultEth, userReth})
+            ([depositPoolEth, vaultEth, userReth]) =>
+            ({depositPoolEth, vaultEth, userReth})
         );
     }
 
@@ -49,7 +46,6 @@ export async function deposit(txOptions) {
 
     // Check balances
     assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(txValue)), 'Incorrect updated deposit pool ETH balance');
-    assert(balances2.networkEth.eq(balances1.networkEth.add(txValue)), 'Incorrect updated network total ETH balance');
     assert(balances2.vaultEth.eq(balances1.vaultEth.add(txValue)), 'Incorrect updated vault ETH balance');
     assert(balances2.userReth.eq(balances1.userReth.add(expectedRethMinted)), 'Incorrect updated user rETH balance');
 

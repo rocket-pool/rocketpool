@@ -25,6 +25,14 @@ export async function getRethCollateralRate() {
 }
 
 
+// Get the current rETH token supply
+export async function getRethTotalSupply() {
+    const rocketETHToken = await RocketETHToken.deployed();
+    let totalSupply = await rocketETHToken.totalSupply.call();
+    return totalSupply;
+}
+
+
 // Get the nETH balance of an address
 export async function getNethBalance(address) {
     const rocketNodeETHToken = await RocketNodeETHToken.deployed();

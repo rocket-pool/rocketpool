@@ -25,13 +25,14 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
     // Get the current ETH : rETH exchange rate
     // Returns the amount of ETH backing 1 rETH
     function getExchangeRate() override public view returns (uint256) {
-        // Get network total ETH balance
+        // Get network balances
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
+        uint256 rethSupply = rocketNetworkBalances.getTotalRETHSupply();
         // Calculate exchange rate
         uint256 calcBase = 1 ether;
-        if (totalSupply == 0) { return calcBase; }
-        return calcBase.mul(totalEthBalance).div(totalSupply);
+        if (rethSupply == 0) { return calcBase; }
+        return calcBase.mul(totalEthBalance).div(rethSupply);
     }
 
     // Get the current ETH collateral rate
@@ -75,9 +76,6 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         // Update balance & supply
         balances[msg.sender] = balances[msg.sender].sub(_amount);
         totalSupply = totalSupply.sub(_amount);
-        // Update network ETH balance
-        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
-        rocketNetworkBalances.decreaseTotalETHBalance(ethAmount);
         // Transfer ETH to sender
         msg.sender.transfer(ethAmount);
         // Emit tokens burned event
