@@ -25,10 +25,10 @@ export async function getETHUtilizationRate() {
 }
 
 
-// Submit network ETH balances
-export async function submitETHBalances(block, total, staking, rethSupply, txOptions) {
+// Submit network balances
+export async function submitBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
     const rocketNetworkBalances = await RocketNetworkBalances.deployed();
-    await rocketNetworkBalances.submitETHBalances(block, total, staking, rethSupply, txOptions);
+    await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
 }
 
 

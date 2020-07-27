@@ -8,7 +8,7 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../lib/SafeMath.sol";
 
-// Network ETH balances
+// Network balances
 
 contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
@@ -21,6 +21,14 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
+    }
+
+    // The block number which balances are current for
+    function getBalancesBlock() override public view returns (uint256) {
+        return getUintS("network.balances.updated.block");
+    }
+    function setBalancesBlock(uint256 _value) private {
+        setUintS("network.balances.updated.block", _value);
     }
 
     // The current RP network total ETH balance
@@ -47,14 +55,6 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         setUintS("network.balance.reth.supply", _value);
     }
 
-    // The block number which balances are current for
-    function getETHBalancesBlock() override public view returns (uint256) {
-        return getUintS("network.balances.updated.block");
-    }
-    function setETHBalancesBlock(uint256 _value) private {
-        setUintS("network.balances.updated.block", _value);
-    }
-
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() override public view returns (uint256) {
@@ -65,19 +65,19 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         return calcBase.mul(stakingEthBalance).div(totalEthBalance);
     }
 
-    // Submit network ETH balances for a block
+    // Submit network balances for a block
     // Only accepts calls from trusted (oracle) nodes
-    function submitETHBalances(uint256 _block, uint256 _total, uint256 _staking, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
+    function submitBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
         require(rocketNetworkSettings.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
         // Check block
-        require(_block > getETHBalancesBlock(), "Network balances for an equal or higher block are set");
+        require(_block > getBalancesBlock(), "Network balances for an equal or higher block are set");
         // Check balances
-        require(_staking <= _total, "Invalid network balances");
+        require(_stakingEth <= _totalEth, "Invalid network balances");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _total, _staking, _rethSupply));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _total, _staking, _rethSupply));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _totalEth, _stakingEth, _rethSupply));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _totalEth, _stakingEth, _rethSupply));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
@@ -88,19 +88,19 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
-            updateETHBalances(_block, _total, _staking, _rethSupply);
+            updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
         }
     }
 
-    // Update network ETH balances
-    function updateETHBalances(uint256 _block, uint256 _total, uint256 _staking, uint256 _rethSupply) private {
+    // Update network balances
+    function updateBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) private {
         // Update balances
-        setETHBalancesBlock(_block);
-        setTotalETHBalance(_total);
-        setStakingETHBalance(_staking);
+        setBalancesBlock(_block);
+        setTotalETHBalance(_totalEth);
+        setStakingETHBalance(_stakingEth);
         setTotalRETHSupply(_rethSupply);
         // Emit balances updated event
-        emit BalancesUpdated(_block, _total, _staking, _rethSupply, now);
+        emit BalancesUpdated(_block, _totalEth, _stakingEth, _rethSupply, now);
     }
 
 }
