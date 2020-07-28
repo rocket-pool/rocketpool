@@ -70,7 +70,12 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Mark minipool as withdrawable
         minipool.setWithdrawable(_stakingStartBalance, _stakingEndBalance);
         // Get node reward amount
-        uint256 nodeAmount = getNodeRewardAmount(minipool);
+        uint256 nodeAmount = getMinipoolNodeRewardAmount(
+            minipool.getNodeFee(),
+            minipool.getUserDepositBalance(),
+            minipool.getStakingStartBalance(),
+            minipool.getStakingEndBalance()
+        );
         // Mint nETH to minipool contract
         if (nodeAmount > 0) { rocketNodeETHToken.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
@@ -113,16 +118,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         }
         // Return
         return nodeAmount;
-    }
-
-    // Get the node reward amount for a withdrawn minipool
-    function getNodeRewardAmount(RocketMinipoolInterface minipool) private view returns (uint256) {
-        return getMinipoolNodeRewardAmount(
-            minipool.getNodeFee(),
-            minipool.getUserDepositBalance(),
-            minipool.getStakingStartBalance(),
-            minipool.getStakingEndBalance()
-        );
     }
 
 }
