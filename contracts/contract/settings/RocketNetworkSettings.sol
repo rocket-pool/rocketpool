@@ -38,7 +38,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
         setUintS("settings.network.consensus.threshold", _value);
     }
 
-    // Submit ETH balances currently enabled (trusted nodes only)
+    // Submit balances currently enabled (trusted nodes only)
     function getSubmitBalancesEnabled() override public view returns (bool) {
         return getBoolS("settings.network.submit.balances.enabled");
     }
