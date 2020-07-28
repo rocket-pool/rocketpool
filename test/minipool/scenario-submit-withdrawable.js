@@ -2,7 +2,7 @@ import { RocketMinipool, RocketMinipoolStatus, RocketNodeManager, RocketStorage 
 
 
 // Submit a minipool withdrawable event
-export async function submitWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions) {
+export async function submitWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions) {
 
     // Load contracts
     const [
@@ -19,8 +19,8 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, sta
     let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.node', txOptions.from, minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch);
-    let submissionCountKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.count', minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch);
+    let nodeSubmissionKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.node', txOptions.from, minipoolAddress, stakingStartBalance, stakingEndBalance);
+    let submissionCountKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.count', minipoolAddress, stakingStartBalance, stakingEndBalance);
 
     // Get submission details
     function getSubmissionDetails() {
@@ -37,10 +37,11 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, sta
     function getMinipoolDetails() {
         return RocketMinipool.at(minipoolAddress).then(minipool => Promise.all([
             minipool.getStatus.call(),
+            minipool.getStakingStartBalance.call(),
             minipool.getStakingEndBalance.call(),
         ])).then(
-            ([status, endBalance]) =>
-            ({status, endBalance})
+            ([status, startBalance, endBalance]) =>
+            ({status, startBalance, endBalance})
         );
     }
 
@@ -48,7 +49,7 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, sta
     let submission1 = await getSubmissionDetails();
 
     // Submit
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, withdrawalBalance, startEpoch, endEpoch, userStartEpoch, txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions);
 
     // Get updated submission details & minipool details
     let [submission2, minipoolDetails] = await Promise.all([
@@ -68,7 +69,8 @@ export async function submitWithdrawable(minipoolAddress, withdrawalBalance, sta
     const withdrawable = web3.utils.toBN(3);
     if (expectWithdrawable) {
         assert(minipoolDetails.status.eq(withdrawable), 'Incorrect updated minipool status');
-        assert(minipoolDetails.endBalance.eq(web3.utils.toBN(withdrawalBalance)), 'Incorrect updated minipool end balance');
+        assert(minipoolDetails.startBalance.eq(web3.utils.toBN(stakingStartBalance)), 'Incorrect updated minipool end balance');
+        assert(minipoolDetails.endBalance.eq(web3.utils.toBN(stakingEndBalance)), 'Incorrect updated minipool end balance');
     } else {
         assert(!minipoolDetails.status.eq(withdrawable), 'Incorrect updated minipool status');
     }

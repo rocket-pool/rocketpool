@@ -46,7 +46,7 @@ export default function() {
             let withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(stakingMinipool, stakingValidatorPubkey, {from: node});
             await stakeMinipool(withdrawableMinipool, withdrawableValidatorPubkey, {from: node});
-            await submitMinipoolWithdrawable(withdrawableMinipool.address, withdrawalBalance, 0, 1, 0, {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
 
         });
 

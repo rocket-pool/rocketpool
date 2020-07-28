@@ -31,15 +31,20 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
-    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) override external
+    // _stakingStartBalance is the validator balance at the time of the user deposit if assigned, or the staking start balance
+    function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external
     onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
-        // Check submission
-        checkCanSetMinipoolWithdrawable(_minipoolAddress, _startEpoch, _endEpoch, _userStartEpoch);
         // Load contracts
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        // Check settings
+        require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
+        // Check minipool status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress, _stakingStartBalance, _stakingEndBalance));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _stakingStartBalance, _stakingEndBalance));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
@@ -51,88 +56,73 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
-            setMinipoolWithdrawable(_minipoolAddress, _withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch);
+            setMinipoolWithdrawable(_minipoolAddress, _stakingStartBalance, _stakingEndBalance);
         }
     }
 
-    // Check a minipool withdrawable event submission
-    function checkCanSetMinipoolWithdrawable(address _minipoolAddress, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) private view {
-        // Check settings
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
-        // Check minipool status
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
-        // Check epochs
-        require(_startEpoch <= _userStartEpoch, "Invalid epochs");
-        require(_userStartEpoch <= _endEpoch, "Invalid epochs");
-    }
-
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
-    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) private {
+    function setMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) private {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable
-        minipool.setWithdrawable(_withdrawalBalance, _startEpoch, _endEpoch, _userStartEpoch);
+        minipool.setWithdrawable(_stakingStartBalance, _stakingEndBalance);
         // Get node reward amount
         uint256 nodeAmount = getNodeRewardAmount(minipool);
         // Mint nETH to minipool contract
         if (nodeAmount > 0) { rocketNodeETHToken.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
-        rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _withdrawalBalance, nodeAmount);
+        rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _stakingEndBalance, nodeAmount);
         // Emit set withdrawable event
-        emit MinipoolSetWithdrawable(_minipoolAddress, _withdrawalBalance, nodeAmount, now);
+        emit MinipoolSetWithdrawable(_minipoolAddress, _stakingEndBalance, nodeAmount, now);
     }
 
-    // Get the node reward amount for a withdrawn minipool
-    function getNodeRewardAmount(RocketMinipoolInterface minipool) private view returns (uint256) {
-        // Calculation base value
-        uint256 calcBase = 1 ether;
-        // Get minipool details
-        uint256 nodeFee = minipool.getNodeFee();
-        uint256 nodeDeposit = minipool.getNodeDepositBalance();
-        uint256 startBalance = minipool.getStakingStartBalance();
-        uint256 endBalance = minipool.getStakingEndBalance();
-        uint256 stakingStart = minipool.getStakingStartEpoch();
-        uint256 stakingEnd = minipool.getStakingEndEpoch();
-        uint256 stakingUserStart = minipool.getStakingUserStartEpoch();
+    // Calculate the node reward amount for a minipool by node fee, user deposit balance, and staking start & end balances
+    // _startBalance is the validator balance at the time of the user deposit if assigned, or the staking start balance
+    function getMinipoolNodeRewardAmount(uint256 _nodeFee, uint256 _userDepositBalance, uint256 _startBalance, uint256 _endBalance) override public pure returns (uint256) {
         // Node reward amount
         uint256 nodeAmount = 0;
+        // Calculate node balance at time of user deposit
+        uint256 nodeBalance = 0;
+        if (_startBalance > _userDepositBalance) {
+            nodeBalance = _startBalance.sub(_userDepositBalance);
+        }
         // Rewards earned
-        if (endBalance > startBalance) {
-            // Apply node deposit amount
-            nodeAmount = nodeDeposit;
-            // Get total rewards earned
-            uint256 rewards = endBalance.sub(startBalance);
-            // Calculate total and node-only staking durations
-            uint256 stakingDuration = stakingEnd.sub(stakingStart);
-            uint256 nodeStakingDuration = stakingUserStart.sub(stakingStart);
-            // Apply node-only rewards
-            if (nodeStakingDuration > 0) {
-                uint256 nodeOnlyRewards = rewards.mul(nodeStakingDuration).div(stakingDuration);
-                rewards = rewards.sub(nodeOnlyRewards);
-                nodeAmount = nodeAmount.add(nodeOnlyRewards);
-            }
-            // Apply node share and commission of remaining rewards
-            if (rewards > 0) {
-                uint256 nodeShare = rewards.mul(nodeDeposit).div(startBalance);
-                rewards = rewards.sub(nodeShare);
-                uint256 nodeCommission = rewards.mul(nodeFee).div(calcBase);
-                nodeAmount = nodeAmount.add(nodeShare).add(nodeCommission);
-            }
+        if (_endBalance > _startBalance) {
+            // Apply node balance
+            nodeAmount = nodeBalance;
+            // Calculate rewards earned
+            uint256 rewards = _endBalance.sub(_startBalance);
+            // Calculate node share of rewards
+            uint256 nodeShare = rewards.mul(nodeBalance).div(_startBalance);
+            rewards = rewards.sub(nodeShare);
+            // Calculate node commission on user share of rewards
+            uint256 calcBase = 1 ether;
+            uint256 nodeCommission = rewards.mul(_nodeFee).div(calcBase);
+            // Update node reward amount
+            nodeAmount = nodeAmount.add(nodeShare).add(nodeCommission);
         }
         // No rewards earned
         else {
-            // Deduct losses from node deposit amount
-            if (startBalance < nodeDeposit.add(endBalance)) {
-                nodeAmount = nodeDeposit.add(endBalance).sub(startBalance);
+            // Deduct losses from node balance
+            if (_startBalance < nodeBalance.add(_endBalance)) {
+                nodeAmount = nodeBalance.add(_endBalance).sub(_startBalance);
             }
         }
         // Return
         return nodeAmount;
+    }
+
+    // Get the node reward amount for a withdrawn minipool
+    function getNodeRewardAmount(RocketMinipoolInterface minipool) private view returns (uint256) {
+        return getMinipoolNodeRewardAmount(
+            minipool.getNodeFee(),
+            minipool.getUserDepositBalance(),
+            minipool.getStakingStartBalance(),
+            minipool.getStakingEndBalance()
+        );
     }
 
 }

@@ -54,7 +54,7 @@ export default function() {
             // Create withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await submitMinipoolWithdrawable(minipool.address, withdrawalBalance, 0, 1, 0, {from: trustedNode});
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
 
             // Update network ETH total to alter rETH exchange rate
             let minipoolUserBalance = await getMinipoolWithdrawalUserBalance(minipool.address);

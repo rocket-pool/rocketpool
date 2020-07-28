@@ -20,14 +20,11 @@ interface RocketMinipoolInterface {
     function getUserDepositAssignedTime() external view returns (uint256);
     function getStakingStartBalance() external view returns (uint256);
     function getStakingEndBalance() external view returns (uint256);
-    function getStakingStartEpoch() external view returns (uint256);
-    function getStakingEndEpoch() external view returns (uint256);
-    function getStakingUserStartEpoch() external view returns (uint256);
     function nodeDeposit() external payable;
     function userDeposit() external payable;
     function refund() external;
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
-    function setWithdrawable(uint256 _withdrawalBalance, uint256 _startEpoch, uint256 _endEpoch, uint256 _userStartEpoch) external;
+    function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) external;
     function withdraw() external;
     function dissolve() external;
     function close() external;

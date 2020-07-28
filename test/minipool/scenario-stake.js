@@ -31,10 +31,9 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
         return Promise.all([
             minipool.getStatus.call(),
             web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
-            minipool.getStakingStartBalance.call(),
         ]).then(
-            ([status, balance, stakingStartBalance]) =>
-            ({status, balance, stakingStartBalance})
+            ([status, balance]) =>
+            ({status, balance})
         );
     }
 
@@ -58,8 +57,6 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
     assert(!details1.status.eq(staking), 'Incorrect initial minipool status');
     assert(details2.status.eq(staking), 'Incorrect updated minipool status');
     assert(details2.balance.eq(details1.balance.sub(launchBalance)), 'Incorrect updated minipool ETH balance');
-    assert(details1.stakingStartBalance.eq(web3.utils.toBN(0)), 'Incorrect initial minipool staking start balance');
-    assert(details2.stakingStartBalance.eq(launchBalance), 'Incorrect updated minipool staking start balance');
 
     // Check minipool by validator pubkey
     assert.equal(validatorMinipool1, '0x0000000000000000000000000000000000000000', 'Incorrect initial minipool by validator pubkey');

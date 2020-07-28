@@ -71,7 +71,7 @@ export default function() {
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
-            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('36', 'ether'), 0, 1, 0, {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('36', 'ether'), {from: trustedNode});
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
