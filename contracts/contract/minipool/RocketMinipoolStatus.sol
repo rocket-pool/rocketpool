@@ -96,8 +96,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         }
         // Rewards earned
         if (_endBalance > _startBalance) {
-            // Apply node balance
-            nodeAmount = nodeBalance;
             // Calculate rewards earned
             uint256 rewards = _endBalance.sub(_startBalance);
             // Calculate node share of rewards
@@ -107,7 +105,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
             uint256 calcBase = 1 ether;
             uint256 nodeCommission = rewards.mul(_nodeFee).div(calcBase);
             // Update node reward amount
-            nodeAmount = nodeAmount.add(nodeShare).add(nodeCommission);
+            nodeAmount = nodeBalance.add(nodeShare).add(nodeCommission);
         }
         // No rewards earned
         else {
