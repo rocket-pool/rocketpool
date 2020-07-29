@@ -31,7 +31,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
 
     // Submit a minipool withdrawable event
     // Only accepts calls from trusted (oracle) nodes
-    // _stakingStartBalance is the validator balance at the time of the user deposit if assigned, or the staking start balance
+    // _stakingStartBalance is the validator balance at the time of the user deposit if assigned, or the balance at activation_epoch
+    // _stakingEndBalance is the validator balance at withdrawable_epoch
     function submitMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external
     onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Load contracts
@@ -85,7 +86,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     }
 
     // Calculate the node reward amount for a minipool by node fee, user deposit balance, and staking start & end balances
-    // _startBalance is the validator balance at the time of the user deposit if assigned, or the staking start balance
+    // _startBalance is the validator balance at the time of the user deposit if assigned, or the balance at activation_epoch
+    // _endBalance is the validator balance at withdrawable_epoch if withdrawable, or the balance at the current epoch
     function getMinipoolNodeRewardAmount(uint256 _nodeFee, uint256 _userDepositBalance, uint256 _startBalance, uint256 _endBalance) override public pure returns (uint256) {
         // Node reward amount
         uint256 nodeAmount = 0;
