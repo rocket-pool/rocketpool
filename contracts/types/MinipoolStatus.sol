@@ -9,5 +9,5 @@ enum MinipoolStatus {
     Prelaunch,      // The minipool has enough ETH to begin staking and is awaiting launch by the node operator
     Staking,        // The minipool is currently staking
     Withdrawable,   // The minipool has become withdrawable on the beacon chain and can be withdrawn from by the node operator
-    Dissolved		// The minipool has been dissolved and its user deposited ETH has been returned to the deposit pool
+    Dissolved       // The minipool has been dissolved and its user deposited ETH has been returned to the deposit pool
 }
