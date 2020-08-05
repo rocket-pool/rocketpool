@@ -8,11 +8,9 @@
 
 ---
 
-`Rocket Pool 2.0` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Casper 2.0, the new consensus protocol that Ethereum will transition to in late 2019.
+`Rocket Pool 2.5` is a first of its kind Ethereum Proof of Stake (PoS) infrastructure service, designed to be highly decentralised, distributed and compatible with staking in Ethereum  2.0 on the beacon chain. It was first conceived in late 2016 and has since had several successful public betas over the life span of ETH2 development. The staking network allows any individual, business, defi dapp, wallet provider, SaaSprovider, exchange — just about any service — the ability to provide their users with the option to earn staking rewards on their ETH holdings without worrying about maintaining an extensive staking infrastructure, just plug and play.
 
-We offer any user, business, corporation, pool, wallet provider, exchange, hedge fund; just about any service, the ability to provide their users the option to earn interest on their ether holdings for a fixed term without worrying about maintaining an extensive staking infrastructure, just plug and play. For a high level overview, please read our 2.0 announcement article.
-
-Rocket Pool has a long history in Ethereum and work on it originally began in late 2016 after the Mauve paper was released by Vitalik Buterin. This provided an early functional spec for Ethereum's new consensus protocol called Casper which would allow users to earn interest on a deposit of Ethereum. Since then Rocket Pool has grown and evolved into a next generation staking network, aiming to allow businesses and their users to earn interest on their ether and to empower users who wish to stake on their own node by providing them with additional income on top of Casper's interest. 
+Staking with the Rocket Pool network is very flexible and unlike any other staking infrastructure for Ethereum 2.0 to date. When depositing ETH into the Rocket Pool smart contracts, you will be instantly issued a token called rETH which represents a tokenised staking deposit in the network. Its value and the rewards it gains over time will be reflected by the work each individual decentralised node operator gives the Rocket Pool network. Rocket Pool’s unique decentralised staking infrastructure is economically bonded to both be secure and scalable.
 
 Rocket Pool isn't just a whitepaper, it's actual code. Be sure to read the [Rocket Pool 101 - FAQ for more information](https://medium.com/rocket-pool/rocket-pool-101-faq-ee683af10da9).
 
