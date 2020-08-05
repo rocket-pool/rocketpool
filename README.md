@@ -38,7 +38,7 @@ Contact form: https://www.rocketpool.net/#contact
 
 Twitter: https://twitter.com/Rocket_Pool
 
-Join our Discord chat channel! https://discordapp.com/invite/tCRG54c
+Join our Discord chat channel! https://discordapp.com/invite/9mwXaDY
 
 ---
 
