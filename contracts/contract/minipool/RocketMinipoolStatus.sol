@@ -10,7 +10,6 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../lib/SafeMath.sol";
 import "../../types/MinipoolStatus.sol";
 
