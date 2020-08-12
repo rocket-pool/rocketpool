@@ -9,8 +9,8 @@ interface RocketMinipoolManagerInterface {
     function getMinipoolAt(uint256 _index) external view returns (address);
     function getNodeMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
-    function getNodeTotalMinipoolCount(address _nodeAddress) external view returns (uint256);
-    function getNodeTotalMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
+    function getNodeValidatingMinipoolCount(address _nodeAddress) external view returns (uint256);
+    function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
     function getMinipoolByPubkey(bytes calldata _pubkey) external view returns (address);
     function getMinipoolExists(address _minipoolAddress) external view returns (bool);
     function getMinipoolPubkey(address _minipoolAddress) external view returns (bytes memory);

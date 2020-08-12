@@ -47,16 +47,16 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _index);
     }
 
-    // Get the total number of minipools created by a node
-    function getNodeTotalMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+    // Get the number of validating minipools owned by a node
+    function getNodeValidatingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.all.index", _nodeAddress)));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.validating.index", _nodeAddress)));
     }
 
-    // Get the address of a minipool created by a node by index
-    function getNodeTotalMinipoolAt(address _nodeAddress, uint256 _index) override public view returns (address) {
+    // Get a validating node minipool address by index
+    function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) override public view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.all.index", _nodeAddress)), _index);
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.validating.index", _nodeAddress)), _index);
     }
 
     // Get a minipool address by validator pubkey
@@ -108,7 +108,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
-        addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.all.index", _nodeAddress)), contractAddress);
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, now);
         // Add minipool to queue
@@ -137,8 +136,16 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Set a minipool's validator pubkey
     // Only accepts calls from registered minipools
     function setMinipoolPubkey(bytes calldata _pubkey) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Load contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Initialize minipool & get properties
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        address nodeAddress = minipool.getNodeAddress();
+        // Set minipool validator pubkey & validator minipool address
         setBytes(keccak256(abi.encodePacked("minipool.pubkey", msg.sender)), _pubkey);
         setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), msg.sender);
+        // Add minipool to node validating minipools index
+        addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), msg.sender);
     }
 
     // Set a minipool's withdrawal balances and withdrawable status
