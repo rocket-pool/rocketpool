@@ -217,14 +217,29 @@ module.exports = async (deployer, network) => {
     }
   };
 
+  // Set network withdrawal credentials
+  const setWithdrawalCredentials = async function() {
+    // Set withdrawal credentials
+    const withdrawalCredentials = Buffer.from('0000000000000000000000000000000000000000000000000000000000000000', 'hex');
+    const rocketNetworkWithdrawal = await contracts.rocketNetworkWithdrawal.deployed();
+    await rocketNetworkWithdrawal.setWithdrawalCredentials(withdrawalCredentials);
+    // Log
+    console.log('\x1b[31m%s\x1b[0m:', '   Set Withdrawal Credentials');
+    console.log('     '+'0x'+withdrawalCredentials.toString('hex'));
+  }
+
   // Run it
-  console.log('  Deploy Contracts');
+  console.log('\x1b[34m%s\x1b[0m', '  Deploy Contracts');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addContracts();
   console.log('\n');
   console.log('\x1b[34m%s\x1b[0m', '  Set ABI Only Storage');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addABIs();
+  console.log('\n');
+  console.log('\x1b[34m%s\x1b[0m', '  Set Network Withdrawal Credentials');
+  console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
+  await setWithdrawalCredentials();
 
   // Disable direct access to storage now
   await rocketStorageInstance.setBool(

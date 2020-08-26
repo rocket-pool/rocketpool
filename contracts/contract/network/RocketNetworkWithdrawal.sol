@@ -41,8 +41,13 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Get the validator withdrawal credentials
     function getWithdrawalCredentials() override public view returns (bytes memory) {
-        // TODO: implement
-        return hex"0000000000000000000000000000000000000000000000000000000000000000";
+        return getBytesS("network.withdrawal.credentials");
+    }
+
+    // Set the validator withdrawal credentials
+    // TODO: remove before mainnet release
+    function setWithdrawalCredentials(bytes memory _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlySuperUser {
+        setBytesS("network.withdrawal.credentials", _value);
     }
 
     // Accept a validator withdrawal from the beacon chain

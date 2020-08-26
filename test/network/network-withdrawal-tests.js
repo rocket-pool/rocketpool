@@ -8,6 +8,7 @@ import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
 import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
+import { setWithdrawalCredentials } from './scenario-set-withdrawal-credentials';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {
@@ -47,6 +48,37 @@ export default function() {
             await stakeMinipool(stakingMinipool, stakingValidatorPubkey, {from: node});
             await stakeMinipool(withdrawableMinipool, withdrawableValidatorPubkey, {from: node});
             await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
+
+        });
+
+
+        //
+        // Set withdrawal credentials
+        //
+
+
+        it(printTitle('admin', 'can set the network withdrawal credentials'), async () => {
+
+            // Withdrawal credentials
+            const withdrawalCredentials = Buffer.from('00000000000000000000000000000000000000000000000000000000000000FF', 'hex');
+
+            // Set withdrawal credentials
+            await setWithdrawalCredentials(withdrawalCredentials, {
+                from: owner,
+            });
+
+        });
+
+
+        it(printTitle('random address', 'cannot set the network withdrawal credentials'), async () => {
+
+            // Withdrawal credentials
+            const withdrawalCredentials = Buffer.from('00000000000000000000000000000000000000000000000000000000000000EE', 'hex');
+
+            // Set withdrawal credentials
+            await shouldRevert(setWithdrawalCredentials(withdrawalCredentials, {
+                from: random,
+            }), 'Random address set the network withdrawal credentials');
 
         });
 
