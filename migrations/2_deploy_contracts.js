@@ -38,6 +38,7 @@ const contracts = {
   // Core
   rocketRole:               artifacts.require('RocketRole.sol'),
   rocketVault:              artifacts.require('RocketVault.sol'),
+  rocketUpgrade:            artifacts.require('RocketUpgrade.sol'),
   // Deposit
   rocketDepositPool:        artifacts.require('RocketDepositPool.sol'),
   // Minipool
