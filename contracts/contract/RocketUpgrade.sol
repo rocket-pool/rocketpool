@@ -38,13 +38,10 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
         // Check contract balances
-        ERC20 rplToken = ERC20(getContractAddress("rocketPoolToken"));
-        ERC20 rethToken = ERC20(getContractAddress("rocketETHToken"));
-        ERC20 nethToken = ERC20(getContractAddress("rocketNodeETHToken"));
-        require(oldContractAddress.balance == 0, "The existing contract has an ether balance");
-        require(rplToken.balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
-        require(rethToken.balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
-        require(nethToken.balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
+        require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
+        //require(ERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
+        require(ERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
+        require(ERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
         // Deregister old contract
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
         deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));

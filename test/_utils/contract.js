@@ -1,3 +1,7 @@
+// Dependencies
+const pako = require('pako');
+
+
 // Get arbitrary contract events from a transaction result
 // txReceipt is the receipt returned from the transaction call
 // contractAddress is the address of the contract to retrieve events for
@@ -12,5 +16,14 @@ export function getTxContractEvents(txReceipt, contractAddress, eventName, event
             if (decodeParam.indexed && (decodeParam.type == 'string' || decodeParam.type == 'bytes')) decodeParam.type = 'bytes32'; // Issues decoding indexed string and bytes parameters
             return decodeParam;
         }), log.data, log.topics.slice(1)));
+}
+
+
+// Compress / decompress contract ABIs
+export function compressABI(abi) {
+    return Buffer.from(pako.deflate(JSON.stringify(abi))).toString('base64');
+}
+export function decompressABI(abi) {
+    return JSON.parse(pako.inflate(Buffer.from(abi, 'base64'), {to: 'string'}));
 }
 
