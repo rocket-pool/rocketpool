@@ -21,7 +21,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     using SafeMath for uint;
 
     // Events
-    event DepositReceived(address indexed from, uint256 amount, uint256 rethAmount, uint256 time);
+    event DepositReceived(address indexed from, uint256 amount, uint256 time);
     event DepositRecycled(address indexed from, uint256 amount, uint256 time);
     event DepositAssigned(address indexed minipool, uint256 amount, uint256 time);
 
@@ -49,16 +49,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         require(getBalance().add(msg.value) <= rocketDepositSettings.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
-        // Calculate amount of rETH to mint
-        uint256 rethAmount;
-        uint256 calcBase = 1 ether;
-        uint256 rethExchangeRate = rocketETHToken.getExchangeRate();
-        if (rethExchangeRate == 0) { rethAmount = msg.value; }
-        else { rethAmount = msg.value.mul(calcBase).div(rethExchangeRate); }
         // Mint rETH to user account
-        rocketETHToken.mint(rethAmount, msg.sender);
+        rocketETHToken.mint(msg.value, msg.sender);
         // Emit deposit received event
-        emit DepositReceived(msg.sender, msg.value, rethAmount, now);
+        emit DepositReceived(msg.sender, msg.value, now);
         // Process deposit
         processDeposit();
     }

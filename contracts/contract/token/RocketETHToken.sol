@@ -14,7 +14,7 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
 
     // Events
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
-    event TokensMinted(address indexed to, uint256 amount, uint256 time);
+    event TokensMinted(address indexed to, uint256 amount, uint256 ethAmount, uint256 time);
     event TokensBurned(address indexed from, uint256 amount, uint256 ethAmount, uint256 time);
 
     // Construct
@@ -22,24 +22,43 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         version = 1;
     }
 
-    // Get the current ETH : rETH exchange rate
-    // Returns the amount of ETH backing 1 rETH
-    function getExchangeRate() override public view returns (uint256) {
+    // Calculate the amount of ETH backing an amount of rETH
+    function getEthValue(uint256 _rethAmount) override public view returns (uint256) {
         // Get network balances
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
         uint256 rethSupply = rocketNetworkBalances.getTotalRETHSupply();
-        // Calculate exchange rate
-        uint256 calcBase = 1 ether;
-        if (rethSupply == 0) { return calcBase; }
-        return calcBase.mul(totalEthBalance).div(rethSupply);
+        // Use 1:1 ratio if no rETH is minted
+        if (rethSupply == 0) { return _rethAmount; }
+        // Calculate and return
+        return _rethAmount.mul(totalEthBalance).div(rethSupply);
+    }
+
+    // Calculate the amount of rETH backed by an amount of ETH
+    function getRethValue(uint256 _ethAmount) override public view returns (uint256) {
+        // Get network balances
+        RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
+        uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
+        uint256 rethSupply = rocketNetworkBalances.getTotalRETHSupply();
+        // Use 1:1 ratio if no rETH is minted
+        if (rethSupply == 0) { return _ethAmount; }
+        // Check network ETH balance
+        require(totalEthBalance > 0, "Cannot calculate rETH token amount while total network balance is zero");
+        // Calculate and return
+        return _ethAmount.mul(rethSupply).div(totalEthBalance);
+    }
+
+    // Get the current ETH : rETH exchange rate
+    // Returns the amount of ETH backing 1 rETH
+    function getExchangeRate() override public view returns (uint256) {
+        return getEthValue(1 ether);
     }
 
     // Get the current ETH collateral rate
     // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
     function getCollateralRate() override public view returns (uint256) {
         uint256 calcBase = 1 ether;
-        uint256 totalEthValue = totalSupply.mul(getExchangeRate()).div(calcBase);
+        uint256 totalEthValue = getEthValue(totalSupply);
         if (totalEthValue == 0) { return calcBase; }
         return calcBase.mul(address(this).balance).div(totalEthValue);
     }
@@ -53,33 +72,34 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
 
     // Mint rETH
     // Only accepts calls from the RocketDepositPool contract
-    function mint(uint256 _amount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
-        // Check amount
-        require(_amount > 0, "Invalid token mint amount");
+    function mint(uint256 _ethAmount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
+        // Get rETH amount
+        uint256 rethAmount = getRethValue(_ethAmount);
+        // Check rETH amount
+        require(rethAmount > 0, "Invalid token mint amount");
         // Update balance & supply
-        balances[_to] = balances[_to].add(_amount);
-        totalSupply = totalSupply.add(_amount);
+        balances[_to] = balances[_to].add(rethAmount);
+        totalSupply = totalSupply.add(rethAmount);
         // Emit tokens minted event
-        emit TokensMinted(_to, _amount, now);
+        emit TokensMinted(_to, rethAmount, _ethAmount, now);
     }
 
     // Burn rETH for ETH
-    function burn(uint256 _amount) override external {
-        // Check amount
-        require(_amount > 0, "Invalid token burn amount");
-        require(balances[msg.sender] >= _amount, "Insufficient rETH balance");
-        // Calculate ETH amount
-        uint256 calcBase = 1 ether;
-        uint256 ethAmount = _amount.mul(getExchangeRate()).div(calcBase);
+    function burn(uint256 _rethAmount) override external {
+        // Check rETH amount
+        require(_rethAmount > 0, "Invalid token burn amount");
+        require(balances[msg.sender] >= _rethAmount, "Insufficient rETH balance");
+        // Get ETH amount
+        uint256 ethAmount = getEthValue(_rethAmount);
         // Check ETH balance
         require(address(this).balance >= ethAmount, "Insufficient ETH balance for exchange");
         // Update balance & supply
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
-        totalSupply = totalSupply.sub(_amount);
+        balances[msg.sender] = balances[msg.sender].sub(_rethAmount);
+        totalSupply = totalSupply.sub(_rethAmount);
         // Transfer ETH to sender
         msg.sender.transfer(ethAmount);
         // Emit tokens burned event
-        emit TokensBurned(msg.sender, _amount, ethAmount, now);
+        emit TokensBurned(msg.sender, _rethAmount, ethAmount, now);
     }
 
 }
