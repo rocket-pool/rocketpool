@@ -24,6 +24,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
     event DepositRecycled(address indexed from, uint256 amount, uint256 time);
     event DepositAssigned(address indexed minipool, uint256 amount, uint256 time);
+    event ExcessWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -34,6 +35,17 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function getBalance() override public view returns (uint256) {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         return rocketVault.balanceOf(address(this));
+    }
+
+    // Excess deposit pool balance (in excess of minipool queue capacity)
+    function getExcessBalance() override public view returns (uint256) {
+        // Get minipool queue capacity
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        uint256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity();
+        // Calculate and return
+        uint256 balance = getBalance();
+        if (minipoolCapacity >= balance) { return 0; }
+        else { return balance.sub(minipoolCapacity); }
     }
 
     // Receive a vault withdrawal
@@ -109,6 +121,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             // Emit deposit assigned event
             emit DepositAssigned(minipoolAddress, minipoolCapacity, now);
         }
+    }
+
+    // Withdraw excess deposit pool balance for rETH collateral
+    function withdrawExcessBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketETHToken", msg.sender) {
+        // Load contracts
+        RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        // Check amount
+        require(_amount <= getExcessBalance(), "Insufficient excess balance for withdrawal");
+        // Withdraw ETH from vault
+        rocketVault.withdrawEther(_amount);
+        // Transfer to rETH contract
+        rocketETHToken.depositExcess{value: _amount}();
+        // Emit excess withdrawn event
+        emit ExcessWithdrawn(msg.sender, _amount, now);
     }
 
 }
