@@ -4,13 +4,18 @@ pragma solidity 0.6.12;
 
 import "./StandardToken.sol";
 import "../RocketBase.sol";
+import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
+import "../../lib/SafeMath.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
 contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
+
+    // Libs
+    using SafeMath for uint;
 
     // Events
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
@@ -63,9 +68,16 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         return calcBase.mul(address(this).balance).div(totalEthValue);
     }
 
-    // Deposit ETH
+    // Deposit ETH rewards
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, now);
+    }
+
+    // Deposit excess ETH from deposit pool
+    // Only accepts calls from the RocketDepositPool contract
+    function depositExcess() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, now);
     }
@@ -91,15 +103,35 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         require(balances[msg.sender] >= _rethAmount, "Insufficient rETH balance");
         // Get ETH amount
         uint256 ethAmount = getEthValue(_rethAmount);
-        // Check ETH balance
-        require(address(this).balance >= ethAmount, "Insufficient ETH balance for exchange");
+        // Get & check ETH balance
+        uint256 ethBalance = getTotalCollateral();
+        require(ethBalance >= ethAmount, "Insufficient ETH balance for exchange");
         // Update balance & supply
         balances[msg.sender] = balances[msg.sender].sub(_rethAmount);
         totalSupply = totalSupply.sub(_rethAmount);
+        // Withdraw ETH from deposit pool if required
+        withdrawDepositCollateral(ethAmount);
         // Transfer ETH to sender
         msg.sender.transfer(ethAmount);
         // Emit tokens burned event
         emit TokensBurned(msg.sender, _rethAmount, ethAmount, now);
+    }
+
+    // Get the total amount of collateral available
+    // Includes rETH contract balance & excess deposit pool balance
+    function getTotalCollateral() private view returns (uint256) {
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        return rocketDepositPool.getExcessBalance().add(address(this).balance);
+    }
+
+    // Withdraw ETH from the deposit pool for collateral if required
+    function withdrawDepositCollateral(uint256 _ethRequired) private {
+        // Check rETH contract balance
+        uint256 ethBalance = address(this).balance;
+        if (ethBalance >= _ethRequired) { return; }
+        // Withdraw
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.withdrawExcessBalance(_ethRequired.sub(ethBalance));
     }
 
 }

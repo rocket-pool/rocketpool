@@ -14,12 +14,11 @@ export async function burnReth(amount, txOptions) {
     function getBalances() {
         return Promise.all([
             rocketETHToken.totalSupply.call(),
-            web3.eth.getBalance(rocketETHToken.address).then(value => web3.utils.toBN(value)),
             rocketETHToken.balanceOf.call(txOptions.from),
             web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
-            ([tokenSupply, tokenEthBalance, userTokenBalance, userEthBalance]) =>
-            ({tokenSupply, tokenEthBalance, userTokenBalance, userEthBalance})
+            ([tokenSupply, userTokenBalance, userEthBalance]) =>
+            ({tokenSupply, userTokenBalance, userEthBalance})
         );
     }
 
@@ -44,7 +43,6 @@ export async function burnReth(amount, txOptions) {
 
     // Check balances
     assert(balances2.tokenSupply.eq(balances1.tokenSupply.sub(burnAmount)), 'Incorrect updated token supply');
-    assert(balances2.tokenEthBalance.eq(balances1.tokenEthBalance.sub(expectedEthTransferred)), 'Incorrect updated token ETH balance');
     assert(balances2.userTokenBalance.eq(balances1.userTokenBalance.sub(burnAmount)), 'Incorrect updated user token balance');
     assert(balances2.userEthBalance.eq(balances1.userEthBalance.add(expectedEthTransferred).sub(txFee)), 'Incorrect updated user ETH balance');
 

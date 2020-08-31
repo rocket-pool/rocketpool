@@ -94,11 +94,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
             rocketVault.withdrawEther(totalAmount);
         }
         // Transfer node balance to nETH contract
-        if (nodeAmount > 0) { rocketNodeETHToken.deposit{value: nodeAmount}(); }
+        if (nodeAmount > 0) { rocketNodeETHToken.depositRewards{value: nodeAmount}(); }
         // Transfer user balance to rETH contract or deposit pool
         if (userAmount > 0) {
             if (rocketETHToken.getCollateralRate() < rocketNetworkSettings.getTargetRethCollateralRate()) {
-                rocketETHToken.deposit{value: userAmount}();
+                rocketETHToken.depositRewards{value: userAmount}();
             } else {
                 rocketDepositPool.recycleWithdrawnDeposit{value: userAmount}();
             }

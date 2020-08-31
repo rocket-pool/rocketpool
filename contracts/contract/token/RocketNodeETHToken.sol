@@ -22,9 +22,9 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
         version = 1;
     }
 
-    // Deposit ETH
+    // Deposit ETH rewards
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function deposit() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, now);
     }
