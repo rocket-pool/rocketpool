@@ -59,6 +59,13 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         return getEthValue(1 ether);
     }
 
+    // Get the total amount of collateral available
+    // Includes rETH contract balance & excess deposit pool balance
+    function getTotalCollateral() override public view returns (uint256) {
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        return rocketDepositPool.getExcessBalance().add(address(this).balance);
+    }
+
     // Get the current ETH collateral rate
     // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
     function getCollateralRate() override public view returns (uint256) {
@@ -115,13 +122,6 @@ contract RocketETHToken is RocketBase, StandardToken, RocketETHTokenInterface {
         msg.sender.transfer(ethAmount);
         // Emit tokens burned event
         emit TokensBurned(msg.sender, _rethAmount, ethAmount, now);
-    }
-
-    // Get the total amount of collateral available
-    // Includes rETH contract balance & excess deposit pool balance
-    function getTotalCollateral() private view returns (uint256) {
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        return rocketDepositPool.getExcessBalance().add(address(this).balance);
     }
 
     // Withdraw ETH from the deposit pool for collateral if required

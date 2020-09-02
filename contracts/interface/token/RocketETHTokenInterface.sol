@@ -8,6 +8,7 @@ interface RocketETHTokenInterface is ERC20 {
     function getEthValue(uint256 _rethAmount) external view returns (uint256);
     function getRethValue(uint256 _ethAmount) external view returns (uint256);
     function getExchangeRate() external view returns (uint256);
+    function getTotalCollateral() external view returns (uint256);
     function getCollateralRate() external view returns (uint256);
     function depositRewards() external payable;
     function depositExcess() external payable;
