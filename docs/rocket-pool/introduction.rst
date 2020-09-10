@@ -28,6 +28,6 @@ The following sections give a high-level overview of the various concepts used i
     :maxdepth: 2
 
     staking.rst
-    deposits.rst
+    reward-tokens.rst
     nodes.rst
     minipools.rst
