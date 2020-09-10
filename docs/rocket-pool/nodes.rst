@@ -25,6 +25,9 @@ When a node makes a deposit to create a minipool, the node demand and commission
 High node demand results in a higher commission rate, while low demand results in a lower commission rate.
 The upper and lower bounds for node commission rate are recorded in Rocket Pool contracts, and will be adjustable via governance mechanics in the future.
 
+When a node makes a deposit, they may specify a minimum commission rate they will accept for the created minipool, to account for fluctuations in the network commission rate while their transaction is mined.
+If the network commission rate drops below this value before the deposit transaction is mined, it is cancelled and reverts.
+
 
 ****************
 Watchtower Nodes
@@ -32,6 +35,7 @@ Watchtower Nodes
 
 Some special nodes owned by Rocket Pool and trusted partners are designated as "watchtower" nodes.
 Watchtower nodes are responsible for reporting the Beacon Chain state back to the PoW chain.
+A majority of watchtower nodes must reach consensus on the information being reported before it takes effect.
 
 Firstly, they report the total value of the Rocket Pool network to the Rocket Pool contracts at set intervals.
 This allows the dynamic rETH : ETH exchange rate to be updated in accordance with rewards earned.
@@ -44,3 +48,7 @@ After phase 2 of the Eth 2.0 rollout, it can also be burned for ETH via the nETH
 
 Watchtower nodes also perform some other minor tasks, such as automatically dissolving timed out minipools which fail to stake.
 This prevents user-deposited ETH in the network from sitting "idle" instead of earning rewards - ETH in dissolved minipools is returned to the deposit pool.
+
+Finally, watchtower nodes are granted special privileges to create "empty" minipools with 0 ETH deposited by the node operator.
+These minipools are assigned 32 user-deposited ETH, which the node operator can still earn a commission on the rewards for.
+Empty minipools are only assigned ETH if there are no regular ones waiting in the queue - they serve as a backup if there is a shortage of node operators in the network.
