@@ -21,6 +21,7 @@ For Regular Stakers
 
 Staking in Rocket Pool as a regular user is as easy as navigating to the `Rocket Pool website <https://beta.rocketpool.net/>`_, entering an amount of ETH to stake, and clicking Start!
 When you stake in Rocket Pool, you will immediately receive an amount of rETH with equivalent value to the ETH you deposit.
+
 The value of rETH accumulates over time as the network earns rewards, so all you need to do to earn a profit is hold onto it.
 Once you're ready to exit, simply trade your rETH back in for ETH via the website (or on an exchange), and as long as the network has performed well, you'll end up with more than you put in!
 
@@ -32,6 +33,7 @@ For Node Operators
 In order to run a node in the Rocket Pool network, you will need to install the Rocket Pool `smart node software <https://github.com/rocket-pool/smartnode-install/>`_.
 The smart node client will allow you to create a new wallet for your node (to hold its Eth 1.0 account and Eth 2.0 validator keys) and register it with the Rocket Pool network.
 Once your node is registered, you can deposit ETH to create minipools (which will have user-deposited ETH assigned to them) and begin staking.
+
 You may deposit either 16 or 32 ETH at a time.
 16 ETH deposits create minipools which must wait until 16 user-deposited ETH is assigned to them before they begin staking.
 32 ETH deposits create minipools which can begin staking and earning rewards immediately - user-deposited ETH is assigned to them later, and you are refunded the extra 16 ETH back to your node account.

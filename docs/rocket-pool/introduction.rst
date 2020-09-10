@@ -13,7 +13,7 @@ An excellent guide to Rocket Pool for new users can be found in our `FAQ article
 It has several objectives within the Ethereum landscape, each relevant to a different audience. It aims to:
 
 #. Provide a network of decentralised nodes to perform proof of stake validation services for the Ethereum network;
-#. Allow users who don't possess the minimum Ether required to become a validator - or the necessary technical skills to run a node - to participate in staking and earn rewards;
+#. Allow users who don't possess the minimum ether to become a validator - or the necessary technical skills to run a node - to participate in staking and earn rewards;
 #. Allow users and businesses to run validator nodes for Eth 2.0 with only 16 ETH, to earn rewards and additional income;
 #. Provide any third party businesses with seamless staking services for their users.
 

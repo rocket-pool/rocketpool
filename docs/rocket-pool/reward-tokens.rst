@@ -12,7 +12,7 @@ A user stakes in Rocket Pool by depositing ETH in exchange for rETH.
 rETH holders can exit by simply exchanging their rETH for ETH.
 
 The rETH token has a dynamic exchange rate for ETH, which is recorded by the Rocket Pool network and increases as the network earns rewards.
-This means that rETH is constantly accumulating value, as long as the network is operating optimally.
+This means that rETH is constantly accruing value, as long as the network is operating optimally.
 rETH holders can simply hold their tokens to earn a profit, and exchange them for ETH once they wish to claim their rewards.
 
 The following example illustrates how the token is used to stake and earn rewards:
