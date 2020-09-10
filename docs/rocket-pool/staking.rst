@@ -15,9 +15,9 @@ The Beacon Chain will require a large sum of ether in order to become a validato
 Rocket Pool aims to solve this problem by pooling ether from multiple users together so that they can stake with less!
 
 
-*********
-For Users
-*********
+*******************
+For Regular Stakers
+*******************
 
 Staking in Rocket Pool as a regular user is as easy as navigating to the `Rocket Pool website <https://beta.rocketpool.net/>`_, entering an amount of ETH to stake, and clicking Start!
 When you stake in Rocket Pool, you will immediately receive an amount of rETH with equivalent value to the ETH you deposit.

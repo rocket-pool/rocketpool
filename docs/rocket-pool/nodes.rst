@@ -13,9 +13,9 @@ When a node operator wants to stake, they deposit 16 or 32 ETH into Rocket Pool,
 The node performs all of the validation duties required by the Ethereum network, and earns a percentage of the rewards on the user-deposited ETH assigned to it as a commission.
 
 
-*******************
-The Node Commission
-*******************
+***********************
+The Node Commission Fee
+***********************
 
 The commission earned by a node is calculated based on network supply and demand dynamics.
 When the Rocket Pool network has a large pool of user-deposited ETH and limited capacity in available minipools, node demand is high.

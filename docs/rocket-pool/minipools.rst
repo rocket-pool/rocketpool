@@ -40,7 +40,7 @@ Exiting & Withdrawing Minipools
 *******************************
 
 Rocket Pool node operators may exit their minipools whenever they like, using commands provided by the smart node software.
-This sends a message to the beacon chain requesting that the validator be exited, which happens after some delay.
+This sends a message to the beacon chain requesting that the validator be exited, which happens after some delay according to the Eth 2.0 protocol.
 Once the validator is exited, Rocket Pool watchtower nodes will report this back to the network contracts, recording their final balance and minting nETH for the node operator.
 
 Until phase 2 of the Eth 2.0 rollout, node operators may only withdraw their nETH earned after a significant delay.
