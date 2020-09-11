@@ -1,3 +1,5 @@
+.. _rocket-pool-nodes:
+
 #####
 Nodes
 #####
@@ -12,6 +14,8 @@ Anyone can register a node with Rocket Pool and begin staking.
 When a node operator wants to stake, they deposit 16 or 32 ETH into Rocket Pool, which is matched with 16 user-deposited ETH.
 The node performs all of the validation duties required by the Ethereum network, and earns a percentage of the rewards on the user-deposited ETH assigned to it as a commission.
 
+
+.. _rocket-pool-nodes-commission:
 
 ***********************
 The Node Commission Fee
@@ -28,6 +32,8 @@ The upper and lower bounds for node commission rate are recorded in Rocket Pool 
 When a node makes a deposit, they may specify a minimum commission rate they will accept for the created minipool, to account for fluctuations in the network commission rate while their transaction is mined.
 If the network commission rate drops below this value before the deposit transaction is mined, it is cancelled and reverts.
 
+
+.. _rocket-pool-nodes-watchtowers:
 
 ****************
 Watchtower Nodes

@@ -1,3 +1,5 @@
+.. _rocket-pool-reward-tokens:
+
 #############
 Reward Tokens
 #############

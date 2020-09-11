@@ -23,6 +23,8 @@ This way, the minipool knows how much to give back to each party once it has fin
 They also record a lot of other information about the node which created them, their staking status, and more.
 
 
+.. _rocket-pool-minipools-staking:
+
 *****************
 Staking Minipools
 *****************

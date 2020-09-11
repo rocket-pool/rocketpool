@@ -1,3 +1,5 @@
+.. _rocket-pool-staking:
+
 #######
 Staking
 #######
@@ -15,6 +17,8 @@ The Beacon Chain will require a large sum of ether in order to become a validato
 Rocket Pool aims to solve this problem by pooling ether from multiple users together so that they can stake with less!
 
 
+.. _rocket-pool-staking-stakers:
+
 *******************
 For Regular Stakers
 *******************
@@ -25,6 +29,8 @@ When you stake in Rocket Pool, you will immediately receive an amount of :ref:`r
 The value of rETH accumulates over time as the network earns rewards, so all you need to do to earn a profit is hold onto it.
 Once you're ready to exit, simply trade your rETH back in for ETH via the website (or on an exchange), and as long as the network has performed well, you'll end up with more than you put in!
 
+
+.. _rocket-pool-staking-node-operators:
 
 ******************
 For Node Operators
