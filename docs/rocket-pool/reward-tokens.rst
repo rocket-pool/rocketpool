@@ -3,6 +3,8 @@ Reward Tokens
 #############
 
 
+.. _rocket-pool-reward-tokens-reth:
+
 **************************
 rETH (for regular stakers)
 **************************
@@ -29,6 +31,8 @@ For this reason, Rocket Pool provides an additional pool of collateral for rETH 
 Excess balance is defined simply as the amount of ETH in the deposit pool minus the capacity of all available minipools in the queue.
 In other words, as long as there is a surplus of user-deposited ETH waiting to be assigned, rETH holders can burn their tokens to claim it.
 
+
+.. _rocket-pool-reward-tokens-neth:
 
 *************************
 nETH (for node operators)

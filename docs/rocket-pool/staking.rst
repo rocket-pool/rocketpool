@@ -20,7 +20,7 @@ For Regular Stakers
 *******************
 
 Staking in Rocket Pool as a regular user is as easy as navigating to the `Rocket Pool website <https://beta.rocketpool.net/>`_, entering an amount of ETH to stake, and clicking Start!
-When you stake in Rocket Pool, you will immediately receive an amount of rETH with equivalent value to the ETH you deposit.
+When you stake in Rocket Pool, you will immediately receive an amount of :ref:`rETH <rocket-pool-reward-tokens-reth>` with equivalent value to the ETH you deposit.
 
 The value of rETH accumulates over time as the network earns rewards, so all you need to do to earn a profit is hold onto it.
 Once you're ready to exit, simply trade your rETH back in for ETH via the website (or on an exchange), and as long as the network has performed well, you'll end up with more than you put in!
@@ -39,5 +39,5 @@ You may deposit either 16 or 32 ETH at a time.
 32 ETH deposits create minipools which can begin staking and earning rewards immediately - user-deposited ETH is assigned to them later, and you are refunded the extra 16 ETH back to your node account.
 
 Running a node in the Rocket Pool network is a long-term committment, as withdrawing a validator's balance will not be possible until phase 2 of the Eth 2.0 rollout.
-Rocket Pool provides an option for node operators to exit and gain access to their share of a validator's balance (in the form of nETH) before phase 2, but only after a long delay.
+Rocket Pool provides an option for node operators to exit and gain access to their share of a validator's balance (in the form of :ref:`nETH <rocket-pool-reward-tokens-neth>`) before phase 2, but only after a long delay.
 Therefore, it is not reccommended to run a node unless you can commit to doing so over a long time period.
