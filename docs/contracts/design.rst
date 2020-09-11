@@ -1,7 +1,11 @@
+.. _contracts-design:
+
 ###############################
 Contract Design & Upgradability
 ###############################
 
+
+.. _contracts-design-architecture:
 
 ************
 Architecture
@@ -15,6 +19,8 @@ The ``RocketStorage`` contract also stores the addresses of all other network co
 Using this architecture, the network can be upgraded by deploying new versions of an existing contract, and updating its address in storage.
 This gives Rocket Pool the flexibility required to fix bugs or implement new features to improve the network.
 
+
+.. _contracts-design-interacting:
 
 ****************************
 Interacting With Rocket Pool
@@ -42,7 +48,7 @@ Network upgrades may have occurred since the previous interaction, resulting in 
 Other contract instances can be created using the appropriate interface taken from the `Rocket Pool repository <https://github.com/rocket-pool/rocketpool/tree/master/contracts/interface>`_, e.g.::
 
     import "RocketStorageInterface.sol";
-    import "RocketPoolInterface.sol";
+    import "RocketDepositPoolInterface.sol";
 
     contract Example {
 
@@ -53,54 +59,43 @@ Other contract instances can be created using the appropriate interface taken fr
         }
 
         exampleMethod() public {
-            address rocketPoolAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.name", "rocketPool")));
-            RocketPoolInterface rocketPool = RocketPoolInterface(rocketPoolAddress);
+            address rocketDepositPoolAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketDepositPool")));
+            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(rocketDepositPoolAddress);
             ...
         }
 
     }
 
-The names of the Rocket Pool contracts, as defined in ``RocketStorage``, are:
+The Rocket Pool contracts, as defined in ``RocketStorage``, are:
 
-    * ``rocketAdmin``
-    * ``rocketPool``
-    * ``rocketRole``
-    * ``rocketNode``
-    * ``rocketPIP``
-    * ``rocketUpgrade``
-    * ``rocketUpgradeApproval``
-    * ``rocketDepositAPI``
-    * ``rocketGroupAPI``
-    * ``rocketNodeAPI``
-    * ``rocketDeposit``
-    * ``rocketDepositIndex``
-    * ``rocketDepositQueue``
-    * ``rocketDepositVault``
-    * ``rocketGroupAccessorFactory``
-    * ``rocketNodeFactory``
-    * ``rocketNodeKeys``
-    * ``rocketNodeTasks``
-    * ``rocketNodeWatchtower``
-    * ``rocketMinipoolDelegateNode``
-    * ``rocketMinipoolDelegateStatus``
-    * ``rocketMinipoolDelegateDeposit``
-    * ``rocketMinipoolFactory``
-    * ``rocketMinipoolSet``
-    * ``rocketMinipoolSettings``
-    * ``rocketDepositSettings``
-    * ``rocketGroupSettings``
-    * ``rocketNodeSettings``
-    * ``rocketPoolToken``
-    * ``rocketETHToken``
-    * ``taskDisableInactiveNodes``
-    * ``taskCalculateNodeFee``
-    * ``utilMaths``
-    * ``utilPublisher``
-    * ``utilAddressQueueStorage``
-    * ``utilBytes32QueueStorage``
-    * ``utilAddressSetStorage``
-    * ``utilBytes32SetStorage``
-    * ``utilStringSetStorage``
+    * ``rocketRole`` - Handles assignment of privileged admin roles (internal)
+    * ``rocketVault`` - Stores ETH held by network contracts (internal, not upgradeable)
+    * ``rocketUpgrade`` - Provides upgrade functionality for the network (internal)
 
-Many of these are used for internal processing, and only a few are likely to be useful for extension, specifically the Group & Deposit API contracts (``rocketGroupAPI``, ``rocketGroupContract``, and ``rocketDepositAPI``).
-The following sections cover the various API methods available; for information on methods of other contracts, consult their interfaces in the `Rocket Pool repository <https://github.com/rocket-pool/rocketpool/tree/master/contracts/interface>`_.
+    * ``rocketDepositPool`` - Accepts user-deposited ETH and handles assignment to minipools
+
+    * ``rocketMinipoolFactory`` - Creates minipool contract instances (internal)
+    * ``rocketMinipoolManager`` - Creates & manages all minipools in the network
+    * ``rocketMinipoolQueue`` - Organises minipools into a queue for ETH assignment
+    * ``rocketMinipoolStatus`` - Handles minipool status updates from watchtower nodes
+
+    * ``rocketNetworkBalances`` - Handles network balance updates from watchtower nodes
+    * ``rocketNetworkFees`` - Calculates node commission rates based on network node demand
+    * ``rocketNetworkWithdrawal`` - Handles processing of beacon chain validator withdrawals
+
+    * ``rocketNodeDeposit`` - Handles node deposits for minipool creation
+    * ``rocketNodeManager`` - Registers & manages all nodes in the network
+
+    * ``rocketDepositSettings`` - Provides network settings relating to deposits
+    * ``rocketMinipoolSettings`` - Provides network settings relating to minipools
+    * ``rocketNetworkSettings`` - Provides miscellaneous network settings
+    * ``rocketNodeSettings`` - Provides network settings relating to nodes
+
+    * ``rocketETHToken`` - The rETH token contract (not upgradeable)
+    * ``rocketNodeETHToken`` - The nETH token contract (not upgradeable)
+
+    * ``addressQueueStorage`` - A utility contract (internal)
+    * ``addressSetStorage`` - A utility contract (internal)
+
+Contracts marked as "internal" do not provide methods which are accessible to the general public, and so are generally not useful for extension.
+For information on specific contract methods, consult their interfaces in the `Rocket Pool repository <https://github.com/rocket-pool/rocketpool/tree/master/contracts/interface>`_.

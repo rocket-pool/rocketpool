@@ -23,6 +23,4 @@ Contents
     :maxdepth: 2
 
     design.rst
-    groups.rst
     deposits.rst
-    reference.rst
