@@ -1,7 +1,11 @@
+.. _js-library-getting-started:
+
 ###############
 Getting Started
 ###############
 
+
+.. _js-library-getting-started-installation:
 
 ************
 Installation
@@ -13,11 +17,13 @@ The Rocket Pool JavaScript library can be added to your application via NPM, and
     npm install web3
 
 
+.. _js-library-getting-started-initialization:
+
 **************
-Initialisation
+Initialization
 **************
 
-The library must be initialised with a web3 instance and a `Truffle <https://github.com/trufflesuite/truffle>`_ ``RocketStorage`` contract artifact::
+The library must be initialized with a web3 instance and a `Truffle <https://github.com/trufflesuite/truffle>`_ ``RocketStorage`` contract artifact::
 
     import Web3 from 'web3';
     import RocketPool from 'rocketpool';
@@ -28,6 +34,8 @@ The library must be initialised with a web3 instance and a `Truffle <https://git
     const rp = new RocketPool(web3, RocketStorage);
 
 
+.. _js-library-getting-started-usage:
+
 *****
 Usage
 *****
@@ -35,16 +43,16 @@ Usage
 The Rocket Pool library is divided into several modules, each for interacting with a different aspect of the network:
 
     * ``contracts``: Handles dynamic loading of the Rocket Pool contracts
-    * ``deposit``: Manages user deposits
-    * ``group``: Manages groups registered with Rocket Pool
+    * ``deposit``: Handles user deposits
+    * ``minipool``: Manages minipools in the Rocket Pool network
+    * ``network``: Handles miscellaneous network functionality
     * ``node``: Manages the nodes making up the Rocket Pool network
-    * ``pool``: Manages the main minipool registry and individual minipools
     * ``settings.deposit``: Provides information on user deposit settings
-    * ``settings.group``: Provides information on group settings
     * ``settings.minipool``: Provides information on minipool settings
+    * ``settings.network``: Provides information on network settings
     * ``settings.node``: Provides information on smart node settings
+    * ``tokens.neth``: Manages nETH token interactions
     * ``tokens.reth``: Manages rETH token interactions
-    * ``tokens.rpl``: Manages RPL token interactions
 
 All methods typically return promises due to the asynchronous nature of working with the Ethereum network.
 Getters return promises which resolve to their value, while mutators (methods which send transactions) return promises which resolve to a transaction receipt.
@@ -52,12 +60,12 @@ Mutators also accept a transaction options object, and an ``onConfirmation`` cal
 
 When using the Rocket Pool library in your project, you may handle the promises returned in the traditional way, or use async/await syntax if supported, e.g.::
 
-    rp.contracts.get('rocketPool')
-        .then(rocketPool => rocketPool.methods.getPoolsCount().call())
-        .then(poolsCount => { console.log(poolsCount); });
+    rp.contracts.get('rocketDepositPool')
+        .then(rocketDepositPool => rocketDepositPool.methods.getBalance().call())
+        .then(balance => { console.log(balance); });
 
 or::
 
-    let rocketPool = await rp.contracts.get('rocketPool');
-    let poolsCount = await rocketPool.methods.getPoolsCount().call();
-    console.log(poolsCount);
+    let rocketDepositPool = await rp.contracts.get('rocketDepositPool');
+    let balance = await rocketDepositPool.methods.getBalance().call();
+    console.log(balance);

@@ -1,3 +1,5 @@
+.. _js-library-contracts:
+
 #########
 Contracts
 #########
@@ -12,8 +14,10 @@ Contract ABIs and addresses are loaded from the chain, the ABIs are decompressed
 This is performed dynamically because Rocket Pool contracts can be upgraded and their ABIs and addresses may change.
 
 This module is used by other library modules internally, and generally does not need to be used directly.
-However, it is exposed publicly for when direct access to web3 contract instances is desired or the library wrapper methods are insufficient.
+However, it is exposed publicly for when direct access to web3 contract instances is desired, or the library wrapper methods are insufficient.
 
+
+.. _js-library-contracts-loading:
 
 ************************
 Loading Contracts & ABIs
@@ -23,18 +27,21 @@ Network contracts can be loaded via the ``contracts.get()`` method, which accept
 If a single contract name is passed, this method returns a promise resolving to a web3 contract instance.
 If a list of contract names is passed, it returns a promise resolving to an array of web3 contract instances, in the same order.
 
-Contract ABIs can be loaded in a similar fashion via the ``contracts.abi()`` method, which accepts either a single contract name, or a list of names, to retrieve ABIs for.
-This returns a promise resolving to an ABI as a JavaScript object, or an array of ABIs.
+Contract addresses and ABIs can be loaded in a similar fashion via the ``contracts.address()`` and ``contracts.abi()`` methods, which accept either a single contract name, or a list of names, to retrieve data for.
 
+
+.. _js-library-contracts-creating:
 
 ***************************
 Creating Contract Instances
 ***************************
 
-Some network contracts, such as ``RocketGroupContract``, ``RocketNodeContract`` and ``RocketMinipool`` have multiple instances deployed at a number of different addresses.
+Some network contracts, such as ``RocketMinipool``, have multiple instances deployed at a number of different addresses.
 To create an instance of one of these contracts, use the ``contracts.make(name, address)`` method.
 It accepts the name of the contract and the address of the specific instance required, both as strings, and returns a promise resolving to a web3 contract instance.
 
+
+.. _js-library-contracts-versions:
 
 ***************************
 Alternate Contract Versions
