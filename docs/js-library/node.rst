@@ -63,10 +63,10 @@ Methods
       Get the address of a trusted node in the network by index; returns ``Promise<string>``
 
     * ``node.getNodeExists(address)``:
-      Check whether the node with the specified address is registered; returns ``Promise<bool>``
+      Check whether the node with the specified address is registered; returns ``Promise<boolean>``
 
     * ``node.getNodeTrusted(address)``:
-      Check whether the node with the specified address is trusted; returns ``Promise<bool>``
+      Check whether the node with the specified address is trusted; returns ``Promise<boolean>``
 
     * ``node.getNodeTimezoneLocation(address)``:
       Get the timezone location of the node with the specified address; returns ``Promise<string>``
