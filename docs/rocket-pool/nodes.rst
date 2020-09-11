@@ -40,13 +40,13 @@ A majority of watchtower nodes must reach consensus on the information being rep
 Firstly, they report the total value of the Rocket Pool network to the Rocket Pool contracts at set intervals.
 This allows the dynamic rETH : ETH exchange rate to be updated in accordance with rewards earned.
 
-Secondly, they report when a minipool's validator on the Beacon Chain is ready for withdrawal.
+Secondly, they report when a minipool's validator on the Beacon Chain is ready for :ref:`withdrawal <rocket-pool-minipools-withdrawals>`.
 The minipool is updated accordingly, so that the Rocket Pool network can track its progress.
 The network also mints nETH equal to the node operator's share of the validator's final balance to the minipool.
 After a delay, the node operator can withdraw this nETH and exchange it for ETH on the open market.
 After phase 2 of the Eth 2.0 rollout, it can also be burned for ETH via the nETH contract itself.
 
-Watchtower nodes also perform some other minor tasks, such as automatically dissolving timed out minipools which fail to stake.
+Watchtower nodes also perform some other minor tasks, such as automatically :ref:`dissolving <rocket-pool-minipools-dissolving>` timed out minipools which fail to stake.
 This prevents user-deposited ETH in the network from sitting "idle" (not earning rewards) by returning it to the deposit pool.
 
 Finally, watchtower nodes are granted special privileges to create "empty" minipools with 0 ETH deposited by the node operator.

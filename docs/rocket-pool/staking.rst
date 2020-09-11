@@ -32,11 +32,12 @@ For Node Operators
 
 In order to run a node in the Rocket Pool network, you will need to install the Rocket Pool `smart node software <https://github.com/rocket-pool/smartnode-install/>`_.
 The smart node client will allow you to create a new wallet for your node (to hold its Eth 1.0 account and Eth 2.0 validator keys) and register it with the Rocket Pool network.
-Once your node is registered, you can deposit ETH to create minipools (which will have user-deposited ETH assigned to them) and begin staking.
+Once your node is registered, you can deposit ETH to create :ref:`minipools <rocket-pool-minipools>` (which will have user-deposited ETH assigned to them) and begin staking.
 
 You may deposit either 16 or 32 ETH at a time.
 16 ETH deposits create minipools which must wait until 16 user-deposited ETH is assigned to them before they begin staking.
-32 ETH deposits create minipools which can begin staking and earning rewards immediately - user-deposited ETH is assigned to them later, and you are refunded the extra 16 ETH back to your node account.
+32 ETH deposits create minipools which can begin staking and earning rewards immediately.
+User-deposited ETH is assigned to them later, and you are :ref:`refunded <rocket-pool-minipools-refunds>` the extra 16 ETH back to your node account.
 
 Running a node in the Rocket Pool network is a long-term committment, as withdrawing a validator's balance will not be possible until phase 2 of the Eth 2.0 rollout.
 Rocket Pool provides an option for node operators to exit and gain access to their share of a validator's balance (in the form of :ref:`nETH <rocket-pool-reward-tokens-neth>`) before phase 2, but only after a long delay.

@@ -1,3 +1,5 @@
+.. _rocket-pool-minipools:
+
 #########
 Minipools
 #########
@@ -35,6 +37,8 @@ The smart node software will then watch for the validator being activated on the
 Once active, its validation duties will automatically be started.
 
 
+.. _rocket-pool-minipools-withdrawals:
+
 *******************************
 Exiting & Withdrawing Minipools
 *******************************
@@ -52,6 +56,8 @@ The share of ETH earned by the node operator will be sent to the nETH contract, 
 The share of ETH belonging to Rocket Pool users will be recycled to the deposit pool, either to stake again or to act as collateral for rETH token exchanges.
 
 
+.. _rocket-pool-minipools-refunds:
+
 ******************
 Refunding Node ETH
 ******************
@@ -64,6 +70,8 @@ Rocket Pool also records the time at which user-deposited ETH is assigned to the
 All rewards earned by the minipool *before* this point are paid exclusively to the node operator.
 Rewards earned after this point are shared between the node operator and Rocket Pool users (after accounting for the node commission fee).
 
+
+.. _rocket-pool-minipools-dissolving:
 
 ********************
 Dissolving Minipools
