@@ -63,13 +63,13 @@ Methods
       Get the address of a trusted node in the network by index; returns ``Promise<string>``
 
     * ``node.getNodeExists(address)``:
-      Check whether the node with the specified address is registered; returns ``Promise<boolean>``
+      Check whether the specified node is registered; returns ``Promise<boolean>``
 
     * ``node.getNodeTrusted(address)``:
-      Check whether the node with the specified address is trusted; returns ``Promise<boolean>``
+      Check whether the specified node is trusted; returns ``Promise<boolean>``
 
     * ``node.getNodeTimezoneLocation(address)``:
-      Get the timezone location of the node with the specified address; returns ``Promise<string>``
+      Get the timezone location of the specified node; returns ``Promise<string>``
 
     * ``node.registerNode(timezoneLocation, options, onConfirmation)``:
       Register the calling address as a node in the network; returns ``Promise<TransactionReceipt>``
