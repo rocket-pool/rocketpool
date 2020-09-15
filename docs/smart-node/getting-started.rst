@@ -15,11 +15,11 @@ The smart node client is supported on Linux, MacOS and Windows.
 **Note that a smart node cannot be run locally on Windows at this stage; the Windows client can only be used to manage a remote server.**
 
 The smart node service is supported on all Unix platforms, with automatic OS dependency installation for Ubuntu, Debian, CentOS and Fedora.
-**OS dependencies (`docker engine <https://docs.docker.com/engine/install/>`_ and `docker-compose <https://docs.docker.com/compose/install/>`_) must be installed manually on all other Unix platforms.**
+**OS dependencies (docker engine and docker-compose) must be installed manually on all other Unix platforms.**
 
 Support for additional operating systems will be added incrementally, after successful testing of the existing version.
 
-The Smart Node stack requires at least 4GB of memory and 8GB of (SSD) hard disk space in order to run.
+The Smart Node service requires at least 4GB of memory and 8GB of (SSD) hard disk space in order to run.
 Note that a node operator must have **root** access to their node in order to install and run the smart node service.
 
 
@@ -36,17 +36,21 @@ You can check with ``curl --version`` and ``wget --version`` respectively.
 **Linux (64 bit)**:
 
 With cURL::
+
     curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 --create-dirs -o ~/bin/rocketpool && chmod +x ~/bin/rocketpool
 
 With wget::
+
     mkdir -p ~/bin && wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 -O ~/bin/rocketpool && chmod +x ~/bin/rocketpool
 
 **MacOS (64 bit)**:
 
 With cURL::
+
     curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -o /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
 
 With wget::
+
     wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -O /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
 
 **Windows (64 bit)**:
@@ -71,7 +75,7 @@ The following installation options are available:
 * ``-v``: Specify a version of the smart node service package files to use (default: latest)
 
 Once the smart node service has been installed, you may need to start a new shell session if working locally.
-This is required for updated user permissions (to interact with docker engine) to take effect.
+This is required for updated user permissions to take effect (for interacting with docker engine).
 
 
 .. _smart-node-getting-started-configuration:
