@@ -53,9 +53,9 @@ If any of your minipools have exited and been marked as withdrawable by the Rock
     rocketpool minipool withdraw
 
 This will display a list of all eligible minipools, and prompt you to select one or all of them to withdraw from.
-Once refunded, the minipool/s will be destroyed, and you should see their balances reflected in your node account.
+Once withdrawn, the minipool/s will be destroyed, and you should see their balances reflected in your node account.
 
-Note that before phase 2 of the Eth 2.0 rollout, rewards can only be withdrawn from exited minipools after a significant delay.
+**Note that before phase 2 of the Eth 2.0 rollout, rewards can only be withdrawn from exited minipools after a significant delay.**
 
 
 .. _smart-node-minipools-dissolve:
