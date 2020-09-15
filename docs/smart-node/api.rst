@@ -27,11 +27,11 @@ All endpoints return data in JSON format, always including ``status`` and ``erro
 Wallet Commands
 ***************
 
-* ``status``: Get the current status of the password & wallet
-* ``set-password [password]``: Set the node password to the specified string
-* ``init``: Initialize the node wallet
-* ``recover [mnemonic]``: Recover the node wallet from a mnemonic phrase (must be quoted)
-* ``export``: Get the node password & wallet file contents
+* ``wallet status``: Get the current status of the password & wallet
+* ``wallet set-password [password]``: Set the node password to the specified string
+* ``wallet init``: Initialize the node wallet
+* ``wallet recover [mnemonic]``: Recover the node wallet from a mnemonic phrase (must be quoted)
+* ``wallet export``: Get the node password & wallet file contents
 
 
 .. _smart-node-api-node:
@@ -40,16 +40,16 @@ Wallet Commands
 Node Commands
 *************
 
-* ``status``: Get the current status of the node
-* ``can-register``: Check whether the node can be registered with Rocket Pool
-* ``register [timezone-location]``: Register the node with Rocket Pool
-* ``set-timezone [timezone-location]``: Set the node's timezone location
-* ``can-deposit [amount]``: Check whether the node can deposit the specified amount of ETH
-* ``deposit [amount] [min-fee]``: Deposit the specified amount of ETH with a minimum commission rate
-* ``can-send [amount] [token]``: Check whether the node can send an amount of tokens
-* ``send [amount] [token] [to-address]``: Send the specified amount of tokens to an address
-* ``can-burn [amount] [token]``: Check whether the node can burn an amount of tokens
-* ``burn [amount] [token]``: Burn the specified amount of tokens for ETH
+* ``node status``: Get the current status of the node
+* ``node can-register``: Check whether the node can be registered with Rocket Pool
+* ``node register [timezone-location]``: Register the node with Rocket Pool
+* ``node set-timezone [timezone-location]``: Set the node's timezone location
+* ``node can-deposit [amount]``: Check whether the node can deposit the specified amount of ETH
+* ``node deposit [amount] [min-fee]``: Deposit the specified amount of ETH with a minimum commission rate
+* ``node can-send [amount] [token]``: Check whether the node can send an amount of tokens
+* ``node send [amount] [token] [to-address]``: Send the specified amount of tokens to an address
+* ``node can-burn [amount] [token]``: Check whether the node can burn an amount of tokens
+* ``node burn [amount] [token]``: Burn the specified amount of tokens for ETH
 
 
 .. _smart-node-api-minipool:
@@ -58,17 +58,17 @@ Node Commands
 Minipool Commands
 *****************
 
-* ``status``: Get the current status of all minipools owned by the node
-* ``can-refund [minipool-address]``: Check whether the specified minipool has a refund available
-* ``refund [minipool-address]``: Refund ETH from the specified minipool
-* ``can-dissolve [minipool-address]``: Check whether the specified minipool can be dissolved
-* ``dissolve [minipool-address]``: Dissolve the specified minipool
-* ``can-exit [minipool-address]``: Check whether the specified minipool can be exited from the beacon chain
-* ``exit [minipool-address]``: Exit the specified minipool from the beacon chain
-* ``can-withdraw [minipool-address]``: Check whether the specified minipool can be withdrawn from
-* ``withdraw [minipool-address]``: Withdraw deposit & rewards from the specified minipool
-* ``can-close [minipool-address]``: Check whether the specified minipool can be closed
-* ``close [minipool-address]``: Close the specified minipool
+* ``minipool status``: Get the current status of all minipools owned by the node
+* ``minipool can-refund [minipool-address]``: Check whether the specified minipool has a refund available
+* ``minipool refund [minipool-address]``: Refund ETH from the specified minipool
+* ``minipool can-dissolve [minipool-address]``: Check whether the specified minipool can be dissolved
+* ``minipool dissolve [minipool-address]``: Dissolve the specified minipool
+* ``minipool can-exit [minipool-address]``: Check whether the specified minipool can be exited from the beacon chain
+* ``minipool exit [minipool-address]``: Exit the specified minipool from the beacon chain
+* ``minipool can-withdraw [minipool-address]``: Check whether the specified minipool can be withdrawn from
+* ``minipool withdraw [minipool-address]``: Withdraw deposit & rewards from the specified minipool
+* ``minipool can-close [minipool-address]``: Check whether the specified minipool can be closed
+* ``minipool close [minipool-address]``: Close the specified minipool
 
 
 .. _smart-node-api-misc:
