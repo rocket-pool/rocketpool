@@ -1,7 +1,11 @@
+.. _smart-node-service:
+
 #######################
 The Rocket Pool Service
 #######################
 
+
+.. _smart-node-service-start:
 
 ********************
 Starting the Service
@@ -11,22 +15,24 @@ Start the Rocket Pool service by running::
 
     rocketpool service start
 
-This will "build up" the Smart Node stack, which runs it and also ensures that it stays running.
+This will "build up" the smart node stack, which runs it and also ensures that it stays running.
 If any of the running containers crash or you restart your node, Docker will start them back up to ensure that no uptime is lost.
 
 You can check that the containers are running correctly with::
 
-    docker ps
+    rocketpool service status
 
-You should see (in any order) entries for containers with ``IMAGE`` names similar to the following:
+You should see (in any order) containers with the following names:
 
-    * ``rocketpool/smartnode-cli:v0.0.1``
-    * ``rocketpool/smartnode-node:v0.0.1``
-    * ``rocketpool/smartnode-minipools:v0.0.1``
-    * ``rocketpool/smartnode-watchtower:v0.0.1``
-    * ``ethereum/client-go:stable``
-    * ``traefik``
+    * ``rocketpool_eth1``
+    * ``rocketpool_eth2``
+    * ``rocketpool_validator``
+    * ``rocketpool_api``
+    * ``rocketpool_node``
+    * ``rocketpool_watchtower``
 
+
+.. _smart-node-service-pause:
 
 *******************
 Pausing the Service
@@ -41,6 +47,8 @@ Note that this will stop validators from performing their validation duties, so 
 The service can be started up again with ``rocketpool service start``.
 
 
+.. _smart-node-service-stop:
+
 ********************
 Stopping the Service
 ********************
@@ -49,12 +57,14 @@ If you have finished interacting with the Rocket Pool network and want to stop t
 
     rocketpool service stop
 
-This will "tear down" the Smart Node stack, stopping and removing all running containers, and deleting their state.
+This will "tear down" the smart node stack, stopping and removing all running containers, and deleting their state.
 Not only will validators stop performing validation duties, but all Ethereum clients will need to re-sync if the service is restarted.
-It is advised to use this command only if the node has no minipools remaining and no balances to withdraw in its network contract.
+It is advised to use this command only if the node has no active minipools.
 
-As a security measure, node data at ``RP_PATH`` (including the node & validators' private keys) will be preserved, and must be manually deleted if desired (this is not recommended).
+As a security measure, node data at ``~/.rocketpool`` (including the node wallet) will be preserved, and must be manually deleted if desired (this is not recommended).
 
+
+.. _smart-node-service-config:
 
 *************************
 Reconfiguring the Service
@@ -62,27 +72,21 @@ Reconfiguring the Service
 
 If you want to make any configuration changes to the Rocket Pool service, run::
 
-    rocketpool service config
+    rocketpool config
 
-This will repeat the configuration prompts that were run on installation, and will overwrite your node's Docker configuration file accordingly.
+This will repeat the configuration process performed after installation, and will overwrite your node's configuration file accordingly.
 For the changes to take effect, restart the Rocket Pool service with ``rocketpool service start``.
 
 
-*******************
-Scaling the Service
-*******************
-
-This feature creates additional containers for an image, and is for advanced use only.
-For example, to run 3 Ethereum PoW client containers in parallel, run::
-
-    rocketpool service scale pow=3
-
-RPC requests from other containers will be load-balanced between the available PoW client containers.
-
+.. _smart-node-service-info:
 
 ***************************
 Viewing Service Information
 ***************************
+
+You can check the current status of the service (its running containers) with::
+
+    rocketpool service status
 
 You can view the logs for all running containers in real-time with::
 
@@ -90,7 +94,7 @@ You can view the logs for all running containers in real-time with::
 
 To view the logs for a single container, add its name at the end, e.g.::
 
-    rocketpool service logs pow
+    rocketpool service logs eth2
 
 Press Ctrl-C to stop.
 

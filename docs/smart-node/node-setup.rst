@@ -1,57 +1,69 @@
+.. _smart-node-setup:
+
 #####################################
 Node Setup, Registration & Management
 #####################################
 
 
-**********************
-Initializing Your Node
-**********************
+.. _smart-node-setup-initialization:
 
-With the Rocket Pool service running, the first thing you'll need to do is initialize your node password & account::
+*****************************
+Initializing Your Node Wallet
+*****************************
 
-    rocketpool node init
+With the Rocket Pool service running, the first thing you'll need to do is initialize your node wallet::
 
-This will prompt you to enter a node password, and will then save it to disk along with a newly generated private key for your node account.
-You won't need to enter your node password again, it will simply be used by the Smart Node to unlock your account.
+    rocketpool wallet init
 
-Your node password is stored at ``~/.rocketpool/password``, while your private key is stored under ``~/.rocketpool/accounts/``.
+This will prompt you to enter a node password, and will then save it to disk.
+You won't need to enter your node password again, it will simply be used by the smart node to unlock your wallet.
+
+Next, a HD wallet will be generated to store your node account and all validator keys for your minipools.
+You will be shown a mnemonic phrase to recover your wallet in case of hardware failure, and prompted to record it and enter it to confirm it is correct.
+
+Your node password is stored at ``~/.rocketpool/data/password``, while your wallet is stored at ``~/.rocketpool/data/wallet``.
 Feel free to back these up in a safe and secure storage area which can't be accessed by anyone else.
+You do not need to back your wallet up repeatedly, even after creating new minipools.
 
-You can make sure your account was created successfully with::
+You can make sure your wallet was created successfully with::
 
-    rocketpool node status
+    rocketpool wallet status
 
-This should display something like: ``Node account 0x0123...0123 has a balance of 00.00 ETH, 00.00 rETH and 00.00 RPL``.
 
+.. _smart-node-setup-recovery:
+
+***************************
+Recovering Your Node Wallet
+***************************
+
+If you lose your node wallet, you can recover it with::
+
+    rocketpool wallet recover
+
+This will prompt you to enter the recovery mnemonic phrase for your wallet.
+If successful, the wallet will be restored along with your node account and all validator keys for created minipools.
+
+
+.. _smart-node-setup-seeding:
 
 *************************
 Seeding Your Node Account
 *************************
 
-Next, you'll need to load your node account up with ETH and RPL to deposit into Rocket Pool.
-You'll also need at least 1 ETH in order to register with Rocket Pool.
-This isn't paid to Rocket Pool - we simply ensure that node operators have enough to cover their gas costs.
+Next, you'll need to load your node account up with ETH to deposit into Rocket Pool.
+You can find your node address via ``rocketpool node status``, then send ETH to that address.
 
-Special commands are available to withdraw ETH and RPL from faucets to your node account, for the Rocket Pool beta only.
-You can check your current faucet allowances with::
+If you're participating in a testnet beta, find a faucet for the relevant testnet to withdraw ETH from.
+Otherwise, you'll need to obtain some ETH and send it to your node address.
 
-	rocketpool faucet allowance
 
-Then, withdraw resources with::
-
-	rocketpool faucet withdraw [amount] [unit]
-
-where ``[amount]`` and ``[unit]`` specify how much of which resource ("ETH" or "RPL") to withdraw.
-Note that it may take a couple of minutes for tokens to be minted to your node account; you can check its balances again with::
-
-	rocketpool node status
-
+.. _smart-node-setup-registration:
 
 *********************
 Registering Your Node
 *********************
 
-Once you're ready, register with::
+Once you have some ETH, register with::
 
     rocketpool node register
 
@@ -59,17 +71,14 @@ You will be prompted to either detect your timezone location automatically, or e
 This information is not used for KYC purposes, but is sent to Rocket Pool during registration in order to display accurate node information to users.
 You may abstain by manually entering a location such as ``Hidden/Hidden``.
 
-Once you've registered successfully, you can check your status again::
+Once you've registered successfully, you can check your status with::
 
     rocketpool node status
 
-This should now display additional information like: ``Node registered with Rocket Pool with contract at 0xcdef...cdef,``
-``timezone 'Etc/Etc' and a balance of 2.00 ETH and 0.00 RPL``
+This should now display additional information like: ``The node is registered with Rocket Pool with a timezone location of Example/Example``.
 
-Registering your node will create a new node contract which is used to interact with the Rocket Pool network.
-Some operations (such as depositing to Rocket Pool or withdrawing from minipools which have finished staking) will affect the ETH and token balances of this contract.
-The node contract is linked directly to your node account, restricting access of these operations to you.
 
+.. _smart-node-setup-timezone:
 
 **************************
 Updating Your Registration
@@ -77,22 +86,12 @@ Updating Your Registration
 
 If you want to update the timezone your node is registered in, run::
 
-    rocketpool node timezone
+    rocketpool node set-timezone
 
 This will repeat the prompts run during registration, and update your node's information in the network.
 
 
-***********************************
-Withdrawing From Your Node Contract
-***********************************
-
-If one of your node's minipools stalls (expires after a long period of inactivity) or withdraws from staking, its ETH & RPL balances will be sent to your node contract.
-You can simply leave these to be used for future deposits, or to withdraw them to your account, use::
-
-    rocketpool node withdraw [amount] [unit]
-
-where ``[amount]`` and ``[unit]`` specify how much of which resource ("ETH" or "RPL") to withdraw.
-
+.. _smart-node-setup-sending:
 
 ******************************
 Sending From Your Node Account
@@ -100,6 +99,6 @@ Sending From Your Node Account
 
 If you want to send ETH or tokens from your node account to another Ethereum address at any time, use::
 
-	rocketpool node send [address] [amount] [unit]
+	rocketpool node send [amount] [token] [to-address]
 
-This will send the specified amount of ETH, rETH or RPL from the node account to the specified address.
+This will send the specified amount of ETH or nETH from the node account to the specified address.
