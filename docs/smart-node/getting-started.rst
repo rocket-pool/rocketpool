@@ -1,60 +1,91 @@
+.. _smart-node-getting-started:
+
 ###############
 Getting Started
 ###############
 
 
+.. _smart-node-getting-started-requirements:
+
 **************************
 OS & Hardware Requirements
 **************************
 
-Currently, the Rocket Pool Smart Node software stack is only officially supported on `Ubuntu <https://ubuntu.com/>`_ 16.04 and up.
+The smart node client is supported on Linux, MacOS and Windows.
+**Note that a smart node cannot be run locally on Windows at this stage; the Windows client can only be used to manage a remote server.**
+
+The smart node service is supported on all Unix platforms, with automatic OS dependency installation for Ubuntu, Debian, CentOS and Fedora.
+**OS dependencies (`docker engine <https://docs.docker.com/engine/install/>`_ and `docker-compose <https://docs.docker.com/compose/install/>`_) must be installed manually on all other Unix platforms.**
+
 Support for additional operating systems will be added incrementally, after successful testing of the existing version.
-However, the majority of the stack runs within Docker containers, so running it on other Unix-based operating systems should require minimal customization.
 
-The Smart Node stack requires at least 3GB of memory and 8GB of (SSD) hard disk space in order to run.
+The Smart Node stack requires at least 4GB of memory and 8GB of (SSD) hard disk space in order to run.
+Note that a node operator must have **root** access to their node in order to install and run the smart node service.
 
-Note that a node operator must have **root** access to their node in order to install the dependencies and register the services required by the Smart Node stack.
 
+.. _smart-node-getting-started-installation:
 
 ************
 Installation
 ************
 
-Firstly, check if you have cURL installed on your system by running the following command in your terminal::
+Firstly, install the smart node client locally.
+For Linux & MacOS, run either the cURL or wget command depending on which utilities are installed on your system.
+You can check with ``curl --version`` and ``wget --version`` respectively.
 
-    curl --version
+**Linux (64 bit)**:
 
-If you don't, install it::
+With cURL::
+    curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 --create-dirs -o ~/bin/rocketpool && chmod +x ~/bin/rocketpool
 
-    sudo apt-get install curl
+With wget::
+    mkdir -p ~/bin && wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 -O ~/bin/rocketpool && chmod +x ~/bin/rocketpool
 
-Then, the Smart Node stack can be installed by running the following command::
+**MacOS (64 bit)**:
 
-    curl -L https://github.com/rocket-pool/smartnode-install/releases/download/0.0.1/setup.sh -o setup.sh && chmod 755 setup.sh && ./setup.sh && rm setup.sh
+With cURL::
+    curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -o /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
 
-This will download the installation shell script, run it, and remove it once complete. For verbose output, add a ``-v`` flag to the setup command::
+With wget::
+    wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -O /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
 
-    curl -L https://github.com/rocket-pool/smartnode-install/releases/download/0.0.1/setup.sh -o setup.sh && chmod 755 setup.sh && ./setup.sh -v && rm setup.sh
+**Windows (64 bit)**:
 
-The installation script will perform the following actions:
+#. Download the `smart node client <https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-windows-amd64.exe>`_.
+#. Move it to the desired location on your system (e.g. ``C:\bin\rocketpool.exe``).
+#. Open the command prompt and run it via its full path (e.g. ``C:\bin\rocketpool.exe``).
 
-    * Install the following OS-level dependencies via ``apt-get``:
+Secondly, install the smart node service either locally or on a remote server.
+To install locally, simply run ``rocketpool service install``.
+To install remotely, provide flags for the remote host address, username, and SSH identity file, e.g.::
+    rocketpool --host example.com --user username --key /path/to/identity.pem service install
 
-        * ``apt-transport-https``
-        * ``ca-certificates``
-        * ``gnupg-agent``
-        * ``software-properties-common``
-        * ``docker-ce``
+If automatic dependency installation is not supported on your platform (or if you would prefer to install OS dependencies yourself), use the ``-d`` option to skip this step (e.g. ``rocketpool service install -d``).
+Then, manually install `docker engine <https://docs.docker.com/engine/install/>`_ and `docker-compose <https://docs.docker.com/compose/install/>`_.
 
-    * Install the ``docker-compose`` tool via cURL
-    * Install the ``rocketpool`` command-line utility
-    * Download all Docker images required by the Smart Node stack
-    * Create a Rocket Pool data folder at ``~/.rocketpool``
-    * Set the ``RP_PATH`` environment variable to the data folder
-    * Download various configuration files used by Docker to the data folder
+The following installation options are available:
 
-The installation script can be run safely if any of the listed software is already installed; these items will be skipped.
-However, any existing Rocket Pool Docker configuration files will be overwritten.
+* ``-r``: Verbose mode (print all output from the installation process)
+* ``-d``: Skip automatic installation of OS dependencies
+* ``-n``: Specify a network to run the smart node on (default: medalla)
+* ``-v``: Specify a version of the smart node service package files to use (default: latest)
 
-Once installation has finished, you will be prompted to answer some questions for the initial configuration.
-Then, you'll be prompted to restart your terminal, and you can begin!
+Once the smart node service has been installed, you may need to start a new shell session if working locally.
+This is required for updated user permissions (to interact with docker engine) to take effect.
+
+
+.. _smart-node-getting-started-configuration:
+
+*************
+Configuration
+*************
+
+Once the smart node service is installed, it must be configured before use.
+Simply run ``rocketpool config`` and follow the prompts to select which Eth 1.0 and Eth 2.0 clients to run in the smart node stack.
+
+You may use `Infura <https://infura.io/>`_ rather than run a full Eth 1.0 client if desired.
+If you do, you will need to create an account and set up a new project to obtain a project ID.
+Note that Infura will limit requests after a certain threshold, so uptime is not guaranteed.
+
+By default, the smart node will select a random Eth 2.0 client to run, in order to increase network client diversity.
+You may, however, select a specific client to run if you prefer.
