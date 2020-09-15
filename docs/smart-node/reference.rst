@@ -1,60 +1,70 @@
+.. _smart-node-reference:
+
 #################
 Command Reference
 #################
 
 
+.. _smart-node-reference-service:
+
 ****************
 Service Commands
 ****************
 
-    * ``rocketpool service start``: Start the Smart Node containers
-    * ``rocketpool service pause``: Stop the execution of the Smart Node containers
-    * ``rocketpool service stop``: Stop the execution of and remove all Smart Node containers and their state
-    * ``rocketpool service scale [service=NUM]``: Scale the number of containers for a Smart Node service
-    * ``rocketpool service config``: Reconfigure the Smart Node service (requires restart for changes to take effect)
-    * ``rocketpool service logs [services]``: View the logs for the Smart Node stack or for an individual container
-    * ``rocketpool service stats``: View resource usage statistics for the Smart Node stack
+* ``rocketpool service install``: Install the Rocket Pool service either locally or to a remote server
+* ``rocketpool service status``: Display the current status of the Rocket Pool service
+* ``rocketpool service start``: Start the Rocket Pool service to begin running a smart node
+* ``rocketpool service pause``: Pause the Rocket Pool service temporarily
+* ``rocketpool service stop``: Stop the Rocket Pool service and remove all associated docker containers
+* ``rocketpool service logs [services...]``: View the logs for one or more services running as part of the docker stack
+* ``rocketpool service stats``: Display resource usage statistics for the Rocket Pool service
+* ``rocketpool config``: Configure the Rocket Pool service and select Eth 1.0 and Eth 2.0 clients
 
+
+.. _smart-node-reference-wallet:
+
+***************
+Wallet Commands
+***************
+
+* ``rocketpool wallet status``: Display the current status of the node's wallet
+* ``rocketpool wallet init``: Initialize the node's password and wallet
+* ``rocketpool wallet recover``: Recover a node wallet from a mnemonic phrase
+* ``rocketpool wallet export``: Display the node password and wallet file contents
+
+
+.. _smart-node-reference-node:
 
 *************
 Node Commands
 *************
 
-    * ``rocketpool node status``: View the node's status and balances
-    * ``rocketpool node init``: Initialise the node with a password and an account
-    * ``rocketpool node register``: Register the node with Rocket Pool
-    * ``rocketpool node withdraw [amount] [unit]``: Withdraw the specified amount of ETH or RPL from the node contract
-    * ``rocketpool node send [address] [amount] [unit]``: Send the specified amount of ETH, rETH or RPL from the node account to the specified address
-    * ``rocketpool node timezone``: Change the timezone location the node is registered under
+* ``rocketpool node status``: Display the current status of the node
+* ``rocketpool node register``: Register the node with the Rocket Pool network
+* ``rocketpool node set-timezone``: Update the node's timezone location
+* ``rocketpool node deposit``: Make a deposit to create a minipool and begin staking
+* ``rocketpool node send [amount] [token] [to]``: Send an amount of ETH or tokens to an address
 
 
-***************
-Faucet Commands
-***************
-
-    * ``rocketpool faucet allowance``: Check your ETH and RPL faucet allowances
-    * ``rocketpool faucet withdraw [amount] [unit]``: Withdraw the specified amount of ETH or RPL from the faucet to your node account
-
-
-*****************
-Node Fee Commands
-*****************
-
-    * ``rocketpool fee display``: Display the current network user fee and the target user fee to vote for
-    * ``rocketpool fee set [percent]``: Set the target user fee percentage to vote for
-
-
-****************
-Deposit Commands
-****************
-
-    * ``rocketpool deposit required``: View the current network RPL requirements and utilization stats
-    * ``rocketpool deposit make [duration]``: Make a deposit for the specified staking duration
-
+.. _smart-node-reference-minipool:
 
 *****************
 Minipool Commands
 *****************
 
-    * ``rocketpool minipool status [filter]``: Check the status of all minipools owned by the node, optionally filtered by status
-    * ``rocketpool minipool withdraw``: Withdraw ETH or rETH and RPL from withdrawn or stalled minipools
+* ``rocketpool minipool status``: Display the current status of all minipools run by the node
+* ``rocketpool minipool refund``: Refund ETH from minipools which have had user-deposited ETH assigned to them
+* ``rocketpool minipool dissolve``: Dissolve initialized minipools and recover deposited ETH from them
+* ``rocketpool minipool withdraw``: Withdraw rewards from minipools which have finished staking and close them
+* ``rocketpool minipool close``: Close minipools which have timed out and been dissolved
+
+
+.. _smart-node-reference-misc:
+
+**********************
+Miscellaneous Commands
+**********************
+
+* ``rocketpool network node-fee``: Display the current network node commission rate for new minipools
+* ``rocketpool queue status``: Display the current status of the deposit pool
+* ``rocketpool queue process``: Process the deposit pool by assigning user-deposited ETH to available minipools
