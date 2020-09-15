@@ -1,7 +1,11 @@
-#####################################
-Managing & Withdrawing From Minipools
-#####################################
+.. _smart-node-minipools:
 
+##################
+Managing Minipools
+##################
+
+
+.. _smart-node-minipools-status:
 
 ************************
 Checking Minipool Status
@@ -9,50 +13,70 @@ Checking Minipool Status
 
 Once you have made one or more deposits from your node, you can view the status of your created minipools with::
 
-    rocketpool minipool status [filter]
+    rocketpool minipool status
 
-where ``[filter]`` is an optional status to filter the list by (``initialized``, ``prelaunch``, ``staking``, ``loggedout``, ``withdrawn``, ``timedout``).
-This will list the following properties of all minipools created by your node:
+This will list various properties of each minipool created by your node, including:
 
-    * ``Address``: The minipool's address
-    * ``Status``: The minipool's current state in its lifecycle, one of:
+* Its address
+* Its current status, and the time & block number it was last updated at
+* The node commission rate on rewards earned by it
+* The amount of ETH deposited by the node operator
+* The amount of user-deposited ETH assigned, and the time it was assigned at
+* The associated validator's public key
 
-        * ``initialized``: The minipool has been created and has no user deposits assigned yet
-        * ``pre-launch``: The minipool has user deposits assigned to it but not enough to begin staking
-        * ``staking``: The minipool has filled with user deposits, sent its balance to the beacon chain, and begun staking
-        * ``logged out``: The minipool has been logged out from the beacon chain but is not yet ready to withdraw from
-        * ``withdrawn``: The minipool has withdrawn from the beacon chain and its rewards may now be withdrawn as rETH
-        * ``timed out``: The minipool timed out after a period of inactivity and deposited ETH and RPL may be withdrawn from it
+You will also be notified if any of your minipools have ETH available for refund or withdrawal.
 
-    * ``Status Updated @ Time``: The time at which the minipool reached its current state
-    * ``Status Updated @ Block``: The block at which the minipool reached its current state
 
-    * ``Staking Duration``: The duration the minipool will stake for before logging out from the beacon chain
-    * ``Staking Total Blocks``: The total number of blocks that the minipool will stake for
-    * ``Staking Until Block`` (staking minipools only): The block that the minipool should log out at
-    * ``Staking Blocks Left`` (staking minipools only): The number of blocks remaining until the minipool should log out
-    * ``Staking Complete Approx`` (staking minipools only): The approximate time at which the minipool should log out
+.. _smart-node-minipools-refund:
 
-    * ``Node Deposit Withdrawn`` (withdrawn minipools only): Whether you have already withdrawn your deposit & rewards from the minipool
-    * ``Node ETH Deposited``: The ETH balance of the deposit you made to the minipool from your node contract
-    * ``Node RPL Deposited``: The RPL balance of the deposit you made to the minipool from your node contract
+************************
+Refunding From Minipools
+************************
 
-    * ``User Deposit Count``: The number of user deposits assigned to the minipool
-    * ``User Deposit Total``: The total amount of user deposits in ETH which the minipool is currently holding
-    * ``User Deposit Capacity``: The total amount of user deposits in ETH which the minipool can hold
+If you have made any deposits of 32 ETH, the created minipools will have 16 ETH available for refund once user-deposited ETH is assigned to them.
+You can refund this ETH to your node account with::
 
+    rocketpool minipool refund
+
+This will display a list of all eligible minipools, and prompt you to select one or all of them to refund your ETH from.
+Once refunded, you should see their balances reflected in your node account.
+
+
+.. _smart-node-minipools-withdraw:
 
 **************************
 Withdrawing From Minipools
 **************************
 
-Once one or more of your node's minipools have finished staking, you can withdraw your rewards and RPL from them with::
+If any of your minipools have exited and been marked as withdrawable by the Rocket Pool network, you can withdraw your deposit & rewards from them with::
 
     rocketpool minipool withdraw
 
-This will list all of your minipools which are available for withdrawal and prompt you to select one (or all) of them to withdraw from.
-Initialized minipools (newly created ones with no user deposits assigned yet) can be withdrawn from and destroyed, but will not be affected if you select "all".
-Withdrawn rETH will be sent to your node account, while withdrawn RPL will be sent to the node contract to be re-used in your next deposit.
-If you want to withdraw it to your node account too, run::
+This will display a list of all eligible minipools, and prompt you to select one or all of them to withdraw from.
+Once refunded, the minipool/s will be destroyed, and you should see their balances reflected in your node account.
 
-    rocketpool node withdraw [amount] rpl
+Note that before phase 2 of the Eth 2.0 rollout, rewards can only be withdrawn from exited minipools after a significant delay.
+
+
+.. _smart-node-minipools-dissolve:
+
+********************
+Dissolving Minipools
+********************
+
+If you create a minipool and decide you want to back out before it begins staking, you can do so with::
+
+    rocketpool minipool dissolve
+
+This will display a list of all minipools which do not yet have user-deposited ETH assigned to them.
+You will be prompted to select one or all of them to dissolve, returning your ETH deposit to your node account.
+Once dissolved, the minipool/s will be destroyed, and you should see their balances reflected in your node account.
+
+If you create a minipool and it fails to stake within a set time period after user-deposited ETH is assigned to it, it may be dissolved by another party.
+This returns the user-deposited ETH to the deposit pool to be reassigned.
+If this occurs, you can close the dissolved minipools with::
+
+    rocketpool minipool close
+
+This will display a list of all eligible minipools, and prompt you to select one or all of them to close.
+Once closed, the minipool/s will be destroyed, and you should see their balances reflected in your node account.

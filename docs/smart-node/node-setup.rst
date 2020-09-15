@@ -20,14 +20,17 @@ You won't need to enter your node password again, it will simply be used by the 
 
 Next, a HD wallet will be generated to store your node account and all validator keys for your minipools.
 You will be shown a mnemonic phrase to recover your wallet in case of hardware failure, and prompted to record it and enter it to confirm it is correct.
-
-Your node password is stored at ``~/.rocketpool/data/password``, while your wallet is stored at ``~/.rocketpool/data/wallet``.
-Feel free to back these up in a safe and secure storage area which can't be accessed by anyone else.
-You do not need to back your wallet up repeatedly, even after creating new minipools.
-
 You can make sure your wallet was created successfully with::
 
     rocketpool wallet status
+
+Your node password is stored at ``~/.rocketpool/data/password``, while your wallet is stored at ``~/.rocketpool/data/wallet``.
+You can export the contents of both of these files and display them on screen with::
+
+    rocketpool wallet export
+
+Feel free to back these up in a safe and secure storage area which can't be accessed by anyone else.
+You do not need to back your wallet up repeatedly, even after creating new minipools.
 
 
 .. _smart-node-setup-recovery:

@@ -1,22 +1,27 @@
-##########################
-Making & Managing Deposits
-##########################
+.. _smart-node-depositing:
+
+###############
+Making Deposits
+###############
 
 
-*****************************
-Checking Deposit Requirements
-*****************************
+.. _smart-node-depositing-commission:
 
-Before making a deposit, you'll need to load your node account up with the required ETH and RPL.
-Deposits always require 16 ETH, but the amount of RPL varies depending on current Rocket Pool network utilisation.
-To check on the current RPL requirements and network utilisation, run::
+*********************************
+Checking the Node Commission Rate
+*********************************
 
-    rocketpool deposit required
+Before making a deposit, you may wish to view the current Rocket Pool network node commission rate.
+The commission rate varies depending on network node supply & demand dynamics, and changes as user deposits are made and minipools are created.
+Check the current node commission rate with::
 
-This will display a series of message like:
-``Depositing 16.00 ETH for 3m requires 32.00 RPL @ 2.00 RPL / ETH.``
-``Current network utilisation for 3m is 30%.``.
+    rocketpool network node-fee
 
+This will display the current rate, along with the minimum and maximum rates possible.
+If you're happy with the current rate, you can make a deposit to create a minipool and start validating.
+
+
+.. _smart-node-depositing-deposit:
 
 ****************
 Making a Deposit
@@ -24,29 +29,14 @@ Making a Deposit
 
 You can make a deposit with::
 
-    rocketpool deposit make [duration]
+    rocketpool node deposit
 
-where ``[duration]`` is the time period you want to stake for.
+You will then be prompted to select an amount of ETH to deposit.
+16 ETH deposits create minipools which must wait for user-deposited ETH to be assigned to them before they begin staking.
+32 ETH deposits create minipools which can begin staking immediately, and will have the excess 16 ETH refunded once they are assigned to.
 
-Because of the dynamic nature of the RPL requirement, deposits are performed in two steps.
-First of all, they are "reserved", which locks in the RPL requirement for the deposit for 24 hours.
-Then, they are completed with a second transaction.
-This gives you time to acquire the necessary ETH and RPL without having to worry about fluctuating prices.
+Next, you will be shown the current network node commission rate and prompted to enter a minimum commission rate you will accept.
+You may either use the suggested value based on the data provided, or enter a custom one.
+If the network node commission rate drops below this threshold before your deposit transaction is mined, the deposit will be cancelled.
 
-After your deposit is reserved, its ETH & RPL requirements, staking duration and expiry time will be displayed.
-Then, you will be prompted to select one of the following options:
-
-	#. Complete the deposit
-	#. Cancel the deposit
-	#. Finish later
-
-Completing the deposit will immediately complete the process and deposit your ETH and RPL into Rocket Pool.
-This requires the necessary ETH and RPL to be sent to the node contract.
-If the node contract's balances are insufficient, you will be prompted to send ETH and/or RPL to it from your node account.
-After successfully completing the deposit, your new minipool's address will be displayed.
-
-Canceling the deposit will cancel the reservation so that you can create a new one later.
-This may be useful if, for example, you want to wait for the RPL requirement to drop and deposit at a lower RPL cost.
-
-Finishing later simply stops the deposit process until you run the command again at a later time.
-When you do, it will pick up where you left off.
+If the deposit is made successfully, the address of the newly created minipool will be displayed.
