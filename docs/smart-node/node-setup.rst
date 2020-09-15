@@ -50,8 +50,9 @@ If successful, the wallet will be restored along with your node account and all 
 Seeding Your Node Account
 *************************
 
-Next, you'll need to load your node account up with ETH to deposit into Rocket Pool.
-You can find your node address via ``rocketpool node status``, then send ETH to that address.
+Next, you'll need to load your node account up with ETH to deposit into Rocket Pool. Find your node address with::
+
+    rocketpool node status
 
 If you're participating in a testnet beta, find a faucet for the relevant testnet to withdraw ETH from.
 Otherwise, you'll need to obtain some ETH and send it to your node address.
@@ -75,7 +76,7 @@ Once you've registered successfully, you can check your status with::
 
     rocketpool node status
 
-This should now display additional information like: ``The node is registered with Rocket Pool with a timezone location of Example/Example``.
+This should now display additional information like: ``The node is registered with Rocket Pool with a timezone location of Australia/Brisbane``.
 
 
 .. _smart-node-setup-timezone:
