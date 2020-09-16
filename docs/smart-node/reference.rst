@@ -12,13 +12,13 @@ Service Commands
 ****************
 
 * ``rocketpool service install``: Install the Rocket Pool service either locally or to a remote server
+* ``rocketpool service config``: Configure the Rocket Pool service and select Eth 1.0 and Eth 2.0 clients
 * ``rocketpool service status``: Display the current status of the Rocket Pool service
 * ``rocketpool service start``: Start the Rocket Pool service to begin running a smart node
 * ``rocketpool service pause``: Pause the Rocket Pool service temporarily
 * ``rocketpool service stop``: Stop the Rocket Pool service and remove all associated docker containers
 * ``rocketpool service logs [services...]``: View the logs for one or more services running as part of the docker stack
 * ``rocketpool service stats``: Display resource usage statistics for the Rocket Pool service
-* ``rocketpool config``: Configure the Rocket Pool service and select Eth 1.0 and Eth 2.0 clients
 
 
 .. _smart-node-reference-wallet:

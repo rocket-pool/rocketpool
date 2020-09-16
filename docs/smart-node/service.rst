@@ -72,7 +72,7 @@ Reconfiguring the Service
 
 If you want to make any configuration changes to the Rocket Pool service, run::
 
-    rocketpool config
+    rocketpool service config
 
 This will repeat the configuration process performed after installation, and will overwrite your node's configuration file accordingly.
 For the changes to take effect, restart the Rocket Pool service with ``rocketpool service start``.

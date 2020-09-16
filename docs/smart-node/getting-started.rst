@@ -85,7 +85,7 @@ Configuration
 *************
 
 Once the smart node service is installed, it must be configured before use.
-Simply run ``rocketpool config`` and follow the prompts to select which Eth 1.0 and Eth 2.0 clients to run in the smart node stack.
+Simply run ``rocketpool service config`` and follow the prompts to select which Eth 1.0 and Eth 2.0 clients to run in the smart node stack.
 
 You may use `Infura <https://infura.io/>`_ rather than run a full Eth 1.0 client if desired.
 If you do, you will need to create an account and set up a new project to obtain a project ID.
