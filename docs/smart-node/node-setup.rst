@@ -57,8 +57,11 @@ Next, you'll need to load your node account up with ETH to deposit into Rocket P
 
     rocketpool node status
 
-If you're participating in a testnet beta, find a faucet for the relevant testnet to withdraw ETH from.
-Otherwise, you'll need to obtain some ETH and send it to your node address.
+If you're participating in a testnet beta, Rocket Pool provides a GoETH faucet. Withdraw from it with::
+
+	rocketpool faucet withdraw eth
+
+Then check your node status again to ensure your ETH balance has increased.
 
 
 .. _smart-node-setup-registration:
