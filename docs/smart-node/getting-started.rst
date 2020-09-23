@@ -14,10 +14,10 @@ OS & Hardware Requirements
 The smart node client is supported on Linux, MacOS and Windows.
 **Note that a smart node cannot be run locally on Windows at this stage; the Windows client can only be used to manage a remote server.**
 
-The smart node service is supported on all Unix platforms, with automatic OS dependency installation for Ubuntu, Debian, CentOS and Fedora.
+The smart node service is supported on AMD64 architecture and all Unix platforms, with automatic OS dependency installation for Ubuntu, Debian, CentOS and Fedora.
 **OS dependencies (docker engine and docker-compose) must be installed manually on all other Unix platforms.**
 
-Support for additional operating systems will be added incrementally, after successful testing of the existing version.
+Support for additional architectures (e.g. ARM) and operating systems will be added incrementally, after successful testing of the existing version.
 
 The Smart Node service requires at least 8GB of memory and 100GB of (SSD) hard disk space in order to run.
 Note that a node operator must have **root** access to their node in order to install and run the smart node service.
