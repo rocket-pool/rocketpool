@@ -81,6 +81,26 @@ For the changes to take effect, restart the Rocket Pool service with ``rocketpoo
 .. _smart-node-service-info:
 
 ***************************
+Modify default location the location of the volumes
+***************************
+
+If you want to move the volume of the rocketpool_eth1 container to a custom location do the following.
+
+Complete the configuration at least once using
+
+    rocketpool service config
+
+Edit the docker-compose.yml file located in ~/.rocketpool/docker-compose.yml
+
+Change the line "eth1clientdata:/ethclient" to "/your/new/path:/ethclient"
+
+Start the service with
+
+    rocketpool service start
+
+.. _smart-node-service-info:
+
+***************************
 Viewing Service Information
 ***************************
 
