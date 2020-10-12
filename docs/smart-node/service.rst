@@ -116,5 +116,5 @@ This may allow you to connect to more peers, and can potentially increase sync t
 The method for forwarding ports depends on your local network setup and is not covered in this document.
 The port ranges to forward are:
 
-**Eth 1.0**: ``30303-30305 (TCP & UDP)``
-**Eth 2.0**: ``9001 (TCP & UDP)``
+* **Eth 1.0**: ``30303-30305 (TCP & UDP)``
+* **Eth 2.0**: ``9001 (TCP & UDP)``
