@@ -43,3 +43,30 @@ If you would like to change the location at which your chain data is stored (for
 #. Restart the Rocket Pool service with::
 
     rocketpool service start
+
+
+.. _smart-node-customization-client-options:
+
+**********************************************
+Customizing Eth 1.0 and Eth 2.0 Client Options
+**********************************************
+
+The Eth 1.0 and Eth 2.0 clients are bootstrapped via shell scripts at the following locations:
+
+    * Eth 1.0 Client: ``~/.rocketpool/chains/eth1/start-node.sh``
+    * Eth 2.0 Beacon Chain: ``~/.rocketpool/chains/eth2/start-beacon.sh``
+    * Eth 2.0 Validator: ``~/.rocketpool/chains/eth2/start-validator.sh``
+
+To customize the command-line options passed to the clients:
+
+#. If the Rocket Pool service is already running, pause it with::
+
+    rocketpool service pause
+
+#. Modify the above files as desired
+
+#. Restart the Rocket Pool service with::
+
+    rocketpool service start
+
+Please consult the documentation for specific Eth 1.0 and Eth 2.0 clients for a full list of command-line options.
