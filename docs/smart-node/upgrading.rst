@@ -10,9 +10,9 @@ As such, node operators need to be aware of Rocket Pool smart node updates, and 
 
 .. _smart-node-upgrading-client:
 
-###############################
+*******************************
 Upgrading the Smart Node Client
-###############################
+*******************************
 
 The smart node client can be upgraded simply by downloading a new version of the binary and replacing the existing version with it.
 Follow the :ref:`smart node client installation <smart-node-getting-started-installation>` instructions.
@@ -20,9 +20,9 @@ Follow the :ref:`smart node client installation <smart-node-getting-started-inst
 
 .. _smart-node-upgrading-service:
 
-################################
+********************************
 Upgrading the Smart Node Service
-################################
+********************************
 
 To upgrade the smart node service, first back up your ``~/.rocketpool`` directory (e.g. ``cp -r ~/.rocketpool ~/.rocketpool.bak``).
 If you have made any customizations to your service configuration files, these will be overwritten.
