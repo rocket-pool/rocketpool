@@ -24,6 +24,7 @@ Contents
     :maxdepth: 2
 
     getting-started.rst
+    upgrading.rst
     customization.rst
     service.rst
     node-setup.rst
