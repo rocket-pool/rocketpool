@@ -15,7 +15,33 @@ Upgrading the Smart Node Client
 *******************************
 
 The smart node client can be upgraded simply by downloading a new version of the binary and replacing the existing version with it.
-Follow the :ref:`smart node client installation <smart-node-getting-started-installation>` instructions.
+For Linux & MacOS, run either the cURL or wget command depending on which utilities are installed on your system.
+You can check with ``curl --version`` and ``wget --version`` respectively.
+
+**Linux (64 bit)**:
+
+With cURL::
+
+    curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 --create-dirs -o ~/bin/rocketpool && chmod +x ~/bin/rocketpool
+
+With wget::
+
+    mkdir -p ~/bin && wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 -O ~/bin/rocketpool && chmod +x ~/bin/rocketpool
+
+**MacOS (64 bit)**:
+
+With cURL::
+
+    curl -L https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -o /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
+
+With wget::
+
+    wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-darwin-amd64 -O /usr/local/bin/rocketpool && chmod +x /usr/local/bin/rocketpool
+
+**Windows (64 bit)**:
+
+#. Download the `smart node client <https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-windows-amd64.exe>`_.
+#. Overwrite your existing client executable with it (e.g. ``C:\bin\rocketpool.exe``).
 
 
 .. _smart-node-upgrading-service:
