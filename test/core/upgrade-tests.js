@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { RocketStorage, RocketMinipoolManager, RocketNodeManager } from '../_utils/artifacts';
+import { RocketStorage, RocketUpgrade, RocketMinipoolManager, RocketNodeManager } from '../_utils/artifacts';
 import { upgradeContract } from './scenario-upgrade-contract';
 import { addContract } from './scenario-add-contract';
 import { upgradeABI } from './scenario-upgrade-abi';
@@ -26,6 +26,7 @@ export default function() {
 
         // Setup
         let rocketMinipoolManagerNew;
+        let rocketUpgradeNew;
         before(async () => {
 
             // Get RocketStorage
@@ -33,6 +34,7 @@ export default function() {
 
             // Deploy new contracts
             rocketMinipoolManagerNew = await RocketMinipoolManager.new(rocketStorage.address, {from: owner});
+            rocketUpgradeNew = await RocketUpgrade.new(rocketStorage.address, {from: owner});
 
         });
 
@@ -44,6 +46,13 @@ export default function() {
 
         it(printTitle('admin', 'can upgrade a contract'), async () => {
             await upgradeContract('rocketNodeManager', rocketMinipoolManagerNew.address, rocketMinipoolManagerNew.abi, {
+                from: owner,
+            });
+        });
+
+
+        it(printTitle('admin', 'can upgrade the upgrade contract'), async () => {
+            await upgradeContract('rocketUpgrade', rocketUpgradeNew.address, rocketUpgradeNew.abi, {
                 from: owner,
             });
         });

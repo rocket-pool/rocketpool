@@ -38,18 +38,18 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
         // Check contract balances
-        require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
+        //require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
         //require(ERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
-        require(ERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
-        require(ERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
-        // Deregister old contract
-        deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
-        deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));
+        //require(ERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
+        //require(ERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
         setAddress(keccak256(abi.encodePacked("contract.address", _name)), _contractAddress);
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
+        // Deregister old contract
+        deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));
+        deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
         // Emit contract upgraded event
         emit ContractUpgraded(nameHash, oldContractAddress, _contractAddress, now);
     }
