@@ -16,7 +16,8 @@ Service Commands
 * ``rocketpool service status``: Display the current status of the Rocket Pool service
 * ``rocketpool service start``: Start the Rocket Pool service to begin running a smart node
 * ``rocketpool service pause``: Pause the Rocket Pool service temporarily
-* ``rocketpool service stop``: Stop the Rocket Pool service and remove all associated docker containers
+* ``rocketpool service stop``: Pause the Rocket Pool service temporarily
+* ``rocketpool service terminate``: Terminate the Rocket Pool service and remove all associated docker containers & volumes
 * ``rocketpool service logs [services...]``: View the logs for one or more services running as part of the docker stack
 * ``rocketpool service stats``: Display resource usage statistics for the Rocket Pool service
 

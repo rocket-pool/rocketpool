@@ -27,7 +27,7 @@ If you would like to change the location at which your chain data is stored (for
 
 #. If the Rocket Pool service is already running, stop it with::
 
-    rocketpool service stop
+    rocketpool service terminate
 
 #. Open ``~/.rocketpool/docker-compose.yml``, and modify the ``eth1`` and ``eth2`` sections as follows:
 
@@ -61,7 +61,7 @@ To customize the command-line options passed to the clients:
 
 #. If the Rocket Pool service is already running, pause it with::
 
-    rocketpool service pause
+    rocketpool service stop
 
 #. Modify the above files as desired
 

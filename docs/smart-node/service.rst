@@ -40,7 +40,7 @@ Pausing the Service
 
 If you want to pause the Rocket Pool service for any reason, run::
 
-    rocketpool service pause
+    rocketpool service stop
 
 This will stop all running containers, suspending their execution, but leave them intact.
 Note that this will stop validators from performing their validation duties, so use this command with caution.
@@ -55,7 +55,7 @@ Stopping the Service
 
 If you have finished interacting with the Rocket Pool network and want to stop the service entirely, run::
 
-    rocketpool service stop
+    rocketpool service terminate
 
 This will "tear down" the smart node stack, stopping and removing all running containers, and deleting their state.
 Not only will validators stop performing validation duties, but all Ethereum clients will need to re-sync if the service is restarted.
