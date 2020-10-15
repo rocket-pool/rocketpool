@@ -4,9 +4,8 @@
 Upgrading Your Smart Node
 #########################
 
-Rocket Pool smart nodes are not upgraded automatically, as ethereum client updates may contain breaking changes and prevent validators from working.
-As such, node operators need to be aware of Rocket Pool smart node updates, and apply them manually.
-
+Rocket Pool smart nodes are not upgraded automatically, as ethereum client updates **may contain breaking changes** and prevent validators from working.
+As such, node operators need to be aware of Rocket Pool smart node updates, and apply them manually. Node operators are encouraged to read the changelogs of the relevant repositories.
 
 .. _smart-node-upgrading-client:
 
