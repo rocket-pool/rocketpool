@@ -85,3 +85,9 @@ If in doubt, you can always do this with no risk to your existing validator keys
 Once your Eth 1.0 client has finished re-syncing, rebuild your validator keystores with::
 
 	rocketpool wallet rebuild
+
+You can check to see if your validator keys have been loaded correctly with::
+
+	rocketpool service logs validator
+
+Always ensure that your validator container has loaded the keys for each of your minipools.
