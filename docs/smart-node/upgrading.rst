@@ -68,3 +68,20 @@ Once you've upgraded the service configuration files, restore any customizations
 Then, start the service back up::
 
     rocketpool service start
+
+
+.. _smart-node-upgrading-post:
+
+******************
+Post-Upgrade Tasks
+******************
+
+Once you have upgraded the smart node client and/or service, check you are running the correct versions with::
+
+	rocketpool service version
+
+In some cases, you may need to rebuild your validator keystores (e.g. if the Eth 2.0 client you are using has updated wallet functionality).
+If in doubt, you can always do this with no risk to your existing validator keys.
+Once your Eth 1.0 client has finished re-syncing, rebuild your validator keystores with::
+
+	rocketpool wallet rebuild
