@@ -2,6 +2,8 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -10,7 +12,6 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
-import "../../lib/SafeMath.sol";
 import "../../types/MinipoolStatus.sol";
 
 // Handles updates to minipool status by trusted (oracle) nodes

@@ -3,7 +3,8 @@ pragma solidity 0.6.12;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../interface/token/ERC20.sol";
-import "../../lib/SafeMath.sol";
+
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // Standard ERC20 token implementation
 

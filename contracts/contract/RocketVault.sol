@@ -5,7 +5,7 @@ pragma solidity 0.6.12;
 import "./RocketBase.sol";
 import "../interface/RocketVaultInterface.sol";
 import "../interface/RocketVaultWithdrawerInterface.sol";
-import "../lib/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded

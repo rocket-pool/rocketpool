@@ -2,9 +2,10 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../lib/SafeMath.sol";
 import "../../types/MinipoolDeposit.sol";
 
 // Network minipool settings

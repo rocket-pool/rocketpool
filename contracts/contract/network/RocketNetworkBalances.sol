@@ -2,11 +2,12 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
-import "../../lib/SafeMath.sol";
 
 // Network balances
 

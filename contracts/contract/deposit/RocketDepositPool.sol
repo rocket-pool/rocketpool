@@ -2,6 +2,8 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
@@ -10,7 +12,7 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
-import "../../lib/SafeMath.sol";
+
 
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools

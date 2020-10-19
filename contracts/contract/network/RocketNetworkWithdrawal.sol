@@ -2,6 +2,8 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
@@ -11,7 +13,6 @@ import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketETHTokenInterface.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
-import "../../lib/SafeMath.sol";
 
 // Handles network validator withdrawals
 
