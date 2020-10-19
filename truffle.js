@@ -31,20 +31,20 @@ module.exports = {
           version: "0.6.12",
       }
   },
+  plugins: ["solidity-coverage"],
   networks: {
     development: {
       host: '127.0.0.1',
       port: 8545,
-      network_id: '*', // Match any network id
-      gas: 8000000,
+      network_id: '5', // Match any network id
+      gas: 12000000,
     },
     // Solidity coverage test
     coverage: {
       host: '127.0.0.1',
       port: 8555,
       network_id: '*', // Match any network id
-      gas: 0xfffffffffff,
-      gasPrice: 0x01,
+      gas: 12000000,
     },
     // Geth RP Testnet Development
     'betatest': {

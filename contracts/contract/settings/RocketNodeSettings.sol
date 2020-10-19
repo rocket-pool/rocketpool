@@ -27,7 +27,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getRegistrationEnabled() override public view returns (bool) {
         return getBoolS("settings.node.registration.enabled");
     }
-    function setRegistrationEnabled(bool _value) public onlySuperUser {
+    function setRegistrationEnabled(bool _value) public onlyOwner {
         setBoolS("settings.node.registration.enabled", _value);
     }
 
@@ -35,7 +35,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getDepositEnabled() override public view returns (bool) {
         return getBoolS("settings.node.deposit.enabled");
     }
-    function setDepositEnabled(bool _value) public onlySuperUser {
+    function setDepositEnabled(bool _value) public onlyOwner {
         setBoolS("settings.node.deposit.enabled", _value);
     }
 

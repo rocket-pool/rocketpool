@@ -17,6 +17,8 @@ abstract contract RocketBase {
     RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
 
+    /*** Modifiers **********************************************************/
+
     /**
     * @dev Throws if called by any sender that doesn't match a Rocket Pool network contract
     */
@@ -24,7 +26,6 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
         _;
     }
-
 
     /**
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
@@ -34,7 +35,6 @@ abstract contract RocketBase {
         _;
     }
 
-
     /**
     * @dev Throws if called by any sender that isn't a registered node
     */
@@ -42,7 +42,6 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "Invalid node");
         _;
     }
-
 
     /**
     * @dev Throws if called by any sender that isn't a trusted node
@@ -52,7 +51,6 @@ abstract contract RocketBase {
         _;
     }
 
-
     /**
     * @dev Throws if called by any sender that isn't a registered minipool
     */
@@ -60,31 +58,28 @@ abstract contract RocketBase {
         require(getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Invalid minipool");
         _;
     }
-
+    
+    /**
+    * @dev Throws if called by any account other than Rocket Pools.
+    */
+    modifier onlyRP() {
+        require(roleHas("owner", msg.sender), "Account is not Rocket Pool");
+        _;
+    }
 
     /**
-    * @dev Throws if called by any account other than the owner.
+    * @dev Throws if called by any account other than DAO.
+    */
+    modifier onlyDAO() {
+        require(roleHas("dao", msg.sender), "Account is not the DAO");
+        _;
+    }
+
+    /**
+    * @dev Throws if called by any account other than RP or the DAO (allows both RP and the DAO to run certain methods until RP revokes their address)
     */
     modifier onlyOwner() {
-        require(roleHas("owner", msg.sender), "Account is not the owner");
-        _;
-    }
-
-
-    /**
-    * @dev Modifier to scope access to admins
-    */
-    modifier onlyAdmin() {
-        require(roleHas("admin", msg.sender), "Account is not an admin");
-        _;
-    }
-
-
-    /**
-    * @dev Modifier to scope access to admins
-    */
-    modifier onlySuperUser() {
-        require(roleHas("owner", msg.sender) || roleHas("admin", msg.sender), "Account is not a super user");
+        require(roleHas("owner", msg.sender) || roleHas("dao", msg.sender), "Account is not Rocket Pool or the DAO");
         _;
     }
 
@@ -97,6 +92,9 @@ abstract contract RocketBase {
         _;
     }
 
+
+
+    /*** Methods **********************************************************/
 
     /// @dev Set the main Rocket Storage address
     constructor(address _rocketStorageAddress) public {
@@ -125,6 +123,15 @@ abstract contract RocketBase {
         // Return
         return contractName;
     }
+
+    /// @dev Check if an address has this role
+    function roleHas(string memory _role, address _address) internal view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
+    }
+
+
+
+    /*** Rocket Storage Methods ****************************************/
 
 
     /// @dev Storage get methods
@@ -175,13 +182,6 @@ abstract contract RocketBase {
     function deleteIntS(string memory _key) internal { rocketStorage.deleteInt(keccak256(abi.encodePacked(_key))); }
     function deleteBytes32S(string memory _key) internal { rocketStorage.deleteBytes32(keccak256(abi.encodePacked(_key))); }
 
-
-    /**
-    * @dev Check if an address has this role
-    */
-    function roleHas(string memory _role, address _address) internal view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
-    }
 
 
 }

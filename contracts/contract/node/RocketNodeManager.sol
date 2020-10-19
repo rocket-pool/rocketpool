@@ -83,7 +83,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Set a node's trusted status
     // Only accepts calls from super users
-    function setNodeTrusted(address _nodeAddress, bool _trusted) override external onlyLatestContract("rocketNodeManager", address(this)) onlySuperUser {
+    function setNodeTrusted(address _nodeAddress, bool _trusted) override external onlyLatestContract("rocketNodeManager", address(this)) onlyOwner {
         // Check node exists
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
         // Check current node status

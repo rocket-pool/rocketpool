@@ -34,7 +34,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getNodeConsensusThreshold() override public view returns (uint256) {
         return getUintS("settings.network.consensus.threshold");
     }
-    function setNodeConsensusThreshold(uint256 _value) public onlySuperUser {
+    function setNodeConsensusThreshold(uint256 _value) public onlyOwner {
         setUintS("settings.network.consensus.threshold", _value);
     }
 
@@ -42,7 +42,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getSubmitBalancesEnabled() override public view returns (bool) {
         return getBoolS("settings.network.submit.balances.enabled");
     }
-    function setSubmitBalancesEnabled(bool _value) public onlySuperUser {
+    function setSubmitBalancesEnabled(bool _value) public onlyOwner {
         setBoolS("settings.network.submit.balances.enabled", _value);
     }
 
@@ -50,7 +50,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getSubmitBalancesFrequency() override public view returns (uint256) {
         return getUintS("settings.network.submit.balances.frequency");
     }
-    function setSubmitBalancesFrequency(uint256 _value) public onlySuperUser {
+    function setSubmitBalancesFrequency(uint256 _value) public onlyOwner {
         setUintS("settings.network.submit.balances.frequency", _value);
     }
 
@@ -58,7 +58,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getProcessWithdrawalsEnabled() override public view returns (bool) {
         return getBoolS("settings.network.process.withdrawals.enabled");
     }
-    function setProcessWithdrawalsEnabled(bool _value) public onlySuperUser {
+    function setProcessWithdrawalsEnabled(bool _value) public onlyOwner {
         setBoolS("settings.network.process.withdrawals.enabled", _value);
     }
 
@@ -66,7 +66,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getMinimumNodeFee() override public view returns (uint256) {
         return getUintS("settings.network.node.fee.minimum");
     }
-    function setMinimumNodeFee(uint256 _value) public onlySuperUser {
+    function setMinimumNodeFee(uint256 _value) public onlyOwner {
         setUintS("settings.network.node.fee.minimum", _value);
     }
 
@@ -74,7 +74,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getTargetNodeFee() override public view returns (uint256) {
         return getUintS("settings.network.node.fee.target");
     }
-    function setTargetNodeFee(uint256 _value) public onlySuperUser {
+    function setTargetNodeFee(uint256 _value) public onlyOwner {
         setUintS("settings.network.node.fee.target", _value);
     }
 
@@ -82,7 +82,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getMaximumNodeFee() override public view returns (uint256) {
         return getUintS("settings.network.node.fee.maximum");
     }
-    function setMaximumNodeFee(uint256 _value) public onlySuperUser {
+    function setMaximumNodeFee(uint256 _value) public onlyOwner {
         setUintS("settings.network.node.fee.maximum", _value);
     }
 
@@ -90,7 +90,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getNodeFeeDemandRange() override public view returns (uint256) {
         return getUintS("settings.network.node.fee.demand.range");
     }
-    function setNodeFeeDemandRange(uint256 _value) public onlySuperUser {
+    function setNodeFeeDemandRange(uint256 _value) public onlyOwner {
         setUintS("settings.network.node.fee.demand.range", _value);
     }
 
@@ -98,7 +98,7 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     function getTargetRethCollateralRate() override public view returns (uint256) {
         return getUintS("settings.network.reth.collateral.target");
     }
-    function setTargetRethCollateralRate(uint256 _value) public onlySuperUser {
+    function setTargetRethCollateralRate(uint256 _value) public onlyOwner {
         setUintS("settings.network.reth.collateral.target", _value);
     }
 

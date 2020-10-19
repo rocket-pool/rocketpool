@@ -46,7 +46,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Set the validator withdrawal credentials
     // TODO: remove before mainnet release
-    function setWithdrawalCredentials(bytes memory _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlySuperUser {
+    function setWithdrawalCredentials(bytes memory _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyOwner {
         setBytesS("network.withdrawal.credentials", _value);
     }
 

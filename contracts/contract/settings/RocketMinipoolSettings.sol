@@ -72,7 +72,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     function getSubmitWithdrawableEnabled() override public view returns (bool) {
         return getBoolS("settings.minipool.submit.withdrawable.enabled");
     }
-    function setSubmitWithdrawableEnabled(bool _value) public onlySuperUser {
+    function setSubmitWithdrawableEnabled(bool _value) public onlyOwner {
         setBoolS("settings.minipool.submit.withdrawable.enabled", _value);
     }
 
@@ -80,7 +80,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     function getLaunchTimeout() override public view returns (uint256) {
         return getUintS("settings.minipool.launch.timeout");
     }
-    function setLaunchTimeout(uint256 _value) public onlySuperUser {
+    function setLaunchTimeout(uint256 _value) public onlyOwner {
         setUintS("settings.minipool.launch.timeout", _value);
     }
 
@@ -88,7 +88,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     function getWithdrawalDelay() override public view returns (uint256) {
         return getUintS("settings.minipool.withdrawal.delay");
     }
-    function setWithdrawalDelay(uint256 _value) public onlySuperUser {
+    function setWithdrawalDelay(uint256 _value) public onlyOwner {
         setUintS("settings.minipool.withdrawal.delay", _value);
     }
 

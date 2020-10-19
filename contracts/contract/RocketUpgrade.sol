@@ -23,7 +23,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Upgrade a network contract
-    function upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlySuperUser {
+    function upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyOwner {
         // Check contract being upgraded
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("rocketVault")),        "Cannot upgrade the vault");
@@ -55,7 +55,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Add a new network contract
-    function addContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlySuperUser {
+    function addContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyOwner {
         // Check contract name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("")), "Invalid contract name");
@@ -75,7 +75,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Upgrade a network contract ABI
-    function upgradeABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlySuperUser {
+    function upgradeABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyOwner {
         // Check ABI exists
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
         require(keccak256(abi.encodePacked(existingAbi)) != keccak256(abi.encodePacked("")), "ABI does not exist");
@@ -86,7 +86,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Add a new network contract ABI
-    function addABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlySuperUser {
+    function addABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyOwner {
         // Check ABI name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("")), "Invalid ABI name");
