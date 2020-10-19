@@ -20,6 +20,7 @@ Service Commands
 * ``rocketpool service terminate``: Terminate the Rocket Pool service and remove all associated docker containers & volumes
 * ``rocketpool service logs [services...]``: View the logs for one or more services running as part of the docker stack
 * ``rocketpool service stats``: Display resource usage statistics for the Rocket Pool service
+* ``rocketpool service version``: Display version information for the Rocket Pool client & service
 
 
 .. _smart-node-reference-wallet:
@@ -31,6 +32,7 @@ Wallet Commands
 * ``rocketpool wallet status``: Display the current status of the node's wallet
 * ``rocketpool wallet init``: Initialize the node's password and wallet
 * ``rocketpool wallet recover``: Recover a node wallet from a mnemonic phrase
+* ``rocketpool wallet rebuild``: Rebuild validator keystores from derived keys
 * ``rocketpool wallet export``: Display the node password and wallet file contents
 
 
