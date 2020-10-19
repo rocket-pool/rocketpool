@@ -36,15 +36,15 @@ module.exports = {
     development: {
       host: '127.0.0.1',
       port: 8545,
-      network_id: '5', // Match any network id
-      gas: 12000000,
+      network_id: '*', // Match any network id
+      gas: 12250000,
     },
     // Solidity coverage test
     coverage: {
       host: '127.0.0.1',
       port: 8555,
       network_id: '*', // Match any network id
-      gas: 12000000,
+      gas: 12250000,
     },
     // Geth RP Testnet Development
     'betatest': {
