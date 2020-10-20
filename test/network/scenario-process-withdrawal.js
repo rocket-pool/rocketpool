@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketETHToken, RocketMinipoolManager, RocketNetworkSettings, RocketNetworkWithdrawal, RocketNodeETHToken, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketTokenRETH, RocketMinipoolManager, RocketNetworkSettings, RocketNetworkWithdrawal, RocketTokenNETH, RocketVault } from '../_utils/artifacts';
 
 
 // Process a validator withdrawal
@@ -7,19 +7,19 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
     // Load contracts
     const [
         rocketDepositPool,
-        rocketETHToken,
+        rocketTokenRETH,
         rocketMinipoolManager,
         rocketNetworkSettings,
         rocketNetworkWithdrawal,
-        rocketNodeETHToken,
+        rocketTokenNETH,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
-        RocketETHToken.deployed(),
+        RocketTokenRETH.deployed(),
         RocketMinipoolManager.deployed(),
         RocketNetworkSettings.deployed(),
         RocketNetworkWithdrawal.deployed(),
-        RocketNodeETHToken.deployed(),
+        RocketTokenNETH.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -30,7 +30,7 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
         targetRethCollateralRate,
     ] = await Promise.all([
         rocketMinipoolManager.getMinipoolByPubkey.call(validatorPubkey),
-        rocketETHToken.getCollateralRate.call(),
+        rocketTokenRETH.getCollateralRate.call(),
         rocketNetworkSettings.getTargetRethCollateralRate.call(),
     ]);
 
@@ -49,8 +49,8 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
         return Promise.all([
             rocketNetworkWithdrawal.getBalance.call(),
             web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(rocketNodeETHToken.address).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(rocketETHToken.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketTokenNETH.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketTokenRETH.address).then(value => web3.utils.toBN(value)),
             rocketDepositPool.getBalance.call(),
         ]).then(
             ([withdrawalPoolEth, vaultEth, nethContractEth, rethContractEth, depositPoolEth]) =>

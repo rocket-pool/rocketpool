@@ -11,7 +11,7 @@ import { getRethBalance, getRethExchangeRate, getRethTotalSupply } from '../_hel
 import { burnReth } from './scenario-burn-reth';
 
 export default function() {
-    contract('RocketETHToken', async (accounts) => {
+    contract('RocketTokenRETH', async (accounts) => {
 
 
         // Accounts

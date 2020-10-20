@@ -1,11 +1,11 @@
-import { RocketNodeETHToken } from '../_utils/artifacts';
+import { RocketTokenNETH } from '../_utils/artifacts';
 
 
 // Withdraw from a minipool
 export async function withdraw(minipool, txOptions) {
 
     // Load contracts
-    let rocketNodeETHToken = await RocketNodeETHToken.deployed();
+    let rocketTokenNETH = await RocketTokenNETH.deployed();
 
     // Get parameters
     let nodeAddress = await minipool.getNodeAddress.call();
@@ -13,7 +13,7 @@ export async function withdraw(minipool, txOptions) {
     // Get minipool balances
     function getMinipoolBalances() {
         return Promise.all([
-            rocketNodeETHToken.balanceOf.call(minipool.address),
+            rocketTokenNETH.balanceOf.call(minipool.address),
             minipool.getNodeRefundBalance.call(),
         ]).then(
             ([neth, nodeRefund]) =>
@@ -24,7 +24,7 @@ export async function withdraw(minipool, txOptions) {
     // Get node balances
     function getNodeBalances() {
         return Promise.all([
-            rocketNodeETHToken.balanceOf.call(nodeAddress),
+            rocketTokenNETH.balanceOf.call(nodeAddress),
             web3.eth.getBalance(nodeAddress).then(value => web3.utils.toBN(value)),
         ]).then(
             ([neth, eth]) =>

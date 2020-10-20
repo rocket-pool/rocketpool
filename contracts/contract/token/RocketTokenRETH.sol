@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
-import "../../interface/token/RocketETHTokenInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
-contract RocketETHToken is RocketBase, ERC20, RocketETHTokenInterface {
+contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
 
     // Libs
     using SafeMath for uint;

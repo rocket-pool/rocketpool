@@ -1,18 +1,18 @@
-import { RocketNodeETHToken } from '../_utils/artifacts';
+import { RocketTokenNETH } from '../_utils/artifacts';
 
 
 // Burn nETH for ETH
 export async function burnNeth(amount, txOptions) {
 
     // Load contracts
-    const rocketNodeETHToken = await RocketNodeETHToken.deployed();
+    const rocketTokenNETH = await RocketTokenNETH.deployed();
 
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketNodeETHToken.totalSupply.call(),
-            web3.eth.getBalance(rocketNodeETHToken.address).then(value => web3.utils.toBN(value)),
-            rocketNodeETHToken.balanceOf.call(txOptions.from),
+            rocketTokenNETH.totalSupply.call(),
+            web3.eth.getBalance(rocketTokenNETH.address).then(value => web3.utils.toBN(value)),
+            rocketTokenNETH.balanceOf.call(txOptions.from),
             web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
             ([tokenSupply, tokenEthBalance, userTokenBalance, userEthBalance]) =>
@@ -28,7 +28,7 @@ export async function burnNeth(amount, txOptions) {
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
-    let txReceipt = await rocketNodeETHToken.burn(amount, txOptions);
+    let txReceipt = await rocketTokenNETH.burn(amount, txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
     // Get updated balances

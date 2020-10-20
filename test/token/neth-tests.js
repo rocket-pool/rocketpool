@@ -10,7 +10,7 @@ import { getNethBalance } from '../_helpers/tokens';
 import { burnNeth } from './scenario-burn-neth';
 
 export default function() {
-    contract('RocketNodeETHToken', async (accounts) => {
+    contract('RocketTokenNETH', async (accounts) => {
 
 
         // Accounts

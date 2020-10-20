@@ -5,13 +5,13 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "../RocketBase.sol";
-import "../../interface/token/RocketNodeETHTokenInterface.sol";
+import "../../interface/token/RocketTokenNETHInterface.sol";
 
 // nETH is paid to node operators when their eth 2.0 validators become withdrawable
 // nETH is backed by ETH (subject to liquidity) 1:1
 // nETH will be replaced by direct BETH payments after eth 2.0 phase 2
 
-contract RocketNodeETHToken is RocketBase, ERC20, RocketNodeETHTokenInterface {
+contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
 
     // Events
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);

@@ -13,7 +13,7 @@ import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/token/RocketNodeETHTokenInterface.sol";
+import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
@@ -215,14 +215,14 @@ contract RocketMinipool is RocketMinipoolInterface {
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be withdrawn from while withdrawable");
         // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
+        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Check withdrawal delay has passed
         require(block.number.sub(statusBlock) >= rocketMinipoolSettings.getWithdrawalDelay(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
         // Transfer nETH balance to node operator
-        uint256 nethBalance = rocketNodeETHToken.balanceOf(address(this));
+        uint256 nethBalance = rocketTokenNETH.balanceOf(address(this));
         if (nethBalance > 0) {
             // Transfer
-            require(rocketNodeETHToken.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator");
+            require(rocketTokenNETH.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator");
             // Emit nETH withdrawn event
             emit NethWithdrawn(nodeAddress, nethBalance, now);
         }

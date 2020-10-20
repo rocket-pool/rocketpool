@@ -91,8 +91,8 @@ The Rocket Pool contracts, as defined in ``RocketStorage``, are:
     * ``rocketNetworkSettings`` - Provides miscellaneous network settings
     * ``rocketNodeSettings`` - Provides network settings relating to nodes
 
-    * ``rocketETHToken`` - The rETH token contract (not upgradeable)
-    * ``rocketNodeETHToken`` - The nETH token contract (not upgradeable)
+    * ``rocketTokenRETH`` - The rETH token contract (not upgradeable)
+    * ``rocketTokenNETH`` - The nETH token contract (not upgradeable)
 
     * ``addressQueueStorage`` - A utility contract (internal)
     * ``addressSetStorage`` - A utility contract (internal)

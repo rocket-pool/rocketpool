@@ -11,8 +11,8 @@ import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
-import "../../interface/token/RocketETHTokenInterface.sol";
-import "../../interface/token/RocketNodeETHTokenInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
+import "../../interface/token/RocketTokenNETHInterface.sol";
 
 // Handles network validator withdrawals
 
@@ -68,10 +68,10 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     function processWithdrawal(bytes calldata _validatorPubkey) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyTrustedNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
+        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check settings
         require(rocketNetworkSettings.getProcessWithdrawalsEnabled(), "Processing withdrawals is currently disabled");
@@ -95,11 +95,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
             rocketVault.withdrawEther(totalAmount);
         }
         // Transfer node balance to nETH contract
-        if (nodeAmount > 0) { rocketNodeETHToken.depositRewards{value: nodeAmount}(); }
+        if (nodeAmount > 0) { rocketTokenNETH.depositRewards{value: nodeAmount}(); }
         // Transfer user balance to rETH contract or deposit pool
         if (userAmount > 0) {
-            if (rocketETHToken.getCollateralRate() < rocketNetworkSettings.getTargetRethCollateralRate()) {
-                rocketETHToken.depositRewards{value: userAmount}();
+            if (rocketTokenRETH.getCollateralRate() < rocketNetworkSettings.getTargetRethCollateralRate()) {
+                rocketTokenRETH.depositRewards{value: userAmount}();
             } else {
                 rocketDepositPool.recycleWithdrawnDeposit{value: userAmount}();
             }

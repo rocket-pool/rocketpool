@@ -59,8 +59,8 @@ const contracts = {
   rocketNetworkSettings:    artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
   // Tokens
-  rocketETHToken:           artifacts.require('RocketETHToken.sol'),
-  rocketNodeETHToken:       artifacts.require('RocketNodeETHToken.sol'),
+  rocketTokenRETH:           artifacts.require('RocketTokenRETH.sol'),
+  rocketTokenNETH:       artifacts.require('RocketTokenNETH.sol'),
   // Utils
   addressQueueStorage:      artifacts.require('AddressQueueStorage.sol'),
   addressSetStorage:        artifacts.require('AddressSetStorage.sol'),

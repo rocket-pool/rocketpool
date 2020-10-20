@@ -11,7 +11,7 @@ import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
-import "../../interface/token/RocketNodeETHTokenInterface.sol";
+import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolStatus.sol";
 
 // Handles updates to minipool status by trusted (oracle) nodes
@@ -65,7 +65,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     function setMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) private {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketNodeETHTokenInterface rocketNodeETHToken = RocketNodeETHTokenInterface(getContractAddress("rocketNodeETHToken"));
+        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable
@@ -78,7 +78,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
             minipool.getStakingEndBalance()
         );
         // Mint nETH to minipool contract
-        if (nodeAmount > 0) { rocketNodeETHToken.mint(nodeAmount, _minipoolAddress); }
+        if (nodeAmount > 0) { rocketTokenNETH.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
         rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _stakingEndBalance, nodeAmount);
         // Emit set withdrawable event

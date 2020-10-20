@@ -11,7 +11,7 @@ import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
-import "../../interface/token/RocketETHTokenInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 
 
 // The main entry point for deposits into the RP network
@@ -58,13 +58,13 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function deposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
         RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
-        RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         // Check deposit settings
         require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         require(getBalance().add(msg.value) <= rocketDepositSettings.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
         // Mint rETH to user account
-        rocketETHToken.mint(msg.value, msg.sender);
+        rocketTokenRETH.mint(msg.value, msg.sender);
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, now);
         // Process deposit
@@ -126,16 +126,16 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     // Withdraw excess deposit pool balance for rETH collateral
-    function withdrawExcessBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketETHToken", msg.sender) {
+    function withdrawExcessBalance(uint256 _amount) override external onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketTokenRETH", msg.sender) {
         // Load contracts
-        RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(getContractAddress("rocketETHToken"));
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check amount
         require(_amount <= getExcessBalance(), "Insufficient excess balance for withdrawal");
         // Withdraw ETH from vault
         rocketVault.withdrawEther(_amount);
         // Transfer to rETH contract
-        rocketETHToken.depositExcess{value: _amount}();
+        rocketTokenRETH.depositExcess{value: _amount}();
         // Emit excess withdrawn event
         emit ExcessWithdrawn(msg.sender, _amount, now);
     }

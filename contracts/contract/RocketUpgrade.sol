@@ -29,8 +29,8 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("rocketVault")),        "Cannot upgrade the vault");
         require(nameHash != keccak256(abi.encodePacked("rocketPoolToken")),    "Cannot upgrade token contracts");
-        require(nameHash != keccak256(abi.encodePacked("rocketETHToken")),     "Cannot upgrade token contracts");
-        require(nameHash != keccak256(abi.encodePacked("rocketNodeETHToken")), "Cannot upgrade token contracts");
+        require(nameHash != keccak256(abi.encodePacked("rocketTokenRETH")),     "Cannot upgrade token contracts");
+        require(nameHash != keccak256(abi.encodePacked("rocketTokenNETH")), "Cannot upgrade token contracts");
         require(nameHash != keccak256(abi.encodePacked("casperDeposit")),      "Cannot upgrade the casper deposit contract");
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
@@ -41,8 +41,8 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         // Check contract balances
         //require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
         //require(IERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
-        //require(IERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
-        //require(IERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
+        //require(IERC20(getContractAddress("rocketTokenRETH")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
+        //require(ERC20(getContractAddress("rocketTokenNETH")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
