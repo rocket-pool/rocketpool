@@ -59,8 +59,11 @@ const contracts = {
   rocketNetworkSettings:    artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
   // Tokens
+  rocketTokenRPLFixedSupply:       artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:           artifacts.require('RocketTokenRETH.sol'),
   rocketTokenNETH:       artifacts.require('RocketTokenNETH.sol'),
+  rocketTokenRPL:       artifacts.require('RocketTokenRPL.sol'),
+
   // Utils
   addressQueueStorage:      artifacts.require('AddressQueueStorage.sol'),
   addressSetStorage:        artifacts.require('AddressSetStorage.sol'),
@@ -102,7 +105,7 @@ module.exports = async (deployer, network) => {
     // Casper live contract address
     let casperDepositAddress = '0XADDLIVECASPERADDRESS';
     // Add our live RPL token address in place
-    contracts.rocketPoolToken.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
+    contracts.rocketTokenRPLFixedSupply.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
   // Goerli test network
@@ -162,7 +165,12 @@ module.exports = async (deployer, network) => {
     for (let contract in contracts) {
       // Only deploy if it hasn't been deployed already like a precompiled
       if(!contracts[contract].hasOwnProperty('precompiled')) {
-        await deployer.deploy(contracts[contract], rocketStorage.address);
+        // If we are deploying the new RPL contract, pass the existing RPL contract address to it
+        if(contract == 'rocketTokenRPL') {
+            await deployer.deploy(contracts[contract], rocketStorage.address, contracts.rocketTokenRPLFixedSupply.address);
+        }else{
+            await deployer.deploy(contracts[contract], rocketStorage.address);
+        }
       }
     }
   };
