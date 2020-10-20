@@ -2,9 +2,10 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import "./RocketBase.sol";
 import "../interface/RocketUpgradeInterface.sol";
-import "../interface/token/ERC20.sol";
 
 // Handles network contract upgrades
 // TODO: replace with governance model before mainnet release
@@ -39,9 +40,9 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
         // Check contract balances
         //require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
-        //require(ERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
-        //require(ERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
-        //require(ERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
+        //require(IERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
+        //require(IERC20(getContractAddress("rocketETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
+        //require(IERC20(getContractAddress("rocketNodeETHToken")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);

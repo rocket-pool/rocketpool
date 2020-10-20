@@ -7,11 +7,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
+import "../../interface/token/RocketETHTokenInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
-contract RocketETHToken is RocketBase, ERC20 {
+contract RocketETHToken is RocketBase, ERC20, RocketETHTokenInterface {
 
     // Libs
     using SafeMath for uint;
@@ -28,7 +29,7 @@ contract RocketETHToken is RocketBase, ERC20 {
     }
 
     // Calculate the amount of ETH backing an amount of rETH
-    function getEthValue(uint256 _rethAmount) public view returns (uint256) {
+    function getEthValue(uint256 _rethAmount) override public view returns (uint256) {
         // Get network balances
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
@@ -40,7 +41,7 @@ contract RocketETHToken is RocketBase, ERC20 {
     }
 
     // Calculate the amount of rETH backed by an amount of ETH
-    function getRethValue(uint256 _ethAmount) public view returns (uint256) {
+    function getRethValue(uint256 _ethAmount) override public view returns (uint256) {
         // Get network balances
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
@@ -55,20 +56,20 @@ contract RocketETHToken is RocketBase, ERC20 {
 
     // Get the current ETH : rETH exchange rate
     // Returns the amount of ETH backing 1 rETH
-    function getExchangeRate() public view returns (uint256) {
+    function getExchangeRate() override public view returns (uint256) {
         return getEthValue(1 ether);
     }
 
     // Get the total amount of collateral available
     // Includes rETH contract balance & excess deposit pool balance
-    function getTotalCollateral() public view returns (uint256) {
+    function getTotalCollateral() override public view returns (uint256) {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         return rocketDepositPool.getExcessBalance().add(address(this).balance);
     }
 
     // Get the current ETH collateral rate
     // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
-    function getCollateralRate() public view returns (uint256) {
+    function getCollateralRate() override public view returns (uint256) {
         uint256 calcBase = 1 ether;
         uint256 totalEthValue = getEthValue(totalSupply());
         if (totalEthValue == 0) { return calcBase; }
@@ -77,21 +78,21 @@ contract RocketETHToken is RocketBase, ERC20 {
 
     // Deposit ETH rewards
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function depositRewards() external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, now);
     }
 
     // Deposit excess ETH from deposit pool
     // Only accepts calls from the RocketDepositPool contract
-    function depositExcess() external payable onlyLatestContract("rocketDepositPool", msg.sender) {
+    function depositExcess() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, now);
     }
 
     // Mint rETH
     // Only accepts calls from the RocketDepositPool contract
-    function mint(uint256 _ethAmount, address _to) external onlyLatestContract("rocketDepositPool", msg.sender) {
+    function mint(uint256 _ethAmount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
         // Get rETH amount
         uint256 rethAmount = getRethValue(_ethAmount);
         // Check rETH amount
@@ -103,7 +104,7 @@ contract RocketETHToken is RocketBase, ERC20 {
     }
 
     // Burn rETH for ETH
-    function burn(uint256 _rethAmount) external {
+    function burn(uint256 _rethAmount) override external {
         // Check rETH amount
         require(_rethAmount > 0, "Invalid token burn amount");
         require(balanceOf(msg.sender) >= _rethAmount, "Insufficient rETH balance");

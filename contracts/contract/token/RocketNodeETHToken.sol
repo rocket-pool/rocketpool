@@ -2,7 +2,8 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./StandardToken.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 import "../RocketBase.sol";
 import "../../interface/token/RocketNodeETHTokenInterface.sol";
 
@@ -10,7 +11,7 @@ import "../../interface/token/RocketNodeETHTokenInterface.sol";
 // nETH is backed by ETH (subject to liquidity) 1:1
 // nETH will be replaced by direct BETH payments after eth 2.0 phase 2
 
-contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInterface {
+contract RocketNodeETHToken is RocketBase, ERC20, RocketNodeETHTokenInterface {
 
     // Events
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
@@ -18,7 +19,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
     event TokensBurned(address indexed from, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress)  ERC20("Rocket Pool Node ETH", "nETH") public {
         version = 1;
     }
 
@@ -35,8 +36,7 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
         // Check amount
         require(_amount > 0, "Invalid token mint amount");
         // Update balance & supply
-        balances[_to] = balances[_to].add(_amount);
-        totalSupply = totalSupply.add(_amount);
+        _mint(_to, _amount);
         // Emit tokens minted event
         emit TokensMinted(_to, _amount, now);
     }
@@ -45,12 +45,11 @@ contract RocketNodeETHToken is RocketBase, StandardToken, RocketNodeETHTokenInte
     function burn(uint256 _amount) override external {
         // Check amount
         require(_amount > 0, "Invalid token burn amount");
-        require(balances[msg.sender] >= _amount, "Insufficient nETH balance");
+        require(balanceOf(msg.sender) >= _amount, "Insufficient nETH balance");
         // Check ETH balance
         require(address(this).balance >= _amount, "Insufficient ETH balance for exchange");
         // Update balance & supply
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
-        totalSupply = totalSupply.sub(_amount);
+        _burn(msg.sender, _amount);
         // Transfer ETH to sender
         msg.sender.transfer(_amount);
         // Emit tokens burned event
