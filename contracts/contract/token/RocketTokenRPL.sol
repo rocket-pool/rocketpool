@@ -33,17 +33,21 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     }
 
     // Swap current RPL fixed supply tokens for new RPL 1:1 to the same address from the user calling it
-    function swapMyTokens(uint256 _amount) external {
+    function swapTokens(uint256 _amount) external {
         // Valid amount?
         require(_amount > 0, "Please enter valid amount of RPL to swap");
         // Check they have a valid amount to swap from
         require(rplFixedSupplyContract.balanceOf(address(msg.sender)) > 0, "No existing RPL fixed supply tokens available to swap");
         // Check they can cover the amount
-        require(rplFixedSupplyContract.balanceOf(address(msg.sender)) <= _amount, "Not enough RPL fixed supply tokens available to cover swap desired amount");
-        // Check address are legit (impossible, but safety first)
+        require(rplFixedSupplyContract.balanceOf(address(msg.sender)) >= _amount, "Not enough RPL fixed supply tokens available to cover swap amount desired");
+        // Check they have allowed this contract to send their tokens
+        uint256 allowance = rplFixedSupplyContract.allowance(msg.sender, address(this));
+        // Enough to cover it?
+        require(allowance >= _amount, "Not enough allowance given for transfer of token.");
+        // Check address is legit (impossible, but safety first)
         require(msg.sender != address(0x0), "Sender address is not a valid address");
         // Send the tokens to this contract now and mint new ones for them
-        if (rplFixedSupplyContract.transfer(address(this), _amount)) {
+        if (rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount)) {
             // Now mint new RPL for them and increase supply
             _mint(msg.sender, _amount);
             // Log it

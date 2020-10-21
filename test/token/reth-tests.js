@@ -8,7 +8,7 @@ import { submitBalances, depositValidatorWithdrawal, processValidatorWithdrawal 
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply } from '../_helpers/tokens';
-import { burnReth } from './scenario-burn-reth';
+import { burnReth } from './scenario-reth-burn';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
