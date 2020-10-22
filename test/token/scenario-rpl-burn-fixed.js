@@ -15,16 +15,18 @@ export async function burnFixedRPL(amount, txOptions) {
             rocketTokenRPL.totalSupply.call(),
             rocketTokenRPL.balanceOf.call(txOptions.from),
             rocketTokenDummyRPL.balanceOf.call(rocketTokenRPL.address),
+            rocketTokenRPL.balanceOf.call(rocketTokenRPL.address),
         ]).then(
-            ([rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply]) =>
-            ({rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply})
+            ([rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply, rplContractBalanceOfSelf]) =>
+            ({rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply, rplContractBalanceOfSelf})
         );
     }
 
     // Get initial balances
     let balances1 = await getBalances();
 
-    //console.log(web3.utils.fromWei(amount), web3.utils.fromWei(balances1.rplFixedUserBalance), web3.utils.fromWei(balances1.rplTokenSupply), web3.utils.fromWei(balances1.rplUserBalance));
+    //console.log(web3.utils.fromWei(amount));
+    //console.log(web3.utils.fromWei(balances1.rplFixedUserBalance), web3.utils.fromWei(balances1.rplContractBalanceOfSelf), web3.utils.fromWei(balances1.rplUserBalance));
  
     // Set gas price
     let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
@@ -37,15 +39,16 @@ export async function burnFixedRPL(amount, txOptions) {
     // Get updated balances
     let balances2 = await getBalances();
 
+    //console.log(web3.utils.fromWei(amount));
+    //console.log(web3.utils.fromWei(balances2.rplFixedUserBalance), web3.utils.fromWei(balances2.rplContractBalanceOfSelf), web3.utils.fromWei(balances2.rplUserBalance));
+
     // Calculate values
     let mintAmount = web3.utils.toBN(amount);
 
 
-
     // Check balances
-    assert(balances2.rplTokenSupply.eq(balances1.rplTokenSupply.add(mintAmount)), 'Incorrect updated token supply');
     assert(balances2.rplUserBalance.eq(balances1.rplUserBalance.add(mintAmount)), 'Incorrect updated user token balance');
-    assert(balances2.rplContractBalanceOfFixedSupply.eq(balances1.rplContractBalanceOfFixedSupply.add(mintAmount)), 'RPL contract does not contain sent fixed RPL amount');
+    assert(balances2.rplContractBalanceOfSelf.eq(balances1.rplContractBalanceOfSelf.sub(mintAmount)), 'RPL contract has not sent the RPL to the user address');
 
 }
 
