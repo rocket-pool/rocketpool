@@ -3,6 +3,7 @@ export const RocketDepositSettings = artifacts.require('RocketDepositSettings.so
 export const RocketTokenRETH = artifacts.require('RocketTokenRETH.sol');
 export const RocketTokenRPL = artifacts.require('RocketTokenRPL.sol');
 export const RocketTokenDummyRPL = artifacts.require('RocketTokenDummyRPL.sol');
+export const RocketDAOSettings = artifacts.require('RocketDAOSettings.sol');
 export const RocketMinipool = artifacts.require('RocketMinipool.sol');
 export const RocketMinipoolManager = artifacts.require('RocketMinipoolManager.sol');
 export const RocketMinipoolQueue = artifacts.require('RocketMinipoolQueue.sol');

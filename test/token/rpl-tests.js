@@ -1,10 +1,10 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';
 import { burnFixedRPL } from './scenario-rpl-burn-fixed';
 import { allowDummyRPL } from './scenario-rpl-allow-fixed';
-import { rplCalcInflation } from './scenario-rpl-inflation';
+import { rplCalcInflation, rplInflationIntervalBlocksGet, rplInflationIntervalBlocksSet } from './scenario-rpl-inflation';
 import { getNethBalance } from '../_helpers/tokens';
 
 // Contracts
@@ -41,7 +41,7 @@ export default function() {
 
         });
 
-        
+        /*
         it(printTitle('userOne', 'burn all their current fixed supply RPL for new RPL'), async () => {
 
             // Load contracts
@@ -108,25 +108,43 @@ export default function() {
            }), 'Burned more RPL than had owned and had given allowance for');
 
         });
-        
+        */
 
-            /*
+            
         it(printTitle('rpl', 'calc inflation'), async () => {
 
             // Calculate inflation daily with 5% (0.05) yearly inflation
-            let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
+            // let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
+
+            // How many blocks to pass each time inflation is calculated, based on daily inflation formula above
+            // So we are assuming the amount of blocks below represents 1 days inflation (obv a lot shorter than reality for testing purposes)
+            
+            const daysToSimulate = 2;
+            const inflationIntervalDailyBlocks = 4;
+            const inflationYearlyTarget = 0.05;
+
+            /*
+            // Set it now as the DAO 
+            await rplInflationIntervalBlocksSet(inflationIntervalBlocks, { from: owner })
+            // Get the inlfation interval in blocks
+            const inflationIntervalBlocksCurrent = await rplInflationIntervalBlocksGet({from: userOne});
+            // Get the current block
+            let startBlock = await web3.eth.getBlockNumber();
       
-            console.log('BLOCK', await web3.eth.getBlockNumber());
+            console.log('BLOCK', startBlock);
 
-           // Test
-           await rplCalcInflation({
-               from: userOne,
-           });
+            await mineBlocks(web3, inflationIntervalBlocksCurrent);
+            */
+            
+            // Test
+            await rplCalcInflation(daysToSimulate, inflationIntervalDailyBlocks, inflationYearlyTarget, {
+                from: owner,
+            });
 
-           console.log('BLOCK', await web3.eth.getBlockNumber());
+           //console.log('BLOCK', await web3.eth.getBlockNumber());
 
         });
-        */
+        
 
     });
 }

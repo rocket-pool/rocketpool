@@ -21,25 +21,20 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     uint256 public totalSwappedRPL = 0;
 
     // Last block inflation was calculated at
-    uint256 private inflationCalcLast = 1;
-    // Inflation block interval (6170 = 1 day approx in 14sec blocks)
-    uint256 private inflationInterval = 6170; 
-    // Inflation rate to be applied per interval (daily)
-    uint256 private inflationRatePerInterval = 1000133680617113500; // 5% annual calculated on a daily interval of blocks
+    uint256 private inflationCalcLast = block.number;
 
-    uint256 blockNowTemp = 8000;
 
     /**** Contracts ************/
 
     // The address of our fixed supply RPL ERC20 token contract
-    IERC20 rplFixedSupplyContract = IERC20(address(0));       
+    IERC20 rplFixedSupplyContract = IERC20(address(0));      
+
 
     /**** Events ***********/
     
     event InflationLog(string logString, uint256 value, uint256 time);
     event RPLFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
 
-    event FlagUint(uint256 flag);
 
     // Construct
     constructor(address _rocketStorageAddress, address _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool", "RPL") public {
@@ -64,7 +59,7 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     * @return uint256 ow many blocks to calculate inflation at
     */
     function getInflationIntervalBlocks() public view returns(uint256) {
-        return inflationInterval;
+        return getUintS("settings.dao.rpl.inflation.interval.blocks");
     }
 
     /**
@@ -72,9 +67,8 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     * @return uint256 The current inflation rate per interval
     */
     function getInflationIntervalRate() public view returns(uint256) {
-        // uint256 calcBase = 1 ether;
-        // return ((1.05 ether).div(1.05 ether) ** (calcBase.mul(1 ether).div(365)));
-        return inflationRatePerInterval;
+        // Inflation rate controlled by the DAO
+        return getUintS("settings.dao.rpl.inflation.interval.rate");
     }
 
     /**
@@ -82,7 +76,8 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     * @return uint256 Time intervals since last update
     */
     function getInlfationIntervalsPassed() public view returns(uint256) {
-        return blockNowTemp / inflationInterval - inflationCalcLast / inflationInterval;
+        uint256 inflationInterval = getInflationIntervalBlocks();
+        return (block.number.div(inflationInterval)).sub(inflationCalcLast.div(inflationInterval));
     }
 
     /**
@@ -93,7 +88,7 @@ contract RocketTokenRPL is RocketBase, ERC20 {
         // The inflation amount
         uint256 inflationTokenAmount = 0;
         // Optimisation
-        uint256 inflationRate = inflationRatePerInterval;
+        uint256 inflationRate = getInflationIntervalRate();
         // Compute the number of inflationInterval elapsed since the last time we minted infation tokens
         uint256 intervalsSinceLastMint = getInlfationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
@@ -122,9 +117,9 @@ contract RocketTokenRPL is RocketBase, ERC20 {
         uint256 newTokens = inflationCalculate();
         // Only mint if we have new tokens to mint since last interval
         if(newTokens > 0) {
-            uint256 timeInt = inflationInterval;
+            uint256 blockInterval = getInflationIntervalBlocks();
             // Update last inflation calculation (rounding down to nearest inflationInterval)
-            inflationCalcLast = (blockNowTemp / timeInt) * timeInt;
+            inflationCalcLast = (block.number.div(blockInterval)) * blockInterval;
             // Update balance & supply
             _mint(_to, newTokens);
             // Transfer now
