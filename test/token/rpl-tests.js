@@ -185,17 +185,19 @@ export default function() {
             // How many blocks to pass each time inflation is calculated, based on daily inflation formula above
             // So we are assuming the amount of blocks below represents 1 days inflation (obv a lot shorter than reality for testing purposes)
             
-            // Number of days to simulate passing
-            const daysToSimulate = 365/12;
             // How many blocks represent a day
             const inflationIntervalDailyBlocks = 2;
             // Our approx inflation target per year
             const inflationYearlyTarget = 0.05;
             // Number of days to have passed for the start block of inflation to begin
-            const inflationStartDays = 2;
+            const inflationStartDays = 1;
+            // How often we simulate someone calling the collect method which mints new tokens to the rewards pool
+            const inflationCollectDays = 10;
+            // Number of days to simulate passing inflation (needs to include the start days)
+            const daysToSimulate = 31;
           
             // Test
-            await rplCalcInflation(daysToSimulate, inflationStartDays, inflationIntervalDailyBlocks, inflationYearlyTarget, {
+            await rplCalcInflation(daysToSimulate, inflationStartDays, inflationCollectDays, inflationIntervalDailyBlocks, inflationYearlyTarget, {
                 from: owner,
             });
 

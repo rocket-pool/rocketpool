@@ -86,7 +86,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         uint256 inflationInterval = getInflationIntervalBlocks();
         // Calculate now if inflation has begun
         if(inflationStartBlock <= block.number && inflationLastCalculatedBlock > 0) {
-            return (block.number.div(inflationInterval)).sub(inflationLastCalculatedBlock.div(inflationInterval));
+            return block.number.sub(inflationLastCalculatedBlock).div(inflationInterval);
         }else{
             return 0;
         }
@@ -120,13 +120,13 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         uint256 inflationTokenAmount = 0;
         // Optimisation
         uint256 inflationRate = getInflationIntervalRate();
-        // Compute the number of inflationInterval elapsed since the last time we minted infation tokens
+        // Compute the number of inflation intervals elapsed since the last time we minted infation tokens
         uint256 intervalsSinceLastMint = getInlfationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
         if(intervalsSinceLastMint > 0 && inflationRate > 0) {
             // Our inflation rate
             uint256 rate = inflationRate; 
-            // Compute inflation for total inflationIntervals elapsed
+            // Compute inflation for total inflation intervals elapsed
             for (uint256 i = 1; i < intervalsSinceLastMint; i++) {
                 rate = rate.mul(inflationRate).div(10 ** 18);
             }
