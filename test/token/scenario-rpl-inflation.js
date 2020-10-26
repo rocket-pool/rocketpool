@@ -82,7 +82,7 @@ export async function rplInflationStartBlockSet(startBlock, txOptions) {
 };
 
 // Calculate the daily inflation over a period
-export async function rplCalcInflation(daysToSimulate, dailyIntervalBlocks, yearlyInflationTarget, txOptions) {
+export async function rplCalcInflation(daysToSimulate, inflationStartDays, dailyIntervalBlocks, yearlyInflationTarget, txOptions) {
 
     // Load contracts
     const rocketTokenRPL = await RocketTokenRPL.deployed();
@@ -93,40 +93,42 @@ export async function rplCalcInflation(daysToSimulate, dailyIntervalBlocks, year
     await rplInflationIntervalRateSet(yearlyInflationTarget, txOptions);
 
     // Get the current block
-    let startBlock = await web3.eth.getBlockNumber();
-    // Find what endblock we should work too
-    let endBlock = daysToSimulate * dailyIntervalBlocks;
+    let currentBlock = await web3.eth.getBlockNumber();
+
+    // Inflation start block - set to start after 1 day of blocks (add 1 to current block to account for tx setting that start block below)
+    const inflationStartBlock = (parseInt(currentBlock)+(inflationStartDays*dailyIntervalBlocks))+1;
+
+    // Set the daily inflation start block
+    await rplInflationStartBlockSet(inflationStartBlock, txOptions);
 
     // Get data about the inflation
     function getInflationData() {
         return Promise.all([
             web3.eth.getBlockNumber(),
             rocketTokenRPL.getInflationIntervalStartBlock.call(),
-            rocketTokenRPL.getInflationIntervalBlocks.call(),
+            rocketTokenRPL.getInlfationIntervalsPassed.call(),
+            rocketTokenRPL.inflationCalculate.call(),
             rocketTokenRPL.getInflationIntervalRate.call(),
-            rocketTokenRPL.inflationCalculate.call()
         ]).then(
-            ([currentBlock, inflationStartBlock, inflationIntervalBlocks, inflationIntervalRate, inflationAmount]) =>
-            ({currentBlock, inflationStartBlock, inflationIntervalBlocks, inflationIntervalRate, inflationAmount})
+            ([currentBlock, inflationStartBlock, inflationIntervalsPassed, inflationAmount, inflationIntervalRate]) =>
+            ({currentBlock, inflationStartBlock, inflationIntervalsPassed, inflationAmount, inflationIntervalRate})
         );
     }
 
-    // Get initial data
-    let inflationData1 = await getInflationData();
+    // Loop through the days and check each one
+    for(let i=0; i < daysToSimulate; i++) {
+        // Get initial data
+        let inflationData1 = await getInflationData();
+        console.log(inflationData1.currentBlock, inflationData1.inflationStartBlock.toString(), inflationData1.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData1.inflationAmount), web3.utils.fromWei(inflationData1.inflationIntervalRate));
 
-    console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.inflationStartBlock), web3.utils.fromWei(inflationData1.inflationIntervalBlocks), web3.utils.fromWei(inflationData1.inflationIntervalRate), web3.utils.fromWei(inflationData1.inflationAmount));
+        // Process the blocks now to simulate days passing
+        await mineBlocks(web3, dailyIntervalBlocks);
 
-    // Process the blocks now to simulate days passing
-    await mineBlocks(web3, endBlock);
+        // Get inflation data
+        let inflationData2 = await getInflationData();
+        console.log(inflationData2.currentBlock, inflationData2.inflationStartBlock.toString(), inflationData2.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData2.inflationAmount), web3.utils.fromWei(inflationData2.inflationIntervalRate));
+    }
 
-    // Get inflation data
-    let inflationData2 = await getInflationData();
-
-    console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.inflationStartBlock), web3.utils.fromWei(inflationData2.inflationIntervalBlocks), web3.utils.fromWei(inflationData2.inflationIntervalRate), web3.utils.fromWei(inflationData2.inflationAmount));
- 
-    // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
-    txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
     //let txReceipt = await rocketTokenRPL.swapTokens(amount, txOptions);

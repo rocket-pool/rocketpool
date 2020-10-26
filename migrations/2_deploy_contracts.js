@@ -58,7 +58,9 @@ const contracts = {
   rocketMinipoolSettings:   artifacts.require('RocketMinipoolSettings.sol'),
   rocketNetworkSettings:    artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
-  rocketDAOSettings:       artifacts.require('RocketDAOSettings.sol'),
+  rocketDAOSettings:        artifacts.require('RocketDAOSettings.sol'),
+  // Rewards
+  rocketRewardsPool:        artifacts.require('RocketRewardsPool.sol'),
   // Tokens
   rocketTokenRPLFixedSupply:       artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:           artifacts.require('RocketTokenRETH.sol'),

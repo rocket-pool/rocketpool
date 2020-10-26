@@ -111,7 +111,7 @@ export default function() {
         */
 
 
-        
+        /*
         it(printTitle('userOne', 'fails to set start block for inflation'), async () => {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
@@ -172,9 +172,12 @@ export default function() {
                 from: owner,
             }), 'Owner set start block for inflation after it had started');
         });
-
+        */
             
         it(printTitle('rpl', 'calc inflation'), async () => {
+
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
 
             // Calculate inflation daily with 5% (0.05) yearly inflation
             // let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
@@ -182,25 +185,17 @@ export default function() {
             // How many blocks to pass each time inflation is calculated, based on daily inflation formula above
             // So we are assuming the amount of blocks below represents 1 days inflation (obv a lot shorter than reality for testing purposes)
             
-            const daysToSimulate = 2;
-            const inflationIntervalDailyBlocks = 4;
+            // Number of days to simulate passing
+            const daysToSimulate = 365/12;
+            // How many blocks represent a day
+            const inflationIntervalDailyBlocks = 2;
+            // Our approx inflation target per year
             const inflationYearlyTarget = 0.05;
-
-            /*
-            // Set it now as the DAO 
-            await rplInflationIntervalBlocksSet(inflationIntervalBlocks, { from: owner })
-            // Get the inlfation interval in blocks
-            const inflationIntervalBlocksCurrent = await rplInflationIntervalBlocksGet({from: userOne});
-            // Get the current block
-            let startBlock = await web3.eth.getBlockNumber();
-      
-            console.log('BLOCK', startBlock);
-
-            await mineBlocks(web3, inflationIntervalBlocksCurrent);
-            */
-            
+            // Number of days to have passed for the start block of inflation to begin
+            const inflationStartDays = 2;
+          
             // Test
-            await rplCalcInflation(daysToSimulate, inflationIntervalDailyBlocks, inflationYearlyTarget, {
+            await rplCalcInflation(daysToSimulate, inflationStartDays, inflationIntervalDailyBlocks, inflationYearlyTarget, {
                 from: owner,
             });
 
