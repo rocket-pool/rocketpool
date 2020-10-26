@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';
 import { burnFixedRPL } from './scenario-rpl-burn-fixed';
 import { allowDummyRPL } from './scenario-rpl-allow-fixed';
-import { rplCalcInflation, rplInflationIntervalBlocksGet, rplInflationIntervalBlocksSet } from './scenario-rpl-inflation';
+import { rplCalcInflation, rplInflationIntervalBlocksGet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet } from './scenario-rpl-inflation';
 import { getNethBalance } from '../_helpers/tokens';
 
 // Contracts
@@ -109,6 +109,69 @@ export default function() {
 
         });
         */
+
+
+        
+        it(printTitle('userOne', 'fails to set start block for inflation'), async () => {
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+                from: userOne,
+            }), 'Non owner set start block for inlfation');
+        });
+
+        it(printTitle('owner', 'succeeds setting future start block for inflation'), async () => {
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+                from: owner,
+            });
+        });
+
+        it(printTitle('owner', 'succeeds setting future start block for inflation twice'), async () => {
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+                from: owner,
+            });
+            // Current block
+            currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+                from: owner,
+            });
+        });
+
+        it(printTitle('owner', 'fails to set start block for inflation less than current block'), async () => {
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)-1, {
+                from: owner,
+            }), 'Owner set old start block for inflation');
+        });
+
+        it(printTitle('owner', 'fails to set start block for inflation after inflation has begun'), async () => {
+            // Current block
+            let currentBlock = await web3.eth.getBlockNumber();
+            // Inflation start block
+            let inflationStartBlock = parseInt(currentBlock)+10;
+            // Set the start block for inflation
+            await rplInflationStartBlockSet(inflationStartBlock, {
+                from: owner,
+            });
+            // Fast forward to when inflation has begun
+            await mineBlocks(web3, inflationStartBlock+1);
+            // Current block
+            currentBlock = await web3.eth.getBlockNumber();
+            // Set the start block for inflation
+            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+                from: owner,
+            }), 'Owner set start block for inflation after it had started');
+        });
 
             
         it(printTitle('rpl', 'calc inflation'), async () => {

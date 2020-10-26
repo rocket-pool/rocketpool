@@ -18,6 +18,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
             // Apply settings
             setInflationIntervalRate(1000133680617113500); // 5% annual calculated on a daily interval of blocks (6170 = 1 day approx in 14sec blocks)
             setInflationIntervalBlocks(6170); // Inflation daily block interval (default is 6170 = 1 day approx in 14sec blocks) 
+            setInflationIntervalStartBlock(block.number+(getInflationIntervalBlocks()*28)); // Set the default start date for inflation to begin as 4 weeks from contract deployment (this can be changed after deployment)
             // Settings initialized
             setBoolS("settings.dao.init", true);
         }
@@ -57,10 +58,14 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
 
     // The block to start inflation at, can only be set if that block has not already passed
     function setInflationIntervalStartBlock(uint256 _value) public onlyOwner {
-        // Cannot be 0, set 'setInflationIntervalRate' to 0 if inflation is no longer required
-        require(_value > block.number, "Inflation interval block amount cannot be 0 or less");
+        // Must be a block in the future
+        require(_value > block.number, "Inflation interval block amount cannot be 0 or less than current block");
+        // If it's already set and started, a new start block cannot be set
+        if(getInflationIntervalStartBlock() > 0) {
+            require(getInflationIntervalStartBlock() > block.number, "Inflation has already started");
+        }
         // We get a perc, so lets calculate that inflation rate for the current
-        setUintS("settings.dao.rpl.inflation.interval.blocks", _value);
+        setUintS("settings.dao.rpl.inflation.interval.start", _value);
     }
 
 }

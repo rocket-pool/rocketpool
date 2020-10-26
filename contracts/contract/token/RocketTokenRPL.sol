@@ -21,7 +21,7 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     uint256 public totalSwappedRPL = 0;
 
     // Last block inflation was calculated at
-    uint256 private inflationCalcLast = block.number;
+    uint256 private inflationCalcBlock = 0;
 
 
     /**** Contracts ************/
@@ -50,8 +50,8 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     * Get the last block that inflation was calculated at
     * @return uint256 Last block since inflation was calculated
     */
-    function getInflationCalcLastBlock() public view returns(uint256) {
-        return inflationCalcLast;
+    function getinflationCalcBlockBlock() public view returns(uint256) {
+        return inflationCalcBlock;
     }
 
     /**
@@ -76,9 +76,29 @@ contract RocketTokenRPL is RocketBase, ERC20 {
     * @return uint256 Time intervals since last update
     */
     function getInlfationIntervalsPassed() public view returns(uint256) {
+        // Get the last time inflation was calculated if it has even started
+        uint256 inflationStartBlock = getInflationIntervalStartBlock();
+        // The block that inflation was last calculated at - if inflation has just begun but not been calculated previously, use the start block as the last calculated point
+        uint256 inflationLastCalculatedBlock = inflationCalcBlock == 0 && inflationStartBlock <= block.number ? inflationStartBlock : inflationCalcBlock;
+        // Get the daily inflation in blocks
         uint256 inflationInterval = getInflationIntervalBlocks();
-        return (block.number.div(inflationInterval)).sub(inflationCalcLast.div(inflationInterval));
+        // Calculate now if inflation has begun
+        if(inflationStartBlock <= block.number && inflationLastCalculatedBlock > 0) {
+            return (block.number.div(inflationInterval)).sub(inflationCalcBlock.div(inflationInterval));
+        }else{
+            return 0;
+        }
     }
+
+    /**
+    * The current block to begin inflation at
+    * @return uint256 The current block to begin inflation at
+    */
+    function getInflationIntervalStartBlock() public view returns(uint256) {
+        // Inflation rate start block controlled by the DAO
+        return getUintS("settings.dao.rpl.inflation.interval.start");
+    }
+
 
     /**
     * @dev Function to compute how many tokens should be minted
@@ -117,9 +137,8 @@ contract RocketTokenRPL is RocketBase, ERC20 {
         uint256 newTokens = inflationCalculate();
         // Only mint if we have new tokens to mint since last interval
         if(newTokens > 0) {
-            uint256 blockInterval = getInflationIntervalBlocks();
-            // Update last inflation calculation (rounding down to nearest inflationInterval)
-            inflationCalcLast = (block.number.div(blockInterval)) * blockInterval;
+            // Update last inflation calculation block
+            inflationCalcBlock = block.number;
             // Update balance & supply
             _mint(_to, newTokens);
             // Transfer now

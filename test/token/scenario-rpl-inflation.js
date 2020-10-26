@@ -14,7 +14,23 @@ export async function rplInflationIntervalBlocksGet(txOptions) {
 export async function rplInflationIntervalBlocksSet(intervalBlocks, txOptions) {
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAOSettings.getInflationIntervalBlocks(),
+        ]).then(
+            ([inflationIntervalBlocks]) =>
+            ({inflationIntervalBlocks})
+        );
+    }
+    // Capture data
+    let dataSet1 = await getTxData();
+    // Perform tx
     await rocketDAOSettings.setInflationIntervalBlocks(intervalBlocks, txOptions);
+    // Capture data
+    let dataSet2 = await getTxData();
+    // Verify
+    assert(dataSet2.inflationIntervalBlocks.eq(web3.utils.toBN(intervalBlocks)), 'Inflation interval blocks not set correctly')
 };
 
 // Set the current inflation period in blocks
@@ -23,7 +39,46 @@ export async function rplInflationIntervalRateSet(yearlyInflationPerc, txOptions
     let dailyInflation = web3.utils.toBN((1 + yearlyInflationPerc) ** (1 / (365)) * 1e18);
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAOSettings.getInflationIntervalRate(),
+        ]).then(
+            ([inflationIntervalRate]) =>
+            ({inflationIntervalRate})
+        );
+    }
+    // Capture data
+    let dataSet1 = await getTxData();
+    // Perform tx
     await rocketDAOSettings.setInflationIntervalRate(dailyInflation, txOptions);
+    // Capture data
+    let dataSet2 = await getTxData();
+    // Verify
+    assert(dataSet2.inflationIntervalRate.eq(dailyInflation), 'Inflation interval rate not set correctly')
+};
+
+// Set the current inflation start block
+export async function rplInflationStartBlockSet(startBlock, txOptions) {
+    // Load contracts
+    const rocketDAOSettings = await RocketDAOSettings.deployed();
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAOSettings.getInflationIntervalStartBlock(),
+        ]).then(
+            ([inflationStartBlock]) =>
+            ({inflationStartBlock})
+        );
+    }
+    // Capture data
+    let dataSet1 = await getTxData();
+    // Perform tx
+    await rocketDAOSettings.setInflationIntervalStartBlock(startBlock, txOptions);
+    // Capture data
+    let dataSet2 = await getTxData();
+    // Verify
+    assert(dataSet2.inflationStartBlock.eq(web3.utils.toBN(startBlock)), 'Start block has not been set correctly')
 };
 
 // Calculate the daily inflation over a period
@@ -45,19 +100,21 @@ export async function rplCalcInflation(daysToSimulate, dailyIntervalBlocks, year
     // Get data about the inflation
     function getInflationData() {
         return Promise.all([
+            web3.eth.getBlockNumber(),
+            rocketTokenRPL.getInflationIntervalStartBlock.call(),
             rocketTokenRPL.getInflationIntervalBlocks.call(),
             rocketTokenRPL.getInflationIntervalRate.call(),
             rocketTokenRPL.inflationCalculate.call()
         ]).then(
-            ([inflationIntervalBlocks, inflationIntervalRate, inflationAmount]) =>
-            ({inflationIntervalBlocks, inflationIntervalRate, inflationAmount})
+            ([currentBlock, inflationStartBlock, inflationIntervalBlocks, inflationIntervalRate, inflationAmount]) =>
+            ({currentBlock, inflationStartBlock, inflationIntervalBlocks, inflationIntervalRate, inflationAmount})
         );
     }
 
     // Get initial data
     let inflationData1 = await getInflationData();
 
-    console.log(web3.utils.fromWei(inflationData1.inflationIntervalBlocks), web3.utils.fromWei(inflationData1.inflationIntervalRate), web3.utils.fromWei(inflationData1.inflationAmount));
+    console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.inflationStartBlock), web3.utils.fromWei(inflationData1.inflationIntervalBlocks), web3.utils.fromWei(inflationData1.inflationIntervalRate), web3.utils.fromWei(inflationData1.inflationAmount));
 
     // Process the blocks now to simulate days passing
     await mineBlocks(web3, endBlock);
@@ -65,7 +122,7 @@ export async function rplCalcInflation(daysToSimulate, dailyIntervalBlocks, year
     // Get inflation data
     let inflationData2 = await getInflationData();
 
-    console.log(web3.utils.fromWei(inflationData2.inflationIntervalBlocks), web3.utils.fromWei(inflationData2.inflationIntervalRate), web3.utils.fromWei(inflationData2.inflationAmount));
+    console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.inflationStartBlock), web3.utils.fromWei(inflationData2.inflationIntervalBlocks), web3.utils.fromWei(inflationData2.inflationIntervalRate), web3.utils.fromWei(inflationData2.inflationAmount));
  
     // Set gas price
     let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
