@@ -42,6 +42,21 @@ This will display a list of all eligible minipools, and prompt you to select one
 Once refunded, you should see their balances reflected in your node account.
 
 
+.. _smart-node-minipools-exit:
+
+*****************
+Exiting Minipools
+*****************
+
+Once you're ready to finish staking, you can exit your minipool validators from the beacon chain with::
+
+	rocketpool minipool exit
+
+This will display a list of all eligible minipools, and prompt you to select one or all of them to exit.
+When you successfully exit a minipool, it can take several hours for its status to be reflected by your node.
+It can also take longer for it to be marked as withdrawable by the Rocket Pool network and for nETH to be minted to it for withdrawal.
+
+
 .. _smart-node-minipools-withdraw:
 
 **************************
