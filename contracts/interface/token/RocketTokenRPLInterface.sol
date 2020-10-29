@@ -12,6 +12,6 @@ interface RocketTokenRPLInterface is IERC20 {
     function getInflationIntervalStartBlock() external view returns(uint256);
     function getInflationRewardsContractAddress() external view returns(address);
     function inflationCalculate() external view returns (uint256);
-    function inflationMintTokens() external returns (bool);
+    function inflationMintTokens() external returns (uint256);
     function swapTokens(uint256 _amount) external;
 }

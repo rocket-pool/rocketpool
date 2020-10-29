@@ -59,7 +59,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     // The block to start inflation at, can only be set if that block has not already passed
     function setInflationIntervalStartBlock(uint256 _value) public onlyOwner {
         // Must be a block in the future
-        require(_value > block.number, "Inflation interval block amount cannot be 0 or less than current block");
+        require(_value > block.number, "Inflation interval start block must be a future block");
         // If it's already set and started, a new start block cannot be set
         if(getInflationIntervalStartBlock() > 0) {
             require(getInflationIntervalStartBlock() > block.number, "Inflation has already started");

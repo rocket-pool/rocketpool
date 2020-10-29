@@ -81,27 +81,23 @@ export async function rplInflationStartBlockSet(startBlock, txOptions) {
     assert(dataSet2.inflationStartBlock.eq(web3.utils.toBN(startBlock)), 'Start block has not been set correctly')
 };
 
-// Calculate the daily inflation over a period
-export async function rplCalcInflation(daysToSimulate, inflationStartDays, inflationCollectDays, dailyIntervalBlocks, yearlyInflationTarget, txOptions) {
+
+// Claim the inflation after a set amount of blocks have passed
+export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = null) {
 
     // Load contracts
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
-    // Set the daily inflation block count
-    await rplInflationIntervalBlocksSet(dailyIntervalBlocks, txOptions);
-    // Set the daily inflation rate
-    await rplInflationIntervalRateSet(yearlyInflationTarget, txOptions);
+    // Get the previously set daily inflation rate
+    const intervalInflationRate = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalRate.call());
+    // Get the previously set start block
+    const blockStart = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalStartBlock.call());
+    // Get the previously set block interval
+    const blockInterval = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalBlocks.call());
+    // Get the previously last inflation calculated block
+    const blockIntervalLastCalc = web3.utils.toBN(await rocketTokenRPL.getInflationCalcBlock.call());
 
-    // Get the current block
-    let currentBlock = await web3.eth.getBlockNumber();
-
-    // Inflation start block - set to start after 1 day of blocks (add 1 to current block to account for tx setting that start block below)
-    const inflationStartBlock = (parseInt(currentBlock)+(inflationStartDays*dailyIntervalBlocks))+1;
-
-    // Set the daily inflation start block
-    await rplInflationStartBlockSet(inflationStartBlock, txOptions);
-
-    // Get data about the inflation
+    // Get data about the current inflation
     function getInflationData() {
         return Promise.all([
             web3.eth.getBlockNumber(),
@@ -109,51 +105,54 @@ export async function rplCalcInflation(daysToSimulate, inflationStartDays, infla
             rocketTokenRPL.getInflationIntervalStartBlock.call(),
             rocketTokenRPL.getInlfationIntervalsPassed.call(),
             rocketTokenRPL.inflationCalculate.call(),
-            rocketTokenRPL.getInflationIntervalRate.call(),
         ]).then(
             ([currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, inflationAmount]) =>
             ({currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, inflationAmount})
         );
     }
 
+    // Get initial data
+    let inflationData1 = await getInflationData();
+    //console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.tokenTotalSupply), inflationData1.inflationStartBlock.toString(), inflationData1.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData1.inflationAmount));
 
-    // Loop through the days and check each one
-    for(let i=0; i < daysToSimulate; i++) {
-        // Get initial data
-        let inflationData1 = await getInflationData();
-        console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.tokenTotalSupply), inflationData1.inflationStartBlock.toString(), inflationData1.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData1.inflationAmount));
+    // Starting amount of total supply
+    let totalSupplyStart = web3.utils.fromWei(inflationData1.tokenTotalSupply);
 
-        // Process the blocks now to simulate days passing
-        await mineBlocks(web3, dailyIntervalBlocks);
-
-        // Collect any inflation if set too 
-        if(inflationCollectDays) {
-            // Can we collect now?
-            if(i % inflationCollectDays == 0) {
-                console.log('COLLECT********************');
-                // Yes we can
-                await rocketTokenRPL.inflationMintTokens(txOptions);
-            }
-        }
-        
-        // Get inflation data
-        let inflationData2 = await getInflationData();
-        console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.tokenTotalSupply), inflationData2.inflationStartBlock.toString(), inflationData2.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData2.inflationAmount));
+    // Some expected data results based on the passed parameters
+    let expectedInflationLastCalcBlock = Number(blockIntervalLastCalc) == 0 && config.blockStart < config.blockClaim ? config.blockStart : Number(blockIntervalLastCalc);
+    let expectedInflationIntervalsPassed = Math.floor((config.blockClaim - expectedInflationLastCalcBlock) / config.blockInterval);
+    let expectedInflationDaily = (1 + config.yearlyInflationTarget) ** (1 / (365));
+    // How much inflation to use based on intervals passed
+    let expectedInflationAmount = expectedInflationDaily;
+    for(let i=1; i < expectedInflationIntervalsPassed; i++) {
+        expectedInflationAmount = (expectedInflationAmount * expectedInflationDaily);
     }
+    // How many tokens to be epected minted
+    let expectedTokensMinted = (expectedInflationAmount * totalSupplyStart) - totalSupplyStart;
+   
+
+    // Get the current block so we can calculate how many blocks to mine to make it to the claim block
+    let blockCurrent = await web3.eth.getBlockNumber();
+    // Blocks to process as passing
+    let blocksToSimulatePassing = config.blockClaim - blockCurrent;
+     // Process the blocks now to simulate blocks passing (nned to minus 1 block as the 'inflationMintTokens' tx triggers a new block with ganache which is equal to the claim block)
+     await mineBlocks(web3, blocksToSimulatePassing-1);  
+    // Claim tokens now
+    await rocketTokenRPL.inflationMintTokens(txOptions);
 
 
-    // Burn tokens & get tx fee
-    //let txReceipt = await rocketTokenRPL.swapTokens(amount, txOptions);
-    //let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    // Get inflation data
+    let inflationData2 = await getInflationData();
+    //console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.tokenTotalSupply), inflationData2.inflationStartBlock.toString(), inflationData2.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData2.inflationAmount));
 
+    // Ending amount of total supply
+    let totalSupplyEnd = web3.utils.fromWei(inflationData2.tokenTotalSupply);
 
+    //console.log('RESULT', expectedInflationIntervalsPassed, expectedTokensMinted.toFixed(4), (totalSupplyEnd - totalSupplyStart).toFixed(4));
 
-    //console.log(inflationData1.itervalsPassed.toString(), inflationData2.itervalsPassed.toString());
-
-    // Check balances
-    //assert(balances2.rplTokenSupply.eq(balances1.rplTokenSupply.add(mintAmount)), 'Incorrect updated token supply');
-    //assert(balances2.rplUserBalance.eq(balances1.rplUserBalance.add(mintAmount)), 'Incorrect updated user token balance');
-    //assert(balances2.rplContractBalanceOfFixedSupply.eq(balances1.rplContractBalanceOfFixedSupply.add(mintAmount)), 'RPL contract does not contain sent fixed RPL amount');
+    // Verify the minted amount is correct based on inflation rate etc
+    assert(expectedTokensMinted.toFixed(4) == (totalSupplyEnd - totalSupplyStart).toFixed(4), 'Incorrect amount of minted tokens expected');
+    // Are we verifying an exact amount of tokens given as a required parameter on this pass?
+    if(tokenAmountToMatch) assert(Number(tokenAmountToMatch).toFixed(4) == Number(totalSupplyEnd).toFixed(4), 'Given token amount does not match total supply made');
 
 }
-
