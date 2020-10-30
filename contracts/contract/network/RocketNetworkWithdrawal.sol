@@ -38,7 +38,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Receive a vault withdrawal
     // Only accepts calls from the RocketVault contract
-    function receiveVaultWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     // Get the validator withdrawal credentials
     function getWithdrawalCredentials() override public view returns (bytes memory) {

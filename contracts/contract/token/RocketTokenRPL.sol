@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
+import "../../interface/rewards/RocketRewardsPoolInterface.sol";
 
 // RPL Governance and utility token
 // Inlfationary with rate determined by DAO
@@ -147,17 +148,21 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     function inflationMintTokens() override public returns (uint256) {
         // Calculate the amount of tokens now based on inflation rate
         uint256 newTokens = inflationCalculate();
+        // Address of the rewards pool to send tokens
+        address rewardsPoolAddress = getInflationRewardsContractAddress();
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
-        address rewardsPoolContract = getInflationRewardsContractAddress();
+        RocketRewardsPoolInterface rewardsPoolContract = RocketRewardsPoolInterface(rewardsPoolAddress);
         // Lets check
-        if(newTokens > 0 && rewardsPoolContract != address(0x0)) {
+        if(newTokens > 0 && rewardsPoolAddress != address(0x0)) {
             // Update last inflation calculation block
             inflationCalcBlock = block.number;
             // inflationCalcBlock = block.number.mul(getInflationIntervalBlocks()).div(getInflationIntervalBlocks());
             // Update balance & supply
-            _mint(rewardsPoolContract, newTokens);
+            _mint(rewardsPoolAddress, newTokens);
             // Transfer now
-            Transfer(address(0), rewardsPoolContract, newTokens);
+            Transfer(address(0), rewardsPoolAddress, newTokens);
+            // Let rewards pool know now
+            rewardsPoolContract.rplTokensDeposited(newTokens);
             // Log it
             emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
             // return number minted

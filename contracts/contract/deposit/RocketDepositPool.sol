@@ -52,7 +52,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // Receive a vault withdrawal
     // Only accepts calls from the RocketVault contract
-    function receiveVaultWithdrawal() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
+    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
 
     // Accept a deposit from a user
     function deposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) {
