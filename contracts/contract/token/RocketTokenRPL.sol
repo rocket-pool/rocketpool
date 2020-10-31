@@ -189,8 +189,6 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         uint256 allowance = rplFixedSupplyContract.allowance(msg.sender, address(this));
         // Enough to cover it?
         require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
-        // Check address is legit (impossible, but safety first)
-        require(msg.sender != address(0x0), "Sender address is not a valid address");
         // Send the tokens to this contract now and mint new ones for them
         if (rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount)) {
             // Initialise itself and send from it's own balance (cant just do a transfer as it's a user calling this so they are msg.sender)

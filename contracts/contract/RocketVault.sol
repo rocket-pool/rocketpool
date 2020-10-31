@@ -75,8 +75,6 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         uint256 allowance = tokenContract.allowance(msg.sender, address(this));
         // Enough to cover it?
         require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
-        // Check address is legit (impossible, but safety first)
-        require(msg.sender != address(0x0), "Sender address is not a valid address");
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Send the tokens to this contract now and mint new ones for them
