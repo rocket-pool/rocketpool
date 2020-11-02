@@ -20,10 +20,10 @@
     "babel-preset-stage-2": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
     "babel-register": "^6.26.0",
-    "ganache-cli": "^6.9.1",
+    "ganache-cli": "^6.12.1",
     "prettier": "^1.10.2",
     "solidity-coverage": "^0.5.11",
-    "truffle": "^5.1.27",
+    "truffle": "^5.1.51",
     "truffle-contract": "^3.*",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.8"
