@@ -1,5 +1,5 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL, RocketDAOSettings } from '../_utils/artifacts';
+import { RocketTokenRPL, RocketDAOSettings, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
 
 
 
@@ -87,13 +87,9 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
 
     // Load contracts
     const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketRewardsPool = await RocketRewardsPool.deployed();
 
-    // Get the previously set daily inflation rate
-    const intervalInflationRate = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalRate.call());
-    // Get the previously set start block
-    const blockStart = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalStartBlock.call());
-    // Get the previously set block interval
-    const blockInterval = web3.utils.toBN(await rocketTokenRPL.getInflationIntervalBlocks.call());
     // Get the previously last inflation calculated block
     const blockIntervalLastCalc = web3.utils.toBN(await rocketTokenRPL.getInflationCalcBlock.call());
 
@@ -104,16 +100,17 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
             rocketTokenRPL.totalSupply.call(),
             rocketTokenRPL.getInflationIntervalStartBlock.call(),
             rocketTokenRPL.getInlfationIntervalsPassed.call(),
-            rocketTokenRPL.inflationCalculate.call(),
+            rocketTokenRPL.balanceOf(rocketVault.address),
+            rocketVault.balanceOfToken('rocketRewardsPool', rocketTokenRPL.address),
         ]).then(
-            ([currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, inflationAmount]) =>
-            ({currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, inflationAmount})
+            ([currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, rocketVaultBalanceRPL, rocketVaultInternalBalanceRPL]) =>
+            ({currentBlock, tokenTotalSupply, inflationStartBlock, inflationIntervalsPassed, rocketVaultBalanceRPL, rocketVaultInternalBalanceRPL})
         );
     }
 
     // Get initial data
     let inflationData1 = await getInflationData();
-    //console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.tokenTotalSupply), inflationData1.inflationStartBlock.toString(), inflationData1.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData1.inflationAmount));
+    //console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.tokenTotalSupply), inflationData1.inflationStartBlock.toString(), web3.utils.fromWei(inflationData1.rocketVaultBalanceRPL), web3.utils.fromWei(inflationData1.rocketVaultInternalBalanceRPL));
 
     // Starting amount of total supply
     let totalSupplyStart = web3.utils.fromWei(inflationData1.tokenTotalSupply);
@@ -143,15 +140,17 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
 
     // Get inflation data
     let inflationData2 = await getInflationData();
-    //console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.tokenTotalSupply), inflationData2.inflationStartBlock.toString(), inflationData2.inflationIntervalsPassed.toString(), web3.utils.fromWei(inflationData2.inflationAmount));
+    //console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.tokenTotalSupply), inflationData2.inflationStartBlock.toString(), web3.utils.fromWei(inflationData2.rocketVaultBalanceRPL), web3.utils.fromWei(inflationData2.rocketVaultInternalBalanceRPL));
 
     // Ending amount of total supply
     let totalSupplyEnd = web3.utils.fromWei(inflationData2.tokenTotalSupply);
 
-    //console.log('RESULT', expectedInflationIntervalsPassed, expectedTokensMinted.toFixed(4), (totalSupplyEnd - totalSupplyStart).toFixed(4));
+    // console.log('RESULT', expectedInflationIntervalsPassed, expectedTokensMinted.toFixed(4), (totalSupplyEnd - totalSupplyStart).toFixed(4));
 
     // Verify the minted amount is correct based on inflation rate etc
     assert(expectedTokensMinted.toFixed(4) == (totalSupplyEnd - totalSupplyStart).toFixed(4), 'Incorrect amount of minted tokens expected');
+    // Verify the minted tokens are now stored in Rocket Vault on behalf of Rocket Rewards Pool
+    assert(inflationData2.rocketVaultInternalBalanceRPL.eq(inflationData2.rocketVaultBalanceRPL), 'Incorrect amount of tokens stored in Rocket Vault for Rocket Rewards Pool');
     // Are we verifying an exact amount of tokens given as a required parameter on this pass?
     if(tokenAmountToMatch) assert(Number(tokenAmountToMatch).toFixed(4) == Number(totalSupplyEnd).toFixed(4), 'Given token amount does not match total supply made');
 

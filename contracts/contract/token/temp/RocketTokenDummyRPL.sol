@@ -16,7 +16,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
 
     uint8 constant decimalPlaces = 18;
     uint256 public exponent = 10**uint256(decimalPlaces);
-    uint256 public totalSupplyCap = 18 * (10**6) * exponent;    // 18 Million tokens
+    uint256 public totalSupplyCap = 18.5 * (10**6) * exponent;    // 18 Million tokens
 
 
     /**** Libs *****************/

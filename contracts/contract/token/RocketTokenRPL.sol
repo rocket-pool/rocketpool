@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
-import "../../interface/rewards/RocketRewardsPoolInterface.sol";
+import "../../interface/RocketVaultInterface.sol";
 
 // RPL Governance and utility token
 // Inlfationary with rate determined by DAO
@@ -148,21 +148,27 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     function inflationMintTokens() override public returns (uint256) {
         // Calculate the amount of tokens now based on inflation rate
         uint256 newTokens = inflationCalculate();
-        // Address of the rewards pool to send tokens
-        address rewardsPoolAddress = getInflationRewardsContractAddress();
+        // Address of the vault where to send tokens
+        address rocketVaultAddress = getContractAddress('rocketVault');
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
-        RocketRewardsPoolInterface rewardsPoolContract = RocketRewardsPoolInterface(rewardsPoolAddress);
+        RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Lets check
-        if(newTokens > 0 && rewardsPoolAddress != address(0x0)) {
+        if(newTokens > 0 && rocketVaultAddress != address(0x0)) {
             // Update last inflation calculation block
             inflationCalcBlock = block.number;
             // inflationCalcBlock = block.number.mul(getInflationIntervalBlocks()).div(getInflationIntervalBlocks());
             // Update balance & supply
-            _mint(rewardsPoolAddress, newTokens);
-            // Transfer now
-            Transfer(address(0), rewardsPoolAddress, newTokens);
-            // Let rewards pool know now
-            rewardsPoolContract.rplTokensDeposited(newTokens);
+            _mint(address(this), newTokens);
+            // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
+            IERC20 rplInflationContract = IERC20(address(this));
+            // This is to prevent an allowance reentry style attack
+            uint256 vaultAllowance = 0;
+            // Get the current allowance for Rocket Vault
+            vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
+            // Now allow Rocket Vault to move those tokens
+            rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens));
+            // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
+            rocketVaultContract.depositToken('rocketRewardsPool', address(this), newTokens);
             // Log it
             emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
             // return number minted
@@ -171,7 +177,6 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
             // Cannot mint yet
             revert("New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
         }
-        
     }   
 
    /**

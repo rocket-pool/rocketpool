@@ -23,7 +23,9 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     }
 
     // Method fired when receiving rewards from RPL token contract
+   
     function rplTokensDeposited(uint256 _amount) override external onlyLatestContract("rocketTokenRPL", msg.sender) {
+         /*
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");
         // Get Rocket Vault
@@ -41,6 +43,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         }else{
             revert("Token transfer was not successful");
         }
+        */
     }
 
 }

@@ -62,11 +62,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         emit EtherWithdrawn(contractKey, _amount, now);
     }
 
-    // Accept an token deposit from a network contract
-    // Only accepts calls from Rocket Pool network contracts
-    function depositToken(address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
+
+    // Accept an token deposit and assign it's balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
+    function depositToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external {
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");
+        // Make sure the network contract is valid (will throw if not)
+        require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Check they can cover the amount
@@ -76,7 +78,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Enough to cover it?
         require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
         // Get contract key
-        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
+        bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
         // Send the tokens to this contract now and mint new ones for them
         if (tokenContract.transferFrom(msg.sender, address(this), _amount)) {
             // Update contract balance
@@ -106,7 +108,14 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         }else{
             revert("Rocket Vault token withdrawal unsuccessful");
         }
+    }
 
+    // Get the balance of a token held by a network contract
+    function balanceOfToken(string memory _networkContractName, address _tokenAddress) override view external returns (uint256) {     
+        // Get contract key
+        bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
+        // Return balance
+        return tokenBalances[contractKey];
     }
 
 }
