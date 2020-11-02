@@ -153,30 +153,26 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
         RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Lets check
-        if(newTokens > 0 && rocketVaultAddress != address(0x0)) {
-            // Update last inflation calculation block
-            inflationCalcBlock = block.number;
-            // inflationCalcBlock = block.number.mul(getInflationIntervalBlocks()).div(getInflationIntervalBlocks());
-            // Update balance & supply
-            _mint(address(this), newTokens);
-            // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
-            IERC20 rplInflationContract = IERC20(address(this));
-            // This is to prevent an allowance reentry style attack
-            uint256 vaultAllowance = 0;
-            // Get the current allowance for Rocket Vault
-            vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
-            // Now allow Rocket Vault to move those tokens
-            rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens));
-            // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
-            rocketVaultContract.depositToken('rocketRewardsPool', address(this), newTokens);
-            // Log it
-            emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
-            // return number minted
-            return newTokens;
-        }else{
-            // Cannot mint yet
-            revert("New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
-        }
+        require(newTokens > 0 && rocketVaultAddress != address(0x0), "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
+        // Update last inflation calculation block
+        inflationCalcBlock = block.number;
+        // inflationCalcBlock = block.number.mul(getInflationIntervalBlocks()).div(getInflationIntervalBlocks());
+        // Miint to itself, then allocate tokens for transfer to rewards contract, this will Update balance & supply
+        _mint(address(this), newTokens);
+        // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
+        IERC20 rplInflationContract = IERC20(address(this));
+        // This is to prevent an allowance reentry style attack
+        uint256 vaultAllowance = 0;
+        // Get the current allowance for Rocket Vault
+        vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
+        // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
+        require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
+        // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
+        require(rocketVaultContract.depositToken('rocketRewardsPool', address(this), newTokens), "Rocket Vault deposit was not successful");
+        // Log it
+        emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
+        // return number minted
+        return newTokens;
     }   
 
    /**
@@ -195,18 +191,15 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Enough to cover it?
         require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
         // Send the tokens to this contract now and mint new ones for them
-        if (rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount)) {
-            // Initialise itself and send from it's own balance (cant just do a transfer as it's a user calling this so they are msg.sender)
-            IERC20 rplInflationContract = IERC20(address(this));
-            // Transfer from the contracts RPL balance to the user
-            rplInflationContract.transfer(msg.sender, _amount);
-            // Update the total swapped
-            totalSwappedRPL = totalSwappedRPL.add(_amount);
-            // Log it
-            emit RPLFixedSupplyBurn(msg.sender, _amount, now);
-        }else{
-            revert("Token transfer from existing RPL contract was not successful");
-        }
+        require(rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing RPL contract was not successful");
+        // Initialise itself and send from it's own balance (cant just do a transfer as it's a user calling this so they are msg.sender)
+        IERC20 rplInflationContract = IERC20(address(this));
+        // Transfer from the contracts RPL balance to the user
+        require(rplInflationContract.transfer(msg.sender, _amount), "Token transfer from RPL inflation contract was not successful");
+        // Update the total swapped
+        totalSwappedRPL = totalSwappedRPL.add(_amount);
+        // Log it
+        emit RPLFixedSupplyBurn(msg.sender, _amount, now);
     }
 
 

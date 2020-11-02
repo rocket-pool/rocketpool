@@ -33,7 +33,15 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Get a contract's ETH balance by address
     function balanceOf(address _contractAddress) override public view returns (uint256) {
+        // Return balance
         return etherBalances[keccak256(abi.encodePacked(getContractName(_contractAddress)))];
+    }
+
+
+    // Get the balance of a token held by a network contract
+    function balanceOfToken(string memory _networkContractName, address _tokenAddress) override public view returns (uint256) {     
+        // Return balance
+        return tokenBalances[keccak256(abi.encodePacked(_networkContractName, _tokenAddress))];
     }
 
     // Accept an ETH deposit from a network contract
@@ -64,7 +72,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
 
     // Accept an token deposit and assign it's balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
-    function depositToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external {
+    function depositToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external returns (bool) {
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");
         // Make sure the network contract is valid (will throw if not)
@@ -80,14 +88,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
         // Send the tokens to this contract now and mint new ones for them
-        if (tokenContract.transferFrom(msg.sender, address(this), _amount)) {
-            // Update contract balance
-            tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
-            // Emit token transfer
-            emit TokenDeposited(contractKey, _tokenAddress, _amount, now);
-        }else{
-            revert("Token transfer was not successful");
-        }
+        require(tokenContract.transferFrom(msg.sender, address(this), _amount), "Token transfer was not successful");
+        // Update contract balance
+        tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
+        // Emit token transfer
+        emit TokenDeposited(contractKey, _tokenAddress, _amount, now);
+        // Done
+        return true;
     }
 
     // Withdraw an amount of a ERC20 token to a network contract
@@ -100,22 +107,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Verify this contract has that amount of tokens at a minimum
         require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
         // Withdraw and let calling contract know
-        if(tokenContract.transfer(msg.sender, _amount)) {
-            // Update balances
-            tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
-            // Emit token withdrawn event
-            emit TokenWithdrawn(contractKey, _tokenAddress, _amount, now);
-        }else{
-            revert("Rocket Vault token withdrawal unsuccessful");
-        }
+        require(tokenContract.transfer(msg.sender, _amount), "Rocket Vault token withdrawal unsuccessful");
+        // Update balances
+        tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
+        // Emit token withdrawn event
+        emit TokenWithdrawn(contractKey, _tokenAddress, _amount, now);
     }
 
-    // Get the balance of a token held by a network contract
-    function balanceOfToken(string memory _networkContractName, address _tokenAddress) override view external returns (uint256) {     
-        // Get contract key
-        bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
-        // Return balance
-        return tokenBalances[contractKey];
-    }
 
 }
