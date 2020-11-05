@@ -16,6 +16,7 @@ import nodeSettingsTests from './settings/node-settings-tests';
 import nethTests from './token/neth-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
+import rewardsPool from './rewards/rewards-tests';
 
 // Header
 console.log('\n');
@@ -44,3 +45,4 @@ nodeSettingsTests();
 nethTests();
 rethTests();
 rplTests();
+rewardsPool();

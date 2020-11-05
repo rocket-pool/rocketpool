@@ -50,6 +50,9 @@ const contracts = {
   rocketNetworkBalances:    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:        artifacts.require('RocketNetworkFees.sol'),
   rocketNetworkWithdrawal:  artifacts.require('RocketNetworkWithdrawal.sol'),
+  // Rewards
+  rocketRewardsPool:        artifacts.require('RocketRewardsPool.sol'),
+  rocketClaimTrustedNode:   artifacts.require('RocketClaimTrustedNode.sol'),
   // Node
   rocketNodeDeposit:        artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeManager:        artifacts.require('RocketNodeManager.sol'),
@@ -59,8 +62,6 @@ const contracts = {
   rocketNetworkSettings:    artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:       artifacts.require('RocketNodeSettings.sol'),
   rocketDAOSettings:        artifacts.require('RocketDAOSettings.sol'),
-  // Rewards
-  rocketRewardsPool:        artifacts.require('RocketRewardsPool.sol'),
   // Tokens
   rocketTokenRPLFixedSupply:       artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:           artifacts.require('RocketTokenRETH.sol'),

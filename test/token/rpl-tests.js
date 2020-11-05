@@ -12,7 +12,7 @@ import { RocketTokenRPL } from '../_utils/artifacts';
 
 
 export default function() {
-    contract.only('RocketTokenRPL', async (accounts) => {
+    contract('RocketTokenRPL', async (accounts) => {
 
 
         // Accounts
