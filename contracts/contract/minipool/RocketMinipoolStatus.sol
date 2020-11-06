@@ -21,6 +21,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     using SafeMath for uint;
 
     // Events
+    event MinipoolWithdrawableSubmitted(address indexed from, address indexed minipool, uint256 stakingStartBalance, uint256 stakingEndBalance, uint256 time);
     event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
 
     // Construct
@@ -52,6 +53,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
+        // Emit minipool withdrawable status submitted event
+        emit MinipoolWithdrawableSubmitted(msg.sender, _minipoolAddress, _stakingStartBalance, _stakingEndBalance, now);
         // Check submission count & set minipool withdrawable
         uint256 calcBase = 1 ether;
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
