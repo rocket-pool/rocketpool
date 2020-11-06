@@ -4,8 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';
 import { burnFixedRPL } from './scenario-rpl-burn-fixed';
 import { allowDummyRPL } from './scenario-rpl-allow-fixed';
-import { rplCalcInflation, rplInflationIntervalBlocksGet, rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from './scenario-rpl-inflation';
-import { getNethBalance } from '../_helpers/tokens';
+import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from './scenario-rpl-inflation';
 
 // Contracts
 import { RocketTokenRPL } from '../_utils/artifacts';

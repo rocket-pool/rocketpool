@@ -34,6 +34,16 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
 
     /*** RPL Claims ***********************************************/
 
+    // DAO Address for RPL rewards
+    function getRewardsDAOAddress() override external view returns (address) {
+        return getAddressS("settings.dao.rpl.rewards.address");
+    }
+
+    // DAO Address for RPL rewards, if it is 0, DAO RPL rewards will roll over for claiming from claimer contracts
+    function setRewardsDAOAddress(address _value) public onlyOwner {
+        setAddressS("settings.dao.rpl.rewards.address", _value); 
+    }
+
     // Claimers
 
     // Get the perc amount that this rewards contract get claim

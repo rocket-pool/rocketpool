@@ -3,21 +3,21 @@ import { RocketTokenRPL, RocketDAOSettings, RocketRewardsPool, RocketRewardsClai
 
 
 // Get the current rewards claim period in blocks
-export async function getRewardsClaimIntervalBlocks(txOptions) {
+export async function rewardsClaimIntervalBlocksGet(txOptions) {
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
     return await rocketDAOSettings.getRewardsClaimIntervalBlocks.call();
 };
 
 // Get the current rewards claimers total
-export async function getRewardsClaimersPercTotal(txOptions) {
+export async function rewardsClaimersPercTotalGet(txOptions) {
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
     return await rocketDAOSettings.getRewardsClaimersPercTotal.call();
 };
 
 // Set the current rewards claim period in blocks
-export async function setRewardsClaimIntervalBlocks(intervalBlocks, txOptions) {
+export async function rewardsClaimIntervalBlocksSet(intervalBlocks, txOptions) {
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
     // Get data about the tx
@@ -41,7 +41,7 @@ export async function setRewardsClaimIntervalBlocks(intervalBlocks, txOptions) {
 
 
 // Set a contract that can claim rewards
-export async function setRewardsClaimerPerc(contractName, perc, txOptions, expectedTotalPerc = null) {
+export async function rewardsClaimerPercSet(contractName, perc, txOptions, expectedTotalPerc = null) {
     // Load contracts
     const rocketDAOSettings = await RocketDAOSettings.deployed();
     // Get data about the tx
