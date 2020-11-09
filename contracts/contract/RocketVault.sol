@@ -99,7 +99,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Withdraw an amount of a ERC20 token to a network contract
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawToken(address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
+    function withdrawToken(address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Get the token ERC20 instance
@@ -112,6 +112,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
         // Emit token withdrawn event
         emit TokenWithdrawn(contractKey, _tokenAddress, _amount, now);
+        // Done
+        return true;
     }
 
 

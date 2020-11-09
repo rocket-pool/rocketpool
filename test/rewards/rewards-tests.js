@@ -21,7 +21,9 @@ export default function() {
             userOne,
             userTwo,
             registeredNode,
-            registeredNodeTrusted
+            registeredNodeTrusted1,
+            registeredNodeTrusted2,
+            registeredNodeTrusted3
         ] = accounts;
 
         // Set some RPL inflation scenes
@@ -54,9 +56,13 @@ export default function() {
 
             // Register nodes
             await registerNode({from: registeredNode});
-            await registerNode({from: registeredNodeTrusted});
+            await registerNode({from: registeredNodeTrusted1});
+            await registerNode({from: registeredNodeTrusted2});
+            await registerNode({from: registeredNodeTrusted3});
             // Enable last node to be trusted
-            await setNodeTrusted(registeredNodeTrusted, true, {from: owner});
+            await setNodeTrusted(registeredNodeTrusted1, true, {from: owner});
+            await setNodeTrusted(registeredNodeTrusted2, true, {from: owner});
+            await setNodeTrusted(registeredNodeTrusted3, true, {from: owner});
             
 
         });
@@ -176,24 +182,13 @@ export default function() {
             await rewardsClaimIntervalBlocksSet(claimIntervalBlocks, {
                 from: owner,
             });
-            // Claim from the contract now
-            await rewardsClaimTrustedNode(claimIntervalBlocks, {
-                from: registeredNodeTrusted,
-            });
-            console.log('-------------');
             // Fast forward blocks
             await mineBlocks(web3, claimIntervalBlocks);
             // Claim from the contract now
             await rewardsClaimTrustedNode(claimIntervalBlocks, {
-                from: registeredNodeTrusted,
+                from: registeredNodeTrusted1,
             });
-            console.log('-------------');
-            // Fast forward blocks
-            await mineBlocks(web3, claimIntervalBlocks);
-            // Claim from the contract now
-            await rewardsClaimTrustedNode(claimIntervalBlocks, {
-                from: registeredNodeTrusted,
-            });
+
         });
 
         
