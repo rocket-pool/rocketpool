@@ -10,13 +10,13 @@ The Rocket Pool service daemons must also be manually registered with the OS ser
 
 The following commands are unavailable when running the Rocket Pool service outside of Docker:
 
-    * `rocketpool service status`
-    * `rocketpool service start`
-    * `rocketpool service pause`
-    * `rocketpool service stop`
-    * `rocketpool service terminate`
-    * `rocketpool service logs`
-    * `rocketpool service stats`
+    * ``rocketpool service status``
+    * ``rocketpool service start``
+    * ``rocketpool service pause``
+    * ``rocketpool service stop``
+    * ``rocketpool service terminate``
+    * ``rocketpool service logs``
+    * ``rocketpool service stats``
 
 To run the Rocket Pool service on your host OS, follow these steps:
 
@@ -78,9 +78,9 @@ To run the Rocket Pool service on your host OS, follow these steps:
 
 .. _smart-node-non-docker-systemd:
 
-##############################################
+**********************************************
 Example systemd Units for Rocket Pool Services
-##############################################
+**********************************************
 
 Geth::
 
