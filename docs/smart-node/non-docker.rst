@@ -1,8 +1,8 @@
 .. _smart-node-non-docker:
 
-#################################################
-Running the Rocket Pool Service Outside of Docker
-#################################################
+##############################################
+Running the Rocket Pool Service Outside Docker
+##############################################
 
 Users with advanced setups may wish to run the Rocket Pool service on their host OS, outside of a Docker environment.
 Note that when using this method, users must install and manage their own Eth 1.0 and Eth 2.0 beacon & validator clients.
