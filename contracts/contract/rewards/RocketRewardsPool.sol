@@ -103,14 +103,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", getClaimIntervalBlockStart(), _claimingContract)));
     }
 
-    /**
-    * Has this user claimed from this claiming contract successfully before?
-    * @return bool Returns true if they have made a claim beofer
-    */
-    function getClaimedBefore(address _claimingContract, address _claimerAddress) override public view returns(bool) {
-        // Check per contract
-        return getBool(keccak256(abi.encodePacked("rewards.pool.claim.contract.successful", _claimingContract, _claimerAddress)));
-    }
 
     /**
     * Have they claimed already during this interval? 
@@ -222,8 +214,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         rocketVault.withdrawToken(rplContractAddress, claimAmount);
         // Store the claiming record for this interval and claiming contract
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", getClaimIntervalBlockStart(), msg.sender, _claimerAddress)), true);
-        // Also store it as having made a claim before
-        setBool(keccak256(abi.encodePacked("rewards.pool.claim.contract.successful", msg.sender, _claimerAddress)), true);
         // Store the last block a claim was made
         setUintS("rewards.pool.claim.interval.block.last", block.number);
         // Store the total RPL rewards claim for this claiming contract in this interval
