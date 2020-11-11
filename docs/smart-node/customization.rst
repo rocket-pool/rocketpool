@@ -59,7 +59,7 @@ To configure Rocket Pool to use external Eth 1.0 and/or Eth 2.0 clients:
 
 #. Configure your router's DHCP settings to lease a static IP address to your machine
 
-#. Reconnect to your router, then find your machine's local IP address with ``ifconfig``
+#. Reconnect to your network, then find your machine's local IP address with ``ifconfig``
 
 #. Ensure your Eth 1.0 and/or Eth 2.0 clients are listening on the address ``0.0.0.0``:
 
