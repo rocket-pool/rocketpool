@@ -82,6 +82,10 @@ To configure Rocket Pool to use external Eth 1.0 and/or Eth 2.0 clients:
     * To use your own Geth instance, update ``chains.eth1.provider`` to ``http://XXX.XXX.XXX.XXX:8545``, where ``XXX.XXX.XXX.XXX`` is your machine's local IP address
     * To use your own Lighthouse or Prysm instance, update ``chains.eth2.provider`` to ``XXX.XXX.XXX.XXX:5052``, where ``XXX.XXX.XXX.XXX`` is your machine's local IP address
 
+#. Configure the Rocket Pool service, selecting Geth for your Eth 1.0 client, and the appropriate Eth 2.0 client::
+
+    rocketpool service config
+
 #. Restart the Rocket Pool service with::
 
     rocketpool service start
