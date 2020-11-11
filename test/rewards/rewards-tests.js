@@ -185,7 +185,7 @@ export default function() {
             // Fast forward blocks
             await mineBlocks(web3, claimIntervalBlocks);
             // Claim from the contract now
-            await rewardsClaimTrustedNode(claimIntervalBlocks, {
+            await rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
             });
 

@@ -9,6 +9,7 @@ interface RocketNodeManagerInterface {
     function getTrustedNodeAt(uint256 _index) external view returns (address);
     function getNodeExists(address _nodeAddress) external view returns (bool);
     function getNodeTrusted(address _nodeAddress) external view returns (bool);
+    function getNodeTrustedBlock(address _nodeAddress) external view returns (uint256);
     function getNodeTimezoneLocation(address _nodeAddress) external view returns (string memory);
     function registerNode(string calldata _timezoneLocation) external;
     function setNodeTrusted(address _nodeAddress, bool _trusted) external;

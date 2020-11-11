@@ -16,6 +16,9 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
+    // Our base calc
+    uint256 calcBase = 1 ether; 
+
     // Libs
     using SafeMath for uint;
 
@@ -73,7 +76,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return getUintS("rewards.pool.claim.interval.block.last");
     }
 
-
     /**
     * Compute intervals since last claim period
     * @return uint256 Time intervals since last update
@@ -94,6 +96,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     }
 
     /**
+    * The current claim amount total for this interval per claiming contract
+    * @return uint256 The current claim amount for this interval for the claiming contract
+    */
+    function getClaimIntervalContractTotalClaimed(address _claimingContract) override public view returns(uint256) {
+        return getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", getClaimIntervalBlockStart(), _claimingContract)));
+    }
+
+    /**
     * Has this user claimed from this claiming contract successfully before?
     * @return bool Returns true if they have made a claim beofer
     */
@@ -101,17 +111,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Check per contract
         return getBool(keccak256(abi.encodePacked("rewards.pool.claim.contract.successful", _claimingContract, _claimerAddress)));
     }
-
-    /**
-    * Can this user do a successful claim now?
-    * @return bool Returns true if this user can do a claim for this interval
-    
-    function getClaimIntervalPossible(address _claimingContract, address _claimerAddress) override public view returns(bool) {
-        // First check to see if this user has claimed before, if not they need to wait until the next interval
-        //if(!getClaimedBefore())
-        // Check per contract
-        return getBool(keccak256(abi.encodePacked("rewards.pool.claim.contract.successful", _claimingContract, _claimerAddress)));
-    }*/
 
     /**
     * Have they claimed already during this interval? 
@@ -145,39 +144,55 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Done
         return rewardsTotal;
     }
-    
-    // How much this claimer is entitled to claim, returns 0 if they have already claimed or the claimer contract perc is 0
-    function getClaimAmount(address _claimContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) { 
-        // Our base calc
-        uint256 calcBase = 1 ether; 
+
+    /**
+    * Get the approx amount of rewards available for this claim interval per claiming contract
+    * @return uint256 Rewards amount for current claim interval per claiming contract
+    */
+    function getClaimIntervalContractTotalRewards(address _claimContract) override public view returns(uint256) {
         // Get the amount allocated to this claim contract
         uint256 claimContractPerc = getClaimIntervalContractPerc(_claimContract);
         // How much rewards are available for this claim interval?
         uint256 claimIntervalRewardsTotal = getClaimIntervalRewardsTotal();
         // How much this claiming contract is entitled too in perc
         uint256 contractClaimTotal = 0;
+        // Check now
+        if(claimContractPerc > 0 && claimIntervalRewardsTotal > 0)  {
+            // Calculate how much rewards this claimer will receive based on their claiming perc
+            contractClaimTotal = claimContractPerc.mul(claimIntervalRewardsTotal).div(calcBase);
+        }
+        // Done
+        return contractClaimTotal;
+    }
+    
+    // How much this claimer is entitled to claim, checks parameters that claim() will check
+    function getClaimAmount(address _claimContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) { 
+        // Get the total rewards available for this claiming contract
+        uint256 contractClaimTotal = getClaimIntervalContractTotalRewards(_claimContract);
         // How much of the above that this claimer will receive
         uint256 claimerTotal = 0;
         // Are we good to proceed?
-        if(claimContractPerc > 0 && _claimerAmountPerc > 0 && _claimerAmountPerc <= 1 ether && claimIntervalRewardsTotal > 0 && !getClaimIntervalHasClaimed(getClaimIntervalBlockStart(), _claimContract, _claimerAddress)) {
-            // Calculate how much rewards this claimer will receive based on their claiming perc
-            contractClaimTotal = claimContractPerc.mul(claimIntervalRewardsTotal).div(calcBase);
-            // Now calculate how much this claimer would receive 
+        if(contractClaimTotal > 0 && 
+               _claimerAmountPerc > 0 && 
+               _claimerAmountPerc <= 1 ether &&
+               _claimerAddress != address(0x0) && 
+               !getClaimIntervalHasClaimed(getClaimIntervalBlockStart(), _claimContract, _claimerAddress)) {
+
+             // Now calculate how much this claimer would receive 
             claimerTotal = _claimerAmountPerc.mul(contractClaimTotal).div(calcBase);
+            // Is it more than currently available + the amount claimed already for this claim interval?
+            claimerTotal = claimerTotal.add(getClaimIntervalContractTotalClaimed(msg.sender)) <= getClaimIntervalContractTotalRewards(msg.sender) ? claimerTotal : 0;
         }
         // Done
         return claimerTotal;
     }
 
-    // A claiming contract claiming for a user and the amount of rewards they need
-    function claim(address _claimerAddress, uint256 _claimerAmount) override external onlyClaimContract {
+    // A claiming contract claiming for a user and the percentage of the rewards they are allowed to receive
+    function claim(address _claimerAddress, uint256 _claimerAmountPerc) override external onlyClaimContract {
+        // Check if they have a valid claim amount
+        uint256 claimAmount = getClaimAmount(msg.sender, _claimerAddress, _claimerAmountPerc);
         // First initial checks
-        require(_claimerAmount > 0 && _claimerAmount <= 1 ether, "Claimer must claim more than zero and less than 100%");
-        require(_claimerAddress != address(0x0), "Claimer address is not valid");
-        // Cannot claim more than once per interval per claiming contract
-        require(!getClaimIntervalHasClaimed(getClaimIntervalBlockStart(), msg.sender, _claimerAddress), "Address has already claimed during this claiming interval");
-        // Have they claimed before? If not they must wait one whole interval before they can claim
-
+        require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // RPL contract address
         address rplContractAddress = getContractAddress('rocketTokenRPL');
         // Get the dao settings contract instance
@@ -203,20 +218,18 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             // Set the current claim amount perc for this contract for this claim interval (if the claim amount is changed, it will kick in on the next interval)
             setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc", msg.sender)), claimContractPerc);
         }
-        // How much are they claiming?
-        uint256 claimerAddressTokens = getClaimAmount(msg.sender, _claimerAddress, _claimerAmount);
-        // Send the tokens to the claiming address now
-        require(claimerAddressTokens > 0, "Claiming address is not entitled to any tokens");
         // Send tokens now
-        rocketVault.withdrawToken(rplContractAddress, claimerAddressTokens);
+        rocketVault.withdrawToken(rplContractAddress, claimAmount);
         // Store the claiming record for this interval and claiming contract
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", getClaimIntervalBlockStart(), msg.sender, _claimerAddress)), true);
         // Also store it as having made a claim before
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.contract.successful", msg.sender, _claimerAddress)), true);
         // Store the last block a claim was made
         setUintS("rewards.pool.claim.interval.block.last", block.number);
+        // Store the total RPL rewards claim for this claiming contract in this interval
+        setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", getClaimIntervalBlockStart(), msg.sender)), getClaimIntervalContractTotalClaimed(msg.sender).add(claimAmount));
         // Log it
-        emit RPLTokensClaimed(msg.sender, _claimerAddress, claimerAddressTokens, now);
+        emit RPLTokensClaimed(msg.sender, _claimerAddress, claimAmount, now);
     }
 
 }

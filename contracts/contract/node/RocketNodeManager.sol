@@ -55,6 +55,11 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
     }
 
+    // Get block number when this node was made trusted
+    function getNodeTrustedBlock(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.trusted.block", _nodeAddress)));
+    }
+
     // Get a node's timezone location
     function getNodeTimezoneLocation(address _nodeAddress) override public view returns (string memory) {
         return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
@@ -93,8 +98,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Set status
         setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
         // Add node to / remove node from trusted index
-        if (_trusted) { addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
-        else { addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); }
+        if (_trusted) { 
+            // Add to index
+            addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); 
+            // Record the block they were made a trusted node at (used by other contracts such as rpl rewards claiming contracts)
+            setUint(keccak256(abi.encodePacked("node.trusted.block", _nodeAddress)), block.number); 
+        }
+        else { 
+            // Remove index
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
+            // Remove the block they were made a trusted node at
+            deleteUint(keccak256(abi.encodePacked("node.trusted.block", _nodeAddress))); 
+        }
         // Emit node trusted set event
         emit NodeTrustedSet(_nodeAddress, _trusted, now);
     }
