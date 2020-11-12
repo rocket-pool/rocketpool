@@ -32,13 +32,13 @@ To run the Rocket Pool service on your host OS, follow these steps:
 
     cd rocketpool-cli
     go build rocketpool-cli.go
-    mv rocketpool-cli /usr/local/bin/rocketpool
+    sudo mv rocketpool-cli /usr/local/bin/rocketpool
 
 #. Build the Rocket Pool service daemon from source and install it::
 
     cd ../rocketpool
     go build rocketpool.go
-    mv rocketpool /usr/local/bin/rocketpoold
+    sudo mv rocketpool /usr/local/bin/rocketpoold
 
 #. Install the smart node service files for the desired version, skipping OS dependency (Docker) installation::
 
