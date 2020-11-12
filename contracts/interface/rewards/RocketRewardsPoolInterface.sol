@@ -4,9 +4,10 @@ pragma solidity 0.6.12;
 
 interface RocketRewardsPoolInterface {
     function getClaimIntervalBlockStart() external view returns(uint256);
+    function getClaimIntervalBlockStartComputed() external view returns(uint256);
+    function getClaimIntervalsPassed() external view returns(uint256);
     function getClaimIntervalBlocks() external view returns(uint256);
     function getClaimBlockLastMade() external view returns(uint256);
-    function getClaimIntervalsPassed() external view returns(uint256);
     function getClaimIntervalRewardsTotal() external view returns(uint256);
     function getClaimIntervalContractTotalRewards(address _claimingContract) external view returns(uint256);
     function getClaimIntervalContractPerc(address _claimingContract) external view returns(uint256);

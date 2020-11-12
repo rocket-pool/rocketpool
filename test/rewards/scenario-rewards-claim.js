@@ -16,6 +16,20 @@ export async function rewardsClaimersPercTotalGet(txOptions) {
     return await rocketDAOSettings.getRewardsClaimersPercTotal.call();
 };
 
+// Get how many claim intervals have passed
+export async function rewardsClaimIntervalNextBlocksNeededGet(txOptions) {
+    // Load contracts
+    const rocketRewardsPool = await RocketRewardsPool.deployed();
+    return await rocketRewardsPool.getClaimIntervalNextBlocksNeeded.call();
+};
+
+// Get how many blocks needed until the next claim interval
+export async function rewardsClaimIntervalsPassedGet(txOptions) {
+    // Load contracts
+    const rocketRewardsPool = await RocketRewardsPool.deployed();
+    return await rocketRewardsPool.getClaimIntervalsPassed.call();
+};
+
 // Set the current rewards claim period in blocks
 export async function rewardsClaimIntervalBlocksSet(intervalBlocks, txOptions) {
     // Load contracts

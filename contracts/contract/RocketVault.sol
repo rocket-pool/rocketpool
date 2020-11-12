@@ -99,15 +99,15 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Withdraw an amount of a ERC20 token to a network contract
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawToken(address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+    function withdrawToken(address _withdrawalAddress, address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Verify this contract has that amount of tokens at a minimum
         require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
-        // Withdraw and let calling contract know
-        require(tokenContract.transfer(msg.sender, _amount), "Rocket Vault token withdrawal unsuccessful");
+        // Withdraw to the desired address
+        require(tokenContract.transfer(_withdrawalAddress, _amount), "Rocket Vault token withdrawal unsuccessful");
         // Update balances
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
         // Emit token withdrawn event

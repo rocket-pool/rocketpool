@@ -20,7 +20,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.dao.init")) {
             // RPL Claims groups (the DAO does not need to be set, it will claim remaining rewards each claim after each interval)
-            setRewardsClaimerPerc('rocketRewardsClaimTrustedNode', 0.7 ether); // Percentage given of 1 ether
+            setRewardsClaimerPerc('rocketClaimTrustedNode', 0.3 ether); // Percentage given of 1 ether
             // RPL Claims settings
             setRewardsClaimIntervalBlocks(185100); // The period at which a claim period will span in blocks - 30 days approx by default
             // RPL Inflation settings
@@ -34,12 +34,12 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
 
     /*** RPL Claims ***********************************************/
 
-    // DAO Address for RPL rewards
+    // DAO Address for RPL rewards, it will only receive the rewards once the address is set
     function getRewardsDAOAddress() override external view returns (address) {
         return getAddressS("settings.dao.rpl.rewards.address");
     }
 
-    // DAO Address for RPL rewards, if it is 0, DAO RPL rewards will roll over for claiming from claimer contracts
+    // DAO Address for RPL rewards, if it is 0, DAO RPL rewards will build up until it is set, they will then be transferred
     function setRewardsDAOAddress(address _value) public onlyOwner {
         setAddressS("settings.dao.rpl.rewards.address", _value); 
     }
