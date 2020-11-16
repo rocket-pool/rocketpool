@@ -1,5 +1,5 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL, RocketDAOSettings, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
+import { RocketTokenRPL, RocketDAOSettings, RocketRewardsPool, RocketRewardsClaimNode, RocketStorage } from '../_utils/artifacts';
 
 
 // Get the current rewards claim period in blocks
@@ -8,6 +8,7 @@ export async function rewardsClaimIntervalBlocksGet(txOptions) {
     const rocketDAOSettings = await RocketDAOSettings.deployed();
     return await rocketDAOSettings.getRewardsClaimIntervalBlocks.call();
 };
+
 
 // Get the current rewards claimers total
 export async function rewardsClaimersPercTotalGet(txOptions) {
