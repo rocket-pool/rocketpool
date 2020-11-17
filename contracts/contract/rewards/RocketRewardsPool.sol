@@ -24,7 +24,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
 
     // Events
-    event RPLTokensClaimed(string indexed claimingContract, address indexed claimingAddress, uint256 amount, uint256 time);  
+    event RPLTokensClaimed(address indexed claimingContract, address indexed claimingAddress, uint256 amount, uint256 time);  
     
     // Modifiers
 
@@ -318,15 +318,17 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // First initial checks
         require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // Send tokens now
-        rocketVault.withdrawToken(_claimerAddress, rplContractAddress, claimAmount);
-        // Store the claiming record for this interval and claiming contract
-        setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalBlockStart, contractName, _claimerAddress)), true);
-        // Store the last block a claim was made
-        setUintS("rewards.pool.claim.interval.block.last", block.number);
-        // Store the total RPL rewards claim for this claiming contract in this interval
-        setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalBlockStart, contractName)), getClaimIntervalContractTotalClaimed(contractName).add(claimAmount));
-        // Log it
-        emit RPLTokensClaimed(contractName, _claimerAddress, claimAmount, now);
+        if(rocketVault.withdrawToken(_claimerAddress, rplContractAddress, claimAmount)) {
+            // Store the claiming record for this interval and claiming contract
+            setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalBlockStart, contractName, _claimerAddress)), true);
+            // Store the last block a claim was made
+            setUintS("rewards.pool.claim.interval.block.last", block.number);
+            // Store the total RPL rewards claim for this claiming contract in this interval
+            setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalBlockStart, contractName)), getClaimIntervalContractTotalClaimed(contractName).add(claimAmount));
+            // Log it
+            emit RPLTokensClaimed(getContractAddress(contractName), _claimerAddress, claimAmount, now);
+        }
+        
     }
 
 }

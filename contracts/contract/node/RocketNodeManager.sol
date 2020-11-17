@@ -92,20 +92,22 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         RocketRewardsClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketRewardsClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
-        // Set status
-        setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), _trusted);
         // Add node to / remove node from trusted index
         if (_trusted) { 
+            // Set status
+            setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), true);
             // Add to index
             addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); 
             // Register them to claim rewards
             rewardsClaimTrustedNode.register(_nodeAddress, true); 
         }
         else { 
-            // Remove index
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
             // Remove them from the claims register
             rewardsClaimTrustedNode.register(_nodeAddress, false); 
+            // Remove index
+            addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
+            // Set status now - has to be done after rewards claims are removed to verify they were a legit trusted node
+            setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), false);
         }
         // Emit node trusted set event
         emit NodeTrustedSet(_nodeAddress, _trusted, now);
