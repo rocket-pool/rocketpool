@@ -221,7 +221,7 @@ module.exports = async (deployer, network) => {
   // Set network withdrawal credentials
   const setWithdrawalCredentials = async function() {
     // Set withdrawal credentials
-    const withdrawalCredentials = Buffer.from('0000000000000000000000000000000000000000000000000000000000000000', 'hex');
+    const withdrawalCredentials = Buffer.from('00d77be6277f1cdcfce33fdcb127b95fe91e09eec04aecc521dc94866f0055f0', 'hex');
     const rocketNetworkWithdrawal = await contracts.rocketNetworkWithdrawal.deployed();
     await rocketNetworkWithdrawal.setWithdrawalCredentials(withdrawalCredentials);
     // Log
