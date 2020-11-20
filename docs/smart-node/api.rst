@@ -82,4 +82,3 @@ Miscellaneous Commands
 * ``queue status``: Get the current status of the deposit pool and minipool queue
 * ``queue can-process``: Check whether the deposit pool can be processed
 * ``queue process``: Process the deposit pool
-* ``faucet withdraw [token]``: Withdraw ETH or tokens from the Rocket Pool faucet (beta only)

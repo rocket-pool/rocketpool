@@ -72,4 +72,3 @@ Miscellaneous Commands
 * ``rocketpool network node-fee``: Display the current network node commission rate for new minipools
 * ``rocketpool queue status``: Display the current status of the deposit pool
 * ``rocketpool queue process``: Process the deposit pool by assigning user-deposited ETH to available minipools
-* ``rocketpool faucet withdraw [token]``: Withdraw ETH or tokens from the Rocket Pool faucet (beta only)
