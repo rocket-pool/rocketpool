@@ -52,6 +52,7 @@ const contracts = {
   rocketNetworkWithdrawal:  artifacts.require('RocketNetworkWithdrawal.sol'),
   // Rewards
   rocketRewardsPool:        artifacts.require('RocketRewardsPool.sol'),
+  rocketClaimDAO:           artifacts.require('RocketClaimDAO.sol'),
   rocketClaimTrustedNode:   artifacts.require('RocketClaimTrustedNode.sol'),
   // Node
   rocketNodeDeposit:        artifacts.require('RocketNodeDeposit.sol'),

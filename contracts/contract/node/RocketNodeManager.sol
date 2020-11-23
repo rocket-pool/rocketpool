@@ -6,10 +6,10 @@ import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/rewards/claims/RocketRewardsClaimTrustedNodeInterface.sol";
+import "../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 
-// Node registration and management
 
+// Node registration and management 
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Events
@@ -82,6 +82,23 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         emit NodeRegistered(msg.sender, now);
     }
 
+    // Register a trusted node to receive rewards  
+    // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
+    function registerNodeTrustedRewards(address _nodeAddress, bool _enable) override public onlyTrustedNode(_nodeAddress) {
+        // Load contracts
+        RocketClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
+        // Verify the trust nodes rewards contract is enabled 
+        if(rewardsClaimTrustedNode.getEnabled()) {
+            if(_enable) {
+                // Register
+                rewardsClaimTrustedNode.register(_nodeAddress, true); 
+            }else{
+                // Unregister
+                rewardsClaimTrustedNode.register(_nodeAddress, false); 
+            }
+        }
+    }
+
     // Set a node's trusted status
     // Only accepts calls from super users
     function setNodeTrusted(address _nodeAddress, bool _trusted) override external onlyLatestContract("rocketNodeManager", address(this)) onlyOwner {
@@ -91,7 +108,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "The node's trusted status is already set");
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        RocketRewardsClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketRewardsClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
         // Add node to / remove node from trusted index
         if (_trusted) { 
             // Set status
@@ -99,11 +115,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             // Add to index
             addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); 
             // Register them to claim rewards
-            rewardsClaimTrustedNode.register(_nodeAddress, true); 
+            registerNodeTrustedRewards(_nodeAddress, true);
+            
         }
         else { 
             // Remove them from the claims register
-            rewardsClaimTrustedNode.register(_nodeAddress, false); 
+            registerNodeTrustedRewards(_nodeAddress, false);
             // Remove index
             addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
             // Set status now - has to be done after rewards claims are removed to verify they were a legit trusted node

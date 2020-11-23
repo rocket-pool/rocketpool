@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "../RocketBase.sol";
 import "../../interface/settings/RocketDAOSettingsInterface.sol";
+import "../../interface/rewards/RocketRewardsPoolInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -20,7 +21,8 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.dao.init")) {
             // RPL Claims groups (the DAO does not need to be set, it will claim remaining rewards each claim after each interval)
-            setRewardsClaimerPerc('rocketClaimTrustedNode', 0.3 ether); // Percentage given of 1 ether
+            setRewardsClaimerPerc('rocketClaimDAO', 0.1 ether);             // Percentage given of 1 ether
+            setRewardsClaimerPerc('rocketClaimTrustedNode', 0.3 ether);     // Percentage given of 1 ether
             // RPL Claims settings
             setRewardsClaimIntervalBlocks(185100); // The period at which a claim period will span in blocks - 30 days approx by default
             // RPL Inflation settings
@@ -49,10 +51,14 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     // Get the perc amount that this rewards contract get claim
     function getRewardsClaimerPerc(string memory _contractName) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("settings.dao.rpl.rewards.claim.group.amount", _contractName)));
-    }
+    } 
+
+        // Get the perc amount that this rewards contract get claim
+    function getRewardsClaimerPercBlockUpdated(string memory _contractName) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("settings.dao.rpl.rewards.claim.group.amount.updated.block", _contractName)));
+    } 
 
     // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    // The DAO does not need to be set, it will claim remaining rewards each claim interval
     function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyOwner {
         // Get the total perc set, can't be more than 100
         uint256 percTotal = getRewardsClaimersPercTotal();
@@ -64,7 +70,17 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
         setUintS("settings.dao.rpl.rewards.claim.group.totalPerc", percTotalUpdate);
         // Update/Add the claimer amount
         setUint(keccak256(abi.encodePacked("settings.dao.rpl.rewards.claim.group.amount", _contractName)), _perc);
+        // Set the block it was updated at
+        setUint(keccak256(abi.encodePacked("settings.dao.rpl.rewards.claim.group.amount.updated.block", _contractName)), block.number);
     }
+
+    /*
+        // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
+    function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyOwner {
+        // Set their claimer perc in the rewards pool
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
+        rewardsPool.registerContract(_contractName, _perc);
+    }*/
 
     // Get the perc amount total for all claimers (remaining goes to DAO)
     function getRewardsClaimersPercTotal() override public view returns (uint256) {

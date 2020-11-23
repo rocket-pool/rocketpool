@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 interface RocketDAOSettingsInterface {
     function getRewardsDAOAddress() external view returns (address);
     function getRewardsClaimerPerc(string memory _contractName) external view returns (uint256);
+    function getRewardsClaimerPercBlockUpdated(string memory _contractName) external view returns (uint256);
     function getRewardsClaimersPercTotal() external view returns (uint256);
     function getRewardsClaimIntervalBlocks() external view returns (uint256);
     function getInflationIntervalRate() external view returns (uint256);
