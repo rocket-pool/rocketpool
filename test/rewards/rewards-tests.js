@@ -6,6 +6,7 @@ import { setNodeTrusted } from '../node/scenario-set-trusted';
 import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet, rewardsClaimIntervalsPassedGet, rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from '../token/scenario-rpl-inflation';
 import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-node';
+import { rewardsClaimDAORewardsAddressSet, rewardsClaimDAO } from './scenario-rewards-claim-dao';
 
 // Contracts
 import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
@@ -24,7 +25,8 @@ export default function() {
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
-            registeredNodeTrusted4
+            registeredNodeTrusted4,
+            daoClaimAddress
         ] = accounts;
 
         // The testing config
@@ -91,7 +93,9 @@ export default function() {
         });
 
         
-       
+        /*** Setting Claimers ****************************/
+
+            
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in blocks
             await shouldRevert(rewardsClaimIntervalBlocksSet(100, {
@@ -168,8 +172,7 @@ export default function() {
             }), "Total claimers percentrage over 100%");
         });
        
-        
-                
+                        
         it(printTitle('userOne', 'fails to call claim method on rewards pool contract as they are not a registered claimer contract'), async () => {
             // Init rewards pool
             const rocketRewardsPool = await RocketRewardsPool.deployed();
@@ -179,6 +182,10 @@ export default function() {
             }), "Non claimer network contract called claim method");
         });
         
+
+        /*** Trusted Node ***************************/
+
+
         it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
@@ -229,8 +236,7 @@ export default function() {
             // Should fail
             await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
-            }), "Made claim again before next interval", "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract");    
-                       
+            }), "Made claim again before next interval", "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract");               
         });
 
 
@@ -362,7 +368,79 @@ export default function() {
         });
         
 
+        /*** DAO ***************************/
+
+
+        it(printTitle('daoClaim', 'user one fails to set DAO claim rewards address'), async () => {
+            // Set the rewards claims interval in blocks
+            await shouldRevert(rewardsClaimDAORewardsAddressSet(userOne, {
+                from: userOne,
+            }), 'Non owner set DAO claim address');
+        });
+
+        it(printTitle('daoClaim', 'owner succeeds setting DAO claim rewards address'), async () => {
+            // Set the rewards claims interval in blocks
+            await rewardsClaimDAORewardsAddressSet(daoClaimAddress, {
+                from: owner,
+            });
+        });
+
+
+        it(printTitle('daoClaim', 'makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract'), async () => {
+            // Setup RPL inflation for occuring every 10 blocks at 5%
+            let rplInflationStartBlock = await rplInflationSetup();
+            // Init this claiming contract on the rewards pool
+            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Can this trusted node claim before there is any inflation available?
+            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
+            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+(claimIntervalBlocks*3));
+            // Make a claim now from a trusted node and verify the DAO collected it's perc
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted1,
+            });    
+            // Make a claim now from another trusted node
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+        });
         
+        
+        it(printTitle('daoClaim', 'Trusted nodes make multiples claims, rewards sent to dao claims contract, DAO rewards address is set and next claims send its balance to its rewards address'), async () => {
+            // Setup RPL inflation for occuring every 10 blocks at 5%
+            let rplInflationStartBlock = await rplInflationSetup();
+            // Init this claiming contract on the rewards pool
+            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Can this trusted node claim before there is any inflation available?
+            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            // Move to start of RPL inflation and ahead one claim interval
+            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+claimIntervalBlocks);
+            // Make a claim now from a trusted node and verify the DAO collected it's perc
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted1,
+            });   
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+            // Set the DAO claim address
+            await rewardsClaimDAORewardsAddressSet(daoClaimAddress, {
+                from: owner,
+            });
+            // Next interval
+            await mineBlocks(web3, claimIntervalBlocks);
+            // Node claim again
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted1,
+            }); 
+            // Node claim again
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+        });
         
     });
 }

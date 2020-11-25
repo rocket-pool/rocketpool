@@ -25,6 +25,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     event EtherWithdrawn(bytes32 indexed by, uint256 amount, uint256 time);
     event TokenDeposited(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenWithdrawn(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
+    event TokenTransfer(bytes32 indexed by, bytes32 indexed to, address indexed tokenAddress, uint256 amount, uint256 time);
 
 	// Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -112,6 +113,26 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
         // Emit token withdrawn event
         emit TokenWithdrawn(contractKey, _tokenAddress, _amount, now);
+        // Done
+        return true;
+    }
+
+
+    // Transfer token from one contract to another
+    // Only accepts calls from Rocket Pool network contracts
+    function transferToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract onlyLatestContract(_networkContractName, getContractAddress(_networkContractName)) returns (bool) {
+        // Get contract keys
+        bytes32 contractKeyFrom = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
+        bytes32 contractKeyTo = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
+        // Get the token ERC20 instance
+        IERC20 tokenContract = IERC20(_tokenAddress);
+        // Verify this contract has that amount of tokens at a minimum
+        require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
+        // Update balances
+        tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
+        tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
+        // Emit token withdrawn event
+        emit TokenTransfer(contractKeyFrom, contractKeyTo, _tokenAddress, _amount, now);
         // Done
         return true;
     }

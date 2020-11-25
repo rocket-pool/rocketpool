@@ -23,3 +23,4 @@ export const RocketUpgrade = artifacts.require('RocketUpgrade.sol');
 export const RocketVault = artifacts.require('RocketVault.sol');
 export const RocketRewardsPool = artifacts.require('RocketRewardsPool.sol');
 export const RocketClaimTrustedNode = artifacts.require('RocketClaimTrustedNode.sol');
+export const RocketClaimDAO = artifacts.require('RocketClaimDAO.sol');

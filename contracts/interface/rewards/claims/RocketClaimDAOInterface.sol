@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 interface RocketClaimDAOInterface {
     function getEnabled() external view returns (bool);
-    function getSendRewardsPossible() external view returns (bool);
+    function getRewardsBalance() external view returns (uint256);
+    function getRewardsSendPossible() external view returns (bool);
     function send() external;
 }

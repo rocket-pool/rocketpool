@@ -33,58 +33,30 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
     function getTxData() {
         return Promise.all([
             web3.eth.getBlockNumber(),
-            rocketRewardsPool.getRPLBalance(),
             rocketRewardsPool.getClaimIntervalBlockStartComputed(),
             rocketRewardsPool.getClaimingContractAllowance('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractTotalClaimed('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractPerc('rocketClaimTrustedNode'),
             rocketClaimTrustedNode.getClaimRewardsAmount(txOptions),
             rocketRewardsPool.getClaimingContractUserTotalCurrent('rocketClaimTrustedNode'),
-            rocketClaimTrustedNode.getClaimPossible(trusedNodeAccount),
-            rocketRewardsPool.getClaimingContractUserRegisteredBlock('rocketClaimTrustedNode', trusedNodeAccount),
-            /*
-            rocketNodeManager.getNodeTrustedBlock(trusedNodeAccount),
-            rocketRewardsPool.getClaimIntervalNextBlocksNeeded(),
-            rocketClaimTrustedNode.getClaimPossible(trusedNodeAccount),
-            rocketRewardsPool.getClaimIntervalBlocks(),
-            rocketRewardsPool.getClaimIntervalBlockStart(),
-            rocketRewardsPool.getClaimBlockLastMade(),
-            rocketRewardsPool.getClaimIntervalsPassed(),
-            rocketRewardsPool.getClaimIntervalRewardsTotal(),
-            rocketVault.balanceOfToken('rocketRewardsPool', rocketTokenRPL.address),
-            */
-            
-            
+   
         ]).then(
-            ([currentBlock, rewardsRplBalance, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal, nodeClaimPossible, claimerBlockReg]) =>
-            ({currentBlock, rewardsRplBalance, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal, nodeClaimPossible, claimerBlockReg})
+            ([currentBlock, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal]) =>
+            ({currentBlock, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal})
         );
     }
+
     // Capture data
     let ds1 = await getTxData();
 
-    // console.log('--------------CLAIM------------- ', trusedNodeAccount);
-    
-    // console.log(ds1.currentBlock, Number(ds1.claimIntervalBlockStart), Number(ds1.trustedNodeClaimIntervalTotal), web3.utils.fromWei(ds1.contractClaimAllowance), web3.utils.fromWei(ds1.contractClaimTotal), web3.utils.fromWei(ds1.rewardsRplBalance), web3.utils.fromWei(ds1.trustedNodeClaimAmount), ds1.nodeClaimPossible, Number(ds1.claimerBlockReg));
-
-
-    // Get the claim amount 
-    // let claimAmountExpected = await rocketClaimTrustedNode.getClaimRewardsAmount(txOptions);
-    //console.log(web3.utils.fromWei(claimAmountExpected.toString()));
     // Perform tx
     await rocketClaimTrustedNode.claim(txOptions);
+
     // Capture data
     let ds2 = await getTxData();
 
-    //console.log(ds2.currentBlock, Number(ds2.claimIntervalBlockStart), Number(ds2.trustedNodeClaimIntervalTotal), web3.utils.fromWei(ds2.contractClaimAllowance), web3.utils.fromWei(ds2.contractClaimTotal),  web3.utils.fromWei(ds2.rewardsRplBalance), web3.utils.fromWei(ds2.trustedNodeClaimAmount), ds2.nodeClaimPossible, Number(ds2.claimerBlockReg));
-    //console.log('-----INTERVALS---------', Number(ds1.claimIntervalBlockStart), Number(ds2.claimIntervalBlockStart));
-    //console.log(' ');
-    //console.log(web3.utils.fromWei(ds2.contractClaimTotal), web3.utils.fromWei(ds1.contractClaimTotal), web3.utils.fromWei(ds1.contractClaimTotal.add(ds1.trustedNodeClaimAmount))); 
-
-    //console.log(Number(web3.utils.fromWei(ds2.contractClaimPerc)));
 
     // Verify 
-    
     if(Number(ds1.claimIntervalBlockStart) == Number(ds2.claimIntervalBlockStart)) {
         // Claim occured in the same interval
         assert(ds2.contractClaimTotal.eq(ds1.contractClaimTotal.add(ds1.trustedNodeClaimAmount)), 'Contract claim amount total incorrect');
@@ -103,8 +75,6 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
     // Can't claim more than contracts allowance
     assert(ds2.contractClaimTotal.lte(ds1.contractClaimAllowance), 'Trusted node claimed more than contracts allowance');
     
-    
-         
   
 };
 

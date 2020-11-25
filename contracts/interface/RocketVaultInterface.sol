@@ -9,4 +9,5 @@ interface RocketVaultInterface {
     function depositToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) external returns (bool);
     function withdrawToken(address _withdrawalAddress, address _tokenAddress, uint256 _amount) external returns (bool);
     function balanceOfToken(string memory _networkContractName, address _tokenAddress) external view returns (uint256);
+    function transferToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) external returns (bool);
 }

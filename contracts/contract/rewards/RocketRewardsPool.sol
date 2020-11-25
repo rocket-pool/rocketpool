@@ -108,6 +108,15 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     }
 
 
+    // If the claiming contact has a % allocated to it higher than 0, it can claim
+    function getClaimingContractEnabled(string memory _contractName) override public view returns (bool) {
+        // Load contract
+        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        // Now verify this contract can claim by having a claim perc > 0 
+        return daoSettings.getRewardsClaimerPerc(_contractName) > 0 ? true : false;
+    }
+    
+
     /**
     * The current claim amount total for this interval per claiming contract
     * @return uint256 The current claim amount for this interval for the claiming contract
@@ -271,15 +280,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return claimerTotal;
     }
 
-
-    // If the claiming contact has a % allocated to it higher than 0, it can claim
-    function getClaimingContractEnabled(string memory _contractName) override public view returns (bool) {
-        // Load contract
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
-        // Now verify this contract can claim by having a claim perc > 0 
-        return daoSettings.getRewardsClaimerPerc(_contractName) > 0 ? true : false;
-    }
-    
    
     // An account must be registered to claim from the rewards pool. They must wait one claim interval before they can collect.
     // Also keeps track of total 
@@ -305,6 +305,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         setUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.block", contractName, _claimerAddress)), registeredBlock);
     }
 
+
     // A claiming contract claiming for a user and the percentage of the rewards they are allowed to receive
     function claim(address _claimerAddress, uint256 _claimerAmountPerc) override external onlyClaimContract {
         // The name of the claiming contract
@@ -321,25 +322,28 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         uint256 claimIntervalBlockStart = getClaimIntervalBlockStartComputed();
         // Is this the first claim of this interval? If so, set the rewards total for this interval
         if(getClaimIntervalsPassed() > 0) {
+            // Mint any new tokens from the RPL inflation
             if(rplContract.getInlfationIntervalsPassed() > 0) rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
             setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken('rocketRewardsPool', rplContractAddress));
             // Set this as the start of the new claim interval
             setUintS("rewards.pool.claim.interval.block.start", claimIntervalBlockStart);
-            // Get the amount allocated to the DAO
+            // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to send them to the dao if possible
             uint256 daoClaimContractAllowance = getClaimingContractAllowance('rocketClaimDAO');
             // Are we sending any?
             if(daoClaimContractAllowance > 0) {
                 // Get the DAO claim contract address
-                address daoClaimAddress = getContractAddress('rocketClaimDAO');
-                // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to send them to the dao if possible
-                RocketClaimDAOInterface rocketClaimDAO = RocketClaimDAOInterface(daoClaimAddress);
-                // Transfers the DAO's tokens to it's contract
-                require(rocketVault.withdrawToken(daoClaimAddress, rplContractAddress, daoClaimContractAllowance), "Could not transfer DAO's tokens to it");
+                address daoClaimContractAddress = getContractAddress('rocketClaimDAO');
+                // Transfers the DAO's tokens to it's contract from the rewards pool
+                require(rocketVault.transferToken('rocketClaimDAO', rplContractAddress, daoClaimContractAllowance), "Could not transfer DAO's tokens to its claiming contract");
                 // Store the total RPL rewards claim for this claiming contract in this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalBlockStart, 'rocketClaimDAO')), getClaimingContractTotalClaimed('rocketClaimDAO').add(daoClaimContractAllowance));
+                // Log it
+                emit RPLTokensClaimed(daoClaimContractAddress, daoClaimContractAddress, daoClaimContractAllowance, now);
+                // Init DAO claim contract
+                RocketClaimDAOInterface rocketClaimDAO = RocketClaimDAOInterface(daoClaimContractAddress);
                 // Can we send now?
-                if(rocketClaimDAO.getSendRewardsPossible()) {
+                if(rocketClaimDAO.getRewardsSendPossible()) {
                     // Go for it
                     rocketClaimDAO.send();
                 }

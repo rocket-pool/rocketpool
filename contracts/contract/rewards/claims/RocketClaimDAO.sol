@@ -28,19 +28,26 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         return rewardsPool.getClaimingContractEnabled('rocketClaimDAO');
     }
 
-    // Can we send funds to the DAO now? this is checked and executed automatically if the DAO address is set 
-    function getSendRewardsPossible() override public view returns (bool) {
+    // Get the amount of RPL on this contract 
+    function getRewardsBalance() override public view returns (uint256) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
+        // Has the DAO rewards address been set and there's a balance to send?
+        return rocketVault.balanceOfToken('rocketClaimDAO', getContractAddress('rocketTokenRPL'));
+    }
+
+    // Can we send funds to the DAO now? this is checked and executed automatically if the DAO address is set 
+    function getRewardsSendPossible() override public view returns (bool) {
+        // Load contracts
         RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
         // Has the DAO rewards address been set and there's a balance to send?
-        return daoSettings.getRewardsDAOAddress() != address(0x0) && rocketVault.balanceOfToken('rocketClaimDAO', getContractAddress('rocketTokenRPL')) > 0 ? true : false;
+        return daoSettings.getRewardsDAOAddress() != address(0x0) && getRewardsBalance() > 0 ? true : false;
     }
 
     // Send the rewards to the DAOs treasury address
     function send() override public {
         // Verify this trusted node is able to claim
-        require(getSendRewardsPossible(), "DAO treasury address not set to receive rewards or there is no RPL balance to send");
+        require(getRewardsSendPossible(), "DAO treasury address not set to receive rewards or there is no RPL balance to send");
         // Load contract s
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
@@ -48,9 +55,9 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         address rplTokenAddress = getContractAddress('rocketTokenRPL');
         address daoTreasuryAddress = daoSettings.getRewardsDAOAddress();
         // Amount to send
-        uint256 tokenAmount = rocketVault.balanceOfToken('rocketClaimDAO', rplTokenAddress);
+        uint256 tokenAmount = getRewardsBalance();
         // Send now
-        require(rocketVault.withdrawToken(daoSettings.getRewardsDAOAddress(), rplTokenAddress, rocketVault.balanceOfToken('rocketClaimDAO', rplTokenAddress)), "Could not send token balance from vault for DAO");
+        require(rocketVault.withdrawToken(daoSettings.getRewardsDAOAddress(), rplTokenAddress, tokenAmount), "Could not send token balance from vault for DAO");
         // Log it
         emit RPLTokensSentDAO(address(this), daoTreasuryAddress, tokenAmount, now);
     }
