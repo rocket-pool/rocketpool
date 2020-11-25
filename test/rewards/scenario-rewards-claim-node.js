@@ -20,7 +20,7 @@ export async function rewardsClaimTrustedNodeRegisteredBlockGet(trustedNodeAddre
 };
 
 // Perform rewards claims for Trusted Nodes + Minipools
-export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expectedClaimPerc = null) {
+export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
 
     // Load contracts
     const rocketVault = await RocketVault.deployed();
@@ -33,7 +33,7 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
     function getTxData() {
         return Promise.all([
             web3.eth.getBlockNumber(),
-            rocketRewardsPool.getClaimIntervalBlockStartComputed(),
+            rocketRewardsPool.getClaimIntervalBlockStart(),
             rocketRewardsPool.getClaimingContractAllowance('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractTotalClaimed('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractPerc('rocketClaimTrustedNode'),
@@ -55,7 +55,6 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
     // Capture data
     let ds2 = await getTxData();
 
-
     // Verify 
     if(Number(ds1.claimIntervalBlockStart) == Number(ds2.claimIntervalBlockStart)) {
         // Claim occured in the same interval
@@ -63,7 +62,7 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
         // How many trusted nodes where in this interval? Their % claimed should be equal to that
         assert(Number(web3.utils.fromWei(ds1.trustedNodeClaimAmount)).toFixed(4) == Number(web3.utils.fromWei(ds2.contractClaimAllowance.div(ds2.trustedNodeClaimIntervalTotal))).toFixed(4), 'Contract claim amount should be equal to their desired equal allocation');
         // The contracts claim perc should never change after a claim in the same interval
-        if(expectedClaimPerc) assert(expectedClaimPerc == Number(web3.utils.fromWei(ds2.contractClaimPerc)), "Contracts claiming percentage changed in an interval");
+        assert(ds1.contractClaimPerc.eq(ds2.contractClaimPerc), "Contracts claiming percentage changed in an interval");
     }else{
         // Check to see if the claim tx has pushed us into a new claim interval
         // The contracts claim total should be greater than 0 due to the claim that just occured
@@ -75,6 +74,8 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions, expe
     // Can't claim more than contracts allowance
     assert(ds2.contractClaimTotal.lte(ds1.contractClaimAllowance), 'Trusted node claimed more than contracts allowance');
     
+    
+
   
 };
 

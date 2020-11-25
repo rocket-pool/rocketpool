@@ -30,7 +30,7 @@ export default function() {
         ] = accounts;
 
         // The testing config
-        let claimIntervalBlocks = 10;
+        let claimIntervalBlocks = 11;
         // Interval for calculating inflation
         let rewardIntervalBlocks = 5
 
@@ -93,7 +93,7 @@ export default function() {
         });
 
         
-        /*** Setting Claimers ****************************/
+        /*** Setting Claimers ***************************/
 
             
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
@@ -325,7 +325,7 @@ export default function() {
                 from: registeredNodeTrusted4,
             });           
         });
-
+        
         
 
         it(printTitle('trustedNode1+2+3+4', 'trusted node 1 makes a claim after RPL inflation has begun, claim rate is changed, then trusted node 2,3 makes a claim and newly registered trusted node 4 claim in next interval'), async () => {
@@ -344,7 +344,7 @@ export default function() {
             // Make a claim now
             await rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
-            }, claimPercOrig);   
+            });   
             // Change inflation rate now, should only kick in on the next interval
             let claimPercChange = 0.2;
             // Update it
@@ -352,11 +352,11 @@ export default function() {
             // Make a claim now and pass it the expected contract claim percentage
             await rewardsClaimTrustedNode(registeredNodeTrusted2, {
                 from: registeredNodeTrusted2,
-            }, claimPercOrig);  
+            });  
             // Make a claim now
             await rewardsClaimTrustedNode(registeredNodeTrusted3, {
                 from: registeredNodeTrusted3,
-            }, claimPercOrig);  
+            });  
             // Make node 4 trusted now
             await setNodeTrusted(registeredNodeTrusted4, true, {from: owner});
             // Move to 2 claim intervals ahead
@@ -364,7 +364,7 @@ export default function() {
             // Attempt claim in the next interval with new inflation rate
             await rewardsClaimTrustedNode(registeredNodeTrusted4, {
                 from: registeredNodeTrusted4,
-            }, claimPercChange);           
+            });           
         });
         
 
@@ -386,7 +386,7 @@ export default function() {
         });
 
 
-        it(printTitle('daoClaim', 'makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract'), async () => {
+        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
             // Init this claiming contract on the rewards pool
@@ -407,8 +407,38 @@ export default function() {
             }); 
         });
         
+
+        it(printTitle('daoClaim', 'trusted node make a claim and the DAO claim rate is set to 0, trusted node makes another 2 claims'), async () => {
+            // Setup RPL inflation for occuring every 10 blocks at 5%
+            let rplInflationStartBlock = await rplInflationSetup();
+            // Init this claiming contract on the rewards pool
+            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Can this trusted node claim before there is any inflation available?
+            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
+            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+claimIntervalBlocks);
+            // Make a claim now from a trusted node and verify the DAO collected it's perc
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted1,
+            });    
+            // Forward to next interval, set claim amount to 0, should kick in the interval after next
+            await rewardsContractSetup('rocketClaimDAO', 0);
+            // Make a claim now from another trusted node
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+            await rewardsContractSetup('rocketClaimTrustedNode', 0.2);
+            // Next interval
+            await mineBlocks(web3, claimIntervalBlocks);
+            // Make another claim, dao shouldn't receive anything
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+        });
         
-        it(printTitle('daoClaim', 'Trusted nodes make multiples claims, rewards sent to dao claims contract, DAO rewards address is set and next claims send its balance to its rewards address'), async () => {
+        it(printTitle('daoClaim', 'trusted nodes make multiples claims, rewards sent to dao claims contract, DAO rewards address is set and next claims send its balance to its rewards address'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
             // Init this claiming contract on the rewards pool
@@ -441,6 +471,7 @@ export default function() {
                 from: registeredNodeTrusted2,
             }); 
         });
+        
         
     });
 }

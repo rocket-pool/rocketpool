@@ -184,28 +184,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", _claimingContract)));
     }
 
-
-    /**
-    * Get the percentage this contract can claim in this interval
-    * @return uint256 Rewards percentage this contract can claim in this interval
-    */
-    function getClaimingContractPerc(string memory _claimingContract) override public view returns(uint256) {
-        // Load contract
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
-        // Get the % amount allocated to this claim contract
-        uint256 claimContractPerc = daoSettings.getRewardsClaimerPerc(_claimingContract);
-        // Get the block the % was changed at, it will only use this % on the next interval
-        if(daoSettings.getRewardsClaimerPercBlockUpdated(_claimingContract) > getClaimIntervalBlockStartComputed()) {
-            // Ok so this percentage was set during this interval, we must use the current % assigned to the last claim and the new one will kick in the next interval
-            // If this is 0, the contract hasn't made a claim yet and can only do so on the next interval
-            claimContractPerc = getClaimingContractPercLast(_claimingContract);
-        }
-        // Done
-        return claimContractPerc;
-    }
-
-
-    
+   
     /**
     * Get the approx amount of rewards available for this claim interval
     * @return uint256 Rewards amount for current claim interval
@@ -230,6 +209,25 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return rewardsTotal;
     }
 
+
+    /**
+    * Get the percentage this contract can claim in this interval
+    * @return uint256 Rewards percentage this contract can claim in this interval
+    */
+    function getClaimingContractPerc(string memory _claimingContract) override public view returns(uint256) {
+        // Load contract
+        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        // Get the % amount allocated to this claim contract
+        uint256 claimContractPerc = daoSettings.getRewardsClaimerPerc(_claimingContract);
+        // Get the block the % was changed at, it will only use this % on the next interval
+        if(daoSettings.getRewardsClaimerPercBlockUpdated(_claimingContract) > getClaimIntervalBlockStartComputed()) {
+            // Ok so this percentage was set during this interval, we must use the current % assigned to the last claim and the new one will kick in the next interval
+            // If this is 0, the contract hasn't made a claim yet and can only do so on the next interval
+            claimContractPerc = getClaimingContractPercLast(_claimingContract);
+        }
+        // Done
+        return claimContractPerc;
+    }
 
 
     /**
@@ -336,6 +334,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
                 address daoClaimContractAddress = getContractAddress('rocketClaimDAO');
                 // Transfers the DAO's tokens to it's contract from the rewards pool
                 require(rocketVault.transferToken('rocketClaimDAO', rplContractAddress, daoClaimContractAllowance), "Could not transfer DAO's tokens to its claiming contract");
+                // Set the current claim percentage this contract is entitled to for this interval
+                setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", 'rocketClaimDAO')), getClaimingContractPerc('rocketClaimDAO'));
                 // Store the total RPL rewards claim for this claiming contract in this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalBlockStart, 'rocketClaimDAO')), getClaimingContractTotalClaimed('rocketClaimDAO').add(daoClaimContractAllowance));
                 // Log it

@@ -69,15 +69,12 @@ export async function rewardsClaimDAO(txOptions) {
 
     // Capture data
     let ds1 = await getTxData();
-
-   // console.log(Number(ds1.intervalBlockStart), web3.utils.fromWei(ds1.daoContractClaimTotal), web3.utils.fromWei(ds1.daoClaimContractRPLBalance), web3.utils.fromWei(ds1.daoRewardsAddressBalance));
     
     // Perform tx
     await rocketClaimTrustedNode.claim(txOptions);
+
     // Capture data
     let ds2 = await getTxData();
-
-    // console.log(Number(ds2.intervalBlockStart), web3.utils.fromWei(ds2.daoContractClaimTotal), web3.utils.fromWei(ds2.daoClaimContractRPLBalance), web3.utils.fromWei(ds2.daoRewardsAddressBalance));
 
     // Verify the claim allowance is correct
     assert(Number(web3.utils.fromWei(ds2.daoClaimAllowance)).toFixed(4) == Number(Number(web3.utils.fromWei(daoClaimPerc)) * Number(web3.utils.fromWei((ds2.intervalRewardsTotal)))).toFixed(4), 'Contract claim amount total does not equal the expected claim amount');
