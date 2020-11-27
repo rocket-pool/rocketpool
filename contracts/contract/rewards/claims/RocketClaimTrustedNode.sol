@@ -59,11 +59,12 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
 
     // Trusted node registering to claim
-    function register(address _trustedNode, bool _enable) override external onlyTrustedNode(_trustedNode) onlyLatestContract("rocketNodeManager", msg.sender) {
+    // TODO: Change onlyLatestContract("rocketNodeManager" to the trusted node dao contract when ready
+    function register(address _trustedNodeAddress, bool _enable) override external onlyTrustedNode(_trustedNodeAddress) onlyLatestContract("rocketNodeManager", msg.sender) {
         // Init the rewards pool contract
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
         // Register/Unregister now
-        rewardsPool.registerClaimer(_trustedNode, _enable);
+        rewardsPool.registerClaimer(_trustedNodeAddress, _enable);
     }
     
     // Trusted node claiming
