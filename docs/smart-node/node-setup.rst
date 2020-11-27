@@ -59,7 +59,7 @@ Next, you'll need to load your node account up with ETH to deposit into Rocket P
 
 If you're participating in a testnet beta, you can obtain GoETH from one of the following faucets:
 
-    * `ethstaker discord <https://discord.gg/kvASzUwg>`_
+    * `ethstaker discord <https://discord.gg/GGGmqZdCBf>`_
     * `faucet.goerli.mudit.blog <https://faucet.goerli.mudit.blog/>`_
 
 Then check your node status again to ensure your ETH balance has increased.
