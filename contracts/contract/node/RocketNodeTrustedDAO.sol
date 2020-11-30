@@ -21,6 +21,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     enum ProposalType {
         Join,               // Join the DAO
         Leave,              // Leave the DAO 
+        Replace,            // Replace a current trusted node with a new registered node
         Kick                // Kick a member from the DAO with optional penalty applied to their RPL deposit
     }
 
@@ -44,7 +45,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
 
     // A registered RP node wishes to join the trusted node DAO
-    function join() override public onlyRegisteredNode(msg.sender) returns (bool) {
+    // Provide an ID that indicates who is running the trusted node and a general message 
+    function join(string memory _id, string memory _message) override public onlyRegisteredNode(msg.sender) returns (bool) {
         // Check current node status
         require(getBool(keccak256(abi.encodePacked("node.trusted", msg.sender))) != true, "This node is already part of the trusted node DAO");
     }
