@@ -35,6 +35,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Get the number of trusted nodes in the network
+    // TODO: Move to DAO contract
     function getTrustedNodeCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
