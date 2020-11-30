@@ -70,15 +70,15 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     /*** Settings  ****************/
     
     // Return the current % the DAO is using for a quorum
-    function getSettingQuorum() override public view returns (uint256) {
+    function getSettingQuorumThreshold() override public view returns (uint256) {
         // Specified as % of 1 ether
-        getUint(keccak256(abi.encodePacked(daoNameSpace, "setting.quorum")));
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting.quorum")));
     } 
 
 
     /*** Members ******************/
 
-    function getTrustedNodeCount() override public view returns (uint256) {
+    function getMemberCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
     }
@@ -129,11 +129,11 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Return the amount of votes need for a proposal to pass
     function getProposalQuorumVotesRequired() override public view returns (uint256) {
         // Get the total trusted nodes
-        uint256 trustedNodeCount = getTrustedNodeCount();
+        uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
         uint256 total = trustedNodeCount >= minMemberCount ? calcBase.div(trustedNodeCount) : minMemberCount;
         // Return the votes required
-        return calcBase.mul(getSettingQuorum()).div(trustedNodeCount);
+        return calcBase.mul(getSettingQuorumThreshold()).div(total);
     }
 
     // Add a proposal to the trusted node DAO, immeditately becomes active

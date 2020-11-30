@@ -5,8 +5,11 @@ import { registerNode } from '../_helpers/node';
 import { register } from './scenario-register';
 import { setNodeTrusted } from './scenario-set-trusted';
 
+// Contracts
+import { RocketNodeTrustedDAO } from '../_utils/artifacts';
+
 export default function() {
-    contract('RocketNodeTrustedDAO', async (accounts) => {
+    contract.only('RocketNodeTrustedDAO', async (accounts) => {
 
 
         // Accounts
@@ -50,13 +53,25 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can register a node'), async () => {
-
-            // Register node
-            await register('Australia/Brisbane', {
-                from: node,
+        it(printTitle('registeredNode1', 'verify trusted node quorum votes required is correct'), async () => {
+            // Load contracts
+            const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();
+            // How many trusted nodes do we have?
+            let trustedNodeCount =  await rocketNodeTrustedDAO.getMemberCount({
+                from: registeredNode1,
             });
-
+            // Get the current quorum threshold
+            let quorumThreshold = await rocketNodeTrustedDAO.getSettingQuorumThreshold({
+                from: registeredNode1,
+            });
+            // Calculate the expected vote threshold
+            let expectedVotes = (Number(web3.utils.fromWei(quorumThreshold)) * Number(trustedNodeCount)).toFixed(2);
+            // Calculate it now on the contracts
+            let quorumVotes = await rocketNodeTrustedDAO.getProposalQuorumVotesRequired({
+                from: registeredNode1,
+            });
+            // Verify
+            assert(expectedVotes == Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");         
         });
 
 

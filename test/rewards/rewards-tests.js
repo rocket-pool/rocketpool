@@ -13,7 +13,7 @@ import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils
 
 
 export default function() {
-    contract.only('RocketRewards', async (accounts) => {
+    contract('RocketRewards', async (accounts) => {
 
 
         // Accounts
