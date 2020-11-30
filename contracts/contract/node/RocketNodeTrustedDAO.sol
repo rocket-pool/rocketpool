@@ -26,7 +26,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // Possible states that a proposal may be in
     enum ProposalType {
-        Join,               // Join the DAO
+        Invite,             // Invite a registered node to join the trusted node DAO
         Leave,              // Leave the DAO 
         Replace,            // Replace a current trusted node with a new registered node
         Kick,               // Kick a member from the DAO with optional penalty applied to their RPL deposit
@@ -145,16 +145,15 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         // Get the proposal ID
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.id")), proposalID);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type")), _proposalType);
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", _proposalType)), msg.sender);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.end")), block.number.add(expireEndBlocks));
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created")), block.number);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for")), 0);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against")), 0);
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.cancelled")), false);
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed")), false);
-        setBytes(keccak256(abi.encodePacked(daoNameSpace, "proposal.payload")), _payload);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.end", proposalID)), block.number.add(expireEndBlocks));
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", proposalID)), 0);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", proposalID)), 0);
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.cancelled", proposalID)), false);
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", proposalID)), false);
+        setBytes(keccak256(abi.encodePacked(daoNameSpace, "proposal.payload", proposalID)), _payload);
         // Update the total proposals
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposals.total")), proposalID);
     }
