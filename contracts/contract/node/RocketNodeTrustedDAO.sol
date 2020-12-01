@@ -16,7 +16,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     using SafeMath for uint;
 
     // Events
-    //event RPLTokensSentDAO(address indexed from, address indexed to, uint256 amount, uint256 time);  
+    event ProposalAdded(address indexed proposer, uint256 indexed proposalID, uint256 indexed proposalType, bytes payload, uint256 time);  
+    event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);  
 
     // Calculate using this as the base
     uint256 calcBase = 1 ether;
@@ -54,7 +55,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     uint256 minMemberCount = 3;
 
     // Timeout in blocks for a proposal to expire
-    uint256 expireEndBlocks = 185100;      // Approx. 1 months worth of blocks
+    uint256 expireEndBlocks = 92550;      // Approx.  2 weeks worth of blocks
 
     // TODO: Add in min time before they can add a proposal eg: 1 month
 
@@ -78,6 +79,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     /*** Members ******************/
 
+    // Total number of members in the current trusted node DAO
     function getMemberCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
@@ -125,6 +127,16 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     function getProposalPayload(uint256 _proposalID) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked(daoNameSpace, "proposal.payload", _proposalID))); 
     }
+
+    // Returns true if this proposal has already been voted on by a member
+    function getProposalReceiptHasVoted(uint256 _proposalID, address _nodeAddress) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.hasVoted", _proposalID, _nodeAddress))); 
+    }
+
+    // Returns true if this proposal was supported by this member
+    function getProposalReceiptSupported(uint256 _proposalID, address _nodeAddress) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.supported", _proposalID, _nodeAddress))); 
+    }
     
     // Return the amount of votes need for a proposal to pass
     function getProposalQuorumVotesRequired() override public view returns (uint256) {
@@ -136,31 +148,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         return calcBase.mul(getSettingQuorumThreshold()).div(total);
     }
 
-    // Add a proposal to the trusted node DAO, immeditately becomes active
-    // Calldata is passed as the payload to execute upon passing the proposal
-    // TODO: Add required checks
-    function proposalAdd(uint256 _proposalType, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (bool) {
-        // Get the total proposal count for this type
-        uint256 proposalCount = getProposalTotal();
-        // Get the proposal ID
-        uint256 proposalID = proposalCount.add(1);
-        // The data structure for a proposal
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.end", proposalID)), block.number.add(expireEndBlocks));
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", proposalID)), 0);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", proposalID)), 0);
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.cancelled", proposalID)), false);
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", proposalID)), false);
-        setBytes(keccak256(abi.encodePacked(daoNameSpace, "proposal.payload", proposalID)), _payload);
-        // Update the total proposals
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposals.total")), proposalID);
-    }
-
-    
     // Return the state of the specified proposal
-    function proposalState(uint256 _proposalID) public view returns (ProposalState) {
+    function getProposalState(uint256 _proposalID) public view returns (ProposalState) {
         // Check the proposal ID is legit
         require(getProposalTotal() >= _proposalID && _proposalID > 0, "Invalid proposal ID");
         // Get the amount of votes for and against
@@ -186,6 +175,45 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     }
 
 
+    // Add a proposal to the trusted node DAO, immeditately becomes active
+    // Calldata is passed as the payload to execute upon passing the proposal
+    // TODO: Add required checks
+    function proposalAdd(uint256 _proposalType, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (bool) {
+        // Get the total proposal count for this type
+        uint256 proposalCount = getProposalTotal();
+        // Get the proposal ID
+        uint256 proposalID = proposalCount.add(1);
+        // The data structure for a proposal
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.end", proposalID)), block.number.add(expireEndBlocks));
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", proposalID)), 0);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", proposalID)), 0);
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.cancelled", proposalID)), false);
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", proposalID)), false);
+        setBytes(keccak256(abi.encodePacked(daoNameSpace, "proposal.payload", proposalID)), _payload);
+        // Update the total proposals
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposals.total")), proposalID);
+        // Log it
+        emit ProposalAdded(msg.sender, proposalID, _proposalType, _payload, now);
+    }
+
+
+    // Voting for or against a proposal
+    function proposalVote(uint256 _proposalID, bool _support) override public onlyTrustedNode(msg.sender) {
+        // Check the proposal is in a state that can be voted on
+        require(getProposalState(_proposalID) == ProposalState.Active, "Voting is closed for this proposal");
+        // Has this member already voted on this proposal?
+        require(!getProposalReceiptHasVoted(_proposalID, msg.sender), "Member has already voted on proposal");
+        // Record the vote now
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.hasVoted", _proposalID, msg.sender)), true);
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.supported", _proposalID, msg.sender)), _support);
+        // Log it
+        emit ProposalVoted(_proposalID, msg.sender, _support, now);
+    }
+
+    
     /*** Methods **********************/
 
     // A registered RP node wishes to join the trusted node DAO

@@ -14,7 +14,10 @@ interface RocketNodeTrustedDAOInterface {
     function getProposalExecuted(uint256 _proposalID) external view returns (bool);
     function getProposalPayload(uint256 _proposalID) external view returns (bytes memory);
     function getProposalQuorumVotesRequired() external view returns (uint256);
+    function getProposalReceiptHasVoted(uint256 _proposalID, address _nodeAddress) external view returns (bool);
+    function getProposalReceiptSupported(uint256 _proposalID, address _nodeAddress) external view returns (bool);
     function proposalAdd(uint256 _proposalType, bytes memory _payload) external returns (bool);
+    function proposalVote(uint256 _proposalID, bool _support) external; 
     function join(string memory _id, string memory _message, address _nodeAddress) external returns (bool);
     function rewardsRegister(bool _enable) external;
 }
