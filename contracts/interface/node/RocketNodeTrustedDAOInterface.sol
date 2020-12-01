@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 interface RocketNodeTrustedDAOInterface {
     function getSettingQuorumThreshold() external view returns (uint256);
     function getMemberCount() external view returns (uint256);
+    function getMemberCanMakeProposal(address _nodeAddress) external view returns (bool);
     function getProposalTotal() external view returns (uint256);
     function getProposalProposer(uint256 _proposalID) external view returns (address);
     function getProposalExpires(uint256 _proposalID) external view returns (uint256);

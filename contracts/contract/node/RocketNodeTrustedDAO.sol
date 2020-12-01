@@ -47,20 +47,17 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         Executed
     }
 
-    // Max number of active proposals allowed at any given time per type
-    uint256 maxActiveTypeProposals = 50;
 
-    // Max number of active proposals allowed per trusted node
-    uint256 maxActiveProposalsPerMember = 2;
-
-    // Min amount of trusted nodes required in the DAO
-    uint256 minMemberCount = 3;
+    // Min amount of trusted node members required in the DAO
+    uint256 memberMinCount = 3;
+    // The amount of blocks a member must wait between making proposals
+    uint256 memberProposalCooldownBlocks = 13221;           // Approx. 2 days worth of blocks
 
     // The voting period for a proposal to pass
-    uint256 votingProposalBlocks = 92550;                   // Approx.  2 weeks worth of blocks
+    uint256 proposalVotingBlocks = 92550;                   // Approx. 2 weeks worth of blocks
     // The time for a successful proposal to be executed, 
     // Will need to be resubmitted if this deadline passes
-    uint256 votingProposalExecuteBlocks = 185100;           // Approx.  4 weeks worth of blocks
+    uint256 proposalVotingExecuteBlocks = 185100;           // Approx. 4 weeks worth of blocks
 
     // TODO: Add in min time before they can add a proposal eg: 1 month
 
@@ -86,8 +83,14 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // Total number of members in the current trusted node DAO
     function getMemberCount() override public view returns (uint256) {
+        // TODO: Update these to use the dao namespace when ready
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
+    }
+
+    // Return true if the member can post another proposal after their last one due to the cooldown
+    function getMemberCanMakeProposal(address _nodeAddress) override public view returns (bool) { 
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.last", _nodeAddress))).add(memberProposalCooldownBlocks) < block.number ? true : false; 
     }
 
 
@@ -135,7 +138,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // A successful proposal needs to be execute before it expires (set amount of blocks), if it expires the proposal needs to be resubmitted
     function getProposalExecutedExpired(uint256 _proposalID) override public view returns (bool) {
-        return getProposalExpires(_proposalID).add(votingProposalExecuteBlocks) < block.number ? true : false; 
+        return getProposalExpires(_proposalID).add(proposalVotingExecuteBlocks) < block.number ? true : false; 
     }
 
     // Get the votes against count of this proposal
@@ -158,7 +161,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         // Get the total trusted nodes
         uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
-        uint256 total = trustedNodeCount >= minMemberCount ? calcBase.div(trustedNodeCount) : minMemberCount;
+        uint256 total = trustedNodeCount >= memberMinCount ? calcBase.div(trustedNodeCount) : memberMinCount;
         // Return the votes required
         return calcBase.mul(getSettingQuorumThreshold()).div(total);
     }
@@ -197,14 +200,18 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Calldata is passed as the payload to execute upon passing the proposal
     // TODO: Add required checks
     function proposalAdd(uint256 _proposalType, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (bool) {
+        // Check this user can make a proposal now
+        require(getMemberCanMakeProposal(msg.sender), "Member cannot make a proposal or has not waited long enough to make another proposal");
+        // Save the last time they made a proposal
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.last", msg.sender)), block.number);
         // Get the total proposal count for this type
-        uint256 proposalCount = getProposalTotal();
+        uint256 proposalCount = getProposalTotal(); 
         // Get the proposal ID
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.expires", proposalID)), block.number.add(votingProposalBlocks));
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.expires", proposalID)), block.number.add(proposalVotingBlocks));
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", proposalID)), 0);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", proposalID)), 0);
