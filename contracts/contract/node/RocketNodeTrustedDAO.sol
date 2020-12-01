@@ -18,6 +18,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Events
     event ProposalAdded(address indexed proposer, uint256 indexed proposalID, uint256 indexed proposalType, bytes payload, uint256 time);  
     event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);  
+    event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
+    event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);    
 
     // Calculate using this as the base
     uint256 calcBase = 1 ether;
@@ -54,8 +56,11 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Min amount of trusted nodes required in the DAO
     uint256 minMemberCount = 3;
 
-    // Timeout in blocks for a proposal to expire
-    uint256 expireEndBlocks = 92550;      // Approx.  2 weeks worth of blocks
+    // The voting period for a proposal to pass
+    uint256 votingProposalBlocks = 92550;                   // Approx.  2 weeks worth of blocks
+    // The time for a successful proposal to be executed, 
+    // Will need to be resubmitted if this deadline passes
+    uint256 votingProposalExecuteBlocks = 185100;           // Approx.  4 weeks worth of blocks
 
     // TODO: Add in min time before they can add a proposal eg: 1 month
 
@@ -93,6 +98,11 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "proposals.total"))); 
     }
 
+    // Get the member who proposed
+    function getProposalProposer(uint256 _proposalID) override public view returns (address) {
+        return getAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", _proposalID))); 
+    }
+
     // Get the expired status of this proposal
     function getProposalExpires(uint256 _proposalID) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.expires", _proposalID))); 
@@ -121,6 +131,11 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Get the executed status of this proposal
     function getProposalExecuted(uint256 _proposalID) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", _proposalID))); 
+    }
+
+    // A successful proposal needs to be execute before it expires (set amount of blocks), if it expires the proposal needs to be resubmitted
+    function getProposalExecutedExpired(uint256 _proposalID) override public view returns (bool) {
+        return getProposalExpires(_proposalID).add(votingProposalExecuteBlocks) < block.number ? true : false; 
     }
 
     // Get the votes against count of this proposal
@@ -159,9 +174,6 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         if (getProposalCancelled(_proposalID)) {
             // Cancelled by the proposer?
             return ProposalState.Cancelled;
-            // Is the proposal is still active?
-        } else if (block.number <= getProposalExpires(_proposalID)) {
-            return ProposalState.Active;
             // Has it been executed?
         } else if (getProposalExecuted(_proposalID)) {
             return ProposalState.Executed;
@@ -171,7 +183,13 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
             // Check the votes, did it pass?
         } else if (votesFor >= getProposalQuorumVotesRequired()) {
             return ProposalState.Succeeded;
-        } 
+            // Has it expired?
+        } else if (getProposalExpires(_proposalID) < block.number) {
+            return ProposalState.Expired;
+        } else {
+            // Proposal is active
+            return ProposalState.Active;
+        }
     }
 
 
@@ -186,7 +204,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         // The data structure for a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.end", proposalID)), block.number.add(expireEndBlocks));
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.expires", proposalID)), block.number.add(votingProposalBlocks));
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", proposalID)), 0);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", proposalID)), 0);
@@ -206,11 +224,47 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         require(getProposalState(_proposalID) == ProposalState.Active, "Voting is closed for this proposal");
         // Has this member already voted on this proposal?
         require(!getProposalReceiptHasVoted(_proposalID, msg.sender), "Member has already voted on proposal");
-        // Record the vote now
+        // Add votes to proposal
+        if(_support) {
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.for", _proposalID)), getProposalVotesFor(_proposalID).add(1));
+        }else{
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.votes.against", _proposalID)), getProposalVotesAgainst(_proposalID).add(1));
+        }
+        // Record the vote receipt now
         setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.hasVoted", _proposalID, msg.sender)), true);
         setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.receipt.supported", _proposalID, msg.sender)), _support);
         // Log it
         emit ProposalVoted(_proposalID, msg.sender, _support, now);
+    }
+
+    // Execute a proposal if it has passed
+    // Anyone can run this if they are willing to pay the gas costs for it
+    // A proposal can be executed as soon as it hits a majority in favour
+    function proposalExecute(uint256 _proposalID) override public {
+        // Firstly make sure this proposal has passed
+        require(getProposalState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded or has already been executed");
+        // Check that the time period to execute hasn't expired (1 month to execute by default after voting period)
+        require(!getProposalExecutedExpired(_proposalID), "Time to execute successful proposal has expired, please resubmit proposal for voting");
+        // Set as executed now before running payload
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", _proposalID)), true);
+        // Ok all good, lets run the payload
+        // TODO: Add payload execution
+        
+        // Log it
+        emit ProposalExecuted(_proposalID, msg.sender, now);
+    }
+
+
+    // Cancel a proposal, can be cancelled by the original proposer only if it hasn't been executed yet
+    function proposalCancel(uint256 _proposalID) override public {
+        // Firstly make sure this proposal that hasn't already been executed
+        require(getProposalState(_proposalID) != ProposalState.Executed, "Proposal has not succeeded or has already been executed");
+        // Only allow the proposer to cancel
+        require(getProposalProposer(_proposalID) == msg.sender, "Proposal can only be cancelled by the proposer");
+        // Set as cancelled now
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.cancelled", _proposalID)), true);
+        // Log it
+        emit ProposalCancelled(_proposalID, msg.sender, now);
     }
 
     
