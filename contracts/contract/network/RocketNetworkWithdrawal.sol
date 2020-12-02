@@ -33,7 +33,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     // Current withdrawal pool balance
     function getBalance() override public view returns (uint256) {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        return rocketVault.balanceOf(address(this));
+        return rocketVault.balanceOf("rocketNetworkWithdrawal");
     }
 
     // Receive a vault withdrawal

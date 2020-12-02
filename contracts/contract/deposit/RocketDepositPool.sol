@@ -36,7 +36,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // Current deposit pool balance
     function getBalance() override public view returns (uint256) {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        return rocketVault.balanceOf(address(this));
+        return rocketVault.balanceOf("rocketDepositPool");
     }
 
     // Excess deposit pool balance (in excess of minipool queue capacity)

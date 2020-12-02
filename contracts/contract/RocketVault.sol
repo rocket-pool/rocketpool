@@ -33,14 +33,14 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     }
 
     // Get a contract's ETH balance by address
-    function balanceOf(address _contractAddress) override public view returns (uint256) {
+    function balanceOf(string memory _networkContractName) override public view returns (uint256) {
         // Return balance
-        return etherBalances[keccak256(abi.encodePacked(getContractName(_contractAddress)))];
+        return etherBalances[keccak256(abi.encodePacked(_networkContractName))];
     }
 
 
     // Get the balance of a token held by a network contract
-    function balanceOfToken(string memory _networkContractName, address _tokenAddress) override public view returns (uint256) {     
+    function balanceOfToken(string memory _networkContractName, address _tokenAddress) override public view returns (uint256) {
         // Return balance
         return tokenBalances[keccak256(abi.encodePacked(_networkContractName, _tokenAddress))];
     }
@@ -120,7 +120,9 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Transfer token from one contract to another
     // Only accepts calls from Rocket Pool network contracts
-    function transferToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract onlyLatestContract(_networkContractName, getContractAddress(_networkContractName)) returns (bool) {
+    function transferToken(string memory _networkContractName, address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+        // Make sure the network contract is valid (will throw if not)
+        require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
         // Get contract keys
         bytes32 contractKeyFrom = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         bytes32 contractKeyTo = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
