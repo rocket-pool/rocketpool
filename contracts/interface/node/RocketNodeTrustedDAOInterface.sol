@@ -27,7 +27,9 @@ interface RocketNodeTrustedDAOInterface {
     function proposalVote(uint256 _proposalID, bool _support) external; 
     function proposalCancel(uint256 _proposalID) external;
     function proposalExecute(uint256 _proposalID) external;
-    function add(string memory _id, string memory _email, string memory _message, address _nodeAddress) external;
+    function bootstrapMember(string memory _id, string memory _email, string memory _message, address _nodeAddress) external;
+    function bootstrapSetting(string memory _settingPath, uint256 _value) external;
     function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) external returns (bool);
+    function setting(string memory _settingPath, uint256 _value) external returns (bool);
     function rewardsRegister(bool _enable) external;
 }

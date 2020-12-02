@@ -24,7 +24,7 @@ export async function setTrustedDaoBootstrapMember(_id, _email, _message = '', _
     //console.log(Number(ds1.memberCount), ds1.memberIsValid);
 
     // Set as a bootstrapped member
-    await rocketNodeTrustedDAO.add(_id, _email, _message, _nodeAddress, txOptions);
+    await rocketNodeTrustedDAO.bootstrapMember(_id, _email, _message, _nodeAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
