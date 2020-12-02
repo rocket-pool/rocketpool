@@ -21,10 +21,10 @@ export async function setNodeTrusted(nodeAddress, trusted, txOptions) {
         rocketNodeManager.getTrustedNodeCount.call(),
         rocketNodeManager.getNodeTrusted.call(nodeAddress),
     ]);
-    let lastTrustedAddress = await rocketNodeManager.getTrustedNodeAt.call(trustedCount2.sub(web3.utils.toBN(1)));
 
     // Check trusted node index
     if (trusted) {
+        let lastTrustedAddress = await rocketNodeManager.getTrustedNodeAt.call(trustedCount2.sub(web3.utils.toBN(1)));
         assert(trustedCount2.eq(trustedCount1.add(web3.utils.toBN(1))), 'Incorrect updated trusted node count');
         assert.equal(lastTrustedAddress, nodeAddress, 'Incorrect updated trusted node index');
     } else {
