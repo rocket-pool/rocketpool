@@ -9,7 +9,7 @@ import { setNodeTrusted } from './scenario-set-trusted';
 import { RocketNodeTrustedDAO } from '../_utils/artifacts';
 
 export default function() {
-    contract.only('RocketNodeTrustedDAO', async (accounts) => {
+    contract('RocketNodeTrustedDAO', async (accounts) => {
 
 
         // Accounts
