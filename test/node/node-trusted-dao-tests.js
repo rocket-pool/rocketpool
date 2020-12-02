@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { register } from './scenario-register';
-import { setNodeTrusted } from './scenario-set-trusted';
+import { setTrustedDaoMember } from './scenario-trusted-dao-add';
 
 // Contracts
 import { RocketNodeTrustedDAO } from '../_utils/artifacts';
@@ -41,18 +41,18 @@ export default function() {
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
             // Enable last node to be trusted
-            await setNodeTrusted(registeredNodeTrusted1, true, {from: owner});
-            await setNodeTrusted(registeredNodeTrusted2, true, {from: owner});
-            await setNodeTrusted(registeredNodeTrusted3, true, {from: owner});
+            await setTrustedDaoMember('node1', 'node@home.com', '', registeredNodeTrusted1, {from: owner});
+            //await setNodeTrusted(registeredNodeTrusted2, true, {from: owner});
+            //await setNodeTrusted(registeredNodeTrusted3, true, {from: owner});
 
         });
 
 
         //
-        // Registration
+        // Start Tests
         //
 
-
+        
         it(printTitle('registeredNode1', 'verify trusted node quorum votes required is correct'), async () => {
             // Load contracts
             const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();

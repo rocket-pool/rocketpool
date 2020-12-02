@@ -4,8 +4,12 @@ pragma solidity 0.6.12;
 
 interface RocketNodeTrustedDAOInterface {
     function getSettingQuorumThreshold() external view returns (uint256);
+    function getSettingRPLBondSize() external view returns (uint256);
+    function getMemberAt(uint256 _index) external view returns (address);
     function getMemberCount() external view returns (uint256);
+    function getMemberCountMinRequired() external view returns (uint256);
     function getMemberCanMakeProposal(address _nodeAddress) external view returns (bool);
+    function getMemberIsValid(address _nodeAddress) external view returns (bool);
     function getProposalTotal() external view returns (uint256);
     function getProposalProposer(uint256 _proposalID) external view returns (address);
     function getProposalExpires(uint256 _proposalID) external view returns (uint256);
@@ -23,6 +27,7 @@ interface RocketNodeTrustedDAOInterface {
     function proposalVote(uint256 _proposalID, bool _support) external; 
     function proposalCancel(uint256 _proposalID) external;
     function proposalExecute(uint256 _proposalID) external;
-    function join(string memory _id, string memory _message, address _nodeAddress) external returns (bool);
+    function add(string memory _id, string memory _email, string memory _message, address _nodeAddress) external;
+    function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) external returns (bool);
     function rewardsRegister(bool _enable) external;
 }
