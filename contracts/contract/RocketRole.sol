@@ -19,8 +19,6 @@ contract RocketRole is RocketBase, RocketRoleInterface {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
-        // There are two main roles, RP (owner - added in RocketStorage up deployment) and DAO (will be transferred to dao address later)
-        setBool(keccak256(abi.encodePacked("access.role", "dao", address(msg.sender))), true);
     }
 
 

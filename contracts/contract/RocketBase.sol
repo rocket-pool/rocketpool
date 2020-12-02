@@ -63,7 +63,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any account other than Rocket Pools.
     */
     modifier onlyRP() {
-        require(roleHas("owner", msg.sender), "Account is not Rocket Pool");
+        require(roleHas("rp", msg.sender), "Account is not Rocket Pool");
         _;
     }
 
@@ -79,7 +79,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any account other than RP or the DAO (allows both RP and the DAO to run certain methods until RP revokes their address)
     */
     modifier onlyOwner() {
-        require(roleHas("owner", msg.sender) || roleHas("dao", msg.sender), "Account is not Rocket Pool or the DAO");
+        require(roleHas("rp", msg.sender) || roleHas("dao", msg.sender), "Account is not Rocket Pool or the DAO");
         _;
     }
 

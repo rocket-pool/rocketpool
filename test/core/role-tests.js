@@ -10,7 +10,7 @@ export default function() {
 
         // Accounts
         const [
-            owner,
+            rp,
             random,
         ] = accounts;
 
@@ -31,14 +31,14 @@ export default function() {
         // Check our main two roles exist (should both be the same initially)
         //
 
-        it(printTitle('rp', 'controls owner role'), async () => {
-            await hasRole('owner', owner, {
+        it(printTitle('rp', 'controls rp role'), async () => {
+            await hasRole('rp', rp, {
                 from: random,
             });
         });
 
         it(printTitle('rp', 'controls dao role'), async () => {
-            await hasRole('dao', owner, {
+            await hasRole('dao', rp, {
                 from: random,
             });
         });
@@ -49,62 +49,62 @@ export default function() {
         //
 
         
-        it(printTitle('rp', 'can transfer owner role to another address'), async () => {
-            await transferRole('owner', random, {
-                from: owner,
+        it(printTitle('rp', 'can transfer rp role to another address'), async () => {
+            await transferRole('rp', random, {
+                from: rp,
             });
         });
 
-        it(printTitle('rp', 'cannot transfer owner role more than once'), async () => {
-            await transferRole('owner', random, {
-                from: owner,
+        it(printTitle('rp', 'cannot transfer rp role more than once'), async () => {
+            await transferRole('rp', random, {
+                from: rp,
             });
-            await shouldRevert(transferRole('owner', accounts[4], {
-                from: owner,
+            await shouldRevert(transferRole('rp', accounts[4], {
+                from: rp,
             }), 'Transferred ownership twice');
         });
 
-        it(printTitle('rp', 'can transfer owner role to another address and receive it back'), async () => {
-            await transferRole('owner', random, {
-                from: owner,
+        it(printTitle('rp', 'can transfer rp role to another address and receive it back'), async () => {
+            await transferRole('rp', random, {
+                from: rp,
             });
-            await transferRole('owner', owner, {
+            await transferRole('rp', rp, {
                 from: random,
             });
         });
 
-        it(printTitle('rp', 'cannot transfer owner role to the current owner address'), async () => {
-            await shouldRevert(transferRole('owner', owner, {
-                from: owner,
-            }), 'Transferred ownership to the current owner address');
+        it(printTitle('rp', 'cannot transfer rp role to the current rp address'), async () => {
+            await shouldRevert(transferRole('rp', rp, {
+                from: rp,
+            }), 'Transferred ownership to the current rp address');
         });
 
-        it(printTitle('rp', 'can transfer owner role to unretrievable address'), async () => {
-            await transferRole('owner', '0x0000000000000000000000000000000000000001', {
-                from: owner,
+        it(printTitle('rp', 'can transfer rp role to irretrievable address'), async () => {
+            await transferRole('rp', '0x0000000000000000000000000000000000000001', {
+                from: rp,
             });
         });
 
         it(printTitle('rp', 'cannot transfer role that does not exist'), async () => {
-            await shouldRevert(transferRole('admin', owner, {
-                from: owner,
+            await shouldRevert(transferRole('admin', rp, {
+                from: rp,
             }), 'Transferred imaginary role');
         });
 
         it(printTitle('rp', 'cannot transfer ownership to an invalid address'), async () => {
-            await shouldRevert(transferRole('owner', '0x0000000000000000000000000000000000000000', {
-                from: owner,
+            await shouldRevert(transferRole('rp', '0x0000000000000000000000000000000000000000', {
+                from: rp,
             }), 'Transferred ownership to an invalid address');
         });
 
-        it(printTitle('dao', 'can transfer owner role to another address'), async () => {
+        it(printTitle('dao', 'can transfer rp role to another address'), async () => {
             await transferRole('dao', random, {
-                from: owner,
+                from: rp,
             });
         });
 
         it(printTitle('random address', 'cannot transfer ownership to another address'), async () => {
-            await shouldRevert(transferRole('owner', random, {
+            await shouldRevert(transferRole('rp', random, {
                 from: random,
             }), 'Random address transferred ownership to another address');
         });
