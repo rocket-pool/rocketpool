@@ -58,14 +58,14 @@ export async function setTrustedDaoBootstrapSetting(_settingPath, _value, txOpti
 
     // Capture data
     let ds1 = await getTxData();
-    // console.log(Number(ds1.settingValue));
+    console.log(Number(ds1.settingValue));
 
     // Set as a bootstrapped member
     await rocketNodeTrustedDAO.bootstrapSetting(_settingPath, _value, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    // console.log(Number(ds2.settingValue));
+    console.log(Number(ds2.settingValue));
 
     // Check it was updated
     assert(ds2.settingValue.eq(web3.utils.toBN(_value)), 'DAO setting not updated in bootstrap mode');

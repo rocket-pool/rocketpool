@@ -54,13 +54,15 @@ export default function() {
         // Start Tests
         //
 
-        /*
+        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'User Node', userOne, {
                 from: owner
             }), 'Non registered node added to trusted node DAO', 'Invalid node');
         });
+
+      
 
         it(printTitle('userOne', 'fails to add a bootstrap trusted node DAO member as non owner'), async () => {
             // Set as trusted dao member via bootstrapping
@@ -85,8 +87,8 @@ export default function() {
                 from: owner
             }), 'Owner added more than 3 bootstrap trusted node dao members', 'Bootstrap mode not engaged, min DAO member count has been met');
         });
-        */
-       
+        
+       /*
 
         it(printTitle('owner', 'updates a setting while bootstrap mode is enabled'), async () => {
             // Set as trusted dao member via bootstrapping
