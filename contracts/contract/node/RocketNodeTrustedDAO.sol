@@ -50,7 +50,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // Only allow bootstrapping the dao if it has less than the required members to form the DAO
     modifier onlyBootstrapMode() {
-        require(getMemberCount() < memberMinCount, "Bootstrap mode not engaged, min DAO member count has been met");
+        require(getMemberCount() < getMemberCountMinRequired(), "Bootstrap mode not engaged, min DAO member count has been met");
         _;
     }
 
@@ -78,6 +78,11 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
 
     /*** Settings  ****************/
+
+    // A general method to return any setting given the setting path is correct, only accepts uints
+    function getSetting(string memory _settingPath) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", _settingPath)));
+    } 
     
     // Return the current % the DAO is using for a quorum
     function getSettingQuorumThreshold() override public view returns (uint256) {
@@ -241,6 +246,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.type", proposalID)), _proposalType);
+        // setString(keccak256(abi.encodePacked(daoNameSpace, "proposal.message", proposalID)), _proposalType); TODO: Possible add an attached message to a proposal
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "proposal.proposer", proposalID)), msg.sender);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.expires", proposalID)), block.number.add(proposalVotingBlocks));
         setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.created", proposalID)), block.number);
@@ -315,6 +321,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
     function bootstrapMember(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) {
         // Ok good to go, lets add them
+        call(_payload)
         invite(_id, _email, _message, _nodeAddress); 
     }
     // Bootstrap mode - Set some initial settings for the DAO
@@ -330,7 +337,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // A current DAO member wishes to invite a registered node to join the DAO
     // Provide an ID that indicates who is running the trusted node, an optional general message and the address of the registered node that they wish to propose joining the dao
-    function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyLatestContract("rocketNodeTrustedDAO", address(this)) onlyRegisteredNode(_nodeAddress) returns (bool) {
+    function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyLatestContract("rocketNodeTrustedDAO", msg.sender) onlyRegisteredNode(_nodeAddress) returns (bool) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check current node status
@@ -356,7 +363,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
 
     // Change one of the current settings of the trusted node DAO
     // Settings only support Uints currently
-    function setting(string memory _settingPath, uint256 _value) override public onlyLatestContract("rocketNodeTrustedDAO", address(this)) returns (bool) {
+    function setting(string memory _settingPath, uint256 _value) override public onlyLatestContract("rocketNodeTrustedDAO", msg.sender) returns (bool) {
         // Some safety guards for certain settings
         if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("quorum"))) require(_value >= 0.51 ether && _value <= 0.9 ether, "Quorum setting must be >= 51% and <= 90%");
         // Ok all good, lets update

@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { register } from './scenario-register';
-import { setTrustedDaoBootstrapMember } from './scenario-trusted-dao-bootstrap';
+import { setTrustedDaoBootstrapMember, setTrustedDaoBootstrapSetting } from './scenario-trusted-dao-bootstrap';
 
 // Contracts
 import { RocketNodeTrustedDAO } from '../_utils/artifacts';
@@ -54,6 +54,7 @@ export default function() {
         // Start Tests
         //
 
+        /*
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'User Node', userOne, {
@@ -84,7 +85,42 @@ export default function() {
                 from: owner
             }), 'Owner added more than 3 bootstrap trusted node dao members', 'Bootstrap mode not engaged, min DAO member count has been met');
         });
+        */
+       
+
+        it(printTitle('owner', 'updates a setting while bootstrap mode is enabled'), async () => {
+            // Set as trusted dao member via bootstrapping
+            await setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
+                from: owner
+            });
+        });
+
+        it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
+            // Add our 3rd member
+            await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
+            // Update setting
+            await shouldRevert(await setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
+                from: owner
+            }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged, min DAO member count has been met');
+        });
+
+        it(printTitle('owner', 'fails to set quorum setting below 51% while bootstrap mode is enabled'), async () => {
+            // Update setting
+            await shouldRevert(setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.50'), {
+                from: owner
+            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
+        });
+
+
+        it(printTitle('owner', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
+            // Update setting
+            await shouldRevert(setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.91'), {
+                from: owner
+            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
+        });
+
         
+        /*
         it(printTitle('registeredNode1', 'verify trusted node quorum votes required is correct'), async () => {
             // Load contracts
             const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();
@@ -105,7 +141,7 @@ export default function() {
             // Verify
             assert(expectedVotes == Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");         
         });
-        
+        */
 
 
     });

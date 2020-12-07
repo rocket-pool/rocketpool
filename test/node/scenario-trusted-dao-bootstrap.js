@@ -39,3 +39,36 @@ export async function setTrustedDaoBootstrapMember(_id, _email, _message = '', _
 
 }
 
+
+// Change a trusted node DAO setting while bootstrap mode is enabled
+export async function setTrustedDaoBootstrapSetting(_settingPath, _value, txOptions) {
+
+    // Load contracts
+    const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketNodeTrustedDAO.getSetting.call(_settingPath),
+        ]).then(
+            ([settingValue]) =>
+            ({settingValue})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+    // console.log(Number(ds1.settingValue));
+
+    // Set as a bootstrapped member
+    await rocketNodeTrustedDAO.bootstrapSetting(_settingPath, _value, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+    // console.log(Number(ds2.settingValue));
+
+    // Check it was updated
+    assert(ds2.settingValue.eq(web3.utils.toBN(_value)), 'DAO setting not updated in bootstrap mode');
+
+}
+

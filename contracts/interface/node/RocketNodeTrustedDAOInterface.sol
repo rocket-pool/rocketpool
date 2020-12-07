@@ -3,6 +3,7 @@ pragma solidity 0.6.12;
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketNodeTrustedDAOInterface {
+    function getSetting(string memory _settingPath) external view returns (uint256);
     function getSettingQuorumThreshold() external view returns (uint256);
     function getSettingRPLBondSize() external view returns (uint256);
     function getMemberAt(uint256 _index) external view returns (address);
