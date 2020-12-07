@@ -25,7 +25,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     uint256 calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string daoNameSpace = 'dao.trustednodes.';
+    string daoNameSpace = 'dao.trustednodes';
 
     // Possible states that a proposal may be in
     enum ProposalType {
@@ -33,8 +33,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         Leave,              // Leave the DAO 
         Replace,            // Replace a current trusted node with a new registered node
         Kick,               // Kick a member from the DAO with optional penalty applied to their RPL deposit
-        Bond,               // The RPL bond amount required to join as a trusted node dao member,
-        Quorum              // Set the quorum required to pass a proposal ( min: 51%, max 90% )
+        Setting             // Change a DAO setting (Quorum, RPL deposit sie, voting periods etc)
+        //Quorum              // Set the quorum required to pass a proposal ( min: 51%, max 90% )
     }
 
     // Possible states that a proposal may be in
@@ -45,6 +45,13 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         Succeeded,
         Expired,
         Executed
+    }
+
+
+    // Only allow bootstrapping the dao if it has less than the required members to form the DAO
+    modifier onlyBootstrapMode() {
+        require(getMemberCount() < memberMinCount, "Bootstrap mode not engaged, min DAO member count has been met");
+        _;
     }
 
 
@@ -65,8 +72,8 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
-        // Set the quorum - specified as % of 1 ether
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "setting.quorum")), 0.51 ether);
+        // Set some initial settings
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "quorum")), 0.51 ether);
     }
 
 
@@ -75,23 +82,47 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
     // Return the current % the DAO is using for a quorum
     function getSettingQuorumThreshold() override public view returns (uint256) {
         // Specified as % of 1 ether
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting.quorum")));
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "quorum")));
     } 
+
+    // Return the current RPL bond size required to join
+    function getSettingRPLBondSize() override public view returns (uint256) {
+        // Specified as % of 1 ether
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "rplbond")));
+    } 
+
 
 
     /*** Members ******************/
 
+    
+    // Get a trusted node member address by index
+    function getMemberAt(uint256 _index) override public view returns (address) { 
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _index);
+    }
+
     // Total number of members in the current trusted node DAO
     function getMemberCount() override public view returns (uint256) {
-        // TODO: Update these to use the dao namespace when ready
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked(daoNameSpace, "member.index")));
+    }
+
+    // Return the min number of members required for the DAO
+    function getMemberCountMinRequired() override public view returns (uint256) { 
+        return memberMinCount; 
+    }
+
+    // Return true if the node addressed passed is a member of the trusted node DAO
+    function getMemberIsValid(address _nodeAddress) override public view returns (bool) { 
+        return getBool(keccak256(abi.encodePacked("dao.trustednodes", "member", _nodeAddress))); 
     }
 
     // Return true if the member can post another proposal after their last one due to the cooldown
     function getMemberCanMakeProposal(address _nodeAddress) override public view returns (bool) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.last", _nodeAddress))).add(memberProposalCooldownBlocks) < block.number ? true : false; 
+        return getMemberIsValid(_nodeAddress) && getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.last", _nodeAddress))).add(memberProposalCooldownBlocks) < block.number ? true : false; 
     }
+
 
 
     /*** Proposals ****************/
@@ -161,7 +192,7 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         // Get the total trusted nodes
         uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
-        uint256 total = trustedNodeCount >= memberMinCount ? calcBase.div(trustedNodeCount) : memberMinCount;
+        uint256 total = trustedNodeCount > 0 ? calcBase.div(trustedNodeCount) : 0;
         // Return the votes required
         return calcBase.mul(getSettingQuorumThreshold()).div(total);
     }
@@ -243,20 +274,23 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         // Log it
         emit ProposalVoted(_proposalID, msg.sender, _support, now);
     }
+    
 
     // Execute a proposal if it has passed
     // Anyone can run this if they are willing to pay the gas costs for it
     // A proposal can be executed as soon as it hits a majority in favour
-    function proposalExecute(uint256 _proposalID) override public {
+    // The original proposer must still be a member for it to be executed
+    function proposalExecute(uint256 _proposalID) onlyTrustedNode(getProposalProposer(_proposalID)) override public {
         // Firstly make sure this proposal has passed
         require(getProposalState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded or has already been executed");
         // Check that the time period to execute hasn't expired (1 month to execute by default after voting period)
         require(!getProposalExecutedExpired(_proposalID), "Time to execute successful proposal has expired, please resubmit proposal for voting");
         // Set as executed now before running payload
         setBool(keccak256(abi.encodePacked(daoNameSpace, "proposal.executed", _proposalID)), true);
-        // Ok all good, lets run the payload
-        // TODO: Add payload execution
-        
+        // Ok all good, lets run the payload, it should execute one of the methods on this contract
+        (bool success,) = address(this).call(getProposalPayload(_proposalID));
+        // Verify it was successful
+        require(success, "Payload call was not successful");
         // Log it
         emit ProposalExecuted(_proposalID, msg.sender, now);
     }
@@ -274,15 +308,59 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
         emit ProposalCancelled(_proposalID, msg.sender, now);
     }
 
+
+    /**** Bootstrapping ***************/
+
+    
+    // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
+    function bootstrapMember(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) {
+        // Ok good to go, lets add them
+        invite(_id, _email, _message, _nodeAddress); 
+    }
+    // Bootstrap mode - Set some initial settings for the DAO
+    function bootstrapSetting(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode {
+        // Ok good to go, lets update the settings
+        setting(_settingPath, _value);
+    }
+
     
     /*** Methods **********************/
 
-    // A registered RP node wishes to join the trusted node DAO
-    // Provide an ID that indicates who is running the trusted node, a general message and the address of the registered node that they wish to propose joining the dao
-    function join(string memory _id, string memory _message, address _nodeAddress) override public onlyTrustedNode(msg.sender) onlyRegisteredNode(_nodeAddress) returns (bool) {
+    // All methods have a public interface so that the calldata payload can be executed, but it must only be run by this contract in `proposalExecute()`
+
+    // A current DAO member wishes to invite a registered node to join the DAO
+    // Provide an ID that indicates who is running the trusted node, an optional general message and the address of the registered node that they wish to propose joining the dao
+    function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyLatestContract("rocketNodeTrustedDAO", address(this)) onlyRegisteredNode(_nodeAddress) returns (bool) {
+        // Load contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check current node status
-        require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != true, "This node is already part of the trusted node DAO");
-        // Check address 
+        require(getBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress))) != true, "This node is already part of the trusted node DAO");
+        // Verify the ID is min 3 chars
+        require(bytes(_id).length >= 3, "The ID for this new member must be at least 3 characters");
+        // Check email address length
+        require(bytes(_email).length >= 6, "The email for this new member must be at least 6 characters");
+        // Ok all good, lets get them setup
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), true);
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)), _email);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.message", _nodeAddress)), _message);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined", _nodeAddress)), block.number);
+        // Add to index
+        addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
+        // Register for them to receive rewards now
+        _rewardsEnable(_nodeAddress, true);
+        // Done
+        return true;
+    }
+
+    // Change one of the current settings of the trusted node DAO
+    // Settings only support Uints currently
+    function setting(string memory _settingPath, uint256 _value) override public onlyLatestContract("rocketNodeTrustedDAO", address(this)) returns (bool) {
+        // Some safety guards for certain settings
+        if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("quorum"))) require(_value >= 0.51 ether && _value <= 0.9 ether, "Quorum setting must be >= 51% and <= 90%");
+        // Ok all good, lets update
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", _settingPath)), _value);
     }
 
 
@@ -292,13 +370,13 @@ contract RocketNodeTrustedDAO is RocketBase, RocketNodeTrustedDAOInterface {
  
     // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
     function rewardsRegister(bool _enable) override public onlyTrustedNode(msg.sender) {
-        rewardsEnable(msg.sender, _enable);
+        _rewardsEnable(msg.sender, _enable);
     }
 
 
     // Enable a trusted node to register for receiving RPL rewards
     // Must be added when they join and removed when they leave
-    function rewardsEnable(address _nodeAddress, bool _enable) private onlyTrustedNode(_nodeAddress) {
+    function _rewardsEnable(address _nodeAddress, bool _enable) private onlyTrustedNode(_nodeAddress) {
         // Load contracts
         RocketClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
         // Verify the trust nodes rewards contract is enabled 
