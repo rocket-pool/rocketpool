@@ -6,7 +6,11 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
 // Handles node deposits and minipool creation
@@ -23,10 +27,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Get/set the total RPL stake amount
     function getTotalRPLStake() override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("rpl.staked.total")));
+        return getUintS("rpl.staked.total");
     }
     function setTotalRPLStake(uint256 _amount) private {
-        setUint(keccak256(abi.encodePacked("rpl.staked.total")), _amount);
+        setUintS("rpl.staked.total", _amount);
     }
 
     // Get/set a node's RPL stake amount
@@ -35,6 +39,25 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
     function setNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         setUint(keccak256(abi.encodePacked("rpl.staked.node", _nodeAddress)), _amount);
+    }
+
+    // Get a node's effective RPL stake amount
+    function getNodeEffectiveRPLStake(address _nodeAddress) override public view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Calculate node's maximum RPL stake
+        uint256 depositUserAmount = rocketMinipoolSettings.getHalfDepositUserAmount();
+        uint256 maxMinipoolStake = rocketNodeSettings.getMaximumPerMinipoolStake();
+        uint256 minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
+        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
+        uint256 maxRplStake = depositUserAmount.mul(maxMinipoolStake).mul(minipoolCount).div(rplPrice);
+        // Return effective stake amount
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        if (rplStake < maxRplStake) { return rplStake; }
+        else { return maxRplStake; }
     }
 
     // Accept an RPL stake
