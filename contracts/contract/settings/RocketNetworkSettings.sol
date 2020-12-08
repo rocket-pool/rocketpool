@@ -19,6 +19,8 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
             setNodeConsensusThreshold(0.51 ether); // 51%
             setSubmitBalancesEnabled(true);
             setSubmitBalancesFrequency(5760); // ~24 hours
+            setSubmitPricesEnabled(true);
+            setSubmitPricesFrequency(5760); // ~24 hours
             setProcessWithdrawalsEnabled(true);
             setMinimumNodeFee(0.05 ether); // 5%
             setTargetNodeFee(0.10 ether); // 10%
@@ -52,6 +54,22 @@ contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
     }
     function setSubmitBalancesFrequency(uint256 _value) public onlyOwner {
         setUintS("settings.network.submit.balances.frequency", _value);
+    }
+
+    // Submit prices currently enabled (trusted nodes only)
+    function getSubmitPricesEnabled() override public view returns (bool) {
+        return getBoolS("settings.network.submit.prices.enabled");
+    }
+    function setSubmitPricesEnabled(bool _value) public onlyOwner {
+        setBoolS("settings.network.submit.prices.enabled", _value);
+    }
+
+    // The frequency in blocks at which network prices should be submitted by trusted nodes
+    function getSubmitPricesFrequency() override public view returns (uint256) {
+        return getUintS("settings.network.submit.prices.frequency");
+    }
+    function setSubmitPricesFrequency(uint256 _value) public onlyOwner {
+        setUintS("settings.network.submit.prices.frequency", _value);
     }
 
     // Process withdrawals currently enabled (trusted nodes only)
