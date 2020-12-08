@@ -58,6 +58,7 @@ const contracts = {
   // Node
   rocketNodeDeposit:            artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeManager:            artifacts.require('RocketNodeManager.sol'),
+  rocketNodeStaking:            artifacts.require('RocketNodeStaking.sol'),
   rocketNodeTrustedDAO:         artifacts.require('RocketNodeTrustedDAO.sol'), 
   rocketNodeTrustedDAOProposal: artifacts.require('RocketNodeTrustedDAOProposal.sol'), 
   // Settings
