@@ -49,12 +49,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Calculate node's maximum RPL stake
-        uint256 depositUserAmount = rocketMinipoolSettings.getHalfDepositUserAmount();
-        uint256 maxMinipoolStake = rocketNodeSettings.getMaximumPerMinipoolStake();
-        uint256 minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
-        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
-        uint256 maxRplStake = depositUserAmount.mul(maxMinipoolStake).mul(minipoolCount).div(rplPrice);
-        // Return effective stake amount
+        uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
+            .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Calculate & return effective stake amount
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
         if (rplStake < maxRplStake) { return rplStake; }
         else { return maxRplStake; }
@@ -67,11 +66,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Calculate & return minipool limit
-        uint256 rplStake = getNodeRPLStake(_nodeAddress);
-        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
-        uint256 depositUserAmount = rocketMinipoolSettings.getHalfDepositUserAmount();
-        uint256 minMinipoolStake = rocketNodeSettings.getMinimumPerMinipoolStake();
-        return rplStake.mul(rplPrice).div(depositUserAmount.mul(minMinipoolStake));
+        return getNodeRPLStake(_nodeAddress)
+            .mul(rocketNetworkPrices.getRPLPrice())
+            .div(
+                rocketMinipoolSettings.getHalfDepositUserAmount()
+                .mul(rocketNodeSettings.getMinimumPerMinipoolStake())
+            );
     }
 
     // Accept an RPL stake
