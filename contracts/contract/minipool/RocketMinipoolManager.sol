@@ -7,6 +7,7 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 
@@ -100,7 +101,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Load contracts
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Check node minipool limit based on RPL stake
+        require(
+            addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress))) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
+            "Minipool count after deposit exceeds limit based on node RPL stake"
+        );
         // Create minipool contract
         address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType);
         // Initialize minipool data
