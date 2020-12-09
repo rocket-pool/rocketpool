@@ -92,6 +92,23 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         increaseNodeRPLStake(msg.sender, _amount);
     }
 
+    // Slash a node's RPL by an ETH amount
+    // Only accepts calls from the RocketMinipoolStatus contract
+    function slashRPL(address _nodeAddress, uint256 _ethSlashAmount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+        // Calculate RPL amount to slash
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        uint256 calcBase = 1 ether;
+        uint256 rplSlashAmount = calcBase.mul(_ethSlashAmount).div(rocketNetworkPrices.getRPLPrice());
+        // Cap slashed amount to node's RPL stake
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        if (rplSlashAmount > rplStake) { rplSlashAmount = rplStake; }
+        // Transfer slashed amount to auction contract
+        // TODO: implement
+        // Update RPL stake amounts
+        decreaseTotalRPLStake(rplSlashAmount);
+        decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
+    }
+
     // Increase/decrease the total RPL stake amount
     function increaseTotalRPLStake(uint256 _amount) private {
         setTotalRPLStake(getTotalRPLStake().add(_amount));

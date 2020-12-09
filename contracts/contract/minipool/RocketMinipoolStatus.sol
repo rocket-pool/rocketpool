@@ -9,6 +9,7 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
@@ -70,10 +71,12 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable
         minipool.setWithdrawable(_stakingStartBalance, _stakingEndBalance);
+        // Get minipool data
+        uint256 userDepositBalance = minipool.getUserDepositBalance();
         // Get node reward amount
         uint256 nodeAmount = getMinipoolNodeRewardAmount(
             minipool.getNodeFee(),
-            minipool.getUserDepositBalance(),
+            userDepositBalance,
             minipool.getStakingStartBalance(),
             minipool.getStakingEndBalance()
         );
@@ -81,6 +84,11 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         if (nodeAmount > 0) { rocketTokenNETH.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
         rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _stakingEndBalance, nodeAmount);
+        // Apply node penalties by liquidating RPL stake
+        if (_stakingEndBalance < userDepositBalance) {
+            RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+            rocketNodeStaking.slashRPL(minipool.getNodeAddress(), userDepositBalance - _stakingEndBalance);
+        }
         // Emit set withdrawable event
         emit MinipoolSetWithdrawable(_minipoolAddress, _stakingEndBalance, nodeAmount, now);
     }
