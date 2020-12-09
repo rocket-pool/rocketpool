@@ -6,5 +6,6 @@ interface RocketNodeStakingInterface {
     function getTotalRPLStake() external view returns (uint256);
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
     function getNodeEffectiveRPLStake(address _nodeAddress) external view returns (uint256);
+    function getNodeMinipoolLimit(address _nodeAddress) external view returns (uint256);
     function stakeRPL(uint256 _amount) external payable;
 }

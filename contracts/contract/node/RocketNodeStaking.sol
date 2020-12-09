@@ -60,6 +60,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         else { return maxRplStake; }
     }
 
+    // Get a node's minipool limit based on RPL stake
+    function getNodeMinipoolLimit(address _nodeAddress) override public view returns (uint256) {
+        // Load contracts
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Calculate & return minipool limit
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
+        uint256 depositUserAmount = rocketMinipoolSettings.getHalfDepositUserAmount();
+        uint256 minMinipoolStake = rocketNodeSettings.getMinimumPerMinipoolStake();
+        return rplStake.mul(rplPrice).div(depositUserAmount.mul(minMinipoolStake));
+    }
+
     // Accept an RPL stake
     // Only accepts calls from registered nodes
     function stakeRPL(uint256 _amount) override external payable onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
