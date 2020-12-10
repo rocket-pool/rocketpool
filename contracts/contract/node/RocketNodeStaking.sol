@@ -9,6 +9,7 @@ import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/settings/RocketDAOSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
@@ -27,18 +28,26 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Get/set the total RPL stake amount
     function getTotalRPLStake() override public view returns (uint256) {
-        return getUintS("rpl.staked.total");
+        return getUintS("rpl.staked.total.amount");
     }
     function setTotalRPLStake(uint256 _amount) private {
-        setUintS("rpl.staked.total", _amount);
+        setUintS("rpl.staked.total.amount", _amount);
     }
 
     // Get/set a node's RPL stake amount
     function getNodeRPLStake(address _nodeAddress) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("rpl.staked.node", _nodeAddress)));
+        return getUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)));
     }
     function setNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setUint(keccak256(abi.encodePacked("rpl.staked.node", _nodeAddress)), _amount);
+        setUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
+    }
+
+    // Get/set the block a node last staked RPL at
+    function getNodeRPLStakedBlock(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("rpl.staked.node.block", _nodeAddress)));
+    }
+    function setNodeRPLStakedBlock(address _nodeAddress, uint256 _block) private {
+        setUint(keccak256(abi.encodePacked("rpl.staked.node.block", _nodeAddress)), _block);
     }
 
     // Get a node's effective RPL stake amount
@@ -87,9 +96,39 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Deposit RPL tokens to vault
         require(rplToken.approve(rocketVaultAddress, _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplTokenAddress, _amount);
-        // Update RPL stake amounts
+        // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(msg.sender, _amount);
+        setNodeRPLStakedBlock(msg.sender, block.number);
+    }
+
+    // Withdraw staked RPL back to the node account
+    // Only accepts calls from registered nodes
+    function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
+        // Load contracts
+        RocketDAOSettingsInterface rocketDAOSettings = RocketDAOSettingsInterface(getContractAddress("rocketDAOSettings"));
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        // Check cooldown period (one claim period) has passed since RPL last staked
+        require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAOSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
+        // Get node's current RPL stake
+        uint256 rplStake = getNodeRPLStake(msg.sender);
+        // Calculate node's minimum RPL stake
+        uint256 minRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
+            .mul(rocketNodeSettings.getMinimumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Check withdrawal would not undercollateralize node
+        require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
+        require(rplStake.sub(_amount) >= minRplStake, "Node's staked RPL balance after withdrawal is less than minimum balance");
+        // Transfer RPL tokens to node address
+        rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), _amount);
+        // Update RPL stake amounts
+        decreaseTotalRPLStake(_amount);
+        decreaseNodeRPLStake(msg.sender, _amount);
     }
 
     // Slash a node's RPL by an ETH amount
