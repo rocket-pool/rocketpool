@@ -21,6 +21,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Libs
     using SafeMath for uint;
 
+    // Events
+    event RPLStaked(address indexed from, uint256 amount, uint256 time);
+    event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
+    event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         version = 1;
@@ -85,7 +90,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Accept an RPL stake
     // Only accepts calls from registered nodes
-    function stakeRPL(uint256 _amount) override external payable onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
+    function stakeRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
         address rplTokenAddress = getContractAddress("rocketTokenRPL");
         address rocketVaultAddress = getContractAddress("rocketVault");
@@ -100,6 +105,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(msg.sender, _amount);
         setNodeRPLStakedBlock(msg.sender, block.number);
+        // Emit RPL staked event
+        emit RPLStaked(msg.sender, _amount, now);
     }
 
     // Withdraw staked RPL back to the node account
@@ -129,6 +136,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
+        // Emit RPL withdrawn event
+        emit RPLWithdrawn(msg.sender, _amount, now);
     }
 
     // Slash a node's RPL by an ETH amount
@@ -146,6 +155,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
+        // Emit RPL slashed event
+        emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, now);
     }
 
     // Increase/decrease the total RPL stake amount
