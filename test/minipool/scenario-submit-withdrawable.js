@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolStatus, RocketNodeManager, RocketStorage } from '../_utils/artifacts';
+import { RocketMinipool, RocketMinipoolStatus, RocketNodeManager, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
 
 
 // Submit a minipool withdrawable event
@@ -8,10 +8,12 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
     const [
         rocketMinipoolStatus,
         rocketNodeManager,
+        rocketNodeStaking,
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolStatus.deployed(),
         RocketNodeManager.deployed(),
+        RocketNodeStaking.deployed(),
         RocketStorage.deployed(),
     ]);
 
@@ -39,21 +41,34 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
             minipool.getStatus.call(),
             minipool.getStakingStartBalance.call(),
             minipool.getStakingEndBalance.call(),
+            minipool.getUserDepositBalance.call(),
         ])).then(
-            ([status, startBalance, endBalance]) =>
-            ({status, startBalance, endBalance})
+            ([status, startBalance, endBalance, userDepositBalance]) =>
+            ({status, startBalance, endBalance, userDepositBalance})
         );
     }
 
-    // Get initial submission details
-    let submission1 = await getSubmissionDetails();
+    // Get node details
+    function getNodeDetails() {
+        return RocketMinipool.at(minipoolAddress)
+            .then(minipool => minipool.getNodeAddress.call())
+            .then(nodeAddress => rocketNodeStaking.getNodeRPLStake.call(nodeAddress))
+            .then(rplStake => ({rplStake}));
+    }
+
+    // Get initial details
+    let [submission1, nodeDetails1] = await Promise.all([
+        getSubmissionDetails(),
+        getNodeDetails().catch(e => ({})),
+    ]);
 
     // Submit
     await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions);
 
-    // Get updated submission details & minipool details
-    let [submission2, minipoolDetails] = await Promise.all([
+    // Get updated details
+    let [submission2, nodeDetails2, minipoolDetails] = await Promise.all([
         getSubmissionDetails(),
+        getNodeDetails(),
         getMinipoolDetails(),
     ]);
 
@@ -71,6 +86,9 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
         assert(minipoolDetails.status.eq(withdrawable), 'Incorrect updated minipool status');
         assert(minipoolDetails.startBalance.eq(web3.utils.toBN(stakingStartBalance)), 'Incorrect updated minipool end balance');
         assert(minipoolDetails.endBalance.eq(web3.utils.toBN(stakingEndBalance)), 'Incorrect updated minipool end balance');
+        if (web3.utils.toBN(stakingEndBalance).lt(minipoolDetails.userDepositBalance)) {
+            assert(nodeDetails2.rplStake.lt(nodeDetails1.rplStake), 'Incorrect updated node RPL stake amount');
+        }
     } else {
         assert(!minipoolDetails.status.eq(withdrawable), 'Incorrect updated minipool status');
     }
