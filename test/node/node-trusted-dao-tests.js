@@ -9,7 +9,7 @@ import { setTrustedDaoBootstrapMember, setTrustedDaoBootstrapSetting } from './s
 import { RocketNodeTrustedDAO } from '../_utils/artifacts';
 
 export default function() {
-    contract.only('RocketNodeTrustedDAO', async (accounts) => {
+    contract('RocketNodeTrustedDAO', async (accounts) => {
 
 
         // Accounts
