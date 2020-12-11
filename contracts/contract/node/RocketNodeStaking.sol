@@ -55,6 +55,25 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.block", _nodeAddress)), _block);
     }
 
+    // Get the total effective RPL stake amount
+    function getTotalEffectiveRPLStake() override public view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Get current total RPL stake
+        uint256 rplStake = getTotalRPLStake();
+        // Calculate maximum total RPL stake
+        uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
+            .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getMinipoolCount())
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Return effective stake amount
+        if (rplStake < maxRplStake) { return rplStake; }
+        else { return maxRplStake; }
+    }
+
     // Get a node's effective RPL stake amount
     function getNodeEffectiveRPLStake(address _nodeAddress) override public view returns (uint256) {
         // Load contracts
@@ -62,13 +81,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        // Get node's current RPL stake
+        uint256 rplStake = getNodeRPLStake(msg.sender);
         // Calculate node's maximum RPL stake
         uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
             .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
             .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
             .div(rocketNetworkPrices.getRPLPrice());
-        // Calculate & return effective stake amount
-        uint256 rplStake = getNodeRPLStake(_nodeAddress);
+        // Return effective stake amount
         if (rplStake < maxRplStake) { return rplStake; }
         else { return maxRplStake; }
     }
