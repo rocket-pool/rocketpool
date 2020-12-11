@@ -2,11 +2,11 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipool } from '../_helpers/minipool';
 import { depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
-import { getNethBalance } from '../_helpers/tokens';
+import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
 
 export default function() {
@@ -42,6 +42,11 @@ export default function() {
 
             // Set settings
             await setMinipoolSetting('WithdrawalDelay', 0, {from: owner});
+
+            // Stake RPL to cover minipools
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Create and withdraw from withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});

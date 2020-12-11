@@ -2,10 +2,11 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
+import { mintRPL } from '../_helpers/tokens';
 import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
 import { setWithdrawalCredentials } from './scenario-set-withdrawal-credentials';
@@ -41,6 +42,12 @@ export default function() {
             // Register trusted node
             await registerNode({from: trustedNode});
             await setNodeTrusted(trustedNode, {from: owner});
+
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(2));
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipools
             let stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});

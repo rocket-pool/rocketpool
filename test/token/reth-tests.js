@@ -3,11 +3,11 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
-import { getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { submitBalances, depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setNetworkSetting } from '../_helpers/settings';
-import { getRethBalance, getRethExchangeRate, getRethTotalSupply } from '../_helpers/tokens';
+import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
 
 export default function() {
@@ -51,6 +51,11 @@ export default function() {
 
             // Set settings
             await setNetworkSetting('TargetRethCollateralRate', web3.utils.toWei('1', 'ether'), {from: owner});
+
+            // Stake RPL to cover minipools
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Create withdrawable minipool
             let minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});

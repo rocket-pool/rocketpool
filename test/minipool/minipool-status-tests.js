@@ -1,9 +1,10 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { createMinipool, stakeMinipool } from '../_helpers/minipool';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_helpers/minipool';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
+import { mintRPL } from '../_helpers/tokens';
 import { submitWithdrawable } from './scenario-submit-withdrawable';
 
 export default function() {
@@ -41,6 +42,11 @@ export default function() {
             await setNodeTrusted(trustedNode1, {from: owner});
             await setNodeTrusted(trustedNode2, {from: owner});
             await setNodeTrusted(trustedNode3, {from: owner});
+
+            // Stake RPL to cover minipools
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipools
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
