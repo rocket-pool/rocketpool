@@ -3,10 +3,11 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
-import { createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setMinipoolSetting } from '../_helpers/settings';
+import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
 import { dissolve } from './scenario-dissolve';
 import { refund } from './scenario-refund';
@@ -60,7 +61,13 @@ export default function() {
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
-            await userDeposit({from: random, value: refundAmount});            
+            await userDeposit({from: random, value: refundAmount});
+
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(6));
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipools
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});

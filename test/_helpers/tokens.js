@@ -1,4 +1,4 @@
-import { RocketTokenRETH, RocketTokenNETH } from '../_utils/artifacts';
+import { RocketTokenRETH, RocketTokenNETH, RocketTokenDummyRPL, RocketTokenRPL } from '../_utils/artifacts';
 
 
 // Get the rETH balance of an address
@@ -38,5 +38,24 @@ export async function getNethBalance(address) {
     const rocketTokenNETH = await RocketTokenNETH.deployed();
     let balance = rocketTokenNETH.balanceOf.call(address);
     return balance;
+}
+
+
+// Mint RPL to an address
+export async function mintRPL(owner, toAddress, amount) {
+
+    // Load contracts
+    const [rocketTokenDummyRPL, rocketTokenRPL] = await Promise.all([
+        RocketTokenDummyRPL.deployed(),
+        RocketTokenRPL.deployed(),
+    ]);
+
+    // Mint dummy RPL to address
+    await rocketTokenDummyRPL.mint(toAddress, amount, {from: owner});
+
+    // Swap dummy RPL for RPL
+    await rocketTokenDummyRPL.approve(rocketTokenRPL.address, amount, {from: toAddress});
+    await rocketTokenRPL.swapTokens(amount, {from: toAddress});
+
 }
 

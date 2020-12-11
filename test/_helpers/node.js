@@ -1,4 +1,4 @@
-import { RocketNodeDeposit, RocketNodeManager } from '../_utils/artifacts';
+import { RocketNodeDeposit, RocketNodeManager, RocketNodeStaking, RocketTokenRPL } from '../_utils/artifacts';
 
 
 // Register a node
@@ -12,6 +12,17 @@ export async function registerNode(txOptions) {
 export async function setNodeTrusted(nodeAddress, txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();
     await rocketNodeManager.setNodeTrusted(nodeAddress, true, txOptions);
+}
+
+
+// Submit a node RPL stake
+export async function nodeStakeRPL(amount, txOptions) {
+    const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
+        RocketNodeStaking.deployed(),
+        RocketTokenRPL.deployed(),
+    ]);
+    await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
+    await rocketNodeStaking.stakeRPL(amount, txOptions);
 }
 
 
