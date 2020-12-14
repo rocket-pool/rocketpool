@@ -39,6 +39,8 @@ const contracts = {
   rocketRole:                   artifacts.require('RocketRole.sol'),
   rocketVault:                  artifacts.require('RocketVault.sol'),
   rocketUpgrade:                artifacts.require('RocketUpgrade.sol'),
+  // Auction
+  rocketAuctionManager:         artifacts.require('RocketAuctionManager.sol'),
   // Deposit
   rocketDepositPool:            artifacts.require('RocketDepositPool.sol'),
   // Minipool
@@ -62,6 +64,7 @@ const contracts = {
   rocketNodeTrustedDAO:         artifacts.require('RocketNodeTrustedDAO.sol'), 
   rocketNodeTrustedDAOProposal: artifacts.require('RocketNodeTrustedDAOProposal.sol'), 
   // Settings
+  rocketAuctionSettings:        artifacts.require('RocketAuctionSettings.sol'),
   rocketDepositSettings:        artifacts.require('RocketDepositSettings.sol'),
   rocketMinipoolSettings:       artifacts.require('RocketMinipoolSettings.sol'),
   rocketNetworkSettings:        artifacts.require('RocketNetworkSettings.sol'),
