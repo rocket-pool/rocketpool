@@ -1,8 +1,8 @@
-import { RocketNodeTrustedDAO } from '../_utils/artifacts';
+import { RocketDAONodeTrusted } from '../_utils/artifacts';
 
 
 // The trusted node DAO can be bootstrapped with several nodes
-export async function setTrustedDaoBootstrapMember(_id, _email, _message = '', _nodeAddress, txOptions) {
+export async function setDaoNodeTrustedBootstrapMember(_id, _email, _message = '', _nodeAddress, txOptions) {
 
     // Load contracts
     const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();

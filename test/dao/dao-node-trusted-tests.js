@@ -2,14 +2,13 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
-import { register } from './scenario-register';
-import { setTrustedDaoBootstrapMember, setTrustedDaoBootstrapSetting } from './scenario-trusted-dao-bootstrap';
+import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting } from './scenario-dao-node-trusted-bootstrap';
 
 // Contracts
-import { RocketNodeTrustedDAO } from '../_utils/artifacts';
+import { RocketDAONodeTrusted } from '../_utils/artifacts';
 
 export default function() {
-    contract('RocketNodeTrustedDAO', async (accounts) => {
+    contract('RocketDAONodeTrusted', async (accounts) => {
 
 
         // Accounts
@@ -43,9 +42,9 @@ export default function() {
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
             // Enable last node to be trusted
-            await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 1', registeredNodeTrusted1, {from: owner});
-            await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 2', registeredNodeTrusted2, {from: owner});
-            // await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
+            await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 1', registeredNodeTrusted1, {from: owner});
+            await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 2', registeredNodeTrusted2, {from: owner});
+            // await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
 
         });
 
@@ -54,26 +53,26 @@ export default function() {
         // Start Tests
         //
 
-        
+
+
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
-            await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'User Node', userOne, {
+            await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'User Node', userOne, {
                 from: owner
             }), 'Non registered node added to trusted node DAO', 'Invalid node');
         });
 
-      
 
         it(printTitle('userOne', 'fails to add a bootstrap trusted node DAO member as non owner'), async () => {
             // Set as trusted dao member via bootstrapping
-            await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'User Node', registeredNode1, {
+            await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'User Node', registeredNode1, {
                 from: userOne
             }), 'Non owner registered node to trusted node DAO', 'Account is not Rocket Pool or the DAO');
         });
 
         it(printTitle('owner', 'cannot add the same member twice'), async () => {
             // Set as trusted dao member via bootstrapping
-            await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 2', registeredNodeTrusted2, {
+            await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 2', registeredNodeTrusted2, {
                 from: owner
             }), 'Owner the same DAO member twice', 'This node is already part of the trusted node DAO');
         });
@@ -81,34 +80,33 @@ export default function() {
   
         it(printTitle('owner', 'fails to add more than the 3 min required bootstrap trusted node dao members'), async () => {
             // Add our 3rd member
-            await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
+            await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
             // Set as trusted dao member via bootstrapping
-            await shouldRevert(setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'User Node', registeredNode3, {
+            await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'User Node', registeredNode3, {
                 from: owner
             }), 'Owner added more than 3 bootstrap trusted node dao members', 'Bootstrap mode not engaged, min DAO member count has been met');
         });
         
-       /*
 
         it(printTitle('owner', 'updates a setting while bootstrap mode is enabled'), async () => {
             // Set as trusted dao member via bootstrapping
-            await setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
+            await setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
                 from: owner
             });
         });
 
         it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
             // Add our 3rd member
-            await setTrustedDaoBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
+            await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
             // Update setting
-            await shouldRevert(await setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
                 from: owner
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged, min DAO member count has been met');
         });
 
         it(printTitle('owner', 'fails to set quorum setting below 51% while bootstrap mode is enabled'), async () => {
             // Update setting
-            await shouldRevert(setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.50'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.50'), {
                 from: owner
             }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
         });
@@ -116,7 +114,7 @@ export default function() {
 
         it(printTitle('owner', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
             // Update setting
-            await shouldRevert(setTrustedDaoBootstrapSetting('quorum', web3.utils.toWei('0.91'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.91'), {
                 from: owner
             }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
         });
@@ -125,19 +123,19 @@ export default function() {
         /*
         it(printTitle('registeredNode1', 'verify trusted node quorum votes required is correct'), async () => {
             // Load contracts
-            const rocketNodeTrustedDAO = await RocketNodeTrustedDAO.deployed();
+            const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
             // How many trusted nodes do we have?
-            let trustedNodeCount =  await rocketNodeTrustedDAO.getMemberCount({
+            let trustedNodeCount =  await rocketDAONodeTrusted.getMemberCount({
                 from: registeredNode1,
             });
             // Get the current quorum threshold
-            let quorumThreshold = await rocketNodeTrustedDAO.getSettingQuorumThreshold({
+            let quorumThreshold = await rocketDAONodeTrusted.getSettingQuorumThreshold({
                 from: registeredNode1,
             });
             // Calculate the expected vote threshold
             let expectedVotes = (Number(web3.utils.fromWei(quorumThreshold)) * Number(trustedNodeCount)).toFixed(2);
             // Calculate it now on the contracts
-            let quorumVotes = await rocketNodeTrustedDAO.getProposalQuorumVotesRequired({
+            let quorumVotes = await rocketDAONodeTrusted.getProposalQuorumVotesRequired({
                 from: registeredNode1,
             });
             // Verify
