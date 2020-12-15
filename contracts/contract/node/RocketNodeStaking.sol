@@ -39,6 +39,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setUintS("rpl.staked.total.amount", _amount);
     }
 
+    // Increase/decrease the total RPL stake amount
+    function increaseTotalRPLStake(uint256 _amount) private {
+        setTotalRPLStake(getTotalRPLStake().add(_amount));
+    }
+    function decreaseTotalRPLStake(uint256 _amount) private {
+        setTotalRPLStake(getTotalRPLStake().sub(_amount));
+    } 
+
     // Get/set a node's RPL stake amount
     function getNodeRPLStake(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)));
@@ -46,6 +54,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function setNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
+
+    // Increase/decrease a node's RPL stake amount
+    function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
+        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).add(_amount));
+    }
+    function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
+        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).sub(_amount));
+    } 
 
     // Get/set the block a node last staked RPL at
     function getNodeRPLStakedBlock(address _nodeAddress) override public view returns (uint256) {
@@ -180,21 +196,5 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Emit RPL slashed event
         emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, now);
     }
-
-    // Increase/decrease the total RPL stake amount
-    function increaseTotalRPLStake(uint256 _amount) private {
-        setTotalRPLStake(getTotalRPLStake().add(_amount));
-    }
-    function decreaseTotalRPLStake(uint256 _amount) private {
-        setTotalRPLStake(getTotalRPLStake().sub(_amount));
-    } 
-
-    // Increase/decrease a node's RPL stake amount
-    function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).add(_amount));
-    }
-    function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).sub(_amount));
-    } 
 
 }
