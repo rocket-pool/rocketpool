@@ -16,30 +16,56 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
         // Initialize settings on deployment
         if (!getBoolS("settings.auction.init")) {
             // Apply settings
-            setStartEnabled(true);
-            setMaximumLotEthValue(10 ether);
+            setCreateLotEnabled(true);
+            setBidOnLotEnabled(true);
+            setLotMinimumEthValue(1 ether);
+            setLotMaximumEthValue(10 ether);
+            setLotDuration(40320); // 7 days
             setStartingPriceRatio(1 ether); // 100%
             setReservePriceRatio(0.5 ether); // 50%
-            setDuration(40320); // 7 days
             // Settings initialized
             setBoolS("settings.auction.init", true);
         }
     }
 
-    // Auction starting currently enabled
-    function getStartEnabled() override public view returns (bool) {
-        return getBoolS("settings.auction.start.enabled");
+    // Lot creation currently enabled
+    function getCreateLotEnabled() override public view returns (bool) {
+        return getBoolS("settings.auction.lot.create.enabled");
     }
-    function setStartEnabled(bool _value) public onlyOwner {
-        setBoolS("settings.auction.start.enabled", _value);
+    function setCreateLotEnabled(bool _value) public onlyOwner {
+        setBoolS("settings.auction.lot.create.enabled", _value);
+    }
+
+    // Bidding on lots currently enabled
+    function getBidOnLotEnabled() override public view returns (bool) {
+        return getBoolS("settings.auction.lot.bidding.enabled");
+    }
+    function setBidOnLotEnabled(bool _value) public onlyOwner {
+        setBoolS("settings.auction.lot.bidding.enabled", _value);
+    }
+
+    // The minimum lot size relative to ETH value
+    function getLotMinimumEthValue() override public view returns (uint256) {
+        return getUintS("settings.auction.lot.value.minimum");
+    }
+    function setLotMinimumEthValue(uint256 _value) public onlyOwner {
+        setUintS("settings.auction.lot.value.minimum", _value);
     }
 
     // The maximum lot size relative to ETH value
-    function getMaximumLotEthValue() override public view returns (uint256) {
+    function getLotMaximumEthValue() override public view returns (uint256) {
         return getUintS("settings.auction.lot.value.maximum");
     }
-    function setMaximumLotEthValue(uint256 _value) public onlyOwner {
+    function setLotMaximumEthValue(uint256 _value) public onlyOwner {
         setUintS("settings.auction.lot.value.maximum", _value);
+    }
+
+    // The maximum auction duration in blocks
+    function getLotDuration() override public view returns (uint256) {
+        return getUintS("settings.auction.lot.duration");
+    }
+    function setLotDuration(uint256 _value) public onlyOwner {
+        setUintS("settings.auction.lot.duration", _value);
     }
 
     // The starting price relative to current RPL price, as a fraction of 1 ether
@@ -56,14 +82,6 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     }
     function setReservePriceRatio(uint256 _value) public onlyOwner {
         setUintS("settings.auction.price.reserve", _value);
-    }
-
-    // The maximum auction duration in blocks
-    function getDuration() override public view returns (uint256) {
-        return getUintS("settings.auction.duration");
-    }
-    function setDuration(uint256 _value) public onlyOwner {
-        setUintS("settings.auction.duration", _value);
     }
 
 }

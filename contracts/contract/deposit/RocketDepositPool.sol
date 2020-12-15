@@ -74,18 +74,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
     function recycleDissolvedDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyRegisteredMinipool(msg.sender) {
-        // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
-        // Process deposit
         processDeposit();
     }
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        // Emit deposit recycled event
         emit DepositRecycled(msg.sender, msg.value, now);
-        // Process deposit
+        processDeposit();
+    }
+
+    // Recycle a liquidated RPL stake from a slashed minipool
+    // Only accepts calls from the RocketAuctionManager contract
+    function recycleLiquidatedStake() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketAuctionManager", msg.sender) {
+        emit DepositRecycled(msg.sender, msg.value, now);
         processDeposit();
     }
 
