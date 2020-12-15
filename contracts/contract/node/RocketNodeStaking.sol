@@ -38,8 +38,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function setTotalRPLStake(uint256 _amount) private {
         setUintS("rpl.staked.total.amount", _amount);
     }
-
-    // Increase/decrease the total RPL stake amount
     function increaseTotalRPLStake(uint256 _amount) private {
         setTotalRPLStake(getTotalRPLStake().add(_amount));
     }
@@ -54,8 +52,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function setNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
-
-    // Increase/decrease a node's RPL stake amount
     function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).add(_amount));
     }
