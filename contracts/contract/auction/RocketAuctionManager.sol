@@ -19,6 +19,9 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     using SafeMath for uint;
 
     // Events
+    event LotCreated(uint256 indexed index, address indexed by, uint256 rplAmount, uint256 time);
+    event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);
+    event BidClaimed(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 rplAmount, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -160,8 +163,8 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         require(remainingRplBalance >= calcBase.mul(rocketAuctionSettings.getLotMinimumEthValue()).div(rplPrice), "Insufficient RPL balance to create new lot");
         // Calculate lot RPL amount
         uint256 lotRplAmount = remainingRplBalance;
-        uint256 maximumLotRPlAmount = calcBase.mul(rocketAuctionSettings.getLotMaximumEthValue()).div(rplPrice);
-        if (lotRplAmount > maximumLotRPlAmount) { lotRplAmount = maximumLotRPlAmount; }
+        uint256 maximumLotRplAmount = calcBase.mul(rocketAuctionSettings.getLotMaximumEthValue()).div(rplPrice);
+        if (lotRplAmount > maximumLotRplAmount) { lotRplAmount = maximumLotRplAmount; }
         // Create lot
         uint256 lotIndex = getLotCount();
         setUint(keccak256(abi.encodePacked("auction.lot.block.start", lotIndex)), block.number);
@@ -172,10 +175,12 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Increment lot count & increase allotted RPL balance
         setLotCount(lotIndex.add(1));
         increaseAllottedRPLBalance(lotRplAmount);
+        // Emit lot created event
+        emit LotCreated(lotIndex, msg.sender, lotRplAmount, now);
     }
 
     // Bid on a lot
-    function bid(uint256 _lotIndex) override external payable onlyLatestContract("rocketAuctionManager", address(this)) {
+    function placeBid(uint256 _lotIndex) override external payable onlyLatestContract("rocketAuctionManager", address(this)) {
         // Load contracts
         RocketAuctionSettingsInterface rocketAuctionSettings = RocketAuctionSettingsInterface(getContractAddress("rocketAuctionSettings"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
@@ -197,10 +202,12 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         rocketDepositPool.recycleLiquidatedStake{value: bidAmount}();
         // Refund excess ETH to sender
         if (msg.value > bidAmount) { msg.sender.transfer(msg.value.sub(bidAmount)); }
+        // Emit bid placed event
+        emit BidPlaced(_lotIndex, msg.sender, bidAmount, now);
     }
 
     // Claim RPL from a lot
-    function claim(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
+    function claimBid(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
         // Get lot price info
         uint256 blockPrice = getLotPriceAtBlock(_lotIndex, block.number);
         uint256 bidPrice = getLotPriceByTotalBids(_lotIndex);
@@ -221,6 +228,8 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), rplAmount);
         // Update address bid amount
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);
+        // Emit bid claimed event
+        emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, now);
     }
 
 }

@@ -21,6 +21,6 @@ interface RocketAuctionManagerInterface {
     function getLotRemainingRPLAmount(uint256 _index) external view returns (uint256);
     function getLotIsCleared(uint256 _index) external view returns (bool);
     function createLot() external;
-    function bid(uint256 _lotIndex) external payable;
-    function claim(uint256 _lotIndex) external;
+    function placeBid(uint256 _lotIndex) external payable;
+    function claimBid(uint256 _lotIndex) external;
 }
