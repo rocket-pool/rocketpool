@@ -200,7 +200,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     }
 
     // Claim RPL from a lot
-    function claim(uint256 _lotIndex) override external payable onlyLatestContract("rocketAuctionManager", address(this)) {
+    function claim(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
         // Get lot price info
         uint256 blockPrice = getLotPriceAtBlock(_lotIndex, block.number);
         uint256 bidPrice = getLotPriceByTotalBids(_lotIndex);
