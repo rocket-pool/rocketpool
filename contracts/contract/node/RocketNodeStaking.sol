@@ -153,15 +153,15 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
         require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAOSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
-        // Get node's current RPL stake
+        // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
+        require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Calculate node's minimum RPL stake
         uint256 minRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
             .mul(rocketNodeSettings.getMinimumPerMinipoolStake())
             .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
             .div(rocketNetworkPrices.getRPLPrice());
         // Check withdrawal would not undercollateralize node
-        require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         require(rplStake.sub(_amount) >= minRplStake, "Node's staked RPL balance after withdrawal is less than minimum balance");
         // Transfer RPL tokens to node address
         rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), _amount);

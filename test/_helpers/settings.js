@@ -1,4 +1,16 @@
-import { RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+import { RocketDAOSettings, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+
+
+// DAO settings
+export async function getDAOSetting(setting) {
+    const rocketDAOSettings = await RocketDAOSettings.deployed();
+    let value = await rocketDAOSettings['get' + setting].call();
+    return value;
+}
+export async function setDAOSetting(setting, value, txOptions) {
+    const rocketDAOSettings = await RocketDAOSettings.deployed();
+    await rocketDAOSettings['set' + setting](value, txOptions);
+}
 
 
 // Deposit settings
