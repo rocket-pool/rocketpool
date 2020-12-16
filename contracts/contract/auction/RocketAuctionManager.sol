@@ -22,6 +22,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     event LotCreated(uint256 indexed index, address indexed by, uint256 rplAmount, uint256 time);
     event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);
     event BidClaimed(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 rplAmount, uint256 time);
+    event RPLRecovered(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
@@ -230,6 +231,19 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);
         // Emit bid claimed event
         emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, now);
+    }
+
+    // Recover unclaimed RPL from a lot
+    function recoverUnclaimedRPL(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
+        // Check RPL can be reclaimed from lot
+        require(block.number >= getLotEndBlock(_lotIndex), "Lot bidding period has not concluded yet");
+        // Get & check remaining RPL amount
+        uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);
+        require(remainingRplAmount > 0, "No unclaimed RPL is available to recover");
+        // Decrease allotted RPL balance
+        decreaseAllottedRPLBalance(remainingRplAmount);
+        // Emit RPL recovered event
+        emit RPLRecovered(_lotIndex, msg.sender, remainingRplAmount, now);
     }
 
 }

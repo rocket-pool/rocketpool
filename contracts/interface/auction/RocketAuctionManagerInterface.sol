@@ -23,4 +23,5 @@ interface RocketAuctionManagerInterface {
     function createLot() external;
     function placeBid(uint256 _lotIndex) external payable;
     function claimBid(uint256 _lotIndex) external;
+    function recoverUnclaimedRPL(uint256 _lotIndex) external;
 }
