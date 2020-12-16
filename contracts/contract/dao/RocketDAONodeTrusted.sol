@@ -35,8 +35,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         Leave,              // Leave the DAO 
         Replace,            // Replace a current trusted node with a new registered node
         Kick,               // Kick a member from the DAO with optional penalty applied to their RPL deposit
-        Setting             // Change a DAO setting (Quorum, RPL deposit sie, voting periods etc)
-        //Quorum              // Set the quorum required to pass a proposal ( min: 51%, max 90% )
+        Setting             // Change a DAO setting (Quorum threshold, RPL deposit size, voting periods etc)
     }
 
 
@@ -56,31 +55,25 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
         // Version
         version = 1;
-        // Set some initial settings
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "quorum")), 0.51 ether);
+        // Set some initial settings on first deployment
+        if(!getBool(keccak256(abi.encodePacked(daoNameSpace, "deployed")))) {
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "quorum")), 0.51 ether);
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "rplbond")), 15000 ether);
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "proposal.cooldown")), 13220);              // How long before a member can make sequential proposals. Approx. 2 days of blocks
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "proposal.vote.blocks")), 92550);           // How long a proposal can be voted on. Approx. 2 weeks worth of blocks
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "proposal.vote.delay.blocks")), 1);         // How long before a proposal can be voted on after it is created. Approx. Next Block
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "proposal.execute.blocks")), 185100);       // How long a proposal be in the queue to be executed. Approx. 4 weeks worth of blocks
+            setBool(keccak256(abi.encodePacked(daoNameSpace, "deployed")), true);                                   // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgraded
+        }
     }
-
-
 
     /*** Settings  ****************/
 
     // A general method to return any setting given the setting path is correct, only accepts uints
-    function getSetting(string memory _settingPath) override public view returns (uint256) {
+    function getSettingUint(string memory _settingPath) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", _settingPath)));
     } 
     
-    // Return the current % the DAO is using for a quorum
-    function getSettingQuorumThreshold() override public view returns (uint256) {
-        // Specified as % of 1 ether
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "quorum")));
-    } 
-
-    // Return the current RPL bond size required to join
-    function getSettingRPLBondSize() override public view returns (uint256) {
-        // Specified as % of 1 ether
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "setting", "rplbond")));
-    } 
-
 
     /*** Proposals ****************/
 
@@ -92,7 +85,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         // Get the total members to use when calculating
         uint256 total = trustedNodeCount > 0 ? calcBase.div(trustedNodeCount) : 0;
         // Return the votes required
-        return calcBase.mul(getSettingQuorumThreshold()).div(total);
+        return calcBase.mul(getSettingUint('quorum')).div(total);
     }
 
 
@@ -121,14 +114,19 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         return getBool(keccak256(abi.encodePacked("dao.trustednodes", "member", _nodeAddress))); 
     }
 
+    // Get the last time this user made a proposal
+    function getMemberLastProposalBlock(address _nodeAddress) override public view returns (uint256) { 
+        return getUint(keccak256(abi.encodePacked("dao.trustednodes", "member.proposal.lastblock", _nodeAddress))); 
+    }
+
 
     /**** Bootstrapping ***************/
 
     
     // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
-    function bootstrapMember(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) {
+    function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) {
         // Ok good to go, lets add them
-        (bool success, bytes memory response) = address(this).call(abi.encodeWithSignature("invite(string,string,string,address)", _id, _email, _message, _nodeAddress));
+        (bool success, bytes memory response) = address(this).call(abi.encodeWithSignature("invite(string,string,address)", _id, _email, _nodeAddress));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
@@ -145,9 +143,24 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
     /*** Methods **********************/
 
 
+    // Create a DAO proposal with calldata, if successful will be added to a queue where it can be executed
+    // A general message can be passed by the proposer along with the calldata payload that can be executed if the proposal passes
+    function propose(string memory _proposalMessage, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (bool) {
+        // Load contracts
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        // Check this user can make a proposal now
+        require(getMemberLastProposalBlock(msg.sender).add(getSettingUint('proposal.cooldown')) >= block.number, "Member has not waited long enough to make another proposal");
+        // Create the proposal
+        if(daoProposal.add('rocketDAONodeTrusted', _proposalMessage, _payload)) {
+            // Record the last time this user made a proposal
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
+        }
+    }
+
+
     // A current DAO member wishes to invite a registered node to join the DAO
-    // Provide an ID that indicates who is running the trusted node, an optional general message and the address of the registered node that they wish to propose joining the dao
-    function invite(string memory _id, string memory _email, string memory _message, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) returns (bool) {
+    // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
+    function invite(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) returns (bool) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check current node status
@@ -161,7 +174,6 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
         setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
         setString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)), _email);
-        setString(keccak256(abi.encodePacked(daoNameSpace, "member.message", _nodeAddress)), _message);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined", _nodeAddress)), block.number);
         // Add to index
         addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 

@@ -2,7 +2,7 @@ import { RocketDAONodeTrusted } from '../_utils/artifacts';
 
 
 // The trusted node DAO can be bootstrapped with several nodes
-export async function setDaoNodeTrustedBootstrapMember(_id, _email, _message = '', _nodeAddress, txOptions) {
+export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress, txOptions) {
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
@@ -23,7 +23,7 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _message = '
 
 
     // Set as a bootstrapped member
-    await rocketDAONodeTrusted.bootstrapMember(_id, _email, _message, _nodeAddress, txOptions);
+    await rocketDAONodeTrusted.bootstrapMember(_id, _email, _nodeAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
@@ -46,10 +46,10 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONodeTrusted.getSetting.call(_settingPath),
+            rocketDAONodeTrusted.getSettingUint.call(_settingPath),
         ]).then(
-            ([settingValue]) =>
-            ({settingValue})
+            ([settingUintValue]) =>
+            ({settingUintValue})
         );
     }
 
@@ -65,7 +65,7 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
     //console.log(Number(ds2.settingValue));
 
     // Check it was updated
-    assert(ds2.settingValue.eq(web3.utils.toBN(_value)), 'DAO setting not updated in bootstrap mode');
+    assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO setting not updated in bootstrap mode');
 
 }
 

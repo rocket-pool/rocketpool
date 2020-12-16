@@ -6,7 +6,6 @@ import "../RocketBase.sol";
 import "../../interface/dao/RocketDAOInterface.sol";
 import "../../interface/dao/RocketDAOProposalInterface.sol";
 
-
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
@@ -16,7 +15,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     using SafeMath for uint;
 
     // Events
-    event ProposalAdded(address indexed proposer, uint256 indexed proposalID, uint256 indexed proposalType, bytes payload, uint256 time);  
+    event ProposalAdded(address indexed proposer, string indexed proposalDAO, uint256 indexed proposalID, bytes payload, uint256 time);  
     event ProposalVoted(uint256 indexed proposalID, address indexed voter, bool indexed supported, uint256 time);  
     event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
     event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);    
@@ -27,17 +26,10 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     // The namespace for any data stored in the trusted node DAO (do not change)
     string daoProposalNameSpace = 'dao.proposal';
 
-    // The voting delay for a proposal to start
-    uint256 proposalStartDelayBlocks = 1;                   // 1 block
-    // The voting period for a proposal to pass
-    uint256 proposalVotingBlocks = 92550;                   // Approx. 2 weeks worth of blocks
-    // The time for a successful proposal to be executed, 
-    // Will need to be resubmitted if this deadline passes
-    uint256 proposalVotingExecuteBlocks = 185100;           // Approx. 4 weeks worth of blocks
-
     
-    // Only allow the DAO contract that created this proposal to access
+    // Only allow the DAO contract to access
     modifier onlyDAOContract(string memory _daoName) {
+        // TODO: Potentially lock this down to final DAO contract names
         // Load contracts
         require(keccak256(abi.encodePacked(getContractName(msg.sender))) == keccak256(abi.encodePacked(_daoName)), "Sender is not the required DAO contract");
         _;
@@ -108,11 +100,6 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         return getBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID))); 
     }
 
-    // A successful proposal needs to be execute before it ends (set amount of blocks), if it expires the proposal needs to be resubmitted
-    function getExecutedEnded(uint256 _proposalID) override public view returns (bool) {
-        return getEnd(_proposalID).add(proposalVotingExecuteBlocks) < block.number ? true : false; 
-    }
-
     // Get the votes against count of this proposal
     function getPayload(uint256 _proposalID) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked(daoProposalNameSpace, "payload", _proposalID))); 
@@ -158,7 +145,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         } else if (getExecuted(_proposalID)) {
             return ProposalState.Executed;
             // Has it expired?
-        } else if (block.number >= getETA(_proposalID).add(proposalVotingExecuteBlocks)) {
+        } else if (block.number >= getETA(_proposalID).add(dao.getSettingUint('proposal.execute.blocks'))) {
             return ProposalState.Expired;
         } else {
             // It is queued, awaiting execution
@@ -170,23 +157,19 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     // Add a proposal to the an RP DAO, immeditately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
     // TODO: Add required checks
-    function add(string memory _proposalDAO, uint256 _proposalType, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (bool) {
-        // TODO: Move 2 lines below to DAO contract resposible
-        // Check this user can make a proposal now
-        //require(getValid(msg.sender), "Member cannot make a proposal or has not waited long enough to make another proposal");
-        // Save the last time they made a proposal
-        //setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "member.last", msg.sender)), block.number);
+    function add(string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (bool) {
+        // Load contracts
+        RocketDAOInterface dao = RocketDAOInterface(msg.sender);
         // Get the total proposal count
         uint256 proposalCount = getTotal(); 
         // Get the proposal ID
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", proposalID)), _proposalDAO);
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "type", proposalID)), _proposalType);
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", proposalID)), _proposalMessage);
         setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), msg.sender);
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), block.number.add(proposalStartDelayBlocks));
-        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", proposalID)), block.number.add(proposalVotingBlocks));
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.delay.blocks')));
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.blocks')));
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", proposalID)), block.number);
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", proposalID)), 0);
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", proposalID)), 0);
@@ -196,7 +179,9 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Update the total proposals
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")), proposalID);
         // Log it
-        emit ProposalAdded(msg.sender, proposalID, _proposalType, _payload, now);
+        emit ProposalAdded(msg.sender, _proposalDAO, proposalID, _payload, now);
+        // Done
+        return true;
     }
 
 
@@ -227,12 +212,10 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     function execute(uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
         // Firstly make sure this proposal has passed
         require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded or has already been executed");
-        // Check that the time period to execute hasn't expired (1 month to execute by default after voting period)
-        require(!getExecutedEnded(_proposalID), "Time to execute successful proposal has expired, please resubmit proposal for voting");
         // Set as executed now before running payload
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID)), true);
-        // Ok all good, lets run the payload, it should execute one of the methods on this contract
-        (bool success,) = address(this).call(getPayload(_proposalID));
+        // Ok all good, lets run the payload on the dao contract that the proposal relates too, it should execute one of the methods on this contract
+        (bool success,) = getContractAddress(getDAO(_proposalID)).call(getPayload(_proposalID));
         // Verify it was successful
         require(success, "Payload call was not successful");
         // Log it
