@@ -126,13 +126,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
     // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) {
         // Ok good to go, lets add them
-        (bool success, bytes memory response) = address(this).call(abi.encodeWithSignature("invite(string,string,address)", _id, _email, _nodeAddress));
+        (bool success, bytes memory response) = address(this).call(abi.encodeWithSignature("join(string,string,address)", _id, _email, _nodeAddress));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
 
     // Bootstrap mode - Set some initial settings for the DAO
-    function bootstrapSetting(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode {
+    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode {
         // Ok good to go, lets update the settings 
         (bool success, bytes memory response) = address(this).call(abi.encodeWithSignature("setting(string,uint256)", _settingPath, _value));
         // Was there an error?
@@ -140,27 +140,37 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
     }
 
     
-    /*** Methods **********************/
-
+    /*** Proposals **********************/
 
     // Create a DAO proposal with calldata, if successful will be added to a queue where it can be executed
     // A general message can be passed by the proposer along with the calldata payload that can be executed if the proposal passes
-    function propose(string memory _proposalMessage, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (bool) {
+    function propose(string memory _proposalMessage, bytes memory _payload) override public onlyTrustedNode(msg.sender) returns (uint256) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
         // Check this user can make a proposal now
         require(getMemberLastProposalBlock(msg.sender).add(getSettingUint('proposal.cooldown')) >= block.number, "Member has not waited long enough to make another proposal");
+        // Record the last time this user made a proposal
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal
-        if(daoProposal.add('rocketDAONodeTrusted', _proposalMessage, _payload)) {
-            // Record the last time this user made a proposal
-            setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
-        }
+        return daoProposal.add('rocketDAONodeTrusted', _proposalMessage, _payload);
     }
 
 
-    // A current DAO member wishes to invite a registered node to join the DAO
+    // Vote on a proposal
+    function vote(uint256 _proposalID, bool _support) override public onlyTrustedNode(msg.sender) {
+        // Load contracts
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        // Vote now, one vote per trusted node member
+        daoProposal.vote(msg.sender, 1 ether, _proposalID, _support);
+    }
+ 
+    
+
+    /*** Methods **********************/
+
+    // A new DAO member joining, can only be done via a proposal or in bootstrap mode
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
-    function invite(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) returns (bool) {
+    function join(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) returns (bool) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check current node status

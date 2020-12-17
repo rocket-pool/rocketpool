@@ -9,9 +9,10 @@ interface RocketDAONodeTrustedInterface {
     function getMemberIsValid(address _nodeAddress) external view returns (bool);
     function getMemberLastProposalBlock(address _nodeAddress) external view returns (uint256);
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) external;
-    function bootstrapSetting(string memory _settingPath, uint256 _value) external;
-    function propose(string memory _proposalMessage, bytes memory _payload) external returns (bool);
-    function invite(string memory _id, string memory _email, address _nodeAddress) external returns (bool);
+    function bootstrapSettingUint(string memory _settingPath, uint256 _value) external;
+    function propose(string memory _proposalMessage, bytes memory _payload) external returns (uint256);
+    function vote(uint256 _proposalID, bool _support) external;
+    function join(string memory _id, string memory _email, address _nodeAddress) external returns (bool);
     function setting(string memory _settingPath, uint256 _value) external returns (bool);
     function rewardsRegister(bool _enable) external;
 }

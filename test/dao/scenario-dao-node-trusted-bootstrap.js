@@ -21,7 +21,6 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress
     // Capture data
     let ds1 = await getTxData();
 
-
     // Set as a bootstrapped member
     await rocketDAONodeTrusted.bootstrapMember(_id, _email, _nodeAddress, txOptions);
 
@@ -58,7 +57,7 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
     //console.log(Number(ds1.settingValue));
 
     // Set as a bootstrapped member
-    await rocketDAONodeTrusted.bootstrapSetting(_settingPath, _value, txOptions);
+    await rocketDAONodeTrusted.bootstrapSettingUint(_settingPath, _value, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
