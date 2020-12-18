@@ -105,6 +105,24 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
 }
 
 
+// Cancel a proposal for this DAO
+export async function daoNodeTrustedCancel(_proposalID, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+
+    // Add a new proposal
+    await rocketDAONodeTrusted.cancel(_proposalID, txOptions);
+
+    // Get the current state
+    let state = Number(await getDAOProposalState(_proposalID));
+
+    // Check proposals
+    assert(state == proposalStates.Cancelled, 'Incorrect proposal state, should be cancelled');
+
+}
+
+
 // Join the DAO after a successful invite proposal has passed
 export async function daoNodeTrustedMemberJoin(txOptions) {
 

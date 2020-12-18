@@ -166,7 +166,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         // Record the last time this user made a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal
-        return daoProposal.add('rocketDAONodeTrusted', _proposalMessage, _payload);
+        return daoProposal.add(msg.sender, 'rocketDAONodeTrusted', _proposalMessage, _payload);
     }
 
 
@@ -176,6 +176,15 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAOInterface, RocketDAONodeTr
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
         // Vote now, one vote per trusted node member
         daoProposal.vote(msg.sender, 1 ether, _proposalID, _support);
+    }
+
+
+    // Cancel a proposal 
+    function cancel(uint256 _proposalID) override public onlyTrustedNode(msg.sender) {
+        // Load contracts
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        // Cancel now, will succeed if it is the original proposer
+        daoProposal.cancel(msg.sender, _proposalID);
     }
  
 

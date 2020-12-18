@@ -6,7 +6,7 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting } from './scenario-dao-node-trusted-bootstrap';
-import { getDAOSettingUint, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedMemberJoin, getDAONodeProposalQuorumVotesRequired, } from './scenario-dao-node-trusted';
+import { getDAOSettingUint, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, getDAONodeProposalQuorumVotesRequired, } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock, getDAOProposalVotesFor, getDAOProposalVotesAgainst, DAOProposalexecute } from './scenario-dao-proposal';
 
 // Contracts
@@ -204,7 +204,7 @@ export default function() {
             // Verify
             assert(expectedVotes == Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");         
         });
-        */
+        
 
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNodeTrusted1 & registeredNodeTrusted2 vote for it and then execute it'), async () => {
             // Total current members
@@ -245,8 +245,37 @@ export default function() {
             await rplAllowanceDAO(registeredNode1, rplBondAmount);
             // Join now
             await daoNodeTrustedMemberJoin({from: registeredNode1});
-            // Verify member count has increased
-            // console.log(Number(totalMembers), Number(totalMembersUpdate), Number(await getDAOProposalState(proposalID)), Number(await getDAONodeProposalQuorumVotesRequired()), Number(await getDAOProposalVotesFor(proposalID)), Number(await getDAOProposalVotesAgainst(proposalID)));
+        });
+        */
+
+
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member but cancels it before it passes'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                ['SaaS_Provider', 'test@sass.com', registeredNode1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+            // Current block
+            blockCurrent = await web3.eth.getBlockNumber();
+            // Cancel now before it passes
+            await daoNodeTrustedCancel(proposalID, {from: registeredNodeTrusted1});
         });
         
 

@@ -153,7 +153,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
     // Add a proposal to the an RP DAO, immeditately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
-    function add(string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (uint256) {
+    function add(address _member, string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (uint256) {
         // Load contracts
         RocketDAOInterface dao = RocketDAOInterface(msg.sender);
         // Get the total proposal count
@@ -161,9 +161,9 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Get the proposal ID
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
+        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), _member);
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", proposalID)), _proposalDAO);
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", proposalID)), _proposalMessage);
-        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), msg.sender);
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.delay.blocks')));
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.blocks')));
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", proposalID)), block.number);
@@ -219,15 +219,17 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
 
     // Cancel a proposal, can be cancelled by the original proposer only if it hasn't been executed yet
-    function cancel(uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
+    function cancel(address _member, uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
         // Firstly make sure this proposal that hasn't already been executed
-        require(getState(_proposalID) != ProposalState.Executed, "Proposal has not succeeded or has already been executed");
+        require(getState(_proposalID) != ProposalState.Executed, "Proposal has already been executed");
+        // Make sure this proposal hasn't already been successful
+        require(getState(_proposalID) != ProposalState.Succeeded, "Proposal has already succeeded");
         // Only allow the proposer to cancel
-        require(getProposer(_proposalID) == msg.sender, "Proposal can only be cancelled by the proposer");
+        require(getProposer(_proposalID) == _member, "Proposal can only be cancelled by the proposer");
         // Set as cancelled now
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID)), true);
         // Log it
-        emit ProposalCancelled(_proposalID, msg.sender, now);
+        emit ProposalCancelled(_proposalID, _member, now);
     }
 
         

@@ -14,6 +14,7 @@ interface RocketDAONodeTrustedInterface {
     function bootstrapSettingUint(string memory _settingPath, uint256 _value) external;
     function propose(string memory _proposalMessage, bytes memory _payload) external returns (uint256);
     function vote(uint256 _proposalID, bool _support) external;
+    function cancel(uint256 _proposalID) external;
     function proposalInvite(string memory _id, string memory _email, address _nodeAddress) external returns (bool);
     function proposalSetting(string memory _settingPath, uint256 _value) external returns (bool);
     function memberJoin() external;
