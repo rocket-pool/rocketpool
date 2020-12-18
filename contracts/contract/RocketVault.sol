@@ -81,14 +81,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Check they can cover the amount
-        require(tokenContract.balanceOf(address(msg.sender)) >= _amount, "Not enough tokens to cover transfer");
+        require(tokenContract.balanceOf(msg.sender) >= _amount, "Not enough tokens to cover transfer");
         // Check they have allowed this contract to send their tokens
-        uint256 allowance = tokenContract.allowance(msg.sender, address(this));
-        // Enough to cover it?
-        require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
+        require(tokenContract.allowance(msg.sender, address(this)) >= _amount, "Not enough allowance given for transfer of tokens");
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
-        // Send the tokens to this contract now and mint new ones for them
+        // Send the tokens to this contract now
         require(tokenContract.transferFrom(msg.sender, address(this), _amount), "Token transfer was not successful");
         // Update contract balance
         tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);

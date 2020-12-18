@@ -1,6 +1,12 @@
 import { RocketDAONodeTrusted, RocketDAOProposal } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
+// Returns the value of a DAO setting
+export async function getDAOSettingUint(__settingPath, txOptions) {
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    return await rocketDAONodeTrusted.getSettingUint.call(__settingPath);
+};
 
 // Returns true if the address is a DAO member
 export async function getDAOMemberIsValid(_nodeAddress, txOptions) {
@@ -49,6 +55,8 @@ export async function daoNodeTrustedPropose(_proposalMessage, _payload, txOption
     // Capture data
     let ds2 = await getTxData();
 
+    // console.log(Number(ds1.proposalTotal), Number(ds2.proposalTotal));
+
     // Get the current state, new proposal should be in pending
     let state = Number(await getDAOProposalState(ds2.proposalTotal));
 
@@ -92,8 +100,40 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     let state = Number(await getDAOProposalState(_proposalID));
 
     // Check proposals
-    //assert(ds2.proposalTotal.eq(ds1.proposalTotal.add(web3.utils.toBN(1))), 'Incorrect proposal total count');
     assert(state == proposalStates.Active, 'Incorrect proposal state, should be active');
+
+}
+
+
+// Join the DAO after a successful invite proposal has passed
+export async function daoNodeTrustedMemberJoin(txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberCount.call(),
+        ]).then(
+            ([memberTotal]) =>
+            ({memberTotal})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+    //console.log('Member Total', Number(ds1.memberTotal));
+
+    // Add a new proposal
+    await rocketDAONodeTrusted.memberJoin(txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+    //console.log('Member Total', Number(ds2.memberTotal));
+
+    // Check member count has increased
+    assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
 
 }
 

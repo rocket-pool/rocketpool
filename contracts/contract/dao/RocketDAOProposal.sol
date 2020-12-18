@@ -153,7 +153,6 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
     // Add a proposal to the an RP DAO, immeditately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
-    // TODO: Add required checks
     function add(string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (uint256) {
         // Load contracts
         RocketDAOInterface dao = RocketDAOInterface(msg.sender);
@@ -207,7 +206,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     // Anyone can run this if they are willing to pay the gas costs for it
     function execute(uint256 _proposalID) override public {
         // Firstly make sure this proposal has passed
-        require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded or has already been executed");
+        require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded, has expired or has already been executed");
         // Set as executed now before running payload
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID)), true);
         // Ok all good, lets run the payload on the dao contract that the proposal relates too, it should execute one of the methods on this contract
