@@ -99,22 +99,61 @@ export default function() {
             await auctionCreateLot({from: random});
 
             // Place bid
-            await placeBid(0, {from: random, value: web3.utils.toWei('10', 'ether')});
+            await placeBid(0, {
+                from: random,
+                value: web3.utils.toWei('10', 'ether'),
+            });
 
         });
 
 
         it(printTitle('random address', 'cannot bid on a lot which doesn\'t exist'), async () => {
 
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random});
+
+            // Attempt to place bid
+            await shouldRevert(placeBid(1, {
+                from: random,
+                value: web3.utils.toWei('10', 'ether'),
+            }), 'Bid on a lot which doesn\'t exist');
+
         });
 
 
         it(printTitle('random address', 'cannot bid on a lot while bidding is disabled'), async () => {
 
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random});
+
+            // Disable bidding
+            await setAuctionSetting('BidOnLotEnabled', false, {from: owner});
+
+            // Attempt to place bid
+            await shouldRevert(placeBid(0, {
+                from: random,
+                value: web3.utils.toWei('10', 'ether'),
+            }), 'Bid on a lot while bidding was disabled');
+
         });
 
 
         it(printTitle('random address', 'cannot bid on a lot after the lot bidding period has concluded'), async () => {
+
+            // Set lot duration
+            await setAuctionSetting('LotDuration', 0, {from: owner});
+
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random});
+
+            // Attempt to place bid
+            await shouldRevert(placeBid(0, {
+                from: random,
+                value: web3.utils.toWei('10', 'ether'),
+            }), 'Bid on a lot after the bidding period concluded');
 
         });
 
