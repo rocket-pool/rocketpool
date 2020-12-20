@@ -1,4 +1,16 @@
-import { RocketDAOSettings, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+import { RocketAuctionSettings, RocketDAOSettings, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+
+
+// Auction settings
+export async function getAuctionSetting(setting) {
+    const rocketAuctionSettings = await RocketAuctionSettings.deployed();
+    let value = await rocketAuctionSettings['get' + setting].call();
+    return value;
+}
+export async function setAuctionSetting(setting, value, txOptions) {
+    const rocketAuctionSettings = await RocketAuctionSettings.deployed();
+    await rocketAuctionSettings['set' + setting](value, txOptions);
+}
 
 
 // DAO settings
