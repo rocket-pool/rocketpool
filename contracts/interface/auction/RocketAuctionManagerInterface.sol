@@ -7,6 +7,7 @@ interface RocketAuctionManagerInterface {
     function getAllottedRPLBalance() external view returns (uint256);
     function getRemainingRPLBalance() external view returns (uint256);
     function getLotCount() external view returns (uint256);
+    function getLotExists(uint256 _index) external view returns (bool);
     function getLotStartBlock(uint256 _index) external view returns (uint256);
     function getLotEndBlock(uint256 _index) external view returns (uint256);
     function getLotStartPrice(uint256 _index) external view returns (uint256);

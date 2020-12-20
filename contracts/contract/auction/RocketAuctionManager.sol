@@ -63,6 +63,9 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     }
 
     // Get lot details
+    function getLotExists(uint256 _index) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("auction.lot.exists", _index)));
+    }
     function getLotStartBlock(uint256 _index) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("auction.lot.block.start", _index)));
     }
@@ -168,6 +171,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         if (lotRplAmount > maximumLotRplAmount) { lotRplAmount = maximumLotRplAmount; }
         // Create lot
         uint256 lotIndex = getLotCount();
+        setBool(keccak256(abi.encodePacked("auction.lot.exists", lotIndex)), true);
         setUint(keccak256(abi.encodePacked("auction.lot.block.start", lotIndex)), block.number);
         setUint(keccak256(abi.encodePacked("auction.lot.block.end", lotIndex)), block.number.add(rocketAuctionSettings.getLotDuration()));
         setUint(keccak256(abi.encodePacked("auction.lot.price.start", lotIndex)), rplPrice.mul(rocketAuctionSettings.getStartingPriceRatio()).div(calcBase));
@@ -187,6 +191,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Check lot can be bid on
         require(rocketAuctionSettings.getBidOnLotEnabled(), "Bidding on lots is currently disabled");
+        require(getLotExists(_lotIndex), "Lot does not exist");
         require(block.number < getLotEndBlock(_lotIndex), "Lot bidding period has concluded");
         // Check lot has RPL remaining
         uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);
@@ -213,6 +218,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         uint256 blockPrice = getLotPriceAtBlock(_lotIndex, block.number);
         uint256 bidPrice = getLotPriceByTotalBids(_lotIndex);
         // Check lot can be claimed from
+        require(getLotExists(_lotIndex), "Lot does not exist");
         require(block.number >= getLotEndBlock(_lotIndex) || bidPrice >= blockPrice, "Lot has not cleared yet");
         // Get & check address bid amount
         uint256 bidAmount = getLotAddressBidAmount(_lotIndex, msg.sender);
@@ -236,6 +242,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Recover unclaimed RPL from a lot
     function recoverUnclaimedRPL(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
         // Check RPL can be reclaimed from lot
+        require(getLotExists(_lotIndex), "Lot does not exist");
         require(block.number >= getLotEndBlock(_lotIndex), "Lot bidding period has not concluded yet");
         // Get & check remaining RPL amount
         uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);

@@ -1,6 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { auctionCreateLot } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
@@ -93,6 +94,18 @@ export default function() {
 
         it(printTitle('random address', 'can place a bid on a lot'), async () => {
 
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random});
+
+            // Place bid
+            await placeBid(0, {from: random, value: web3.utils.toWei('10', 'ether')});
+
+        });
+
+
+        it(printTitle('random address', 'cannot bid on a lot which doesn\'t exist'), async () => {
+
         });
 
 
@@ -116,6 +129,11 @@ export default function() {
         });
 
 
+        it(printTitle('random address', 'cannot claim RPL from a lot which doesn\'t exist'), async () => {
+
+        });
+
+
         it(printTitle('random address', 'cannot claim RPL from a lot before it has cleared'), async () => {
 
         });
@@ -127,6 +145,11 @@ export default function() {
 
 
         it(printTitle('random address', 'can recover unclaimed RPL from a lot'), async () => {
+
+        });
+
+
+        it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which doesn\'t exist'), async () => {
 
         });
 
