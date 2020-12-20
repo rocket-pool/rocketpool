@@ -94,7 +94,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         // Get node's current RPL stake
-        uint256 rplStake = getNodeRPLStake(msg.sender);
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
         // Calculate node's maximum RPL stake
         uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
             .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
