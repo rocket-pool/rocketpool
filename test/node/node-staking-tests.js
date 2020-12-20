@@ -47,9 +47,15 @@ export default function() {
         it(printTitle('node operator', 'can stake RPL'), async () => {
 
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = web3.utils.toWei('5000', 'ether');
 
-            // Approve transfer & stake RPL
+            // Approve transfer & stake RPL once
+            await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
+            await stakeRpl(rplAmount, {
+                from: node,
+            });
+
+            // Approve transfer & stake RPL twice
             await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
             await stakeRpl(rplAmount, {
                 from: node,
