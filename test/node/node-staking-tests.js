@@ -55,6 +55,9 @@ export default function() {
                 from: node,
             });
 
+            // Make node deposit / create minipool
+            await nodeDeposit({from: node, value: web3.utils.toWei('16', 'ether')});
+
             // Approve transfer & stake RPL twice
             await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
             await stakeRpl(rplAmount, {
