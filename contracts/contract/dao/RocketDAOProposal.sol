@@ -129,6 +129,9 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         if (getCancelled(_proposalID)) {
             // Cancelled by the proposer?
             return ProposalState.Cancelled;
+            // Has it been executed?
+        } else if (getExecuted(_proposalID)) {
+            return ProposalState.Executed;
             // Is the proposal pending? Eg. waiting to be voted on
         } else if (block.number <= getStart(_proposalID)) {
             return ProposalState.Pending;
@@ -138,26 +141,19 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
             // Check the votes, was it defeated?
         } else if (votesFor <= votesAgainst || votesFor < dao.getProposalQuorumVotesRequired()) {
             return ProposalState.Defeated;
-            // If the ETA is 0, it means it has succeeded, but the block it will be available for execution has not been set yet
-        } else if (getETA(_proposalID) == 0) {
-            return ProposalState.Succeeded;
-            // Has it been executed?
-        } else if (getExecuted(_proposalID)) {
-            return ProposalState.Executed;
             // Has it expired?
-        } else if (block.number >= getETA(_proposalID).add(dao.getSettingUint('proposal.execute.blocks'))) {
+        } else if (block.number >= getEnd(_proposalID).add(dao.getSettingUint('proposal.execute.blocks'))) {
             return ProposalState.Expired;
         } else {
-            // It is queued, awaiting execution
-            return ProposalState.Queued;
+            // Vote was successful, is now awaiting execution
+            return ProposalState.Succeeded;
         }
     }
 
 
     // Add a proposal to the an RP DAO, immeditately becomes active
     // Calldata is passed as the payload to execute upon passing the proposal
-    // TODO: Add required checks
-    function add(string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (bool) {
+    function add(address _member, string memory _proposalDAO, string memory _proposalMessage, bytes memory _payload) override public onlyDAOContract(_proposalDAO) returns (uint256) {
         // Load contracts
         RocketDAOInterface dao = RocketDAOInterface(msg.sender);
         // Get the total proposal count
@@ -165,9 +161,9 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Get the proposal ID
         uint256 proposalID = proposalCount.add(1);
         // The data structure for a proposal
+        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), _member);
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", proposalID)), _proposalDAO);
         setString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", proposalID)), _proposalMessage);
-        setAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", proposalID)), msg.sender);
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "start", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.delay.blocks')));
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "end", proposalID)), block.number.add(dao.getSettingUint('proposal.vote.blocks')));
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "created", proposalID)), block.number);
@@ -181,58 +177,59 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Log it
         emit ProposalAdded(msg.sender, _proposalDAO, proposalID, _payload, now);
         // Done
-        return true;
+        return proposalID;
     }
 
 
     // Voting for or against a proposal
-    function vote(uint256 _proposalID, bool _support) override public onlyDAOContract(getDAO(_proposalID)) {
+    function vote(address _member, uint256 _votes, uint256 _proposalID, bool _support) override public onlyDAOContract(getDAO(_proposalID)) {
         // Check the proposal is in a state that can be voted on
-        require(getState(_proposalID) == ProposalState.Active, "Voting is closed for this proposal");
+        require(getState(_proposalID) == ProposalState.Active, "Voting is not active for this proposal");
         // Has this member already voted on this proposal?
-        require(!getReceiptHasVoted(_proposalID, msg.sender), "Member has already voted on proposal");
+        require(!getReceiptHasVoted(_proposalID, _member), "Member has already voted on proposal");
         // Add votes to proposal
         if(_support) {
-            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), getVotesFor(_proposalID).add(1));
+            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), getVotesFor(_proposalID).add(_votes));
         }else{
-            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), getVotesAgainst(_proposalID).add(1));
+            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), getVotesAgainst(_proposalID).add(_votes));
         }
         // Record the vote receipt now
-        setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.hasVoted", _proposalID, msg.sender)), true);
-        setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, msg.sender)), _support);
+        setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.votes", _proposalID, _member)), _votes);
+        setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.hasVoted", _proposalID, _member)), true);
+        setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, _member)), _support);
         // Log it
-        emit ProposalVoted(_proposalID, msg.sender, _support, now);
+        emit ProposalVoted(_proposalID, _member, _support, now);
     }
     
 
     // Execute a proposal if it has passed
     // Anyone can run this if they are willing to pay the gas costs for it
-    // A proposal can be executed as soon as it hits a majority in favour
-    // The original proposer must still be a member for it to be executed
-    function execute(uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
+    function execute(uint256 _proposalID) override public {
         // Firstly make sure this proposal has passed
-        require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded or has already been executed");
+        require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded, has expired or has already been executed");
         // Set as executed now before running payload
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "executed", _proposalID)), true);
         // Ok all good, lets run the payload on the dao contract that the proposal relates too, it should execute one of the methods on this contract
-        (bool success,) = getContractAddress(getDAO(_proposalID)).call(getPayload(_proposalID));
-        // Verify it was successful
-        require(success, "Payload call was not successful");
+        (bool success, bytes memory response) = getContractAddress(getDAO(_proposalID)).call(getPayload(_proposalID));
+        // Was there an error?
+        require(success, getRevertMsg(response));
         // Log it
         emit ProposalExecuted(_proposalID, msg.sender, now);
     }
 
 
     // Cancel a proposal, can be cancelled by the original proposer only if it hasn't been executed yet
-    function cancel(uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
+    function cancel(address _member, uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
         // Firstly make sure this proposal that hasn't already been executed
-        require(getState(_proposalID) != ProposalState.Executed, "Proposal has not succeeded or has already been executed");
+        require(getState(_proposalID) != ProposalState.Executed, "Proposal has already been executed");
+        // Make sure this proposal hasn't already been successful
+        require(getState(_proposalID) != ProposalState.Succeeded, "Proposal has already succeeded");
         // Only allow the proposer to cancel
-        require(getProposer(_proposalID) == msg.sender, "Proposal can only be cancelled by the proposer");
+        require(getProposer(_proposalID) == _member, "Proposal can only be cancelled by the proposer");
         // Set as cancelled now
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID)), true);
         // Log it
-        emit ProposalCancelled(_proposalID, msg.sender, now);
+        emit ProposalCancelled(_proposalID, _member, now);
     }
 
         

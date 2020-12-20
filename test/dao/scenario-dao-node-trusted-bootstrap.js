@@ -10,17 +10,15 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONodeTrusted.getMemberCount.call(),
-            rocketDAONodeTrusted.getMemberIsValid.call(_nodeAddress),
+            rocketDAONodeTrusted.getMemberID.call(_nodeAddress),
         ]).then(
-            ([memberCount, memberIsValid]) =>
-            ({memberCount, memberIsValid})
+            ([memberID]) =>
+            ({memberID})
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
-
 
     // Set as a bootstrapped member
     await rocketDAONodeTrusted.bootstrapMember(_id, _email, _nodeAddress, txOptions);
@@ -28,11 +26,8 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress
     // Capture data
     let ds2 = await getTxData();
 
-    let lastMemberAddress = await rocketDAONodeTrusted.getMemberAt.call(ds2.memberCount.sub(web3.utils.toBN(1)));
-
-    // Check trusted node index
-    assert(ds2.memberCount.eq(ds1.memberCount.add(web3.utils.toBN(1))), 'Incorrect updated trusted node count');
-    assert.equal(lastMemberAddress, _nodeAddress, 'Incorrect updated trusted node index');
+    // Check ID has been recorded
+    assert(ds2.memberID == _id, 'Member was not invited to join correctly');
 
 }
 
@@ -58,7 +53,7 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
     //console.log(Number(ds1.settingValue));
 
     // Set as a bootstrapped member
-    await rocketDAONodeTrusted.bootstrapSetting(_settingPath, _value, txOptions);
+    await rocketDAONodeTrusted.bootstrapSettingUint(_settingPath, _value, txOptions);
 
     // Capture data
     let ds2 = await getTxData();

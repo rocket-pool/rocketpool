@@ -1,12 +1,17 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
+import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
+import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
+import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting } from './scenario-dao-node-trusted-bootstrap';
-import { daoNodeTrustedProposal } from './scenario-dao-node-trusted-proposal';
+import { getDAOSettingUint, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, getDAONodeProposalQuorumVotesRequired, } from './scenario-dao-node-trusted';
+import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock, getDAOProposalVotesFor, getDAOProposalVotesAgainst, DAOProposalexecute } from './scenario-dao-proposal';
 
 // Contracts
-import { RocketDAONodeTrusted } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketVault, RocketTokenRPL } from '../_utils/artifacts'; 
+
 
 export default function() {
     contract('RocketDAONodeTrusted', async (accounts) => {
@@ -32,8 +37,42 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
+
+
+        // Mints fixed supply RPL, burns that for new RPL and gives it to the account
+        let rplMint = async function(_account, _amount) {
+            // Load contracts
+            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            
+            // Convert
+            _amount = web3.utils.toWei(_amount.toString(), 'ether');
+            // Mint RPL fixed supply for the users to simulate current users having RPL
+            await mintDummyRPL(_account, _amount, { from: owner });
+            // Mint a large amount of dummy RPL to owner, who then burns it for real RPL which is sent to nodes for testing below
+            await allowDummyRPL(rocketTokenRPL.address, _amount, { from: _account });
+            // Burn existing fixed supply RPL for new RPL
+            await burnFixedRPL(_amount, { from: _account }); 
+
+        }
+
+        // Allow the given account to spend this users RPL
+        let rplAllowanceDAO = async function(_account, _amount) {
+            // Load contracts
+            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+            // Convert
+            _amount = web3.utils.toWei(_amount.toString(), 'ether');
+            // Approve now
+            await rocketTokenRPL.approve(rocketDAONodeTrusted.address, _amount, { from: _account });
+        }
+
+
+
         // Setup
         before(async () => {
+
+            // How much RPL is required for a trusted node bond?
+            let rplBondAmount = web3.utils.fromWei(await getDAOSettingUint('rplbond'));
 
             // Register nodes
             await registerNode({from: registeredNode1});
@@ -42,10 +81,18 @@ export default function() {
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
-            // Enable last node to be trusted
+            // Mint RPL For use as a bond by nodes that wish to join
+            await rplMint(registeredNodeTrusted1, rplBondAmount);
+            await rplMint(registeredNodeTrusted2, rplBondAmount);
+            // Grant an allowance for the trusted node dao to spend their RPL for the bond
+            await rplAllowanceDAO(registeredNodeTrusted1, rplBondAmount);
+            await rplAllowanceDAO(registeredNodeTrusted2, rplBondAmount);
+            // Create invites for them to become a member
             await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', registeredNodeTrusted1, {from: owner});
             await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', registeredNodeTrusted2, {from: owner});
-            // await setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', 'Node Number 3', registeredNodeTrusted3, {from: owner});
+            // Now get them to join
+            await daoNodeTrustedMemberJoin({from: registeredNodeTrusted1});
+            await daoNodeTrustedMemberJoin({from: registeredNodeTrusted2});
 
         });
 
@@ -54,7 +101,7 @@ export default function() {
         // Start Tests
         //
 
-
+        /*
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -159,17 +206,76 @@ export default function() {
         });
         
 
-        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNodeTrusted1 & registeredNodeTrusted2 vote for it'), async () => {
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNodeTrusted1 & registeredNodeTrusted2 vote for it and then execute it'), async () => {
+            // Total current members
+            let totalMembers = await getDAONodeMemberCount();
+            // How much RPL is required for a trusted node bond?
+            let rplBondAmount = web3.utils.fromWei(await getDAOSettingUint('rplbond'));
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
-                {name: 'invite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
                 ['SaaS_Provider', 'test@sass.com', registeredNode1]
             );
             // Add the proposal
-            await daoNodeTrustedProposal('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+            // Current block
+            blockCurrent = await web3.eth.getBlockNumber();
+            // Fast forward to this voting period finishing
+            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
+            // Proposal should be successful, lets execute it
+            await DAOProposalexecute(proposalID, { from: registeredNodeTrusted1 });
+            // Member has now been invited to join, so lets do that
+            // We'll allow the DAO to transfer our RPL bond before joining
+            await rplMint(registeredNode1, rplBondAmount);
+            await rplAllowanceDAO(registeredNode1, rplBondAmount);
+            // Join now
+            await daoNodeTrustedMemberJoin({from: registeredNode1});
+        });
+        */
 
+
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member but cancels it before it passes'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                ['SaaS_Provider', 'test@sass.com', registeredNode1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+            // Current block
+            blockCurrent = await web3.eth.getBlockNumber();
+            // Cancel now before it passes
+            await daoNodeTrustedCancel(proposalID, {from: registeredNodeTrusted1});
         });
         
 
