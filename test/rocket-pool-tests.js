@@ -1,6 +1,7 @@
 // Import tests
 import roleTests from './core/role-tests';
 import upgradeTests from './core/upgrade-tests';
+import auctionTests from './auction/auction-tests';
 import depositPoolTests from './deposit/deposit-pool-tests';
 import minipoolTests from './minipool/minipool-tests';
 import minipoolStatusTests from './minipool/minipool-status-tests';
@@ -33,6 +34,7 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 // Run tests
 roleTests();
 upgradeTests();
+auctionTests();
 depositPoolTests();
 minipoolTests();
 minipoolStatusTests();
