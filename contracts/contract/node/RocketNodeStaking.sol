@@ -43,7 +43,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
     function decreaseTotalRPLStake(uint256 _amount) private {
         setTotalRPLStake(getTotalRPLStake().sub(_amount));
-    } 
+    }
 
     // Get/set a node's RPL stake amount
     function getNodeRPLStake(address _nodeAddress) override public view returns (uint256) {
@@ -57,7 +57,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
     function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).sub(_amount));
-    } 
+    }
 
     // Get/set the block a node last staked RPL at
     function getNodeRPLStakedBlock(address _nodeAddress) override public view returns (uint256) {
