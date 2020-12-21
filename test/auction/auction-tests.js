@@ -267,15 +267,45 @@ export default function() {
 
         it(printTitle('random address', 'cannot claim RPL from a lot which doesn\'t exist'), async () => {
 
+            // Create lot & place bid to clear
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionPlaceBid(0, {from: random1, value: web3.utils.toWei('1000', 'ether')});
+
+            // Attempt to claim RPL
+            await shouldRevert(claimBid(1, {
+                from: random1, 
+            }), 'Claimed RPL from a lot which doesn\'t exist');
+
         });
 
 
         it(printTitle('random address', 'cannot claim RPL from a lot before it has cleared'), async () => {
 
+            // Create lot & place bid
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionPlaceBid(0, {from: random1, value: web3.utils.toWei('4', 'ether')});
+
+            // Attempt to claim RPL
+            await shouldRevert(claimBid(0, {
+                from: random1, 
+            }), 'Claimed RPL from a lot before it has cleared');
+
         });
 
 
         it(printTitle('random address', 'cannot claim RPL from a lot it has not bid on'), async () => {
+
+            // Create lot & place bid to clear
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionPlaceBid(0, {from: random1, value: web3.utils.toWei('1000', 'ether')});
+
+            // Attempt to claim RPL
+            await shouldRevert(claimBid(0, {
+                from: random2, 
+            }), 'Address claimed RPL from a lot it has not bid on');
 
         });
 
