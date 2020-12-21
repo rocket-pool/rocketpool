@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { auctionCreateLot, auctionPlaceBid, getLotStartBlock, getLotPriceAtBlock } from '../_helpers/auction';
@@ -401,7 +401,7 @@ export default function() {
         });
 
 
-        it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
+        it(printTitle('random address', 'cannot recover unclaimed RPL from a lot twice'), async () => {
 
             // Create closed lot
             await setAuctionSetting('LotDuration', 0, {from: owner});
@@ -412,9 +412,30 @@ export default function() {
             await recoverUnclaimedRPL(0, {from: random1});
 
             // Attempt to recover RPL again
-            await recoverUnclaimedRPL(0, {
+            await shouldRevert(recoverUnclaimedRPL(0, {
                 from: random1,
-            });
+            }), 'Recovered unclaimed RPL from a lot twice');
+
+        });
+
+
+        it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
+
+            // Set lot duration
+            await setAuctionSetting('LotDuration', 10, {from: owner});
+
+            // Create lot & place bid to clear
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionPlaceBid(0, {from: random1, value: web3.utils.toWei('1000', 'ether')});
+
+            // Move to lot bidding period end
+            await mineBlocks(web3, 10);
+
+            // Attempt to recover RPL again
+            await shouldRevert(recoverUnclaimedRPL(0, {
+                from: random1,
+            }), 'Recovered unclaimed RPL from a lot which had no RPL to recover');
 
         });
 

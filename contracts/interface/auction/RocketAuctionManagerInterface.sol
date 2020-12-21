@@ -15,6 +15,7 @@ interface RocketAuctionManagerInterface {
     function getLotTotalRPLAmount(uint256 _index) external view returns (uint256);
     function getLotTotalBidAmount(uint256 _index) external view returns (uint256);
     function getLotAddressBidAmount(uint256 _index, address _bidder) external view returns (uint256);
+    function getLotRPLRecovered(uint256 _index) external view returns (bool);
     function getLotPriceAtBlock(uint256 _index, uint256 _block) external view returns (uint256);
     function getLotPriceByTotalBids(uint256 _index) external view returns (uint256);
     function getLotCurrentPrice(uint256 _index) external view returns (uint256);

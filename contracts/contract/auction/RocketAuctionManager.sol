@@ -104,6 +104,14 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         setLotAddressBidAmount(_index, _bidder, getLotAddressBidAmount(_index, _bidder).add(_amount));
     }
 
+    // Get/set the lot's RPL recovered status
+    function getLotRPLRecovered(uint256 _index) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("auction.lot.rpl.recovered", _index)));
+    }
+    function setLotRPLRecovered(uint256 _index, bool _recovered) private {
+        setBool(keccak256(abi.encodePacked("auction.lot.rpl.recovered", _index)), _recovered);
+    }
+
     // Get the RPL price for a lot at a block
     function getLotPriceAtBlock(uint256 _index, uint256 _block) override public view returns (uint256) {
         // Get lot parameters
@@ -245,15 +253,17 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Recover unclaimed RPL from a lot
     function recoverUnclaimedRPL(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
-        // Check lot exists
+        // Check lot exists and has not already had RPL recovered
         require(getLotExists(_lotIndex), "Lot does not exist");
+        require(!getLotRPLRecovered(_lotIndex), "Unclaimed RPL has already been recovered from the lot");
         // Check RPL can be reclaimed from lot
         require(block.number >= getLotEndBlock(_lotIndex), "Lot bidding period has not concluded yet");
         // Get & check remaining RPL amount
         uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);
         require(remainingRplAmount > 0, "No unclaimed RPL is available to recover");
-        // Decrease allotted RPL balance
+        // Decrease allotted RPL balance & set RPL recovered status
         decreaseAllottedRPLBalance(remainingRplAmount);
+        setLotRPLRecovered(_lotIndex, true);
         // Emit RPL recovered event
         emit RPLRecovered(_lotIndex, msg.sender, remainingRplAmount, now);
     }
