@@ -21,7 +21,8 @@ export default function() {
             owner,
             node,
             trustedNode,
-            random,
+            random1,
+            random2,
         ] = accounts;
 
 
@@ -47,7 +48,7 @@ export default function() {
             await mintRPL(owner, node, rplAmount);
             await nodeStakeRPL(rplAmount, {from: node});
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: random1, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, null, {from: node});
 
         });
@@ -60,7 +61,7 @@ export default function() {
 
             // Create lot
             await createLot({
-                from: random,
+                from: random1,
             });
 
         });
@@ -76,7 +77,7 @@ export default function() {
 
             // Attempt to create lot
             await shouldRevert(createLot({
-                from: random,
+                from: random1,
             }), 'Created a lot while lot creation was disabled');
 
         });
@@ -86,7 +87,7 @@ export default function() {
 
             // Attempt to create lot
             await shouldRevert(createLot({
-                from: random,
+                from: random1,
             }), 'Created a lot with an insufficient RPL balance');
 
         });
@@ -96,12 +97,24 @@ export default function() {
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
-            await auctionCreateLot({from: random});
+            await auctionCreateLot({from: random1});
 
-            // Place bid
+            // Place bid from first address
             await placeBid(0, {
-                from: random,
-                value: web3.utils.toWei('10', 'ether'),
+                from: random1,
+                value: web3.utils.toWei('4', 'ether'),
+            });
+
+            // Increase bid from first address
+            await placeBid(0, {
+                from: random1,
+                value: web3.utils.toWei('4', 'ether'),
+            });
+
+            // Place bid from second address
+            await placeBid(0, {
+                from: random2,
+                value: web3.utils.toWei('4', 'ether'),
             });
 
         });
@@ -111,12 +124,12 @@ export default function() {
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
-            await auctionCreateLot({from: random});
+            await auctionCreateLot({from: random1});
 
             // Attempt to place bid
             await shouldRevert(placeBid(1, {
-                from: random,
-                value: web3.utils.toWei('10', 'ether'),
+                from: random1,
+                value: web3.utils.toWei('4', 'ether'),
             }), 'Bid on a lot which doesn\'t exist');
 
         });
@@ -126,16 +139,31 @@ export default function() {
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
-            await auctionCreateLot({from: random});
+            await auctionCreateLot({from: random1});
 
             // Disable bidding
             await setAuctionSetting('BidOnLotEnabled', false, {from: owner});
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
-                from: random,
-                value: web3.utils.toWei('10', 'ether'),
+                from: random1,
+                value: web3.utils.toWei('4', 'ether'),
             }), 'Bid on a lot while bidding was disabled');
+
+        });
+
+
+        it(printTitle('random address', 'cannot bid an invalid amount on a lot'), async () => {
+
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Attempt to place bid
+            await shouldRevert(placeBid(0, {
+                from: random1,
+                value: web3.utils.toWei('0', 'ether'),
+            }), 'Bid an invalid amount on a lot');
 
         });
 
@@ -147,18 +175,34 @@ export default function() {
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
-            await auctionCreateLot({from: random});
+            await auctionCreateLot({from: random1});
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
-                from: random,
-                value: web3.utils.toWei('10', 'ether'),
+                from: random1,
+                value: web3.utils.toWei('4', 'ether'),
             }), 'Bid on a lot after the bidding period concluded');
 
         });
 
 
         it(printTitle('random address', 'cannot bid on a lot after the RPL allocation has been exhausted'), async () => {
+
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Place bid & claim all RPL
+            await placeBid(0, {
+                from: random1,
+                value: web3.utils.toWei('1000', 'ether'),
+            });
+
+            // Attempt to place bid
+            await shouldRevert(placeBid(0, {
+                from: random2,
+                value: web3.utils.toWei('4', 'ether'),
+            }), 'Bid on a lot after the RPL allocation was exhausted');
 
         });
 
