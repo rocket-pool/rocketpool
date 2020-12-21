@@ -189,6 +189,8 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Load contracts
         RocketAuctionSettingsInterface rocketAuctionSettings = RocketAuctionSettingsInterface(getContractAddress("rocketAuctionSettings"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        // Check bid amount
+        require(msg.value > 0, "Invalid bid amount");
         // Check lot can be bid on
         require(rocketAuctionSettings.getBidOnLotEnabled(), "Bidding on lots is currently disabled");
         require(getLotExists(_lotIndex), "Lot does not exist");
@@ -199,7 +201,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Calculate the bid amount
         uint256 bidAmount = msg.value;
         uint256 calcBase = 1 ether;
-        uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtBlock(_lotIndex, block.number).div(calcBase));
+        uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtBlock(_lotIndex, block.number)).div(calcBase);
         if (bidAmount > maximumBidAmount) { bidAmount = maximumBidAmount; }
         // Increase lot bid amounts
         increaseLotTotalBidAmount(_lotIndex, bidAmount);
