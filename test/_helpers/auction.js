@@ -15,3 +15,10 @@ export async function auctionCreateLot(txOptions) {
     await rocketAuctionManager.createLot(txOptions);
 }
 
+
+// Place a bid on a lot
+export async function auctionPlaceBid(lotIndex, txOptions) {
+	const rocketAuctionManager = await RocketAuctionManager.deployed();
+    await rocketAuctionManager.placeBid(lotIndex, txOptions);
+}
+

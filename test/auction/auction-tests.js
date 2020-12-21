@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { auctionCreateLot } from '../_helpers/auction';
+import { auctionCreateLot, auctionPlaceBid } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
@@ -59,7 +59,12 @@ export default function() {
             // Slash RPL assigned to minipool to fill auction contract
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
 
-            // Create lot
+            // Create first lot
+            await createLot({
+                from: random1,
+            });
+
+            // Create second lot
             await createLot({
                 from: random1,
             });
@@ -95,26 +100,45 @@ export default function() {
 
         it(printTitle('random address', 'can place a bid on a lot'), async () => {
 
-            // Create lot
+            // Create lots
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
+            await auctionCreateLot({from: random1});
 
-            // Place bid from first address
+            // Place bid on first lot from first address
             await placeBid(0, {
                 from: random1,
                 value: web3.utils.toWei('4', 'ether'),
             });
 
-            // Increase bid from first address
+            // Increase bid on first lot from first address
             await placeBid(0, {
                 from: random1,
                 value: web3.utils.toWei('4', 'ether'),
             });
 
-            // Place bid from second address
+            // Place bid on first lot from second address
             await placeBid(0, {
                 from: random2,
                 value: web3.utils.toWei('4', 'ether'),
+            });
+
+            // Place bid on second lot from first address
+            await placeBid(1, {
+                from: random1,
+                value: web3.utils.toWei('2', 'ether'),
+            });
+
+            // Increase bid on second lot from first address
+            await placeBid(1, {
+                from: random1,
+                value: web3.utils.toWei('2', 'ether'),
+            });
+
+            // Place bid on second lot from second address
+            await placeBid(1, {
+                from: random2,
+                value: web3.utils.toWei('2', 'ether'),
             });
 
         });
@@ -208,6 +232,35 @@ export default function() {
 
 
         it(printTitle('random address', 'can claim RPL from a lot'), async () => {
+
+            // Create lots & place bids to clear
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionCreateLot({from: random1});
+            await auctionPlaceBid(0, {from: random1, value: web3.utils.toWei('5', 'ether')});
+            await auctionPlaceBid(0, {from: random2, value: web3.utils.toWei('5', 'ether')});
+            await auctionPlaceBid(1, {from: random1, value: web3.utils.toWei('3', 'ether')});
+            await auctionPlaceBid(1, {from: random2, value: web3.utils.toWei('3', 'ether')});
+
+            // Claim RPL on first lot from first address
+            await claimBid(0, {
+                from: random1, 
+            });
+
+            // Claim RPL on first lot from second address
+            await claimBid(0, {
+                from: random2, 
+            });
+
+            // Claim RPL on second lot from first address
+            await claimBid(1, {
+                from: random1, 
+            });
+
+            // Claim RPL on second lot from second address
+            await claimBid(1, {
+                from: random2, 
+            });
 
         });
 
