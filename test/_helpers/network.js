@@ -1,4 +1,4 @@
-import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkWithdrawal } from '../_utils/artifacts';
+import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkPrices, RocketNetworkWithdrawal } from '../_utils/artifacts';
 
 
 // Get the network total ETH balance
@@ -29,6 +29,13 @@ export async function getETHUtilizationRate() {
 export async function submitBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
     const rocketNetworkBalances = await RocketNetworkBalances.deployed();
     await rocketNetworkBalances.submitBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+}
+
+
+// Submit network token prices
+export async function submitPrices(block, rplPrice, txOptions) {
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
 }
 
 

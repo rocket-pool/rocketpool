@@ -1,9 +1,10 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { auctionCreateLot, auctionPlaceBid } from '../_helpers/auction';
+import { auctionCreateLot, auctionPlaceBid, getLotStartBlock, getLotPriceAtBlock } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
+import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { setAuctionSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
@@ -94,6 +95,46 @@ export default function() {
             await shouldRevert(createLot({
                 from: random1,
             }), 'Created a lot with an insufficient RPL balance');
+
+        });
+
+
+        it(printTitle('auction lot', 'has correct price at block'), async () => {
+
+            // Set lot settings
+            await setAuctionSetting('LotDuration', 100, {from: owner});
+            await setAuctionSetting('StartingPriceRatio', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setAuctionSetting('ReservePriceRatio', web3.utils.toWei('0', 'ether'), {from: owner});
+
+            // Set RPL price
+            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: trustedNode});
+
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Get lot start block
+            const startBlock = parseInt(await getLotStartBlock(0));
+
+            // Set expected prices at blocks
+            const values = [
+                {block: startBlock +   0, expectedPrice: web3.utils.toBN(web3.utils.toWei('1.0000', 'ether'))},
+                {block: startBlock +  12, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.9856', 'ether'))},
+                {block: startBlock +  25, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.9375', 'ether'))},
+                {block: startBlock +  37, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.8631', 'ether'))},
+                {block: startBlock +  50, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.7500', 'ether'))},
+                {block: startBlock +  63, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.6031', 'ether'))},
+                {block: startBlock +  75, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.4375', 'ether'))},
+                {block: startBlock +  88, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.2256', 'ether'))},
+                {block: startBlock + 100, expectedPrice: web3.utils.toBN(web3.utils.toWei('0.0000', 'ether'))},
+            ];
+
+            // Check fees
+            for (let vi = 0; vi < values.length; ++vi) {
+                let v = values[vi];
+                let price = await getLotPriceAtBlock(0, v.block);
+                assert(price.eq(v.expectedPrice), 'Lot price does not match expected price at block');
+            }
 
         });
 
@@ -312,20 +353,68 @@ export default function() {
 
         it(printTitle('random address', 'can recover unclaimed RPL from a lot'), async () => {
 
+            // Create closed lots
+            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+            await auctionCreateLot({from: random1});
+
+            // Recover RPL from first lot
+            await recoverUnclaimedRPL(0, {
+                from: random1,
+            });
+
+            // Recover RPL from second lot
+            await recoverUnclaimedRPL(1, {
+                from: random1,
+            });
+
         });
 
 
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which doesn\'t exist'), async () => {
+
+            // Create closed lot
+            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Attempt to recover RPL
+            await shouldRevert(recoverUnclaimedRPL(1, {
+                from: random1,
+            }), 'Recovered unclaimed RPL from a lot which doesn\'t exist');
 
         });
 
 
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot before the lot bidding period has concluded'), async () => {
 
+            // Create lot
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Attempt to recover RPL
+            await shouldRevert(recoverUnclaimedRPL(0, {
+                from: random1,
+            }), 'Recovered unclaimed RPL from a lot before its bidding period had concluded');
+
         });
 
 
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
+
+            // Create closed lot
+            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
+            await auctionCreateLot({from: random1});
+
+            // Recover RPL
+            await recoverUnclaimedRPL(0, {from: random1});
+
+            // Attempt to recover RPL again
+            await recoverUnclaimedRPL(0, {
+                from: random1,
+            });
 
         });
 
