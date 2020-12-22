@@ -11,6 +11,7 @@ interface RocketDAONodeTrustedInterface {
     function getMemberLastProposalBlock(address _nodeAddress) external view returns (uint256);
     function getMemberID(address _nodeAddress) external view returns (string memory);
     function getMemberEmail(address _nodeAddress) external view returns (string memory);
+    function getMemberJoinedBlock(address _nodeAddress) external view returns (uint256);
     function getMemberLeaveAccepted(address _nodeAddress) external view returns (bool);
     function getMemberLeaveAcceptedBlock(address _nodeAddress) external view returns (uint256);
     function getMemberRPLBondAmount(address _nodeAddress) external view returns (uint256);

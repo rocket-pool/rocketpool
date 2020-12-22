@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
 
@@ -123,30 +123,35 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
+            rocketTokenRPL.balanceOf(txOptions.from),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
         ]).then(
-            ([memberTotal]) =>
-            ({memberTotal})
+            ([memberTotal, rplBalanceBond, rplBalanceVault]) =>
+            ({memberTotal, rplBalanceBond, rplBalanceVault})
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
-    //console.log('Member Total', Number(ds1.memberTotal));
+    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceBond), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionJoin(txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    //console.log('Member Total', Number(ds2.memberTotal));
+    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceBond), web3.utils.fromWei(ds2.rplBalanceVault));
 
     // Check member count has increased
     assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
+    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault.add(ds1.rplBalanceBond)), 'RocketVault address does not contain the correct RPL bond amount');
 
 }
 
@@ -158,30 +163,35 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
+            rocketTokenRPL.balanceOf(_rplRefundAddress),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
         ]).then(
-            ([memberTotal]) =>
-            ({memberTotal})
+            ([memberTotal, rplBalanceRefund, rplBalanceVault]) =>
+            ({memberTotal, rplBalanceRefund, rplBalanceVault})
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
-    console.log('Member Total', Number(ds1.memberTotal));
+    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceRefund), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionLeave(_rplRefundAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    console.log('Member Total', Number(ds2.memberTotal));
+    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceRefund), web3.utils.fromWei(ds2.rplBalanceVault));
 
-    // Check member count has increased
+    // Verify
     assert(ds2.memberTotal.eq(ds1.memberTotal.sub(web3.utils.toBN(1))), 'Member count has not decreased');
+    assert(ds2.rplBalanceRefund.eq(ds1.rplBalanceVault.sub(ds2.rplBalanceRefund)), 'Member RPL refund address does not contain the correct RPL bond amount');
 
 }
 

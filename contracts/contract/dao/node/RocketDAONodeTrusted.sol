@@ -28,7 +28,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     string daoNameSpace = 'dao.trustednodes';
 
     // Min amount of trusted node members required in the DAO
-    uint256 memberMinCount = 3;
+    uint256 daoMemberMinCount = 3;
 
     // Possible states that a trusted node proposal may be in
     enum ProposalType {
@@ -42,7 +42,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     // Only allow bootstrapping the dao if it has less than the required members to form the DAO
     modifier onlyBootstrapMode() {
-        require(getMemberCount() < memberMinCount, "Bootstrap mode not engaged, min DAO member count has been met");
+        require(getMemberCount() < daoMemberMinCount, "Bootstrap mode not engaged, min DAO member count has been met");
         _;
     }
 
@@ -116,6 +116,11 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         return getString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress))); 
     }
 
+    // Get the block the member joined at
+    function getMemberJoinedBlock(address _nodeAddress) override public view returns (uint256) { 
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress))); 
+    }
+
     // Has this users leave request been accepted?
     function getMemberLeaveAccepted(address _nodeAddress) override public view returns (bool) { 
         return getBool(keccak256(abi.encodePacked(daoNameSpace, "member.leave.accepted", _nodeAddress))); 
@@ -172,10 +177,10 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     // Vote on a proposal
     function vote(uint256 _proposalID, bool _support) override public onlyTrustedNode(msg.sender) {
-        // Did they join during this voting period? If so, they can't vote or it'll throw off the set proposalVotesRequired 
-        
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        // Did they join after this proposal was created? If so, they can't vote or it'll throw off the set proposalVotesRequired 
+        require(getMemberJoinedBlock(msg.sender) < daoProposal.getCreated(_proposalID), "Member cannot vote on proposal created before they became a member");
         // Vote now, one vote per trusted node member
         daoProposal.vote(msg.sender, 1 ether, _proposalID, _support);
     }
