@@ -75,9 +75,12 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     function getTxData() {
         return Promise.all([
             rocketDAOProposal.getTotal.call(),
+            rocketDAOProposal.getState.call(_proposalID),
+            rocketDAOProposal.getVotesFor.call(_proposalID),
+            rocketDAOProposal.getVotesRequired.call(_proposalID),
         ]).then(
-            ([proposalTotal]) =>
-            ({proposalTotal})
+            ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired]) =>
+            ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired})
         );
     }
 
@@ -90,11 +93,9 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     // Capture data
     let ds2 = await getTxData();
 
-    // Get the current state
-    let state = Number(await getDAOProposalState(_proposalID));
-
     // Check proposals
-    assert(state == proposalStates.Active, 'Incorrect proposal state, should be active');
+    if(ds2.proposalState == proposalStates.Active) assert(ds2.proposalVotesFor.lt(ds2.proposalVotesRequired), 'Proposal state is active, votes for proposal should be less than the votes required');
+    if(ds2.proposalState == proposalStates.Succeeded) assert(ds2.proposalVotesFor.gte(ds2.proposalVotesRequired), 'Proposal state is successful, yet does not have the votes required');
 
 }
 

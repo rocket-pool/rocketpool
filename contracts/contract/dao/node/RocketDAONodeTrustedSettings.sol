@@ -26,7 +26,7 @@ contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrustedSetting
             setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.cooldown")), 13220);              // How long before a member can make sequential proposals. Approx. 2 days of blocks
             setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.vote.blocks")), 92550);           // How long a proposal can be voted on. Approx. 2 weeks worth of blocks
             setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.vote.delay.blocks")), 1);         // How long before a proposal can be voted on after it is created. Approx. Next Block
-            setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.execute.blocks")), 185100);       // How long a proposal be in the queue to be executed. Approx. 4 weeks worth of blocks
+            setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.execute.blocks")), 185100);       // How long a proposal can be executed after its voting period is finished. Approx. 4 weeks worth of blocks
             setUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.action.blocks")), 92550);         // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires Approx. 2 weeks worth of blocks
             setBool(keccak256(abi.encodePacked(daoNameSpace, "deployed")), true);                        // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
@@ -84,7 +84,7 @@ contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrustedSetting
         return getSettingUint('proposal.vote.delay.blocks');
     }
 
-    // How long a proposal be in the queue to be executed. Approx. 4 weeks worth of blocks
+    // How long a proposal can be executed after its voting period is finished Approx. 4 weeks worth of blocks
     function getProposalExecuteBlocks() override public view returns (uint256) { 
         return getSettingUint('proposal.execute.blocks');
     }

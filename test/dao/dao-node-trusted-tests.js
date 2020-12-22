@@ -273,7 +273,6 @@ export default function() {
             await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
-            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Current block
             blockCurrent = await web3.eth.getBlockNumber();
             // Cancel now before it passes
@@ -293,7 +292,7 @@ export default function() {
                 [registeredNodeTrusted1]
             );
             // Add the proposal
-            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+            let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
             // Current block
@@ -310,6 +309,67 @@ export default function() {
             // Member can now leave and collect any RPL bond
             await daoNodeTrustedMemberLeave(registeredNodeTrusted1, {from: registeredNodeTrusted1});
         });
+        
+
+        it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
+                [registeredNodeTrusted1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Register new member now
+            await bootstrapMemberAdd(registeredNode2, 'rocketpool', 'node@home.com');
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            // New member attempts to vote on proposal started before they joined, fails
+            await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode2 }), 'Member voted on proposal they shouldn\'t be able too', 'Member cannot vote on proposal created before they became a member');
+        });
+        
+
+        it(printTitle('registeredNodeTrusted2', 'fails to execute a successful proposal after it expires'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
+                [registeredNodeTrusted1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+            // Fast forward to this voting period finishing and executing period expiring
+            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
+            // Execution should fail
+            await shouldRevert(DAOProposalexecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
+
+        });
+        
         
 
     });
