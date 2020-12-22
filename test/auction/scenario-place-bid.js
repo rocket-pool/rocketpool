@@ -41,20 +41,41 @@ export async function placeBid(lotIndex, txOptions) {
         );
     }
 
+    // Get balances
+    function getBalances(bidderAddress) {
+        return Promise.all([
+            web3.eth.getBalance(bidderAddress).then(value => web3.utils.toBN(value)),
+        ]).then(
+            ([bidder]) =>
+            ({bidder})
+        );
+    }
+
     // Get lot price at block
     function getLotPriceAtBlock() {
         return web3.eth.getBlock('latest')
             .then(block => rocketAuctionManager.getLotPriceAtBlock.call(lotIndex, block.number));
     }
 
-    // Get initial lot details
-    let lot1 = await getLotDetails(txOptions.from);
+    // Get initial lot details & address balance
+    let [lot1, balances1] = await Promise.all([
+        getLotDetails(txOptions.from),
+        getBalances(txOptions.from),
+    ]);
+
+    // Set gas price
+    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    txOptions.gasPrice = gasPrice;
 
     // Place bid
-    await rocketAuctionManager.placeBid(lotIndex, txOptions);
+    let txReceipt = await rocketAuctionManager.placeBid(lotIndex, txOptions);
+    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
-    // Get updated lot details
-    let lot2 = await getLotDetails(txOptions.from);
+    // Get updated lot details & address balance
+    let [lot2, balances2] = await Promise.all([
+        getLotDetails(txOptions.from),
+        getBalances(txOptions.from),
+    ]);
 
     // Get parameters
     const lotBlockPrice = await getLotPriceAtBlock();
@@ -71,6 +92,9 @@ export async function placeBid(lotIndex, txOptions) {
     assert(lot2.priceByTotalBids.eq(calcBase.mul(lot2.totalBidAmount).div(lot2.totalRplAmount)), 'Incorrect updated price by total bids');
     assert(lot2.claimedRplAmount.eq(calcBase.mul(lot2.totalBidAmount).div(lot2.currentPrice)), 'Incorrect updated claimed RPL amount');
     assert(lot2.totalRplAmount.eq(lot2.claimedRplAmount.add(lot2.remainingRplAmount)), 'Incorrect updated RPL amounts');
+
+    // Check balances
+    assert(balances2.bidder.eq(balances1.bidder.sub(bidAmount).sub(txFee)), 'Incorrect updated address ETH balance');
 
 }
 
