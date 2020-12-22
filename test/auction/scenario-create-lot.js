@@ -63,9 +63,7 @@ export async function createLot(txOptions) {
     }
 
     // Get initial contract details
-    let [details1] = await Promise.all([
-        getContractDetails(),
-    ]);
+    let details1 = await getContractDetails();
 
     // Create lot
     await rocketAuctionManager.createLot(txOptions);
