@@ -38,7 +38,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDaoNodeTrustedSettings"));
+        // RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Is it a trusted node DAO member?
         bool daoNodeTrustedMember = rocketNodeManager.getNodeTrusted(msg.sender);
         // Check node settings
@@ -55,7 +55,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(depositType != MinipoolDeposit.Empty || daoNodeTrustedMember, "Invalid node deposit amount");
         // Check if it's a trusted node member, it's not exceeding the amount of unbonded minipool validatos it can make
         // TODO: Add in variable that records the amount of unbonded minipools per trusted node member
-        // if(daoNodeTrustedMember) require(rocketDaoNodeTrustedSettings.getMinipoolUnbondedMax() >= [insertUnbondedMinipoolCountHere], "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed");
+        // if(daoNodeTrustedMember) require(rocketDAONodeTrustedSettings.getMinipoolUnbondedMax() >= [insertUnbondedMinipoolCountHere], "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, now);
         // Create minipool
