@@ -96,7 +96,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         return true;
     }
 
-    // Withdraw an amount of a ERC20 token to a network contract
+    // Withdraw an amount of a ERC20 token to an address
     // Only accepts calls from Rocket Pool network contracts
     function withdrawToken(address _withdrawalAddress, address _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
         // Get contract key

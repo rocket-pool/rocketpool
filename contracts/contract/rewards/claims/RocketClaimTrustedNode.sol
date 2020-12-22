@@ -63,7 +63,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         // Only accept calls from the RocketNodeManager or RocketNodeTrustedDAO contracts
         require(
             msg.sender == getAddress(keccak256(abi.encodePacked("contract.address", "rocketNodeManager"))) ||
-            msg.sender == getAddress(keccak256(abi.encodePacked("contract.address", "rocketDAONodeTrusted"))),
+            msg.sender == getAddress(keccak256(abi.encodePacked("contract.address", "rocketDAONodeTrustedActions"))),
             "Invalid or outdated contract"
         );
         // Init the rewards pool contract

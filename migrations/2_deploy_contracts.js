@@ -64,6 +64,8 @@ const contracts = {
   // DAOs
   rocketDAOProposal:            artifacts.require('RocketDAOProposal.sol'),
   rocketDAONodeTrusted:         artifacts.require('RocketDAONodeTrusted.sol'),
+  rocketDAONodeTrustedSettings: artifacts.require('RocketDAONodeTrustedSettings.sol'),
+  rocketDAONodeTrustedActions:  artifacts.require('RocketDAONodeTrustedActions.sol'),
   // Settings
   rocketAuctionSettings:        artifacts.require('RocketAuctionSettings.sol'),
   rocketDepositSettings:        artifacts.require('RocketDepositSettings.sol'),

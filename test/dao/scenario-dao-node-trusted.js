@@ -1,12 +1,6 @@
-import { RocketDAONodeTrusted, RocketDAOProposal } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
-// Returns the value of a DAO setting
-export async function getDAOSettingUint(__settingPath, txOptions) {
-    // Load contracts
-    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
-    return await rocketDAONodeTrusted.getSettingUint.call(__settingPath);
-};
 
 // Returns true if the address is a DAO member
 export async function getDAOMemberIsValid(_nodeAddress, txOptions) {
@@ -128,6 +122,7 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
 
     // Get data about the tx
     function getTxData() {
@@ -144,7 +139,7 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
     //console.log('Member Total', Number(ds1.memberTotal));
 
     // Add a new proposal
-    await rocketDAONodeTrusted.memberJoin(txOptions);
+    await rocketDAONodeTrustedActions.actionJoin(txOptions);
 
     // Capture data
     let ds2 = await getTxData();
@@ -152,6 +147,41 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
 
     // Check member count has increased
     assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
+
+}
+
+
+
+// Leave the DAO after a successful leave proposal has passed
+export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberCount.call(),
+        ]).then(
+            ([memberTotal]) =>
+            ({memberTotal})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+    console.log('Member Total', Number(ds1.memberTotal));
+
+    // Add a new proposal
+    await rocketDAONodeTrustedActions.actionLeave(_rplRefundAddress, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+    console.log('Member Total', Number(ds2.memberTotal));
+
+    // Check member count has increased
+    assert(ds2.memberTotal.eq(ds1.memberTotal.sub(web3.utils.toBN(1))), 'Member count has not decreased');
 
 }
 
