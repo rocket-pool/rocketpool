@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedSettings } from '../_utils/artifacts';
 
 
 // The trusted node DAO can be bootstrapped with several nodes
@@ -37,11 +37,12 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedSettings = await RocketDAONodeTrustedSettings.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONodeTrusted.getSettingUint.call(_settingPath),
+            rocketDAONodeTrustedSettings.getSettingUint.call(_settingPath),
         ]).then(
             ([settingUintValue]) =>
             ({settingUintValue})
