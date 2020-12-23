@@ -1,4 +1,4 @@
-import { RocketAuctionManager, RocketAuctionSettings, RocketNetworkPrices } from '../_utils/artifacts';
+import { RocketAuctionManager, RocketAuctionSettings } from '../_utils/artifacts';
 
 
 // Place a bid on a lot
@@ -8,18 +8,9 @@ export async function placeBid(lotIndex, txOptions) {
     const [
         rocketAuctionManager,
         rocketAuctionSettings,
-        rocketNetworkPrices,
     ] = await Promise.all([
         RocketAuctionManager.deployed(),
         RocketAuctionSettings.deployed(),
-        RocketNetworkPrices.deployed(),
-    ]);
-
-    // Get parameters
-    const [
-        rplPrice,
-    ] = await Promise.all([
-        rocketNetworkPrices.getRPLPrice.call(),
     ]);
 
     // Calculation base value
