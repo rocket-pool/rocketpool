@@ -52,7 +52,7 @@ export async function placeBid(lotIndex, txOptions) {
             .then(block => rocketAuctionManager.getLotPriceAtBlock.call(lotIndex, block.number));
     }
 
-    // Get initial lot details & address balance
+    // Get initial lot details & balances
     let [lot1, balances1] = await Promise.all([
         getLotDetails(txOptions.from),
         getBalances(txOptions.from),
@@ -66,7 +66,7 @@ export async function placeBid(lotIndex, txOptions) {
     let txReceipt = await rocketAuctionManager.placeBid(lotIndex, txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
-    // Get updated lot details & address balance
+    // Get updated lot details & balances
     let [lot2, balances2] = await Promise.all([
         getLotDetails(txOptions.from),
         getBalances(txOptions.from),
