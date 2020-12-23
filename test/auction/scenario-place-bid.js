@@ -1,4 +1,4 @@
-import { RocketAuctionManager, RocketAuctionSettings } from '../_utils/artifacts';
+import { RocketAuctionManager, RocketAuctionSettings, RocketVault } from '../_utils/artifacts';
 
 
 // Place a bid on a lot
@@ -8,9 +8,11 @@ export async function placeBid(lotIndex, txOptions) {
     const [
         rocketAuctionManager,
         rocketAuctionSettings,
+        rocketVault,
     ] = await Promise.all([
         RocketAuctionManager.deployed(),
         RocketAuctionSettings.deployed(),
+        RocketVault.deployed(),
     ]);
 
     // Calculation base value
@@ -36,9 +38,11 @@ export async function placeBid(lotIndex, txOptions) {
     function getBalances(bidderAddress) {
         return Promise.all([
             web3.eth.getBalance(bidderAddress).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            rocketVault.balanceOf.call('rocketDepositPool'),
         ]).then(
-            ([bidder]) =>
-            ({bidder})
+            ([bidderEth, vaultEth, depositPoolEth]) =>
+            ({bidderEth, vaultEth, depositPoolEth})
         );
     }
 
@@ -85,7 +89,9 @@ export async function placeBid(lotIndex, txOptions) {
     assert(lot2.totalRplAmount.eq(lot2.claimedRplAmount.add(lot2.remainingRplAmount)), 'Incorrect updated RPL amounts');
 
     // Check balances
-    assert(balances2.bidder.eq(balances1.bidder.sub(bidAmount).sub(txFee)), 'Incorrect updated address ETH balance');
+    assert(balances2.bidderEth.eq(balances1.bidderEth.sub(bidAmount).sub(txFee)), 'Incorrect updated address ETH balance');
+    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(bidAmount)), 'Incorrect updated deposit pool ETH balance');
+    assert(balances2.vaultEth.eq(balances1.vaultEth.add(bidAmount)), 'Incorrect updated vault ETH balance');
 
 }
 
