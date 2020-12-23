@@ -245,7 +245,8 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Transfer RPL to bidder
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), rplAmount);
-        // Update address bid amount
+        // Decrease allotted RPL balance & update address bid amount
+        decreaseAllottedRPLBalance(rplAmount);
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);
         // Emit bid claimed event
         emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, now);
