@@ -15,6 +15,17 @@ export async function claimBid(lotIndex, txOptions) {
         RocketVault.deployed(),
     ]);
 
+    // Get auction contract details
+    function getContractDetails() {
+        return Promise.all([
+            rocketAuctionManager.getAllottedRPLBalance.call(),
+            rocketAuctionManager.getRemainingRPLBalance.call(),
+        ]).then(
+            ([allottedRplBalance, remainingRplBalance]) =>
+            ({allottedRplBalance, remainingRplBalance})
+        );
+    }
+
     // Get lot details
     function getLotDetails(bidderAddress) {
         return Promise.all([
@@ -38,8 +49,9 @@ export async function claimBid(lotIndex, txOptions) {
         );
     }
 
-    // Get initial lot details & balances
-    let [lot1, balances1] = await Promise.all([
+    // Get initial details & balances
+    let [details1, lot1, balances1] = await Promise.all([
+    	getContractDetails(),
         getLotDetails(txOptions.from),
         getBalances(txOptions.from),
     ]);
@@ -47,8 +59,9 @@ export async function claimBid(lotIndex, txOptions) {
     // Claim RPL
     await rocketAuctionManager.claimBid(lotIndex, txOptions);
 
-    // Get updated lot details & balances
-    let [lot2, balances2] = await Promise.all([
+    // Get updated details & balances
+    let [details2, lot2, balances2] = await Promise.all([
+    	getContractDetails(),
         getLotDetails(txOptions.from),
         getBalances(txOptions.from),
     ]);
@@ -56,6 +69,11 @@ export async function claimBid(lotIndex, txOptions) {
     // Get expected values
     const calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
     const expectedRplAmount = calcBase.mul(lot1.addressBidAmount).div(lot1.currentPrice);
+
+    // Check details
+    assert(details2.allottedRplBalance.eq(details1.allottedRplBalance.sub(expectedRplAmount)), 'Incorrect updated contract allotted RPL balance');
+    assert(details2.remainingRplBalance.eq(details1.remainingRplBalance), 'Contract remaining RPL balance updated and should not have');
+    assert(lot2.addressBidAmount.eq(web3.utils.toBN(0)), 'Incorrect updated address bid amount');
 
     // Check balances
     assert(balances2.bidderRpl.eq(balances1.bidderRpl.add(expectedRplAmount)), 'Incorrect updated address RPL balance');
