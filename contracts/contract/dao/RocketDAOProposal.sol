@@ -121,12 +121,13 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     
 
     // Return the state of the specified proposal
+    // A successful proposal can be executed immediately
     function getState(uint256 _proposalID) override public view returns (ProposalState) {
         // Check the proposal ID is legit
         require(getTotal() >= _proposalID && _proposalID > 0, "Invalid proposal ID");
         // Get the amount of votes for and against
         uint256 votesFor = getVotesFor(_proposalID);
-        uint256 votesAgainst = getVotesAgainst(_proposalID);
+        // uint256 votesAgainst = getVotesAgainst(_proposalID);
         // Now return the state of the current proposal
         if (getCancelled(_proposalID)) {
             // Cancelled by the proposer?
@@ -134,21 +135,22 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
             // Has it been executed?
         } else if (getExecuted(_proposalID)) {
             return ProposalState.Executed;
+            // Has it expired?
+        } else if (block.number >= getExpires(_proposalID)) {
+            return ProposalState.Expired;
+            // Vote was successful, is now awaiting execution
+        } else if (votesFor >= getVotesRequired(_proposalID)) {
+            return ProposalState.Succeeded;
             // Is the proposal pending? Eg. waiting to be voted on
         } else if (block.number <= getStart(_proposalID)) {
             return ProposalState.Pending;
             // The proposal is active and can be voted on
         } else if (block.number <= getEnd(_proposalID)) {
             return ProposalState.Active;
-            // Check the votes, was it defeated?
-        } else if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID)) {
-            return ProposalState.Defeated;
-            // Has it expired?
-        } else if (block.number >= getExpires(_proposalID)) {
-            return ProposalState.Expired;
         } else {
-            // Vote was successful, is now awaiting execution
-            return ProposalState.Succeeded;
+            // Check the votes, was it defeated?
+            // if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID))
+            return ProposalState.Defeated;
         }
     }
 

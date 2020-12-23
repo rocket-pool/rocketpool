@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
 
@@ -75,9 +75,12 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     function getTxData() {
         return Promise.all([
             rocketDAOProposal.getTotal.call(),
+            rocketDAOProposal.getState.call(_proposalID),
+            rocketDAOProposal.getVotesFor.call(_proposalID),
+            rocketDAOProposal.getVotesRequired.call(_proposalID),
         ]).then(
-            ([proposalTotal]) =>
-            ({proposalTotal})
+            ([proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired]) =>
+            ({proposalTotal, proposalState, proposalVotesFor, proposalVotesRequired})
         );
     }
 
@@ -90,11 +93,9 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     // Capture data
     let ds2 = await getTxData();
 
-    // Get the current state
-    let state = Number(await getDAOProposalState(_proposalID));
-
     // Check proposals
-    assert(state == proposalStates.Active, 'Incorrect proposal state, should be active');
+    if(ds2.proposalState == proposalStates.Active) assert(ds2.proposalVotesFor.lt(ds2.proposalVotesRequired), 'Proposal state is active, votes for proposal should be less than the votes required');
+    if(ds2.proposalState == proposalStates.Succeeded) assert(ds2.proposalVotesFor.gte(ds2.proposalVotesRequired), 'Proposal state is successful, yet does not have the votes required');
 
 }
 
@@ -123,30 +124,35 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
+            rocketTokenRPL.balanceOf(txOptions.from),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
         ]).then(
-            ([memberTotal]) =>
-            ({memberTotal})
+            ([memberTotal, rplBalanceBond, rplBalanceVault]) =>
+            ({memberTotal, rplBalanceBond, rplBalanceVault})
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
-    //console.log('Member Total', Number(ds1.memberTotal));
+    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceBond), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionJoin(txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    //console.log('Member Total', Number(ds2.memberTotal));
+    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceBond), web3.utils.fromWei(ds2.rplBalanceVault));
 
     // Check member count has increased
     assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
+    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault.add(ds1.rplBalanceBond)), 'RocketVault address does not contain the correct RPL bond amount');
 
 }
 
@@ -158,30 +164,35 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
+            rocketTokenRPL.balanceOf(_rplRefundAddress),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
         ]).then(
-            ([memberTotal]) =>
-            ({memberTotal})
+            ([memberTotal, rplBalanceRefund, rplBalanceVault]) =>
+            ({memberTotal, rplBalanceRefund, rplBalanceVault})
         );
     }
 
     // Capture data
     let ds1 = await getTxData();
-    console.log('Member Total', Number(ds1.memberTotal));
+    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceRefund), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionLeave(_rplRefundAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    console.log('Member Total', Number(ds2.memberTotal));
+    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceRefund), web3.utils.fromWei(ds2.rplBalanceVault));
 
-    // Check member count has increased
+    // Verify
     assert(ds2.memberTotal.eq(ds1.memberTotal.sub(web3.utils.toBN(1))), 'Member count has not decreased');
+    assert(ds2.rplBalanceRefund.eq(ds1.rplBalanceVault.sub(ds2.rplBalanceRefund)), 'Member RPL refund address does not contain the correct RPL bond amount');
 
 }
 
