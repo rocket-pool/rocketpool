@@ -43,7 +43,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
     // When a new member has been successfully invited to join, they must call this method to join officially
     // They will be required to have the RPL bond amount in their account
-    function actionJoin() override external onlyRegisteredNode(msg.sender) {
+    function actionJoin() override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Set some intiial contract address
         address rocketVaultAddress = getContractAddress('rocketVault');
         address rocketTokenRPLAddress = getContractAddress('rocketTokenRPL');
@@ -85,12 +85,14 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     
 
     // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their RPL bond
-    function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) {
+    function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsInterface rocketDAONodeSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Check this wouldn't dip below the min required trusted nodes
+        require(rocketDAONode.getMemberCount() > rocketDAONode.getMemberMinRequired(), "Member count will fall below min required, this member must choose to be replaced");
         // Check they were successful in their proposal to leave
         require(rocketDAONode.getMemberLeaveAccepted(msg.sender), "Member has not made a successful leave proposal to the DAO");
         // Has their leave request expired?
@@ -119,7 +121,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
  
  
     // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
-    function actionRewardsRegister(bool _enable) override public onlyTrustedNode(msg.sender) {
+    function actionRewardsRegister(bool _enable) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         _rewardsEnable(msg.sender, _enable);
     }
 

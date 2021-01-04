@@ -6,6 +6,7 @@ interface RocketDAONodeTrustedInterface {
     function getMemberQuorumVotesRequired() external view returns (uint256);
     function getMemberAt(uint256 _index) external view returns (address);
     function getMemberCount() external view returns (uint256);
+    function getMemberMinRequired() external view returns (uint256);
     function getMemberInvitedBlock(address _nodeAddress) external view returns (uint256);
     function getMemberIsValid(address _nodeAddress) external view returns (bool);
     function getMemberLastProposalBlock(address _nodeAddress) external view returns (uint256);
