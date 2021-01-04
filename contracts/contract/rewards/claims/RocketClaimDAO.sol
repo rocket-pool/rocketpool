@@ -45,7 +45,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     }
 
     // Send the rewards to the DAOs treasury address
-    function send() override public {
+    function send() override public onlyLatestContract("rocketClaimDAO", address(this)) {
         // Verify this trusted node is able to claim
         require(getRewardsSendPossible(), "DAO treasury address not set to receive rewards or there is no RPL balance to send");
         // Load contract s

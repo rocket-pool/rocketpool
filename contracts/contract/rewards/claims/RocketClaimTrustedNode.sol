@@ -67,7 +67,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
     
     // Trusted node claiming
-    function claim() override external onlyTrustedNode(msg.sender) {
+    function claim() override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketClaimTrustedNode", address(this)) {
         // Verify this trusted node is able to claim
         require(getClaimPossible(msg.sender), "This trusted node is not able to claim yet and must wait until a full claim interval passes");
         // Init the rewards pool contract
