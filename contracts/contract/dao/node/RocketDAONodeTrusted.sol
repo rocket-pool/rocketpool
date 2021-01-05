@@ -101,11 +101,6 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         return getBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress))); 
     }
 
-    // Get the block that the member was invited to join at
-    function getMemberInvitedBlock(address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.invited.block", _nodeAddress))); 
-    }
-
     // Get the last time this user made a proposal
     function getMemberLastProposalBlock(address _nodeAddress) override public view returns (uint256) { 
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", _nodeAddress))); 
@@ -124,21 +119,21 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Get the block the member joined at
     function getMemberJoinedBlock(address _nodeAddress) override public view returns (uint256) { 
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress))); 
-    }
+    } 
 
-    // Has this users leave request been accepted?
-    function getMemberLeaveAccepted(address _nodeAddress) override public view returns (bool) { 
-        return getBool(keccak256(abi.encodePacked(daoNameSpace, "member.leave.accepted", _nodeAddress))); 
-    }
-
-    // Get the block that this user leave request was accepted at
-    function getMemberLeaveAcceptedBlock(address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.leave.block", _nodeAddress))); 
+    // Get data that was recorded about a proposal that was executed
+    function getMemberProposalExecutedBlock(string memory _proposalType, address _nodeAddress) override public view returns (uint256) { 
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", _proposalType, _nodeAddress))); 
     }
 
     // Get the RPL bond amount the user deposited to join
     function getMemberRPLBondAmount(address _nodeAddress) override public view returns (uint256) { 
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress))); 
+    }
+
+    // Get an address that's either to be replaced or is being replaced
+    function getMemberReplacedAddress(string memory _type, address _nodeAddress) override public view returns (address) { 
+        return getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", _type, _nodeAddress))); 
     }
 
 
@@ -204,19 +199,11 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // A new DAO member being invited, can only be done via a proposal or in bootstrap mode
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
     function proposalInvite(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
-        // Check current node status
-        require(getBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress))) != true, "This node is already part of the trusted node DAO");
-        // Verify the ID is min 3 chars
-        require(bytes(_id).length >= 3, "The ID for this new member must be at least 3 characters");
-        // Check email address length
-        require(bytes(_email).length >= 6, "The email for this new member must be at least 6 characters");
+        // Their proposal executed, record the block
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "invited", _nodeAddress)), block.number);
         // Ok all good, lets get their invitation and member data setup
-        // They are initially only invited to join, so their membership isn't set as true until they accept it in 'memberJoin()'
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), false);
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
-        setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
-        setString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)), _email);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.invited.block", _nodeAddress)), block.number);
+        // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
+        _memberInit(_id, _email, _nodeAddress);
     }
 
 
@@ -224,23 +211,22 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     function proposalLeave(address _nodeAddress) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
         require(getMemberCount() > daoMemberMinCount, "Member count will fall below min required, this member must choose to be replaced");
-        // Their proposal to leave has been accepted
-        setBool(keccak256(abi.encodePacked(daoNameSpace, "member.leave.accepted", _nodeAddress)), true);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.leave.block", _nodeAddress)), block.number);
+        // Their proposal to leave has been accepted, record the block
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "leave", _nodeAddress)), block.number);
     }
 
 
     // A current member proposes replacing themselves as a member with a new member who will take over their RPL bond
-    // TODO: 
-    // - Work on the replacement function
-    // - Look at adding 'onlyLatestContract("rocketDAONodeTrusted", address(this))' modifier to methods in here and claims etc to ensure replaced contract methods can't be run
-    /*
-    function proposalReplace(address _memberAddress, address _nodeAddress) override public onlyExecutingContracts onlyTrustedNode(_memberAddress) onlyRegisteredNode(_nodeAddress) { 
+    // Member who is proposing to be replaced, must action the method in the actions contract to confirm they want to be replaced
+    function proposalReplace(address _memberNodeAddress, string memory _replaceId, string memory _replaceEmail, address _replaceNodeAddress) override public onlyExecutingContracts onlyTrustedNode(_memberNodeAddress) onlyRegisteredNode(_replaceNodeAddress) { 
+        // Their proposal to be replaced has been accepted, record the block
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "replace", _replaceNodeAddress)), block.number);
+        // Initialise the new prospective members details
+        _memberInit(_replaceId, _replaceEmail, _replaceNodeAddress);
         // Their proposal to be replaced has been accepted
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace.new", _nodeAddress)), _nodeAddress);
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace.existing", _nodeAddress)), _memberAddress);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.replace.block", _nodeAddress)), block.number);
-    }*/
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", "new", _memberNodeAddress)), _replaceNodeAddress);
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", "current", _memberNodeAddress)), _memberNodeAddress);
+    }
     
 
     // Change one of the current settings of the trusted node DAO
@@ -255,8 +241,22 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
 
-    // Adding a new members data
-    // function _
+    // Add a new potential members data, they are not official members yet, just propsective
+    function _memberInit(string memory _id, string memory _email, address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
+        // Check current node status
+        require(!getMemberIsValid(_nodeAddress), "This node is already part of the trusted node DAO");
+        // Verify the ID is min 3 chars
+        require(bytes(_id).length >= 3, "The ID for this new member must be at least 3 characters");
+        // Check email address length
+        require(bytes(_email).length >= 6, "The email for this new member must be at least 6 characters");
+        // Member initial data, not official until the bool is flagged as true
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), false);
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)), _email);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), 0);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)), 0);
+    }
         
 
 }

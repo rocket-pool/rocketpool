@@ -6,4 +6,5 @@ interface RocketDAONodeTrustedActionsInterface {
     function actionJoin() external;
     function actionLeave(address _rplBondRefundAddress) external;
     function actionRewardsRegister(bool _enable) external;
+    function actionReplace() external; 
 }

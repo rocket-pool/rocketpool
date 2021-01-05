@@ -101,7 +101,7 @@ export default function() {
         // Start Tests
         //
 
-     
+        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -166,7 +166,6 @@ export default function() {
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged, min DAO member count has been met');
         });
 
-        
 
         it(printTitle('owner', 'fails to set quorum setting below 51% while bootstrap mode is enabled'), async () => {
             // Update setting
@@ -175,8 +174,7 @@ export default function() {
             }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
         });
 
-        
-
+    
         it(printTitle('owner', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
             // Update setting
             await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.91'), {
@@ -320,7 +318,7 @@ export default function() {
             // Cancel now before it passes
             await daoNodeTrustedCancel(proposalID, {from: registeredNodeTrusted1});
         });
-
+        
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to leave the DAO and receive their RPL bond refund, proposal is denied as it would be under the min members required for the DAO'), async () => {
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
