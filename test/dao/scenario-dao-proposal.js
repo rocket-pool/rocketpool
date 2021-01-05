@@ -49,7 +49,7 @@ export async function getDAOProposalVotesAgainst(proposalID, txOptions) {
 
 
 // Execute a successful proposal
-export async function DAOProposalexecute(_proposalID, txOptions) {
+export async function DAOProposalExecute(_proposalID, txOptions) {
 
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();

@@ -197,3 +197,43 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
 }
 
 
+// A member wishes to replace themselves with a registered node
+export async function daoNodeTrustedMemberReplace(newMemberAddress, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberIsValid.call(txOptions.from),
+            rocketDAONodeTrusted.getMemberIsValid.call(newMemberAddress),
+            rocketDAONodeTrusted.getMemberCount.call(),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
+        ]).then(
+            ([currentMemberStatus, newMemberStatus, memberTotal, rplBalanceVault]) =>
+            ({currentMemberStatus, newMemberStatus, memberTotal, rplBalanceVault})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+    //console.log(ds1.currentMemberStatus, ds1.newMemberStatus, 'Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceVault));
+
+    // Add a new proposal
+    await rocketDAONodeTrustedActions.actionReplace(txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+    //console.log(ds2.currentMemberStatus, ds2.newMemberStatus, 'Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceVault));
+
+    // Check member count has increased
+    assert(ds1.currentMemberStatus == true && ds2.currentMemberStatus == false, 'Current member is still a member');
+    assert(ds1.newMemberStatus == false && ds2.newMemberStatus == true, 'New member has not replaced the current member');
+    assert(ds2.memberTotal.eq(ds1.memberTotal), 'Member count has changed, should be the same');
+    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault), 'RPL Vault balance has changed');
+
+}
