@@ -214,8 +214,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     
 
     // Execute a proposal if it has passed
-    // Anyone can run this if they are willing to pay the gas costs for it
-    function execute(uint256 _proposalID) override public {
+    function execute(uint256 _proposalID) override public  {
         // Firstly make sure this proposal has passed
         require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded, has expired or has already been executed");
         // Set as executed now before running payload

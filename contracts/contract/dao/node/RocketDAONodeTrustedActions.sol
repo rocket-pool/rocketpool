@@ -23,6 +23,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     event ActionJoined(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);  
     event ActionLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
     event ActionReplace(address indexed _currentNodeAddress, address indexed _newNodeAddress, uint256 time);
+    event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
 
     // Calculate using this as the base
     uint256 calcBase = 1 ether;
@@ -138,8 +139,8 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
 
     // A member can choose to have their spot in the DAO replaced by another member 
-    // Must be run by the node that wishes to replace the current member
-    function actionReplace() override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
+    // Must be run by the current member node that wishes to be replaced (so it's verified they want out)
+    function actionReplace() override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsInterface rocketDAONodeSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
@@ -147,6 +148,8 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         address memberCurrent = rocketDAONode.getMemberReplacedAddress('current', msg.sender);
         // Get the replacement member 
         address memberReplacement = rocketDAONode.getMemberReplacedAddress('new', msg.sender);
+        // Verify the replacement member is still a registered node
+        require(getBool(keccak256(abi.encodePacked("node.exists", memberReplacement))), "Replacement member is no longer a registered RP node");
         // Check they are confirming they wish to be replaced
         require(memberCurrent == msg.sender, "The replace method must be run by the current member that wishes to be replaced");
         // The block that the member was successfully allowed to be replaced
@@ -159,6 +162,26 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         _memberRemove(memberCurrent);
         // Log it
         emit ActionReplace(memberCurrent, msg.sender, now);
+    }
+
+
+    // A member can be evicted from the DAO by proposal, send their remaining RPL balance to them and remove from the DAO
+    // Is run via the main DAO contract when the proposal passes and is executed
+    function actionKick(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
+        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        // Get the
+        uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(_nodeAddress);
+        // Refund
+        if(rplBondRefundAmount > 0) {
+            // Send tokens now
+            require(rocketVault.withdrawToken(_nodeAddress, getContractAddress('rocketTokenRPL'), rplBondRefundAmount), "Could not send kicked members RPL bond token balance from vault");
+        }
+        // Remove the member now
+        _memberRemove(_nodeAddress);
+        // Log it
+        emit ActionKick(_nodeAddress, rplBondRefundAmount, now);   
     }
 
 

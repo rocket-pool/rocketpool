@@ -20,6 +20,7 @@ export const RocketNodeSettings = artifacts.require('RocketNodeSettings.sol');
 export const RocketDAOProposal = artifacts.require('RocketDAOProposal.sol');
 export const RocketDAONodeTrusted = artifacts.require('RocketDAONodeTrusted.sol');
 export const RocketDAONodeTrustedActions = artifacts.require('RocketDAONodeTrustedActions.sol');
+export const RocketDAONodeTrustedProposals = artifacts.require('RocketDAONodeTrustedProposals.sol');
 export const RocketDAONodeTrustedSettings = artifacts.require('RocketDAONodeTrustedSettings.sol');
 export const RocketRole = artifacts.require('RocketRole.sol');
 export const RocketStorage = artifacts.require('RocketStorage.sol');

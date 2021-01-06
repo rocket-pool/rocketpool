@@ -6,8 +6,8 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting } from './scenario-dao-node-trusted-bootstrap';
-import { getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, getDAONodeProposalQuorumVotesRequired, } from './scenario-dao-node-trusted';
-import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock, getDAOProposalVotesFor, getDAOProposalVotesAgainst, DAOProposalExecute } from './scenario-dao-proposal';
+import { daoNodeTrustedExecute, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, getDAONodeProposalQuorumVotesRequired, } from './scenario-dao-node-trusted';
+import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock, getDAOProposalVotesFor, getDAOProposalVotesAgainst } from './scenario-dao-proposal';
 
 // Contracts
 import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketVault, RocketTokenRPL } from '../_utils/artifacts'; 
@@ -252,8 +252,8 @@ export default function() {
             // Fast forward to voting periods finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID_1)-blockCurrent)+2);
             // Proposal should be successful, lets execute it
-            await DAOProposalExecute(proposalID_1, { from: registeredNodeTrusted1 });
-            await DAOProposalExecute(proposalID_2, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedExecute(proposalID_1, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedExecute(proposalID_2, { from: registeredNodeTrusted1 });
             // Member has now been invited to join, so lets do that
             // We'll allow the DAO to transfer our RPL bond before joining
             await rplMint(registeredNode1, rplBondAmount);
@@ -285,7 +285,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID_3)-blockCurrent)+1);
             // Proposal should be successful, lets execute it
-            await DAOProposalExecute(proposalID_3, { from: registeredNodeTrusted2 });
+            await daoNodeTrustedExecute(proposalID_3, { from: registeredNodeTrusted2 });
             // Member can now leave and collect any RPL bond
             await daoNodeTrustedMemberLeave(registeredNodeTrusted2, {from: registeredNodeTrusted2});
         });
@@ -345,7 +345,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
             // Proposal should be successful, lets execute it
-            await shouldRevert(DAOProposalExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required, this member must choose to be replaced');
+            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required, this member must choose to be replaced');
         });
         */
         
@@ -353,6 +353,7 @@ export default function() {
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
+            let proposalActionBlocks = 2; 
             // Current member to be replaced
             let currentMember = registeredNodeTrusted1;
             // New member to replace current member
@@ -360,6 +361,7 @@ export default function() {
             // Update now while in bootstrap mode
             await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
             await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.action.blocks', proposalActionBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalReplace', type: 'function', inputs: [{type: 'address', name: '_memberNodeAddress'}, {type: 'string', name: '_replaceId'},{type: 'string', name: '_replaceEmail'}, {type: 'address', name: '__replaceNodeAddress'}]},
@@ -379,7 +381,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
             // Proposal should be successful, lets execute it
-            await DAOProposalExecute(proposalID, { from: registeredNodeTrusted2 });
+            await daoNodeTrustedExecute(proposalID, { from: registeredNodeTrusted2 });
             // Member can now be replaced
             await daoNodeTrustedMemberReplace(newMember, {from: currentMember});
         });
@@ -441,7 +443,7 @@ export default function() {
             // Fast forward to this voting period finishing and executing period expiring
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
             // Execution should fail
-            await shouldRevert(DAOProposalExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
+            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
 
         });
         */

@@ -48,37 +48,6 @@ export async function getDAOProposalVotesAgainst(proposalID, txOptions) {
 };
 
 
-// Execute a successful proposal
-export async function DAOProposalExecute(_proposalID, txOptions) {
-
-    // Load contracts
-    const rocketDAOProposal = await RocketDAOProposal.deployed();
-
-    // Get data about the tx
-    function getTxData() {
-        return Promise.all([
-            rocketDAOProposal.getState.call(_proposalID),
-        ]).then(
-            ([proposalState]) =>
-            ({proposalState})
-        );
-    }
-
-    // Capture data
-    let ds1 = await getTxData();
-    //console.log(Number(ds1.proposalState));
-
-    // Execute a proposal
-    await rocketDAOProposal.execute(_proposalID, txOptions);
-
-    // Capture data
-    let ds2 = await getTxData();
-    //console.log(Number(ds2.proposalState));
-
-    // Check it was updated
-    assert(ds2.proposalState.eq(web3.utils.toBN(6)), 'Proposal is not in the executed state');
-
-}
 
 
 
