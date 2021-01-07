@@ -167,7 +167,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
     // A member can be evicted from the DAO by proposal, send their remaining RPL balance to them and remove from the DAO
     // Is run via the main DAO contract when the proposal passes and is executed
-    function actionKick(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
+    function actionKick(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));

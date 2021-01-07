@@ -194,6 +194,8 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
     // Voting for or against a proposal
     function vote(address _member, uint256 _votes, uint256 _proposalID, bool _support) override public onlyDAOContract(getDAO(_proposalID)) {
+        // Successful proposals can be executed immediately, add this as a check for people who are still trying to vote after it has passed
+        require(getState(_proposalID) != ProposalState.Succeeded, "Proposal has passed, voting is complete and the proposal can now be executed");
         // Check the proposal is in a state that can be voted on
         require(getState(_proposalID) == ProposalState.Active, "Voting is not active for this proposal");
         // Has this member already voted on this proposal?

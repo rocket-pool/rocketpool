@@ -101,7 +101,7 @@ export default function() {
         // Start Tests
         //
 
-        /*
+        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -347,8 +347,8 @@ export default function() {
             // Proposal should be successful, lets execute it
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required, this member must choose to be replaced');
         });
-        */
-        
+
+
        it(printTitle('registeredNodeTrusted1', 'creates a proposal to replace themselves with registeredNode2 in the DAO, it is successful and registeredNode2 becomes a member and takes over their RPL bond'), async () => {
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
@@ -386,7 +386,48 @@ export default function() {
             await daoNodeTrustedMemberReplace(newMember, {from: currentMember});
         });
 
-        /*
+        
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
+            // Get the DAO settings
+            const daoNode = await RocketDAONodeTrusted.deployed();
+            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting('proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            // Add our 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
+            // How much bond has registeredNodeTrusted2 paid?
+            let registeredNodeTrusted2BondAmount = await daoNode.getMemberRPLBondAmount.call(registeredNodeTrusted2);
+            // How much to fine? 33%
+            let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div(web3.utils.toBN(3));
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
+                [registeredNodeTrusted2, registeredNodeTrusted2BondAmountFine]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
+            await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });   // Don't kick me
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            // Proposal has passed, lets execute it now
+            await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
+            // Member should be kicked now, let's check their RPL balance has their 33% bond returned
+            let rplBalance = await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2);
+            //console.log(web3.utils.fromWei(await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2)));
+            assert((registeredNodeTrusted2BondAmount.sub(registeredNodeTrusted2BondAmountFine)).eq(rplBalance), "registeredNodeTrusted2 remaining RPL balance is incorrect");
+        });
+        
 
         it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
             // Setup our proposal settings
@@ -445,9 +486,7 @@ export default function() {
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
 
-        });
-        */
-        
+        });      
         
 
     });
