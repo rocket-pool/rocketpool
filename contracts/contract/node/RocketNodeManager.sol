@@ -126,12 +126,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             // Add to index
             addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); 
             // Register them to claim rewards
-            setRegisterNodeTrustedRewards(_nodeAddress, true);
+            // setRegisterNodeTrustedRewards(_nodeAddress, true);
             
         }
         else { 
             // Remove them from the claims register
-            setRegisterNodeTrustedRewards(_nodeAddress, false);
+            // setRegisterNodeTrustedRewards(_nodeAddress, false);
             // Remove index
             addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
             // Set status now - has to be done after rewards claims are removed to verify they were a legit trusted node
