@@ -37,8 +37,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDaoNodeTrusted"));
-        RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDaoNodeTrustedSettings"));
+        RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Is it a trusted node DAO member?
         bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
