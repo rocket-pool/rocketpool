@@ -3,6 +3,7 @@ pragma solidity 0.6.12;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
+import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -99,6 +100,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
         // Load contracts
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
@@ -115,6 +117,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
+        // Update unbonded validator count if minipool is unbonded
+        if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, now);
         // Add minipool to queue
@@ -128,6 +132,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function destroyMinipool() override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
@@ -136,6 +141,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
+        // Update unbonded validator count if minipool is unbonded
+        if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, now);
     }
