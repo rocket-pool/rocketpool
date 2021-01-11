@@ -8,7 +8,6 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
@@ -37,12 +36,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDaoNodeTrusted"));
         RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDaoNodeTrustedSettings"));
         // Is it a trusted node DAO member?
-        bool daoNodeTrustedMember = rocketNodeManager.getNodeTrusted(msg.sender);
+        bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
