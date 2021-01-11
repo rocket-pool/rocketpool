@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { registerNode } from '../_helpers/node';
+import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
@@ -68,18 +68,8 @@ export default function() {
 
         // Add a new DAO member via bootstrap mode
         let bootstrapMemberAdd = async function(_account, _id, _email) {
-            // Get the DAO settings
-            let daoNodesettings = await RocketDAONodeTrustedSettings.deployed();
-            // How much RPL is required for a trusted node bond?
-            let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
-            // Mint RPL bond required for them to join
-            await rplMint(_account, rplBondAmount);
-            // Set allowance for the Vault to grab the bond
-            await rplAllowanceDAO(_account, rplBondAmount);
-            // Create invites for them to become a member
-            await setDaoNodeTrustedBootstrapMember(_id, _email, _account, {from: owner});
-            // Now get them to join
-            await daoNodeTrustedMemberJoin({from: _account});
+            // Use helper now
+            await setNodeTrusted(_account, _id, _email, owner);
         }
 
         // Setup
