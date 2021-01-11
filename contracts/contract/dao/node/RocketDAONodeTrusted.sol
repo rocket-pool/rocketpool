@@ -63,6 +63,10 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     /*** Members ******************/
 
+    // Return true if the node addressed passed is a member of the trusted node DAO
+    function getMemberIsValid(address _nodeAddress) override public view returns (bool) { 
+        return getBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress))); 
+    }
     
     // Get a trusted node member address by index
     function getMemberAt(uint256 _index) override public view returns (address) { 
@@ -79,11 +83,6 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Min required member count for the DAO
     function getMemberMinRequired() override public view returns (uint256) {
         return daoMemberMinCount;
-    }
-
-    // Return true if the node addressed passed is a member of the trusted node DAO
-    function getMemberIsValid(address _nodeAddress) override public view returns (bool) { 
-        return getBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress))); 
     }
 
     // Get the last time this user made a proposal

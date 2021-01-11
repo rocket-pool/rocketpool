@@ -6,7 +6,6 @@ import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 
 
 // Node registration and management 
@@ -32,19 +31,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getNodeAt(uint256 _index) override public view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.index")), _index);
-    }
-
-    // Get the number of trusted nodes in the network
-    // TODO: Move to DAO contract
-    function getTrustedNodeCount() override public view returns (uint256) {
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.trusted.index")));
-    }
-
-    // Get a trusted node address by index
-    function getTrustedNodeAt(uint256 _index) override public view returns (address) {
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.trusted.index")), _index);
     }
 
     // Check whether a node exists
@@ -83,63 +69,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         emit NodeRegistered(msg.sender, now);
     }
 
-    
-    // Register a trusted node to receive rewards  
-    // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
-    // TODO: Move to Trusted node DAO contract when ready
-    function setRegisterNodeTrustedRewards(address _nodeAddress, bool _enable) private onlyTrustedNode(_nodeAddress) {
-        // Load contracts
-        RocketClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
-        // Verify the trust nodes rewards contract is enabled 
-        if(rewardsClaimTrustedNode.getEnabled()) {
-            if(_enable) {
-                // Register
-                rewardsClaimTrustedNode.register(_nodeAddress, true); 
-            }else{
-                // Unregister
-                rewardsClaimTrustedNode.register(_nodeAddress, false); 
-            }
-        }
-    }
- 
-    // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
-    // TODO: Move to Trusted node DAO contract when ready
-    function registerNodeTrustedRewards(bool _enable) override public onlyTrustedNode(msg.sender) {
-        setRegisterNodeTrustedRewards(msg.sender, _enable);
-    }
-
-
-    // Set a node's trusted status
-    // Only accepts calls from super users
-    // TODO: Move to Trusted node DAO contract when ready
-    function setNodeTrusted(address _nodeAddress, bool _trusted) override external onlyLatestContract("rocketNodeManager", address(this)) onlyOwner {
-        // Check node exists
-        require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))), "The node does not exist");
-        // Check current node status
-        require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) != _trusted, "The node's trusted status is already set");
-        // Load contracts
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Add node to / remove node from trusted index
-        if (_trusted) { 
-            // Set status
-            setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), true);
-            // Add to index
-            addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress); 
-            // Register them to claim rewards
-            // setRegisterNodeTrustedRewards(_nodeAddress, true);
-            
-        }
-        else { 
-            // Remove them from the claims register
-            // setRegisterNodeTrustedRewards(_nodeAddress, false);
-            // Remove index
-            addressSetStorage.removeItem(keccak256(abi.encodePacked("nodes.trusted.index")), _nodeAddress);
-            // Set status now - has to be done after rewards claims are removed to verify they were a legit trusted node
-            setBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)), false);
-        }
-        // Emit node trusted set event
-        emit NodeTrustedSet(_nodeAddress, _trusted, now);
-    }
 
     // Set a node's timezone location
     // Only accepts calls from registered nodes

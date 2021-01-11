@@ -8,7 +8,7 @@ import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
@@ -56,8 +56,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         setUint(submissionCountKey, submissionCount);
         // Check submission count & set minipool withdrawable
         uint256 calcBase = 1 ether;
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
             setMinipoolWithdrawable(_minipoolAddress, _stakingStartBalance, _stakingEndBalance);
         }
     }

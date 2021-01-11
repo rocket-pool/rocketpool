@@ -5,8 +5,8 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
+import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 
 // Network balances
@@ -88,8 +88,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         setUint(submissionCountKey, submissionCount);
         // Check submission count & update network balances
         uint256 calcBase = 1 ether;
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        if (calcBase.mul(submissionCount).div(rocketNodeManager.getTrustedNodeCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
             updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
         }
     }
