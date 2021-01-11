@@ -44,11 +44,10 @@ abstract contract RocketBase {
     }
 
     /**
-    * @dev Throws if called by any sender that isn't a trusted node
+    * @dev Throws if called by any sender that isn't a trusted node DAO member
     */
     modifier onlyTrustedNode(address _nodeAddress) {
-        // TODO: Remove old "node.trusted" namespace when trusted node DAO fully implemented
-        require(getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress))) || getBool(keccak256(abi.encodePacked("dao.trustednodes", "member", _nodeAddress))), "Invalid trusted node");
+        require(getBool(keccak256(abi.encodePacked("dao.trustednodes", "member", _nodeAddress))), "Invalid trusted node");
         _;
     }
 
