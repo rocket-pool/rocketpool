@@ -8,10 +8,10 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 
@@ -36,11 +36,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
-        // RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDaoNodeTrusted"));
+        RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDaoNodeTrustedSettings"));
         // Is it a trusted node DAO member?
-        bool daoNodeTrustedMember = rocketNodeManager.getNodeTrusted(msg.sender);
+        bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
         require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
@@ -54,8 +54,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
         require(depositType != MinipoolDeposit.Empty || daoNodeTrustedMember, "Invalid node deposit amount");
         // Check if it's a trusted node member, it's not exceeding the amount of unbonded minipool validatos it can make
-        // TODO: Add in variable that records the amount of unbonded minipools per trusted node member
-        // if(daoNodeTrustedMember) require(rocketDAONodeTrustedSettings.getMinipoolUnbondedMax() >= [insertUnbondedMinipoolCountHere], "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed");
+        if (daoNodeTrustedMember) { require(rocketDaoNodeTrustedSettings.getMinipoolUnbondedMax() >= rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender), "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed"); }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, now);
         // Create minipool

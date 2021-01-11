@@ -35,4 +35,5 @@ interface RocketDAOProposalInterface {
     function vote(address _member, uint256 _votes, uint256 _proposalID, bool _support) external; 
     function cancel(address _member, uint256 _proposalID) external;
     function execute(uint256 _proposalID) external;
+    
 }
