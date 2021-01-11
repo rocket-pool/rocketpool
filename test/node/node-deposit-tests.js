@@ -1,6 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { mintRPLBond, bootstrapMember, memberJoin } from '../_helpers/dao';
 import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
@@ -40,6 +41,11 @@ export default function() {
             // Register trusted node
             await registerNode({from: trustedNode});
             await setNodeTrusted(trustedNode, {from: owner});
+
+            // Add trusted node to DAO
+            await mintRPLBond(owner, trustedNode);
+            await bootstrapMember(trustedNode, 'rpl', 'node@rocketpool.net', {from: owner});
+            await memberJoin({from: trustedNode});
 
             // Get settings
             fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');

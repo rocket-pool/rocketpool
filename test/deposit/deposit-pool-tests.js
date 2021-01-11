@@ -1,6 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { mintRPLBond, bootstrapMember, memberJoin } from '../_helpers/dao';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
@@ -39,6 +40,11 @@ export default function() {
             // Register trusted node
             await registerNode({from: trustedNode});
             await setNodeTrusted(trustedNode, {from: owner});
+
+            // Add trusted node to DAO
+            await mintRPLBond(owner, trustedNode);
+            await bootstrapMember(trustedNode, 'rpl', 'node@rocketpool.net', {from: owner});
+            await memberJoin({from: trustedNode});
 
         });
 
