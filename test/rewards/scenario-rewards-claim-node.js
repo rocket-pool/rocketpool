@@ -23,8 +23,6 @@ export async function rewardsClaimTrustedNodeRegisteredBlockGet(trustedNodeAddre
 export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
 
     // Load contracts
-    const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketRewardsPool = await RocketRewardsPool.deployed();
     const rocketClaimTrustedNode = await RocketClaimTrustedNode.deployed();
 
@@ -38,8 +36,7 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
             rocketRewardsPool.getClaimingContractTotalClaimed('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractPerc('rocketClaimTrustedNode'),
             rocketClaimTrustedNode.getClaimRewardsAmount(txOptions),
-            rocketRewardsPool.getClaimingContractUserTotalCurrent('rocketClaimTrustedNode'),
-   
+            rocketRewardsPool.getClaimingContractUserTotalCurrent('rocketClaimTrustedNode')
         ]).then(
             ([currentBlock, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal]) =>
             ({currentBlock, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal})
@@ -48,6 +45,8 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
 
     // Capture data
     let ds1 = await getTxData();
+
+    //console.log('DAO Contract Amount', Number(web3.utils.fromWei(ds1.test)));
 
     // Perform tx
     await rocketClaimTrustedNode.claim(txOptions);

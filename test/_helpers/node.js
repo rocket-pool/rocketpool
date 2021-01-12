@@ -52,8 +52,6 @@ export async function setNodeTrusted(_account, _id, _email, owner) {
     await setDaoNodeTrustedBootstrapMember(_id, _email, _account, {from: owner});
     // Now get them to join
     await daoNodeTrustedMemberJoin({from: _account});
-
-
 }
 
 

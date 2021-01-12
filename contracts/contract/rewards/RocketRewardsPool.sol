@@ -153,7 +153,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Get the block they registered at
         uint256 registeredBlock = getClaimingContractUserRegisteredBlock(_claimingContract, _claimerAddress);
         // If it's 0 or hasn't passed one interval yet, they can't claim 
-        return registeredBlock > 0 && registeredBlock.add(getClaimIntervalBlocks()) <= block.number ? true : false;
+        return registeredBlock > 0 && registeredBlock.add(getClaimIntervalBlocks()) <= block.number && getClaimingContractPerc(_claimingContract) > 0 ? true : false;
     }
 
 

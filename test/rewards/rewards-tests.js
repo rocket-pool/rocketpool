@@ -1,8 +1,7 @@
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { registerNode } from '../_helpers/node';
-import { setNodeTrusted } from '../node/scenario-set-trusted';
+import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet, rewardsClaimIntervalsPassedGet, rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from '../token/scenario-rpl-inflation';
 import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-node';
@@ -13,7 +12,7 @@ import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils
 
 
 export default function() {
-    contract('RocketRewards', async (accounts) => {
+    contract.only('RocketRewards', async (accounts) => {
 
 
         // Accounts
@@ -25,7 +24,6 @@ export default function() {
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
-            registeredNodeTrusted4,
             daoClaimAddress
         ] = accounts;
 
@@ -82,12 +80,10 @@ export default function() {
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
-            await registerNode({from: registeredNodeTrusted4});
             // Enable last node to be trusted
-            await setNodeTrusted(registeredNodeTrusted1, true, {from: owner});
-            await setNodeTrusted(registeredNodeTrusted2, true, {from: owner});
-            await setNodeTrusted(registeredNodeTrusted3, true, {from: owner});
-            // Don't set node 4 as trusted just yet, it's used to test late registrations as trusted below
+            await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
+            await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
+            // Don't set node 3 as trusted just yet, it's used to test late registrations as trusted below
             
 
         });
@@ -95,7 +91,7 @@ export default function() {
         
         /*** Setting Claimers ***************************/
 
-            
+                 
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in blocks
             await shouldRevert(rewardsClaimIntervalBlocksSet(100, {
@@ -201,22 +197,7 @@ export default function() {
             }), "Made claim before RPL inflation started", "This trusted node is not able to claim yet and must wait until a full claim interval passes");           
         });
 
-        it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
-            // Setup RPL inflation for occuring every 10 blocks at 5%
-            let rplInflationStartBlock = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.5);
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Can this trusted node claim before there is any inflation available?
-            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
-            // Now make sure we can't claim yet
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            }), "Made claim before RPL inflation started", "This trusted node is not able to claim yet and must wait until a full claim interval passes");           
-        });
-
-         
+             
                 
         it(printTitle('trustedNode1', 'makes a claim, then fails to make another in the same claim interval'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
@@ -240,7 +221,7 @@ export default function() {
         });
 
 
-        it(printTitle('trustedNode4', 'fails to claim rewards as they have not waited one claim interval'), async () => {
+        it(printTitle('trustedNode3', 'fails to claim rewards as they have not waited one claim interval'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
             // Init this claiming contract on the rewards pool
@@ -252,36 +233,15 @@ export default function() {
             // Move to start of RPL inflation
             await mineBlocks(web3, rplInflationStartBlock-blockCurrent);
             // Make node 4 trusted now
-            await setNodeTrusted(registeredNodeTrusted4, true, {from: owner});
+            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
             // Get the current block
             blockCurrent = await web3.eth.getBlockNumber();
             // Make a claim now
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted4, {
-                from: registeredNodeTrusted4,
+            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted3, {
+                from: registeredNodeTrusted3,
             }), "Made claim before next interval", "This trusted node is not able to claim yet and must wait until a full claim interval passes");                    
         });
-        
-        
-        it(printTitle('trustedNode1', 'fails to make a claim when removed as trusted node operator'), async () => {
-            // Setup RPL inflation for occuring every 10 blocks at 5%
-            let rplInflationStartBlock = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.05);
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Can this trusted node claim before there is any inflation available?
-            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
-            // Move to start of RPL inflation and ahead one claim interval
-            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+claimIntervalBlocks);
-            // Remove as trusted node
-            await setNodeTrusted(registeredNodeTrusted1, false, {from: owner});
-            // Make a claim now
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            }), "Made claim again before next interval", "Invalid trusted node");                 
-        });
-
-        
+             
 
         it(printTitle('trustedNode1', 'fails to make a claim when trusted node contract claim perc is set to 0'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
@@ -297,7 +257,7 @@ export default function() {
             // Make a claim now
             await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
-            }), "Made claim again before next interval", "Not a valid rewards claiming contact or it has been disabled");                 
+            }), "Made claim again before next interval", "This trusted node is not able to claim yet and must wait until a full claim interval passes");                 
         });
 
     
@@ -316,19 +276,19 @@ export default function() {
             await rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
             });   
-            // Make node 4 trusted now
-            await setNodeTrusted(registeredNodeTrusted4, true, {from: owner});
+            // Make node 3 trusted now
+            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
             // Move to next claim interval
             await mineBlocks(web3, claimIntervalBlocks);
             // Attempt claim in the next interval
-            await rewardsClaimTrustedNode(registeredNodeTrusted4, {
-                from: registeredNodeTrusted4,
+            await rewardsClaimTrustedNode(registeredNodeTrusted3, {
+                from: registeredNodeTrusted3,
             });           
         });
         
         
 
-        it(printTitle('trustedNode1+2+3+4', 'trusted node 1 makes a claim after RPL inflation has begun, claim rate is changed, then trusted node 2,3 makes a claim and newly registered trusted node 4 claim in next interval'), async () => {
+        it(printTitle('trustedNode1+2+3', 'trusted node 1 makes a claim after RPL inflation has begun, claim rate is changed, then trusted node 2 makes a claim and newly registered trusted node 3 claim in next interval'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
             // Set the contracts perc it can claim 1 =100%
@@ -353,17 +313,13 @@ export default function() {
             await rewardsClaimTrustedNode(registeredNodeTrusted2, {
                 from: registeredNodeTrusted2,
             });  
-            // Make a claim now
-            await rewardsClaimTrustedNode(registeredNodeTrusted3, {
-                from: registeredNodeTrusted3,
-            });  
-            // Make node 4 trusted now
-            await setNodeTrusted(registeredNodeTrusted4, true, {from: owner});
+            // Make node 3 trusted now
+            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
             // Move to 2 claim intervals ahead
             await mineBlocks(web3, claimIntervalBlocks+claimIntervalBlocks);
             // Attempt claim in the next interval with new inflation rate
-            await rewardsClaimTrustedNode(registeredNodeTrusted4, {
-                from: registeredNodeTrusted4,
+            await rewardsClaimTrustedNode(registeredNodeTrusted3, {
+                from: registeredNodeTrusted3,
             });           
         });
         
@@ -472,6 +428,6 @@ export default function() {
             }); 
         });
         
-        
+     
     });
 }
