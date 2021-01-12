@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolStatus, RocketNodeManager, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketMinipool, RocketMinipoolStatus, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
 
 
 // Submit a minipool withdrawable event
@@ -6,19 +6,19 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
 
     // Load contracts
     const [
+        rocketDAONodeTrusted,
         rocketMinipoolStatus,
-        rocketNodeManager,
         rocketNodeStaking,
         rocketStorage,
     ] = await Promise.all([
+        RocketDAONodeTrusted.deployed(),
         RocketMinipoolStatus.deployed(),
-        RocketNodeManager.deployed(),
         RocketNodeStaking.deployed(),
         RocketStorage.deployed(),
     ]);
 
     // Get parameters
-    let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
+    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
     let nodeSubmissionKey = web3.utils.soliditySha3('minipool.withdrawable.submitted.node', txOptions.from, minipoolAddress, stakingStartBalance, stakingEndBalance);

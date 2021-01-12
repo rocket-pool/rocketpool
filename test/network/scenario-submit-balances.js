@@ -1,4 +1,4 @@
-import { RocketNetworkBalances, RocketNodeManager, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketNetworkBalances, RocketStorage } from '../_utils/artifacts';
 
 
 // Submit network balances
@@ -6,17 +6,17 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
 
     // Load contracts
     const [
+        rocketDAONodeTrusted,
         rocketNetworkBalances,
-        rocketNodeManager,
         rocketStorage,
     ] = await Promise.all([
+        RocketDAONodeTrusted.deployed(),
         RocketNetworkBalances.deployed(),
-        RocketNodeManager.deployed(),
         RocketStorage.deployed(),
     ]);
 
     // Get parameters
-    let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
+    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
     let nodeSubmissionKey = web3.utils.soliditySha3('network.balances.submitted.node', txOptions.from, block, totalEth, stakingEth, rethSupply);

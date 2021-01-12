@@ -1,4 +1,4 @@
-import { RocketNetworkPrices, RocketNodeManager, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketNetworkPrices, RocketStorage } from '../_utils/artifacts';
 
 
 // Submit network prices
@@ -6,17 +6,17 @@ export async function submitPrices(block, rplPrice, txOptions) {
 
     // Load contracts
     const [
+        rocketDAONodeTrusted,
         rocketNetworkPrices,
-        rocketNodeManager,
         rocketStorage,
     ] = await Promise.all([
+        RocketDAONodeTrusted.deployed(),
         RocketNetworkPrices.deployed(),
-        RocketNodeManager.deployed(),
         RocketStorage.deployed(),
     ]);
 
     // Get parameters
-    let trustedNodeCount = await rocketNodeManager.getTrustedNodeCount.call();
+    let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
     let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node', txOptions.from, block, rplPrice);

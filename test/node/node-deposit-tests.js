@@ -1,7 +1,6 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { mintRPLBond, bootstrapMember, memberJoin } from '../_helpers/dao';
 import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
