@@ -10,7 +10,7 @@ import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
 
 export default function() {
-    contract('RocketTokenNETH', async (accounts) => {
+    contract.only('RocketTokenNETH', async (accounts) => {
 
 
         // Accounts
@@ -38,7 +38,7 @@ export default function() {
 
             // Register trusted node
             await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Set settings
             await setMinipoolSetting('WithdrawalDelay', 0, {from: owner});
