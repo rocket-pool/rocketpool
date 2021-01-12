@@ -10,7 +10,7 @@ import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
 
 export default function() {
-    contract.only('RocketTokenNETH', async (accounts) => {
+    contract('RocketTokenNETH', async (accounts) => {
 
 
         // Accounts

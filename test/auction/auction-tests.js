@@ -42,7 +42,7 @@ export default function() {
 
             // Register trusted node
             await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Mint RPL to node & stake; create & stake minipool
             const rplAmount = web3.utils.toWei('10000', 'ether');

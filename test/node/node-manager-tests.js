@@ -5,7 +5,7 @@ import { registerNode } from '../_helpers/node';
 import { setNodeSetting } from '../_helpers/settings';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
-import { setNodeTrusted } from './scenario-set-trusted';
+
 
 export default function() {
     contract('RocketNodeManager', async (accounts) => {
@@ -120,57 +120,6 @@ export default function() {
 
         });
 
-
-        //
-        // Trusted status
-        //
-
-
-        it(printTitle('admin', 'can set a node\'s trusted status'), async () => {
-
-            // Set trusted status
-            await setNodeTrusted(registeredNode, true, {from: owner});
-            await setNodeTrusted(registeredNode, false, {from: owner});
-
-        });
-
-
-        it(printTitle('admin', 'cannot set trusted status for an invalid node'), async () => {
-
-            // Attempt to set trusted status
-            await shouldRevert(setNodeTrusted(random, true, {
-                from: owner,
-            }), 'Set trusted status for an invalid node');
-
-        });
-
-
-        it(printTitle('admin', 'cannot set a node\'s trusted status to its current trusted status'), async () => {
-
-            // Attempt to set trusted status
-            await shouldRevert(setNodeTrusted(registeredNode, false, {
-                from: owner,
-            }), 'Set a node\'s trusted status to its current trusted status');
-
-            // Update trusted status
-            await setNodeTrusted(registeredNode, true, {from: owner});
-
-            // Attempt to set trusted status
-            await shouldRevert(setNodeTrusted(registeredNode, true, {
-                from: owner,
-            }), 'Set a node\'s trusted status to its current trusted status');
-
-        });
-
-
-        it(printTitle('random address', 'cannot set a node\'s trusted status'), async () => {
-
-            // Attempt to set trusted status
-            await shouldRevert(setNodeTrusted(registeredNode, true, {
-                from: random,
-            }), 'Random address set a node\'s trusted status');
-
-        });
 
 
     });

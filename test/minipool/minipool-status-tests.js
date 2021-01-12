@@ -43,9 +43,10 @@ export default function() {
             await registerNode({from: trustedNode1});
             await registerNode({from: trustedNode2});
             await registerNode({from: trustedNode3});
-            await setNodeTrusted(trustedNode1, {from: owner});
-            await setNodeTrusted(trustedNode2, {from: owner});
-            await setNodeTrusted(trustedNode3, {from: owner});
+            await setNodeTrusted(trustedNode1, 'saas_1', 'node1@home.com', owner);
+            await setNodeTrusted(trustedNode2, 'saas_2', 'node2@home.com', owner);
+            await setNodeTrusted(trustedNode3, 'saas_3', 'node3@home.com', owner);
+     
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();

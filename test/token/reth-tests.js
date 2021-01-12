@@ -47,7 +47,7 @@ export default function() {
 
             // Register trusted node
             await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Set settings
             await setNetworkSetting('TargetRethCollateralRate', web3.utils.toWei('1', 'ether'), {from: owner});
