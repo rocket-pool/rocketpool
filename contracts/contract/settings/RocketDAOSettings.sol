@@ -23,6 +23,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
             // RPL Claims groups (the DAO does not need to be set, it will claim remaining rewards each claim after each interval)
             setRewardsClaimerPerc('rocketClaimDAO', 0.1 ether);             // Percentage given of 1 ether
             setRewardsClaimerPerc('rocketClaimTrustedNode', 0.3 ether);     // Percentage given of 1 ether
+            setRewardsClaimerPerc('rocketClaimNode', 0.6 ether);            // Percentage given of 1 ether
             // RPL Claims settings
             setRewardsClaimIntervalBlocks(185100); // The period at which a claim period will span in blocks - 30 days approx by default
             // RPL Inflation settings
