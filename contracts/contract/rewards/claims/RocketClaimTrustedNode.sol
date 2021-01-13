@@ -5,7 +5,6 @@ pragma solidity 0.6.12;
 import "../../RocketBase.sol";
 import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
-import "../../../interface/node/RocketNodeManagerInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
