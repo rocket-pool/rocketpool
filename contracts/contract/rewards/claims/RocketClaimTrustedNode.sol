@@ -51,14 +51,14 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
 
     // Return how much they can expect in rpl rewards
-    function getClaimRewardsAmount() override public view onlyTrustedNode(msg.sender) returns (uint256) {
+    function getClaimRewardsAmount(address _trustedNodeAddress) override public view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
         // Init the rewards pool contract 
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
-        return rewardsPool.getClaimAmount('rocketClaimTrustedNode', msg.sender, getClaimRewardsPerc(msg.sender));
+        return rewardsPool.getClaimAmount('rocketClaimTrustedNode', _trustedNodeAddress, getClaimRewardsPerc(_trustedNodeAddress));
     }
 
     // Trusted node registering to claim
-    function register(address _trustedNodeAddress, bool _enable) override external onlyTrustedNode(_trustedNodeAddress) onlyLatestContract("rocketClaimTrustedNode", address(this)) onlyLatestContract("rocketDAONodeTrustedActions", msg.sender) {
+    function register(address _trustedNodeAddress, bool _enable) override external onlyLatestContract("rocketClaimTrustedNode", address(this)) onlyLatestContract("rocketDAONodeTrustedActions", msg.sender) onlyTrustedNode(_trustedNodeAddress) {
         // Init the rewards pool contract
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
         // Register/Unregister now
@@ -66,7 +66,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
     
     // Trusted node claiming
-    function claim() override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketClaimTrustedNode", address(this)) {
+    function claim() override external onlyLatestContract("rocketClaimTrustedNode", address(this)) onlyTrustedNode(msg.sender) {
         // Verify this trusted node is able to claim
         require(getClaimPossible(msg.sender), "This trusted node is not able to claim yet and must wait until a full claim interval passes");
         // Init the rewards pool contract
