@@ -84,7 +84,9 @@ export default function() {
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
             // Don't set node 3 as trusted just yet, it's used to test late registrations as trusted below
-            
+
+            // Disable RocketClaimNode claims contract
+            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
         });
 
