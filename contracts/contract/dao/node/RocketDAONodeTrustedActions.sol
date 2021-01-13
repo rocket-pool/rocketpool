@@ -43,6 +43,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     // Add a new member to the DAO
     function _memberAdd(address _nodeAddress, uint256 _rplBondAmountPaid) private onlyRegisteredNode(_nodeAddress) {
         // Load contracts
+        RocketClaimTrustedNodeInterface rocketClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check current node status
@@ -56,15 +57,16 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
          // Add to member index now
         addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
         // Register for them to receive rewards now
-        _rewardsEnable(_nodeAddress, true);
+        rocketClaimTrustedNode.register(_nodeAddress, true);
     }
 
     // Remove a member from the DAO
     function _memberRemove(address _nodeAddress) private onlyTrustedNode(_nodeAddress) {
         // Load contracts
+        RocketClaimTrustedNodeInterface rocketClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Deregister them from receiving rewards now
-        _rewardsEnable(_nodeAddress, false);
+        rocketClaimTrustedNode.register(_nodeAddress, false);
         // Remove their membership now
         deleteBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)));
         deleteAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)));
@@ -184,32 +186,5 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         emit ActionKick(_nodeAddress, rplBondRefundAmount, now);   
     }
 
-
-    /*** RPL Rewards ***********/
- 
- 
-    // Enable trusted nodes to call this themselves in case the rewards contract for them was disabled for any reason when they were set as trusted
-    function actionRewardsRegister(bool _enable) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
-        _rewardsEnable(msg.sender, _enable);
-    }
-
-
-    // Enable a trusted node to register for receiving RPL rewards
-    // Must be added when they join and removed when they leave
-    function _rewardsEnable(address _nodeAddress, bool _enable) private onlyTrustedNode(_nodeAddress) {
-        // Load contracts
-        RocketClaimTrustedNodeInterface rewardsClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
-        // Verify the trust nodes rewards contract is enabled 
-        if(rewardsClaimTrustedNode.getEnabled()) {
-            if(_enable) {
-                // Register
-                rewardsClaimTrustedNode.register(_nodeAddress, true); 
-            }else{
-                // Unregister
-                rewardsClaimTrustedNode.register(_nodeAddress, false); 
-            }
-        }
-    }
-        
 
 }
