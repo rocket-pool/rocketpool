@@ -13,7 +13,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Events
     event NodeRegistered(address indexed node, uint256 time);
-    event NodeTrustedSet(address indexed node, bool trusted, uint256 time);
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
 
     // Construct
@@ -38,11 +37,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)));
     }
 
-    // Check whether a node is trusted
-    function getNodeTrusted(address _nodeAddress) override public view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("node.trusted", _nodeAddress)));
-    }
-
     // Get a node's timezone location
     function getNodeTimezoneLocation(address _nodeAddress) override public view returns (string memory) {
         return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
@@ -61,7 +55,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(!getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "The node is already registered in the Rocket Pool network");
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
-        setBool(keccak256(abi.encodePacked("node.trusted", msg.sender)), false);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);

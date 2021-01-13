@@ -11,11 +11,10 @@ export async function register(timezoneLocation, txOptions) {
     function getNodeDetails(nodeAddress) {
         return Promise.all([
             rocketNodeManager.getNodeExists.call(nodeAddress),
-            rocketNodeManager.getNodeTrusted.call(nodeAddress),
             rocketNodeManager.getNodeTimezoneLocation.call(nodeAddress),
         ]).then(
-            ([exists, trusted, timezoneLocation]) =>
-            ({exists, trusted, timezoneLocation})
+            ([exists, timezoneLocation]) =>
+            ({exists, timezoneLocation})
         );
     }
 
@@ -36,7 +35,6 @@ export async function register(timezoneLocation, txOptions) {
     assert(nodeCount2.eq(nodeCount1.add(web3.utils.toBN(1))), 'Incorrect updated node count');
     assert.equal(lastNodeAddress, txOptions.from, 'Incorrect updated node index');
     assert.isTrue(details.exists, 'Incorrect node exists flag');
-    assert.isFalse(details.trusted, 'Incorrect node trusted flag');
     assert.equal(details.timezoneLocation, timezoneLocation, 'Incorrect node timezone location');
 
 }
