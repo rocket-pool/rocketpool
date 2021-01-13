@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 
 import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 
@@ -45,6 +46,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     // Register a new node with Rocket Pool
     function registerNode(string calldata _timezoneLocation) override external onlyLatestContract("rocketNodeManager", address(this)) {
         // Load contracts
+        RocketClaimNodeInterface rocketClaimNode = RocketClaimNodeInterface(getContractAddress("rocketClaimNode"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
@@ -58,6 +60,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
+        // Register node for RPL claims
+        rocketClaimNode.register(msg.sender, true);
         // Emit node registered event
         emit NodeRegistered(msg.sender, now);
     }
