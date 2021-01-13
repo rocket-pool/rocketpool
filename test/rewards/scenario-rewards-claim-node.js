@@ -35,7 +35,7 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
             rocketRewardsPool.getClaimingContractAllowance('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractTotalClaimed('rocketClaimTrustedNode'),
             rocketRewardsPool.getClaimingContractPerc('rocketClaimTrustedNode'),
-            rocketClaimTrustedNode.getClaimRewardsAmount(txOptions),
+            rocketClaimTrustedNode.getClaimRewardsAmount.call(txOptions.from),
             rocketRewardsPool.getClaimingContractUserTotalCurrent('rocketClaimTrustedNode')
         ]).then(
             ([currentBlock, claimIntervalBlockStart, contractClaimAllowance, contractClaimTotal, contractClaimPerc, trustedNodeClaimAmount, trustedNodeClaimIntervalTotal]) =>
