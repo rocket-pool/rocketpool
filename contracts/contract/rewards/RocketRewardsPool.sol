@@ -32,7 +32,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * @dev Throws if called by any sender that doesn't match a Rocket Pool claim contract
     */
     modifier onlyClaimContract() {
-        // They need a set claim amount > 0 to make a claim
+        require(getClaimingContractExists(getContractName(msg.sender)), "Not a valid rewards claiming contact");
+        _;
+    }
+
+    /**
+    * @dev Throws if called by any sender that doesn't match an enabled Rocket Pool claim contract
+    */
+    modifier onlyEnabledClaimContract() {
         require(getClaimingContractEnabled(getContractName(msg.sender)), "Not a valid rewards claiming contact or it has been disabled");
         _;
     }
@@ -105,6 +112,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimBlockLastMade() override public view returns(uint256) {
         return getUintS("rewards.pool.claim.interval.block.last");
+    }
+
+
+    // Check whether a claiming contract exists
+    function getClaimingContractExists(string memory _contractName) override public view returns (bool) {
+        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        return (daoSettings.getRewardsClaimerPercBlockUpdated(_contractName) > 0);
     }
 
 
@@ -305,7 +319,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
 
     // A claiming contract claiming for a user and the percentage of the rewards they are allowed to receive
-    function claim(address _claimerAddress, uint256 _claimerAmountPerc) override external onlyClaimContract {
+    function claim(address _claimerAddress, uint256 _claimerAmountPerc) override external onlyEnabledClaimContract {
         // The name of the claiming contract
         string memory contractName = getContractName(msg.sender);
         // Check to see if this registered claimer has waited one interval before collecting

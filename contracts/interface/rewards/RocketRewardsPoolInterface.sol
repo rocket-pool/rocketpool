@@ -19,6 +19,7 @@ interface RocketRewardsPoolInterface {
     function getClaimingContractAllowance(string memory _claimingContract) external view returns(uint256);
     function getClaimingContractPerc(string memory _claimingContract) external view returns(uint256);
     function getClaimingContractPercLast(string memory _claimingContract) external view returns(uint256);
+    function getClaimingContractExists(string memory _contractName) external view returns (bool);
     function getClaimingContractEnabled(string memory _contractName) external view returns (bool);
     function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) external view returns (uint256);
     function registerClaimer(address _claimerAddress, bool _enabled) external;
