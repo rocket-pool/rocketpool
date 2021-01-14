@@ -7,7 +7,8 @@ import { setNodeSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet, rewardsClaimIntervalsPassedGet, rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from '../token/scenario-rpl-inflation';
-import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-node';
+import { rewardsClaimNode } from './scenario-rewards-claim-node';
+import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-trusted-node';
 import { rewardsClaimDAORewardsAddressSet, rewardsClaimDAO } from './scenario-rewards-claim-dao';
 
 // Contracts
@@ -117,7 +118,7 @@ export default function() {
 
         });
 
-        
+
         /*** Setting Claimers ***************************/
 
                  
@@ -205,6 +206,104 @@ export default function() {
             await shouldRevert(rocketRewardsPool.claim(userOne, web3.utils.toWei('0.1'),  {
                 from: userOne
             }), "Non claimer network contract called claim method");
+        });
+
+
+        /*** Regular Nodes ***************************/
+
+
+        it(printTitle('node', 'can claim RPL'), async () => {
+
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartBlock = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentBlock = await web3.eth.getBlockNumber();
+            assert.isBelow(currentBlock, rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            await mineBlocks(web3, rplInflationStartBlock + claimIntervalBlocks - currentBlock);
+
+            // Claim RPL
+            await rewardsClaimNode({
+                from: registeredNode1,
+            });
+            await rewardsClaimNode({
+                from: registeredNode2,
+            });
+
+            // Move to next claim interval
+            await mineBlocks(web3, claimIntervalBlocks);
+
+            // Claim RPL again
+            await rewardsClaimNode({
+                from: registeredNode1,
+            });
+            await rewardsClaimNode({
+                from: registeredNode2,
+            });
+
+        });
+
+
+        it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
+
+            // Initialize claims contract
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move ahead one claim interval
+            await mineBlocks(web3, claimIntervalBlocks);
+
+            // Attempt to claim RPL
+            await shouldRevert(rewardsClaimNode({
+                from: registeredNode1,
+            }), 'Node claimed RPL before RPL inflation began');
+
+        });
+
+
+        it(printTitle('node', 'cannot claim RPL while the node claim contract is disabled'), async () => {
+
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartBlock = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentBlock = await web3.eth.getBlockNumber();
+            assert.isBelow(currentBlock, rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            await mineBlocks(web3, rplInflationStartBlock + claimIntervalBlocks - currentBlock);
+
+            // Disable RocketClaimNode claims contract
+            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
+
+            // Attempt to claim RPL
+            await shouldRevert(rewardsClaimNode({
+                from: registeredNode1,
+            }), 'Node claimed RPL while node claim contract was disabled');
+
+        });
+
+
+        it(printTitle('node', 'cannot claim RPL twice in the same interval'), async () => {
+
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartBlock = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentBlock = await web3.eth.getBlockNumber();
+            assert.isBelow(currentBlock, rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            await mineBlocks(web3, rplInflationStartBlock + claimIntervalBlocks - currentBlock);
+
+            // Claim RPL
+            await rewardsClaimNode({
+                from: registeredNode1,
+            });
+
+            // Attempt to claim RPL again
+            await shouldRevert(rewardsClaimNode({
+                from: registeredNode1,
+            }), 'Node claimed RPL twice in the same interval');
+
         });
         
 
