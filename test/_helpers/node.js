@@ -6,6 +6,14 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 
 
+// Get a node's effective RPL stake
+export async function getNodeEffectiveRPLStake(nodeAddress) {
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    let effectiveStake = await rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress);
+    return effectiveStake;
+}
+
+
 // Register a node
 export async function registerNode(txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();

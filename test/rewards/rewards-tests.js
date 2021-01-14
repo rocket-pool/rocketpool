@@ -1,7 +1,10 @@
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
+import { submitPrices } from '../_helpers/network';
+import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDeposit, getNodeEffectiveRPLStake } from '../_helpers/node';
+import { setNodeSetting } from '../_helpers/settings';
+import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet, rewardsClaimIntervalsPassedGet, rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from '../token/scenario-rpl-inflation';
 import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-node';
@@ -20,7 +23,8 @@ export default function() {
             owner,
             userOne,
             userTwo,
-            registeredNode,
+            registeredNode1,
+            registeredNode2,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
@@ -73,20 +77,43 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
+        // Setup
         before(async () => {
 
+            // Disable RocketClaimNode claims contract
+            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
+
             // Register nodes
-            await registerNode({from: registeredNode});
+            await registerNode({from: registeredNode1});
+            await registerNode({from: registeredNode2});
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
-            // Enable last node to be trusted
+
+            // Set nodes as trusted
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
             // Don't set node 3 as trusted just yet, it's used to test late registrations as trusted below
 
-            // Disable RocketClaimNode claims contract
-            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
+            // Set max per-minipool stake to 100% and RPL price to 1 ether
+            await setNodeSetting('MaximumPerMinipoolStake', web3.utils.toWei('1', 'ether'), {from: owner});
+            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
+            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
+
+            // Stake RPL against nodes and create minipools to set effective stakes
+            await mintRPL(owner, registeredNode1, web3.utils.toWei('32', 'ether'));
+            await mintRPL(owner, registeredNode2, web3.utils.toWei('32', 'ether'));
+            await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode1});
+            await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
+            await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+
+            // Check node effective stakes
+            let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
+            let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
+            assert(node1EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Incorrect node 1 effective stake');
+            assert(node2EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('32', 'ether'))), 'Incorrect node 2 effective stake');
 
         });
 
