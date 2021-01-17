@@ -84,6 +84,10 @@ For the changes to take effect, restart the Rocket Pool service with ``rocketpoo
 Viewing Service Information
 ***************************
 
+You can check the version of the CLI client and the service with::
+
+    rocketpool service version
+
 You can check the current status of the service (its running containers) with::
 
     rocketpool service status

@@ -1,6 +1,6 @@
 # Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool [![Build Status](https://travis-ci.org/rocket-pool/rocketpool.svg?branch=master)](https://travis-ci.org/rocket-pool/rocketpool)
 
-*NOTE: The current version of Rocket Pool requires the latest [ganache-cli@v6.9.1](https://github.com/trufflesuite/ganache-cli), [truffle@v5.1.22](https://github.com/trufflesuite/truffle), and [NodeJS@12.18.3 LTS](https://nodejs.org/en/download/package-manager/) or greater to run locally.
+*NOTE: The current version of Rocket Pool requires the latest [ganache-cli@v6.12.1](https://github.com/trufflesuite/ganache-cli), [truffle@v5.1.51](https://github.com/trufflesuite/truffle), and [NodeJS@12.18.3 LTS](https://nodejs.org/en/download/package-manager/) or greater to run locally.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />

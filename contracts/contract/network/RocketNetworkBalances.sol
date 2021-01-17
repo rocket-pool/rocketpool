@@ -17,6 +17,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     using SafeMath for uint;
 
     // Events
+    event BalancesSubmitted(address indexed from, uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
     event BalancesUpdated(uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
 
     // Construct
@@ -86,6 +87,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
+        // Emit balances submitted event
+        emit BalancesSubmitted(msg.sender, _block, _totalEth, _stakingEth, _rethSupply, now);
         // Check submission count & update network balances
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));

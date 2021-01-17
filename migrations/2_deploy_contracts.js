@@ -129,7 +129,7 @@ module.exports = async (deployer, network) => {
   else if (network == 'goerli') {
 
     // Casper deposit contract details
-    const casperDepositAddress = '0x07b39f4fde4a38bace212b546dac87c58dfe3fdc';
+    const casperDepositAddress = '0x8c5fecdc472e27bc447696f431e425d02dd46a8c';
     const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     contracts.casperDeposit = {
           address: casperDepositAddress,
@@ -246,7 +246,7 @@ module.exports = async (deployer, network) => {
   // Set network withdrawal credentials
   const setWithdrawalCredentials = async function() {
     // Set withdrawal credentials
-    const withdrawalCredentials = Buffer.from('0000000000000000000000000000000000000000000000000000000000000000', 'hex');
+    const withdrawalCredentials = Buffer.from('00d77be6277f1cdcfce33fdcb127b95fe91e09eec04aecc521dc94866f0055f0', 'hex');
     const rocketNetworkWithdrawal = await contracts.rocketNetworkWithdrawal.deployed();
     await rocketNetworkWithdrawal.setWithdrawalCredentials(withdrawalCredentials);
     // Log

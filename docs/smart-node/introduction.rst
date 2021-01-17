@@ -26,6 +26,7 @@ Contents
     getting-started.rst
     upgrading.rst
     customization.rst
+    non-docker.rst
     service.rst
     node-setup.rst
     depositing.rst

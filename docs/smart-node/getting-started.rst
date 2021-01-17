@@ -19,7 +19,7 @@ The smart node service is supported on AMD64 architecture and all Unix platforms
 
 Support for additional architectures (e.g. ARM) and operating systems will be added incrementally, after successful testing of the existing version.
 
-The Smart Node service requires at least 8GB of memory and 100GB of (SSD) hard disk space in order to run.
+The Smart Node service requires at least 16GB of memory and 200GB of (SSD) hard disk space in order to run.
 Note that a node operator must have **root** access to their node in order to install and run the smart node service.
 
 
