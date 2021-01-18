@@ -39,12 +39,6 @@ contract RocketMinipool is RocketMinipoolInterface {
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
 
-    // Events
-    event StatusUpdated(uint8 indexed status, uint256 time);
-    event EtherDeposited(address indexed from, uint256 amount, uint256 time);
-    event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
-    event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
-
     // Status getters
     function getStatus() override public view returns (MinipoolStatus) { return status; }
     function getStatusBlock() override public view returns (uint256) { return statusBlock; }
