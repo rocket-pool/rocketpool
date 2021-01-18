@@ -2,10 +2,11 @@ pragma solidity 0.6.12;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "./RocketMinipoolDelegateInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
-interface RocketMinipoolInterface {
+interface RocketMinipoolInterface is RocketMinipoolDelegateInterface {
     function getStatus() external view returns (MinipoolStatus);
     function getStatusBlock() external view returns (uint256);
     function getStatusTime() external view returns (uint256);
@@ -20,12 +21,4 @@ interface RocketMinipoolInterface {
     function getUserDepositAssignedTime() external view returns (uint256);
     function getStakingStartBalance() external view returns (uint256);
     function getStakingEndBalance() external view returns (uint256);
-    function nodeDeposit() external payable;
-    function userDeposit() external payable;
-    function refund() external;
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
-    function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) external;
-    function withdraw() external;
-    function dissolve() external;
-    function close() external;
 }
