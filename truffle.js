@@ -48,26 +48,26 @@ module.exports = {
     },
     // Geth RP Testnet Development
     'betatest': {
-        host: "127.0.0.1",
-        port: 8999,
-        network_id: "77", 
-        from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
-        gas: 8000000,
+      host: "127.0.0.1",
+      port: 8999,
+      network_id: "77", 
+      from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
+      gas: 12450000,
     },
     // Workshop network
     'workshop': {
-        host: "127.0.0.1",
-        port: 8545,
-        network_id: "88", 
-        from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
-        gas: 8000000,
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "88", 
+      from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
+      gas: 12450000,
     },
     // Goerli testnet
     'goerli': {
       host: '127.0.0.1',
       port: 8545,
       network_id: '5',
-      gas: 8000000,
+      gas: 12450000,
     },
   },
 };
