@@ -29,7 +29,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getRegistrationEnabled() override public view returns (bool) {
         return getBoolS("settings.node.registration.enabled");
     }
-    function setRegistrationEnabled(bool _value) public onlyOwner {
+    function setRegistrationEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.node.registration.enabled", _value);
     }
 
@@ -37,7 +37,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getDepositEnabled() override public view returns (bool) {
         return getBoolS("settings.node.deposit.enabled");
     }
-    function setDepositEnabled(bool _value) public onlyOwner {
+    function setDepositEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.node.deposit.enabled", _value);
     }
 
@@ -45,7 +45,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getMinimumPerMinipoolStake() override public view returns (uint256) {
         return getUintS("settings.node.per.minipool.stake.minimum");
     }
-    function setMinimumPerMinipoolStake(uint256 _value) public onlyOwner {
+    function setMinimumPerMinipoolStake(uint256 _value) public onlyGuardian {
         setUintS("settings.node.per.minipool.stake.minimum", _value);
     }
 
@@ -53,7 +53,7 @@ contract RocketNodeSettings is RocketBase, RocketNodeSettingsInterface {
     function getMaximumPerMinipoolStake() override public view returns (uint256) {
         return getUintS("settings.node.per.minipool.stake.maximum");
     }
-    function setMaximumPerMinipoolStake(uint256 _value) public onlyOwner {
+    function setMaximumPerMinipoolStake(uint256 _value) public onlyGuardian {
         setUintS("settings.node.per.minipool.stake.maximum", _value);
     }
 

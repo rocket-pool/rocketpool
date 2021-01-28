@@ -30,7 +30,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     function getDepositEnabled() override public view returns (bool) {
         return getBoolS("settings.deposit.enabled");
     }
-    function setDepositEnabled(bool _value) public onlyOwner {
+    function setDepositEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.deposit.enabled", _value);
     }
 
@@ -38,7 +38,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     function getAssignDepositsEnabled() override public view returns (bool) {
         return getBoolS("settings.deposit.assign.enabled");
     }
-    function setAssignDepositsEnabled(bool _value) public onlyOwner {
+    function setAssignDepositsEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.deposit.assign.enabled", _value);
     }
 
@@ -46,7 +46,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     function getMinimumDeposit() override public view returns (uint256) {
         return getUintS("settings.deposit.minimum");
     }
-    function setMinimumDeposit(uint256 _value) public onlyOwner {
+    function setMinimumDeposit(uint256 _value) public onlyGuardian {
         setUintS("settings.deposit.minimum", _value);
     }
 
@@ -54,7 +54,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     function getMaximumDepositPoolSize() override public view returns (uint256) {
         return getUintS("settings.deposit.pool.maximum");
     }
-    function setMaximumDepositPoolSize(uint256 _value) public onlyOwner {
+    function setMaximumDepositPoolSize(uint256 _value) public onlyGuardian {
         setUintS("settings.deposit.pool.maximum", _value);
     }
 
@@ -62,7 +62,7 @@ contract RocketDepositSettings is RocketBase, RocketDepositSettingsInterface {
     function getMaximumDepositAssignments() override public view returns (uint256) {
         return getUintS("settings.deposit.assign.maximum");
     }
-    function setMaximumDepositAssignments(uint256 _value) public onlyOwner {
+    function setMaximumDepositAssignments(uint256 _value) public onlyGuardian {
         setUintS("settings.deposit.assign.maximum", _value);
     }
 

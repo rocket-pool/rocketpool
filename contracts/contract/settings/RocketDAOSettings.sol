@@ -43,7 +43,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     }
 
     // DAO Address for RPL rewards, if it is 0, DAO RPL rewards will build up until it is set, they will then be transferred
-    function setRewardsDAOAddress(address _value) public onlyOwner {
+    function setRewardsDAOAddress(address _value) public onlyGuardian {
         setAddressS("settings.dao.rpl.rewards.address", _value); 
     }
 
@@ -60,7 +60,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     } 
 
     // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyOwner {
+    function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyGuardian {
         // Get the total perc set, can't be more than 100
         uint256 percTotal = getRewardsClaimersPercTotal();
         // If this group already exists, it will update the perc
@@ -77,7 +77,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
 
     /*
         // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyOwner {
+    function setRewardsClaimerPerc(string memory _contractName, uint256 _perc) public onlyGuardian {
         // Set their claimer perc in the rewards pool
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
         rewardsPool.registerContract(_contractName, _perc);
@@ -97,7 +97,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     }
 
     // The period over which claims can be made
-    function setRewardsClaimIntervalBlocks(uint256 _value) public onlyOwner {
+    function setRewardsClaimIntervalBlocks(uint256 _value) public onlyGuardian {
         setUintS("settings.dao.rpl.rewards.claim.period.blocks", _value);
     }
 
@@ -111,7 +111,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     // The inflation rate per day calculated using the yearly target in mind
     // Eg. Calculate inflation daily with 5% (0.05) yearly inflation 
     // Calculate in js example: let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
-    function setInflationIntervalRate(uint256 _value) public onlyOwner {
+    function setInflationIntervalRate(uint256 _value) public onlyGuardian {
         setUintS("settings.dao.rpl.inflation.interval.rate", _value);
     }
  
@@ -122,7 +122,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     }
 
     // How often the inflation is calculated, if this is changed significantly, then the above setInflationIntervalRate() will need to be adjusted
-    function setInflationIntervalBlocks(uint256 _value) public onlyOwner {
+    function setInflationIntervalBlocks(uint256 _value) public onlyGuardian {
         // Cannot be 0, set 'setInflationIntervalRate' to 0 if inflation is no longer required
         require(_value > 0, "Inflation interval block amount cannot be 0 or less");
         // We get a perc, so lets calculate that inflation rate for the current
@@ -135,7 +135,7 @@ contract RocketDAOSettings is RocketBase, RocketDAOSettingsInterface {
     }
 
     // The block to start inflation at, can only be set if that block has not already passed
-    function setInflationIntervalStartBlock(uint256 _value) public onlyOwner {
+    function setInflationIntervalStartBlock(uint256 _value) public onlyGuardian {
         // Must be a block in the future
         require(_value > block.number, "Inflation interval start block must be a future block");
         // If it's already set and started, a new start block cannot be set

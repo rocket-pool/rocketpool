@@ -59,38 +59,15 @@ abstract contract RocketBase {
         _;
     }
     
+
     /**
-    * @dev Throws if called by any account other than Rocket Pools.
+    * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
     */
-    modifier onlyRP() {
-        require(roleHas("rp", msg.sender), "Account is not Rocket Pool");
+    modifier onlyGuardian() {
+        require(getBool(keccak256(abi.encodePacked("access.role", "guardian", msg.sender))), "Account is not a temporary guardian");
         _;
     }
 
-    /**
-    * @dev Throws if called by any account other than DAO.
-    */
-    modifier onlyDAO() {
-        require(roleHas("dao", msg.sender), "Account is not the DAO");
-        _;
-    }
-
-    /**
-    * @dev Throws if called by any account other than RP or the DAO (allows both RP and the DAO to run certain methods until RP revokes their address)
-    */
-    modifier onlyOwner() {
-        require(roleHas("rp", msg.sender) || roleHas("dao", msg.sender), "Account is not Rocket Pool or the DAO");
-        _;
-    }
-
-
-    /**
-    * @dev Reverts if the address doesn't have this role
-    */
-    modifier onlyRole(string memory _role) {
-        require(roleHas(_role, msg.sender), "Account does not match the specified role");
-        _;
-    }
 
 
 
@@ -122,11 +99,6 @@ abstract contract RocketBase {
         require(keccak256(abi.encodePacked(contractName)) != keccak256(abi.encodePacked("")), "Contract not found");
         // Return
         return contractName;
-    }
-
-    /// @dev Check if an address has this role
-    function roleHas(string memory _role, address _address) internal view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("access.role", _role, _address)));
     }
 
     /// @dev Get revert error message from a .call method

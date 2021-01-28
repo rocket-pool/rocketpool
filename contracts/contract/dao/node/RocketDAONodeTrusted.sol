@@ -142,7 +142,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     
     // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
-    function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyOwner onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+    function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyGuardian onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets add them
         (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, _nodeAddress));
         // Was there an error?
@@ -150,7 +150,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
     // Bootstrap mode - Set some initial settings for the DAO
-    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
         (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingUint(string,uint256)", _settingPath, _value));
         // Was there an error?

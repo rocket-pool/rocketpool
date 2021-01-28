@@ -32,7 +32,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getCreateLotEnabled() override public view returns (bool) {
         return getBoolS("settings.auction.lot.create.enabled");
     }
-    function setCreateLotEnabled(bool _value) public onlyOwner {
+    function setCreateLotEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.auction.lot.create.enabled", _value);
     }
 
@@ -40,7 +40,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getBidOnLotEnabled() override public view returns (bool) {
         return getBoolS("settings.auction.lot.bidding.enabled");
     }
-    function setBidOnLotEnabled(bool _value) public onlyOwner {
+    function setBidOnLotEnabled(bool _value) public onlyGuardian {
         setBoolS("settings.auction.lot.bidding.enabled", _value);
     }
 
@@ -48,7 +48,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getLotMinimumEthValue() override public view returns (uint256) {
         return getUintS("settings.auction.lot.value.minimum");
     }
-    function setLotMinimumEthValue(uint256 _value) public onlyOwner {
+    function setLotMinimumEthValue(uint256 _value) public onlyGuardian {
         setUintS("settings.auction.lot.value.minimum", _value);
     }
 
@@ -56,7 +56,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getLotMaximumEthValue() override public view returns (uint256) {
         return getUintS("settings.auction.lot.value.maximum");
     }
-    function setLotMaximumEthValue(uint256 _value) public onlyOwner {
+    function setLotMaximumEthValue(uint256 _value) public onlyGuardian {
         setUintS("settings.auction.lot.value.maximum", _value);
     }
 
@@ -64,7 +64,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getLotDuration() override public view returns (uint256) {
         return getUintS("settings.auction.lot.duration");
     }
-    function setLotDuration(uint256 _value) public onlyOwner {
+    function setLotDuration(uint256 _value) public onlyGuardian {
         setUintS("settings.auction.lot.duration", _value);
     }
 
@@ -72,7 +72,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getStartingPriceRatio() override public view returns (uint256) {
         return getUintS("settings.auction.price.start");
     }
-    function setStartingPriceRatio(uint256 _value) public onlyOwner {
+    function setStartingPriceRatio(uint256 _value) public onlyGuardian {
         setUintS("settings.auction.price.start", _value);
     }
 
@@ -80,7 +80,7 @@ contract RocketAuctionSettings is RocketBase, RocketAuctionSettingsInterface {
     function getReservePriceRatio() override public view returns (uint256) {
         return getUintS("settings.auction.price.reserve");
     }
-    function setReservePriceRatio(uint256 _value) public onlyOwner {
+    function setReservePriceRatio(uint256 _value) public onlyGuardian {
         setUintS("settings.auction.price.reserve", _value);
     }
 

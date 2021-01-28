@@ -33,9 +33,8 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @dev Construct RocketStorage
     constructor() public {
-        // Set the main owner upon deployment
-        boolStorage[keccak256(abi.encodePacked("access.role", "rp", msg.sender))] = true;
-        boolStorage[keccak256(abi.encodePacked("access.role", "dao", msg.sender))] = true;
+        // Set the main guiardian upon deployment
+        boolStorage[keccak256(abi.encodePacked("access.role", "guardian", msg.sender))] = true;
     }
 
 

@@ -103,7 +103,7 @@ export default function() {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', registeredNode1, {
                 from: userOne
-            }), 'Non owner registered node to trusted node DAO', 'Account is not Rocket Pool or the DAO');
+            }), 'Non owner registered node to trusted node DAO', 'Account is not a temporary guardian');
         });
 
         it(printTitle('owner', 'cannot add the same member twice'), async () => {
@@ -142,7 +142,7 @@ export default function() {
             // Update setting
             await shouldRevert(setDAONodeTrustedBootstrapSetting('rplbond', web3.utils.toWei('10000'), {
                 from: userOne
-            }), 'UserOne changed RPL bond setting', 'Account is not Rocket Pool or the DAO');
+            }), 'UserOne changed RPL bond setting', 'Account is not a temporary guardian');
         });
 
 

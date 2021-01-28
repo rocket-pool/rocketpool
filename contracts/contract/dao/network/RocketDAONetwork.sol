@@ -44,7 +44,7 @@ contract RocketDAONetwork is RocketBase, RocketDAONetworkInterface {
 
 
     // Bootstrap mode - Setting
-    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
+    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
         // Ok good to go, lets update the settings 
         (bool success, bytes memory response) = getContractAddress('rocketDAONetworkProposals').call(abi.encodeWithSignature("proposalSettingUint(string,uint256)", _settingPath, _value));
         // Was there an error?
@@ -52,7 +52,7 @@ contract RocketDAONetwork is RocketBase, RocketDAONetworkInterface {
     }
 
     // Bootstrap mode - Set a claiming contract to receive a % of RPL inflation rewards
-    function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) override public onlyOwner onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
+    function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
         // Ok good to go, lets update the rewards claiming contract amount 
         (bool success, bytes memory response) = getContractAddress('rocketDAONetworkProposals').call(abi.encodeWithSignature("proposalSettingRewardsClaimer(string,uint256)", _contractName, _perc));
         // Was there an error?
@@ -60,7 +60,7 @@ contract RocketDAONetwork is RocketBase, RocketDAONetworkInterface {
     }
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
-    function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyOwner onlyLatestContract("rocketDAONetwork", address(this)) {
+    function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyLatestContract("rocketDAONetwork", address(this)) {
         require(_confirmDisableBootstrapMode == true, 'You must confirm disabling bootstrap mode, it can only be done once!');
         setBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")), true); 
     }

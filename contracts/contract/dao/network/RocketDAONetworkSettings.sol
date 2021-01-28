@@ -88,7 +88,7 @@ contract RocketDAONetworkSettings is RocketBase, RocketDAONetworkSettingsInterfa
     }
 
     // DAO Address for RPL rewards, if it is 0, DAO RPL rewards will build up until it is set, they will then be transferred
-    function setRewardsDAOAddress(address _value) public onlyOwner {
+    function setRewardsDAOAddress(address _value) public onlyGuardian {
         setAddressS("settings.dao.rpl.rewards.address", _value); 
     }*/
 
