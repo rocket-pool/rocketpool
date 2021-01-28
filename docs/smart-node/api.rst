@@ -31,6 +31,7 @@ Wallet Commands
 * ``wallet set-password [password]``: Set the node password to the specified string
 * ``wallet init``: Initialize the node wallet
 * ``wallet recover [mnemonic]``: Recover the node wallet from a mnemonic phrase (must be quoted)
+* ``wallet rebuild``: Rebuild validator keystores from derived keys
 * ``wallet export``: Get the node password & wallet file contents
 
 
@@ -81,4 +82,3 @@ Miscellaneous Commands
 * ``queue status``: Get the current status of the deposit pool and minipool queue
 * ``queue can-process``: Check whether the deposit pool can be processed
 * ``queue process``: Process the deposit pool
-* ``faucet withdraw [token]``: Withdraw ETH or tokens from the Rocket Pool faucet (beta only)
