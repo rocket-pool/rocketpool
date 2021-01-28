@@ -45,9 +45,8 @@ contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrustedSetting
     // Setter
        
     // Update a setting, can only be executed by the DAO contract when a majority on a setting proposal has passed and been executed
-    function setSettingUint(string memory _settingPath, uint256 _value) override external {
+    function setSettingUint(string memory _settingPath, uint256 _value) override external onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // Make sure only the DAO contract can update a setting
-        require(msg.sender == getContractAddress('rocketDAONodeTrustedProposals'), "Only the rocketDAONodeTrustedProposals contract can update a DAO setting");
         setUint(keccak256(abi.encodePacked(daoNameSpace, _settingPath)), _value);
     } 
     

@@ -65,16 +65,19 @@ const contracts = {
   // DAOs
   rocketDAOProposal:              artifacts.require('RocketDAOProposal.sol'),
   rocketDAONodeTrusted:           artifacts.require('RocketDAONodeTrusted.sol'),
-  rocketDAONodeTrustedSettings:   artifacts.require('RocketDAONodeTrustedSettings.sol'),
   rocketDAONodeTrustedProposals:  artifacts.require('RocketDAONodeTrustedProposals.sol'),
+  rocketDAONodeTrustedSettings:   artifacts.require('RocketDAONodeTrustedSettings.sol'),
   rocketDAONodeTrustedActions:    artifacts.require('RocketDAONodeTrustedActions.sol'),
+  rocketDAONetwork:               artifacts.require('RocketDAONetwork.sol'),
+  rocketDAONetworkProposals:      artifacts.require('RocketDAONetworkProposals.sol'),
+  rocketDAONetworkSettings:       artifacts.require('RocketDAONetworkSettings.sol'),
+  rocketDAONetworkActions:        artifacts.require('RocketDAONetworkActions.sol'),
   // Settings
   rocketAuctionSettings:          artifacts.require('RocketAuctionSettings.sol'),
   rocketDepositSettings:          artifacts.require('RocketDepositSettings.sol'),
   rocketMinipoolSettings:         artifacts.require('RocketMinipoolSettings.sol'),
   rocketNetworkSettings:          artifacts.require('RocketNetworkSettings.sol'),
   rocketNodeSettings:             artifacts.require('RocketNodeSettings.sol'),
-  rocketDAOSettings:              artifacts.require('RocketDAOSettings.sol'),
   // Tokens
   rocketTokenRPLFixedSupply:      artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:                artifacts.require('RocketTokenRETH.sol'),

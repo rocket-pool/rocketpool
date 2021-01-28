@@ -71,7 +71,7 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
     }
     // Always verify
     // Can't claim more than contracts allowance
-    assert(ds2.contractClaimTotal.lte(ds1.contractClaimAllowance), 'Trusted node claimed more than contracts allowance');
+    assert(ds2.contractClaimTotal.lte(ds2.contractClaimAllowance), 'Trusted node claimed more than contracts allowance');
     
     
 

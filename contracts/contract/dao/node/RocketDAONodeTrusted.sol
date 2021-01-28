@@ -51,13 +51,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Return the amount of member votes need for a proposal to pass
     function getMemberQuorumVotesRequired() override public view returns (uint256) {
         // Load contracts
-        RocketDAONodeTrustedSettingsInterface rocketDAOSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsInterface rocketDAONetworkSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Get the total trusted nodes
         uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
         uint256 total = trustedNodeCount > 0 ? calcBase.div(trustedNodeCount) : 0;
         // Return the votes required
-        return calcBase.mul(rocketDAOSettings.getQuorum()).div(total);
+        return calcBase.mul(rocketDAONetworkSettings.getQuorum()).div(total);
     }
 
 
@@ -152,7 +152,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Bootstrap mode - Set some initial settings for the DAO
     function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyOwner onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSetting(string,uint256)", _settingPath, _value));
+        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingUint(string,uint256)", _settingPath, _value));
         // Was there an error?
         require(success, getRevertMsg(response));
     }

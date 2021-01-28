@@ -5,11 +5,11 @@ import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDeposit, getNodeEffectiveRPLStake } from '../_helpers/node';
 import { setNodeSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
-import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet, rewardsClaimIntervalsPassedGet, rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
-import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from '../token/scenario-rpl-inflation';
+import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
+import { setDAONetworkBootstrapRewardsClaimer, setRewardsClaimIntervalBlocks, setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
 import { rewardsClaimNode } from './scenario-rewards-claim-node';
-import { rewardsClaimTrustedNode, rewardsClaimTrustedNodePossibleGet, rewardsClaimTrustedNodeRegisteredBlockGet } from './scenario-rewards-claim-trusted-node';
-import { rewardsClaimDAORewardsAddressSet, rewardsClaimDAO } from './scenario-rewards-claim-dao';
+import { rewardsClaimTrustedNode } from './scenario-rewards-claim-trusted-node';
+import {  rewardsClaimDAO } from './scenario-rewards-claim-dao';
 
 // Contracts
 import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
@@ -17,7 +17,7 @@ import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils
 
 export default function() {
     contract('RocketRewards', async (accounts) => {
-
+setRewardsClaimIntervalBlocks
 
         // Accounts
         const [
@@ -49,11 +49,11 @@ export default function() {
             let yearlyInflationTarget = 0.05;
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(blockStart, { from: owner });
+            await setRPLInflationStartBlock(blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(yearlyInflationTarget, { from: owner });
             // Return the starting block for inflation when it will be available
             return blockStart + blockInterval;
         }
@@ -61,14 +61,9 @@ export default function() {
         // Set a rewards claiming contract
         let rewardsContractSetup = async function(_claimContract, _claimAmountPerc) {
             // Set the amount this contract can claim
-            await rewardsClaimerPercSet(_claimContract, web3.utils.toWei(_claimAmountPerc.toString(), 'ether'), {
-                from: owner,
-            });
+            await setDAONetworkBootstrapRewardsClaimer(_claimContract, web3.utils.toWei(_claimAmountPerc.toString(), 'ether'), { from: owner });
             // Set the claim interval blocks
-            await rewardsClaimIntervalBlocksSet(claimIntervalBlocks, {
-                from: owner,
-            });
-
+            await setRewardsClaimIntervalBlocks(claimIntervalBlocks, { from: owner });
         }
 
 
@@ -82,7 +77,7 @@ export default function() {
         before(async () => {
 
             // Disable RocketClaimNode claims contract
-            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Register nodes
             await registerNode({from: registeredNode1});
@@ -124,14 +119,14 @@ export default function() {
                  
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in blocks
-            await shouldRevert(rewardsClaimIntervalBlocksSet(100, {
+            await shouldRevert(setRewardsClaimIntervalBlocks(100, {
                 from: userOne,
             }), 'Non owner set interval blocks for rewards claim period');
         });
 
         it(printTitle('owner', 'succeeds setting interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in blocks
-            await rewardsClaimIntervalBlocksSet(100, {
+            await setRewardsClaimIntervalBlocks(100, {
                 from: owner,
             });
         });
@@ -139,7 +134,7 @@ export default function() {
                 
         it(printTitle('userOne', 'fails to set contract claimer percentage for rewards'), async () => {
             // Set the amount this contract can claim
-            await shouldRevert(rewardsClaimerPercSet('myHackerContract', web3.utils.toWei('0.1', 'ether'), {
+            await shouldRevert(setDAONetworkBootstrapRewardsClaimer('myHackerContract', web3.utils.toWei('0.1', 'ether'), {
                 from: userOne,
             }), 'Non owner set contract claimer percentage for rewards');
         });
@@ -147,15 +142,15 @@ export default function() {
 
         it(printTitle('owner', 'set contract claimer percentage for rewards, then update it'), async () => {
             // Set the amount this contract can claim
-            await rewardsClaimerPercSet('rocketPoolClaimer2', web3.utils.toWei('0.0001', 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimDAO', web3.utils.toWei('0.0001', 'ether'), {
                 from: owner,
             });
             // Set the amount this contract can claim, then update it
-            await rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei('0.01', 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0.01', 'ether'), {
                 from: owner,
             });
             // Update now
-            await rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei('0.02', 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0.02', 'ether'), {
                 from: owner,
             });
         });
@@ -165,11 +160,11 @@ export default function() {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Set the amount this contract can claim, then update it
-            await rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei('0.01', 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0.01', 'ether'), {
                 from: owner,
             });
             // Update now
-            await rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei('0', 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {
                 from: owner,
             }, totalClaimersPerc);
         });
@@ -182,7 +177,7 @@ export default function() {
             // Get the total % needed to make 100%
             let claimAmount = (1 - totalClaimersPerc).toFixed(4);
             // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
-            await rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei(claimAmount.toString(), 'ether'), {
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei(claimAmount.toString(), 'ether'), {
                 from: owner,
             }, 1);
         });
@@ -193,7 +188,7 @@ export default function() {
             // Get the total % needed to make 100%
             let claimAmount = ((1 - totalClaimersPerc) + 0.001).toFixed(4); 
             // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
-            await shouldRevert(rewardsClaimerPercSet('rocketPoolClaimer1', web3.utils.toWei(claimAmount.toString(), 'ether'), {
+            await shouldRevert(setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei(claimAmount.toString(), 'ether'), {
                 from: owner,
             }), "Total claimers percentrage over 100%");
         });
@@ -273,7 +268,7 @@ export default function() {
             await mineBlocks(web3, rplInflationStartBlock + claimIntervalBlocks - currentBlock);
 
             // Disable RocketClaimNode claims contract
-            await rewardsClaimerPercSet('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
+            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Attempt to claim RPL
             await shouldRevert(rewardsClaimNode({
@@ -307,7 +302,7 @@ export default function() {
         });
         
 
-        /*** Trusted Node ***************************/
+        /*** Trusted Node **************************/
 
 
         it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
@@ -453,21 +448,7 @@ export default function() {
         
 
         /*** DAO ***************************/
-
-
-        it(printTitle('daoClaim', 'user one fails to set DAO claim rewards address'), async () => {
-            // Set the rewards claims interval in blocks
-            await shouldRevert(rewardsClaimDAORewardsAddressSet(userOne, {
-                from: userOne,
-            }), 'Non owner set DAO claim address');
-        });
-
-        it(printTitle('daoClaim', 'owner succeeds setting DAO claim rewards address'), async () => {
-            // Set the rewards claims interval in blocks
-            await rewardsClaimDAORewardsAddressSet(daoClaimAddress, {
-                from: owner,
-            });
-        });
+      
 
 
         it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract'), async () => {
@@ -517,7 +498,7 @@ export default function() {
             // Next interval
             await mineBlocks(web3, claimIntervalBlocks);
             // Make another claim, dao shouldn't receive anything
-            await rewardsClaimDAO({
+            await rewardsClaimDAO ({
                 from: registeredNodeTrusted2,
             }); 
         });
@@ -540,10 +521,6 @@ export default function() {
             await rewardsClaimDAO({
                 from: registeredNodeTrusted2,
             }); 
-            // Set the DAO claim address
-            await rewardsClaimDAORewardsAddressSet(daoClaimAddress, {
-                from: owner,
-            });
             // Next interval
             await mineBlocks(web3, claimIntervalBlocks);
             // Node claim again

@@ -9,7 +9,7 @@ import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/settings/RocketDAOSettingsInterface.sol";
+import "../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
@@ -145,14 +145,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Only accepts calls from registered nodes
     function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
-        RocketDAOSettingsInterface rocketDAOSettings = RocketDAOSettingsInterface(getContractAddress("rocketDAOSettings"));
+        RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress("rocketDAONetworkSettings"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAOSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
+        require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAONetworkSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");

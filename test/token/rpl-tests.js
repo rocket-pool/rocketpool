@@ -4,7 +4,8 @@ import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';
 import { burnFixedRPL } from './scenario-rpl-burn-fixed';
 import { allowDummyRPL } from './scenario-rpl-allow-fixed';
-import { rplInflationIntervalRateSet, rplInflationIntervalBlocksSet, rplInflationStartBlockSet, rplClaimInflation } from './scenario-rpl-inflation';
+import { rplClaimInflation } from './scenario-rpl-inflation';
+import { setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
 
 // Contracts
 import { RocketTokenRPL } from '../_utils/artifacts';
@@ -112,7 +113,7 @@ export default function() {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+            await shouldRevert(setRPLInflationStartBlock(parseInt(currentBlock)+10, {
                 from: userOne,
             }), 'Non owner set start block for inlfation');
         });
@@ -121,7 +122,7 @@ export default function() {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+            await setRPLInflationStartBlock(parseInt(currentBlock)+10, {
                 from: owner,
             });
         });
@@ -130,13 +131,13 @@ export default function() {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+            await setRPLInflationStartBlock(parseInt(currentBlock)+10, {
                 from: owner,
             });
             // Current block
             currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+            await setRPLInflationStartBlock(parseInt(currentBlock)+10, {
                 from: owner,
             });
         });
@@ -145,7 +146,7 @@ export default function() {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)-1, {
+            await shouldRevert(setRPLInflationStartBlock(parseInt(currentBlock)-1, {
                 from: owner,
             }), 'Owner set old start block for inflation');
         });
@@ -156,7 +157,7 @@ export default function() {
             // Inflation start block
             let inflationStartBlock = parseInt(currentBlock)+10;
             // Set the start block for inflation
-            await rplInflationStartBlockSet(inflationStartBlock, {
+            await setRPLInflationStartBlock(inflationStartBlock, {
                 from: owner,
             });
             // Fast forward to when inflation has begun
@@ -164,7 +165,7 @@ export default function() {
             // Current block
             currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
-            await shouldRevert(rplInflationStartBlockSet(parseInt(currentBlock)+10, {
+            await shouldRevert(setRPLInflationStartBlock(parseInt(currentBlock)+10, {
                 from: owner,
             }), 'Owner set start block for inflation after it had started');
         });
@@ -184,11 +185,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Run the test now
             await shouldRevert(rplClaimInflation(config.blockClaim, { from: userOne }, 'Inflation claimed before start block has passed'));
@@ -209,11 +210,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Run the test now
             await shouldRevert(rplClaimInflation(config.blockClaim, { from: userOne }, 'Inflation claimed at start block'));
@@ -234,11 +235,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Run the test now
             await shouldRevert(rplClaimInflation(config.blockClaim, { from: userOne }, 'Inflation claimed before interval has passed'));
@@ -259,11 +260,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             await rplClaimInflation(config, { from: userOne });
@@ -284,11 +285,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             await rplClaimInflation(config, { from: userOne });
@@ -325,11 +326,11 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             config.blockClaim = config.blockStart + (365 * config.blockInterval);
@@ -356,11 +357,11 @@ export default function() {
             let quarterlyBlockAmount = totalYearBlocks / 4;
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             config.blockClaim += quarterlyBlockAmount;
@@ -392,11 +393,11 @@ export default function() {
             let quarterlyBlockAmount = totalYearBlocks / 4;
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             config.blockClaim += quarterlyBlockAmount;
@@ -423,18 +424,18 @@ export default function() {
             }
 
             // Set the daily inflation start block
-            await rplInflationStartBlockSet(config.blockStart, { from: owner });
+            await setRPLInflationStartBlock(config.blockStart, { from: owner });
             // Set the daily inflation block count
-            await rplInflationIntervalBlocksSet(config.blockInterval, { from: owner });
+            await setRPLInflationIntervalBlocks(config.blockInterval, { from: owner });
             // Set the daily inflation rate
-            await rplInflationIntervalRateSet(config.yearlyInflationTarget, { from: owner });
+            await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
             // Mint inflation now
             config.blockClaim = config.blockStart + (365 * config.blockInterval);
             await rplClaimInflation(config, { from: userOne }, 18900000);
 
             // Now set inflation to 0
-            await rplInflationIntervalRateSet(0, { from: owner });
+            await setRPLInflationIntervalRate(0, { from: owner });
 
             // Attempt to collect inflation
             config.blockClaim = config.blockStart + (720 * config.blockInterval);

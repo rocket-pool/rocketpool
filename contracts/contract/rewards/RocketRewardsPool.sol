@@ -5,8 +5,7 @@ pragma solidity 0.6.12;
 import "../RocketBase.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/rewards/RocketRewardsPoolInterface.sol";
-import "../../interface/rewards/claims/RocketClaimDAOInterface.sol";
-import "../../interface/settings/RocketDAOSettingsInterface.sol";
+import "../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -101,7 +100,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimIntervalBlocks() override public view returns(uint256) {
         // Get from the DAO settings
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
         return daoSettings.getRewardsClaimIntervalBlocks();
     }
 
@@ -117,7 +116,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     // Check whether a claiming contract exists
     function getClaimingContractExists(string memory _contractName) override public view returns (bool) {
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
         return (daoSettings.getRewardsClaimerPercBlockUpdated(_contractName) > 0);
     }
 
@@ -125,7 +124,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     // If the claiming contact has a % allocated to it higher than 0, it can claim
     function getClaimingContractEnabled(string memory _contractName) override public view returns (bool) {
         // Load contract
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
         // Now verify this contract can claim by having a claim perc > 0 
         return daoSettings.getRewardsClaimerPerc(_contractName) > 0 ? true : false;
     }
@@ -230,7 +229,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimingContractPerc(string memory _claimingContract) override public view returns(uint256) {
         // Load contract
-        RocketDAOSettingsInterface daoSettings = RocketDAOSettingsInterface(getContractAddress('rocketDAOSettings'));
+        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
         // Get the % amount allocated to this claim contract
         uint256 claimContractPerc = daoSettings.getRewardsClaimerPerc(_claimingContract);
         // Get the block the % was changed at, it will only use this % on the next interval
@@ -340,27 +339,20 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken('rocketRewardsPool', rplContractAddress));
             // Set this as the start of the new claim interval
             setUintS("rewards.pool.claim.interval.block.start", claimIntervalBlockStart);
-            // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to send them to the dao if possible
+            // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to transfer them to the dao if possible
             uint256 daoClaimContractAllowance = getClaimingContractAllowance('rocketClaimDAO');
             // Are we sending any?
             if(daoClaimContractAllowance > 0) {
                 // Get the DAO claim contract address
                 address daoClaimContractAddress = getContractAddress('rocketClaimDAO');
-                // Transfers the DAO's tokens to it's contract from the rewards pool
-                require(rocketVault.transferToken('rocketClaimDAO', rplContractAddress, daoClaimContractAllowance), "Could not transfer DAO's tokens to its claiming contract");
+                // Transfers the DAO's tokens to it's claiming contract from the rewards pool
+                require(rocketVault.transferToken('rocketClaimDAO', rplContractAddress, daoClaimContractAllowance), "Could not transfer token balance from vault for DAO");
                 // Set the current claim percentage this contract is entitled to for this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", 'rocketClaimDAO')), getClaimingContractPerc('rocketClaimDAO'));
                 // Store the total RPL rewards claim for this claiming contract in this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalBlockStart, 'rocketClaimDAO')), getClaimingContractTotalClaimed('rocketClaimDAO').add(daoClaimContractAllowance));
                 // Log it
                 emit RPLTokensClaimed(daoClaimContractAddress, daoClaimContractAddress, daoClaimContractAllowance, now);
-                // Init DAO claim contract
-                RocketClaimDAOInterface rocketClaimDAO = RocketClaimDAOInterface(daoClaimContractAddress);
-                // Can we send now?
-                if(rocketClaimDAO.getRewardsSendPossible()) {
-                    // Go for it
-                    rocketClaimDAO.send();
-                }
             }
         }
         // Has anyone claimed from this contract so far in this interval? If not then set the interval settings for the contract
