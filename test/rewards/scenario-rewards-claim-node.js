@@ -56,6 +56,8 @@ export async function rewardsClaimNode(txOptions) {
     let claimPerc = calcBase.mul(details1.nodeRplStake).div(details1.totalRplStake);
     let expectedClaimAmount = details1.nodesRplShare.mul(claimPerc).div(calcBase);
 
+    //console.log(web3.utils.fromWei(balances2.nodeRpl.sub(balances1.nodeRpl)), web3.utils.fromWei(expectedClaimAmount));
+
     // Check balances
     assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(expectedClaimAmount), 'Incorrect updated node RPL balance');
 

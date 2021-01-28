@@ -17,7 +17,6 @@ import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils
 
 export default function() {
     contract('RocketRewards', async (accounts) => {
-setRewardsClaimIntervalBlocks
 
         // Accounts
         const [
@@ -33,7 +32,7 @@ setRewardsClaimIntervalBlocks
         ] = accounts;
 
         // The testing config
-        let claimIntervalBlocks = 11;
+        let claimIntervalBlocks = 16;
         // Interval for calculating inflation
         let rewardIntervalBlocks = 5
 
