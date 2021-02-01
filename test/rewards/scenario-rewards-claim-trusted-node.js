@@ -1,6 +1,4 @@
-import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL, RocketDAOSettings, RocketRewardsPool, RocketClaimTrustedNode, RocketVault, RocketNodeManager } from '../_utils/artifacts';
-import { rewardsClaimIntervalBlocksSet, rewardsClaimerPercSet } from './scenario-rewards-claim';
+import { RocketRewardsPool, RocketClaimTrustedNode } from '../_utils/artifacts';
 
 
 // Can this trusted node make a claim yet? They need to wait 1 claim interval after being made a trusted node

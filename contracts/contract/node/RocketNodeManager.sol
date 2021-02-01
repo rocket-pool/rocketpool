@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -17,7 +17,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -63,7 +63,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Register node for RPL claims
         rocketClaimNode.register(msg.sender, true);
         // Emit node registered event
-        emit NodeRegistered(msg.sender, now);
+        emit NodeRegistered(msg.sender, block.timestamp);
     }
 
 
@@ -75,7 +75,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Set timezone location
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Emit node timezone location set event
-        emit NodeTimezoneLocationSet(msg.sender, now);
+        emit NodeTimezoneLocationSet(msg.sender, block.timestamp);
     }
 
 }

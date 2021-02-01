@@ -1,6 +1,5 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL, RocketDAONetworkSettings, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting, setRewardsClaimIntervalBlocks, setRPLInflationStartBlock, setRPLInflationIntervalBlocks} from '../dao/scenario-dao-network-bootstrap';
+import { RocketTokenRPL, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
 
 
 
@@ -18,7 +17,6 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // Load contracts
     const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketVault = await RocketVault.deployed();
-    const rocketRewardsPool = await RocketRewardsPool.deployed();
 
     // Get the previously last inflation calculated block
     const blockIntervalLastCalc = web3.utils.toBN(await rocketTokenRPL.getInflationCalcBlock.call());

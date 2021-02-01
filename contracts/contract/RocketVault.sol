@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -28,7 +28,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     event TokenTransfer(bytes32 indexed by, bytes32 indexed to, address indexed tokenAddress, uint256 amount, uint256 time);
 
 	// Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -53,7 +53,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Update contract balance
         etherBalances[contractKey] = etherBalances[contractKey].add(msg.value);
         // Emit ether deposited event
-        emit EtherDeposited(contractKey, msg.value, now);
+        emit EtherDeposited(contractKey, msg.value, block.timestamp);
     }
 
     // Withdraw an amount of ETH to a network contract
@@ -68,7 +68,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
         withdrawer.receiveVaultWithdrawalETH{value: _amount}();
         // Emit ether withdrawn event
-        emit EtherWithdrawn(contractKey, _amount, now);
+        emit EtherWithdrawn(contractKey, _amount, block.timestamp);
     }
 
 
@@ -91,7 +91,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Update contract balance
         tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
         // Emit token transfer
-        emit TokenDeposited(contractKey, _tokenAddress, _amount, now);
+        emit TokenDeposited(contractKey, _tokenAddress, _amount, block.timestamp);
         // Done
         return true;
     }
@@ -110,7 +110,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Update balances
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
         // Emit token withdrawn event
-        emit TokenWithdrawn(contractKey, _tokenAddress, _amount, now);
+        emit TokenWithdrawn(contractKey, _tokenAddress, _amount, block.timestamp);
         // Done
         return true;
     }
@@ -132,7 +132,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
         tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
         // Emit token withdrawn event
-        emit TokenTransfer(contractKeyFrom, contractKeyTo, _tokenAddress, _amount, now);
+        emit TokenTransfer(contractKeyFrom, contractKeyTo, _tokenAddress, _amount, block.timestamp);
         // Done
         return true;
     }

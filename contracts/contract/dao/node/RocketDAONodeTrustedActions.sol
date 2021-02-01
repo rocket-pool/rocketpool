@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -33,7 +33,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
     }
@@ -108,7 +108,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
         _memberAdd(msg.sender, rplBondAmount);
         // Log it
-        emit ActionJoined(msg.sender, rplBondAmount, now);
+        emit ActionJoined(msg.sender, rplBondAmount, block.timestamp);
     }
     
 
@@ -136,7 +136,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Remove them now
         _memberRemove(msg.sender);
         // Log it
-        emit ActionLeave(msg.sender, rplBondRefundAmount, now);
+        emit ActionLeave(msg.sender, rplBondRefundAmount, block.timestamp);
     }
 
 
@@ -163,7 +163,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Remove existing member now
         _memberRemove(memberCurrent);
         // Log it
-        emit ActionReplace(memberCurrent, msg.sender, now);
+        emit ActionReplace(memberCurrent, msg.sender, block.timestamp);
     }
 
 
@@ -183,7 +183,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Remove the member now
         _memberRemove(_nodeAddress);
         // Log it
-        emit ActionKick(_nodeAddress, rplBondRefundAmount, now);   
+        emit ActionKick(_nodeAddress, rplBondRefundAmount, block.timestamp);   
     }
 
 

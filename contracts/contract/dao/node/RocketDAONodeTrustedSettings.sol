@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -15,7 +15,7 @@ contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrustedSetting
     string daoNameSpace = 'dao.trustednodes.setting';
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
         // Set some initial settings on first deployment

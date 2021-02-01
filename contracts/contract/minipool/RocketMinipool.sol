@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -64,7 +64,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
 
     // Construct
-    constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) public {
+    constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
         // Check parameters
         require(_rocketStorageAddress != address(0x0), "Invalid storage address");
         require(_nodeAddress != address(0x0), "Invalid node address");
@@ -76,7 +76,7 @@ contract RocketMinipool is RocketMinipoolInterface {
         // Set initial status
         status = MinipoolStatus.Initialized;
         statusBlock = block.number;
-        statusTime = now;
+        statusTime = block.timestamp;
         // Set details
         depositType = _depositType;
         nodeAddress = _nodeAddress;

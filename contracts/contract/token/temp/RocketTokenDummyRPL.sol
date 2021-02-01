@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -32,7 +32,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
     /**** Methods ***********/
 
     // Construct with our token details
-    constructor(address _rocketStorageAddress) ERC20("Rocket Pool Dummy RPL", "DRPL") public {}
+    constructor(address _rocketStorageAddress) ERC20("Rocket Pool Dummy RPL", "DRPL") {}
 
 
     // @dev Mint the Rocket Pool Tokens (RPL)

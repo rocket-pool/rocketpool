@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -17,7 +17,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

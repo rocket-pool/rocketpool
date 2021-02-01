@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -23,7 +23,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -56,7 +56,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check if it's a trusted node member, it's not exceeding the amount of unbonded minipool validatos it can make
         if (daoNodeTrustedMember) { require(rocketDaoNodeTrustedSettings.getMinipoolUnbondedMax() >= rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender), "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed"); }
         // Emit deposit received event
-        emit DepositReceived(msg.sender, msg.value, now);
+        emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Create minipool
         address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
         RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);

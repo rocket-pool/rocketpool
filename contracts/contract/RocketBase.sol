@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -74,7 +74,7 @@ abstract contract RocketBase {
     /*** Methods **********************************************************/
 
     /// @dev Set the main Rocket Storage address
-    constructor(address _rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }

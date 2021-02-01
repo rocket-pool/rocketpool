@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -36,7 +36,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
     }
@@ -186,7 +186,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Update the total proposals
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")), proposalID);
         // Log it
-        emit ProposalAdded(msg.sender, _dao, proposalID, _payload, now);
+        emit ProposalAdded(msg.sender, _dao, proposalID, _payload, block.timestamp);
         // Done
         return proposalID;
     }
@@ -211,7 +211,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.hasVoted", _proposalID, _member)), true);
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.supported", _proposalID, _member)), _support);
         // Log it
-        emit ProposalVoted(_proposalID, _member, _support, now);
+        emit ProposalVoted(_proposalID, _member, _support, block.timestamp);
     }
     
 
@@ -226,7 +226,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Was there an error?
         require(success, getRevertMsg(response));
         // Log it
-        emit ProposalExecuted(_proposalID, msg.sender, now);
+        emit ProposalExecuted(_proposalID, msg.sender, block.timestamp);
     }
 
 
@@ -241,7 +241,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Set as cancelled now
         setBool(keccak256(abi.encodePacked(daoProposalNameSpace, "cancelled", _proposalID)), true);
         // Log it
-        emit ProposalCancelled(_proposalID, _member, now);
+        emit ProposalCancelled(_proposalID, _member, block.timestamp);
     }
 
         

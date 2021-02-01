@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -19,7 +19,7 @@ contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
     event TokensBurned(address indexed from, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress)  ERC20("Rocket Pool Node ETH", "nETH") public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress)  ERC20("Rocket Pool Node ETH", "nETH") {
         version = 1;
     }
 
@@ -27,7 +27,7 @@ contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, now);
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
 
     // Mint nETH
@@ -38,7 +38,7 @@ contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
         // Update balance & supply
         _mint(_to, _amount);
         // Emit tokens minted event
-        emit TokensMinted(_to, _amount, now);
+        emit TokensMinted(_to, _amount, block.timestamp);
     }
 
     // Burn nETH for ETH
@@ -53,7 +53,7 @@ contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
         // Transfer ETH to sender
         msg.sender.transfer(_amount);
         // Emit tokens burned event
-        emit TokensBurned(msg.sender, _amount, now);
+        emit TokensBurned(msg.sender, _amount, block.timestamp);
     }
 
 }

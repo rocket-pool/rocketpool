@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -23,7 +23,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
     event TokensBurned(address indexed from, uint256 amount, uint256 ethAmount, uint256 time);
 
     // Construct with our token details
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool ETH", "rETH") public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool ETH", "rETH") {
         // Version
         version = 1;
     }
@@ -80,14 +80,14 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
         // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, now);
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
 
     // Deposit excess ETH from deposit pool
     // Only accepts calls from the RocketDepositPool contract
     function depositExcess() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
         // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, now);
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
 
     // Mint rETH
@@ -100,7 +100,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         // Update balance & supply
         _mint(_to, rethAmount);
         // Emit tokens minted event
-        emit TokensMinted(_to, rethAmount, _ethAmount, now);
+        emit TokensMinted(_to, rethAmount, _ethAmount, block.timestamp);
     }
 
     // Burn rETH for ETH
@@ -120,7 +120,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         // Transfer ETH to sender
         msg.sender.transfer(ethAmount);
         // Emit tokens burned event
-        emit TokensBurned(msg.sender, _rethAmount, ethAmount, now);
+        emit TokensBurned(msg.sender, _rethAmount, ethAmount, block.timestamp);
     }
 
     // Withdraw ETH from the deposit pool for collateral if required

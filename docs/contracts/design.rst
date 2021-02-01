@@ -34,7 +34,7 @@ To begin interacting with the Rocket Pool network, first create an instance of t
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) public {
+        constructor(address _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 
@@ -54,7 +54,7 @@ Other contract instances can be created using the appropriate interface taken fr
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) public {
+        constructor(address _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 

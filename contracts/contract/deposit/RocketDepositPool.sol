@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -29,7 +29,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event ExcessWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -66,7 +66,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Mint rETH to user account
         rocketTokenRETH.mint(msg.value, msg.sender);
         // Emit deposit received event
-        emit DepositReceived(msg.sender, msg.value, now);
+        emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Process deposit
         processDeposit();
     }
@@ -74,21 +74,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
     function recycleDissolvedDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyRegisteredMinipool(msg.sender) {
-        emit DepositRecycled(msg.sender, msg.value, now);
+        emit DepositRecycled(msg.sender, msg.value, block.timestamp);
         processDeposit();
     }
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function recycleWithdrawnDeposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        emit DepositRecycled(msg.sender, msg.value, now);
+        emit DepositRecycled(msg.sender, msg.value, block.timestamp);
         processDeposit();
     }
 
     // Recycle a liquidated RPL stake from a slashed minipool
     // Only accepts calls from the RocketAuctionManager contract
     function recycleLiquidatedStake() override external payable onlyLatestContract("rocketDepositPool", address(this)) onlyLatestContract("rocketAuctionManager", msg.sender) {
-        emit DepositRecycled(msg.sender, msg.value, now);
+        emit DepositRecycled(msg.sender, msg.value, block.timestamp);
         processDeposit();
     }
 
@@ -124,7 +124,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             // Assign deposit to minipool
             minipool.userDeposit{value: minipoolCapacity}();
             // Emit deposit assigned event
-            emit DepositAssigned(minipoolAddress, minipoolCapacity, now);
+            emit DepositAssigned(minipoolAddress, minipoolCapacity, block.timestamp);
         }
     }
 
@@ -140,7 +140,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Transfer to rETH contract
         rocketTokenRETH.depositExcess{value: _amount}();
         // Emit excess withdrawn event
-        emit ExcessWithdrawn(msg.sender, _amount, now);
+        emit ExcessWithdrawn(msg.sender, _amount, block.timestamp);
     }
 
 }

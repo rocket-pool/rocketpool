@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -21,7 +21,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 1;
         // Set initial RPL price
@@ -63,7 +63,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Emit prices submitted event
-        emit PricesSubmitted(msg.sender, _block, _rplPrice, now);
+        emit PricesSubmitted(msg.sender, _block, _rplPrice, block.timestamp);
         // Check submission count & update network prices
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -78,7 +78,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         setPricesBlock(_block);
         setRPLPrice(_rplPrice);
         // Emit prices updated event
-        emit PricesUpdated(_block, _rplPrice, now);
+        emit PricesUpdated(_block, _rplPrice, block.timestamp);
     }
 
 }

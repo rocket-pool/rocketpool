@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -19,7 +19,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     event ABIAdded(bytes32 indexed name, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -52,7 +52,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         deleteString(keccak256(abi.encodePacked("contract.name", oldContractAddress)));
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
         // Emit contract upgraded event
-        emit ContractUpgraded(nameHash, oldContractAddress, _contractAddress, now);
+        emit ContractUpgraded(nameHash, oldContractAddress, _contractAddress, block.timestamp);
     }
 
     // Add a new network contract
@@ -72,7 +72,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         setAddress(keccak256(abi.encodePacked("contract.address", _name)), _contractAddress);
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit contract added event
-        emit ContractAdded(nameHash, _contractAddress, now);
+        emit ContractAdded(nameHash, _contractAddress, block.timestamp);
     }
 
     // Upgrade a network contract ABI
@@ -83,7 +83,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         // Set ABI
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit ABI upgraded event
-        emit ABIUpgraded(keccak256(abi.encodePacked(_name)), now);
+        emit ABIUpgraded(keccak256(abi.encodePacked(_name)), block.timestamp);
     }
 
     // Add a new network contract ABI
@@ -97,7 +97,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         // Set ABI
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit ABI added event
-        emit ABIAdded(nameHash, now);
+        emit ABIAdded(nameHash, block.timestamp);
     }
 
 }

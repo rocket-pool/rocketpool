@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -21,7 +21,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -120,7 +120,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update unbonded validator count if minipool is unbonded
         if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
         // Emit minipool created event
-        emit MinipoolCreated(contractAddress, _nodeAddress, now);
+        emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
         rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
@@ -144,7 +144,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update unbonded validator count if minipool is unbonded
         if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
         // Emit minipool destroyed event
-        emit MinipoolDestroyed(msg.sender, nodeAddress, now);
+        emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }
 
     // Set a minipool's validator pubkey

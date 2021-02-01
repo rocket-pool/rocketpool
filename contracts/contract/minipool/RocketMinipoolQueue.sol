@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -24,7 +24,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     event MinipoolRemoved(address indexed minipool, bytes32 indexed queueId, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -97,11 +97,12 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         addressQueueStorage.enqueueItem(keccak256(abi.encodePacked(_queueId)), _minipool);
         // Emit enqueued event
-        emit MinipoolEnqueued(_minipool, keccak256(abi.encodePacked(_queueId)), now);
+        emit MinipoolEnqueued(_minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
     }
 
     // Remove the first available minipool from the highest priority queue and return its address
     // Only accepts calls from the RocketDepositPool contract
+    // TIP: Solidity warning here appears to be a bug - https://github.com/ethereum/solidity/issues/10084
     function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
         if (getLength(MinipoolDeposit.Half) > 0) { return dequeueMinipool("minipools.available.half"); }
         if (getLength(MinipoolDeposit.Full) > 0) { return dequeueMinipool("minipools.available.full"); }
@@ -113,7 +114,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         address minipool = addressQueueStorage.dequeueItem(keccak256(abi.encodePacked(_queueId)));
         // Emit dequeued event
-        emit MinipoolDequeued(minipool, keccak256(abi.encodePacked(_queueId)), now);
+        emit MinipoolDequeued(minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
         // Return
         return minipool;
     }
@@ -135,7 +136,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         addressQueueStorage.removeItem(keccak256(abi.encodePacked(_queueId)), _minipool);
         // Emit removed event
-        emit MinipoolRemoved(_minipool, keccak256(abi.encodePacked(_queueId)), now);
+        emit MinipoolRemoved(_minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
     }
 
 }

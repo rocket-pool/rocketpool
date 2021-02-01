@@ -1,12 +1,11 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/network/RocketDAONetworkActionsInterface.sol";
-import "../../../interface/dao/network/RocketDAONetworkActionsInterface.sol";
-import "../../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
+
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -25,7 +24,7 @@ contract RocketDAONetworkActions is RocketBase, RocketDAONetworkActionsInterface
 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
     }

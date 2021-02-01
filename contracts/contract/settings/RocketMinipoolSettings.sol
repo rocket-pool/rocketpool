@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -16,7 +16,7 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set version
         version = 1;
         // Initialize settings on deployment
@@ -31,41 +31,41 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
     }
 
     // Balance required to launch minipool
-    function getLaunchBalance() override public view returns (uint256) {
+    function getLaunchBalance() override public pure returns (uint256) {
         return 32 ether;
     }
 
     // Required node deposit amounts
-    function getDepositNodeAmount(MinipoolDeposit _depositType) override public view returns (uint256) {
+    function getDepositNodeAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
         if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
         return 0;
     }
-    function getFullDepositNodeAmount() override public view returns (uint256) {
+    function getFullDepositNodeAmount() override public pure returns (uint256) {
         return getLaunchBalance();
     }
-    function getHalfDepositNodeAmount() override public view returns (uint256) {
+    function getHalfDepositNodeAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyDepositNodeAmount() override public view returns (uint256) {
+    function getEmptyDepositNodeAmount() override public pure returns (uint256) {
         return 0 ether;
     }
 
     // Required user deposit amounts
-    function getDepositUserAmount(MinipoolDeposit _depositType) override public view returns (uint256) {
+    function getDepositUserAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
         return 0;
     }
-    function getFullDepositUserAmount() override public view returns (uint256) {
+    function getFullDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getHalfDepositUserAmount() override public view returns (uint256) {
+    function getHalfDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyDepositUserAmount() override public view returns (uint256) {
+    function getEmptyDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance();
     }
 

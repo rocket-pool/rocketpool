@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
-import "../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
+import "../../interface/dao/network/settings/RocketDAONetworkSettingsInflationInterface.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
@@ -14,6 +14,9 @@ import "../../interface/RocketVaultInterface.sol";
 // Inlfationary with rate determined by DAO
 
 contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
+
+    // Libs
+    using SafeMath for uint;
 
     /**** Properties ***********/
 
@@ -39,7 +42,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
 
 
     // Construct
-    constructor(address _rocketStorageAddress, address _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool", "RPL") public {
+    constructor(address _rocketStorageAddress, address _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool", "RPL") {
         // Version
         version = 1;
         // Set the mainnet RPL fixed supply token address
@@ -64,8 +67,8 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     * @return uint256 ow many blocks to calculate inflation at
     */
     function getInflationIntervalBlocks() override public view returns(uint256) {
-        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
-        return daoSettings.getInflationIntervalBlocks();
+        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        return daoSettingsInflation.getInflationIntervalBlocks();
     }
 
     /**
@@ -74,8 +77,8 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     */
     function getInflationIntervalRate() override public view returns(uint256) {
         // Inflation rate controlled by the DAO
-        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
-        return daoSettings.getInflationIntervalRate();
+        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        return daoSettingsInflation.getInflationIntervalRate();
     }
 
     /**
@@ -84,8 +87,8 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     */
     function getInflationIntervalStartBlock() override public view returns(uint256) {
         // Inflation rate start block controlled by the DAO
-        RocketDAONetworkSettingsInterface daoSettings = RocketDAONetworkSettingsInterface(getContractAddress('rocketDAONetworkSettings'));
-        return daoSettings.getInflationIntervalStartBlock();
+        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        return daoSettingsInflation.getInflationIntervalStartBlock();
     }
 
     /**
@@ -109,7 +112,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         uint256 inflationInterval = getInflationIntervalBlocks();
         // Calculate now if inflation has begun
         if(inflationLastCalculatedBlock > 0) {
-            return block.number.sub(inflationLastCalculatedBlock).div(inflationInterval);
+            return (block.number).sub(inflationLastCalculatedBlock).div(inflationInterval);
         }else{
             return 0;
         }
@@ -203,7 +206,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Update the total swapped
         totalSwappedRPL = totalSwappedRPL.add(_amount);
         // Log it
-        emit RPLFixedSupplyBurn(msg.sender, _amount, now);
+        emit RPLFixedSupplyBurn(msg.sender, _amount, block.timestamp);
     }
 
 

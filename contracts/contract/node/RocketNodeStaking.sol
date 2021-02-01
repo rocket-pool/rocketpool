@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -9,7 +9,8 @@ import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
+// TODO: Renable when implemented
+//import "../../interface/dao/network/RocketDAONetworkSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
 import "../../interface/settings/RocketNodeSettingsInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
@@ -27,7 +28,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -138,21 +139,23 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         increaseNodeRPLStake(msg.sender, _amount);
         setNodeRPLStakedBlock(msg.sender, block.number);
         // Emit RPL staked event
-        emit RPLStaked(msg.sender, _amount, now);
+        emit RPLStaked(msg.sender, _amount, block.timestamp);
     }
 
     // Withdraw staked RPL back to the node account
     // Only accepts calls from registered nodes
     function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
-        RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress("rocketDAONetworkSettings"));
+        // TODO: Renable when implemented
+        // RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress("rocketDAONetworkSettings"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAONetworkSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
+        // TODO: Renable when implemented
+        //require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAONetworkSettings.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
@@ -169,7 +172,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
         // Emit RPL withdrawn event
-        emit RPLWithdrawn(msg.sender, _amount, now);
+        emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
     }
 
     // Slash a node's RPL by an ETH amount
@@ -190,7 +193,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
         // Emit RPL slashed event
-        emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, now);
+        emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, block.timestamp);
     }
 
 }

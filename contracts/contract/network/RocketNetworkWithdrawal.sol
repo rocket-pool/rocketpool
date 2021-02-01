@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -26,7 +26,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 nethAmount, uint256 rethAmount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -60,7 +60,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Emit withdrawal received event
-        emit WithdrawalReceived(msg.sender, msg.value, now);
+        emit WithdrawalReceived(msg.sender, msg.value, block.timestamp);
     }
 
     // Process a validator withdrawal from the beacon chain
@@ -105,7 +105,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
             }
         }
         // Emit withdrawal processed event
-        emit WithdrawalProcessed(keccak256(abi.encodePacked(_validatorPubkey)), minipool, nodeAmount, userAmount, now);
+        emit WithdrawalProcessed(keccak256(abi.encodePacked(_validatorPubkey)), minipool, nodeAmount, userAmount, block.timestamp);
     }
 
 }

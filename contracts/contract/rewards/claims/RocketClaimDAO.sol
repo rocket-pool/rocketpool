@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -15,7 +15,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     event RPLTokensSentByDAONetwork(string invoiceID, address indexed from, address indexed to, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
     }
@@ -39,7 +39,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         // Send now
         require(rocketVault.withdrawToken(_recipientAddress, rplTokenAddress, _amount), "Could not send token balance from vault for network DAO");
         // Log it
-        emit RPLTokensSentByDAONetwork(_invoiceID, address(this), _recipientAddress, _amount, now);
+        emit RPLTokensSentByDAONetwork(_invoiceID, address(this), _recipientAddress, _amount, block.timestamp);
     }
   
 

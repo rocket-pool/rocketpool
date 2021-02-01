@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -32,7 +32,7 @@ contract RocketStorage is RocketStorageInterface {
 
 
     /// @dev Construct RocketStorage
-    constructor() public {
+    constructor() {
         // Set the main guiardian upon deployment
         boolStorage[keccak256(abi.encodePacked("access.role", "guardian", msg.sender))] = true;
     }

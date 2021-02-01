@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -10,7 +10,7 @@ import "../../interface/settings/RocketNetworkSettingsInterface.sol";
 contract RocketNetworkSettings is RocketBase, RocketNetworkSettingsInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set version
         version = 1;
         // Initialize settings on deployment

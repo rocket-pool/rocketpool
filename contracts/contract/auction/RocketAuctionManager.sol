@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -25,7 +25,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     event RPLRecovered(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -189,7 +189,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         setLotCount(lotIndex.add(1));
         increaseAllottedRPLBalance(lotRplAmount);
         // Emit lot created event
-        emit LotCreated(lotIndex, msg.sender, lotRplAmount, now);
+        emit LotCreated(lotIndex, msg.sender, lotRplAmount, block.timestamp);
     }
 
     // Bid on a lot
@@ -220,7 +220,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Refund excess ETH to sender
         if (msg.value > bidAmount) { msg.sender.transfer(msg.value.sub(bidAmount)); }
         // Emit bid placed event
-        emit BidPlaced(_lotIndex, msg.sender, bidAmount, now);
+        emit BidPlaced(_lotIndex, msg.sender, bidAmount, block.timestamp);
     }
 
     // Claim RPL from a lot
@@ -249,7 +249,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         decreaseAllottedRPLBalance(rplAmount);
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);
         // Emit bid claimed event
-        emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, now);
+        emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, block.timestamp);
     }
 
     // Recover unclaimed RPL from a lot
@@ -266,7 +266,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         decreaseAllottedRPLBalance(remainingRplAmount);
         setLotRPLRecovered(_lotIndex, true);
         // Emit RPL recovered event
-        emit RPLRecovered(_lotIndex, msg.sender, remainingRplAmount, now);
+        emit RPLRecovered(_lotIndex, msg.sender, remainingRplAmount, block.timestamp);
     }
 
 }

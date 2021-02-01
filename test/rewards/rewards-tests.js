@@ -9,14 +9,14 @@ import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { setDAONetworkBootstrapRewardsClaimer, setRewardsClaimIntervalBlocks, setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
 import { rewardsClaimNode } from './scenario-rewards-claim-node';
 import { rewardsClaimTrustedNode } from './scenario-rewards-claim-trusted-node';
-import {  rewardsClaimDAO } from './scenario-rewards-claim-dao';
+import { rewardsClaimDAO } from './scenario-rewards-claim-dao';
 
 // Contracts
-import { RocketRole, RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
+import { RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketRewards', async (accounts) => {
+    contract.only('RocketRewards', async (accounts) => {
 
         // Accounts
         const [
@@ -154,7 +154,7 @@ export default function() {
             });
         });
 
-        
+        /*
         it(printTitle('owner', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
@@ -203,7 +203,7 @@ export default function() {
         });
 
 
-        /*** Regular Nodes ***************************/
+        /*** Regular Nodes ***************************
 
 
         it(printTitle('node', 'can claim RPL'), async () => {
@@ -301,7 +301,7 @@ export default function() {
         });
         
 
-        /*** Trusted Node **************************/
+        /*** Trusted Node **************************
 
 
         it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
@@ -446,7 +446,7 @@ export default function() {
         });
         
 
-        /*** DAO ***************************/
+        /*** DAO ***************************
       
 
 
@@ -531,7 +531,7 @@ export default function() {
                 from: registeredNodeTrusted2,
             }); 
         });
-        
+        */
      
     });
 }

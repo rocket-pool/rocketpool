@@ -1,5 +1,5 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL, RocketDAONetworkSettings, RocketRewardsPool, RocketClaimDAO, RocketClaimTrustedNode, RocketDAONetwork, RocketVault } from '../_utils/artifacts';
+import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketDAONetwork, RocketVault } from '../_utils/artifacts';
 
 
 
@@ -7,7 +7,6 @@ import { RocketTokenRPL, RocketDAONetworkSettings, RocketRewardsPool, RocketClai
 export async function rewardsClaimDAO(txOptions) {
     // Load contracts
     const rocketVault = await RocketVault.deployed();
-    const rocketDAONetwork = await RocketDAONetwork.deployed();
     const rocketClaimTrustedNode = await RocketClaimTrustedNode.deployed();
     const rocketRewardsPool = await RocketRewardsPool.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();

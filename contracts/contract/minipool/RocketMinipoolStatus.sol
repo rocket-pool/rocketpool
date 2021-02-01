@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -27,7 +27,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -56,7 +56,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Emit minipool withdrawable status submitted event
-        emit MinipoolWithdrawableSubmitted(msg.sender, _minipoolAddress, _stakingStartBalance, _stakingEndBalance, now);
+        emit MinipoolWithdrawableSubmitted(msg.sender, _minipoolAddress, _stakingStartBalance, _stakingEndBalance, block.timestamp);
         // Check submission count & set minipool withdrawable
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -93,7 +93,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
             rocketNodeStaking.slashRPL(minipool.getNodeAddress(), userDepositBalance - _stakingEndBalance);
         }
         // Emit set withdrawable event
-        emit MinipoolSetWithdrawable(_minipoolAddress, _stakingEndBalance, nodeAmount, now);
+        emit MinipoolSetWithdrawable(_minipoolAddress, _stakingEndBalance, nodeAmount, block.timestamp);
     }
 
     // Calculate the node reward amount for a minipool by node fee, user deposit balance, and staking start & end balances
