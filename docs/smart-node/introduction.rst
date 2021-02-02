@@ -32,3 +32,4 @@ Contents
     minipools.rst
     reference.rst
     api.rst
+    security.srt
