@@ -11,7 +11,7 @@ import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/network/settings/RocketDAONetworkSettingsRewardsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/dao/network/settings/RocketDAONetworkSettingsNodeInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
 // Handles node deposits and minipool creation
@@ -73,12 +73,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         // Get current total RPL stake
         uint256 rplStake = getTotalRPLStake();
         // Calculate maximum total RPL stake
         uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
-            .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
+            .mul(rocketDAONetworkSettingsNode.getMaximumPerMinipoolStake())
             .mul(rocketMinipoolManager.getMinipoolCount())
             .div(rocketNetworkPrices.getRPLPrice());
         // Return effective stake amount
@@ -92,12 +92,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         // Get node's current RPL stake
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
         // Calculate node's maximum RPL stake
         uint256 maxRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
-            .mul(rocketNodeSettings.getMaximumPerMinipoolStake())
+            .mul(rocketDAONetworkSettingsNode.getMaximumPerMinipoolStake())
             .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
             .div(rocketNetworkPrices.getRPLPrice());
         // Return effective stake amount
@@ -110,13 +110,13 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         // Calculate & return minipool limit
         return getNodeRPLStake(_nodeAddress)
             .mul(rocketNetworkPrices.getRPLPrice())
             .div(
                 rocketMinipoolSettings.getHalfDepositUserAmount()
-                .mul(rocketNodeSettings.getMinimumPerMinipoolStake())
+                .mul(rocketDAONetworkSettingsNode.getMinimumPerMinipoolStake())
             );
     }
 
@@ -149,7 +149,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
         require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAONetworkSettingsRewards.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
@@ -158,7 +158,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Calculate node's minimum RPL stake
         uint256 minRplStake = rocketMinipoolSettings.getHalfDepositUserAmount()
-            .mul(rocketNodeSettings.getMinimumPerMinipoolStake())
+            .mul(rocketDAONetworkSettingsNode.getMinimumPerMinipoolStake())
             .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
             .div(rocketNetworkPrices.getRPLPrice());
         // Check withdrawal would not undercollateralize node

@@ -1,4 +1,6 @@
-import { RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+import { RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings } from '../_utils/artifacts';
+import { RocketDAONetworkSettingsNode } from '../_utils/artifacts';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 
 
 // Set a deposit setting
@@ -17,13 +19,6 @@ export async function setMinipoolSetting(setting, value, txOptions) {
 export async function setNetworkSetting(setting, value, txOptions) {
     await setSetting(RocketNetworkSettings, setting, value, txOptions);
 }
-
-
-// Set a node setting
-export async function setNodeSetting(setting, value, txOptions) {
-    await setSetting(RocketNodeSettings, setting, value, txOptions);
-}
-
 
 // Set a setting
 async function setSetting(SettingsContract, setting, value, txOptions) {

@@ -15,7 +15,7 @@ import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 
 export default function() {
-    contract.only('RocketAuctionManager', async (accounts) => {
+    contract('RocketAuctionManager', async (accounts) => {
 
 
         // Accounts

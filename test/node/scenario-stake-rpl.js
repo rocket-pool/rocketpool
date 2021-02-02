@@ -1,4 +1,4 @@
-import { RocketMinipoolManager, RocketMinipoolSettings, RocketNetworkPrices, RocketNodeSettings, RocketNodeStaking, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketMinipoolManager, RocketMinipoolSettings, RocketNetworkPrices, RocketDAONetworkSettingsNode, RocketNodeStaking, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 
 
 // Stake RPL against the node
@@ -9,7 +9,7 @@ export async function stakeRpl(amount, txOptions) {
         rocketMinipoolManager,
         rocketMinipoolSettings,
         rocketNetworkPrices,
-        rocketNodeSettings,
+        rocketDAONetworkSettingsNode,
         rocketNodeStaking,
         rocketTokenRPL,
         rocketVault,
@@ -17,7 +17,7 @@ export async function stakeRpl(amount, txOptions) {
         RocketMinipoolManager.deployed(),
         RocketMinipoolSettings.deployed(),
         RocketNetworkPrices.deployed(),
-        RocketNodeSettings.deployed(),
+        RocketDAONetworkSettingsNode.deployed(),
         RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
         RocketVault.deployed(),
@@ -31,8 +31,8 @@ export async function stakeRpl(amount, txOptions) {
         rplPrice,
     ] = await Promise.all([
         rocketMinipoolSettings.getHalfDepositUserAmount.call(),
-        rocketNodeSettings.getMinimumPerMinipoolStake.call(),
-        rocketNodeSettings.getMaximumPerMinipoolStake.call(),
+        rocketDAONetworkSettingsNode.getMinimumPerMinipoolStake.call(),
+        rocketDAONetworkSettingsNode.getMaximumPerMinipoolStake.call(),
         rocketNetworkPrices.getRPLPrice.call(),
     ]);
 

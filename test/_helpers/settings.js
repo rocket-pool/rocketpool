@@ -1,4 +1,4 @@
-import { RocketDAONetworkSettingsAuction, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketNodeSettings } from '../_utils/artifacts';
+import { RocketDAONetworkSettingsAuction, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketDAONetworkSettingsNode } from '../_utils/artifacts';
 
 
 // Auction settings
@@ -31,7 +31,6 @@ export async function setMinipoolSetting(setting, value, txOptions) {
     await rocketMinipoolSettings['set' + setting](value, txOptions);
 }
 
-
 // Network settings
 export async function getNetworkSetting(setting) {
     const rocketNetworkSettings = await RocketNetworkSettings.deployed();
@@ -43,15 +42,11 @@ export async function setNetworkSetting(setting, value, txOptions) {
     await rocketNetworkSettings['set' + setting](value, txOptions);
 }
 
-
 // Node settings
 export async function getNodeSetting(setting) {
-    const rocketNodeSettings = await RocketNodeSettings.deployed();
-    let value = await rocketNodeSettings['get' + setting].call();
+    const rocketDAONetworkSettingsNode = await RocketDAONetworkSettingsNode.deployed();
+    let value = await rocketDAONetworkSettingsNode['get' + setting].call();
     return value;
 }
-export async function setNodeSetting(setting, value, txOptions) {
-    const rocketNodeSettings = await RocketNodeSettings.deployed();
-    await rocketNodeSettings['set' + setting](value, txOptions);
-}
+
 

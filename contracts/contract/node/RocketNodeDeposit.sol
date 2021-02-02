@@ -10,7 +10,7 @@ import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/settings/RocketDepositSettingsInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/dao/network/settings/RocketDAONetworkSettingsNodeInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -36,13 +36,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Is it a trusted node DAO member?
         bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
-        require(rocketNodeSettings.getDepositEnabled(), "Node deposits are currently disabled");
+        require(rocketDAONetworkSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
         require(rocketNetworkFees.getNodeFee() >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
         // Get deposit type by node deposit amount

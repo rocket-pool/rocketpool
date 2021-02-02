@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
-import "../../interface/settings/RocketNodeSettingsInterface.sol";
+import "../../interface/dao/network/settings/RocketDAONetworkSettingsNodeInterface.sol"; 
 import "../../interface/util/AddressSetStorageInterface.sol";
 
 
@@ -47,10 +47,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function registerNode(string calldata _timezoneLocation) override external onlyLatestContract("rocketNodeManager", address(this)) {
         // Load contracts
         RocketClaimNodeInterface rocketClaimNode = RocketClaimNodeInterface(getContractAddress("rocketClaimNode"));
-        RocketNodeSettingsInterface rocketNodeSettings = RocketNodeSettingsInterface(getContractAddress("rocketNodeSettings"));
+        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
-        require(rocketNodeSettings.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
+        require(rocketDAONetworkSettingsNode.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
         // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Check node is not registered
