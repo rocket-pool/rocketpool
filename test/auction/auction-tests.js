@@ -1,12 +1,13 @@
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { RocketDAONetworkSettingsAuction } from '../_utils/artifacts';
 import { auctionCreateLot, auctionPlaceBid, getLotStartBlock, getLotPriceAtBlock } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { setAuctionSetting } from '../_helpers/settings';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { createLot } from './scenario-create-lot';
 import { placeBid } from './scenario-place-bid';
@@ -14,7 +15,7 @@ import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 
 export default function() {
-    contract('RocketAuctionManager', async (accounts) => {
+    contract.only('RocketAuctionManager', async (accounts) => {
 
 
         // Accounts
@@ -79,7 +80,7 @@ export default function() {
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
 
             // Disable lot creation
-            await setAuctionSetting('CreateLotEnabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.create.enabled', false, {from: owner});
 
             // Attempt to create lot
             await shouldRevert(createLot({
@@ -88,7 +89,7 @@ export default function() {
 
         });
 
-
+        
         it(printTitle('random address', 'cannot create a lot with an insufficient RPL balance'), async () => {
 
             // Attempt to create lot
@@ -102,9 +103,9 @@ export default function() {
         it(printTitle('auction lot', 'has correct price at block'), async () => {
 
             // Set lot settings
-            await setAuctionSetting('LotDuration', 100, {from: owner});
-            await setAuctionSetting('StartingPriceRatio', web3.utils.toWei('1', 'ether'), {from: owner});
-            await setAuctionSetting('ReservePriceRatio', web3.utils.toWei('0', 'ether'), {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 100, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.price.start', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.price.reserve', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Set RPL price
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: trustedNode});
@@ -138,7 +139,7 @@ export default function() {
 
         });
 
-
+      
         it(printTitle('random address', 'can place a bid on a lot'), async () => {
 
             // Create lots
@@ -207,7 +208,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Disable bidding
-            await setAuctionSetting('BidOnLotEnabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.bidding.enabled', false, {from: owner});
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
@@ -236,7 +237,7 @@ export default function() {
         it(printTitle('random address', 'cannot bid on a lot after the lot bidding period has concluded'), async () => {
 
             // Set lot duration
-            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 0, {from: owner});
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
@@ -354,7 +355,7 @@ export default function() {
         it(printTitle('random address', 'can recover unclaimed RPL from a lot'), async () => {
 
             // Create closed lots
-            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
             await auctionCreateLot({from: random1});
@@ -375,7 +376,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which doesn\'t exist'), async () => {
 
             // Create closed lot
-            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
 
@@ -404,7 +405,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot twice'), async () => {
 
             // Create closed lot
-            await setAuctionSetting('LotDuration', 0, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
 
@@ -422,7 +423,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
 
             // Set lot duration
-            await setAuctionSetting('LotDuration', 10, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsAuction, 'auction.lot.duration', 10, {from: owner});
 
             // Create lot & place bid to clear
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
@@ -438,7 +439,7 @@ export default function() {
             }), 'Recovered unclaimed RPL from a lot which had no RPL to recover');
 
         });
-
+        
 
     });
 }

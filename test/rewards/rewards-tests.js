@@ -12,11 +12,11 @@ import { rewardsClaimTrustedNode } from './scenario-rewards-claim-trusted-node';
 import { rewardsClaimDAO } from './scenario-rewards-claim-dao';
 
 // Contracts
-import { RocketRewardsPool, RocketRewardsClaimNode } from '../_utils/artifacts';
+import { RocketRewardsPool } from '../_utils/artifacts';
 
 
 export default function() {
-    contract.only('RocketRewards', async (accounts) => {
+    contract('RocketRewards', async (accounts) => {
 
         // Accounts
         const [
@@ -77,7 +77,7 @@ export default function() {
 
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
-
+            
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
@@ -88,7 +88,6 @@ export default function() {
             // Set nodes as trusted
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
-            // Don't set node 3 as trusted just yet, it's used to test late registrations as trusted below
 
             // Set max per-minipool stake to 100% and RPL price to 1 ether
             await setNodeSetting('MaximumPerMinipoolStake', web3.utils.toWei('1', 'ether'), {from: owner});
@@ -103,17 +102,18 @@ export default function() {
             await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-
+            
             // Check node effective stakes
             let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
             let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
             assert(node1EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Incorrect node 1 effective stake');
             assert(node2EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('32', 'ether'))), 'Incorrect node 2 effective stake');
+            
 
         });
 
 
-        /*** Setting Claimers ***************************/
+        /*** Setting Claimers **************************/
 
                  
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
@@ -154,7 +154,7 @@ export default function() {
             });
         });
 
-        /*
+        
         it(printTitle('owner', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
@@ -203,7 +203,7 @@ export default function() {
         });
 
 
-        /*** Regular Nodes ***************************
+        /*** Regular Nodes ***************************/
 
 
         it(printTitle('node', 'can claim RPL'), async () => {
@@ -238,7 +238,7 @@ export default function() {
 
         });
 
-
+       
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
 
             // Initialize claims contract
@@ -301,7 +301,7 @@ export default function() {
         });
         
 
-        /*** Trusted Node **************************
+        /*** Trusted Node **************************/
 
 
         it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
@@ -446,7 +446,7 @@ export default function() {
         });
         
 
-        /*** DAO ***************************
+        /*** DAO ***************************/
       
 
 
@@ -531,7 +531,7 @@ export default function() {
                 from: registeredNodeTrusted2,
             }); 
         });
-        */
+        
      
     });
 }

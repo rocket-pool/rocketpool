@@ -49,7 +49,6 @@ export async function rewardsClaimDAO(txOptions) {
     if(Number(ds1.intervalBlockStart) < Number(ds2.intervalBlockStart)) {
         // Dao can only receive rewards on the first claim of a claim period
         assert(ds2.daoRewardsAddressBalance.eq(ds1.daoRewardsAddressBalance.add(ds2.daoContractClaimTotal)), "DAO rewards address does not contain the correct balance");
-
     }else{
         // Claim interval has not passed, dao should not have claimed anything
         assert(ds2.daoRewardsAddressBalance.eq(ds1.daoRewardsAddressBalance), "DAO rewards address balance has changed on same interval claim");

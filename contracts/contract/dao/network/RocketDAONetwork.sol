@@ -42,10 +42,18 @@ contract RocketDAONetwork is RocketBase, RocketDAONetworkInterface {
     /**** Bootstrapping ***************/
     // While bootstrap mode is engaged, RP can change settings alongside the DAO (when its implemented). When disabled, only DAO will be able to control settings
 
-    // Bootstrap mode - Setting
-    function bootstrapSettingUint(string memory _settingNameSpace, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
+    // Bootstrap mode - Uint Setting
+    function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONetworkProposals').call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingNameSpace, _settingPath, _value));
+        (bool success, bytes memory response) = getContractAddress('rocketDAONetworkProposals').call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
+        // Was there an error?
+        require(success, getRevertMsg(response));
+    }
+
+    // Bootstrap mode - Bool Setting
+    function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONetwork", address(this)) {
+        // Ok good to go, lets update the settings 
+        (bool success, bytes memory response) = getContractAddress('rocketDAONetworkProposals').call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
         // Was there an error?
         require(success, getRevertMsg(response));
     }

@@ -47,11 +47,19 @@ contract RocketDAONetworkProposals is RocketBase, RocketDAONetworkProposalsInter
     /*** Proposals **********************/
 
     // Change one of the current uint256 settings of the network DAO
-    function proposalSettingUint(string memory _settingContract, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
+    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
         // Load contracts
-        RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress(_settingContract));
+        RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
         rocketDAONetworkSettings.setSettingUint(_settingPath, _value);
+    }
+
+    // Change one of the current bool settings of the network DAO
+    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
+        // Load contracts
+        RocketDAONetworkSettingsInterface rocketDAONetworkSettings = RocketDAONetworkSettingsInterface(getContractAddress(_settingContractName));
+        // Lets update
+        rocketDAONetworkSettings.setSettingBool(_settingPath, _value);
     }
         
     // Update a claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards

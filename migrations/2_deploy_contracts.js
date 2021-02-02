@@ -73,8 +73,8 @@ const contracts = {
   rocketDAONetworkActions:              artifacts.require('RocketDAONetworkActions.sol'),
   rocketDAONetworkSettingsInflation:    artifacts.require('RocketDAONetworkSettingsInflation.sol'),
   rocketDAONetworkSettingsRewards:      artifacts.require('RocketDAONetworkSettingsRewards.sol'),
+  rocketDAONetworkSettingsAuction:      artifacts.require('RocketDAONetworkSettingsAuction.sol'),
   // Settings
-  rocketAuctionSettings:                artifacts.require('RocketAuctionSettings.sol'),
   rocketDepositSettings:                artifacts.require('RocketDepositSettings.sol'),
   rocketMinipoolSettings:               artifacts.require('RocketMinipoolSettings.sol'),
   rocketNetworkSettings:                artifacts.require('RocketNetworkSettings.sol'),

@@ -229,7 +229,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimingContractPerc(string memory _claimingContract) override public view returns(uint256) {
         // Load contract
-        RocketDAONetworkSettingsRewardsInterface daoSettingsRewards = RocketDAONetworkSettingsRewardsInterface(getContractAddress('rocketDAONetworkSettings'));
+        RocketDAONetworkSettingsRewardsInterface daoSettingsRewards = RocketDAONetworkSettingsRewardsInterface(getContractAddress('rocketDAONetworkSettingsRewards'));
         // Get the % amount allocated to this claim contract
         uint256 claimContractPerc = daoSettingsRewards.getRewardsClaimerPerc(_claimingContract);
         // Get the block the % was changed at, it will only use this % on the next interval
