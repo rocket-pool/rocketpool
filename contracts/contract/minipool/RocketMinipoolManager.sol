@@ -35,6 +35,18 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.index")), _index);
     }
 
+    // Get the number of unprocessed minipools in the network
+    function getUnprocessedMinipoolCount() override public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.unprocessed.index")));
+    }
+
+    // Get an unprocessed network minipool address by index
+    function getUnprocessedMinipoolAt(uint256 _index) override public view returns (address) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.unprocessed.index")), _index);
+    }
+
     // Get the number of minipools owned by a node
     function getNodeMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -107,6 +119,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.unprocessed.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, now);
@@ -158,8 +171,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Set a minipool's withdrawal processed status
     // Only accepts calls from the RocketNetworkWithdrawal contract
-    function setMinipoolWithdrawalProcessed(address _minipoolAddress, bool _processed) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        setBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)), _processed);
+    function setMinipoolWithdrawalProcessed(address _minipoolAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+        // Set withdrawal processed status
+        setBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)), true);
+        // Remove minipool from unprocessed index
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.unprocessed.index")), _minipoolAddress);
     }
 
 }
