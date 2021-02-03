@@ -29,7 +29,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
 
     // Spend the network DAOs RPL rewards 
-    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyLatestContract("rocketDAONetworkActions", msg.sender) {
+    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyLatestContract("rocketDAOProtocolActions", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         // Addresses

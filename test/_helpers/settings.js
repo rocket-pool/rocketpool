@@ -1,22 +1,18 @@
-import { RocketDAONetworkSettingsAuction, RocketDepositSettings, RocketMinipoolSettings, RocketNetworkSettings, RocketDAONetworkSettingsNode } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketMinipoolSettings, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 
 
 // Auction settings
 export async function getAuctionSetting(setting) {
-    const rocketAuctionSettings = await RocketDAONetworkSettingsAuction.deployed();
+    const rocketAuctionSettings = await RocketDAOProtocolSettingsAuction.deployed();
     let value = await rocketAuctionSettings['get' + setting].call();
     return value;
 }
 
 // Deposit settings
 export async function getDepositSetting(setting) {
-    const rocketDepositSettings = await RocketDepositSettings.deployed();
-    let value = await rocketDepositSettings['get' + setting].call();
+    const rocketDAOProtocolSettingsDeposit = await RocketDAOProtocolSettingsDeposit.deployed();
+    let value = await rocketDAOProtocolSettingsDeposit['get' + setting].call();
     return value;
-}
-export async function setDepositSetting(setting, value, txOptions) {
-    const rocketDepositSettings = await RocketDepositSettings.deployed();
-    await rocketDepositSettings['set' + setting](value, txOptions);
 }
 
 
@@ -33,19 +29,15 @@ export async function setMinipoolSetting(setting, value, txOptions) {
 
 // Network settings
 export async function getNetworkSetting(setting) {
-    const rocketNetworkSettings = await RocketNetworkSettings.deployed();
-    let value = await rocketNetworkSettings['get' + setting].call();
+    const rocketDAOProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
+    let value = await rocketDAOProtocolSettingsNetwork['get' + setting].call();
     return value;
-}
-export async function setNetworkSetting(setting, value, txOptions) {
-    const rocketNetworkSettings = await RocketNetworkSettings.deployed();
-    await rocketNetworkSettings['set' + setting](value, txOptions);
 }
 
 // Node settings
 export async function getNodeSetting(setting) {
-    const rocketDAONetworkSettingsNode = await RocketDAONetworkSettingsNode.deployed();
-    let value = await rocketDAONetworkSettingsNode['get' + setting].call();
+    const rocketDAOProtocolSettingsNode = await RocketDAOProtocolSettingsNode.deployed();
+    let value = await rocketDAOProtocolSettingsNode['get' + setting].call();
     return value;
 }
 

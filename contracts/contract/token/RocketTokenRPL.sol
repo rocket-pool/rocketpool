@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
-import "../../interface/dao/network/settings/RocketDAONetworkSettingsInflationInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
@@ -67,7 +67,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     * @return uint256 ow many blocks to calculate inflation at
     */
     function getInflationIntervalBlocks() override public view returns(uint256) {
-        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
         return daoSettingsInflation.getInflationIntervalBlocks();
     }
 
@@ -77,7 +77,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     */
     function getInflationIntervalRate() override public view returns(uint256) {
         // Inflation rate controlled by the DAO
-        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
         return daoSettingsInflation.getInflationIntervalRate();
     }
 
@@ -87,7 +87,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     */
     function getInflationIntervalStartBlock() override public view returns(uint256) {
         // Inflation rate start block controlled by the DAO
-        RocketDAONetworkSettingsInflationInterface daoSettingsInflation = RocketDAONetworkSettingsInflationInterface(getContractAddress('rocketDAONetworkSettingsInflation'));
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
         return daoSettingsInflation.getInflationIntervalStartBlock();
     }
 

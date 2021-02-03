@@ -11,7 +11,7 @@ import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolStatus.sol";
 
@@ -39,7 +39,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     onlyLatestContract("rocketMinipoolStatus", address(this)) onlyTrustedNode(msg.sender) onlyRegisteredMinipool(_minipoolAddress) {
         // Load contracts
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Check settings
         require(rocketMinipoolSettings.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
@@ -60,7 +60,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Check submission count & set minipool withdrawable
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             setMinipoolWithdrawable(_minipoolAddress, _stakingStartBalance, _stakingEndBalance);
         }
     }

@@ -1,5 +1,5 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketDAONetwork, RocketVault } from '../_utils/artifacts';
+import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
 
 
 

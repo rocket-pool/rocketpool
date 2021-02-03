@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../RocketBase.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network balances
 
@@ -71,8 +71,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Only accepts calls from trusted (oracle) nodes
     function submitBalances(uint256 _block, uint256 _totalEth, uint256 _stakingEth, uint256 _rethSupply) override external onlyLatestContract("rocketNetworkBalances", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        require(rocketNetworkSettings.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        require(rocketDAOProtocolSettingsNetwork.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
         // Check block
         require(_block > getBalancesBlock(), "Network balances for an equal or higher block are set");
         // Check balances
@@ -92,7 +92,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check submission count & update network balances
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             updateBalances(_block, _totalEth, _stakingEth, _rethSupply);
         }
     }

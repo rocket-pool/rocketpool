@@ -2,16 +2,16 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketDAONetworkSettings.sol";
-import "../../../../interface/dao/network/settings/RocketDAONetworkSettingsInflationInterface.sol";
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // RPL Inflation settings in RP which the DAO will have full control over
-contract RocketDAONetworkSettingsInflation is RocketDAONetworkSettings, RocketDAONetworkSettingsInflationInterface {
+contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAONetworkSettings(_rocketStorageAddress, "inflation") {
+    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
         // Set version 
         version = 1;
          // Set some initial settings on first deployment

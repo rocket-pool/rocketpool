@@ -8,7 +8,7 @@ import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network node demand and commission rate
 
@@ -47,11 +47,11 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         uint256 calcBase = 1 ether;
         uint256 demandDivisor = 1000000000000;
         // Get settings
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        uint256 minFee = rocketNetworkSettings.getMinimumNodeFee();
-        uint256 targetFee = rocketNetworkSettings.getTargetNodeFee();
-        uint256 maxFee = rocketNetworkSettings.getMaximumNodeFee();
-        uint256 demandRange = rocketNetworkSettings.getNodeFeeDemandRange();
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        uint256 minFee = rocketDAOProtocolSettingsNetwork.getMinimumNodeFee();
+        uint256 targetFee = rocketDAOProtocolSettingsNetwork.getTargetNodeFee();
+        uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
+        uint256 demandRange = rocketDAOProtocolSettingsNetwork.getNodeFeeDemandRange();
         // Normalize node demand
         uint256 nNodeDemand;
         bool nNodeDemandSign;

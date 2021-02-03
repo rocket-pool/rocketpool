@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketTokenRETH, RocketMinipoolManager, RocketNetworkSettings, RocketNetworkWithdrawal, RocketTokenNETH, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketTokenRETH, RocketMinipoolManager, RocketDAOProtocolSettingsNetwork, RocketNetworkWithdrawal, RocketTokenNETH, RocketVault } from '../_utils/artifacts';
 
 
 // Process a validator withdrawal
@@ -9,7 +9,7 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
         rocketDepositPool,
         rocketTokenRETH,
         rocketMinipoolManager,
-        rocketNetworkSettings,
+        rocketDAOProtocolSettingsNetwork,
         rocketNetworkWithdrawal,
         rocketTokenNETH,
         rocketVault,
@@ -17,7 +17,7 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
         RocketDepositPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketMinipoolManager.deployed(),
-        RocketNetworkSettings.deployed(),
+        RocketDAOProtocolSettingsNetwork.deployed(),
         RocketNetworkWithdrawal.deployed(),
         RocketTokenNETH.deployed(),
         RocketVault.deployed(),
@@ -31,7 +31,7 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
     ] = await Promise.all([
         rocketMinipoolManager.getMinipoolByPubkey.call(validatorPubkey),
         rocketTokenRETH.getCollateralRate.call(),
-        rocketNetworkSettings.getTargetRethCollateralRate.call(),
+        rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate.call(),
     ]);
 
     // Get minipool details

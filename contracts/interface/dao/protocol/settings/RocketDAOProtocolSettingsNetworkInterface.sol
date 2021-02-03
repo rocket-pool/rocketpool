@@ -2,7 +2,7 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-interface RocketNetworkSettingsInterface {
+interface RocketDAOProtocolSettingsNetworkInterface {
     function getNodeConsensusThreshold() external view returns (uint256);
     function getSubmitBalancesEnabled() external view returns (bool);
     function getSubmitBalancesFrequency() external view returns (uint256);

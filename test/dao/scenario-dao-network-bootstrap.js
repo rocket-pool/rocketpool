@@ -1,4 +1,4 @@
-import { RocketDAONetwork, RocketDAONetworkSettingsRewards, RocketDAONetworkSettingsInflation } from '../_utils/artifacts';
+import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation } from '../_utils/artifacts';
 
 
 
@@ -12,14 +12,14 @@ export async function setDAONetworkBootstrapSetting(_settingContractInstance, _s
     }
 
     // Load contracts
-    const rocketDAONetwork = await RocketDAONetwork.deployed();
-    const rocketDAONetworkSettingsContract = await _settingContractInstance.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocolSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONetworkSettingsContract.getSettingUint.call(_settingPath),
-            rocketDAONetworkSettingsContract.getSettingBool.call(_settingPath)
+            rocketDAOProtocolSettingsContract.getSettingUint.call(_settingPath),
+            rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPath)
         ]).then(
             ([settingUintValue, settingBoolValue]) =>
             ({settingUintValue, settingBoolValue})
@@ -29,9 +29,9 @@ export async function setDAONetworkBootstrapSetting(_settingContractInstance, _s
     // Capture data
     let ds1 = await getTxData();
 
-    // Set as a bootstrapped setting. detect type first
-    if(typeof(_value) == 'number' || typeof(_value) == 'string') await rocketDAONetwork.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
-    if(typeof(_value) == 'boolean') await rocketDAONetwork.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
+    if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
     
     // Capture data
     let ds2 = await getTxData();
@@ -44,13 +44,13 @@ export async function setDAONetworkBootstrapSetting(_settingContractInstance, _s
 // Set a contract that can claim rewards
 export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc, txOptions, expectedTotalPerc = null) {
     // Load contracts
-    const rocketDAONetwork = await RocketDAONetwork.deployed();
-    const rocketDAONetworkSettingsRewards = await RocketDAONetworkSettingsRewards.deployed();
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketDAOProtocolSettingsRewards = await RocketDAOProtocolSettingsRewards.deployed();
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONetworkSettingsRewards.getRewardsClaimerPerc(_contractName),
-            rocketDAONetworkSettingsRewards.getRewardsClaimersPercTotal(),
+            rocketDAOProtocolSettingsRewards.getRewardsClaimerPerc(_contractName),
+            rocketDAOProtocolSettingsRewards.getRewardsClaimersPercTotal(),
         ]).then(
             ([rewardsClaimerPerc, rewardsClaimersPercTotal]) =>
             ({rewardsClaimerPerc, rewardsClaimersPercTotal})
@@ -60,7 +60,7 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
     let dataSet1 = await getTxData();
     //console.log(dataSet1.rewardsClaimerPerc.toString(), dataSet1.rewardsClaimersPercTotal.toString());
     // Perform tx
-    await rocketDAONetwork.bootstrapSettingClaimer(_contractName, _perc, txOptions);
+    await rocketDAOProtocol.bootstrapSettingClaimer(_contractName, _perc, txOptions);
     // Capture data
     let dataSet2 = await getTxData();
     //console.log(dataSet2.rewardsClaimerPerc.toString(), dataSet2.rewardsClaimersPercTotal.toString());
@@ -79,7 +79,7 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
 // Set the current rewards claim period in blocks
 export async function setRewardsClaimIntervalBlocks(intervalBlocks, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsRewards, 'rpl.rewards.claim.period.blocks', intervalBlocks, txOptions);
+    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', intervalBlocks, txOptions);
 };
 
 
@@ -90,19 +90,19 @@ export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions
     // Calculate the inflation rate per day
     let dailyInflation = web3.utils.toBN((1 + yearlyInflationPerc) ** (1 / (365)) * 1e18);
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
+    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
 };
 
 // Set the current RPL inflation rate blocks, how often inflation is calculated
 export async function setRPLInflationIntervalBlocks(intervalBlocks, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsInflation, 'rpl.inflation.interval.blocks', intervalBlocks, txOptions);
+    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.blocks', intervalBlocks, txOptions);
 };
 
 // Set the current RPL inflation block interval
 export async function setRPLInflationStartBlock(startBlock, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsInflation, 'rpl.inflation.interval.start', startBlock, txOptions);
+    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startBlock, txOptions);
 };
 
 

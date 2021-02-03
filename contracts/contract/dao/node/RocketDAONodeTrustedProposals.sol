@@ -56,13 +56,13 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
-        RocketDAONodeTrustedSettingsInterface rocketDAONetworkSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Check this user can make a proposal now
-        require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAONetworkSettings.getProposalCooldown()) >= block.number, "Member has not waited long enough to make another proposal");
+        require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAOProtocolSettings.getProposalCooldown()) >= block.number, "Member has not waited long enough to make another proposal");
         // Record the last time this user made a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal
-        return daoProposal.add(msg.sender, 'rocketDAONodeTrustedProposals', _proposalMessage, block.number.add(rocketDAONetworkSettings.getProposalVoteDelayBlocks()), rocketDAONetworkSettings.getProposalVoteBlocks(), rocketDAONetworkSettings.getProposalExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
+        return daoProposal.add(msg.sender, 'rocketDAONodeTrustedProposals', _proposalMessage, block.number.add(rocketDAOProtocolSettings.getProposalVoteDelayBlocks()), rocketDAOProtocolSettings.getProposalVoteBlocks(), rocketDAOProtocolSettings.getProposalExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
     }
 
     // Vote on a proposal
@@ -151,11 +151,11 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Settings only support Uints currently
     function proposalSettingUint(string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
         // Load contracts
-        RocketDAONodeTrustedSettingsInterface rocketDAONetworkSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Some safety guards for certain settings
         if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("quorum"))) require(_value >= 0.51 ether && _value <= 0.9 ether, "Quorum setting must be >= 51% and <= 90%");
         // Ok all good, lets update
-        rocketDAONetworkSettings.setSettingUint(_settingPath, _value);
+        rocketDAOProtocolSettings.setSettingUint(_settingPath, _value);
     }
 
 

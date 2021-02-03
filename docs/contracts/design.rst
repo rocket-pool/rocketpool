@@ -86,10 +86,10 @@ The Rocket Pool contracts, as defined in ``RocketStorage``, are:
     * ``rocketNodeDeposit`` - Handles node deposits for minipool creation
     * ``rocketNodeManager`` - Registers & manages all nodes in the network
 
-    * ``rocketDepositSettings`` - Provides network settings relating to deposits
+    * ``rocketDAOProtocolSettingsDeposit`` - Provides network settings relating to deposits
     * ``rocketMinipoolSettings`` - Provides network settings relating to minipools
-    * ``rocketNetworkSettings`` - Provides miscellaneous network settings
-    * ``rocketDAONetworkSettingsNode`` - Provides network settings relating to nodes
+    * ``rocketDAOProtocolSettingsNetwork`` - Provides miscellaneous network settings
+    * ``rocketDAOProtocolSettingsNode`` - Provides network settings relating to nodes
 
     * ``rocketTokenRETH`` - The rETH token contract (not upgradeable)
     * ``rocketTokenNETH`` - The nETH token contract (not upgradeable)

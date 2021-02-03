@@ -5,11 +5,12 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { depositValidatorWithdrawal } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { setNetworkSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
 import { setWithdrawalCredentials } from './scenario-set-withdrawal-credentials';
+import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {
@@ -142,7 +143,7 @@ export default function() {
             await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Disable processing withdrawals
-            await setNetworkSetting('ProcessWithdrawalsEnabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.process.withdrawals.enabled', false, {from: owner});
 
             // Attempt to process withdrawal
             await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {

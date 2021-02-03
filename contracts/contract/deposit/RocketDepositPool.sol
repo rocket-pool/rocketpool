@@ -10,7 +10,7 @@ import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/settings/RocketDepositSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 
 
@@ -57,12 +57,12 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // Accept a deposit from a user
     function deposit() override external payable onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
-        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         // Check deposit settings
-        require(rocketDepositSettings.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
-        require(msg.value >= rocketDepositSettings.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
-        require(getBalance().add(msg.value) <= rocketDepositSettings.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
+        require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
+        require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
+        require(getBalance().add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
         // Mint rETH to user account
         rocketTokenRETH.mint(msg.value, msg.sender);
         // Emit deposit received event
@@ -95,24 +95,24 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     // Process a deposit
     function processDeposit() private {
         // Load contracts
-        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits if enabled
-        if (rocketDepositSettings.getAssignDepositsEnabled()) { assignDeposits(); }
+        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) { assignDeposits(); }
     }
 
     // Assign deposits to available minipools
     function assignDeposits() override public onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
-        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
-        require(rocketDepositSettings.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
+        require(rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
         // Assign deposits
-        for (uint256 i = 0; i < rocketDepositSettings.getMaximumDepositAssignments(); ++i) {
+        for (uint256 i = 0; i < rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments(); ++i) {
             // Get & check next available minipool capacity
             uint256 minipoolCapacity = rocketMinipoolQueue.getNextCapacity();
             if (minipoolCapacity == 0 || getBalance() < minipoolCapacity) { break; }

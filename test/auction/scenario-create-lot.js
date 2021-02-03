@@ -1,4 +1,4 @@
-import { RocketAuctionManager, RocketDAONetworkSettingsAuction, RocketNetworkPrices } from '../_utils/artifacts';
+import { RocketAuctionManager, RocketDAOProtocolSettingsAuction, RocketNetworkPrices } from '../_utils/artifacts';
 
 
 // Create a new lot for auction
@@ -11,7 +11,7 @@ export async function createLot(txOptions) {
         rocketNetworkPrices,
     ] = await Promise.all([
         RocketAuctionManager.deployed(),
-        RocketDAONetworkSettingsAuction.deployed(),
+        RocketDAOProtocolSettingsAuction.deployed(),
         RocketNetworkPrices.deployed(),
     ]);
 

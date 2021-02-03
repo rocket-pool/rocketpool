@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
-import "../../../interface/dao/network/RocketDAONetworkActionsInterface.sol";
+import "../../../interface/dao/protocol/RocketDAOProtocolActionsInterface.sol";
 
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 // The Rocket Pool Network DAO Actions - This is a placeholder for the network DAO to come
-contract RocketDAONetworkActions is RocketBase, RocketDAONetworkActionsInterface { 
+contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterface { 
 
     using SafeMath for uint;
 
@@ -20,7 +20,7 @@ contract RocketDAONetworkActions is RocketBase, RocketDAONetworkActionsInterface
     uint256 calcBase = 1 ether;
 
     // The namespace for any data stored in the network DAO (do not change)
-    string daoNameSpace = 'dao.network';
+    string daoNameSpace = 'dao.protocol';
 
 
     // Construct

@@ -2,18 +2,18 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketDAONetworkSettings.sol";
-import "../../../../interface/dao/network/settings/RocketDAONetworkSettingsRewardsInterface.sol";
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // Settings in RP which the DAO will have full control over
-contract RocketDAONetworkSettingsRewards is RocketDAONetworkSettings, RocketDAONetworkSettingsRewardsInterface {
+contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDAOProtocolSettingsRewardsInterface {
 
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAONetworkSettings(_rocketStorageAddress, "rewards") {
+    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "rewards") {
         // Set version 
         version = 1;
          // Set some initial settings on first deployment

@@ -2,8 +2,9 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { setNetworkSetting } from '../_helpers/settings';
 import { submitBalances } from './scenario-submit-balances';
+import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {
@@ -84,7 +85,7 @@ export default function() {
             let rethSupply = web3.utils.toWei('8', 'ether');
 
             // Disable submissions
-            await setNetworkSetting('SubmitBalancesEnabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.enabled', false, {from: owner});
 
             // Attempt to submit balances
             await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {

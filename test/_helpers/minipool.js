@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolManager, RocketMinipoolSettings, RocketMinipoolStatus, RocketNetworkPrices, RocketNetworkWithdrawal, RocketNodeDeposit, RocketDAONetworkSettingsNode } from '../_utils/artifacts';
+import { RocketMinipool, RocketMinipoolManager, RocketMinipoolSettings, RocketMinipoolStatus, RocketNetworkPrices, RocketNetworkWithdrawal, RocketNodeDeposit, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
 
@@ -35,17 +35,17 @@ export async function getMinipoolMinimumRPLStake() {
     const [
         rocketMinipoolSettings,
         rocketNetworkPrices,
-        rocketDAONetworkSettingsNode,
+        rocketDAOProtocolSettingsNode,
     ] = await Promise.all([
         RocketMinipoolSettings.deployed(),
         RocketNetworkPrices.deployed(),
-        RocketDAONetworkSettingsNode.deployed(),
+        RocketDAOProtocolSettingsNode.deployed(),
     ]);
 
     // Load data
     let [depositUserAmount, minMinipoolStake, rplPrice] = await Promise.all([
         rocketMinipoolSettings.getHalfDepositUserAmount(),
-        rocketDAONetworkSettingsNode.getMinimumPerMinipoolStake(),
+        rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake(),
         rocketNetworkPrices.getRPLPrice(),
     ]);
 

@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketDepositSettings, RocketMinipoolQueue, RocketMinipoolSettings, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketDAOProtocolSettingsDeposit, RocketMinipoolQueue, RocketMinipoolSettings, RocketVault } from '../_utils/artifacts';
 
 
 // Assign deposits to minipools
@@ -7,13 +7,13 @@ export async function assignDeposits(txOptions) {
     // Load contracts
     const [
         rocketDepositPool,
-        rocketDepositSettings,
+        rocketDAOProtocolSettingsDeposit,
         rocketMinipoolQueue,
         rocketMinipoolSettings,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
-        RocketDepositSettings.deployed(),
+        RocketDAOProtocolSettingsDeposit.deployed(),
         RocketMinipoolQueue.deployed(),
         RocketMinipoolSettings.deployed(),
         RocketVault.deployed(),
@@ -27,7 +27,7 @@ export async function assignDeposits(txOptions) {
         fullDepositUserAmount, halfDepositUserAmount, emptyDepositUserAmount,
     ] = await Promise.all([
         rocketDepositPool.getBalance.call(),
-        rocketDepositSettings.getMaximumDepositAssignments.call(),
+        rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments.call(),
         rocketMinipoolQueue.getLength.call(1), rocketMinipoolQueue.getLength.call(2), rocketMinipoolQueue.getLength.call(3),
         rocketMinipoolSettings.getDepositUserAmount(1), rocketMinipoolSettings.getDepositUserAmount(2), rocketMinipoolSettings.getDepositUserAmount(3),
     ]);

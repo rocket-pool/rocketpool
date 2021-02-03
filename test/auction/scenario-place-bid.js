@@ -1,4 +1,4 @@
-import { RocketAuctionManager, RocketDAONetworkSettingsAuction, RocketVault } from '../_utils/artifacts';
+import { RocketAuctionManager, RocketDAOProtocolSettingsAuction, RocketVault } from '../_utils/artifacts';
 
 
 // Place a bid on a lot
@@ -11,7 +11,7 @@ export async function placeBid(lotIndex, txOptions) {
         rocketVault,
     ] = await Promise.all([
         RocketAuctionManager.deployed(),
-        RocketDAONetworkSettingsAuction.deployed(),
+        RocketDAOProtocolSettingsAuction.deployed(),
         RocketVault.deployed(),
     ]);
 

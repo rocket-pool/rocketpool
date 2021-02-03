@@ -8,7 +8,7 @@ import "../RocketBase.sol";
 import "../../interface/auction/RocketAuctionManagerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/dao/network/settings/RocketDAONetworkSettingsAuctionInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuctionInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
 // Facilitates RPL liquidation auctions
@@ -163,7 +163,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Create a new lot for auction
     function createLot() override external onlyLatestContract("rocketAuctionManager", address(this)) {
         // Load contracts
-        RocketDAONetworkSettingsAuctionInterface rocketAuctionSettings = RocketDAONetworkSettingsAuctionInterface(getContractAddress("rocketDAONetworkSettingsAuction"));
+        RocketDAOProtocolSettingsAuctionInterface rocketAuctionSettings = RocketDAOProtocolSettingsAuctionInterface(getContractAddress("rocketDAOProtocolSettingsAuction"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Calculation base value
         uint256 calcBase = 1 ether;
@@ -195,7 +195,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Bid on a lot
     function placeBid(uint256 _lotIndex) override external payable onlyLatestContract("rocketAuctionManager", address(this)) {
         // Load contracts
-        RocketDAONetworkSettingsAuctionInterface rocketAuctionSettings = RocketDAONetworkSettingsAuctionInterface(getContractAddress("rocketDAONetworkSettingsAuction"));
+        RocketDAOProtocolSettingsAuctionInterface rocketAuctionSettings = RocketDAOProtocolSettingsAuctionInterface(getContractAddress("rocketDAOProtocolSettingsAuction"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Check bid amount
         require(msg.value > 0, "Invalid bid amount");

@@ -8,9 +8,9 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/settings/RocketDepositSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../interface/dao/network/settings/RocketDAONetworkSettingsNodeInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -32,17 +32,17 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function deposit(uint256 _minimumNodeFee) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        RocketDepositSettingsInterface rocketDepositSettings = RocketDepositSettingsInterface(getContractAddress("rocketDepositSettings"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        RocketDAONetworkSettingsNodeInterface rocketDAONetworkSettingsNode = RocketDAONetworkSettingsNodeInterface(getContractAddress("rocketDAONetworkSettingsNode"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsInterface rocketDaoNodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Is it a trusted node DAO member?
         bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
-        require(rocketDAONetworkSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
+        require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
         require(rocketNetworkFees.getNodeFee() >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
         // Get deposit type by node deposit amount
@@ -63,7 +63,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Transfer deposit to minipool
         minipool.nodeDeposit{value: msg.value}();
         // Assign deposits if enabled
-        if (rocketDepositSettings.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
+        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
     }
 
 }

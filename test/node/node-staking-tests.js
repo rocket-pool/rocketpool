@@ -9,7 +9,7 @@ import { withdrawRpl } from './scenario-withdraw-rpl';
 import { setRewardsClaimIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
 
 export default function() {
-    contract.only('RocketNodeStaking', async (accounts) => {
+    contract('RocketNodeStaking', async (accounts) => {
 
 
         // Accounts

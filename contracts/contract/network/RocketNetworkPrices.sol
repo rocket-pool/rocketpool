@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../RocketBase.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network token price data
 
@@ -48,8 +48,8 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Only accepts calls from trusted (oracle) nodes
     function submitPrices(uint256 _block, uint256 _rplPrice) override external onlyLatestContract("rocketNetworkPrices", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        require(rocketNetworkSettings.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
         // Check block
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
@@ -67,7 +67,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Check submission count & update network prices
         uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketNetworkSettings.getNodeConsensusThreshold()) {
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             updatePrices(_block, _rplPrice);
         }
     }

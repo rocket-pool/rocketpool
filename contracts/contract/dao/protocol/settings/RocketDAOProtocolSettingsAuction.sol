@@ -2,15 +2,15 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketDAONetworkSettings.sol";
-import "../../../../interface/dao/network/settings/RocketDAONetworkSettingsAuctionInterface.sol";
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuctionInterface.sol";
 
 // Network auction settings
 
-contract RocketDAONetworkSettingsAuction is RocketDAONetworkSettings, RocketDAONetworkSettingsAuctionInterface {
+contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDAOProtocolSettingsAuctionInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAONetworkSettings(_rocketStorageAddress, "auction") {
+    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
         // Set version
         version = 1;
         // Initialize settings on deployment

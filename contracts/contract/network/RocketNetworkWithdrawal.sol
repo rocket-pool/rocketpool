@@ -10,7 +10,7 @@ import "../../interface/RocketVaultWithdrawerInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
 
@@ -70,11 +70,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check settings
-        require(rocketNetworkSettings.getProcessWithdrawalsEnabled(), "Processing withdrawals is currently disabled");
+        require(rocketDAOProtocolSettingsNetwork.getProcessWithdrawalsEnabled(), "Processing withdrawals is currently disabled");
         // Check validator minipool
         address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
         require(minipool != address(0x0), "Invalid minipool validator");
@@ -98,7 +98,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         if (nodeAmount > 0) { rocketTokenNETH.depositRewards{value: nodeAmount}(); }
         // Transfer user balance to rETH contract or deposit pool
         if (userAmount > 0) {
-            if (rocketTokenRETH.getCollateralRate() < rocketNetworkSettings.getTargetRethCollateralRate()) {
+            if (rocketTokenRETH.getCollateralRate() < rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate()) {
                 rocketTokenRETH.depositRewards{value: userAmount}();
             } else {
                 rocketDepositPool.recycleWithdrawnDeposit{value: userAmount}();

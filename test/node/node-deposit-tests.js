@@ -1,7 +1,7 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { RocketDAONetworkSettingsNode } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
@@ -82,7 +82,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Disable deposits
-            await setDAONetworkBootstrapSetting(RocketDAONetworkSettingsNode, 'node.deposit.enabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.deposit.enabled', false, {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {

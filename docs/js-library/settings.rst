@@ -13,7 +13,7 @@ The ``settings`` module loads Rocket Pool network settings data from the chain, 
 
     * ``settings.deposit``: Loads information on user deposit settings
     * ``settings.minipool``: Loads information on minipool settings
-    * ``settings.network``: Loads information on network settings
+    * ``network``: Loads information on network settings
     * ``settings.node``: Loads information on smart node settings
 
 
@@ -74,31 +74,31 @@ Methods
 
 **Network Settings**:
 
-    * ``settings.network.getNodeConsensusThreshold()``:
+    * ``network.getNodeConsensusThreshold()``:
       Get the threshold of watchtower node submissions for consensus as a fraction of 1; returns ``Promise<number>``
 
-    * ``settings.network.getSubmitBalancesEnabled()``:
+    * ``network.getSubmitBalancesEnabled()``:
       Get whether network balance submission is enabled; returns ``Promise<boolean>``
 
-    * ``settings.network.getSubmitBalancesFrequency()``:
+    * ``network.getSubmitBalancesFrequency()``:
       Get the frequency at which network balances are submitted in blocks; returns ``Promise<number>``
 
-    * ``settings.network.getProcessWithdrawalsEnabled()``:
+    * ``network.getProcessWithdrawalsEnabled()``:
       Get whether processing validator withdrawals is enabled; returns ``Promise<boolean>``
 
-    * ``settings.network.getMinimumNodeFee()``:
+    * ``network.getMinimumNodeFee()``:
       Get the minimum node commission rate as a fraction of 1; returns ``Promise<number>``
 
-    * ``settings.network.getTargetNodeFee()``:
+    * ``network.getTargetNodeFee()``:
       Get the target node commission rate as a fraction of 1; returns ``Promise<number>``
 
-    * ``settings.network.getMaximumNodeFee()``:
+    * ``network.getMaximumNodeFee()``:
       Get the maximum node commission rate as a fraction of 1; returns ``Promise<number>``
 
-    * ``settings.network.getNodeFeeDemandRange()``:
+    * ``network.getNodeFeeDemandRange()``:
       Get the range of node demand values in wei to base fee calculations on; returns ``Promise<string>``
 
-    * ``settings.network.getTargetRethCollateralRate()``:
+    * ``network.getTargetRethCollateralRate()``:
       Get the target rETH contract collateral rate as a fraction of 1; returns ``Promise<number>``
 
 **Node Settings**:

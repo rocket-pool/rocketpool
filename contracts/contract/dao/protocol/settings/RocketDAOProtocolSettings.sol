@@ -3,11 +3,11 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../../RocketBase.sol";
-import "../../../../interface/dao/network/settings/RocketDAONetworkSettingsInterface.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInterface.sol";
 
 // Settings in RP which the DAO will have full control over
 // This settings contract enables storage using setting paths with namespaces, rather than explicit set methods
-abstract contract RocketDAONetworkSettings is RocketBase, RocketDAONetworkSettingsInterface {
+abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSettingsInterface {
 
 
     // The namespace for a particular group of settings
@@ -17,7 +17,7 @@ abstract contract RocketDAONetworkSettings is RocketBase, RocketDAONetworkSettin
     // Only allow updating from the DAO proposals contract
     modifier onlyDAONetworkProposal() {
         // If this contract has been initialised, only allow access from the proposals contract
-        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress('rocketDAONetworkProposals') == msg.sender, "Only DAO Network Proposals contract can update a setting");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress('rocketDAOProtocolProposals') == msg.sender, "Only DAO Network Proposals contract can update a setting");
         _;
     }
 

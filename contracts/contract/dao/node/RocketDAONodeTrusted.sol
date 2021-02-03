@@ -51,13 +51,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Return the amount of member votes need for a proposal to pass
     function getMemberQuorumVotesRequired() override public view returns (uint256) {
         // Load contracts
-        RocketDAONodeTrustedSettingsInterface rocketDAONetworkSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
         // Get the total trusted nodes
         uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
         uint256 total = trustedNodeCount > 0 ? calcBase.div(trustedNodeCount) : 0;
         // Return the votes required
-        return calcBase.mul(rocketDAONetworkSettings.getQuorum()).div(total);
+        return calcBase.mul(rocketDAOProtocolSettings.getQuorum()).div(total);
     }
 
 
