@@ -88,7 +88,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Check balance
         require(getBalance() >= totalAmount, "Insufficient withdrawal pool balance");
         // Set withdrawal processed status
-        rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool, true);
+        rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool);
         // Withdraw ETH from vault
         if (totalAmount > 0) {
             // Withdraw

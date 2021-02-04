@@ -18,10 +18,11 @@ export async function deposit(minimumNodeFee, txOptions) {
     function getMinipoolCounts(nodeAddress) {
         return Promise.all([
             rocketMinipoolManager.getMinipoolCount.call(),
+            rocketMinipoolManager.getUnprocessedMinipoolCount.call(),
             rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
         ]).then(
-            ([network, node]) =>
-            ({network, node})
+            ([network, unprocessed, node]) =>
+            ({network, unprocessed, node})
         );
     }
 
@@ -59,17 +60,21 @@ export async function deposit(minimumNodeFee, txOptions) {
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
     let [
         lastMinipoolAddress,
+        lastUnprocessedMinipoolAddress,
         lastNodeMinipoolAddress,
         minipoolDetails,
     ] = await Promise.all([
         rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub(web3.utils.toBN(1))),
-        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.network.sub(web3.utils.toBN(1))),
+        rocketMinipoolManager.getUnprocessedMinipoolAt.call(minipoolCounts2.unprocessed.sub(web3.utils.toBN(1))),
+        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.node.sub(web3.utils.toBN(1))),
         getMinipoolDetails(minipoolAddress),
     ]);
 
     // Check minipool indexes
     assert(minipoolCounts2.network.eq(minipoolCounts1.network.add(web3.utils.toBN(1))), 'Incorrect updated network minipool count');
     assert.equal(lastMinipoolAddress, minipoolAddress, 'Incorrect updated network minipool index');
+    assert(minipoolCounts2.unprocessed.eq(minipoolCounts1.unprocessed.add(web3.utils.toBN(1))), 'Incorrect updated unprocessed minipool count');
+    assert.equal(lastUnprocessedMinipoolAddress, minipoolAddress, 'Incorrect updated unprocessed minipool index');
     assert(minipoolCounts2.node.eq(minipoolCounts1.node.add(web3.utils.toBN(1))), 'Incorrect updated node minipool count');
     assert.equal(lastNodeMinipoolAddress, minipoolAddress, 'Incorrect updated node minipool index');
 
