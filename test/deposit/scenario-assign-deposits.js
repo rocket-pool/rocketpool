@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketDAOProtocolSettingsDeposit, RocketMinipoolQueue, RocketMinipoolSettings, RocketVault } from '../_utils/artifacts';
+import { RocketDepositPool, RocketDAOProtocolSettingsDeposit, RocketMinipoolQueue, RocketDAOProtocolSettingsMinipool, RocketVault } from '../_utils/artifacts';
 
 
 // Assign deposits to minipools
@@ -9,13 +9,13 @@ export async function assignDeposits(txOptions) {
         rocketDepositPool,
         rocketDAOProtocolSettingsDeposit,
         rocketMinipoolQueue,
-        rocketMinipoolSettings,
+        rocketDAOProtocolSettingsMinipool,
         rocketVault,
     ] = await Promise.all([
         RocketDepositPool.deployed(),
         RocketDAOProtocolSettingsDeposit.deployed(),
         RocketMinipoolQueue.deployed(),
-        RocketMinipoolSettings.deployed(),
+        RocketDAOProtocolSettingsMinipool.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -29,7 +29,7 @@ export async function assignDeposits(txOptions) {
         rocketDepositPool.getBalance.call(),
         rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments.call(),
         rocketMinipoolQueue.getLength.call(1), rocketMinipoolQueue.getLength.call(2), rocketMinipoolQueue.getLength.call(3),
-        rocketMinipoolSettings.getDepositUserAmount(1), rocketMinipoolSettings.getDepositUserAmount(2), rocketMinipoolSettings.getDepositUserAmount(3),
+        rocketDAOProtocolSettingsMinipool.getDepositUserAmount(1), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(2), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(3),
     ]);
 
     // Get queued minipool capacities

@@ -4,29 +4,27 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../RocketBase.sol";
-import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
-import "../../types/MinipoolDeposit.sol";
-
+import "./RocketDAOProtocolSettings.sol";
+import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+ 
 // Network minipool settings
-
-contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
+contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
     // Libs
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
         version = 1;
         // Initialize settings on deployment
-        if (!getBoolS("settings.minipool.init")) {
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSubmitWithdrawableEnabled(true);
-            setLaunchTimeout(5760); // ~24 hours
-            setWithdrawalDelay(172800); // ~30 days
+            setSettingBool("minipool.submit.withdrawable.enabled", true);
+            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
+            setSettingUint("minipool.withdrawal.delay", 172800);            // ~30 days       
             // Settings initialized
-            setBoolS("settings.minipool.init", true);
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
 
@@ -71,26 +69,17 @@ contract RocketMinipoolSettings is RocketBase, RocketMinipoolSettingsInterface {
 
     // Submit minipool withdrawable events currently enabled (trusted nodes only)
     function getSubmitWithdrawableEnabled() override public view returns (bool) {
-        return getBoolS("settings.minipool.submit.withdrawable.enabled");
-    }
-    function setSubmitWithdrawableEnabled(bool _value) public onlyGuardian {
-        setBoolS("settings.minipool.submit.withdrawable.enabled", _value);
+        return getSettingBool("minipool.submit.withdrawable.enabled");
     }
 
     // Timeout period in blocks for prelaunch minipools to launch
     function getLaunchTimeout() override public view returns (uint256) {
-        return getUintS("settings.minipool.launch.timeout");
-    }
-    function setLaunchTimeout(uint256 _value) public onlyGuardian {
-        setUintS("settings.minipool.launch.timeout", _value);
+        return getSettingUint("minipool.launch.timeout");
     }
 
     // Withdrawal delay in blocks before withdrawable minipools can be closed
     function getWithdrawalDelay() override public view returns (uint256) {
-        return getUintS("settings.minipool.withdrawal.delay");
-    }
-    function setWithdrawalDelay(uint256 _value) public onlyGuardian {
-        setUintS("settings.minipool.withdrawal.delay", _value);
+        return getSettingUint("minipool.withdrawal.delay");
     }
 
 }

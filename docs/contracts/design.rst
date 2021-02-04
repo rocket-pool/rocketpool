@@ -87,7 +87,7 @@ The Rocket Pool contracts, as defined in ``RocketStorage``, are:
     * ``rocketNodeManager`` - Registers & manages all nodes in the network
 
     * ``rocketDAOProtocolSettingsDeposit`` - Provides network settings relating to deposits
-    * ``rocketMinipoolSettings`` - Provides network settings relating to minipools
+    * ``rocketDAOProtocolSettingsMinipool`` - Provides network settings relating to minipools
     * ``rocketDAOProtocolSettingsNetwork`` - Provides miscellaneous network settings
     * ``rocketDAOProtocolSettingsNode`` - Provides network settings relating to nodes
 

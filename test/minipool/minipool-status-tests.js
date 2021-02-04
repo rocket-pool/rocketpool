@@ -4,13 +4,13 @@ import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { setMinipoolSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { submitWithdrawable } from './scenario-submit-withdrawable';
+import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
-
 
         // Accounts
         const [
@@ -142,7 +142,7 @@ export default function() {
             let endBalance = web3.utils.toWei('36', 'ether');
 
             // Disable submissions
-            await setMinipoolSetting('SubmitWithdrawableEnabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.submit.withdrawable.enabled', false, {from: owner});
 
             // Attempt to submit withdrawable event for staking minipool
             await shouldRevert(submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {

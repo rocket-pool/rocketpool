@@ -11,7 +11,7 @@ import "../../interface/minipool/RocketMinipoolDelegateInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
-import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
@@ -87,9 +87,9 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
         require(!nodeDepositAssigned, "The node deposit has already been assigned");
         // Load contracts
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check deposit amount
-        require(msg.value == rocketMinipoolSettings.getDepositNodeAmount(depositType), "Invalid node deposit amount");
+        require(msg.value == rocketDAOProtocolSettingsMinipool.getDepositNodeAmount(depositType), "Invalid node deposit amount");
         // Update node deposit details
         nodeDepositBalance = msg.value;
         nodeDepositAssigned = true;
@@ -106,9 +106,9 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
         require(!userDepositAssigned, "The user deposit has already been assigned");
         // Load contracts
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check deposit amount
-        require(msg.value == rocketMinipoolSettings.getDepositUserAmount(depositType), "Invalid user deposit amount");
+        require(msg.value == rocketDAOProtocolSettingsMinipool.getDepositUserAmount(depositType), "Invalid user deposit amount");
         // Update user deposit details
         userDepositBalance = msg.value;
         userDepositAssigned = true;
@@ -141,10 +141,10 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         // Get launch amount
-        uint256 launchAmount = rocketMinipoolSettings.getLaunchBalance();
+        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
         // Check validator pubkey is not in use
@@ -178,10 +178,10 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be withdrawn from while withdrawable");
         // Load contracts
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Check withdrawal delay has passed
-        require(block.number.sub(statusBlock) >= rocketMinipoolSettings.getWithdrawalDelay(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
+        require(block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getWithdrawalDelay(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
         // Transfer nETH balance to node operator
         uint256 nethBalance = rocketTokenNETH.balanceOf(address(this));
         if (nethBalance > 0) {
@@ -204,11 +204,11 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check if being dissolved by minipool owner or minipool is timed out
         require(
             msg.sender == nodeAddress ||
-            (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketMinipoolSettings.getLaunchTimeout()),
+            (status == MinipoolStatus.Prelaunch && block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout()),
             "The minipool can only be dissolved by its owner unless it has timed out"
         );
         // Transfer user balance to deposit pool

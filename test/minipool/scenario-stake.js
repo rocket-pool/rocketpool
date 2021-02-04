@@ -1,4 +1,4 @@
-import { RocketMinipoolManager, RocketMinipoolSettings } from '../_utils/artifacts';
+import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
 import { getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 
 
@@ -8,14 +8,14 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
     // Load contracts
     const [
         rocketMinipoolManager,
-        rocketMinipoolSettings,
+        rocketDAOProtocolSettingsMinipool,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
-        RocketMinipoolSettings.deployed(),
+        RocketDAOProtocolSettingsMinipool.deployed(),
     ]);
 
     // Get parameters
-    let launchBalance = await rocketMinipoolSettings.getLaunchBalance.call();
+    let launchBalance = await rocketDAOProtocolSettingsMinipool.getLaunchBalance.call();
 
     // Get validator deposit data
     let depositData = {

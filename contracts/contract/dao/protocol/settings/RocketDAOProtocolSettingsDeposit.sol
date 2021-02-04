@@ -16,11 +16,11 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingBool("settings.deposit.enabled", true);
-            setSettingBool("settings.deposit.assign.enabled", true);
-            setSettingUint("settings.deposit.minimum", 0.01 ether);
-            setSettingUint("settings.deposit.pool.maximum", 1000 ether);
-            setSettingUint("settings.deposit.assign.maximum", 2);
+            setSettingBool("deposit.enabled", true);
+            setSettingBool("deposit.assign.enabled", true);
+            setSettingUint("deposit.minimum", 0.01 ether);
+            setSettingUint("deposit.pool.maximum", 1000 ether);
+            setSettingUint("deposit.assign.maximum", 2);
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -28,27 +28,27 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
 
     // Deposits currently enabled
     function getDepositEnabled() override public view returns (bool) {
-        return getSettingBool("settings.deposit.enabled");
+        return getSettingBool("deposit.enabled");
     }
 
     // Deposit assignments currently enabled
     function getAssignDepositsEnabled() override public view returns (bool) {
-        return getSettingBool("settings.deposit.assign.enabled");
+        return getSettingBool("deposit.assign.enabled");
     }
 
     // Minimum deposit size
     function getMinimumDeposit() override public view returns (uint256) {
-        return getSettingUint("settings.deposit.minimum");
+        return getSettingUint("deposit.minimum");
     }
 
     // The maximum size of the deposit pool
     function getMaximumDepositPoolSize() override public view returns (uint256) {
-        return getSettingUint("settings.deposit.pool.maximum");
+        return getSettingUint("deposit.pool.maximum");
     }
 
     // The maximum number of deposit assignments to perform at once
     function getMaximumDepositAssignments() override public view returns (uint256) {
-        return getSettingUint("settings.deposit.assign.maximum");
+        return getSettingUint("deposit.assign.maximum");
     }
 
 }

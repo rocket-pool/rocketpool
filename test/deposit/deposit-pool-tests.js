@@ -82,7 +82,7 @@ export default function() {
         it(printTitle('staker', 'cannot make a deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.enabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.enabled', false, {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit({
@@ -112,7 +112,7 @@ export default function() {
         it(printTitle('staker', 'cannot make a deposit which would exceed the maximum deposit pool size'), async () => {
 
             // Set max deposit pool size
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.pool.maximum', web3.utils.toWei('100', 'ether'), {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', web3.utils.toWei('100', 'ether'), {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit({
@@ -136,7 +136,7 @@ export default function() {
             });
 
             // Disable deposit assignment
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.assign.enabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
@@ -151,8 +151,8 @@ export default function() {
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('0', 'ether')});
 
             // Re-enable deposit assignment & set limit
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.assign.enabled', true, {from: owner});
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.assign.maximum', 3, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.maximum', 3, {from: owner});
 
             // Assign deposits with assignable deposits
             await assignDeposits({
@@ -165,7 +165,7 @@ export default function() {
         it(printTitle('random address', 'cannot assign deposits while deposit assignment is disabled'), async () => {
 
             // Disable deposit assignment
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'settings.deposit.assign.enabled', false, {from: owner});
+            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
 
             // Attempt to assign deposits
             await shouldRevert(assignDeposits({

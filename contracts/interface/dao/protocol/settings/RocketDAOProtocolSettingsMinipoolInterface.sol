@@ -2,9 +2,9 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "../../types/MinipoolDeposit.sol";
+import "../../../../types/MinipoolDeposit.sol";
 
-interface RocketMinipoolSettingsInterface {
+interface RocketDAOProtocolSettingsMinipoolInterface {
     function getLaunchBalance() external view returns (uint256);
     function getDepositNodeAmount(MinipoolDeposit _depositType) external view returns (uint256);
     function getFullDepositNodeAmount() external view returns (uint256);

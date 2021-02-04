@@ -1,4 +1,4 @@
-import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketMinipoolSettings, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 
 
 // Auction settings
@@ -15,16 +15,11 @@ export async function getDepositSetting(setting) {
     return value;
 }
 
-
 // Minipool settings
 export async function getMinipoolSetting(setting) {
-    const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
-    let value = await rocketMinipoolSettings['get' + setting].call();
+    const rocketDAOProtocolSettingsMinipool = await RocketDAOProtocolSettingsMinipool.deployed();
+    let value = await rocketDAOProtocolSettingsMinipool['get' + setting].call();
     return value;
-}
-export async function setMinipoolSetting(setting, value, txOptions) {
-    const rocketMinipoolSettings = await RocketMinipoolSettings.deployed();
-    await rocketMinipoolSettings['set' + setting](value, txOptions);
 }
 
 // Network settings

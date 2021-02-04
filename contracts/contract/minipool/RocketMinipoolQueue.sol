@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/settings/RocketMinipoolSettingsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/util/AddressQueueStorageInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 
@@ -54,33 +54,33 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Get the total combined capacity of the queues
     function getTotalCapacity() override public view returns (uint256) {
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
-            getLength(MinipoolDeposit.Full).mul(rocketMinipoolSettings.getFullDepositUserAmount())
+            getLength(MinipoolDeposit.Full).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
         ).add(
-            getLength(MinipoolDeposit.Half).mul(rocketMinipoolSettings.getHalfDepositUserAmount())
+            getLength(MinipoolDeposit.Half).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
         ).add(
-            getLength(MinipoolDeposit.Empty).mul(rocketMinipoolSettings.getEmptyDepositUserAmount())
+            getLength(MinipoolDeposit.Empty).mul(rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount())
         );
     }
 
     // Get the total effective capacity of the queues (used in node demand calculation)
     function getEffectiveCapacity() override public view returns (uint256) {
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
-            getLength(MinipoolDeposit.Full).mul(rocketMinipoolSettings.getFullDepositUserAmount())
+            getLength(MinipoolDeposit.Full).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
         ).add(
-            getLength(MinipoolDeposit.Half).mul(rocketMinipoolSettings.getHalfDepositUserAmount())
+            getLength(MinipoolDeposit.Half).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
         );
     }
 
     // Get the capacity of the next available minipool
     // Returns 0 if no minipools are available
     function getNextCapacity() override public view returns (uint256) {
-        RocketMinipoolSettingsInterface rocketMinipoolSettings = RocketMinipoolSettingsInterface(getContractAddress("rocketMinipoolSettings"));
-        if (getLength(MinipoolDeposit.Half) > 0) { return rocketMinipoolSettings.getHalfDepositUserAmount(); }
-        if (getLength(MinipoolDeposit.Full) > 0) { return rocketMinipoolSettings.getFullDepositUserAmount(); }
-        if (getLength(MinipoolDeposit.Empty) > 0) { return rocketMinipoolSettings.getEmptyDepositUserAmount(); }
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        if (getLength(MinipoolDeposit.Half) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
+        if (getLength(MinipoolDeposit.Full) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
+        if (getLength(MinipoolDeposit.Empty) > 0) { return rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount(); }
         return 0;
     }
 
