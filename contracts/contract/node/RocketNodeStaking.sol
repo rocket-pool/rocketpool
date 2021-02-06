@@ -105,6 +105,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         else { return maxRplStake; }
     }
 
+    // Get a node's minimum RPL stake to collateralize their minipools
+    function getNodeMinimumRPLStake(address _nodeAddress) override public view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Calculate minimum RPL stake
+        return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
+            .div(rocketNetworkPrices.getRPLPrice());
+    }
+
     // Get a node's minipool limit based on RPL stake
     function getNodeMinipoolLimit(address _nodeAddress) override public view returns (uint256) {
         // Load contracts
@@ -146,23 +160,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
         require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
-        // Calculate node's minimum RPL stake
-        uint256 minRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
-            .mul(rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake())
-            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
-            .div(rocketNetworkPrices.getRPLPrice());
         // Check withdrawal would not undercollateralize node
-        require(rplStake.sub(_amount) >= minRplStake, "Node's staked RPL balance after withdrawal is less than minimum balance");
+        require(rplStake.sub(_amount) >= getNodeMinimumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than minimum balance");
         // Transfer RPL tokens to node address
         rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), _amount);
         // Update RPL stake amounts
