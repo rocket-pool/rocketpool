@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
 import { mintRPL, approveRPL } from './tokens';
 
 
@@ -10,7 +10,7 @@ export async function mintRPLBond(owner, node) {
         rocketDAONodeTrustedSettings,
     ] = await Promise.all([
         RocketDAONodeTrustedActions.deployed(),
-        RocketDAONodeTrustedSettings.deployed(),
+        RocketDAONodeTrustedSettingsMembers.deployed(),
     ]);
 
     // Get RPL bond amount

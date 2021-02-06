@@ -6,7 +6,8 @@ import "../../RocketBase.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedProposalsInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
-import "../../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -56,13 +57,13 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
-        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this user can make a proposal now
-        require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAOProtocolSettings.getProposalCooldown()) >= block.number, "Member has not waited long enough to make another proposal");
+        require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAONodeTrustedSettingsProposals.getCooldown()) >= block.number, "Member has not waited long enough to make another proposal");
         // Record the last time this user made a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal
-        return daoProposal.add(msg.sender, 'rocketDAONodeTrustedProposals', _proposalMessage, block.number.add(rocketDAOProtocolSettings.getProposalVoteDelayBlocks()), rocketDAOProtocolSettings.getProposalVoteBlocks(), rocketDAOProtocolSettings.getProposalExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
+        return daoProposal.add(msg.sender, 'rocketDAONodeTrustedProposals', _proposalMessage, block.number.add(rocketDAONodeTrustedSettingsProposals.getVoteDelayBlocks()), rocketDAONodeTrustedSettingsProposals.getVoteBlocks(), rocketDAONodeTrustedSettingsProposals.getExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
     }
 
     // Vote on a proposal
@@ -100,7 +101,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
     function proposalInvite(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
         // Their proposal executed, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "invited", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "invited", _nodeAddress)), block.number);
         // Ok all good, lets get their invitation and member data setup
         // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
         _memberInit(_id, _email, _nodeAddress);
@@ -114,7 +115,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
         require(daoNodeTrusted.getMemberCount() > daoNodeTrusted.getMemberMinRequired(), "Member count will fall below min required, this member must choose to be replaced");
         // Their proposal to leave has been accepted, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "leave", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "leave", _nodeAddress)), block.number);
     }
 
 
@@ -122,7 +123,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Member who is proposing to be replaced, must action the method in the actions contract to confirm they want to be replaced
     function proposalReplace(address _memberNodeAddress, string memory _replaceId, string memory _replaceEmail, address _replaceNodeAddress) override public onlyExecutingContracts onlyTrustedNode(_memberNodeAddress) onlyRegisteredNode(_replaceNodeAddress) { 
         // Their proposal to be replaced has been accepted, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", "replace", _memberNodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "replace", _memberNodeAddress)), block.number);
         // Initialise the new prospective members details
         _memberInit(_replaceId, _replaceEmail, _replaceNodeAddress);
         // Their proposal to be replaced has been accepted
@@ -147,17 +148,26 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
 
 
-    // Change one of the current settings of the trusted node DAO
-    // Settings only support Uints currently
-    function proposalSettingUint(string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
+    /*** Settings ***************/
+
+    // Change one of the current uint256 settings of the DAO
+    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
         // Load contracts
-        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
-        // Some safety guards for certain settings
-        if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("quorum"))) require(_value >= 0.51 ether && _value <= 0.9 ether, "Quorum setting must be >= 51% and <= 90%");
-        // Ok all good, lets update
-        rocketDAOProtocolSettings.setSettingUint(_settingPath, _value);
+        RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress(_settingContractName));
+        // Lets update
+        rocketDAONodeTrustedSettings.setSettingUint(_settingPath, _value);
     }
 
+    // Change one of the current bool settings of the DAO
+    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
+        // Load contracts
+        RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress(_settingContractName));
+        // Lets update
+        rocketDAONodeTrustedSettings.setSettingBool(_settingPath, _value);
+    }
+
+
+    /*** Internal ***************/
 
     // Add a new potential members data, they are not official members yet, just propsective
     function _memberInit(string memory _id, string memory _email, address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {

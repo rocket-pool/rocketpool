@@ -5,18 +5,15 @@ pragma solidity 0.7.6;
 import "../../RocketBase.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
 
 // The Rocket Pool Network DAO - This is a placeholder for the network DAO to come
 contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
-    using SafeMath for uint;
 
     // The namespace for any data stored in the network DAO (do not change)
     string daoNameSpace = 'dao.protocol';
 
-    // Only allow bootstrapping the dao if it has less than the required members to form the DAO
+    // Only allow bootstrapping when enabled
     modifier onlyBootstrapMode() {
         require(getBootstrapModeDisabled() == false, "Bootstrap mode not engaged");
         _;
@@ -67,7 +64,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     }
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
-    function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyLatestContract("rocketDAOProtocol", address(this)) {
+    function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         require(_confirmDisableBootstrapMode == true, 'You must confirm disabling bootstrap mode, it can only be done once!');
         setBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")), true); 
     }

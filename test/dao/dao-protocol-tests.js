@@ -6,15 +6,14 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled } from './scenario-dao-node-trusted-bootstrap';
-import { daoNodeTrustedExecute, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, } from './scenario-dao-node-trusted';
-import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
+import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock} from './scenario-dao-proposal';
 
 // Contracts
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL } from '../_utils/artifacts'; 
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketVault, RocketTokenRPL } from '../_utils/artifacts'; 
 
 
 export default function() {
-    contract.only('RocketDAONodeTrusted', async (accounts) => {
+    contract('RocketDAONodeTrusted', async (accounts) => {
 
 
         // Accounts
@@ -37,23 +36,6 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-
-
-        // Mints fixed supply RPL, burns that for new RPL and gives it to the account
-        let rplMint = async function(_account, _amount) {
-            // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
-            
-            // Convert
-            _amount = web3.utils.toWei(_amount.toString(), 'ether');
-            // Mint RPL fixed supply for the users to simulate current users having RPL
-            await mintDummyRPL(_account, _amount, { from: owner });
-            // Mint a large amount of dummy RPL to owner, who then burns it for real RPL which is sent to nodes for testing below
-            await allowDummyRPL(rocketTokenRPL.address, _amount, { from: _account });
-            // Burn existing fixed supply RPL for new RPL
-            await burnFixedRPL(_amount, { from: _account }); 
-
-        }
 
         // Allow the given account to spend this users RPL
         let rplAllowanceDAO = async function(_account, _amount) {
@@ -90,7 +72,7 @@ export default function() {
         //
         // Start Tests
         //
-        
+        /*
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -112,11 +94,20 @@ export default function() {
                 from: owner
             }), 'Owner the same DAO member twice', 'This node is already part of the trusted node DAO');
         });
-      
+
+  
+        it(printTitle('owner', 'fails to add more than the 3 min required bootstrap trusted node dao members'), async () => {
+            // Add our 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
+            // Set as trusted dao member via bootstrapping
+            await shouldRevert(bootstrapMemberAdd(registeredNode2, 'rocketpool', 'node@home.com')
+                , 'Owner added more than 3 bootstrap trusted node dao members', 'Bootstrap mode not engaged, min DAO member count has been met');
+        });
+        
 
         it(printTitle('owner', 'updates quorum setting while bootstrap mode is enabled'), async () => {
             // Set as trusted dao member via bootstrapping
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0.55'), {
+            await setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
                 from: owner
             });
         });
@@ -124,18 +115,19 @@ export default function() {
 
         it(printTitle('owner', 'updates RPL bond setting while bootstrap mode is enabled'), async () => {
             // Set RPL Bond at 10K RPL
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.rplbond', web3.utils.toWei('10000'), {
+            await setDAONodeTrustedBootstrapSetting('rplbond', web3.utils.toWei('10000'), {
                 from: owner
             });
         });
 
         it(printTitle('userOne', 'fails to update RPL bond setting while bootstrap mode is enabled as they are not the owner'), async () => {
             // Update setting
-            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.rplbond', web3.utils.toWei('10000'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('rplbond', web3.utils.toWei('10000'), {
                 from: userOne
             }), 'UserOne changed RPL bond setting', 'Account is not a temporary guardian');
         });
-        
+        */
+
         it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
@@ -144,25 +136,25 @@ export default function() {
                 from: owner
             })
             // Update setting
-            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'quorum', web3.utils.toWei('0.55'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
                 from: owner
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged');
         });
-        
 
-        it(printTitle('owner', 'fails to set quorum setting as 0% while bootstrap mode is enabled'), async () => {
+        /*
+        it(printTitle('owner', 'fails to set quorum setting below 51% while bootstrap mode is enabled'), async () => {
             // Update setting
-            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.50'), {
                 from: owner
-            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be > 0 & <= 90%');
+            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
         });
 
     
         it(printTitle('owner', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
             // Update setting
-            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0.91'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.91'), {
                 from: owner
-            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be > 0 & <= 90%');
+            }), 'Owner changed quorum setting to invalid value', 'Quorum setting must be >= 51% and <= 90%');
         });
         
 
@@ -190,17 +182,17 @@ export default function() {
         // The big test
         it(printTitle('registeredNodeTrusted1&2', 'create two proposals for two new members that are voted in, one then chooses to leave and is allowed too'), async () => {
             // Get the DAO settings
-            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
+            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed(); 
+            // Total current members
+            let totalMembers = await getDAONodeMemberCount();
             // How much RPL is required for a trusted node bond?
             let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
-            // Disable bootstrap mode
-            await setDaoNodeTrustedBootstrapModeDisabled({ from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // New Member 1
             // Encode the calldata for the proposal
             let proposalCalldata1 = web3.eth.abi.encodeFunctionCall(
@@ -272,7 +264,6 @@ export default function() {
             // Member can now leave and collect any RPL bond
             await daoNodeTrustedMemberLeave(registeredNodeTrusted2, {from: registeredNodeTrusted2});
         });
-        
 
         // Test various proposal states
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it passes and is executed'), async () => {
@@ -283,8 +274,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // Now registeredNodeTrusted2 wants to leave
@@ -327,8 +318,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // Now registeredNodeTrusted2 wants to leave
@@ -367,8 +358,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
@@ -395,8 +386,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -430,9 +421,9 @@ export default function() {
             // New member to replace current member
             let newMember = registeredNode2;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.action.blocks', proposalActionBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('action.blocks', proposalActionBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalReplace', type: 'function', inputs: [{type: 'address', name: '_memberNodeAddress'}, {type: 'string', name: '_replaceId'},{type: 'string', name: '_replaceEmail'}, {type: 'address', name: '__replaceNodeAddress'}]},
@@ -466,8 +457,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // How much bond has registeredNodeTrusted2 paid?
@@ -506,8 +497,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -535,8 +526,8 @@ export default function() {
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting('execute.blocks', proposalVoteExecuteBlocks, { from: owner });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -559,7 +550,7 @@ export default function() {
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
 
         });    
-        
+        */
 
     });
 }

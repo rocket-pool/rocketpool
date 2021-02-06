@@ -1,4 +1,4 @@
-import { RocketNodeDeposit, RocketNodeManager, RocketNodeStaking, RocketTokenRPL, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings } from '../_utils/artifacts';
+import { RocketNodeDeposit, RocketNodeManager, RocketNodeStaking, RocketTokenRPL, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
@@ -49,7 +49,7 @@ export async function setNodeTrusted(_account, _id, _email, owner) {
     }
 
     // Get the DAO settings
-    let daoNodesettings = await RocketDAONodeTrustedSettings.deployed();
+    let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
     // How much RPL is required for a trusted node bond?
     let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
     // Mint RPL bond required for them to join

@@ -20,12 +20,12 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // RPL Claims groups (the DAO does not need to be set, it will claim remaining rewards each claim after each interval)
             setSettingRewardsClaimer('rocketClaimDAO', 0.1 ether);                                              // DAO Rewards claim % amount - Percentage given of 1 ether
-            setSettingRewardsClaimer('rocketClaimNode', 0.70 ether);                                             // Bonded Node Rewards claim % amount - Percentage given of 1 ether
+            setSettingRewardsClaimer('rocketClaimNode', 0.70 ether);                                            // Bonded Node Rewards claim % amount - Percentage given of 1 ether
             setSettingRewardsClaimer('rocketClaimTrustedNode', 0.2 ether);                                      // Trusted Node Rewards claim % amount - Percentage given of 1 ether
             // RPL Claims settings
             setSettingUint("rpl.rewards.claim.period.blocks", 86380);                                           // The period at which a claim period will span in blocks - 14 days approx by default
             // Deployment check
-            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                               // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
     }
 
@@ -33,7 +33,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
     /*** Settings ****************/
 
     // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    function setSettingRewardsClaimer(string memory _contractName, uint256 _perc) override public onlyDAONetworkProposal {
+    function setSettingRewardsClaimer(string memory _contractName, uint256 _perc) override public onlyDAOProtocolProposal {
         // Get the total perc set, can't be more than 100
         uint256 percTotal = getRewardsClaimersPercTotal();
         // If this group already exists, it will update the perc

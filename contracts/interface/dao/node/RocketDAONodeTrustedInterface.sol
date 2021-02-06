@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketDAONodeTrustedInterface {
+    function getBootstrapModeDisabled() external view returns (bool);
     function getMemberQuorumVotesRequired() external view returns (uint256);
     function getMemberAt(uint256 _index) external view returns (address);
     function getMemberCount() external view returns (uint256);
@@ -19,5 +20,7 @@ interface RocketDAONodeTrustedInterface {
     function incrementMemberUnbondedValidatorCount(address _nodeAddress) external;
     function decrementMemberUnbondedValidatorCount(address _nodeAddress) external;
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) external;
-    function bootstrapSettingUint(string memory _settingPath, uint256 _value) external;
+    function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;
+    function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) external;
+    function bootstrapDisable(bool _confirmDisableBootstrapMode) external;
 }

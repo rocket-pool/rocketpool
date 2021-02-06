@@ -5,7 +5,6 @@ import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolS
 // Change a trusted node DAO setting while bootstrap mode is enabled
 export async function setDAONetworkBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
 
-
     // Helper function
     String.prototype.lowerCaseFirstLetter = function() {
         return this.charAt(0).toLowerCase() + this.slice(1);
@@ -37,8 +36,8 @@ export async function setDAONetworkBootstrapSetting(_settingContractInstance, _s
     let ds2 = await getTxData();
 
     // Check it was updated
-    if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO network uint256 setting not updated in bootstrap mode');
-    if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO network boolean setting not updated in bootstrap mode');
+    if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
+    if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO protocol boolean setting not updated in bootstrap mode');
 }
 
 // Set a contract that can claim rewards

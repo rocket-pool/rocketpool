@@ -6,7 +6,8 @@ import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
-import "../../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 
@@ -90,13 +91,14 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         IERC20 rplInflationContract = IERC20(rocketTokenRPLAddress);
         RocketVaultInterface rocketVault = RocketVaultInterface(rocketVaultAddress);
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketDAONodeTrustedSettingsInterface rocketDAONodeSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
+        RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // The block that the member was successfully invited to join the DAO
         uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock('invited', msg.sender);
         // The current member bond amount in RPL that's required
-        uint256 rplBondAmount = rocketDAONodeSettings.getRPLBond();
+        uint256 rplBondAmount = rocketDAONodeTrustedSettingsMembers.getRPLBond();
         // Has their invite expired?
-        require(memberInvitedBlock.add(rocketDAONodeSettings.getProposalActionBlocks()) > block.number, "This nodes invitation to join has expired, please apply again");
+        require(memberInvitedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This nodes invitation to join has expired, please apply again");
         // Verify they have allowed this contract to spend their RPL for the bond
         require(rplInflationContract.allowance(msg.sender, address(this)) >= rplBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens");
         // Transfer the tokens to this contract now
@@ -117,13 +119,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketDAONodeTrustedSettingsInterface rocketDAONodeSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this wouldn't dip below the min required trusted nodes
         require(rocketDAONode.getMemberCount() > rocketDAONode.getMemberMinRequired(), "Member count will fall below min required, this member must choose to be replaced");
         // Get the block that they were approved to leave at
         uint256 leaveAcceptedBlock = rocketDAONode.getMemberProposalExecutedBlock('leave', msg.sender);
         // Has their leave request expired?
-        require(leaveAcceptedBlock.add(rocketDAONodeSettings.getProposalActionBlocks()) > block.number, "This member has not been approved to leave or request has expired, please apply to leave again");
+        require(leaveAcceptedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This member has not been approved to leave or request has expired, please apply to leave again");
         // They were succesful, lets refund their RPL Bond
         uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(msg.sender);
         // Refund
@@ -145,7 +147,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     function actionReplace() override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketDAONodeTrustedSettingsInterface rocketDAONodeSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Get the current member that wishes to be replaced
         address memberCurrent = rocketDAONode.getMemberReplacedAddress('current', msg.sender);
         // Get the replacement member 
@@ -157,7 +159,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // The block that the member was successfully allowed to be replaced
         uint256 memberReplaceBlock = rocketDAONode.getMemberProposalExecutedBlock('replace', msg.sender);
         // Has their invite expired?
-        require(memberReplaceBlock.add(rocketDAONodeSettings.getProposalActionBlocks()) > block.number, "This nodes invitation to replace a node has expired, please apply again");
+        require(memberReplaceBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This nodes invitation to replace a node has expired, please apply again");
         // Add new member now (rpl bond transfers to the new member)
         _memberAdd(memberReplacement, rocketDAONode.getMemberRPLBondAmount(memberCurrent));
         // Remove existing member now

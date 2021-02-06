@@ -3,11 +3,11 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../../RocketBase.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInterface.sol";
+import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsInterface.sol";
 
 // Settings in RP which the DAO will have full control over
 // This settings contract enables storage using setting paths with namespaces, rather than explicit set methods
-abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSettingsInterface {
+abstract contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrustedSettingsInterface {
 
 
     // The namespace for a particular group of settings
@@ -15,9 +15,9 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
 
 
     // Only allow updating from the DAO proposals contract
-    modifier onlyDAOProtocolProposal() {
+    modifier onlyDAONodeTrustedProposal() {
         // If this contract has been initialised, only allow access from the proposals contract
-        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress('rocketDAOProtocolProposals') == msg.sender, "Only DAO Protocol Proposals contract can update a setting");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress('rocketDAONodeTrustedProposals') == msg.sender, "Only DAO Node Trusted Proposals contract can update a setting");
         _;
     }
 
@@ -25,7 +25,7 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
     // Construct
     constructor(address _rocketStorageAddress, string memory _settingNameSpace) RocketBase(_rocketStorageAddress) {
         // Apply the setting namespace
-        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting", _settingNameSpace));
+        settingNameSpace = keccak256(abi.encodePacked("dao.trustednodes.setting", _settingNameSpace));
     }
 
 
@@ -37,7 +37,7 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
     } 
 
     // Update a Uint setting, can only be executed by the DAO contract when a majority on a setting proposal has passed and been executed
-    function setSettingUint(string memory _settingPath, uint256 _value) virtual public override onlyDAOProtocolProposal {
+    function setSettingUint(string memory _settingPath, uint256 _value) virtual public override onlyDAONodeTrustedProposal {
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     } 
@@ -51,7 +51,7 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
     } 
 
     // Update a setting, can only be executed by the DAO contract when a majority on a setting proposal has passed and been executed
-    function setSettingBool(string memory _settingPath, bool _value) virtual public override onlyDAOProtocolProposal {
+    function setSettingBool(string memory _settingPath, bool _value) virtual public override onlyDAONodeTrustedProposal {
         // Update setting now
         setBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }

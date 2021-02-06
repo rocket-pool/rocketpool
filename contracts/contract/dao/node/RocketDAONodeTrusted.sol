@@ -6,7 +6,7 @@ import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
-import "../../../interface/dao/node/RocketDAONodeTrustedSettingsInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 
@@ -31,11 +31,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Min amount of trusted node members required in the DAO
     uint256 daoMemberMinCount = 3;
 
-    // Only allow bootstrapping the dao if it has less than the required members to form the DAO
+
+    // Only allow bootstrapping when enabled
     modifier onlyBootstrapMode() {
-        require(getMemberCount() < daoMemberMinCount, "Bootstrap mode not engaged, min DAO member count has been met");
+        require(getBootstrapModeDisabled() == false, "Bootstrap mode not engaged");
         _;
     }
+    
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -43,6 +45,14 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         version = 1;
     }
 
+
+
+    /**** DAO Properties **************/
+
+    // Returns true if bootstrap mode is disabled
+    function getBootstrapModeDisabled() override public view returns (bool) { 
+        return getBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled"))); 
+    }
     
 
     /*** Proposals ****************/
@@ -51,13 +61,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Return the amount of member votes need for a proposal to pass
     function getMemberQuorumVotesRequired() override public view returns (uint256) {
         // Load contracts
-        RocketDAONodeTrustedSettingsInterface rocketDAOProtocolSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress("rocketDAONodeTrustedSettings"));
+        RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         // Get the total trusted nodes
         uint256 trustedNodeCount = getMemberCount();
         // Get the total members to use when calculating
         uint256 total = trustedNodeCount > 0 ? calcBase.div(trustedNodeCount) : 0;
         // Return the votes required
-        return calcBase.mul(rocketDAOProtocolSettings.getQuorum()).div(total);
+        return calcBase.mul(rocketDAONodeTrustedSettingsMembers.getQuorum()).div(total);
     }
 
 
@@ -107,7 +117,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     // Get data that was recorded about a proposal that was executed
     function getMemberProposalExecutedBlock(string memory _proposalType, address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.executed.block", _proposalType, _nodeAddress))); 
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", _proposalType, _nodeAddress))); 
     }
 
     // Get the RPL bond amount the user deposited to join
@@ -149,12 +159,27 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         require(success, getRevertMsg(response));
     }
 
-    // Bootstrap mode - Set some initial settings for the DAO
-    function bootstrapSettingUint(string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+
+    // Bootstrap mode - Uint Setting
+    function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingUint(string,uint256)", _settingPath, _value));
+        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
         // Was there an error?
         require(success, getRevertMsg(response));
+    }
+
+    // Bootstrap mode - Bool Setting
+    function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+        // Ok good to go, lets update the settings 
+        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
+        // Was there an error?
+        require(success, getRevertMsg(response));
+    }
+
+    // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
+    function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+        require(_confirmDisableBootstrapMode == true, 'You must confirm disabling bootstrap mode, it can only be done once!');
+        setBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")), true); 
     }
 
  

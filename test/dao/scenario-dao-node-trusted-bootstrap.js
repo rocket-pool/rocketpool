@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedSettings } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
 
 
 // The trusted node DAO can be bootstrapped with several nodes
@@ -33,19 +33,25 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress
 
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
-export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, txOptions) {
+export async function setDAONodeTrustedBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
+
+    // Helper function
+    String.prototype.lowerCaseFirstLetter = function() {
+        return this.charAt(0).toLowerCase() + this.slice(1);
+    }
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
-    const rocketDAONodeTrustedSettings = await RocketDAONodeTrustedSettings.deployed();
+    const rocketDAONodeTrustedSettingsContract = await _settingContractInstance.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAONodeTrustedSettings.getSettingUint.call(_settingPath),
+            rocketDAONodeTrustedSettingsContract.getSettingUint.call(_settingPath),
+            rocketDAONodeTrustedSettingsContract.getSettingBool.call(_settingPath)
         ]).then(
-            ([settingUintValue]) =>
-            ({settingUintValue})
+            ([settingUintValue, settingBoolValue]) =>
+            ({settingUintValue, settingBoolValue})
         );
     }
 
@@ -53,15 +59,48 @@ export async function setDAONodeTrustedBootstrapSetting(_settingPath, _value, tx
     let ds1 = await getTxData();
     //console.log(Number(ds1.settingValue));
 
+    // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
+    if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAONodeTrusted.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    if(typeof(_value) == 'boolean') await rocketDAONodeTrusted.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    
+    // Capture data
+    let ds2 = await getTxData();
+
+    // Check it was updated
+    if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO node trusted uint256 setting not updated in bootstrap mode');
+    if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO node trusted boolean setting not updated in bootstrap mode');
+
+
+}
+
+
+// Disable bootstrap mode
+export async function setDaoNodeTrustedBootstrapModeDisabled(txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getBootstrapModeDisabled.call(),
+        ]).then(
+            ([bootstrapmodeDisabled]) =>
+            ({bootstrapmodeDisabled})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+
     // Set as a bootstrapped member
-    await rocketDAONodeTrusted.bootstrapSettingUint(_settingPath, _value, txOptions);
+    await rocketDAONodeTrusted.bootstrapDisable(true, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    //console.log(Number(ds2.settingValue));
 
-    // Check it was updated
-    assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO setting not updated in bootstrap mode');
+    // Check ID has been recorded
+    assert(ds2.bootstrapmodeDisabled == true, 'Bootstrap mode was not disabled');
 
 }
 

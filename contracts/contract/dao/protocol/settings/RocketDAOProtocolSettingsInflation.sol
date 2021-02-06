@@ -16,8 +16,6 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
         version = 1;
          // Set some initial settings on first deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            // RPL Claims settings
-            setSettingUint("rpl.rewards.claim.period.blocks", 86380);                                           // The period at which a claim period will span in blocks - 14 days approx by default
             // RPL Inflation settings
             setSettingUint("rpl.inflation.interval.rate", 1000133680617113500);                                 // 5% annual calculated on a daily interval of blocks (6170 = 1 day approx in 14sec blocks) - Calculate in js example: let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
             setSettingUint("rpl.inflation.interval.blocks", 6170);                                              // How often the inflation is calculated, if this is changed significantly, then the above 'rpl.inflation.interval.rate' will need to be adjusted. If inflation is no longer required, set 'rpl.inflation.interval.rate' to 0, not this parameter                
@@ -32,7 +30,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
     /*** Set Uint *****************************************/
 
     // Update a setting, overrides inherited setting method with extra checks for this contract
-    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAONetworkProposal {
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         // Check the inflation block interval
         if(keccak256(bytes(_settingPath)) == keccak256(bytes('rpl.inflation.interval.blocks'))) {
