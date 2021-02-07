@@ -29,8 +29,14 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
 
     // Get whether a node can make a claim
     function getClaimPossible(address _nodeAddress) override public view onlyRegisteredNode(_nodeAddress) returns (bool) {
+        // Load contracts
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
-        return rocketRewardsPool.getClaimingContractUserCanClaim("rocketClaimNode", _nodeAddress);
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        // Return claim possible status
+        return (
+            rocketRewardsPool.getClaimingContractUserCanClaim("rocketClaimNode", _nodeAddress) &&
+            rocketNodeStaking.getNodeRPLStake(_nodeAddress) >= rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress)
+        );
     }
 
     // Get the share of rewards for a node as a fraction of 1 ether
