@@ -186,10 +186,13 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Transfer nETH balance to node operator
         uint256 nethBalance = rocketTokenNETH.balanceOf(address(this));
         if (nethBalance > 0) {
+            // Get node withdrawal address
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
             // Transfer
-            require(rocketTokenNETH.transfer(nodeAddress, nethBalance), "nETH balance was not successfully transferred to node operator");
+            require(rocketTokenNETH.transfer(nodeWithdrawalAddress, nethBalance), "nETH balance was not successfully transferred to node operator");
             // Emit nETH withdrawn event
-            emit NethWithdrawn(nodeAddress, nethBalance, block.timestamp);
+            emit NethWithdrawn(nodeWithdrawalAddress, nethBalance, block.timestamp);
         }
         // Transfer refunded ETH to node operator
         if (nodeRefundBalance > 0) { refundNode(); }
