@@ -102,8 +102,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove the first available minipool from the highest priority queue and return its address
     // Only accepts calls from the RocketDepositPool contract
-    // TIP: Solidity warning here appears to be a bug - https://github.com/ethereum/solidity/issues/10084
-    function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address) {
+    function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
         if (getLength(MinipoolDeposit.Half) > 0) { return dequeueMinipool("minipools.available.half"); }
         if (getLength(MinipoolDeposit.Full) > 0) { return dequeueMinipool("minipools.available.full"); }
         if (getLength(MinipoolDeposit.Empty) > 0) { return dequeueMinipool("minipools.available.empty"); }
