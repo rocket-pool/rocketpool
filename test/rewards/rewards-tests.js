@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
+import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
@@ -28,6 +28,7 @@ export default function() {
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
+            node1WithdrawalAddress,
         ] = accounts;
 
         // The testing config
@@ -83,6 +84,9 @@ export default function() {
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
+
+            // Set node 1 withdrawal address
+            await setNodeWithdrawalAddress(node1WithdrawalAddress, {from: registeredNode1});
 
             // Set nodes as trusted
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);

@@ -1,4 +1,4 @@
-import { RocketClaimNode, RocketNodeStaking, RocketRewardsPool, RocketTokenRPL } from '../_utils/artifacts';
+import { RocketClaimNode, RocketNodeManager, RocketNodeStaking, RocketRewardsPool, RocketTokenRPL } from '../_utils/artifacts';
 
 
 // Perform rewards claims for a regular node
@@ -7,15 +7,20 @@ export async function rewardsClaimNode(txOptions) {
     // Load contracts
     const [
         rocketClaimNode,
+        rocketNodeManager,
         rocketNodeStaking,
         rocketRewardsPool,
         rocketTokenRPL,
     ] = await Promise.all([
         RocketClaimNode.deployed(),
+        RocketNodeManager.deployed(),
         RocketNodeStaking.deployed(),
         RocketRewardsPool.deployed(),
         RocketTokenRPL.deployed(),
     ]);
+
+    // Get node withdrawal address
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(txOptions.from);
 
     // Get details
     function getDetails() {
@@ -32,7 +37,7 @@ export async function rewardsClaimNode(txOptions) {
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketTokenRPL.balanceOf.call(txOptions.from),
+            rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
         ]).then(
             ([nodeRpl]) =>
             ({nodeRpl})
