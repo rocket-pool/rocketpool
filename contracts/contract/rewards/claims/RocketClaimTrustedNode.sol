@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../RocketBase.sol";
+import "../../../interface/node/RocketNodeManagerInterface.sol";
 import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 
@@ -69,10 +70,12 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     function claim() override external onlyLatestContract("rocketClaimTrustedNode", address(this)) onlyTrustedNode(msg.sender) {
         // Verify this trusted node is able to claim
         require(getClaimPossible(msg.sender), "This trusted node is not able to claim yet and must wait until a full claim interval passes");
-        // Init the rewards pool contract
+        // Get node withdrawal address
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
+        // Claim RPL
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
-        // Attempt to make a claim, will throw if not allowed yet or conditions aren't met
-        rewardsPool.claim(msg.sender, getClaimRewardsPerc(msg.sender));
+        rewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
     
 

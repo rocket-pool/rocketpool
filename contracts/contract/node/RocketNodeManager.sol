@@ -14,6 +14,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Events
     event NodeRegistered(address indexed node, uint256 time);
+    event NodeWithdrawalAddressSet(address indexed node, address indexed withdrawalAddress, uint256 time);
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
 
     // Construct
@@ -38,6 +39,11 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)));
     }
 
+    // Get a node's withdrawal address
+    function getNodeWithdrawalAddress(address _nodeAddress) override public view returns (address) {
+        return getAddress(keccak256(abi.encodePacked("node.withdrawal.address", _nodeAddress)));
+    }
+
     // Get a node's timezone location
     function getNodeTimezoneLocation(address _nodeAddress) override public view returns (string memory) {
         return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
@@ -57,6 +63,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(!getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "The node is already registered in the Rocket Pool network");
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
+        setAddress(keccak256(abi.encodePacked("node.withdrawal.address", msg.sender)), msg.sender);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
@@ -66,6 +73,15 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         emit NodeRegistered(msg.sender, block.timestamp);
     }
 
+    // Set a node's withdrawal address
+    function setWithdrawalAddress(address _withdrawalAddress) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
+        // Check withdrawal address
+        require(_withdrawalAddress != address(0x0), "Invalid withdrawal address");
+        // Set withdrawal address
+        setAddress(keccak256(abi.encodePacked("node.withdrawal.address", msg.sender)), _withdrawalAddress);
+        // Emit withdrawal address set event
+        emit NodeWithdrawalAddressSet(msg.sender, _withdrawalAddress, block.timestamp);
+    }
 
     // Set a node's timezone location
     // Only accepts calls from registered nodes

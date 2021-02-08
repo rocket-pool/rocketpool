@@ -318,7 +318,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
 
     // A claiming contract claiming for a user and the percentage of the rewards they are allowed to receive
-    function claim(address _claimerAddress, uint256 _claimerAmountPerc) override external onlyEnabledClaimContract {
+    function claim(address _claimerAddress, address _toAddress, uint256 _claimerAmountPerc) override external onlyEnabledClaimContract {
         // The name of the claiming contract
         string memory contractName = getContractName(msg.sender);
         // Check to see if this registered claimer has waited one interval before collecting
@@ -374,7 +374,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // First initial checks
         require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // Send tokens now
-        require(rocketVault.withdrawToken(_claimerAddress, rplContractAddress, claimAmount), "Could not send token balance from vault for claim");
+        require(rocketVault.withdrawToken(_toAddress, rplContractAddress, claimAmount), "Could not send token balance from vault for claim");
         // Store the claiming record for this interval and claiming contract
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalBlockStart, contractName, _claimerAddress)), true);
         // Store the total RPL rewards claim for this claiming contract in this interval
