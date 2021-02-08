@@ -5,7 +5,7 @@ import { mintDummyRPL } from './scenario-rpl-mint-fixed';
 import { burnFixedRPL } from './scenario-rpl-burn-fixed';
 import { allowDummyRPL } from './scenario-rpl-allow-fixed';
 import { rplClaimInflation } from './scenario-rpl-inflation';
-import { setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
+import { setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
 import { RocketTokenRPL } from '../_utils/artifacts';
@@ -118,7 +118,7 @@ export default function() {
             }), 'Non owner set start block for inlfation');
         });
 
-        it(printTitle('owner', 'succeeds setting future start block for inflation'), async () => {
+        it(printTitle('guardian', 'succeeds setting future start block for inflation'), async () => {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
@@ -127,7 +127,7 @@ export default function() {
             });
         });
 
-        it(printTitle('owner', 'succeeds setting future start block for inflation twice'), async () => {
+        it(printTitle('guardian', 'succeeds setting future start block for inflation twice'), async () => {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
@@ -142,7 +142,7 @@ export default function() {
             });
         });
 
-        it(printTitle('owner', 'fails to set start block for inflation less than current block'), async () => {
+        it(printTitle('guardian', 'fails to set start block for inflation less than current block'), async () => {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Set the start block for inflation
@@ -151,7 +151,7 @@ export default function() {
             }), 'Owner set old start block for inflation');
         });
 
-        it(printTitle('owner', 'fails to set start block for inflation after inflation has begun'), async () => {
+        it(printTitle('guardian', 'fails to set start block for inflation after inflation has begun'), async () => {
             // Current block
             let currentBlock = await web3.eth.getBlockNumber();
             // Inflation start block

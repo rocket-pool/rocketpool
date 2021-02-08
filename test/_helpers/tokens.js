@@ -1,6 +1,14 @@
 import { RocketTokenRETH, RocketTokenNETH, RocketTokenDummyRPL, RocketTokenRPL } from '../_utils/artifacts';
 
 
+// Get the RPL balance of an address
+export async function getRplBalance(address) {
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    let balance = rocketTokenRPL.balanceOf.call(address);
+    return balance;
+}
+
+
 // Get the rETH balance of an address
 export async function getRethBalance(address) {
     const rocketTokenRETH = await RocketTokenRETH.deployed();

@@ -32,7 +32,5 @@ contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterfa
 
     /*** Action Methods ************************/
 
-
-
    
 }

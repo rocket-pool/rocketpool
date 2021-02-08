@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { submitPrices } from './scenario-submit-prices';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkPrices', async (accounts) => {
@@ -81,7 +81,7 @@ export default function() {
             let rplPrice = web3.utils.toWei('0.02', 'ether');
 
             // Disable submissions
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', false, {from: owner});
 
             // Attempt to submit prices
             await shouldRevert(submitPrices(block, rplPrice, {

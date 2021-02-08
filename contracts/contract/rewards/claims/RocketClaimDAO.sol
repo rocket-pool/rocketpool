@@ -12,7 +12,7 @@ import "../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
 contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
     // Events
-    event RPLTokensSentByDAONetwork(string invoiceID, address indexed from, address indexed to, uint256 amount, uint256 time);
+    event RPLTokensSentByDAOProtocol(string invoiceID, address indexed from, address indexed to, uint256 amount, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -29,17 +29,17 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
 
     // Spend the network DAOs RPL rewards 
-    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyLatestContract("rocketDAOProtocolActions", msg.sender) {
+    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         // Addresses
         address rplTokenAddress = getContractAddress('rocketTokenRPL');
         // Some initial checks
-        require(_amount > 0 && _amount <= rocketVault.balanceOfToken('rocketClaimDAO', rplTokenAddress), "You cannot send 0 RPL or more than the DAO has in it's account");
+        require(_amount > 0 && _amount <= rocketVault.balanceOfToken('rocketClaimDAO', rplTokenAddress), "You cannot send 0 RPL or more than the DAO has in its account");
         // Send now
         require(rocketVault.withdrawToken(_recipientAddress, rplTokenAddress, _amount), "Could not send token balance from vault for network DAO");
         // Log it
-        emit RPLTokensSentByDAONetwork(_invoiceID, address(this), _recipientAddress, _amount, block.timestamp);
+        emit RPLTokensSentByDAOProtocol(_invoiceID, address(this), _recipientAddress, _amount, block.timestamp);
     }
   
 

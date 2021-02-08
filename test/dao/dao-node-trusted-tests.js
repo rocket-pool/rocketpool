@@ -107,7 +107,7 @@ setNodeTrusted
             }), 'Non owner registered node to trusted node DAO', 'Account is not a temporary guardian');
         });
 
-        it(printTitle('owner', 'cannot add the same member twice'), async () => {
+        it(printTitle('guardian', 'cannot add the same member twice'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', registeredNodeTrusted2, {
                 from: owner
@@ -115,14 +115,14 @@ setNodeTrusted
         });
       
 
-        it(printTitle('owner', 'updates quorum setting while bootstrap mode is enabled'), async () => {
+        it(printTitle('guardian', 'updates quorum setting while bootstrap mode is enabled'), async () => {
             // Set as trusted dao member via bootstrapping
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0.55'), {
                 from: owner
             });
         });
 
-        it(printTitle('owner', 'updates RPL bond setting while bootstrap mode is enabled'), async () => {
+        it(printTitle('guardian', 'updates RPL bond setting while bootstrap mode is enabled'), async () => {
             // Set RPL Bond at 10K RPL
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.rplbond', web3.utils.toWei('10000'), {
                 from: owner
@@ -136,7 +136,7 @@ setNodeTrusted
             }), 'UserOne changed RPL bond setting', 'Account is not a temporary guardian');
         });
         
-        it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
+        it(printTitle('guardian', 'fails to update setting after bootstrap mode is disabled'), async () => {
             // Disable bootstrap mode
             await setDaoNodeTrustedBootstrapModeDisabled({
                 from: owner
@@ -147,7 +147,7 @@ setNodeTrusted
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged');
         });
 
-        it(printTitle('owner', 'fails to set quorum setting as 0% while bootstrap mode is enabled'), async () => {
+        it(printTitle('guardian', 'fails to set quorum setting as 0% while bootstrap mode is enabled'), async () => {
             // Update setting
             await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0'), {
                 from: owner
@@ -155,7 +155,7 @@ setNodeTrusted
         });
 
     
-        it(printTitle('owner', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
+        it(printTitle('guardian', 'fails to set quorum setting above 90% while bootstrap mode is enabled'), async () => {
             // Update setting
             await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.quorum', web3.utils.toWei('0.91'), {
                 from: owner
