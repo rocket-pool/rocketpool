@@ -7,7 +7,7 @@ import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { createLot } from './scenario-create-lot';
 import { placeBid } from './scenario-place-bid';
@@ -80,7 +80,7 @@ export default function() {
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
 
             // Disable lot creation
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', false, {from: owner});
 
             // Attempt to create lot
             await shouldRevert(createLot({
@@ -103,9 +103,9 @@ export default function() {
         it(printTitle('auction lot', 'has correct price at block'), async () => {
 
             // Set lot settings
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 100, {from: owner});
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.start', web3.utils.toWei('1', 'ether'), {from: owner});
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.reserve', web3.utils.toWei('0', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 100, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.start', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.reserve', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Set RPL price
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: trustedNode});
@@ -208,7 +208,7 @@ export default function() {
             await auctionCreateLot({from: random1});
 
             // Disable bidding
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.bidding.enabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.bidding.enabled', false, {from: owner});
 
             // Attempt to place bid
             await shouldRevert(placeBid(0, {
@@ -237,7 +237,7 @@ export default function() {
         it(printTitle('random address', 'cannot bid on a lot after the lot bidding period has concluded'), async () => {
 
             // Set lot duration
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
@@ -355,7 +355,7 @@ export default function() {
         it(printTitle('random address', 'can recover unclaimed RPL from a lot'), async () => {
 
             // Create closed lots
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
             await auctionCreateLot({from: random1});
@@ -376,7 +376,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which doesn\'t exist'), async () => {
 
             // Create closed lot
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
 
@@ -405,7 +405,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot twice'), async () => {
 
             // Create closed lot
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 0, {from: owner});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
             await auctionCreateLot({from: random1});
 
@@ -423,7 +423,7 @@ export default function() {
         it(printTitle('random address', 'cannot recover unclaimed RPL from a lot which has no RPL to recover'), async () => {
 
             // Set lot duration
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 10, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 10, {from: owner});
 
             // Create lot & place bid to clear
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});

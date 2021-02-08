@@ -10,7 +10,7 @@ import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
 import { setWithdrawalCredentials } from './scenario-set-withdrawal-credentials';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {
@@ -143,7 +143,7 @@ export default function() {
             await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
 
             // Disable processing withdrawals
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.process.withdrawals.enabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.process.withdrawals.enabled', false, {from: owner});
 
             // Attempt to process withdrawal
             await shouldRevert(processWithdrawal(withdrawableValidatorPubkey, {

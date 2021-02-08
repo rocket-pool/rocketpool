@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDeposit, getNodeEffectiveRPLStake } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { setDAONetworkBootstrapRewardsClaimer, setRewardsClaimIntervalBlocks, spendRewardsClaimTreasury, setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-protocol-bootstrap';
@@ -17,7 +17,7 @@ import { RocketRewardsPool } from '../_utils/artifacts';
 
 
 export default function() {
-    contract.only('RocketRewards', async (accounts) => {
+    contract('RocketRewards', async (accounts) => {
 
         // Accounts
         const [
@@ -90,7 +90,7 @@ export default function() {
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
 
             // Set max per-minipool stake to 100% and RPL price to 1 ether
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
 
