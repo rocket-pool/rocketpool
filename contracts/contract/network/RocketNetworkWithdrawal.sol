@@ -55,7 +55,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Get withdrawal shares
         uint256 totalShare = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(msg.sender);
         uint256 nodeShare = rocketMinipoolManager.getMinipoolWithdrawalNodeBalance(msg.sender);
-        uint256 userShare = totalAmount.sub(nodeAmount);
+        uint256 userShare = totalShare.sub(nodeShare);
         // Get withdrawal amounts based on shares
         uint256 nodeAmount = msg.value.mul(nodeShare).div(totalShare);
         uint256 userAmount = msg.value.mul(userShare).div(totalShare);
