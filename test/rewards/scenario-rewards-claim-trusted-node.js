@@ -44,13 +44,15 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
     // Capture data
     let ds1 = await getTxData();
 
-    //console.log('DAO Contract Amount', Number(web3.utils.fromWei(ds1.test)));
+    //console.log('Node DAO Contract Amount', Number(web3.utils.fromWei(ds1.currentBlock)), Number(web3.utils.fromWei(ds1.claimIntervalBlockStart)));
 
     // Perform tx
     await rocketClaimTrustedNode.claim(txOptions);
 
     // Capture data
     let ds2 = await getTxData();
+
+    //console.log('Node DAO Contract Amount', Number(web3.utils.fromWei(ds2.currentBlock)), Number(web3.utils.fromWei(ds2.claimIntervalBlockStart)));
 
     // Verify 
     if(Number(ds1.claimIntervalBlockStart) == Number(ds2.claimIntervalBlockStart)) {

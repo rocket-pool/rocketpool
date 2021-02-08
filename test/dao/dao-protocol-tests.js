@@ -127,7 +127,7 @@ export default function() {
             }), 'UserOne changed RPL bond setting', 'Account is not a temporary guardian');
         });
         */
-
+        /*
         it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
@@ -139,7 +139,7 @@ export default function() {
             await shouldRevert(setDAONodeTrustedBootstrapSetting('quorum', web3.utils.toWei('0.55'), {
                 from: owner
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged');
-        });
+        });*/
 
         /*
         it(printTitle('owner', 'fails to set quorum setting below 51% while bootstrap mode is enabled'), async () => {
