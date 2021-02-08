@@ -15,7 +15,6 @@ import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, Roc
 export default function() {
     contract('RocketDAOProtocol', async (accounts) => {
 
-
         // Accounts
         const [
             guardian,
@@ -29,25 +28,7 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-        // Allow the given account to spend this users RPL
-        let rplAllowanceDAO = async function(_account, _amount) {
-            // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
-            const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
-            // Convert
-            _amount = web3.utils.toWei(_amount.toString(), 'ether');
-            // Approve now
-            await rocketTokenRPL.approve(rocketDAONodeTrustedActions.address, _amount, { from: _account });
-        }
-
-        // Add a new DAO member via bootstrap mode
-        let bootstrapMemberAdd = async function(_account, _id, _email) {
-            // Use helper now
-            await setNodeTrusted(_account, _id, _email, owner);
-        }
-
-
-        // Setup
+        // Setup - This is a WIP DAO, onlyGuardians will be able to change settings before the DAO is officially rolled out
         before(async () => {
         
         });
@@ -105,10 +86,7 @@ export default function() {
             }), "Guardian updated bootstrap setting after mode disabled", "Bootstrap mode not engaged");
             
         });
-        
-
-
-        
+    
 
     });
 }
