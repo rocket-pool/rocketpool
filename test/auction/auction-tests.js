@@ -7,7 +7,7 @@ import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { createLot } from './scenario-create-lot';
 import { placeBid } from './scenario-place-bid';

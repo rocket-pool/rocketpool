@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { getNodeFeeByDemand } from '../_helpers/network';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkFees', async (accounts) => {

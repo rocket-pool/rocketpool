@@ -10,7 +10,7 @@ import { getDepositSetting } from '../_helpers/settings';
 import { assignDeposits } from './scenario-assign-deposits';
 import { deposit } from './scenario-deposit';
 import { RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {

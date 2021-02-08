@@ -9,7 +9,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {

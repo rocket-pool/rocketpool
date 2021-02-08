@@ -10,7 +10,7 @@ import { depositWithdrawal } from './scenario-deposit-withdrawal';
 import { processWithdrawal } from './scenario-process-withdrawal';
 import { setWithdrawalCredentials } from './scenario-set-withdrawal-credentials';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkWithdrawal', async (accounts) => {

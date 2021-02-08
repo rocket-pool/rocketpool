@@ -8,7 +8,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
 import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketTokenNETH', async (accounts) => {

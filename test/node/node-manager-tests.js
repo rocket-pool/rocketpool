@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 

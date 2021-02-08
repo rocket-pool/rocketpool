@@ -13,7 +13,7 @@ import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdraw } from './scenario-withdraw';
 import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {

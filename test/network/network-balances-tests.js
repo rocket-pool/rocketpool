@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { submitBalances } from './scenario-submit-balances';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {

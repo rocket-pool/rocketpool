@@ -7,7 +7,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { submitWithdrawable } from './scenario-submit-withdrawable';
 import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {

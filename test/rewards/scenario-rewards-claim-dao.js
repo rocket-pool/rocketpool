@@ -1,7 +1,13 @@
 import { mineBlocks } from '../_utils/evm';
-import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
+import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketClaimDAO, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
 
-
+// Set the address the DAO can receive rewards at
+export async function getRewardsDAOTreasuryBalance(txOptions) {
+    // Load contracts
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    return rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address);
+}
 
 // Set the address the DAO can receive rewards at
 export async function rewardsClaimDAO(txOptions) {
@@ -55,5 +61,6 @@ export async function rewardsClaimDAO(txOptions) {
     }
   
 };
+
 
 
