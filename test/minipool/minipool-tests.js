@@ -5,7 +5,7 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
 import { getWithdrawalCredentials } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
+import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
 import { dissolve } from './scenario-dissolve';
@@ -23,6 +23,7 @@ export default function() {
         const [
             owner,
             node,
+            nodeWithdrawalAddress,
             trustedNode,
             random,
         ] = accounts;
@@ -46,8 +47,9 @@ export default function() {
         let dissolvedMinipool;
         before(async () => {
 
-            // Register node
+            // Register node & set withdrawal address
             await registerNode({from: node});
+            await setNodeWithdrawalAddress(nodeWithdrawalAddress, {from: node});
 
             // Register trusted node
             await registerNode({from: trustedNode});

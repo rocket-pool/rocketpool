@@ -1,14 +1,18 @@
-import { RocketTokenNETH } from '../_utils/artifacts';
+import { RocketNodeManager, RocketTokenNETH } from '../_utils/artifacts';
 
 
 // Withdraw from a minipool
 export async function withdraw(minipool, txOptions) {
 
     // Load contracts
-    let rocketTokenNETH = await RocketTokenNETH.deployed();
+    const [rocketNodeManager, rocketTokenNETH] = await Promise.all([
+        RocketNodeManager.deployed(),
+        RocketTokenNETH.deployed(),
+    ]);
 
     // Get parameters
     let nodeAddress = await minipool.getNodeAddress.call();
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
     // Get minipool balances
     function getMinipoolBalances() {
@@ -24,8 +28,8 @@ export async function withdraw(minipool, txOptions) {
     // Get node balances
     function getNodeBalances() {
         return Promise.all([
-            rocketTokenNETH.balanceOf.call(nodeAddress),
-            web3.eth.getBalance(nodeAddress).then(value => web3.utils.toBN(value)),
+            rocketTokenNETH.balanceOf.call(nodeWithdrawalAddress),
+            web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
         ]).then(
             ([neth, eth]) =>
             ({neth, eth})
@@ -46,18 +50,14 @@ export async function withdraw(minipool, txOptions) {
     let txReceipt = await minipool.withdraw(txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
-    // Get updated node balances & minipool contract code
-    let [nodeBalances2, minipoolCode] = await Promise.all([
-        getNodeBalances(),
-        web3.eth.getCode(minipool.address),
-    ]);
+    // Get updated node balances
+    let nodeBalances2 = await getNodeBalances();
 
     // Check balances
+    let expectedNodeEthBalance = nodeBalances1.eth.add(minipoolBalances.nodeRefund);
+    if (nodeWithdrawalAddress == nodeAddress) expectedNodeEthBalance = expectedNodeEthBalance.sub(txFee);
     assert(nodeBalances2.neth.eq(nodeBalances1.neth.add(minipoolBalances.neth)), 'Incorrect updated node nETH balance');
-    assert(nodeBalances2.eth.eq(nodeBalances1.eth.add(minipoolBalances.nodeRefund).sub(txFee)), 'Incorrect updated node ETH balance');
-
-    // Check minipool contract code
-    assert.equal(minipoolCode, '0x', 'Minipool contract was not destroyed');
+    assert(nodeBalances2.eth.eq(expectedNodeEthBalance), 'Incorrect updated node ETH balance');
 
 }
 
