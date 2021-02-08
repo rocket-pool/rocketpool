@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeStakeRPL, nodeDeposit, getNodeEffectiveRPLStake } from '../_helpers/node';
+import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
@@ -17,7 +17,8 @@ import { RocketRewardsPool } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketRewards', async (accounts) => {
+    contract('RocketRewardsPool', async (accounts) => {
+
 
         // Accounts
         const [
@@ -28,8 +29,10 @@ export default function() {
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
+            node1WithdrawalAddress,
             daoInvoiceRecipient
         ] = accounts;
+
 
         // The testing config
         let claimIntervalBlocks = 16;
@@ -84,6 +87,9 @@ export default function() {
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             await registerNode({from: registeredNodeTrusted3});
+
+            // Set node 1 withdrawal address
+            await setNodeWithdrawalAddress(node1WithdrawalAddress, {from: registeredNode1});
 
             // Set nodes as trusted
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
@@ -197,7 +203,7 @@ export default function() {
             // Init rewards pool
             const rocketRewardsPool = await RocketRewardsPool.deployed();
             // Try to call the claim method
-            await shouldRevert(rocketRewardsPool.claim(userOne, web3.utils.toWei('0.1'),  {
+            await shouldRevert(rocketRewardsPool.claim(userOne, userOne, web3.utils.toWei('0.1'),  {
                 from: userOne
             }), "Non claimer network contract called claim method");
         });
@@ -297,6 +303,33 @@ export default function() {
             await shouldRevert(rewardsClaimNode({
                 from: registeredNode1,
             }), 'Node claimed RPL twice in the same interval');
+
+        });
+
+
+        it(printTitle('node', 'cannot claim RPL while their node is undercollateralized'), async () => {
+
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartBlock = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentBlock = await web3.eth.getBlockNumber();
+            assert.isBelow(currentBlock, rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            await mineBlocks(web3, rplInflationStartBlock + claimIntervalBlocks - currentBlock);
+
+            // Decrease RPL price to undercollateralize node
+            await submitPrices(10, web3.utils.toWei('0.01', 'ether'), {from: registeredNodeTrusted1});
+            await submitPrices(10, web3.utils.toWei('0.01', 'ether'), {from: registeredNodeTrusted2});
+
+            // Get & check node's current and minimum RPL stakes
+            let [currentRplStake, minimumRplStake] = await Promise.all([getNodeRPLStake(registeredNode1), getNodeMinimumRPLStake(registeredNode1)]);
+            assert(currentRplStake.lt(minimumRplStake), 'Node\'s current RPL stake should be below their minimum RPL stake');
+
+            // Attempt to claim RPL
+            await shouldRevert(rewardsClaimNode({
+                from: registeredNode1,
+            }), 'Node claimed RPL while undercollateralized');
 
         });
         

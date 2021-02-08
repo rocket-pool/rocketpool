@@ -5,6 +5,7 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../../RocketBase.sol";
+import "../../../interface/node/RocketNodeManagerInterface.sol";
 import "../../../interface/node/RocketNodeStakingInterface.sol";
 import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimNodeInterface.sol";
@@ -29,8 +30,14 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
 
     // Get whether a node can make a claim
     function getClaimPossible(address _nodeAddress) override public view onlyRegisteredNode(_nodeAddress) returns (bool) {
+        // Load contracts
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
-        return rocketRewardsPool.getClaimingContractUserCanClaim("rocketClaimNode", _nodeAddress);
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        // Return claim possible status
+        return (
+            rocketRewardsPool.getClaimingContractUserCanClaim("rocketClaimNode", _nodeAddress) &&
+            rocketNodeStaking.getNodeRPLStake(_nodeAddress) >= rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress)
+        );
     }
 
     // Get the share of rewards for a node as a fraction of 1 ether
@@ -64,9 +71,12 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     function claim() override external onlyLatestContract("rocketClaimNode", address(this)) onlyRegisteredNode(msg.sender) {
         // Check that the node can claim
         require(getClaimPossible(msg.sender), "The node is currently unable to claim");
+        // Get node withdrawal address
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
         // Claim RPL
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
-        rocketRewardsPool.claim(msg.sender, getClaimRewardsPerc(msg.sender));
+        rocketRewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
 
 }

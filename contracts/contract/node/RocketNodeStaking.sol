@@ -115,7 +115,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Calculate minimum RPL stake
         return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake())
-            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
             .div(rocketNetworkPrices.getRPLPrice());
     }
 

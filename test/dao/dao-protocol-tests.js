@@ -86,10 +86,7 @@ export default function() {
             }), "Guardian updated bootstrap setting after mode disabled", "Bootstrap mode not engaged");
             
         });
-        
-
-
-        
+    
 
     });
 }
