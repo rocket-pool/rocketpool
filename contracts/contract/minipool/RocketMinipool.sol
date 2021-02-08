@@ -29,6 +29,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     uint256 private nodeDepositBalance;
     uint256 private nodeRefundBalance;
     bool private nodeDepositAssigned;
+    bool private nodeWithdrawn;
 
     // User deposit details
     uint256 private userDepositBalance;
@@ -38,6 +39,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Staking details
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
+    bool private validatorBalanceWithdrawn;
 
     // Status getters
     function getStatus() override public view returns (MinipoolStatus) { return status; }
@@ -53,6 +55,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
     function getNodeRefundBalance() override public view returns (uint256) { return nodeRefundBalance; }
     function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
+    function getNodeWithdrawn() override public view returns (bool) { return nodeWithdrawn; }
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
@@ -62,6 +65,7 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Staking detail getters
     function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
     function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
+    function getValidatorBalanceWithdrawn() override public view returns (bool) { return validatorBalanceWithdrawn; }
 
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
