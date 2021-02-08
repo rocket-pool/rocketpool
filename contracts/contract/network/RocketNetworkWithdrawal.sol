@@ -5,12 +5,12 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 
 // Handles network validator withdrawals
 
@@ -27,14 +27,14 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
-    // Get the network withdrawal contract address
-    function getWithdrawalContractAddress() override public view returns (address) {
+    // Get the eth1 system withdrawal contract address
+    function getSystemWithdrawalContractAddress() override public view returns (address) {
         return getAddressS("network.withdrawal.contract.address");
     }
 
-    // Set the network withdrawal contract address
+    // Set the eth1 system withdrawal contract address
     // Only accepts calls from the guardian address
-    function setWithdrawalContractAddress(address _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyGuardian {
+    function setSystemWithdrawalContractAddress(address _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyGuardian {
         setAddressS("network.withdrawal.contract.address", _value);
     }
 

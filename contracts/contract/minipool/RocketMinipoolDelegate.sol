@@ -125,6 +125,19 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
+    // Receive the minipool's withdrawn eth2 validator balance
+    // Only accepts calls from the eth1 system withdrawal contract
+    receive() external payable {
+        // load contracts
+        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
+        // Check sender address
+        require(msg.sender == rocketNetworkWithdrawal.getSystemWithdrawalContractAddress(), "Validator balances can only be sent by the eth1 system withdrawal contract");
+        // Process validator withdrawal for minipool
+        rocketNetworkWithdrawal.processWithdrawal{value: msg.value}();
+        // Destroy minipool
+        destroy();
+    }
+
     // Refund node ETH refinanced from user deposited ETH
     function refund() override external onlyMinipoolOwner(msg.sender) {
         // Check refund balance
@@ -192,8 +205,6 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         }
         // Transfer refunded ETH to node operator
         if (nodeRefundBalance > 0) { refundNode(); }
-        // Destroy minipool
-        destroy();
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool

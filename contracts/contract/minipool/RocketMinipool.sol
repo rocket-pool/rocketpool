@@ -97,6 +97,13 @@ contract RocketMinipool is RocketMinipoolInterface {
         if (!success) { revert(getRevertMessage(data)); }
     }
 
+    // Receive the minipool's withdrawn eth2 validator balance
+    // Only accepts calls from the eth1 system withdrawal contract
+    receive() external payable {
+        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("receive()"));
+        if (!success) { revert(getRevertMessage(data)); }
+    }
+
     // Refund node ETH refinanced from user deposited ETH
     function refund() override external {
         (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("refund()"));
