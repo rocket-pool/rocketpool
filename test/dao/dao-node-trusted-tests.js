@@ -35,8 +35,6 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-setNodeTrusted
-
         // Mints fixed supply RPL, burns that for new RPL and gives it to the account
         let rplMint = async function(_account, _amount) {
             // Load contracts

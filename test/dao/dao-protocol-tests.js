@@ -13,7 +13,7 @@ import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrusted
 
 
 export default function() {
-    contract('RocketDAONodeTrusted', async (accounts) => {
+    contract('RocketDAOProtocol', async (accounts) => {
 
 
         // Accounts
@@ -34,7 +34,6 @@ export default function() {
         let snapshotId;
         beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
-
 
 
         // Allow the given account to spend this users RPL
