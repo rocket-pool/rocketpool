@@ -21,7 +21,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
             setSettingUint("rpl.inflation.interval.blocks", 6170);                                              // How often the inflation is calculated, if this is changed significantly, then the above 'rpl.inflation.interval.rate' will need to be adjusted. If inflation is no longer required, set 'rpl.inflation.interval.rate' to 0, not this parameter                
             setSettingUint("rpl.inflation.interval.start", block.number+(getInflationIntervalBlocks()*14));     // Set the default start date for inflation to begin as 2 weeks from contract deployment (this can be changed after deployment)
             // Deployment check
-            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                               // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
     }
     

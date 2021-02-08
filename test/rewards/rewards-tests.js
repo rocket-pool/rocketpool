@@ -4,20 +4,21 @@ import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
-import { setDAONetworkBootstrapRewardsClaimer, setRewardsClaimIntervalBlocks, setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
+import { setDAONetworkBootstrapRewardsClaimer, setRewardsClaimIntervalBlocks, spendRewardsClaimTreasury, setRPLInflationIntervalRate, setRPLInflationStartBlock, setRPLInflationIntervalBlocks } from '../dao/scenario-dao-protocol-bootstrap';
 import { rewardsClaimNode } from './scenario-rewards-claim-node';
 import { rewardsClaimTrustedNode } from './scenario-rewards-claim-trusted-node';
-import { rewardsClaimDAO } from './scenario-rewards-claim-dao';
+import { rewardsClaimDAO, getRewardsDAOTreasuryBalance } from './scenario-rewards-claim-dao';
 
 // Contracts
 import { RocketRewardsPool } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketRewards', async (accounts) => {
+    contract('RocketRewardsPool', async (accounts) => {
+
 
         // Accounts
         const [
@@ -29,7 +30,9 @@ export default function() {
             registeredNodeTrusted2,
             registeredNodeTrusted3,
             node1WithdrawalAddress,
+            daoInvoiceRecipient
         ] = accounts;
+
 
         // The testing config
         let claimIntervalBlocks = 16;
@@ -93,7 +96,7 @@ export default function() {
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
 
             // Set max per-minipool stake to 100% and RPL price to 1 ether
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
             await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
 
@@ -126,7 +129,7 @@ export default function() {
             }), 'Non owner set interval blocks for rewards claim period');
         });
 
-        it(printTitle('owner', 'succeeds setting interval blocks for rewards claim period'), async () => {
+        it(printTitle('guardian', 'succeeds setting interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in blocks
             await setRewardsClaimIntervalBlocks(100, {
                 from: owner,
@@ -142,7 +145,7 @@ export default function() {
         });
 
 
-        it(printTitle('owner', 'set contract claimer percentage for rewards, then update it'), async () => {
+        it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it'), async () => {
             // Set the amount this contract can claim
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimDAO', web3.utils.toWei('0.0001', 'ether'), {
                 from: owner,
@@ -158,7 +161,7 @@ export default function() {
         });
 
         
-        it(printTitle('owner', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
+        it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Set the amount this contract can claim, then update it
@@ -173,7 +176,7 @@ export default function() {
 
       
 
-        it(printTitle('owner', 'set contract claimers total percentage to 100%'), async () => {
+        it(printTitle('guardian', 'set contract claimers total percentage to 100%'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Get the total % needed to make 100%
@@ -184,7 +187,7 @@ export default function() {
             }, 1);
         });
 
-        it(printTitle('owner', 'fail to set contract claimers total percentage over 100%'), async () => {
+        it(printTitle('guardian', 'fail to set contract claimers total percentage over 100%'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Get the total % needed to make 100%
@@ -480,7 +483,7 @@ export default function() {
       
 
 
-        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract'), async () => {
+        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract, then protocol DAO spends some'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
             let rplInflationStartBlock = await rplInflationSetup();
             // Init this claiming contract on the rewards pool
@@ -499,8 +502,38 @@ export default function() {
             await rewardsClaimDAO({
                 from: registeredNodeTrusted2,
             }); 
+            // Get the balance of the DAO treasury and spend it
+            let daoTreasuryBalance = await getRewardsDAOTreasuryBalance();
+            // Now spend some via the protocol DAO in bootstrap mode
+            await spendRewardsClaimTreasury('invoice123', daoInvoiceRecipient, daoTreasuryBalance, {
+                from: owner
+            })
         });
-        
+
+
+        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract, then fails to spend more than it has'), async () => {
+            // Setup RPL inflation for occuring every 10 blocks at 5%
+            let rplInflationStartBlock = await rplInflationSetup();
+            // Init this claiming contract on the rewards pool
+            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Can this trusted node claim before there is any inflation available?
+            assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
+            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
+            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+(claimIntervalBlocks*3));
+            // Make a claim now from another trusted node
+            await rewardsClaimDAO({
+                from: registeredNodeTrusted2,
+            }); 
+            // Get the balance of the DAO treasury and spend it
+            let daoTreasuryBalance = await getRewardsDAOTreasuryBalance();
+            // Now spend some via the protocol DAO in bootstrap mode
+            await shouldRevert(spendRewardsClaimTreasury('invoice123', daoInvoiceRecipient, daoTreasuryBalance+"1", {
+                from: owner,
+            }), "Protocol DAO spent more RPL than it had in its treasury", "You cannot send 0 RPL or more than the DAO has in its account");   
+        });
+
 
         it(printTitle('daoClaim', 'trusted node make a claim and the DAO claim rate is set to 0, trusted node makes another 2 claims'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%

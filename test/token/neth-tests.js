@@ -8,7 +8,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
 import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketTokenNETH', async (accounts) => {
@@ -42,7 +42,7 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Set settings
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', 0, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', 0, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();

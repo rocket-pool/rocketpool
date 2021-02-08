@@ -9,7 +9,6 @@ import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
 // The Rocket Pool Network DAO - This is a placeholder for the network DAO to come
 contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
-
     // The namespace for any data stored in the network DAO (do not change)
     string daoNameSpace = 'dao.protocol';
 
@@ -32,8 +31,6 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     function getBootstrapModeDisabled() override public view returns (bool) { 
         return getBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled"))); 
     }
-
-
 
 
     /**** Bootstrapping ***************/
@@ -61,7 +58,16 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
         (bool success, bytes memory response) = getContractAddress('rocketDAOProtocolProposals').call(abi.encodeWithSignature("proposalSettingRewardsClaimer(string,uint256)", _contractName, _perc));
         // Was there an error?
         require(success, getRevertMsg(response));
+    } 
+
+    // Bootstrap mode -Spend DAO treasury
+    function bootstrapSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        // Ok good to go, lets update the rewards claiming contract amount 
+        (bool success, bytes memory response) = getContractAddress('rocketDAOProtocolProposals').call(abi.encodeWithSignature("proposalSpendTreasury(string,address,uint256)", _invoiceID, _recipientAddress, _amount));
+        // Was there an error?
+        require(success, getRevertMsg(response));
     }
+
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
     function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {

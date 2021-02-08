@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
-import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress } from './scenario-set-withdrawal-address';
@@ -56,7 +56,7 @@ export default function() {
         it(printTitle('node operator', 'cannot register a node while registrations are disabled'), async () => {
 
             // Disable registrations
-            await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.registration.enabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.registration.enabled', false, {from: owner});
 
             // Attempt registration
             await shouldRevert(register('Australia/Brisbane', {

@@ -6,7 +6,7 @@ import { registerNode, nodeStakeRPL, nodeDeposit } from '../_helpers/node';
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
 import { withdrawRpl } from './scenario-withdraw-rpl';
-import { setRewardsClaimIntervalBlocks } from '../dao/scenario-dao-network-bootstrap';
+import { setRewardsClaimIntervalBlocks } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {

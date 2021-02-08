@@ -1,9 +1,9 @@
-import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation } from '../_utils/artifacts';
+import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 
 
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
-export async function setDAONetworkBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
+export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _settingPath, _value, txOptions) {
 
     // Helper function
     String.prototype.lowerCaseFirstLetter = function() {
@@ -78,8 +78,46 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
 // Set the current rewards claim period in blocks
 export async function setRewardsClaimIntervalBlocks(intervalBlocks, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', intervalBlocks, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', intervalBlocks, txOptions);
 };
+
+
+// Spend the DAO treasury in bootstrap mode
+export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _amount, txOptions) {
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const rocketVault = await RocketVault.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address),
+            rocketTokenRPL.balanceOf(_recipientAddress),
+        ]).then(
+            ([daoClaimTreasuryBalance, recipientBalance]) =>
+            ({daoClaimTreasuryBalance, recipientBalance})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+
+    // console.log(web3.utils.fromWei(ds1.daoClaimTreasuryBalance), web3.utils.fromWei(ds1.recipientBalance), web3.utils.fromWei(_amount));
+    
+    // Perform tx
+    await rocketDAOProtocol.bootstrapSpendTreasury(_invoiceID, _recipientAddress, _amount, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+
+    // console.log(web3.utils.fromWei(ds2.daoClaimTreasuryBalance), web3.utils.fromWei(ds2.recipientBalance), web3.utils.fromWei(_amount));
+
+    // Verify the amount sent is correct
+    assert(ds2.recipientBalance.eq(ds1.recipientBalance.add(_amount)), "Amount spent by treasury does not match recipients received amount");
+
+}
 
 
 /*** Inflation *******/
@@ -89,19 +127,49 @@ export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions
     // Calculate the inflation rate per day
     let dailyInflation = web3.utils.toBN((1 + yearlyInflationPerc) ** (1 / (365)) * 1e18);
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
 };
 
 // Set the current RPL inflation rate blocks, how often inflation is calculated
 export async function setRPLInflationIntervalBlocks(intervalBlocks, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.blocks', intervalBlocks, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.blocks', intervalBlocks, txOptions);
 };
 
 // Set the current RPL inflation block interval
 export async function setRPLInflationStartBlock(startBlock, txOptions) {
     // Set it now
-    await setDAONetworkBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startBlock, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startBlock, txOptions);
 };
 
+
+// Disable bootstrap mode
+export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
+
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAOProtocol.getBootstrapModeDisabled.call(),
+        ]).then(
+            ([bootstrapmodeDisabled]) =>
+            ({bootstrapmodeDisabled})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+
+    // Set as a bootstrapped member
+    await rocketDAOProtocol.bootstrapDisable(true, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+
+    // Check ID has been recorded
+    assert(ds2.bootstrapmodeDisabled == true, 'Bootstrap mode was not disabled');
+
+}
 

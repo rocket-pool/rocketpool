@@ -7,6 +7,7 @@ import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import "../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -70,7 +71,13 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOProtocolSettingsRewards.setSettingRewardsClaimer(_contractName, _perc);
     }
 
-
+    // Spend RPL from the DAO's treasury
+    function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyExecutingContracts() {
+        // Load contracts
+        RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
+        // Update now
+        rocketDAOTreasury.spend(_invoiceID, _recipientAddress, _amount);
+    }
     
 
 }
