@@ -6,11 +6,11 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled } from './scenario-dao-node-trusted-bootstrap';
-import { daoNodeTrustedExecute, getDAOMemberIsValid, getDAONodeMemberCount, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, } from './scenario-dao-node-trusted';
+import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
 
 // Contracts
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL } from '../_utils/artifacts'; 
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL } from '../_utils/artifacts'; 
 
 
 export default function() {
@@ -24,10 +24,8 @@ export default function() {
             userTwo,
             registeredNode1,
             registeredNode2,
-            registeredNode3,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
-            registeredNodeTrusted3,
         ] = accounts;
 
 
@@ -37,7 +35,7 @@ export default function() {
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
-
+setNodeTrusted
 
         // Mints fixed supply RPL, burns that for new RPL and gives it to the account
         let rplMint = async function(_account, _amount) {
@@ -74,6 +72,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Load contracts
+            await RocketDAONodeTrustedSettingsMembers.deployed();
+            await RocketDAONodeTrustedSettingsProposals.deployed();
 
             // Register nodes
             await registerNode({from: registeredNode1});
@@ -121,7 +122,6 @@ export default function() {
             });
         });
 
-
         it(printTitle('owner', 'updates RPL bond setting while bootstrap mode is enabled'), async () => {
             // Set RPL Bond at 10K RPL
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.rplbond', web3.utils.toWei('10000'), {
@@ -137,18 +137,15 @@ export default function() {
         });
         
         it(printTitle('owner', 'fails to update setting after bootstrap mode is disabled'), async () => {
-            // Add our 3rd member
-            await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // Disable bootstrap mode
             await setDaoNodeTrustedBootstrapModeDisabled({
                 from: owner
             })
             // Update setting
-            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'quorum', web3.utils.toWei('0.55'), {
+            await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'members.quorum', web3.utils.toWei('0.55'), {
                 from: owner
             }), 'Owner updated setting after bootstrap mode is disabled', 'Bootstrap mode not engaged');
         });
-        
 
         it(printTitle('owner', 'fails to set quorum setting as 0% while bootstrap mode is enabled'), async () => {
             // Update setting

@@ -72,7 +72,7 @@ export default function() {
             });
 
         });
-
+        
 
         it(printTitle('random address', 'cannot create a lot while lot creation is disabled'), async () => {
 

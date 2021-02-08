@@ -69,6 +69,8 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         // Update now
         rocketDAOProtocolSettingsRewards.setSettingRewardsClaimer(_contractName, _perc);
     }
+
+
     
 
 }

@@ -28,6 +28,8 @@ console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
 // Run tests
+daoProtocolTests();
+daoNodeTrustedTests();
 upgradeTests();
 auctionTests();
 depositPoolTests();
@@ -40,8 +42,6 @@ networkWithdrawalTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();
-daoProtocolTests();
-daoNodeTrustedTests();
 nethTests();
 rethTests();
 rplTests();

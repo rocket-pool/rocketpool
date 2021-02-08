@@ -23,13 +23,11 @@ export default function() {
         const [
             owner,
             userOne,
-            userTwo,
             registeredNode1,
             registeredNode2,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
             registeredNodeTrusted3,
-            daoClaimAddress
         ] = accounts;
 
         // The testing config
@@ -423,7 +421,7 @@ export default function() {
             // Can this trusted node claim before there is any inflation available?
             assert(blockCurrent < rplInflationStartBlock, 'Current block should be below RPL inflation start block');
             // Move to start of RPL inflation
-            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+rewardIntervalBlocks);
+            await mineBlocks(web3, (rplInflationStartBlock-blockCurrent)+claimIntervalBlocks);
             // Make a claim now
             await rewardsClaimTrustedNode(registeredNodeTrusted1, {
                 from: registeredNodeTrusted1,
