@@ -63,6 +63,13 @@ export async function setNodeTrusted(_account, _id, _email, owner) {
 }
 
 
+// Set a withdrawal address for a node
+export async function setNodeWithdrawalAddress(withdrawalAddress, txOptions) {
+    const rocketNodeManager = await RocketNodeManager.deployed();
+    await rocketNodeManager.setWithdrawalAddress(withdrawalAddress, txOptions);
+}
+
+
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([

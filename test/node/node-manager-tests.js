@@ -6,6 +6,7 @@ import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAONetworkBootstrapSetting } from '../dao/scenario-dao-network-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
+import { setWithdrawalAddress } from './scenario-set-withdrawal-address';
 
 
 export default function() {
@@ -17,6 +18,7 @@ export default function() {
             owner,
             node,
             registeredNode,
+            withdrawalAddress,
             random,
         ] = accounts;
 
@@ -83,6 +85,41 @@ export default function() {
             await shouldRevert(register('Australia/Brisbane', {
                 from: node,
             }), 'Registered a node which is already registered');
+
+        });
+
+
+        //
+        // Withdrawal address
+        //
+
+
+        it(printTitle('node operator', 'can set their withdrawal address'), async () => {
+
+            // Set withdrawal address
+            await setWithdrawalAddress(withdrawalAddress, {
+                from: registeredNode,
+            });
+
+        });
+
+
+        it(printTitle('node operator', 'cannot set their withdrawal address to an invalid address'), async () => {
+
+            // Attempt to set withdrawal address
+            await shouldRevert(setWithdrawalAddress('0x0000000000000000000000000000000000000000', {
+                from: registeredNode,
+            }), 'Set a withdrawal address to an invalid address');
+
+        });
+
+
+        it(printTitle('random address', 'cannot set a withdrawal address'), async () => {
+
+            // Attempt to set withdrawal address
+            await shouldRevert(setWithdrawalAddress(withdrawalAddress, {
+                from: random,
+            }), 'Random address set a withdrawal address');
 
         });
 
