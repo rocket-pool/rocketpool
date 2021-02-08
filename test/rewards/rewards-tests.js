@@ -196,7 +196,7 @@ export default function() {
             // Init rewards pool
             const rocketRewardsPool = await RocketRewardsPool.deployed();
             // Try to call the claim method
-            await shouldRevert(rocketRewardsPool.claim(userOne, web3.utils.toWei('0.1'),  {
+            await shouldRevert(rocketRewardsPool.claim(userOne, userOne, web3.utils.toWei('0.1'),  {
                 from: userOne
             }), "Non claimer network contract called claim method");
         });
