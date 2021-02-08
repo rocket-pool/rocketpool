@@ -6,11 +6,27 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 
 
+// Get a node's RPL stake
+export async function getNodeRPLStake(nodeAddress) {
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    let stake = await rocketNodeStaking.getNodeRPLStake.call(nodeAddress);
+    return stake;
+}
+
+
 // Get a node's effective RPL stake
 export async function getNodeEffectiveRPLStake(nodeAddress) {
     const rocketNodeStaking = await RocketNodeStaking.deployed();
     let effectiveStake = await rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress);
     return effectiveStake;
+}
+
+
+// Get a node's minipool RPL stake
+export async function getNodeMinimumRPLStake(nodeAddress) {
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    let minimumStake = await rocketNodeStaking.getNodeMinimumRPLStake.call(nodeAddress);
+    return minimumStake;
 }
 
 
