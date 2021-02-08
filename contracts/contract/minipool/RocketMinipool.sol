@@ -83,6 +83,23 @@ contract RocketMinipool is RocketMinipoolInterface {
         nodeFee = rocketNetworkFees.getNodeFee();
     }
 
+    // Get the withdrawal credentials for the minipool contract
+    function getWithdrawalCredentials() override external view returns (bytes memory) {
+        // Parameters
+        uint256 credentialsLength = 32;
+        uint256 addressLength = 20;
+        uint256 addressOffset = credentialsLength - addressLength;
+        byte withdrawalPrefix = 0x01;
+        // Calculate & return
+        bytes memory ret = new bytes(credentialsLength);
+        bytes20 addr = bytes20(address(this));
+        ret[0] = withdrawalPrefix;
+        for (uint256 i = 0; i < addressLength; i++) {
+            ret[i + addressOffset] = addr[i];
+        }
+        return ret;
+    }
+
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function nodeDeposit() override external payable {

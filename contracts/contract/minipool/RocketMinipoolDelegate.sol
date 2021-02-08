@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolDelegateInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
@@ -155,7 +156,6 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         // Get launch amount
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         // Check minipool balance
@@ -163,7 +163,8 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Check validator pubkey is not in use
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is already in use");
         // Send staking deposit to casper
-        casperDeposit.deposit{value: launchAmount}(_validatorPubkey, rocketNetworkWithdrawal.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
+        casperDeposit.deposit{value: launchAmount}(_validatorPubkey, minipool.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Progress to staking

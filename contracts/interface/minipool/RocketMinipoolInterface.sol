@@ -21,4 +21,5 @@ interface RocketMinipoolInterface is RocketMinipoolDelegateInterface {
     function getUserDepositAssignedTime() external view returns (uint256);
     function getStakingStartBalance() external view returns (uint256);
     function getStakingEndBalance() external view returns (uint256);
+    function getWithdrawalCredentials() external view returns (bytes memory);
 }
