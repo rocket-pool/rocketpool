@@ -138,7 +138,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Receive the minipool's withdrawn eth2 validator balance
     // Only accepts calls from the eth1 system withdrawal contract
-    receive() external payable {
+    receive() external payable onlyRegisteredMinipool(address(this)) {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
         // load contracts
