@@ -76,6 +76,13 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         _;
     }
 
+    // Require that the address is a registered minipool
+    // Prevents methods from being run directly on the delegate contract
+    modifier onlyRegisteredMinipool(address _minipoolAddress) {
+        require(rocketStorage.getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress))), "Invalid minipool");
+        _;
+    }
+
     // Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
         return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
@@ -83,7 +90,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function nodeDeposit() override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    function nodeDeposit() override external payable onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
         require(!nodeDepositAssigned, "The node deposit has already been assigned");
@@ -102,7 +109,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
-    function userDeposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) {
+    function userDeposit() override external payable onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketDepositPool", msg.sender) {
         // Check current status & user deposit status
         require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
         require(!userDepositAssigned, "The user deposit has already been assigned");
@@ -127,7 +134,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
     }
 
     // Refund node ETH refinanced from user deposited ETH
-    function refund() override external onlyMinipoolOwner(msg.sender) {
+    function refund() override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check refund balance
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
         // Refund node
@@ -136,7 +143,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
     // Only accepts calls from the minipool owner (node)
-    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyMinipoolOwner(msg.sender) {
+    function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
         // Load contracts
@@ -160,7 +167,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
-    function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) {
+    function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketMinipoolStatus", msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Staking, "The minipool can only become withdrawable while staking");
         // Set staking details
@@ -175,7 +182,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Withdraw node balances & rewards from the minipool and close it
     // Only accepts calls from the minipool owner (node)
-    function withdraw() override external onlyMinipoolOwner(msg.sender) {
+    function withdraw() override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be withdrawn from while withdrawable");
         // Load contracts
@@ -202,7 +209,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
     // Only accepts calls from the minipool owner (node), or from any address if timed out
-    function dissolve() override external {
+    function dissolve() override external onlyRegisteredMinipool(address(this)) {
         // Check current status
         require(status == MinipoolStatus.Initialized || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialized or in prelaunch");
         // Load contracts
@@ -231,7 +238,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Withdraw node balances from the minipool and close it
     // Only accepts calls from the minipool owner (node)
-    function close() override external onlyMinipoolOwner(msg.sender) {
+    function close() override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Dissolved, "The minipool can only be closed while dissolved");
         // Transfer node balance to node operator
