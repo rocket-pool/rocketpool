@@ -4,13 +4,13 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./RocketBase.sol";
-import "../interface/RocketUpgradeInterface.sol";
-
+import "../../RocketBase.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedUpgradeInterface.sol";
+ 
 // Handles network contract upgrades
 // TODO: replace with governance model before mainnet release
 
-contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
+contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeInterface {
 
     // Events
     event ContractUpgraded(bytes32 indexed name, address indexed oldAddress, address indexed newAddress, uint256 time);
@@ -23,8 +23,23 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         version = 1;
     }
 
+    // Main accessor for performing an upgrade, be it a contract or abi for a contract
+    // Will require > 50% of trusted DAO members to run when bootstrap mode is disabled
+    function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
+        // What action are we performing?
+        bytes32 typeHash = keccak256(abi.encodePacked(_type));
+        // Lets do it!
+        if(typeHash == keccak256(abi.encodePacked("upgradeContract"))) _upgradeContract(_name, _contractAddress, _contractAbi);
+        if(typeHash == keccak256(abi.encodePacked("addContract"))) _addContract(_name, _contractAddress, _contractAbi);
+        if(typeHash == keccak256(abi.encodePacked("upgradeABI"))) _upgradeABI(_name, _contractAbi);
+        if(typeHash == keccak256(abi.encodePacked("addABI"))) _addABI(_name, _contractAbi);
+    }
+
+
+    /*** Internal Upgrade Methods for the Trusted Node DAO ****************/
+
     // Upgrade a network contract
-    function upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyGuardian {
+    function _upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract being upgraded
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("rocketVault")),        "Cannot upgrade the vault");
@@ -38,11 +53,6 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
         // Check new contract address
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
-        // Check contract balances
-        //require(oldContractAddress.balance == 0, "The existing contract has an ETH balance");
-        //require(IERC20(getContractAddress("rocketPoolToken")).balanceOf(oldContractAddress) == 0, "The existing contract has an RPL balance");
-        //require(IERC20(getContractAddress("rocketTokenRETH")).balanceOf(oldContractAddress) == 0, "The existing contract has a rETH balance");
-        //require(ERC20(getContractAddress("rocketTokenNETH")).balanceOf(oldContractAddress) == 0, "The existing contract has a nETH balance");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
@@ -56,7 +66,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Add a new network contract
-    function addContract(string memory _name, address _contractAddress, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyGuardian {
+    function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("")), "Invalid contract name");
@@ -76,7 +86,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Upgrade a network contract ABI
-    function upgradeABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyGuardian {
+    function _upgradeABI(string memory _name, string memory _contractAbi) internal {
         // Check ABI exists
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
         require(keccak256(abi.encodePacked(existingAbi)) != keccak256(abi.encodePacked("")), "ABI does not exist");
@@ -87,7 +97,7 @@ contract RocketUpgrade is RocketBase, RocketUpgradeInterface {
     }
 
     // Add a new network contract ABI
-    function addABI(string memory _name, string memory _contractAbi) override external onlyLatestContract("rocketUpgrade", address(this)) onlyGuardian {
+    function _addABI(string memory _name, string memory _contractAbi) internal {
         // Check ABI name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(nameHash != keccak256(abi.encodePacked("")), "Invalid ABI name");

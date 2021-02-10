@@ -6,6 +6,7 @@ import "../../RocketBase.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedProposalsInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedUpgradeInterface.sol";
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsInterface.sol";
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
@@ -95,7 +96,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
 
 
-    /*** Proposal Methods **********************/
+    /*** Proposal - Members **********************/
 
     // A new DAO member being invited, can only be done via a proposal or in bootstrap mode
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
@@ -148,7 +149,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
 
 
-    /*** Settings ***************/
+    /*** Proposal - Settings ***************/
 
     // Change one of the current uint256 settings of the DAO
     function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
@@ -164,6 +165,17 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
         rocketDAONodeTrustedSettings.setSettingBool(_settingPath, _value);
+    }
+
+
+    /*** Proposal - Upgrades ***************/
+
+    // Upgrade contracts or ABI's if the DAO agrees
+    function proposalUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyExecutingContracts() {
+        // Load contracts
+        RocketDAONodeTrustedUpgradeInterface rocketDAONodeTrustedUpgradeInterface = RocketDAONodeTrustedUpgradeInterface(getContractAddress("rocketDAONodeTrustedUpgrade"));
+        // Lets update
+        rocketDAONodeTrustedUpgradeInterface.upgrade(_type, _name, _contractAbi, _contractAddress);
     }
 
 

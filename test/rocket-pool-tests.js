@@ -1,5 +1,4 @@
 // Import tests
-import upgradeTests from './core/upgrade-tests';
 import auctionTests from './auction/auction-tests';
 import depositPoolTests from './deposit/deposit-pool-tests';
 import minipoolTests from './minipool/minipool-tests';
@@ -30,7 +29,6 @@ console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 // Run tests
 daoProtocolTests();
 daoNodeTrustedTests();
-upgradeTests();
 auctionTests();
 depositPoolTests();
 minipoolTests();
