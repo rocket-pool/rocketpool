@@ -22,5 +22,6 @@ interface RocketDAONodeTrustedInterface {
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) external;
     function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;
     function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) external;
+    function bootstrapUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) external;
     function bootstrapDisable(bool _confirmDisableBootstrapMode) external;
 }

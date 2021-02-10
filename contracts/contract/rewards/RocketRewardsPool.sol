@@ -285,7 +285,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             claimerTotal = _claimerAmountPerc.mul(contractClaimTotal).div(calcBase);
             // Is it more than currently available + the amount claimed already for this claim interval?
             claimerTotal = claimerTotal.add(getClaimingContractTotalClaimed(contractName)) <= getClaimingContractAllowance(contractName) ? claimerTotal : 0;
-            
         }
         // Done
         return claimerTotal;

@@ -209,9 +209,9 @@ export default function() {
         });
 
 
-        /*** Regular Nodes ***************************/
+        /*** Regular Nodes **************************/
 
-
+        /*
         it(printTitle('node', 'can claim RPL'), async () => {
 
             // Initialize RPL inflation & claims contract
@@ -242,9 +242,9 @@ export default function() {
                 from: registeredNode2,
             });
 
-        });
+        });*/
 
-       
+      
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
 
             // Initialize claims contract

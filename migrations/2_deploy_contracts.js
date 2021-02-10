@@ -31,17 +31,16 @@ function loadABI(abiFilePath) {
 
 
 // Storage
-const rocketStorage =             artifacts.require('RocketStorage.sol');
+const rocketStorage =                       artifacts.require('RocketStorage.sol');
 
 // Network contracts
 const contracts = {
-  // Core
-  rocketVault:                    artifacts.require('RocketVault.sol'),
-  rocketUpgrade:                  artifacts.require('RocketUpgrade.sol'),
+  // Vault
+  rocketVault:                              artifacts.require('RocketVault.sol'),
   // Auction
-  rocketAuctionManager:           artifacts.require('RocketAuctionManager.sol'),
+  rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
   // Deposit
-  rocketDepositPool:              artifacts.require('RocketDepositPool.sol'),
+  rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
   // Minipool
   rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
@@ -67,6 +66,7 @@ const contracts = {
   rocketDAONodeTrusted:                     artifacts.require('RocketDAONodeTrusted.sol'),
   rocketDAONodeTrustedProposals:            artifacts.require('RocketDAONodeTrustedProposals.sol'),
   rocketDAONodeTrustedActions:              artifacts.require('RocketDAONodeTrustedActions.sol'),
+  rocketDAONodeTrustedUpgrade:              artifacts.require('RocketDAONodeTrustedUpgrade.sol'),
   rocketDAONodeTrustedSettingsMembers:      artifacts.require('RocketDAONodeTrustedSettingsMembers.sol'),
   rocketDAONodeTrustedSettingsProposals:    artifacts.require('RocketDAONodeTrustedSettingsProposals.sol'),
   rocketDAOProtocol:                        artifacts.require('RocketDAOProtocol.sol'),
@@ -92,7 +92,7 @@ const contracts = {
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:                       artifacts.require('RocketMinipool.sol'),
+  rocketMinipool:                           artifacts.require('RocketMinipool.sol'),
 };
 
 
@@ -202,6 +202,9 @@ module.exports = async (deployer, network) => {
     // Log RocketStorage
     console.log('\x1b[31m%s\x1b[0m:', '   Set Storage Address');
     console.log('     '+rocketStorage.address);
+    // Add Rocket Storage to deployed contracts
+    contracts.rocketStorage = artifacts.require('RocketStorage.sol');
+    // Now process the rest
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
         // Log it

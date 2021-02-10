@@ -176,6 +176,15 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         require(success, getRevertMsg(response));
     }
 
+
+    // Bootstrap mode - Upgrade contracts or their ABI
+    function bootstrapUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+        // Ok good to go, lets update the settings 
+        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalUpgrade(string,string,string,address)", _type, _name, _contractAbi, _contractAddress));
+        // Was there an error?
+        require(success, getRevertMsg(response));
+    }
+
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
     function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         require(_confirmDisableBootstrapMode == true, 'You must confirm disabling bootstrap mode, it can only be done once!');
