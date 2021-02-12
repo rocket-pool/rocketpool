@@ -5,9 +5,13 @@ pragma solidity 0.7.6;
 import "../RocketBase.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 // Address set storage helper for RocketStorage data (contains unique items; has reverse index lookups)
 
 contract AddressSetStorage is RocketBase, AddressSetStorageInterface {
+
+    using SafeMath for uint;
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -36,8 +40,8 @@ contract AddressSetStorage is RocketBase, AddressSetStorageInterface {
         require(getUint(keccak256(abi.encodePacked(_key, ".index", _value))) == 0, "Item already exists in set");
         uint count = getUint(keccak256(abi.encodePacked(_key, ".count")));
         setAddress(keccak256(abi.encodePacked(_key, ".item", count)), _value);
-        setUint(keccak256(abi.encodePacked(_key, ".index", _value)), count + 1);
-        setUint(keccak256(abi.encodePacked(_key, ".count")), count + 1);
+        setUint(keccak256(abi.encodePacked(_key, ".index", _value)), count.add(1));
+        setUint(keccak256(abi.encodePacked(_key, ".count")), count.add(1));
     }
 
     // Remove an item from a set
@@ -47,13 +51,13 @@ contract AddressSetStorage is RocketBase, AddressSetStorageInterface {
         uint256 index = getUint(keccak256(abi.encodePacked(_key, ".index", _value)));
         require(index-- > 0, "Item does not exist in set");
         uint count = getUint(keccak256(abi.encodePacked(_key, ".count")));
-        if (index < count - 1) {
-            address lastItem = getAddress(keccak256(abi.encodePacked(_key, ".item", count - 1)));
+        if (index < count.sub(1)) {
+            address lastItem = getAddress(keccak256(abi.encodePacked(_key, ".item", count.sub(1))));
             setAddress(keccak256(abi.encodePacked(_key, ".item", index)), lastItem);
-            setUint(keccak256(abi.encodePacked(_key, ".index", lastItem)), index + 1);
+            setUint(keccak256(abi.encodePacked(_key, ".index", lastItem)), index.add(1));
         }
         setUint(keccak256(abi.encodePacked(_key, ".index", _value)), 0);
-        setUint(keccak256(abi.encodePacked(_key, ".count")), count - 1);
+        setUint(keccak256(abi.encodePacked(_key, ".count")), count.sub(1));
     }
 
 }

@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
 
     // Calculate using this as the base
-    uint256 calcBase = 1 ether;
+    uint256 private calcBase = 1 ether;
 
     // Libs
     using SafeMath for uint;
