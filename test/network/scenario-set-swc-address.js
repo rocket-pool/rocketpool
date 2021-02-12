@@ -8,7 +8,7 @@ export async function setSystemWithdrawalContractAddress(swcAddress, txOptions) 
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
 
     // Set SWC address
-    await rocketNetworkWithdrawal.getSystemWithdrawalContractAddress(swcAddress, txOptions);
+    await rocketNetworkWithdrawal.setSystemWithdrawalContractAddress(swcAddress, txOptions);
 
     // Get & check updated SWC address
     let networkSwcAddress = await rocketNetworkWithdrawal.getSystemWithdrawalContractAddress.call();
