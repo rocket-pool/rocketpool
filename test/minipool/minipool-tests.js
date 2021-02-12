@@ -125,7 +125,7 @@ export default function() {
 
             // Check withdrawal credentials
             let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initializedMinipool.address.substr(2));
-            assert.equal(withdrawalCredentials, expectedWithdrawalCredentials, 'Invalid minipool withdrawal credentials');
+            assert.equal(withdrawalCredentials.toLowerCase(), expectedWithdrawalCredentials.toLowerCase(), 'Invalid minipool withdrawal credentials');
 
         });
 
