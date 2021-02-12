@@ -23,13 +23,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     event MemberLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
 
     // Calculate using this as the base
-    uint256 calcBase = 1 ether;
+    uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string daoNameSpace = 'dao.trustednodes';
+    string private daoNameSpace = 'dao.trustednodes';
 
     // Min amount of trusted node members required in the DAO
-    uint256 daoMemberMinCount = 3;
+    uint256 private daoMemberMinCount = 3;
 
 
     // Only allow bootstrapping when enabled

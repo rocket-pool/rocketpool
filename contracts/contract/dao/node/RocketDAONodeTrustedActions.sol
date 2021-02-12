@@ -27,10 +27,10 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
 
     // Calculate using this as the base
-    uint256 calcBase = 1 ether;
+    uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string daoNameSpace = 'dao.trustednodes';
+    string private daoNameSpace = 'dao.trustednodes';
 
 
     // Construct

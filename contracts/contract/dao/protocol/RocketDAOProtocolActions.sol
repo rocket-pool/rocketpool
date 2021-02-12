@@ -17,10 +17,10 @@ contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterfa
     using SafeMath for uint;
 
     // Calculate using this as the base
-    uint256 calcBase = 1 ether;
+    uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the network DAO (do not change)
-    string daoNameSpace = 'dao.protocol';
+    string private daoNameSpace = 'dao.protocol';
 
 
     // Construct

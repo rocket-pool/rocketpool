@@ -8,7 +8,6 @@ import "../../RocketBase.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedUpgradeInterface.sol";
  
 // Handles network contract upgrades
-// TODO: replace with governance model before mainnet release
 
 contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeInterface {
 

@@ -13,7 +13,7 @@ import "../../types/MinipoolStatus.sol";
 contract RocketMinipool is RocketMinipoolInterface {
 
     // Main Rocket Pool storage contract
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);
+    RocketStorageInterface private rocketStorage = RocketStorageInterface(0);
 
     // Status
     MinipoolStatus private status;
