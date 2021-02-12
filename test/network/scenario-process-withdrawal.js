@@ -59,20 +59,18 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
     }
 
     // Get initial balances & withdrawal processed status
-    let [balances1, withdrawalProcessed1, unprocessedMinipoolCount1] = await Promise.all([
+    let [balances1, withdrawalProcessed1] = await Promise.all([
         getBalances(),
         rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipoolAddress),
-        rocketMinipoolManager.getUnprocessedMinipoolCount.call(),
     ]);
 
     // Process withdrawal
     await rocketNetworkWithdrawal.processWithdrawal(validatorPubkey, txOptions);
 
     // Get updated balances & withdrawal processed status
-    let [balances2, withdrawalProcessed2, unprocessedMinipoolCount2] = await Promise.all([
+    let [balances2, withdrawalProcessed2] = await Promise.all([
         getBalances(),
         rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipoolAddress),
-        rocketMinipoolManager.getUnprocessedMinipoolCount.call(),
     ]);
 
     // Get expected user amount destination
@@ -94,9 +92,6 @@ export async function processWithdrawal(validatorPubkey, txOptions) {
         assert(balances2.rethContractEth.eq(balances1.rethContractEth), 'Incorrect updated rETH contract balance');
         assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
     }
-
-    // Check unprocessed minipool index
-    assert(unprocessedMinipoolCount2.eq(unprocessedMinipoolCount1.sub(web3.utils.toBN(1))), 'Incorrect updated unprocessed minipool count');
 
 }
 
