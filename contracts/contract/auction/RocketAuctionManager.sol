@@ -127,6 +127,11 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         return startPrice.sub(startPrice.sub(endPrice).mul(tn).div(td).mul(tn).div(td));
     }
 
+    // Get the RPL price for a lot at the current block
+    function getLotPriceAtCurrentBlock(uint256 _index) override public view returns (uint256) {
+        return getLotPriceAtBlock(_index, block.number);
+    }
+
     // Get the RPL price for a lot based on total ETH amount bid
     function getLotPriceByTotalBids(uint256 _index) override public view returns (uint256) {
         uint256 calcBase = 1 ether;
@@ -136,7 +141,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Get the current RPL price for a lot
     // Returns the clearing price if cleared, or the price at the current block otherwise
     function getLotCurrentPrice(uint256 _index) override public view returns (uint256) {
-        uint256 blockPrice = getLotPriceAtBlock(_index, block.number);
+        uint256 blockPrice = getLotPriceAtCurrentBlock(_index);
         uint256 bidPrice = getLotPriceByTotalBids(_index);
         if (bidPrice > blockPrice) { return bidPrice; }
         else { return blockPrice; }
@@ -156,7 +161,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Check whether a lot has cleared
     function getLotIsCleared(uint256 _index) override public view returns (bool) {
         if (block.number >= getLotEndBlock(_index)) { return true; }
-        if (getLotPriceByTotalBids(_index) >= getLotPriceAtBlock(_index, block.number)) { return true; }
+        if (getLotPriceByTotalBids(_index) >= getLotPriceAtCurrentBlock(_index)) { return true; }
         return false;
     }
 
@@ -210,7 +215,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Calculate the bid amount
         uint256 bidAmount = msg.value;
         uint256 calcBase = 1 ether;
-        uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtBlock(_lotIndex, block.number)).div(calcBase);
+        uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtCurrentBlock(_lotIndex)).div(calcBase);
         if (bidAmount > maximumBidAmount) { bidAmount = maximumBidAmount; }
         // Increase lot bid amounts
         increaseLotTotalBidAmount(_lotIndex, bidAmount);
@@ -228,7 +233,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Check lot exists
         require(getLotExists(_lotIndex), "Lot does not exist");
         // Get lot price info
-        uint256 blockPrice = getLotPriceAtBlock(_lotIndex, block.number);
+        uint256 blockPrice = getLotPriceAtCurrentBlock(_lotIndex);
         uint256 bidPrice = getLotPriceByTotalBids(_lotIndex);
         // Check lot can be claimed from
         require(block.number >= getLotEndBlock(_lotIndex) || bidPrice >= blockPrice, "Lot has not cleared yet");
