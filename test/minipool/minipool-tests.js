@@ -110,6 +110,27 @@ export default function() {
 
 
         //
+        // Withdrawal credentials
+        //
+
+
+        it.only(printTitle('minipool', 'has correct withdrawal credentials'), async () => {
+
+            // Withdrawal credentials settings
+            const withdrawalPrefix = '01';
+            const padding = '0000000000000000000000';
+
+            // Get minipool withdrawal credentials
+            let withdrawalCredentials = await initializedMinipool.getWithdrawalCredentials.call();
+
+            // Check withdrawal credentials
+            let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initializedMinipool.address.substr(2));
+            assert.equal(withdrawalCredentials, expectedWithdrawalCredentials, 'Invalid minipool withdrawal credentials');
+
+        });
+
+
+        //
         // Refund
         //
 
