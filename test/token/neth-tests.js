@@ -70,7 +70,10 @@ export default function() {
         it(printTitle('nETH holder', 'can burn nETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {from: dummySwc});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Burn nETH
             await burnNeth(nethBalance, {
@@ -83,7 +86,10 @@ export default function() {
         it(printTitle('nETH holder', 'cannot burn an invalid amount of nETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {from: dummySwc});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');

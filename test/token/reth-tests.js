@@ -87,7 +87,10 @@ export default function() {
         it(printTitle('rETH holder', 'can burn rETH for ETH collateral'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {from: dummySwc});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Burn rETH
             await burnReth(rethBalance, {
@@ -118,7 +121,10 @@ export default function() {
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {from: dummySwc});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');
