@@ -124,6 +124,13 @@ export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBa
 }
 
 
+// Send validator balance to a minipool
+export async function withdrawMinipoolValidatorBalance(minipool, txOptions) {
+    txOptions.to = minipool.address;
+    await web3.eth.sendTransaction(txOptions);
+}
+
+
 // Withdraw node balances & rewards from a minipool and destroy it
 export async function withdrawMinipool(minipool, txOptions) {
     await minipool.withdraw(txOptions);
