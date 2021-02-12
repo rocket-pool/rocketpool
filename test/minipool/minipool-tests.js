@@ -4,7 +4,6 @@ import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
-import { getWithdrawalCredentials } from '../_helpers/network';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
@@ -38,7 +37,6 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
-        let withdrawalCredentials;
         let initializedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
@@ -58,9 +56,6 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
-
-            // Get network settings
-            withdrawalCredentials = await getWithdrawalCredentials();
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
@@ -220,7 +215,7 @@ export default function() {
         it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
 
             // Stake prelaunch minipool
-            await stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await stake(prelaunchMinipool, getValidatorPubkey(), null, {
                 from: node,
             });
 
@@ -230,7 +225,7 @@ export default function() {
         it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
 
             // Attempt to stake initialized minipool
-            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), null, {
                 from: node,
             }), 'Staked a minipool which was not at prelaunch');
 
@@ -243,10 +238,10 @@ export default function() {
             let pubkey = getValidatorPubkey();
 
             // Stake prelaunch minipool
-            await stake(prelaunchMinipool, pubkey, withdrawalCredentials, {from: node});
+            await stake(prelaunchMinipool, pubkey, null, {from: node});
 
             // Attempt to stake second prelaunch minipool with same pubkey
-            await shouldRevert(stake(prelaunchMinipool2, pubkey, withdrawalCredentials, {
+            await shouldRevert(stake(prelaunchMinipool2, pubkey, null, {
                 from: node,
             }), 'Staked a minipool with a reused validator pubkey');
 
@@ -257,7 +252,6 @@ export default function() {
 
             // Get withdrawal credentials
             let invalidWithdrawalCredentials = '0x1111111111111111111111111111111111111111111111111111111111111111';
-            assert.notEqual(invalidWithdrawalCredentials, withdrawalCredentials, 'Withdrawal credentials are not incorrect');
 
             // Attempt to stake prelaunch minipool
             await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), invalidWithdrawalCredentials, {
@@ -270,7 +264,7 @@ export default function() {
         it(printTitle('random address', 'cannot stake a minipool'), async () => {
 
             // Attempt to stake prelaunch minipool
-            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), null, {
                 from: random,
             }), 'Random address staked a minipool');
 
