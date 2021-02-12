@@ -136,23 +136,6 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
-    // Receive the minipool's withdrawn eth2 validator balance
-    // Only accepts calls from the eth1 system withdrawal contract
-    receive() external payable onlyRegisteredMinipool(address(this)) {
-        // Check current status
-        require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
-        // load contracts
-        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
-        // Check sender address
-        require(msg.sender == rocketNetworkWithdrawal.getSystemWithdrawalContractAddress(), "The minipool's validator balance can only be sent by the eth1 system withdrawal contract");
-        // Set validator balance withdrawn status
-        validatorBalanceWithdrawn = true;
-        // Process validator withdrawal for minipool
-        rocketNetworkWithdrawal.processWithdrawal{value: msg.value}();
-        // Destroy minipool if node has withdrawn
-        if (nodeWithdrawn) { destroy(); }
-    }
-
     // Refund node ETH refinanced from user deposited ETH
     function refund() override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check refund balance
@@ -205,6 +188,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
     function withdraw() override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) {
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool can only be withdrawn from while withdrawable");
+        require(!nodeWithdrawn, "The minipool has already been withdrawn from");
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
@@ -227,6 +211,24 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         if (nodeRefundBalance > 0) { refundNode(); }
         // Destroy minipool if validator balance has been withdrawn
         if (validatorBalanceWithdrawn) { destroy(); }
+    }
+
+    // Receive the minipool's withdrawn eth2 validator balance
+    // Only accepts calls from the eth1 system withdrawal contract
+    function receiveValidatorBalance() external payable onlyRegisteredMinipool(address(this)) {
+        // Check current status
+        require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
+        require(!validatorBalanceWithdrawn, "The minipool's validator balance has already been sent");
+        // load contracts
+        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
+        // Check sender address
+        require(msg.sender == rocketNetworkWithdrawal.getSystemWithdrawalContractAddress(), "The minipool's validator balance can only be sent by the eth1 system withdrawal contract");
+        // Set validator balance withdrawn status
+        validatorBalanceWithdrawn = true;
+        // Process validator withdrawal for minipool
+        rocketNetworkWithdrawal.processWithdrawal{value: msg.value}();
+        // Destroy minipool if node has withdrawn
+        if (nodeWithdrawn) { destroy(); }
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool

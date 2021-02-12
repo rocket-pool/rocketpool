@@ -104,6 +104,13 @@ contract RocketMinipool is RocketMinipoolInterface {
         return ret;
     }
 
+    // Receive the minipool's withdrawn eth2 validator balance
+    // Only accepts calls from the eth1 system withdrawal contract
+    receive() external payable {
+        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("receiveValidatorBalance()"));
+        if (!success) { revert(getRevertMessage(data)); }
+    }
+
     // Assign the node deposit to the minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function nodeDeposit() override external payable {
@@ -115,13 +122,6 @@ contract RocketMinipool is RocketMinipoolInterface {
     // Only accepts calls from the RocketDepositPool contract
     function userDeposit() override external payable {
         (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("userDeposit()"));
-        if (!success) { revert(getRevertMessage(data)); }
-    }
-
-    // Receive the minipool's withdrawn eth2 validator balance
-    // Only accepts calls from the eth1 system withdrawal contract
-    receive() external payable {
-        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("receive()"));
         if (!success) { revert(getRevertMessage(data)); }
     }
 
