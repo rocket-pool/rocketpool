@@ -127,6 +127,7 @@ export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBa
 // Send validator balance to a minipool
 export async function withdrawMinipoolValidatorBalance(minipool, txOptions) {
     txOptions.to = minipool.address;
+    txOptions.gas = 12450000;
     await web3.eth.sendTransaction(txOptions);
 }
 
