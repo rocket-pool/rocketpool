@@ -114,7 +114,7 @@ export default function() {
         //
 
 
-        it.only(printTitle('minipool', 'has correct withdrawal credentials'), async () => {
+        it(printTitle('minipool', 'has correct withdrawal credentials'), async () => {
 
             // Withdrawal credentials settings
             const withdrawalPrefix = '01';
