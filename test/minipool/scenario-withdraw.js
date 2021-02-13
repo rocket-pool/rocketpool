@@ -36,10 +36,11 @@ export async function withdraw(minipool, txOptions) {
         );
     }
 
-    // Get initial node balances & minipool balances
-    let [nodeBalances1, minipoolBalances] = await Promise.all([
+    // Get initial node balances, minipool balances & node withdrawn status
+    let [nodeBalances1, minipoolBalances, nodeWithdrawn1] = await Promise.all([
         getNodeBalances(),
         getMinipoolBalances(),
+        minipool.getNodeWithdrawn.call(),
     ]);
 
     // Set gas price
@@ -50,8 +51,15 @@ export async function withdraw(minipool, txOptions) {
     let txReceipt = await minipool.withdraw(txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
-    // Get updated node balances
-    let nodeBalances2 = await getNodeBalances();
+    // Get updated node balances & node withdrawn status
+    let [nodeBalances2, nodeWithdrawn2] = await Promise.all([
+        getNodeBalances(),
+        minipool.getNodeWithdrawn.call(),
+    ]);
+
+    // Check minipool node withdrawn status
+    assert.isFalse(nodeWithdrawn1, 'Incorrect initial minipool node withdrawn status');
+    assert.isTrue(nodeWithdrawn2, 'Incorrect updated minipool node withdrawn status');
 
     // Check balances
     let expectedNodeEthBalance = nodeBalances1.eth.add(minipoolBalances.nodeRefund);

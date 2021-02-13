@@ -63,25 +63,9 @@ export async function getNodeFeeByDemand(nodeDemand) {
 }
 
 
-// Get the network withdrawal credentials
-export async function getWithdrawalCredentials() {
+// Set the system withdrawal contract address
+export async function setSystemWithdrawalContractAddress(swcAddress, txOptions) {
     const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
-    return withdrawalCredentials;
-}
-
-
-// Accept a validator withdrawal
-export async function depositValidatorWithdrawal(txOptions) {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    txOptions.to = rocketNetworkWithdrawal.address;
-    await web3.eth.sendTransaction(txOptions);
-}
-
-
-// Process a validator withdrawal
-export async function processValidatorWithdrawal(validatorPubkey, txOptions) {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.processWithdrawal(validatorPubkey, txOptions);
+    await rocketNetworkWithdrawal.setSystemWithdrawalContractAddress(swcAddress, txOptions);
 }
 

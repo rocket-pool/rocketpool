@@ -7,8 +7,6 @@ import "../../types/MinipoolDeposit.sol";
 interface RocketMinipoolManagerInterface {
     function getMinipoolCount() external view returns (uint256);
     function getMinipoolAt(uint256 _index) external view returns (address);
-    function getUnprocessedMinipoolCount() external view returns (uint256);
-    function getUnprocessedMinipoolAt(uint256 _index) external view returns (address);
     function getNodeMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
     function getNodeValidatingMinipoolCount(address _nodeAddress) external view returns (uint256);

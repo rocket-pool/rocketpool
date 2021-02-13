@@ -1,10 +1,11 @@
+import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
-import { getWithdrawalCredentials } from '../_helpers/network';
+import { setSystemWithdrawalContractAddress } from '../_helpers/network';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
@@ -12,7 +13,7 @@ import { dissolve } from './scenario-dissolve';
 import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdraw } from './scenario-withdraw';
-import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
+import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
@@ -25,6 +26,7 @@ export default function() {
             node,
             nodeWithdrawalAddress,
             trustedNode,
+            dummySwc,
             random,
         ] = accounts;
 
@@ -38,13 +40,13 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
-        let withdrawalCredentials;
         let initializedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
         let stakingMinipool;
         let withdrawableMinipool;
         let dissolvedMinipool;
+        let withdrawalBalance = web3.utils.toWei('36', 'ether');
         before(async () => {
 
             // Register node & set withdrawal address
@@ -59,8 +61,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
 
-            // Get network settings
-            withdrawalCredentials = await getWithdrawalCredentials();
+            // Set dummy SWC address
+            await setSystemWithdrawalContractAddress(dummySwc, {from: owner});
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
@@ -81,7 +83,7 @@ export default function() {
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
-            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('36', 'ether'), {from: trustedNode});
+            await submitMinipoolWithdrawable(withdrawableMinipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
@@ -103,6 +105,27 @@ export default function() {
             let prelaunch2RefundBalance = await prelaunchMinipool2.getNodeRefundBalance.call();
             assert(prelaunchRefundBalance.eq(web3.utils.toBN(refundAmount)), 'Incorrect prelaunch minipool refund balance');
             assert(prelaunch2RefundBalance.eq(web3.utils.toBN(0)), 'Incorrect prelaunch minipool refund balance');
+
+        });
+
+
+        //
+        // Withdrawal credentials
+        //
+
+
+        it(printTitle('minipool', 'has correct withdrawal credentials'), async () => {
+
+            // Withdrawal credentials settings
+            const withdrawalPrefix = '01';
+            const padding = '0000000000000000000000';
+
+            // Get minipool withdrawal credentials
+            let withdrawalCredentials = await initializedMinipool.getWithdrawalCredentials.call();
+
+            // Check withdrawal credentials
+            let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initializedMinipool.address.substr(2));
+            assert.equal(withdrawalCredentials.toLowerCase(), expectedWithdrawalCredentials.toLowerCase(), 'Invalid minipool withdrawal credentials');
 
         });
 
@@ -220,7 +243,7 @@ export default function() {
         it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
 
             // Stake prelaunch minipool
-            await stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await stake(prelaunchMinipool, getValidatorPubkey(), null, {
                 from: node,
             });
 
@@ -230,7 +253,7 @@ export default function() {
         it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
 
             // Attempt to stake initialized minipool
-            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), null, {
                 from: node,
             }), 'Staked a minipool which was not at prelaunch');
 
@@ -243,10 +266,10 @@ export default function() {
             let pubkey = getValidatorPubkey();
 
             // Stake prelaunch minipool
-            await stake(prelaunchMinipool, pubkey, withdrawalCredentials, {from: node});
+            await stake(prelaunchMinipool, pubkey, null, {from: node});
 
             // Attempt to stake second prelaunch minipool with same pubkey
-            await shouldRevert(stake(prelaunchMinipool2, pubkey, withdrawalCredentials, {
+            await shouldRevert(stake(prelaunchMinipool2, pubkey, null, {
                 from: node,
             }), 'Staked a minipool with a reused validator pubkey');
 
@@ -257,7 +280,6 @@ export default function() {
 
             // Get withdrawal credentials
             let invalidWithdrawalCredentials = '0x1111111111111111111111111111111111111111111111111111111111111111';
-            assert.notEqual(invalidWithdrawalCredentials, withdrawalCredentials, 'Withdrawal credentials are not incorrect');
 
             // Attempt to stake prelaunch minipool
             await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), invalidWithdrawalCredentials, {
@@ -270,7 +292,7 @@ export default function() {
         it(printTitle('random address', 'cannot stake a minipool'), async () => {
 
             // Attempt to stake prelaunch minipool
-            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), withdrawalCredentials, {
+            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), null, {
                 from: random,
             }), 'Random address staked a minipool');
 
@@ -308,6 +330,24 @@ export default function() {
         });
 
 
+        it(printTitle('node operator', 'cannot withdraw a withdrawable minipool twice'), async () => {
+
+            // Wait for withdrawal delay
+            await mineBlocks(web3, withdrawalDelay);
+
+            // Withdraw withdrawable minipool
+            await withdraw(withdrawableMinipool, {
+                from: node,
+            });
+
+            // Attempt to withdraw withdrawable minipool again
+            await shouldRevert(withdraw(withdrawableMinipool, {
+                from: node,
+            }), 'Withdrew a minipool twice');
+
+        });
+
+
         it(printTitle('node operator', 'cannot withdraw a withdrawable minipool before withdrawal delay'), async () => {
 
             // Attempt to withdraw withdrawable minipool
@@ -327,6 +367,75 @@ export default function() {
             await shouldRevert(withdraw(withdrawableMinipool, {
                 from: random,
             }), 'Random address withdrew a minipool');
+
+        });
+
+
+        //
+        // Withdraw validator balance
+        //
+
+
+        it(printTitle('system withdrawal contract', 'can send validator balance to a withdrawable minipool'), async () => {
+
+            // Send validator balance
+            await withdrawValidatorBalance(withdrawableMinipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
+
+        });
+
+
+        it(printTitle('system withdrawal contract', 'cannot send validator balance to a minipool which is not withdrawable'), async () => {
+
+            // Attempt to send validator balance
+            await shouldRevert(withdrawValidatorBalance(stakingMinipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            }), 'Sent validator balance to a minipool which was not withdrawable');
+
+        });
+
+
+        it(printTitle('system withdrawal contract', 'cannot send validator balance to a withdrawable minipool twice'), async () => {
+
+            // Send validator balance
+            await withdrawValidatorBalance(withdrawableMinipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
+
+            // Attempt to send validator balance again
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            }), 'Sent validator balance to a minipool twice');
+
+        });
+
+
+        it(printTitle('system withdrawal contract', 'cannot send validator balance to a withdrawable minipool while processing withdrawals is disabled'), async () => {
+
+            // Disable processing withdrawals
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.process.withdrawals.enabled', false, {from: owner});
+
+            // Attempt to send validator balance
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            }), 'Sent validator balance to a minipool while processing withdrawals was disabled');
+
+        });
+
+
+        it(printTitle('random address', 'cannot send validator balance to a withdrawable minipool'), async () => {
+
+            // Attempt to send validator balance
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
+                from: random,
+                value: withdrawalBalance,
+            }), 'Random address sent validator balance to a minipool');
 
         });
 

@@ -3,8 +3,8 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
-import { submitBalances, depositValidatorWithdrawal, processValidatorWithdrawal } from '../_helpers/network';
+import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipoolValidatorBalance } from '../_helpers/minipool';
+import { submitBalances, setSystemWithdrawalContractAddress } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
@@ -20,6 +20,7 @@ export default function() {
             owner,
             node,
             trustedNode,
+            dummySwc,
             staker1,
             staker2,
         ] = accounts;
@@ -32,6 +33,7 @@ export default function() {
 
 
         // Setup
+        let minipool;
         let validatorPubkey = getValidatorPubkey();
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let rethBalance;
@@ -53,13 +55,16 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
 
+            // Set dummy SWC address
+            await setSystemWithdrawalContractAddress(dummySwc, {from: owner});
+
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create withdrawable minipool
-            let minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
 
@@ -82,8 +87,10 @@ export default function() {
         it(printTitle('rETH holder', 'can burn rETH for ETH collateral'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
-            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Burn rETH
             await burnReth(rethBalance, {
@@ -114,8 +121,10 @@ export default function() {
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
 
             // Withdraw minipool validator balance to rETH contract
-            await depositValidatorWithdrawal({from: owner, value: withdrawalBalance});
-            await processValidatorWithdrawal(validatorPubkey, {from: trustedNode});
+            await withdrawMinipoolValidatorBalance(minipool, {
+                from: dummySwc,
+                value: withdrawalBalance,
+            });
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');

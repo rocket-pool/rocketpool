@@ -5,24 +5,21 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/RocketVaultWithdrawerInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 
 // Handles network validator withdrawals
 
-contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface, RocketVaultWithdrawerInterface {
+contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface {
 
     // Libs
     using SafeMath for uint;
 
     // Events
-    event WithdrawalReceived(address indexed from, uint256 amount, uint256 time);
     event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 nethAmount, uint256 rethAmount, uint256 time);
 
     // Construct
@@ -30,70 +27,44 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
-    // Current withdrawal pool balance
-    function getBalance() override public view returns (uint256) {
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        return rocketVault.balanceOf("rocketNetworkWithdrawal");
+    // Get the eth1 system withdrawal contract address
+    function getSystemWithdrawalContractAddress() override public view returns (address) {
+        return getAddressS("network.withdrawal.contract.address");
     }
 
-    // Receive a vault withdrawal
-    // Only accepts calls from the RocketVault contract
-    function receiveVaultWithdrawalETH() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyLatestContract("rocketVault", msg.sender) {}
-
-    // Get the validator withdrawal credentials
-    function getWithdrawalCredentials() override public view returns (bytes memory) {
-        return getBytesS("network.withdrawal.credentials");
-    }
-
-    // Set the validator withdrawal credentials
-    // TODO: remove before mainnet release
-    function setWithdrawalCredentials(bytes memory _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyGuardian {
-        setBytesS("network.withdrawal.credentials", _value);
-    }
-
-    // Accept a validator withdrawal from the beacon chain
-    receive() external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) {
-        // Check deposit amount
-        require(msg.value > 0, "Invalid deposit amount");
-        // Load contracts
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        // Transfer ETH to vault
-        rocketVault.depositEther{value: msg.value}();
-        // Emit withdrawal received event
-        emit WithdrawalReceived(msg.sender, msg.value, block.timestamp);
+    // Set the eth1 system withdrawal contract address
+    // Only accepts calls from the guardian address
+    function setSystemWithdrawalContractAddress(address _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyGuardian {
+        setAddressS("network.withdrawal.contract.address", _value);
     }
 
     // Process a validator withdrawal from the beacon chain
-    // Only accepts calls from trusted (oracle) nodes
-    function processWithdrawal(bytes calldata _validatorPubkey) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyTrustedNode(msg.sender) {
+    // Only accepts calls from registered minipools
+    function processWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        // Check settings
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
+        // Check network settings
         require(rocketDAOProtocolSettingsNetwork.getProcessWithdrawalsEnabled(), "Processing withdrawals is currently disabled");
-        // Check validator minipool
-        address minipool = rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey);
-        require(minipool != address(0x0), "Invalid minipool validator");
         // Check minipool withdrawal status
-        require(rocketMinipoolManager.getMinipoolWithdrawable(minipool), "Minipool is not withdrawable");
-        require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(minipool), "Withdrawal has already been processed for minipool");
-        // Get withdrawal amounts
-        uint256 totalAmount = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(minipool);
-        uint256 nodeAmount = rocketMinipoolManager.getMinipoolWithdrawalNodeBalance(minipool);
-        uint256 userAmount = totalAmount.sub(nodeAmount);
-        // Check balance
-        require(getBalance() >= totalAmount, "Insufficient withdrawal pool balance");
-        // Set withdrawal processed status
-        rocketMinipoolManager.setMinipoolWithdrawalProcessed(minipool);
-        // Withdraw ETH from vault
-        if (totalAmount > 0) {
-            // Withdraw
-            rocketVault.withdrawEther(totalAmount);
+        require(rocketMinipoolManager.getMinipoolWithdrawable(msg.sender), "Minipool is not withdrawable");
+        require(!rocketMinipoolManager.getMinipoolWithdrawalProcessed(msg.sender), "Withdrawal has already been processed for minipool");
+        // Get withdrawal shares
+        uint256 totalShare = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(msg.sender);
+        uint256 nodeShare = rocketMinipoolManager.getMinipoolWithdrawalNodeBalance(msg.sender);
+        uint256 userShare = totalShare.sub(nodeShare);
+        // Get withdrawal amounts based on shares
+        uint256 nodeAmount = 0;
+        uint256 userAmount = 0;
+        if (totalShare > 0) {
+            nodeAmount = msg.value.mul(nodeShare).div(totalShare);
+            userAmount = msg.value.mul(userShare).div(totalShare);
         }
+        // Set withdrawal processed status
+        rocketMinipoolManager.setMinipoolWithdrawalProcessed(msg.sender);
         // Transfer node balance to nETH contract
         if (nodeAmount > 0) { rocketTokenNETH.depositRewards{value: nodeAmount}(); }
         // Transfer user balance to rETH contract or deposit pool
@@ -105,7 +76,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
             }
         }
         // Emit withdrawal processed event
-        emit WithdrawalProcessed(keccak256(abi.encodePacked(_validatorPubkey)), minipool, nodeAmount, userAmount, block.timestamp);
+        emit WithdrawalProcessed(keccak256(abi.encodePacked(rocketMinipoolManager.getMinipoolPubkey(msg.sender))), msg.sender, nodeAmount, userAmount, block.timestamp);
     }
 
 }

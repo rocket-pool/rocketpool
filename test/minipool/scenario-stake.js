@@ -17,6 +17,9 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
     // Get parameters
     let launchBalance = await rocketDAOProtocolSettingsMinipool.getLaunchBalance.call();
 
+    // Get minipool withdrawal credentials
+    if (!withdrawalCredentials) withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
+
     // Get validator deposit data
     let depositData = {
         pubkey: validatorPubkey,

@@ -99,8 +99,8 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
     // Create validator pubkey
     if (!validatorPubkey) validatorPubkey = getValidatorPubkey();
 
-    // Get withdrawal credentials
-    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
+    // Get minipool withdrawal credentials
+    let withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
 
     // Get validator deposit data
     let depositData = {
@@ -121,6 +121,14 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
     await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions);
+}
+
+
+// Send validator balance to a minipool
+export async function withdrawMinipoolValidatorBalance(minipool, txOptions) {
+    txOptions.to = minipool.address;
+    txOptions.gas = 12450000;
+    await web3.eth.sendTransaction(txOptions);
 }
 
 
