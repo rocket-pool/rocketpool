@@ -211,7 +211,7 @@ export default function() {
 
         /*** Regular Nodes **************************/
 
-        /*
+
         it(printTitle('node', 'can claim RPL'), async () => {
 
             // Initialize RPL inflation & claims contract
@@ -242,7 +242,7 @@ export default function() {
                 from: registeredNode2,
             });
 
-        });*/
+        });
 
       
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
@@ -533,7 +533,7 @@ export default function() {
                 from: owner,
             }), "Protocol DAO spent more RPL than it had in its treasury", "You cannot send 0 RPL or more than the DAO has in its account");   
         });
-
+        
 
         it(printTitle('daoClaim', 'trusted node make a claim and the DAO claim rate is set to 0, trusted node makes another 2 claims'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
@@ -564,6 +564,7 @@ export default function() {
                 from: registeredNodeTrusted2,
             }); 
         });
+        
         
         it(printTitle('daoClaim', 'trusted nodes make multiples claims, rewards sent to dao claims contract, DAO rewards address is set and next claims send its balance to its rewards address'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
