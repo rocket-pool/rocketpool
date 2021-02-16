@@ -89,6 +89,8 @@ export default function() {
             // Deploy new contracts
             rocketMinipoolManagerNew = await RocketMinipoolManager.new(rocketStorage.address, {from: guardian});
             rocketDAONodeTrustedUpgradeNew = await RocketDAONodeTrustedUpgrade.new(rocketStorage.address, {from: guardian});
+            // Set a small proposal cooldown
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', 10, { from: guardian });
 
         });
 
@@ -96,7 +98,7 @@ export default function() {
         //
         // Start Tests
         //
-    
+        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -391,6 +393,71 @@ export default function() {
             // Cancel now before it passes
             await daoNodeTrustedCancel(proposalID, {from: registeredNodeTrusted1});
         });
+
+        
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, then attempts to again for registeredNode2 before cooldown has passed and that fails'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            let proposalCooldownBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                ['SaaS_Provider', 'test@sass.com', registeredNode1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Encode the calldata for the proposal
+            let proposalCalldata2 = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalInvite2', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                ['SaaS_Provider2', 'test2@sass.com', registeredNode2]
+            );
+            // Add the proposal
+            await shouldRevert(daoNodeTrustedPropose('hey guys, can we add this other cool SaaS member please?', proposalCalldata2, {
+                from: registeredNodeTrusted1
+            }), 'Add proposal before cooldown period passed', 'Member has not waited long enough to make another proposal');
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the cooldown period expires and proposal can be made again
+            await mineBlocks(web3, blockCurrent+proposalCooldownBlocks);
+            // Try again
+            await daoNodeTrustedPropose('hey guys, can we add this other cool SaaS member please?', proposalCalldata2, {
+                from: registeredNodeTrusted1
+            });
+        });
+        
+
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNode2 tries to vote on it, but fails as they joined after it was created'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_email'}, {type: 'address', name: '_nodeAddress'}]},
+                ['SaaS_Provider', 'test@sass.com', registeredNode1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Now add a new member after that proposal was created
+            await bootstrapMemberAdd(registeredNode2, 'rocketpool', 'node@home.com');
+            // registeredNodeTrusted1 votes
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            // registeredNode2 vote fails
+            await shouldRevert(daoNodeTrustedVote(proposalID, true, { 
+                from: registeredNode2 
+            }), 'Voted on proposal created before they joined', 'Member cannot vote on proposal created before they became a member');
+        });
+        
         
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to leave the DAO and receive their RPL bond refund, proposal is denied as it would be under the min members required for the DAO'), async () => {
             // Setup our proposal settings
@@ -559,11 +626,10 @@ export default function() {
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
-
         });    
         
 
-        /*** Upgrade Contacts & ABI **************/
+        /*** Upgrade Contacts & ABI *************/
 
         // Contracts
         it(printTitle('guardian', 'can upgrade a contract in bootstrap mode'), async () => {
@@ -696,6 +762,6 @@ export default function() {
                 from: userOne,
             }), 'Random address added a new contract ABI', 'Account is not a temporary guardian');
         });
-
+        
     });
 }
