@@ -18,6 +18,7 @@ interface RocketDAOProposalInterface {
     function getTotal() external view returns (uint256);
     function getDAO(uint256 _proposalID) external view returns (string memory);
     function getProposer(uint256 _proposalID) external view returns (address);
+    function getMessage(uint256 _proposalID) external view returns (string memory);
     function getStart(uint256 _proposalID) external view returns (uint256);
     function getEnd(uint256 _proposalID) external view returns (uint256);
     function getExpires(uint256 _proposalID) external view returns (uint256);

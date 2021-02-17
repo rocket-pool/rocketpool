@@ -50,13 +50,18 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     }
 
     // Get the DAO that this proposal belongs too
-    function getDAO(uint256 _proposalID) override public view returns (string memory) { 
+    function getDAO(uint256 _proposalID) override public view returns (string memory) {
         return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "dao", _proposalID))); 
     }
 
     // Get the member who proposed
     function getProposer(uint256 _proposalID) override public view returns (address) {
         return getAddress(keccak256(abi.encodePacked(daoProposalNameSpace, "proposer", _proposalID))); 
+    }
+
+    // Get the proposal message
+    function getMessage(uint256 _proposalID) override public view returns (string memory) {
+        return getString(keccak256(abi.encodePacked(daoProposalNameSpace, "message", _proposalID))); 
     }
 
     // Get the start block of this proposal
