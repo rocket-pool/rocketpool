@@ -39,8 +39,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsMembersInterface rocketDaoNodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
-        // Is it a trusted node DAO member?
-        bool daoNodeTrustedMember = rocketDaoNodeTrusted.getMemberIsValid(msg.sender);
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
@@ -50,11 +48,17 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         if (msg.value == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount()) { depositType = MinipoolDeposit.Full; }
         else if (msg.value == rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount()) { depositType = MinipoolDeposit.Half; }
         else if (msg.value == rocketDAOProtocolSettingsMinipool.getEmptyDepositNodeAmount()) { depositType = MinipoolDeposit.Empty; }
-        // Check deposit type; only trusted nodes can create empty minipools
+        // Check deposit type is valid
         require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
-        require(depositType != MinipoolDeposit.Empty || daoNodeTrustedMember, "Invalid node deposit amount");
-        // Check if it's a trusted node member, it's not exceeding the amount of unbonded minipool validatos it can make
-        if (daoNodeTrustedMember) { require(rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax() >= rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender), "Trusted node member would exceed the amount of allowed unbonded minipool validators allowed"); }
+        // Node is trusted
+        if (rocketDaoNodeTrusted.getMemberIsValid(msg.sender)) {
+            // If creating an unbonded minipool, check current unbonded minipool count
+            if (depositType == MinipoolDeposit.Empty) {
+                require(rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender) < rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax(), "Trusted node member would exceed the amount of unbonded minipools allowed");
+            }
+        }
+        // Node is not trusted - it cannot create unbonded minipools
+        else { require(depositType != MinipoolDeposit.Empty, "Only members of the trusted node DAO may create unbonded minipools"); }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Create minipool
