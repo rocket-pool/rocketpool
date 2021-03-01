@@ -278,3 +278,71 @@ export async function daoNodeTrustedMemberReplace(newMemberAddress, txOptions) {
 }
 
 
+// Challenger a members node to respond and signal it is still alive
+export async function daoNodeTrustedMemberChallengeMake(_nodeAddress, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberIsValid.call(_nodeAddress),
+            rocketDAONodeTrusted.getMemberIsChallenged.call(_nodeAddress),
+          ]).then(
+            ([currentMemberStatus, memberChallengedStatus]) =>
+            ({currentMemberStatus, memberChallengedStatus})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+
+    // Add a new proposal
+    await rocketDAONodeTrustedActions.actionChallengeMake(_nodeAddress, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+
+    // Check member count has increased
+    assert(ds1.currentMemberStatus == true, 'Challenged member has had their membership removed');
+    assert(ds1.memberChallengedStatus == false, 'Challenged a member that was already challenged');
+    assert(ds2.memberChallengedStatus == true, 'Member did not become challenged');
+
+}
+
+
+// Decide a challenges outcome
+export async function daoNodeTrustedMemberChallengeDecide(_nodeAddress, _expectedMemberStatus, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberIsValid.call(_nodeAddress),
+            rocketDAONodeTrusted.getMemberIsChallenged.call(_nodeAddress),
+          ]).then(
+            ([currentMemberStatus, memberChallengedStatus]) =>
+            ({currentMemberStatus, memberChallengedStatus})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+
+    // Add a new proposal
+    await rocketDAONodeTrustedActions.actionChallengeDecide(_nodeAddress, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+
+    // Check member count has increased
+    assert(ds2.currentMemberStatus == _expectedMemberStatus, 'Challenged member did not become their expected status');
+
+}
+
+

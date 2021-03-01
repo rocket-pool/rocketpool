@@ -16,6 +16,7 @@ interface RocketDAONodeTrustedInterface {
     function getMemberProposalExecutedBlock(string memory _proposalType, address _nodeAddress) external view returns (uint256);
     function getMemberReplacedAddress(string memory _type, address _nodeAddress) external view returns (address);
     function getMemberRPLBondAmount(address _nodeAddress) external view returns (uint256);
+    function getMemberIsChallenged(address _nodeAddress) external view returns (bool);
     function getMemberUnbondedValidatorCount(address _nodeAddress) external view returns (uint256);
     function incrementMemberUnbondedValidatorCount(address _nodeAddress) external;
     function decrementMemberUnbondedValidatorCount(address _nodeAddress) external;

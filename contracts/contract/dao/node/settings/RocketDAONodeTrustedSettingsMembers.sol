@@ -16,9 +16,11 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
-            setSettingUint('members.quorum', 0.51 ether);                   // Member quorum threshold that must be met for proposals to pass (51%)
+            setSettingUint('members.quorum', 0.51 ether);                    // Member quorum threshold that must be met for proposals to pass (51%)
             setSettingUint('members.rplbond', 15000 ether);                  // Bond amount required for a new member to join
             setSettingUint('members.minipool.unbonded.max', 250);            // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
+            setSettingUint('members.challenge.cooldown', 6172);              // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
+            setSettingUint('members.challenge.window', 43204);               // How long a member has to respond to a challenge. 7 days worth of blocks
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -50,6 +52,16 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
     // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
     function getMinipoolUnbondedMax() override public view returns (uint256) { 
         return getSettingUint('members.minipool.unbonded.max');
+    }
+
+    // How long a member must wait before making consecutive challenges
+    function getChallengeCooldown() override public view returns (uint256) { 
+        return getSettingUint('members.challenge.cooldown');
+    }
+
+    // The window available to meet any node challenges
+    function getChallengeWindow() override public view returns (uint256) { 
+        return getSettingUint('members.challenge.window');
     }
         
 

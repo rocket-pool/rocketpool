@@ -25,6 +25,8 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     event ActionLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
     event ActionReplace(address indexed _currentNodeAddress, address indexed _newNodeAddress, uint256 time);
     event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
+    event ActionChallengeMade(address indexed _nodeChallengedAddress, address indexed _nodeChallengerAddress, uint256 time);
+    event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengDeciderAddress, bool _success, uint256 time);
 
     // Calculate using this as the base
     uint256 private calcBase = 1 ether;
@@ -188,5 +190,61 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         emit ActionKick(_nodeAddress, rplBondRefundAmount, block.timestamp);   
     }
 
+
+    // In the event that the majority of members go offline permanently and no more proposals could be passed, a current member can 'challenge' another members node to respond
+    // If it does not respond in the given window, it can be removed as a member. The one who removes the member after the challenge isn't met, must be another member to provide some oversight
+    // So this can only work if there is a min of 2 members in the DAO who have their nodes running. It does also not require a proposal to start (obviously).
+    // This should only be used in an emergency situation to recover the DAO. Members that need removing when consensus is still viable, should be done via the 'kick' method.
+    function actionChallengeMake(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyTrustedNode(msg.sender) {
+        // Load contracts
+        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
+        // Can't challenge yourself duh
+        require(msg.sender != _nodeAddress, 'You cannot challenge yourself');
+        // Is this member already being challenged?
+        require(!rocketDAONode.getMemberIsChallenged(_nodeAddress), "Member is already being challenged");
+        // Has this member recently made another challenge and not waited for the cooldown to pass?
+        require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenge.created.block", msg.sender))).add(rocketDAONodeTrustedSettingsMembers.getChallengeCooldown()) < block.number, "You must wait for the challenge cooldown to pass before issuing another challenge");
+        // Ok challenge accepted
+        // Record the last time this member challenged
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenge.created.block", msg.sender)), block.number);
+        // Record the challenge block now
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)), block.number);
+        // Record who made the challenge
+        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress)), msg.sender);
+        // Log it
+        emit ActionChallengeMade(_nodeAddress, msg.sender, block.timestamp);
+    }
+
+    
+    // Decides the success of a challenge. If called by the challenged node within the challenge window, the challenge is defeated and the member stays as they have indicated their node is still alive.
+    // If called after the challenge window has passed by anyone except the original challenge initiator, then the challenge has succeeded and the member is removed
+    function actionChallengeDecide(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyTrustedNode(msg.sender) {
+        // Load contracts
+        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        // Was the challenge successful?
+        bool challengeSuccess = false;
+        // Get the block the challenge was initiated at
+        uint256 challengeBlock = getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
+        // If challenge block is 0, the member hasn't been challenged or they have successfully responded to the challenge previously
+        require(challengeBlock > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
+        // The member deciding the challenge, must not be the original initiator to provide some oversight
+        require(getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress))) != msg.sender, "Challenge cannot be decided by the original initiator, must be another member");
+        // Is this member being actively challenged and is it the node being challenged that has responded?
+        if(rocketDAONode.getMemberIsChallenged(_nodeAddress)) {
+            // Is it the node being challenged?
+            if(_nodeAddress == msg.sender) {
+                // Challenge is defeated, node has responded
+                deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
+            }
+        }else{
+            // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
+            _memberRemove(_nodeAddress);
+            // Challenge was successful
+            challengeSuccess = true;
+        }
+        // Log it
+        emit ActionChallengeDecided(_nodeAddress, msg.sender, challengeSuccess, block.timestamp);
+    }
 
 }

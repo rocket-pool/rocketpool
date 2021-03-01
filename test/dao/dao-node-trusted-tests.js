@@ -7,7 +7,7 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade } from './scenario-dao-node-trusted-bootstrap';
-import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, } from './scenario-dao-node-trusted';
+import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
 
 // Contracts
@@ -98,7 +98,7 @@ export default function() {
         //
         // Start Tests
         //
-        
+
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -627,6 +627,69 @@ export default function() {
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
         });    
+
+        it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond and it does successfully in the window required'), async () => {
+            // Add a 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Update our challenge settings
+            let challengeWindowBlocks = 10;
+            let challengeCooldownBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            // Attempt to challenge a non-member
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode2, { from: registeredNodeTrusted1 }), 'A non member was challenged', 'Invalid trusted node');
+            // Challenge the 3rd member
+            await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
+            // Attempt to challenge again 
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 }), 'Member was challenged again', 'Member is already being challenged');
+            // Attempt to challenge another member before cooldown has passed 
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNodeTrusted2, { from: registeredNodeTrusted1 }), 'Member challenged another user before cooldown had passed', 'You must wait for the challenge cooldown to pass before issuing another challenge');
+            // Have 3rd member respond to the challenge successfully 
+            await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
+            // Wait until the original iniators cooldown window has passed and they attempt another challenge
+            await mineBlocks(web3, challengeCooldownBlocks);
+            await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
+            // Have 3rd member respond to the challenge successfully again
+            await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
+        });
+
+        it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond, they do not in the window required and lose their membership + bond'), async () => {
+            // Add a 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Update our challenge settings
+            let challengeWindowBlocks = 10;
+            let challengeCooldownBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            // Try to challenge yourself
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNode1 }), 'Member challenged themselves', 'You cannot challenge yourself');
+            // Challenge the 3rd member
+            await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
+            // Have the original iniator member try to decide the result
+            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted1 }), 'Member who initiated challenge was able to attempt the decision', 'Challenge cannot be decided by the original initiator, must be another member');
+            // Attempt to decide a challenge on a member that hasn't been challenged
+            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNodeTrusted2, true, { from: registeredNodeTrusted1 }), 'Member decided challenge on member without a challenge', 'Member hasn\'t been challenged or they have successfully responded to the challenge already');
+            // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
+            await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 });
+            // Fast forward to past the challenge window with the challenged node responding
+            await mineBlocks(web3, challengeWindowBlocks);
+            // Decide the challenge now after the node hasn't responded in the challenge window
+            await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
+        });
         
 
         /*** Upgrade Contacts & ABI *************/
