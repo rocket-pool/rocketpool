@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipoolValidatorBalance } from '../_helpers/minipool';
-import { submitBalances, setSystemWithdrawalContractAddress } from '../_helpers/network';
+import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
@@ -56,7 +56,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
 
             // Set dummy SWC address
-            await setSystemWithdrawalContractAddress(dummySwc, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();

@@ -1,12 +1,7 @@
-import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
-import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
-import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDAOProtocolBootstrapSetting, setDaoProtocolBootstrapModeDisabled } from './scenario-dao-protocol-bootstrap';
-import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock} from './scenario-dao-proposal';
 
 // Contracts
 import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsRewards } from '../_utils/artifacts'; 
@@ -19,6 +14,7 @@ export default function() {
         const [
             guardian,
             userOne,
+            swcDummyAddress
         ] = accounts;
 
 
@@ -63,6 +59,9 @@ export default function() {
                 from: guardian
             });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', true, {
+                from: guardian
+            });
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', swcDummyAddress, {
                 from: guardian
             });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', 100, {

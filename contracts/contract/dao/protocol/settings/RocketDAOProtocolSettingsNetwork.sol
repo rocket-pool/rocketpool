@@ -16,17 +16,18 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingUint("network.consensus.threshold", 0.51 ether);     // 51%
+            setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
             setSettingBool("network.submit.balances.enabled", true);
-            setSettingUint("network.submit.balances.frequency", 5760);     // ~24 hours
+            setSettingUint("network.submit.balances.frequency", 5760);      // ~24 hours
             setSettingBool("network.submit.prices.enabled", true);
-            setSettingUint("network.submit.prices.frequency", 5760);       // ~24 hours
+            setSettingUint("network.submit.prices.frequency", 5760);        // ~24 hours
             setSettingBool("network.process.withdrawals.enabled", true);
-            setSettingUint("network.node.fee.minimum", 0.05 ether);        // 5%
-            setSettingUint("network.node.fee.target", 0.10 ether);         // 10%
-            setSettingUint("network.node.fee.maximum", 0.20 ether);        // 20%
+            setSettingUint("network.node.fee.minimum", 0.05 ether);         // 5%
+            setSettingUint("network.node.fee.target", 0.10 ether);          // 10%
+            setSettingUint("network.node.fee.maximum", 0.20 ether);         // 20%
             setSettingUint("network.node.fee.demand.range", 1000 ether);
             setSettingUint("network.reth.collateral.target", 0.1 ether);   
+            setSettingAddress("network.withdrawal.contract.address", address(0x0));  // The ETH2 system withdrawal contract address
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -85,6 +86,11 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     // Target rETH collateralization rate as a fraction of 1 ether
     function getTargetRethCollateralRate() override public view returns (uint256) {
         return getSettingUint("network.reth.collateral.target");
+    }
+
+    // Get the eth1 system withdrawal contract address
+    function getSystemWithdrawalContractAddress() override public view returns (address) {
+        return getSettingAddress("network.withdrawal.contract.address");
     }
 
 }

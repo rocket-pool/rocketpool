@@ -13,7 +13,7 @@ import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-// The Network DAO Proposals - Placeholder contracts until DAO is implemented
+// The protocol DAO Proposals - Placeholder contracts until DAO is implemented
 contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInterface {  
 
     using SafeMath for uint;
@@ -47,7 +47,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         
     /*** Proposals **********************/
 
-    // Change one of the current uint256 settings of the network DAO
+    // Change one of the current uint256 settings of the protocol DAO
     function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
@@ -55,12 +55,20 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOProtocolSettings.setSettingUint(_settingPath, _value);
     }
 
-    // Change one of the current bool settings of the network DAO
+    // Change one of the current bool settings of the protocol DAO
     function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
         rocketDAOProtocolSettings.setSettingBool(_settingPath, _value);
+    }
+
+    // Change one of the current address settings of the protocol DAO
+    function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override public onlyExecutingContracts() {
+        // Load contracts
+        RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
+        // Lets update
+        rocketDAOProtocolSettings.setSettingAddress(_settingPath, _value);
     }
         
     // Update a claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards

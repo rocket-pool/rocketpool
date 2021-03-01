@@ -1,3 +1,4 @@
+import Web3 from 'web3';
 import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 
 
@@ -18,10 +19,11 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     function getTxData() {
         return Promise.all([
             rocketDAOProtocolSettingsContract.getSettingUint.call(_settingPath),
-            rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPath)
+            rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPath),
+            rocketDAOProtocolSettingsContract.getSettingAddress.call(_settingPath)
         ]).then(
-            ([settingUintValue, settingBoolValue]) =>
-            ({settingUintValue, settingBoolValue})
+            ([settingUintValue, settingBoolValue, settingAddressValue]) =>
+            ({settingUintValue, settingBoolValue, settingAddressValue})
         );
     }
 
@@ -29,15 +31,24 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     let ds1 = await getTxData();
 
     // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
-    if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
-    if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
-    
+    if(Web3.utils.isAddress(_value)) {
+        await rocketDAOProtocol.bootstrapSettingAddress(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    }else{
+        if(typeof(_value) == 'number' || typeof(_value) == 'string' || typeof(_value) == 'object') await rocketDAOProtocol.bootstrapSettingUint(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+        if(typeof(_value) == 'boolean') await rocketDAOProtocol.bootstrapSettingBool(_settingContractInstance._json.contractName.lowerCaseFirstLetter(), _settingPath, _value, txOptions);
+    }
+
     // Capture data
     let ds2 = await getTxData();
 
     // Check it was updated
-    if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
-    if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO protocol boolean setting not updated in bootstrap mode');
+    if(Web3.utils.isAddress(_value)) {
+        await assert(ds2.settingAddressValue == _value, 'DAO protocol address setting not updated in bootstrap mode');
+    }else{
+        if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
+        if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO protocol boolean setting not updated in bootstrap mode');
+    }
+    
 }
 
 // Set a contract that can claim rewards

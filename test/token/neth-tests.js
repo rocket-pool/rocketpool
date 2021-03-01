@@ -3,11 +3,10 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipoolValidatorBalance, withdrawMinipool } from '../_helpers/minipool';
-import { setSystemWithdrawalContractAddress } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
-import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
@@ -47,7 +46,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', 0, {from: owner});
 
             // Set dummy SWC address
-            await setSystemWithdrawalContractAddress(dummySwc, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();

@@ -135,7 +135,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         // Load contracts
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         // Has this member been challenged recently and still within the challenge window to respond?
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) >= block.number ? true : false;
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) > block.number ? true : false;
     }
 
     // How many unbonded validators this member has

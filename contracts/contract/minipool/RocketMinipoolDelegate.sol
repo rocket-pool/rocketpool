@@ -14,6 +14,7 @@ import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
@@ -221,8 +222,9 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         require(!validatorBalanceWithdrawn, "The minipool's validator balance has already been sent");
         // load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetworkInterface = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Check sender address
-        require(msg.sender == rocketNetworkWithdrawal.getSystemWithdrawalContractAddress(), "The minipool's validator balance can only be sent by the eth1 system withdrawal contract");
+        require(msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress(), "The minipool's validator balance can only be sent by the eth1 system withdrawal contract");
         // Set validator balance withdrawn status
         validatorBalanceWithdrawn = true;
         // Process validator withdrawal for minipool

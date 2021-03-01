@@ -5,7 +5,6 @@ import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
-import { setSystemWithdrawalContractAddress } from '../_helpers/network';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
@@ -62,7 +61,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
 
             // Set dummy SWC address
-            await setSystemWithdrawalContractAddress(dummySwc, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');

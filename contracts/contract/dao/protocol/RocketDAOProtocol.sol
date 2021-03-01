@@ -52,6 +52,14 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
         require(success, getRevertMsg(response));
     }
 
+    // Bootstrap mode - Address Setting
+    function bootstrapSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        // Ok good to go, lets update the settings 
+        (bool success, bytes memory response) = getContractAddress('rocketDAOProtocolProposals').call(abi.encodeWithSignature("proposalSettingAddress(string,string,address)", _settingContractName, _settingPath, _value));
+        // Was there an error?
+        require(success, getRevertMsg(response));
+    }
+
     // Bootstrap mode - Set a claiming contract to receive a % of RPL inflation rewards
     function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the rewards claiming contract amount 

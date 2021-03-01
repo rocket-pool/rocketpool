@@ -56,4 +56,18 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
         setBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
+    
+    /*** Addresses  ****************/
+
+    // A general method to return any setting given the setting path is correct, only accepts addresses
+    function getSettingAddress(string memory _settingPath) public view override returns (address) {
+        return getAddress(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
+    } 
+
+    // Update a setting, can only be executed by the DAO contract when a majority on a setting proposal has passed and been executed
+    function setSettingAddress(string memory _settingPath, address _value) virtual public override onlyDAOProtocolProposal {
+        // Update setting now
+        setAddress(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
+    }
+
 }

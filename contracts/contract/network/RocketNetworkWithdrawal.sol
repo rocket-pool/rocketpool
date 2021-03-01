@@ -27,16 +27,6 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         version = 1;
     }
 
-    // Get the eth1 system withdrawal contract address
-    function getSystemWithdrawalContractAddress() override public view returns (address) {
-        return getAddressS("network.withdrawal.contract.address");
-    }
-
-    // Set the eth1 system withdrawal contract address
-    // Only accepts calls from the guardian address
-    function setSystemWithdrawalContractAddress(address _value) override external onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyGuardian {
-        setAddressS("network.withdrawal.contract.address", _value);
-    }
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from registered minipools
@@ -58,7 +48,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         uint256 userShare = totalShare.sub(nodeShare);
         // Get withdrawal amounts based on shares
         uint256 nodeAmount = 0;
-        uint256 userAmount = 0;
+        uint256 userAmount = 0; 
         if (totalShare > 0) {
             nodeAmount = msg.value.mul(nodeShare).div(totalShare);
             userAmount = msg.value.mul(userShare).div(totalShare);

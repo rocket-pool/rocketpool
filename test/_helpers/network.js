@@ -63,9 +63,4 @@ export async function getNodeFeeByDemand(nodeDemand) {
 }
 
 
-// Set the system withdrawal contract address
-export async function setSystemWithdrawalContractAddress(swcAddress, txOptions) {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.setSystemWithdrawalContractAddress(swcAddress, txOptions);
-}
 
