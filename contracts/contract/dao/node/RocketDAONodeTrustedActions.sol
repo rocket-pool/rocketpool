@@ -230,18 +230,19 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         require(challengeBlock > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
         // The member deciding the challenge, must not be the original initiator to provide some oversight
         require(getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress))) != msg.sender, "Challenge cannot be decided by the original initiator, must be another member");
-        // Is this member being actively challenged and is it the node being challenged that has responded?
-        if(rocketDAONode.getMemberIsChallenged(_nodeAddress)) {
-            // Is it the node being challenged?
-            if(_nodeAddress == msg.sender) {
-                // Challenge is defeated, node has responded
-                deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
-            }
+        // Allow the challenged member to refute the challenge at anytime. If the window has passed and the challenge node does not run this method, any member can decide the challenge and eject the absent member
+        // Is it the node being challenged?
+        if(_nodeAddress == msg.sender) {
+            // Challenge is defeated, node has responded
+            deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
         }else{
-            // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
-            _memberRemove(_nodeAddress);
-            // Challenge was successful
-            challengeSuccess = true;
+            // The challenge window has passed, the member can be ejected now
+            if(!rocketDAONode.getMemberIsChallenged(_nodeAddress)) {
+                // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
+                _memberRemove(_nodeAddress);
+                // Challenge was successful
+                challengeSuccess = true;
+            }
         }
         // Log it
         emit ActionChallengeDecided(_nodeAddress, msg.sender, challengeSuccess, block.timestamp);
