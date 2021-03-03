@@ -28,8 +28,6 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     event ActionChallengeMade(address indexed _nodeChallengedAddress, address indexed _nodeChallengerAddress, uint256 time);
     event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengDeciderAddress, bool _success, uint256 time);
 
-    // Calculate using this as the base
-    uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
     string private daoNameSpace = 'dao.trustednodes';
@@ -77,15 +75,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)));
+        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
          // Remove from member index now
         addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
     }
-  
-    /*** Action Methods ************************/
 
-    // When a new member has been successfully invited to join, they must call this method to join officially
-    // They will be required to have the RPL bond amount in their account
-    function actionJoin() override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
+    // A member official joins the DAO with their bond ready, if successful they are added as a member
+    function _memberJoin(address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
         // Set some intiial contract address
         address rocketVaultAddress = getContractAddress('rocketVault');
         address rocketTokenRPLAddress = getContractAddress('rocketTokenRPL');
@@ -96,26 +92,40 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // The block that the member was successfully invited to join the DAO
-        uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock('invited', msg.sender);
+        uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock('invited', _nodeAddress);
         // The current member bond amount in RPL that's required
         uint256 rplBondAmount = rocketDAONodeTrustedSettingsMembers.getRPLBond();
         // Has their invite expired?
         require(memberInvitedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This nodes invitation to join has expired, please apply again");
         // Verify they have allowed this contract to spend their RPL for the bond
-        require(rplInflationContract.allowance(msg.sender, address(this)) >= rplBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens");
+        require(rplInflationContract.allowance(_nodeAddress, address(this)) >= rplBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens");
         // Transfer the tokens to this contract now
-        require(rplInflationContract.transferFrom(msg.sender, address(this), rplBondAmount), "Token transfer to RocketDAONodeTrusted contract was not successful");
+        require(rplInflationContract.transferFrom(_nodeAddress, address(this), rplBondAmount), "Token transfer to RocketDAONodeTrusted contract was not successful");
         // Allow RocketVault to transfer these tokens to itself now
         require(rplInflationContract.approve(rocketVaultAddress, rplBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted RPL bond tokens was not successful");
         // Let vault know it can move these tokens to itself now and credit the balance to this contract
         require(rocketVault.depositToken(getContractName(address(this)), rocketTokenRPLAddress, rplBondAmount), "Rocket Vault RPL bond deposit deposit was not successful");
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
-        _memberAdd(msg.sender, rplBondAmount);
+        _memberAdd(_nodeAddress, rplBondAmount);
         // Log it
-        emit ActionJoined(msg.sender, rplBondAmount, block.timestamp);
+        emit ActionJoined(_nodeAddress, rplBondAmount, block.timestamp);
+    }
+  
+    /*** Action Methods ************************/
+
+    // When a new member has been successfully invited to join, they must call this method to join officially
+    // They will be required to have the RPL bond amount in their account
+    // This method allows us to only allow them to join if they have a working node account and have been officially invited
+    function actionJoin() override public onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
+        _memberJoin(msg.sender);
+    }
+
+    // When the DAO has suffered a loss of members due to unforseen blackswan issue and has < the min required amount (3), a regular bonded node can directly join as a member and recover the DAO
+    // They will be required to have the RPL bond amount in their account. This is called directly from RocketDAONodeTrusted.
+    function actionJoinRequired(address _nodeAddress) override public onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
+        _memberJoin(_nodeAddress);
     }
     
-
     // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their RPL bond
     function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
@@ -191,23 +201,24 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     }
 
 
-    // In the event that the majority of members go offline permanently and no more proposals could be passed, a current member can 'challenge' another members node to respond
-    // If it does not respond in the given window, it can be removed as a member. The one who removes the member after the challenge isn't met, must be another member to provide some oversight
-    // So this can only work if there is a min of 2 members in the DAO who have their nodes running. It does also not require a proposal to start (obviously).
+    // In the event that the majority/all of members go offline permanently and no more proposals could be passed, a current member or a regular node can 'challenge' a DAO members node to respond
+    // If it does not respond in the given window, it can be removed as a member. The one who removes the member after the challenge isn't met, must be another node other than the proposer to provide some oversight
     // This should only be used in an emergency situation to recover the DAO. Members that need removing when consensus is still viable, should be done via the 'kick' method.
-    function actionChallengeMake(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyTrustedNode(msg.sender) {
+    function actionChallengeMake(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) payable {
         // Load contracts
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
+        // Members can challenge other members for free, but for a regular bonded node to challenge a DAO member, requires non-refundable payment to prevent spamming
+        if(rocketDAONode.getMemberIsValid(msg.sender) != true) require(msg.value == rocketDAONodeTrustedSettingsMembers.getChallengeCost(), "Non DAO members must pay ETH to challenge a members node");
         // Can't challenge yourself duh
         require(msg.sender != _nodeAddress, 'You cannot challenge yourself');
         // Is this member already being challenged?
         require(!rocketDAONode.getMemberIsChallenged(_nodeAddress), "Member is already being challenged");
-        // Has this member recently made another challenge and not waited for the cooldown to pass?
-        require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenge.created.block", msg.sender))).add(rocketDAONodeTrustedSettingsMembers.getChallengeCooldown()) < block.number, "You must wait for the challenge cooldown to pass before issuing another challenge");
+        // Has this node recently made another challenge and not waited for the cooldown to pass?
+        require(getUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.block", msg.sender))).add(rocketDAONodeTrustedSettingsMembers.getChallengeCooldown()) < block.number, "You must wait for the challenge cooldown to pass before issuing another challenge");
         // Ok challenge accepted
         // Record the last time this member challenged
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenge.created.block", msg.sender)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.block", msg.sender)), block.number);
         // Record the challenge block now
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)), block.number);
         // Record who made the challenge
@@ -219,9 +230,9 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     
     // Decides the success of a challenge. If called by the challenged node within the challenge window, the challenge is defeated and the member stays as they have indicated their node is still alive.
     // If called after the challenge window has passed by anyone except the original challenge initiator, then the challenge has succeeded and the member is removed
-    function actionChallengeDecide(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyTrustedNode(msg.sender) {
+    function actionChallengeDecide(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
-        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         // Was the challenge successful?
         bool challengeSuccess = false;
         // Get the block the challenge was initiated at
@@ -229,15 +240,15 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // If challenge block is 0, the member hasn't been challenged or they have successfully responded to the challenge previously
         require(challengeBlock > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
         // The member deciding the challenge, must not be the original initiator to provide some oversight
-        require(getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress))) != msg.sender, "Challenge cannot be decided by the original initiator, must be another member");
+        require(getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress))) != msg.sender, "Challenge cannot be decided by the original initiator, must be another node");
         // Allow the challenged member to refute the challenge at anytime. If the window has passed and the challenge node does not run this method, any member can decide the challenge and eject the absent member
         // Is it the node being challenged?
         if(_nodeAddress == msg.sender) {
             // Challenge is defeated, node has responded
             deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
         }else{
-            // The challenge window has passed, the member can be ejected now
-            if(!rocketDAONode.getMemberIsChallenged(_nodeAddress)) {
+            // The challenge refute window has passed, the member can be ejected now
+            if(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.number) {
                 // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
                 _memberRemove(_nodeAddress);
                 // Challenge was successful
@@ -247,5 +258,6 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Log it
         emit ActionChallengeDecided(_nodeAddress, msg.sender, challengeSuccess, block.timestamp);
     }
+
 
 }

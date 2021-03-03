@@ -4,9 +4,10 @@ pragma solidity 0.7.6;
 
 interface RocketDAONodeTrustedActionsInterface {
     function actionJoin() external;
+    function actionJoinRequired(address _nodeAddress) external;
     function actionLeave(address _rplBondRefundAddress) external;
     function actionReplace() external; 
     function actionKick(address _nodeAddress) external;
-    function actionChallengeMake(address _nodeAddress) external;
+    function actionChallengeMake(address _nodeAddress) external payable;
     function actionChallengeDecide(address _nodeAddress) external;
 }

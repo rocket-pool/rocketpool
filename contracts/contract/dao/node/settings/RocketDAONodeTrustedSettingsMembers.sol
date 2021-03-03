@@ -21,6 +21,7 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
             setSettingUint('members.minipool.unbonded.max', 250);            // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
             setSettingUint('members.challenge.cooldown', 6172);              // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
             setSettingUint('members.challenge.window', 43204);               // How long a member has to respond to a challenge. 7 days worth of blocks
+            setSettingUint('members.challenge.cost', 1 ether);               // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -62,6 +63,11 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
     // The window available to meet any node challenges
     function getChallengeWindow() override public view returns (uint256) { 
         return getSettingUint('members.challenge.window');
+    }
+
+    // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
+    function getChallengeCost() override public view returns (uint256) { 
+        return getSettingUint('members.challenge.cost');
     }
         
 

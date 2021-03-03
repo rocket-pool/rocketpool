@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedUpgrade, RocketStorage, RocketVault, RocketTokenRPL } from '../_utils/artifacts';
 import { compressABI, decompressABI } from '../_utils/contract';
 
 
@@ -197,4 +197,41 @@ export async function setDaoNodeTrustedBootstrapUpgrade(_type, _name, _abi, _con
     }
     
 
+}
+
+
+// A registered node attempting to join as a member due to low DAO member count
+export async function setDaoNodeTrustedMemberRequired(_id, _email, txOptions) {
+
+    // Load contracts
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+
+    // Get data about the tx
+    function getTxData() {
+        return Promise.all([
+            rocketDAONodeTrusted.getMemberCount.call(),
+            rocketTokenRPL.balanceOf(txOptions.from),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
+        ]).then(
+            ([memberTotal, rplBalanceBond, rplBalanceVault]) =>
+            ({memberTotal, rplBalanceBond, rplBalanceVault})
+        );
+    }
+
+    // Capture data
+    let ds1 = await getTxData();
+    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceBond), web3.utils.fromWei(ds1.rplBalanceVault));
+
+    // Add a new proposal
+    await rocketDAONodeTrusted.memberJoinRequired(_id, _email, txOptions);
+
+    // Capture data
+    let ds2 = await getTxData();
+    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceBond), web3.utils.fromWei(ds2.rplBalanceVault));
+
+    // Check member count has increased
+    assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
+    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault.add(ds1.rplBalanceBond)), 'RocketVault address does not contain the correct RPL bond amount');
 }

@@ -6,7 +6,7 @@ import { registerNode, setNodeTrusted } from '../_helpers/node';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
-import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade } from './scenario-dao-node-trusted-bootstrap';
+import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade, setDaoNodeTrustedMemberRequired } from './scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
 
@@ -98,6 +98,7 @@ export default function() {
         //
         // Start Tests
         //
+        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -627,6 +628,7 @@ export default function() {
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
         });    
 
+        
 
         it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond and it does successfully in the window required'), async () => {
             // Add a 3rd member
@@ -662,6 +664,7 @@ export default function() {
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
         });
 
+        
         it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond, they do not in the window required and lose their membership + bond'), async () => {
             // Add a 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
@@ -682,7 +685,7 @@ export default function() {
             // Challenge the 3rd member
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
             // Have the original iniator member try to decide the result
-            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted1 }), 'Member who initiated challenge was able to attempt the decision', 'Challenge cannot be decided by the original initiator, must be another member');
+            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted1 }), 'Member who initiated challenge was able to attempt the decision', 'Challenge cannot be decided by the original initiator, must be another node');
             // Attempt to decide a challenge on a member that hasn't been challenged
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNodeTrusted2, true, { from: registeredNodeTrusted1 }), 'Member decided challenge on member without a challenge', 'Member hasn\'t been challenged or they have successfully responded to the challenge already');
             // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
@@ -692,7 +695,90 @@ export default function() {
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
+
         
+
+        it(printTitle('registeredNode2', 'as a regular node challenges a DAO members node to respond by paying ETH, they do not respond in the window required and lose their membership + bond'), async () => {
+            // Get the DAO settings
+            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
+            // How much ETH is required for a regular node to challenge a DAO member
+            let challengeCost = await daoNodesettings.getChallengeCost();
+            // Add a 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Update our challenge settings
+            let challengeWindowBlocks = 10;
+            let challengeCooldownBlocks = 10;
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            // Attempt to challenge a non member
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(userOne, {
+                from: registeredNode2 
+            }), 'Challenged a non DAO member', 'Invalid trusted node');
+            // Attempt to challenge as a non member
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNodeTrusted2, {
+                from: userOne 
+            }), 'Challenged a non DAO member', 'Invalid node');
+            // Challenge the 3rd member as a regular node, should revert as we haven't paid to challenge
+            await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode1, {
+                from: registeredNode2 
+            }), 'Regular node challenged DAO member without paying challenge fee', 'Non DAO members must pay ETH to challenge a members node');
+            // Ok pay now to challenge
+            await daoNodeTrustedMemberChallengeMake(registeredNode1, { 
+                value: challengeCost,
+                from: registeredNode2 
+            });
+            // Fast forward to past the challenge window with the challenged node responding
+            await mineBlocks(web3, challengeWindowBlocks);
+            // Decide the challenge now after the node hasn't responded in the challenge window
+            await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
+        });
+
+        
+        it(printTitle('registered2', 'joins the DAO automatically as a member due to the min number of members falling below the min required'), async () => {
+            // Attempt to join as a non node operator
+            await shouldRevert(setDaoNodeTrustedMemberRequired('rocketpool_emergency_node_op', 'node2@home.com', { 
+                from: userOne 
+            }), 'Regular node joined DAO without bond during low member mode', 'Invalid node');
+            // Attempt to join without setting allowance for the bond
+            await shouldRevert(setDaoNodeTrustedMemberRequired('rocketpool_emergency_node_op', 'node2@home.com', { 
+                from: registeredNode2 
+            }), 'Regular node joined DAO without bond during low member mode', 'Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens');
+            // Get the DAO settings
+            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
+            // How much RPL is required for a trusted node bond?
+            let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
+            // We'll allow the DAO to transfer our RPL bond before joining
+            await rplMint(registeredNode2, rplBondAmount);
+            await rplAllowanceDAO(registeredNode2, rplBondAmount);
+            // Should just be 2 nodes in the DAO now which means a 3rd can join to make up the min count
+            await setDaoNodeTrustedMemberRequired('rocketpool_emergency_node_op', 'node2@home.com', {
+                from: registeredNode2,
+            });
+        });
+
+        
+        it(printTitle('registered2', 'attempt to auto join the DAO automatically and fails as the DAO has the min member count required'), async () => {
+            // Add a 3rd member
+            await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
+            // Get the DAO settings
+            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
+            // How much RPL is required for a trusted node bond?
+            let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
+            // We'll allow the DAO to transfer our RPL bond before joining
+            await rplMint(registeredNode2, rplBondAmount);
+            await rplAllowanceDAO(registeredNode2, rplBondAmount);
+            // Should just be 2 nodes in the DAO now which means a 3rd can join to make up the min count
+            await shouldRevert(setDaoNodeTrustedMemberRequired('rocketpool_emergency_node_op', 'node2@home.com', {
+                from: registeredNode2,
+            }), 'Regular node joined DAO when not in low member mode', 'Low member mode not engaged');
+        });
 
         /*** Upgrade Contacts & ABI *************/
 

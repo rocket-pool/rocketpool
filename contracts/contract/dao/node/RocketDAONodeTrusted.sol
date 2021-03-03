@@ -5,7 +5,6 @@ pragma solidity 0.7.6;
 import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
-import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
@@ -35,6 +34,12 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Only allow bootstrapping when enabled
     modifier onlyBootstrapMode() {
         require(getBootstrapModeDisabled() == false, "Bootstrap mode not engaged");
+        _;
+    }
+
+    // Only when the DAO needs new members due to being below the required min
+    modifier onlyLowMemberMode() {
+        require(getMemberCount() < daoMemberMinCount, "Low member mode not engaged");
         _;
     }
     
@@ -132,10 +137,8 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     // Is this member currently being 'challenged' to see if their node is responding
     function getMemberIsChallenged(address _nodeAddress) override public view returns (bool) { 
-        // Load contracts
-        RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
-        // Has this member been challenged recently and still within the challenge window to respond?
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) > block.number ? true : false;
+        // Has this member been challenged recently and still within the challenge window to respond? If there is a challenge block recorded against them, they are actively being challenged.
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))) > 0 ? true : false;
     }
 
     // How many unbonded validators this member has
@@ -200,6 +203,19 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
  
+    /**** Recovery ***************/
         
+    // In an explicable black swan scenario where the DAO loses more than the min membership required (3), this method can be used by a regular node operator to join the DAO
+    // Must have their ID, email, current RPL bond amount available and must be called by their current registered node account
+    function memberJoinRequired(string memory _id, string memory _email) override public onlyLowMemberMode onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+        // Ok good to go, lets add them 
+        (bool successPropose, bytes memory responsePropose) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, msg.sender));
+        // Was there an error?
+        require(successPropose, getRevertMsg(responsePropose));
+        // Get the to automatically join as a member (by a regular proposal, they would have to manually accept, but this is no ordinary situation)
+        (bool successJoin, bytes memory responseJoin) = getContractAddress("rocketDAONodeTrustedActions").call(abi.encodeWithSignature("actionJoinRequired(address)", msg.sender));
+        // Was there an error?
+        require(successJoin, getRevertMsg(responseJoin));
+    }
 
 }
