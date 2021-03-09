@@ -89,19 +89,7 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Get the withdrawal credentials for the minipool contract
     function getWithdrawalCredentials() override external view returns (bytes memory) {
-        // Parameters
-        uint256 credentialsLength = 32;
-        uint256 addressLength = 20;
-        uint256 addressOffset = credentialsLength - addressLength;
-        byte withdrawalPrefix = 0x01;
-        // Calculate & return
-        bytes memory ret = new bytes(credentialsLength);
-        bytes20 addr = bytes20(address(this));
-        ret[0] = withdrawalPrefix;
-        for (uint256 i = 0; i < addressLength; i++) {
-            ret[i + addressOffset] = addr[i];
-        }
-        return ret;
+        return abi.encodePacked(byte(0x01), bytes11(0x0), address(this));
     }
 
     // Receive the minipool's withdrawn eth2 validator balance
