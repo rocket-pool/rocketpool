@@ -62,11 +62,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
     event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) {
-        // Initialise RocketStorage
-        require(_rocketStorageAddress != address(0x0), "Invalid storage address");
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-    }
+    constructor(address _rocketStorageAddress) {}
 
     // Only allow access from the owning node address
     modifier onlyMinipoolOwner(address _nodeAddress) {
@@ -89,7 +85,9 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
 
     // Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
-        return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
+        address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
+        require(contractAddress != address(0x0), "Contract not found");
+        return contractAddress;
     }
 
     // Assign the node deposit to the minipool

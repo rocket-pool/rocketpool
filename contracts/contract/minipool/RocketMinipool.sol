@@ -168,7 +168,9 @@ contract RocketMinipool is RocketMinipoolInterface {
 
     // Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
-        return rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
+        address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
+        require(contractAddress != address(0x0), "Contract not found");
+        return contractAddress;
     }
 
     // Get a revert message from delegatecall return data
