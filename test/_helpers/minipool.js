@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketMinipoolStatus, RocketNetworkPrices, RocketNetworkWithdrawal, RocketNodeDeposit, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import { RocketMinipoolDelegate, RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketMinipoolStatus, RocketNetworkPrices, RocketNetworkWithdrawal, RocketNodeDeposit, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
 
@@ -79,7 +79,7 @@ export async function createMinipool(txOptions) {
 
     // Return minipool instance
     if (!minipoolCreatedEvents.length) return;
-    return RocketMinipool.at(minipoolCreatedEvents[0].minipool);
+    return RocketMinipoolDelegate.at(minipoolCreatedEvents[0].minipool);
 
 }
 

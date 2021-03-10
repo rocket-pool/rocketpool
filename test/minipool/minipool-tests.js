@@ -109,8 +109,25 @@ export default function() {
 
 
         //
-        // Withdrawal credentials
+        // General
         //
+
+
+        it(printTitle('random address', 'cannot send ETH to non-payable minipool delegate methods'), async () => {
+
+            // Attempt to send ETH to view method
+            await shouldRevert(prelaunchMinipool.getStatus({
+                from: random,
+                value: web3.utils.toWei('1', 'ether'),
+            }), 'Sent ETH to a non-payable minipool delegate view method');
+
+            // Attempt to send ETH to mutator method
+            await shouldRevert(refund(prelaunchMinipool, {
+                from: node,
+                value: web3.utils.toWei('1', 'ether'),
+            }), 'Sent ETH to a non-payable minipool delegate mutator method');
+
+        });
 
 
         it(printTitle('minipool', 'has correct withdrawal credentials'), async () => {

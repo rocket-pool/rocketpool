@@ -8,9 +8,9 @@ import "../../interface/RocketStorageInterface.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolDelegateInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -21,7 +21,7 @@ import "../../types/MinipoolStatus.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
+contract RocketMinipoolDelegate is RocketMinipoolInterface {
 
     // Libs
     using SafeMath for uint;
@@ -60,6 +60,37 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
+
+    // Status getters
+    function getStatus() override public view returns (MinipoolStatus) { return status; }
+    function getStatusBlock() override public view returns (uint256) { return statusBlock; }
+    function getStatusTime() override public view returns (uint256) { return statusTime; }
+
+    // Deposit type getter
+    function getDepositType() override public view returns (MinipoolDeposit) { return depositType; }
+
+    // Node detail getters
+    function getNodeAddress() override public view returns (address) { return nodeAddress; }
+    function getNodeFee() override public view returns (uint256) { return nodeFee; }
+    function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
+    function getNodeRefundBalance() override public view returns (uint256) { return nodeRefundBalance; }
+    function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
+    function getNodeWithdrawn() override public view returns (bool) { return nodeWithdrawn; }
+
+    // User deposit detail getters
+    function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
+    function getUserDepositAssigned() override public view returns (bool) { return userDepositAssigned; }
+    function getUserDepositAssignedTime() override public view returns (uint256) { return userDepositAssignedTime; }
+
+    // Staking detail getters
+    function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
+    function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
+    function getValidatorBalanceWithdrawn() override public view returns (bool) { return validatorBalanceWithdrawn; }
+
+    // Get the withdrawal credentials for the minipool contract
+    function getWithdrawalCredentials() override public view returns (bytes memory) {
+        return abi.encodePacked(byte(0x01), bytes11(0x0), address(this));
+    }
 
     // Only allow access from the owning node address
     modifier onlyMinipoolOwner(address _nodeAddress) {
@@ -156,8 +187,7 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
         // Check validator pubkey is not in use
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is already in use");
         // Send staking deposit to casper
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(address(this));
-        casperDeposit.deposit{value: launchAmount}(_validatorPubkey, minipool.getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value: launchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Progress to staking

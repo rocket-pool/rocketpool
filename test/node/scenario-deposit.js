@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolManager, RocketNodeDeposit } from '../_utils/artifacts';
+import { RocketMinipoolDelegate, RocketMinipoolManager, RocketNodeDeposit } from '../_utils/artifacts';
 import { getTxContractEvents } from '../_utils/contract';
 
 
@@ -27,7 +27,7 @@ export async function deposit(minimumNodeFee, txOptions) {
 
     // Get minipool details
     function getMinipoolDetails(minipoolAddress) {
-        return RocketMinipool.at(minipoolAddress).then(minipool => Promise.all([
+        return RocketMinipoolDelegate.at(minipoolAddress).then(minipool => Promise.all([
             rocketMinipoolManager.getMinipoolExists.call(minipoolAddress),
             minipool.getNodeAddress.call(),
             minipool.getNodeDepositBalance.call(),

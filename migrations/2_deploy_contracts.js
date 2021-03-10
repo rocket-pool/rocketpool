@@ -92,7 +92,7 @@ const contracts = {
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:                           artifacts.require('RocketMinipool.sol'),
+  rocketMinipool:                           artifacts.require('RocketMinipoolDelegate.sol'),
 };
 
 

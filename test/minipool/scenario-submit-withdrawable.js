@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketMinipool, RocketMinipoolStatus, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketMinipoolDelegate, RocketMinipoolStatus, RocketNodeStaking, RocketStorage } from '../_utils/artifacts';
 
 
 // Submit a minipool withdrawable event
@@ -37,7 +37,7 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
 
     // Get minipool details
     function getMinipoolDetails() {
-        return RocketMinipool.at(minipoolAddress).then(minipool => Promise.all([
+        return RocketMinipoolDelegate.at(minipoolAddress).then(minipool => Promise.all([
             minipool.getStatus.call(),
             minipool.getStakingStartBalance.call(),
             minipool.getStakingEndBalance.call(),
@@ -50,7 +50,7 @@ export async function submitWithdrawable(minipoolAddress, stakingStartBalance, s
 
     // Get node details
     function getNodeDetails() {
-        return RocketMinipool.at(minipoolAddress)
+        return RocketMinipoolDelegate.at(minipoolAddress)
             .then(minipool => minipool.getNodeAddress.call())
             .then(nodeAddress => rocketNodeStaking.getNodeRPLStake.call(nodeAddress))
             .then(rplStake => ({rplStake}));
