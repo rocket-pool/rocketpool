@@ -61,9 +61,6 @@ contract RocketMinipoolDelegate is RocketMinipoolDelegateInterface {
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
 
-    // Construct
-    constructor(address _rocketStorageAddress) {}
-
     // Only allow access from the owning node address
     modifier onlyMinipoolOwner(address _nodeAddress) {
         require(_nodeAddress == nodeAddress, "Invalid minipool owner");

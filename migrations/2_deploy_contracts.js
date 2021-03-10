@@ -185,11 +185,23 @@ module.exports = async (deployer, network) => {
     for (let contract in contracts) {
       // Only deploy if it hasn't been deployed already like a precompiled
       if(!contracts[contract].hasOwnProperty('precompiled')) {
-        // If we are deploying the new RPL contract, pass the existing RPL contract address to it
-        if(contract == 'rocketTokenRPL') {
+        switch (contract) {
+
+          // New RPL contract - pass storage address & existing RPL contract address
+          case 'rocketTokenRPL':
             await deployer.deploy(contracts[contract], rocketStorage.address, contracts.rocketTokenRPLFixedSupply.address);
-        }else{
+          break;
+
+          // Minipool delegate contract - no constructor args
+          case 'rocketMinipoolDelegate':
+            await deployer.deploy(contracts[contract]);
+          break;
+
+          // All other contracts - pass storage address
+          default:
             await deployer.deploy(contracts[contract], rocketStorage.address);
+          break;
+
         }
       }
     }
