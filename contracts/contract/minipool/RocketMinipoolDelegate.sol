@@ -251,7 +251,7 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         // Check sender address or tx value
         require(
             msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress() ||
-            address(this).balance.sub(nodeRefundBalance).add(msg.value) >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this)),
+            address(this).balance.sub(nodeRefundBalance) >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this)),
             "The minipool's validator balance must be sent by the eth1 system withdrawal contract, or match the expected balance"
         );
         // Set validator balance withdrawn status
