@@ -445,24 +445,32 @@ export default function() {
         });
 
 
-        it(printTitle('random address', 'cannot send validator balance to a withdrawable minipool unless it matches expected balance'), async () => {
-
-            // Attempt to send insuffucient validator balance
-            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
-                value: web3.utils.toWei('1', 'ether'),
-            }), 'Random address sent insufficient validator balance to a minipool');
-
-            // Attempt to send insuffucient validator balance
-            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
-                value: web3.utils.toWei('16', 'ether'),
-            }), 'Random address sent insufficient validator balance to a minipool');
+        it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
 
             // Send validator balance
             await withdrawValidatorBalance(withdrawableMinipool, {
                 from: random,
                 value: withdrawalBalance,
+            });
+
+        });
+
+
+        it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
+
+            // Get tx amount (half of withdrawal balance)
+            let amount = web3.utils.toBN(withdrawalBalance).div(web3.utils.toBN(2));
+
+            // Send initial tx
+            await withdrawValidatorBalance(withdrawableMinipool, {
+                from: random,
+                value: amount,
+            }, false);
+
+            // Send final tx
+            await withdrawValidatorBalance(withdrawableMinipool, {
+                from: random,
+                value: amount,
             });
 
         });

@@ -2,7 +2,7 @@ import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketMinipoolMana
 
 
 // Send validator balance to a minipool
-export async function withdrawValidatorBalance(minipool, txOptions) {
+export async function withdrawValidatorBalance(minipool, txOptions, withdrawalExpected) {
 
 	// Load contracts
     const [
@@ -69,25 +69,39 @@ export async function withdrawValidatorBalance(minipool, txOptions) {
         rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipool.address),
     ]);
 
-    // Get expected user amount destination
-    let expectRethDeposit = rethCollateralRate.lt(targetRethCollateralRate);
-
-    // Check minipool balance withdrawn status
+    // Check initial status
     assert.isFalse(balanceWithdrawn1, 'Incorrect initial minipool validator balance withdrawn status');
-    assert.isTrue(balanceWithdrawn2, 'Incorrect updated minipool validator balance withdrawn status');
-
-    // Check minipool withdrawal processed status
     assert.isFalse(withdrawalProcessed1, 'Incorrect initial minipool withdrawal processed status');
-    assert.isTrue(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
 
-    // Check balances
-    assert(balances2.nethContractEth.eq(balances1.nethContractEth.add(withdrawalNodeAmount)), 'Incorrect updated nETH contract balance');
-    if (expectRethDeposit) {
-        assert(balances2.rethContractEth.eq(balances1.rethContractEth.add(withdrawalUserAmount)), 'Incorrect updated rETH contract balance');
-        assert(balances2.depositPoolEth.eq(balances1.depositPoolEth), 'Incorrect updated deposit pool balance');
-    } else {
-        assert(balances2.rethContractEth.eq(balances1.rethContractEth), 'Incorrect updated rETH contract balance');
-        assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
+    // Withdrawal expected
+    if (withdrawalExpected !== false) {
+
+        // Check updated status
+        assert.isTrue(balanceWithdrawn2, 'Incorrect updated minipool validator balance withdrawn status');
+        assert.isTrue(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
+
+        // Get expected user amount destination
+        let expectRethDeposit = rethCollateralRate.lt(targetRethCollateralRate);
+
+        // Check balances
+        assert(balances2.nethContractEth.eq(balances1.nethContractEth.add(withdrawalNodeAmount)), 'Incorrect updated nETH contract balance');
+        if (expectRethDeposit) {
+            assert(balances2.rethContractEth.eq(balances1.rethContractEth.add(withdrawalUserAmount)), 'Incorrect updated rETH contract balance');
+            assert(balances2.depositPoolEth.eq(balances1.depositPoolEth), 'Incorrect updated deposit pool balance');
+        } else {
+            assert(balances2.rethContractEth.eq(balances1.rethContractEth), 'Incorrect updated rETH contract balance');
+            assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
+        }
+
+    }
+
+    // Withdrawal not expected
+    else {
+
+        // Check updated status
+        assert.isFalse(balanceWithdrawn2, 'Incorrect updated minipool validator balance withdrawn status');
+        assert.isFalse(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
+
     }
 
 }

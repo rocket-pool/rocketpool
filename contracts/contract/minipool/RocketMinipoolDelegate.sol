@@ -248,18 +248,16 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetworkInterface = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
-        // Check sender address or tx value
-        require(
-            msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress() ||
-            address(this).balance.sub(nodeRefundBalance) >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this)),
-            "The minipool's validator balance must be sent by the eth1 system withdrawal contract, or match the expected balance"
-        );
-        // Set validator balance withdrawn status
-        validatorBalanceWithdrawn = true;
-        // Process validator withdrawal for minipool
-        rocketNetworkWithdrawal.processWithdrawal{value: msg.value}();
-        // Destroy minipool if node has withdrawn
-        if (nodeWithdrawn) { destroy(); }
+        // Check sender address or withdrawn balance before processing withdrawal
+        uint256 withdrawnBalance = address(this).balance.sub(nodeRefundBalance);
+        if (msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress() || withdrawnBalance >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this))) {
+            // Set validator balance withdrawn status
+            validatorBalanceWithdrawn = true;
+            // Process validator withdrawal for minipool
+            rocketNetworkWithdrawal.processWithdrawal{value: withdrawnBalance}();
+            // Destroy minipool if node has withdrawn
+            if (nodeWithdrawn) { destroy(); }
+        }
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
