@@ -53,7 +53,7 @@ If successful, the wallet will be restored along with your node account and all 
 Seeding Your Node Account
 *************************
 
-Next, you'll need to load your node account up with ETH to deposit into Rocket Pool. Find your node address with::
+Next, you'll need to load your node account up with ETH and RPL to deposit into Rocket Pool. Find your node address with::
 
     rocketpool node status
 
@@ -62,7 +62,14 @@ If you're participating in a testnet beta, you can obtain GoETH from one of the 
     * `ethstaker discord <https://discord.gg/GGGmqZdCBf>`_
     * `faucet.goerli.mudit.blog <https://faucet.goerli.mudit.blog/>`_
 
-Then check your node status again to ensure your ETH balance has increased.
+Once you have some GoETH, you can also request RPL from a faucet directly from the CLI::
+
+    rocketpool faucet withdraw-rpl
+
+Note that this requires a 0.5 GoETH fee to prevent abuse.
+
+After requesting your GoETH and RPL, check your node status again to ensure your balances have increased.
+Note that the RPL you received will be referred to as "old RPL", which can be swapped for the new RPL token.
 
 
 .. _smart-node-setup-registration:
@@ -91,6 +98,10 @@ This should now display additional information like: ``The node is registered wi
 **************************
 Updating Your Registration
 **************************
+
+If you want to set a withdrawal address which all node rewards & refunds will be sent to, run::
+
+    rocketpool node set-withdrawal-address [address]
 
 If you want to update the timezone your node is registered in, run::
 
