@@ -245,10 +245,15 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
         require(!validatorBalanceWithdrawn, "The minipool's validator balance has already been sent");
         // load contracts
-        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetworkInterface = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        // Check sender address
-        require(msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress(), "The minipool's validator balance can only be sent by the eth1 system withdrawal contract");
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
+        // Check sender address or tx value
+        require(
+            msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress() ||
+            address(this).balance.sub(nodeRefundBalance).add(msg.value) >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this)),
+            "The minipool's validator balance must be sent by the eth1 system withdrawal contract, or match the expected balance"
+        );
         // Set validator balance withdrawn status
         validatorBalanceWithdrawn = true;
         // Process validator withdrawal for minipool

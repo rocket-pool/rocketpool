@@ -445,13 +445,19 @@ export default function() {
         });
 
 
-        it(printTitle('random address', 'cannot send validator balance to a withdrawable minipool'), async () => {
+        it(printTitle('random address', 'cannot send validator balance to a withdrawable minipool unless it matches expected balance'), async () => {
 
             // Attempt to send validator balance
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
                 from: random,
-                value: withdrawalBalance,
+                value: web3.utils.toWei('1', 'ether'),
             }), 'Random address sent validator balance to a minipool');
+
+            // Send validator balance
+            await withdrawValidatorBalance(withdrawableMinipool, {
+                from: random,
+                value: withdrawalBalance,
+            });
 
         });
 
