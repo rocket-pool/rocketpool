@@ -51,7 +51,7 @@ If you would like to change the location at which your chain data is stored (for
 Using External Eth 1.0 and Eth 2.0 Clients
 ******************************************
 
-By default, the Rocket Pool service will run its own Eth 1.0 (Geth) and Eth 2.0 (Lighthouse / Prysm) clients.
+By default, the Rocket Pool service will run its own Eth 1.0 (Geth) and Eth 2.0 (Lighthouse / Nimbus / Prysm / Teku) clients.
 However, you may already have your own clients running on your host OS which you want to configure Rocket Pool to communicate with.
 Note that you should still run the validator process provided by Rocket Pool, as the service performs its own key management and loads validator keys into it.
 
@@ -65,7 +65,9 @@ To configure Rocket Pool to use external Eth 1.0 and/or Eth 2.0 clients:
 
     * Geth: ``--http --http.addr 0.0.0.0 --http.port 8545 --http.vhosts *``
     * Lighthouse: ``--http --http-address 0.0.0.0 --http-port 5052``
+    * Nimbus: ``--rpc --rpc-address 0.0.0.0 --rpc-port 5052``
     * Prysm: ``--rpc-host 0.0.0.0 --rpc-port 5052``
+    * Teku: ``--rest-api-enabled --rest-api-interface 0.0.0.0 --rest-api-port 5052``
 
 #. If the Rocket Pool service is already running, pause it with::
 
@@ -74,13 +76,13 @@ To configure Rocket Pool to use external Eth 1.0 and/or Eth 2.0 clients:
 #. Open ``~/.rocketpool/docker-compose.yml``, and modify the ``services`` section as follows:
 
     * If you want to use your own Geth instance, remove the ``eth1`` section, then remove all ``- eth1`` entries under ``depends_on:`` sections
-    * If you want to use your own Lighthouse or Prysm instance, remove the ``eth2`` section, then remove all ``- eth2`` entries under ``depends_on:`` sections
+    * If you want to use your own Lighthouse, Nimbus, Prysm or Teku instance, remove the ``eth2`` section, then remove all ``- eth2`` entries under ``depends_on:`` sections
     * Remove any ``depends_on:`` sections which are empty
 
 #. Open ``~/.rocketpool/config.yml``, and make the following changes:
 
     * To use your own Geth instance, update ``chains.eth1.provider`` to ``http://XXX.XXX.XXX.XXX:8545``, where ``XXX.XXX.XXX.XXX`` is your machine's local IP address
-    * To use your own Lighthouse or Prysm instance, update ``chains.eth2.provider`` to ``XXX.XXX.XXX.XXX:5052``, where ``XXX.XXX.XXX.XXX`` is your machine's local IP address
+    * To use your own Lighthouse, Nimbus, Prysm or Teku instance, update ``chains.eth2.provider`` to ``XXX.XXX.XXX.XXX:5052``, where ``XXX.XXX.XXX.XXX`` is your machine's local IP address
 
 #. Configure the Rocket Pool service, selecting Geth for your Eth 1.0 client, and the appropriate Eth 2.0 client::
 
