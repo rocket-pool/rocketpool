@@ -20,6 +20,22 @@ You can either swap your entire old RPL balance, or a portion of it if you prefe
 Note that you can also skip this step, and will be prompted to swap any old RPL when you try to stake it.
 
 
+.. _staking-rpl-price:
+
+**********************
+Checking the RPL Price
+**********************
+
+Before staking RPL with Rocket Pool, you may wish to view the current RPL price recorded by the Rocket Pool network contracts.
+The RPL price is reported by oracle nodes at set intervals, using data aggregated from a number of decentralized exchanges.
+Check the current RPL price with::
+
+    rocketpool network rpl-price
+
+This will display the current recorded RPL price, along with the block it was last updated at.
+The price will affect the minimum RPL stake, and maximum "effective stake", per minipool.
+
+
 .. _staking-rpl-staking:
 
 ****************************
