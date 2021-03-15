@@ -49,8 +49,11 @@ With wget::
 Upgrading the Smart Node Service
 ********************************
 
-To upgrade the smart node service, first back up your ``~/.rocketpool`` directory (e.g. ``cp -r ~/.rocketpool ~/.rocketpool.bak``).
-If you have made any customizations to your service configuration files, these will be overwritten.
+Before upgrading the smart node service, if you have made any customizations to your service configuration files, back them up::
+
+    cp -r ~/.rocketpool ~/.rocketpool.bak
+
+Any changes to these files will be overwritten, so you will need to restore them manually after updating.
 
 Next, pause the service before making changes to it::
 
@@ -64,7 +67,7 @@ You may optionally specify a version of the Rocket Pool smart node service to us
 
     rocketpool service install -d -v 0.0.3
 
-Once you've upgraded the service configuration files, restore any customizations you made to the previous ones.
+Once you've upgraded the service configuration files, restore any customizations you made previously.
 Then, start the service back up::
 
     rocketpool service start

@@ -61,11 +61,11 @@ To run the Rocket Pool service on your host OS, follow these steps:
 
     rocketpool service config
 
-#. Register the following services with your operating system (example systemd units are provided below):
+#. Register the following services with your operating system (example systemd units for some clients are provided below):
 
     * Geth
-    * Lighthouse / Prysm beacon chain
-    * Lighthouse / Prysm validator
+    * Lighthouse / Nimbus / Prysm / Teku beacon chain
+    * Lighthouse / Prysm / Teku validator
     * ``/usr/local/bin/rocketpoold node``
     * ``/usr/local/bin/rocketpoold watchtower``
 

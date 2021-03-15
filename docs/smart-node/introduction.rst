@@ -29,6 +29,7 @@ Contents
     non-docker.rst
     service.rst
     node-setup.rst
+    staking-rpl.rst
     depositing.rst
     minipools.rst
     reference.rst
