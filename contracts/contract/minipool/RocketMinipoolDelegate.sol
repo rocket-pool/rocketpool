@@ -344,7 +344,7 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         rocketMinipoolManager.destroyMinipool();
         // Self destruct & send any remaining ETH to vault
-        selfdestruct(payable(getContractAddress("rocketVault")));
+        selfdestruct(payable(nodeAddress));
     }
 
 }
