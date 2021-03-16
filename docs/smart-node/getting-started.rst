@@ -43,6 +43,8 @@ With wget::
 
     mkdir -p ~/bin && wget https://github.com/rocket-pool/smartnode-install/releases/latest/download/rocketpool-cli-linux-amd64 -O ~/bin/rocketpool && chmod +x ~/bin/rocketpool
 
+**Note: You may need to start a new shell session before the ``rocketpool`` command is available to use.**
+
 **MacOS (64 bit)**:
 
 With cURL::
