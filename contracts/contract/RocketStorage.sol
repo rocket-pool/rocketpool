@@ -22,10 +22,15 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        // The owner and other contracts are only allowed to set the storage upon deployment to register the initial contracts/settings, afterwards their direct access is disabled
         if (boolStorage[keccak256(abi.encodePacked("contract.storage.initialised"))] == true) {
             // Make sure the access is permitted to only contracts in our Dapp
             require(boolStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))], "Invalid or outdated network contract");
+        } else {
+            // Only Dapp and the guardian account are allowed access during initialisation.
+            // tx.origin is only safe to use in this case for deployment since no external contracts are interacted with
+            require((
+                boolStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))] || boolStorage[keccak256(abi.encodePacked("access.role", "guardian", tx.origin))]
+            ), "Invalid or outdated network contract attempting access during deployment");
         }
         _;
     }
