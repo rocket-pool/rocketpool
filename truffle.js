@@ -8,6 +8,7 @@
 const Web3 = require('web3');
 const FS = require('fs');
 const Contract = require('truffle-contract');
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 // Importing babel to be able to use ES6 imports
 require("babel-register")({
@@ -62,12 +63,24 @@ module.exports = {
       from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
       gas: 12450000,
     },
-    // Goerli testnet
+    // Geth RP Testnet Development
+    // Remove accounts[0] lookup in migrations script when deploying
     'goerli': {
-      host: '127.0.0.1',
-      port: 8545,
-      network_id: '5',
-      gas: 12450000,
+        provider: () =>
+        new HDWalletProvider({
+            mnemonic: {
+                phrase: ""
+            },
+            providerOrUrl: "",
+            numberOfAddresses: 1, 
+            shareNonce: true,
+            derivationPath: "m/44'/60'/0'/0"
+        }),
+        host: '',
+        port: 8888,
+        network_id: "5", 
+        from: "0xFfc1f495d6D033Bc3CE027A87bfDe574b09b7BeD",
+        gas: 8000000,
     },
   },
 };
