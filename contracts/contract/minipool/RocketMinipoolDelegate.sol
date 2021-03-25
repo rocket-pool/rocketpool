@@ -218,7 +218,7 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Check withdrawal delay has passed
-        require(block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getWithdrawalDelay(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
+        require(block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getWithdrawalDelay() || validatorBalanceWithdrawn, "The minipool cannot be withdrawn from until after the withdrawal delay period");
         // Set node withdrawn status
         nodeWithdrawn = true;
         // Transfer nETH balance to node operator
