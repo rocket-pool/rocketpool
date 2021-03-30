@@ -52,12 +52,12 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
     // Staking details
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
-    bool private validatorBalanceWithdrawn;
 
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
+    event EtherReceived(address indexed from, uint256 amount, uint256 time);
     event NethWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     // Status getters
@@ -84,7 +84,13 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
     // Staking detail getters
     function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
     function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
-    function getValidatorBalanceWithdrawn() override public view returns (bool) { return validatorBalanceWithdrawn; }
+
+    // Is the user able to burn their nETH for ETH and close the pool now?
+    // ETH from the SWC should have been received at this point
+    function getCanClosePool() override public view returns (bool) { 
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        return address(this).balance.sub(nodeRefundBalance) >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this)); 
+    }
 
     // Get the withdrawal credentials for the minipool contract
     function getWithdrawalCredentials() override public view returns (bytes memory) {
@@ -218,7 +224,7 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Check withdrawal delay has passed
-        require(block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getWithdrawalDelay() || validatorBalanceWithdrawn, "The minipool cannot be withdrawn from until after the withdrawal delay period");
+        require(block.number.sub(statusBlock) >= rocketDAOProtocolSettingsMinipool.getWithdrawalDelay() || getCanClosePool(), "The minipool cannot be withdrawn from until after the withdrawal delay period");
         // Set node withdrawn status
         nodeWithdrawn = true;
         // Transfer nETH balance to node operator
@@ -234,30 +240,35 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         }
         // Transfer refunded ETH to node operator
         if (nodeRefundBalance > 0) { refundNode(); }
-        // Destroy minipool if validator balance has been withdrawn
-        if (validatorBalanceWithdrawn) { destroy(); }
     }
 
-    // Receive the minipool's withdrawn eth2 validator balance
-    // Only accepts calls from the eth1 system withdrawal contract
+
+    // Log receiving ETH, can be from the SWC or another entity
     function receiveValidatorBalance() external payable onlyRegisteredMinipool(address(this)) {
+        // Emit ether received event
+        emit EtherReceived(msg.sender, msg.value, block.timestamp);
+    }
+
+    // Burn NETH for ETH in the minipool, payout the ETH and close pool
+    // Minipool will self destruct when entire nETH balance has been burned
+    // Anyone with sufficient nETH can close a pool
+    function payoutAndClose() external onlyRegisteredMinipool(address(this)) {
         // Check current status
-        require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
-        require(!validatorBalanceWithdrawn, "The minipool's validator balance has already been sent");
+        require(status == MinipoolStatus.Withdrawable, "The minipool's validator nETH can only be burned for ETH while withdrawable");
+        // Check if we can payout
+        require(getCanClosePool(), "ETH Balance not sufficient for closing the minipool and paying out");
         // load contracts
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetworkInterface = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
-        // Check sender address or withdrawn balance before processing withdrawal
-        uint256 withdrawnBalance = address(this).balance.sub(nodeRefundBalance);
-        if (msg.sender == rocketDAOProtocolSettingsNetworkInterface.getSystemWithdrawalContractAddress() || withdrawnBalance >= rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this))) {
-            // Set validator balance withdrawn status
-            validatorBalanceWithdrawn = true;
-            // Process validator withdrawal for minipool
-            rocketNetworkWithdrawal.processWithdrawal{value: withdrawnBalance}();
-            // Destroy minipool if node has withdrawn
-            if (nodeWithdrawn) { destroy(); }
-        }
+        // How much nETH do we need to burn?
+        uint256 nethRequiredBalance = rocketMinipoolManager.getMinipoolWithdrawalTotalBalance(address(this));
+        // Lets burn it for ETH on this contract now
+        rocketTokenNETH.burn(msg.sender, nethRequiredBalance);
+        // Now distribute ETH balances and close pool
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(msg.sender);
+        // Destroy minipool now
+        destroy(); 
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool

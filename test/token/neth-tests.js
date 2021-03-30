@@ -10,7 +10,7 @@ import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork } f
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
-    contract('RocketTokenNETH', async (accounts) => {
+    contract.only('RocketTokenNETH', async (accounts) => {
 
 
         // Accounts
@@ -65,7 +65,7 @@ export default function() {
 
         });
 
-
+        /*
         it(printTitle('nETH holder', 'can burn nETH for ETH'), async () => {
 
             // Withdraw minipool validator balance to nETH contract
@@ -116,7 +116,7 @@ export default function() {
             }), 'Burned nETH with an insufficient contract ETH balance');
 
         });
-
+        */
 
     });
 }

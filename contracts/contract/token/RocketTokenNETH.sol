@@ -42,18 +42,16 @@ contract RocketTokenNETH is RocketBase, ERC20, RocketTokenNETHInterface {
     }
 
     // Burn nETH for ETH
-    function burn(uint256 _amount) override external {
+    function burn(address nethOwner, uint256 _amount) override external onlyRegisteredMinipool(msg.sender) {
         // Check amount
         require(_amount > 0, "Invalid token burn amount");
-        require(balanceOf(msg.sender) >= _amount, "Insufficient nETH balance");
+        require(balanceOf(nethOwner) >= _amount, "Insufficient nETH balance");
         // Check ETH balance
-        require(address(this).balance >= _amount, "Insufficient ETH balance for exchange");
+        require(address(msg.sender).balance >= _amount, "Insufficient minipool ETH balance for burn");
         // Update balance & supply
-        _burn(msg.sender, _amount);
-        // Transfer ETH to sender
-        msg.sender.transfer(_amount);
+        _burn(nethOwner, _amount);
         // Emit tokens burned event
-        emit TokensBurned(msg.sender, _amount, block.timestamp);
+        emit TokensBurned(nethOwner, _amount, block.timestamp);
     }
 
 }
