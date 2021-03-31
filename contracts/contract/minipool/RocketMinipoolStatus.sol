@@ -12,7 +12,6 @@ import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../types/MinipoolStatus.sol";
 
 // Handles updates to minipool status by trusted (oracle) nodes
@@ -69,7 +68,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     function setMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) private {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         // Initialize minipool
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         // Mark minipool as withdrawable
@@ -83,8 +81,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
             minipool.getStakingStartBalance(),
             minipool.getStakingEndBalance()
         );
-        // Mint nETH to minipool contract
-        if (nodeAmount > 0) { rocketTokenNETH.mint(nodeAmount, _minipoolAddress); }
         // Set minipool withdrawal balances
         rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _stakingEndBalance, nodeAmount);
         // Apply node penalties by liquidating RPL stake

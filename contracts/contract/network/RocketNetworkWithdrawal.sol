@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../RocketBase.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
-import "../../interface/token/RocketTokenNETHInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 
 // Handles network validator withdrawals
@@ -20,7 +20,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
     using SafeMath for uint;
 
     // Events
-    event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 nethAmount, uint256 rethAmount, uint256 time);
+    event WithdrawalProcessed(bytes32 indexed validator, address indexed minipool, uint256 ethAmount, uint256 rethAmount, uint256 time);
 
     // Construct
     constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -30,12 +30,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from registered minipools
-    function processWithdrawal() override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyRegisteredMinipool(msg.sender) {
+    function processWithdrawal(address payable _nodeOwner) override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketTokenNETHInterface rocketTokenNETH = RocketTokenNETHInterface(getContractAddress("rocketTokenNETH"));
         RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         // Check network settings
         require(rocketDAOProtocolSettingsNetwork.getProcessWithdrawalsEnabled(), "Processing withdrawals is currently disabled");
@@ -55,8 +54,11 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         }
         // Set withdrawal processed status
         rocketMinipoolManager.setMinipoolWithdrawalProcessed(msg.sender);
-        // Transfer node balance to nETH contract
-        if (nodeAmount > 0) { rocketTokenNETH.depositRewards{value: nodeAmount}(); }
+        // Transfer node ETH balance to node operator
+        if (nodeAmount > 0) { 
+            // Transfer ETH now
+            _nodeOwner.transfer(nodeAmount);
+         }
         // Transfer user balance to rETH contract or deposit pool
         if (userAmount > 0) {
             if (rocketTokenRETH.getCollateralRate() < rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate()) {

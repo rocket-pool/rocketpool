@@ -44,7 +44,6 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         require(nameHash != keccak256(abi.encodePacked("rocketVault")),        "Cannot upgrade the vault");
         require(nameHash != keccak256(abi.encodePacked("rocketPoolToken")),    "Cannot upgrade token contracts");
         require(nameHash != keccak256(abi.encodePacked("rocketTokenRETH")),     "Cannot upgrade token contracts");
-        require(nameHash != keccak256(abi.encodePacked("rocketTokenNETH")), "Cannot upgrade token contracts");
         require(nameHash != keccak256(abi.encodePacked("casperDeposit")),      "Cannot upgrade the casper deposit contract");
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));

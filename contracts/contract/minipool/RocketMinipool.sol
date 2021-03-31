@@ -28,7 +28,6 @@ contract RocketMinipool {
     uint256 private nodeDepositBalance;
     uint256 private nodeRefundBalance;
     bool private nodeDepositAssigned;
-    bool private nodeWithdrawn;
 
     // User deposit details
     uint256 private userDepositBalance;
