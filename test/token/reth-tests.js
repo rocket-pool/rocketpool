@@ -3,7 +3,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipoolValidatorBalance } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
@@ -20,7 +20,6 @@ export default function() {
             owner,
             node,
             trustedNode,
-            dummySwc,
             staker1,
             staker2,
         ] = accounts;
@@ -55,8 +54,6 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
 
-            // Set dummy SWC address
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
@@ -86,10 +83,16 @@ export default function() {
 
         it(printTitle('rETH holder', 'can burn rETH for ETH collateral'), async () => {
 
-            // Withdraw minipool validator balance to rETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {
-                from: dummySwc,
-                value: withdrawalBalance,
+            // Send ETH to the minipool to simulate receving from SWC
+            await web3.eth.sendTransaction({
+                from: trustedNode,
+                to: minipool.address,
+                value: withdrawalBalance
+            });
+
+            // Run the payout function now
+            await payoutMinipool(minipool, {
+                from: trustedNode
             });
 
             // Burn rETH
@@ -119,11 +122,17 @@ export default function() {
 
 
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
+            
+            // Send ETH to the minipool to simulate receving from SWC
+            await web3.eth.sendTransaction({
+                from: trustedNode,
+                to: minipool.address,
+                value: withdrawalBalance
+            });
 
-            // Withdraw minipool validator balance to rETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {
-                from: dummySwc,
-                value: withdrawalBalance,
+            // Run the payout function now
+            await payoutMinipool(minipool, {
+                from: trustedNode
             });
 
             // Get burn amounts

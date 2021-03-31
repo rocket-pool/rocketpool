@@ -13,8 +13,7 @@ export default function() {
         // Accounts
         const [
             guardian,
-            userOne,
-            swcDummyAddress
+            userOne
         ] = accounts;
 
 
@@ -59,9 +58,6 @@ export default function() {
                 from: guardian
             });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', true, {
-                from: guardian
-            });
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', swcDummyAddress, {
                 from: guardian
             });
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', 100, {

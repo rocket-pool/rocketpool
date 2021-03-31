@@ -62,6 +62,13 @@ export async function withdrawValidatorBalance(minipool, txOptions, withdrawalEx
     txOptions.gas = 12450000;
     await web3.eth.sendTransaction(txOptions);
 
+    // Is a payout expected?
+    if (withdrawalExpected !== false) {
+        await minipool.payout({
+            from: txOptions.from
+        });
+    }
+
     // Get updated balances & withdrawal processed status
     let [balances2, balanceWithdrawn2, withdrawalProcessed2] = await Promise.all([
         getBalances(),

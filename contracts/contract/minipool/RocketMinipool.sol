@@ -40,6 +40,9 @@ contract RocketMinipool {
     uint256 private stakingEndBalance;
     bool private validatorBalanceWithdrawn;
 
+    // Events
+    event EtherReceived(address indexed from, uint256 amount, uint256 time);
+
     // Construct
     constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
         // Check parameters
@@ -62,8 +65,8 @@ contract RocketMinipool {
 
     // Receive the minipool's withdrawn eth2 validator balance
     receive() external payable {
-        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature("receiveValidatorBalance()"));
-        if (!success) { revert(getRevertMessage(data)); }
+        // Emit ether received event
+        emit EtherReceived(msg.sender, msg.value, block.timestamp);
     }
 
     // Delegate all other calls to minipool delegate contract

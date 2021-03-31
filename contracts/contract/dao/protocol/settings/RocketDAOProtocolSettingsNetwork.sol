@@ -27,7 +27,6 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.maximum", 0.20 ether);         // 20%
             setSettingUint("network.node.fee.demand.range", 1000 ether);
             setSettingUint("network.reth.collateral.target", 0.1 ether);   
-            setSettingAddress("network.withdrawal.contract.address", address(0x0));  // The ETH2 system withdrawal contract address
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -88,9 +87,5 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.reth.collateral.target");
     }
 
-    // Get the eth1 system withdrawal contract address
-    function getSystemWithdrawalContractAddress() override public view returns (address) {
-        return getSettingAddress("network.withdrawal.contract.address");
-    }
 
 }

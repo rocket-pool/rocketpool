@@ -2,7 +2,7 @@ import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
-import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, withdrawMinipoolValidatorBalance, withdrawMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool, withdrawMinipool } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getNethBalance, mintRPL } from '../_helpers/tokens';
 import { burnNeth } from './scenario-neth-burn';
@@ -10,15 +10,14 @@ import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork } f
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
-    contract.only('RocketTokenNETH', async (accounts) => {
+    contract('RocketTokenNETH', async (accounts) => {
 
 
         // Accounts
         const [
             owner,
             node,
-            trustedNode,
-            dummySwc,
+            oracleNode,
         ] = accounts;
 
 
@@ -39,14 +38,11 @@ export default function() {
             await registerNode({from: node});
 
             // Register trusted node
-            await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
+            await registerNode({from: oracleNode});
+            await setNodeTrusted(oracleNode, 'saas_1', 'node@home.com', owner);
 
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', 0, {from: owner});
-
-            // Set dummy SWC address
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
@@ -56,7 +52,7 @@ export default function() {
             // Create and withdraw from withdrawable minipool
             minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
+            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: oracleNode});
             await withdrawMinipool(minipool, {from: node});
 
             // Get & check node nETH balance
@@ -65,13 +61,19 @@ export default function() {
 
         });
 
-        /*
+        
         it(printTitle('nETH holder', 'can burn nETH for ETH'), async () => {
 
-            // Withdraw minipool validator balance to nETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {
-                from: dummySwc,
-                value: withdrawalBalance,
+            // Send ETH to the minipool to simulate receving from SWC
+            await web3.eth.sendTransaction({
+                from: oracleNode,
+                to: minipool.address,
+                value: withdrawalBalance
+            });
+
+            // Run the payout function now
+            await payoutMinipool(minipool, {
+                from: oracleNode
             });
 
             // Burn nETH
@@ -84,10 +86,16 @@ export default function() {
 
         it(printTitle('nETH holder', 'cannot burn an invalid amount of nETH'), async () => {
 
-            // Withdraw minipool validator balance to nETH contract
-            await withdrawMinipoolValidatorBalance(minipool, {
-                from: dummySwc,
-                value: withdrawalBalance,
+            // Send ETH to the minipool to simulate receving from SWC
+            await web3.eth.sendTransaction({
+                from: oracleNode,
+                to: minipool.address,
+                value: withdrawalBalance
+            });
+
+            // Run the payout function now
+            await payoutMinipool(minipool, {
+                from: oracleNode
             });
 
             // Get burn amounts
@@ -116,7 +124,7 @@ export default function() {
             }), 'Burned nETH with an insufficient contract ETH balance');
 
         });
-        */
+
 
     });
 }

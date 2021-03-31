@@ -60,9 +60,6 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
 
-            // Set dummy SWC address
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.withdrawal.contract.address', dummySwc, {from: owner});
-
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
             await userDeposit({from: random, value: refundAmount});
@@ -112,7 +109,7 @@ export default function() {
         // General
         //
 
-
+        
         it(printTitle('random address', 'cannot send ETH to non-payable minipool delegate methods'), async () => {
 
             // Attempt to send ETH to view method
@@ -390,24 +387,26 @@ export default function() {
         //
         // Withdraw validator balance
         //
-
+        
 
         it(printTitle('system withdrawal contract', 'can send validator balance to a withdrawable minipool'), async () => {
 
             // Send validator balance
             await withdrawValidatorBalance(withdrawableMinipool, {
-                from: dummySwc,
+                from: random,
                 value: withdrawalBalance,
             });
 
         });
+
+        
 
 
         it(printTitle('system withdrawal contract', 'cannot send validator balance to a minipool which is not withdrawable'), async () => {
 
             // Attempt to send validator balance
             await shouldRevert(withdrawValidatorBalance(stakingMinipool, {
-                from: dummySwc,
+                from: random,
                 value: withdrawalBalance,
             }), 'Sent validator balance to a minipool which was not withdrawable');
 
@@ -418,13 +417,13 @@ export default function() {
 
             // Send validator balance
             await withdrawValidatorBalance(withdrawableMinipool, {
-                from: dummySwc,
+                from: random,
                 value: withdrawalBalance,
             });
 
             // Attempt to send validator balance again
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: dummySwc,
+                from: random,
                 value: withdrawalBalance,
             }), 'Sent validator balance to a minipool twice');
 
@@ -438,7 +437,7 @@ export default function() {
 
             // Attempt to send validator balance
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: dummySwc,
+                from: random,
                 value: withdrawalBalance,
             }), 'Sent validator balance to a minipool while processing withdrawals was disabled');
 
@@ -474,7 +473,7 @@ export default function() {
             });
 
         });
-
+        
 
         //
         // Close
@@ -509,7 +508,7 @@ export default function() {
             }), 'Random address closed a minipool');
 
         });
-
+        
 
     });
 }
