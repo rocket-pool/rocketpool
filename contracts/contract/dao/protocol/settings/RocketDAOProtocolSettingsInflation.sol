@@ -19,7 +19,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
             // RPL Inflation settings
             setSettingUint("rpl.inflation.interval.rate", 1000133680617113440);                                 // 5% annual calculated on a daily interval of blocks (7200 = 1 day approx in 12sec blocks) - Calculate in js example: let dailyInflation = web3.utils.toBN((1 + 0.05) ** (1 / (365)) * 1e18);
             setSettingUint("rpl.inflation.interval.blocks", 7200);                                              // How often the inflation is calculated, if this is changed significantly, then the above 'rpl.inflation.interval.rate' will need to be adjusted. If inflation is no longer required, set 'rpl.inflation.interval.rate' to 0, not this parameter                
-            setSettingUint("rpl.inflation.interval.start", block.number+(getInflationIntervalBlocks()*14));     // Set the default start date for inflation to begin as 2 weeks from contract deployment (this can be changed after deployment)
+            setSettingUint("rpl.inflation.interval.start", block.number+(getInflationIntervalBlocks()*28));     // Set the default start date for inflation to begin as 4 weeks from contract deployment (this can be changed after deployment)
             // Deployment check
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
@@ -58,7 +58,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
         return getSettingUint("rpl.inflation.interval.rate");
     }
     
-    // Inflation block interval (default is 6170 = 1 day approx in 14sec blocks) 
+    // Inflation block interval (default is 7200 = 1 day approx in 12sec blocks) 
     function getInflationIntervalBlocks() override public view returns (uint256) {
         return getSettingUint("rpl.inflation.interval.blocks"); 
     }
