@@ -12,7 +12,7 @@ import { RocketTokenRPL } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketTokenRPL', async (accounts) => {
+    contract.only('RocketTokenRPL', async (accounts) => {
 
 
         // Accounts
@@ -247,15 +247,15 @@ export default function() {
         });
         
 
-        it(printTitle('userOne', 'mint inflation after a single interval has passed'), async () => {
+        it(printTitle('userOne', 'mint inflation midway through a second interval, then mint again after another interval'), async () => {
 
             // Current block
             let blockCurrent = await web3.eth.getBlockNumber();
 
             let config = {
-                blockInterval: 2,
+                blockInterval: 15,
                 blockStart: blockCurrent + 20,
-                blockClaim: blockCurrent + 22,
+                blockClaim: blockCurrent + 35,
                 yearlyInflationTarget: 0.05
             }
 
@@ -266,19 +266,23 @@ export default function() {
             // Set the daily inflation rate
             await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
-            // Mint inflation now
+            // Claim inflation half way through the second interval
+            await rplClaimInflation(config, { from: userOne });
+            config.blockClaim += config.blockInterval+23;
+            await rplClaimInflation(config, { from: userOne });
+            config.blockClaim += config.blockInterval + 42;
             await rplClaimInflation(config, { from: userOne });
 
         });
-
-
+        
+        
         it(printTitle('userOne', 'mint inflation at multiple random intervals'), async () => {
 
             // Current block
             let blockCurrent = await web3.eth.getBlockNumber();
 
             let config = {
-                blockInterval: 3,
+                blockInterval: 2,
                 blockStart: blockCurrent + 10,
                 blockClaim: blockCurrent + 22,
                 yearlyInflationTarget: 0.025
@@ -312,7 +316,7 @@ export default function() {
 
         });
         
-
+       
 
         it(printTitle('userOne', 'mint one years inflation after 365 days at 5% which would equal 18,900,000 tokens'), async () => {
 
@@ -338,7 +342,7 @@ export default function() {
 
 
         });
-
+       
         
         it(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
 
@@ -347,8 +351,8 @@ export default function() {
 
             let config = {
                 blockInterval: 2,
-                blockStart: blockCurrent + 50,
-                blockClaim: blockCurrent + 52, // 365 is an uneven number, so add one extra interval at the start
+                blockStart: blockCurrent + 20,
+                blockClaim: blockCurrent + 20,
                 yearlyInflationTarget: 0.05
             }
 
@@ -363,14 +367,19 @@ export default function() {
             // Set the daily inflation rate
             await setRPLInflationIntervalRate(config.yearlyInflationTarget, { from: owner });
 
+            // Alternate collections slightly to test slightly irregular collections
+            let altModifier = config.blockInterval * 1.1;
+
             // Mint inflation now
             config.blockClaim += quarterlyBlockAmount;
             await rplClaimInflation(config, { from: userOne });
             config.blockClaim += quarterlyBlockAmount;
             await rplClaimInflation(config, { from: userOne });
-            config.blockClaim += quarterlyBlockAmount;
+            config.blockClaim += altModifier;
             await rplClaimInflation(config, { from: userOne });
             config.blockClaim += quarterlyBlockAmount;
+            await rplClaimInflation(config, { from: userOne });
+            config.blockClaim += quarterlyBlockAmount - altModifier;
             await rplClaimInflation(config, { from: userOne }, 18900000);
 
         });
@@ -382,9 +391,9 @@ export default function() {
             let blockCurrent = await web3.eth.getBlockNumber();
 
             let config = {
-                blockInterval: 2,
+                blockInterval: 3,
                 blockStart: blockCurrent + 50,
-                blockClaim: blockCurrent + 54, // 365 is an uneven number, so add two extra intervals at the start to account for 2 years
+                blockClaim: blockCurrent + 51, // 365 is an uneven number, so add two extra intervals at the start to account for 2 years
                 yearlyInflationTarget: 0.05
             }
 
@@ -411,6 +420,7 @@ export default function() {
 
         });
         
+        
 
         it(printTitle('userOne', 'mint one years inflation, then set inflation rate to 0 to prevent new inflation'), async () => {
 
@@ -418,7 +428,7 @@ export default function() {
             let blockCurrent = await web3.eth.getBlockNumber();
 
             let config = {
-                blockInterval: 1,
+                blockInterval: 2,
                 blockStart: blockCurrent + 50,
                 yearlyInflationTarget: 0.05
             }
@@ -439,10 +449,10 @@ export default function() {
 
             // Attempt to collect inflation
             config.blockClaim = config.blockStart + (720 * config.blockInterval);
-            await shouldRevert(rplClaimInflation(config, { from: userOne }), "Minted inflation after rate set to 0");
+            await shouldRevert(rplClaimInflation(config, { from: userOne }), "Minted inflation after rate set to 0", "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
 
         });
-
+        
 
     });
 }

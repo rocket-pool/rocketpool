@@ -162,8 +162,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Lets check
         require(newTokens > 0 && rocketVaultAddress != address(0x0), "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
         // Update last inflation calculation block
-        inflationCalcBlock = block.number;
-        // inflationCalcBlock = block.number.mul(getInflationIntervalBlocks()).div(getInflationIntervalBlocks());
+        inflationCalcBlock = getInflationCalcBlock().add(getInflationIntervalBlocks().mul(getInlfationIntervalsPassed()));
         // Miint to itself, then allocate tokens for transfer to rewards contract, this will Update balance & supply
         _mint(address(this), newTokens);
         // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
