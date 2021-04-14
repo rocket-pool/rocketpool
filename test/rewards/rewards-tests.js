@@ -119,7 +119,7 @@ export default function() {
         });
 
 
-        /*** Setting Claimers **************************/
+        /*** Setting Claimers *************************/
 
                  
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
@@ -209,9 +209,9 @@ export default function() {
         });
 
 
-        /*** Regular Nodes **************************/
+        /*** Regular Nodes *************************/
 
-
+        /*
         it(printTitle('node', 'can claim RPL'), async () => {
 
             // Initialize RPL inflation & claims contract
@@ -243,6 +243,7 @@ export default function() {
             });
 
         });
+        */
 
       
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
@@ -334,7 +335,7 @@ export default function() {
         });
         
 
-        /*** Trusted Node **************************/
+        /*** Trusted Node *************************/
 
 
         it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
@@ -374,7 +375,6 @@ export default function() {
                 from: registeredNodeTrusted1,
             }), "Made claim again before next interval", "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract");               
         });
-
 
         it(printTitle('trustedNode3', 'fails to claim rewards as they have not waited one claim interval'), async () => {
             // Setup RPL inflation for occuring every 10 blocks at 5%
@@ -595,7 +595,6 @@ export default function() {
                 from: registeredNodeTrusted2,
             }); 
         });
-        
      
     });
 }

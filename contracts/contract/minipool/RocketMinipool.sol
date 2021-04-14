@@ -37,7 +37,6 @@ contract RocketMinipool {
     // Staking details
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
-    bool private validatorBalanceWithdrawn;
 
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);

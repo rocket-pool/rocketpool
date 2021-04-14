@@ -30,7 +30,7 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
 
     // Process a validator withdrawal from the beacon chain
     // Only accepts calls from registered minipools
-    function processWithdrawal(address payable _nodeOwner) override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyRegisteredMinipool(msg.sender) {
+    function processWithdrawal(address _nodeWithdrawalAddress) override external payable onlyLatestContract("rocketNetworkWithdrawal", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
@@ -57,7 +57,8 @@ contract RocketNetworkWithdrawal is RocketBase, RocketNetworkWithdrawalInterface
         // Transfer node ETH balance to node operator
         if (nodeAmount > 0) { 
             // Transfer ETH now
-            _nodeOwner.transfer(nodeAmount);
+            (bool success,) = _nodeWithdrawalAddress.call{value: nodeAmount}("");
+            require(success, "Node ETH balance was not successfully transferred to node withdrawal address");
          }
         // Transfer user balance to rETH contract or deposit pool
         if (userAmount > 0) {

@@ -21,8 +21,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", true);
-            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
-            setSettingUint("minipool.withdrawal.delay", 172800);            // ~30 days       
+            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours  
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -77,9 +76,5 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return getSettingUint("minipool.launch.timeout");
     }
 
-    // Withdrawal delay in blocks before withdrawable minipools can be closed
-    function getWithdrawalDelay() override public view returns (uint256) {
-        return getSettingUint("minipool.withdrawal.delay");
-    }
 
 }

@@ -47,7 +47,9 @@ export async function rewardsClaimTrustedNode(trusedNodeAccount, txOptions) {
     //console.log('Node DAO Contract Amount', Number(web3.utils.fromWei(ds1.currentBlock)), Number(web3.utils.fromWei(ds1.claimIntervalBlockStart)));
 
     // Perform tx
-    await rocketClaimTrustedNode.claim(txOptions);
+    let tx = await rocketClaimTrustedNode.claim(txOptions);
+
+   // console.log(tx);
 
     // Capture data
     let ds2 = await getTxData();

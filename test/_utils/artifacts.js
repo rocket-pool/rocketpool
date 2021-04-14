@@ -35,7 +35,6 @@ export const RocketNodeStaking = artifacts.require('RocketNodeStaking.sol');
 export const RocketRewardsPool = artifacts.require('RocketRewardsPool.sol');
 export const RocketStorage = artifacts.require('RocketStorage.sol');
 export const RocketTokenDummyRPL = artifacts.require('RocketTokenDummyRPL.sol');
-export const RocketTokenNETH = artifacts.require('RocketTokenNETH.sol');
 export const RocketTokenRETH = artifacts.require('RocketTokenRETH.sol');
 export const RocketTokenRPL = artifacts.require('RocketTokenRPL.sol');
 export const RocketVault = artifacts.require('RocketVault.sol');

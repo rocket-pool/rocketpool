@@ -82,7 +82,6 @@ const contracts = {
   // Tokens
   rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
-  rocketTokenNETH:                          artifacts.require('RocketTokenNETH.sol'),
   rocketTokenRPL:                           artifacts.require('RocketTokenRPL.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),

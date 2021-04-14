@@ -125,8 +125,8 @@ export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBa
 
 
 // Send validator balance to a minipool
-export async function payoutMinipool(minipool, txOptions) {
-    await minipool.payout(txOptions);
+export async function payoutMinipool(minipool, confirm = false, txOptions) {
+    await minipool.payout(confirm, txOptions);
 }
 
 

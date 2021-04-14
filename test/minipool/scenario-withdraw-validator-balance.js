@@ -1,23 +1,27 @@
-import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketMinipoolManager, RocketTokenNETH, RocketTokenRETH } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketMinipoolManager, RocketNodeManager, RocketTokenRETH } from '../_utils/artifacts';
 
 
 // Send validator balance to a minipool
-export async function withdrawValidatorBalance(minipool, txOptions, withdrawalExpected) {
+export async function withdrawValidatorBalance(minipool, confirm = false, txOptions, ) {
 
 	// Load contracts
     const [
 	    rocketDAOProtocolSettingsNetwork,
         rocketDepositPool,
         rocketMinipoolManager,
-        rocketTokenNETH,
         rocketTokenRETH,
+        rocketNodeManager
     ] = await Promise.all([
     	RocketDAOProtocolSettingsNetwork.deployed(),
         RocketDepositPool.deployed(),
         RocketMinipoolManager.deployed(),
-        RocketTokenNETH.deployed(),
         RocketTokenRETH.deployed(),
+        RocketNodeManager.deployed(),
     ]);
+
+    // Get node parameters
+    let nodeAddress = await minipool.getNodeAddress.call();
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
     // Get parameters
     let [
@@ -41,75 +45,68 @@ export async function withdrawValidatorBalance(minipool, txOptions, withdrawalEx
     // Get balances
     function getBalances() {
         return Promise.all([
-            web3.eth.getBalance(rocketTokenNETH.address).then(value => web3.utils.toBN(value)),
             web3.eth.getBalance(rocketTokenRETH.address).then(value => web3.utils.toBN(value)),
             rocketDepositPool.getBalance.call(),
+            web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
         ]).then(
-            ([nethContractEth, rethContractEth, depositPoolEth]) =>
-            ({nethContractEth, rethContractEth, depositPoolEth})
+            ([rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth]) =>
+            ({rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth})
         );
     }
 
-    // Get initial balances & withdrawal processed status
-    let [balances1, balanceWithdrawn1, withdrawalProcessed1] = await Promise.all([
-        getBalances(),
-        minipool.getValidatorBalanceWithdrawn.call(),
-        rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipool.address),
-    ]);
 
-	// Send validator balance to minipool
-	txOptions.to = minipool.address;
+    // Send validator balance to minipool
+    txOptions.to = minipool.address;
     txOptions.gas = 12450000;
-    await web3.eth.sendTransaction(txOptions);
-
-    // Is a payout expected?
-    if (withdrawalExpected !== false) {
-        await minipool.payout({
-            from: txOptions.from
-        });
+    if(txOptions.value > 0) {
+        await web3.eth.sendTransaction(txOptions);
     }
 
-    // Get updated balances & withdrawal processed status
-    let [balances2, balanceWithdrawn2, withdrawalProcessed2] = await Promise.all([
+    // Get initial balances & withdrawal processed status
+    let [balances1, withdrawalProcessed1] = await Promise.all([
         getBalances(),
-        minipool.getValidatorBalanceWithdrawn.call(),
         rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipool.address),
     ]);
+
+    // Payout the balances now
+    await minipool.payout(confirm, {
+        from: txOptions.from
+    });
+    
+    // Get updated balances & withdrawal processed status
+    let [balances2, withdrawalProcessed2] = await Promise.all([
+        getBalances(),
+        rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipool.address),
+    ]);
+
+    //console.log('Withdrawal Amount:', web3.utils.fromWei(withdrawalTotalAmount), web3.utils.fromWei(withdrawalNodeAmount));
+    //console.log('Minipool Amount:', web3.utils.fromWei(balances1.minipoolEth), web3.utils.fromWei(balances2.minipoolEth));
+    //console.log('Node Withdrawal Address Amount:', web3.utils.fromWei(balances1.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth));
+    //console.log('rETH Contract Amount:', web3.utils.fromWei(balances1.rethContractEth), web3.utils.fromWei(balances2.rethContractEth));
+    //console.log('Deposit Pool Amount:', web3.utils.fromWei(balances1.depositPoolEth), web3.utils.fromWei(balances2.depositPoolEth));
 
     // Check initial status
-    assert.isFalse(balanceWithdrawn1, 'Incorrect initial minipool validator balance withdrawn status');
     assert.isFalse(withdrawalProcessed1, 'Incorrect initial minipool withdrawal processed status');
 
-    // Withdrawal expected
-    if (withdrawalExpected !== false) {
+    // Check updated status
+    assert.isTrue(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
 
-        // Check updated status
-        assert.isTrue(balanceWithdrawn2, 'Incorrect updated minipool validator balance withdrawn status');
-        assert.isTrue(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
+    // Get expected user amount destination
+    let expectRethDeposit = rethCollateralRate.lt(targetRethCollateralRate);
 
-        // Get expected user amount destination
-        let expectRethDeposit = rethCollateralRate.lt(targetRethCollateralRate);
-
-        // Check balances
-        assert(balances2.nethContractEth.eq(balances1.nethContractEth.add(withdrawalNodeAmount)), 'Incorrect updated nETH contract balance');
-        if (expectRethDeposit) {
-            assert(balances2.rethContractEth.eq(balances1.rethContractEth.add(withdrawalUserAmount)), 'Incorrect updated rETH contract balance');
-            assert(balances2.depositPoolEth.eq(balances1.depositPoolEth), 'Incorrect updated deposit pool balance');
-        } else {
-            assert(balances2.rethContractEth.eq(balances1.rethContractEth), 'Incorrect updated rETH contract balance');
-            assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
-        }
-
+    // Check balances
+    if (expectRethDeposit) {
+        assert(balances2.rethContractEth.eq(balances1.rethContractEth.add(withdrawalUserAmount)), 'Incorrect updated rETH contract balance');
+        assert(balances2.depositPoolEth.eq(balances1.depositPoolEth), 'Incorrect updated deposit pool balance');
+    } else {
+        assert(balances2.rethContractEth.eq(balances1.rethContractEth), 'Incorrect updated rETH contract balance');
+        assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
     }
 
-    // Withdrawal not expected
-    else {
+    // Verify node withdrawal address has the expected ETH
+    assert((balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)).eq(withdrawalNodeAmount), 'Incorrect node operator withdrawal address balance');
 
-        // Check updated status
-        assert.isFalse(balanceWithdrawn2, 'Incorrect updated minipool validator balance withdrawn status');
-        assert.isFalse(withdrawalProcessed2, 'Incorrect updated minipool withdrawal processed status');
-
-    }
 
 }
 

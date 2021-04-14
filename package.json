@@ -1,7 +1,7 @@
 {
   "name": "rocketpool",
-  "version": "2.5.0",
-  "description": "A next generation decentralised Ethereum 2.0 proof of stake network",
+  "version": "3.0.0",
+  "description": "A next generation decentralised Ethereum 2.0 proof of stake protocol",
   "repository": "git@github.com:rocket-pool/rocketpool.git",
   "author": "David Rugendyke <contact@rocketpool.net>",
   "scripts": {

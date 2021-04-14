@@ -50,7 +50,6 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
     // Staking details
     uint256 private stakingStartBalance;
     uint256 private stakingEndBalance;
-    bool private validatorBalanceWithdrawn;
 
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);
@@ -81,7 +80,6 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
     // Staking detail getters
     function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
     function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
-    function getValidatorBalanceWithdrawn() override public view returns (bool) { return validatorBalanceWithdrawn; }
 
     // Get the withdrawal credentials for the minipool contract
     function getWithdrawalCredentials() override public view returns (bytes memory) {
@@ -207,21 +205,20 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
 
 
     // Payout the ETH to the node operator and rETH contract now
+    // Minipool should be in withdrawable status, and only set that way once it has a balance close to the stakingEndBalance
     // Requires confirmation by the node operator to execute this as it will also destroy the minipool
-    // Should only ever be executed once the minipool has received an ETH balance from the SWC 
+    // Should only ever be executed once the minipool has received an ETH balance from the SWC, onus is on the node operator
     function payout(bool _confirmPayout) override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) { 
         // Require confirmation the node operator wishes to pay out now with the current ETH balance on the contract
         require(_confirmPayout, "Node operator did not confirm they wish to payout now");
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
-        require(!validatorBalanceWithdrawn, "The minipool's validator balance has already been sent");
         // load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
-        // Set validator balance withdrawn status
-        validatorBalanceWithdrawn = true;
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
-        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(msg.sender);
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(rocketNodeManager.getNodeWithdrawalAddress(nodeAddress));
         // Destroy minipool now
         destroy();
     }
@@ -243,9 +240,9 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         );
         // Transfer user balance to deposit pool
         if (userDepositBalance > 0) {
-            // Transfer
+            // Transfer 
             rocketDepositPool.recycleDissolvedDeposit{value: userDepositBalance}();
-            userDepositBalance = 0;
+            userDepositBalance = 0; 
             // Emit ether withdrawn event
             emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, block.timestamp);
         }
@@ -309,8 +306,10 @@ contract RocketMinipoolDelegate is RocketMinipoolInterface {
         // Destroy minipool
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         rocketMinipoolManager.destroyMinipool();
-        // Self destruct & send any remaining ETH to vault
-        selfdestruct(payable(nodeAddress));
+        // Send any refund ETH to the node withdrawal account
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        // Self destruct & send any remaining ETH or refund ETH to the node operator account
+        selfdestruct(payable(rocketNodeManager.getNodeWithdrawalAddress(nodeAddress)));
     }
 
 }

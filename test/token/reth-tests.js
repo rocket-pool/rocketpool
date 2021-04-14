@@ -5,7 +5,7 @@ import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
+import { registerNode, setNodeTrusted, nodeStakeRPL, setNodeWithdrawalAddress } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
@@ -19,6 +19,7 @@ export default function() {
         const [
             owner,
             node,
+            nodeWithdrawalAddress,
             trustedNode,
             staker1,
             staker2,
@@ -44,8 +45,9 @@ export default function() {
             // Make deposit
             await userDeposit({from: staker1, value: web3.utils.toWei('16', 'ether')});
 
-            // Register node
+            // Register node & set withdrawal address
             await registerNode({from: node});
+            await setNodeWithdrawalAddress(nodeWithdrawalAddress, {from: node});
 
             // Register trusted node
             await registerNode({from: trustedNode});
@@ -91,8 +93,8 @@ export default function() {
             });
 
             // Run the payout function now
-            await payoutMinipool(minipool, {
-                from: trustedNode
+            await payoutMinipool(minipool, true, {
+                from: node
             });
 
             // Burn rETH
@@ -102,7 +104,7 @@ export default function() {
 
         });
 
-
+        
         it(printTitle('rETH holder', 'can burn rETH for excess deposit pool ETH'), async () => {
 
             // Make user deposit
@@ -131,8 +133,8 @@ export default function() {
             });
 
             // Run the payout function now
-            await payoutMinipool(minipool, {
-                from: trustedNode
+            await payoutMinipool(minipool, true, {
+                from: node
             });
 
             // Get burn amounts
@@ -174,7 +176,7 @@ export default function() {
             }), 'Burned rETH with an insufficient deposit pool excess ETH balance');
 
         });
-
+        
 
     });
 }

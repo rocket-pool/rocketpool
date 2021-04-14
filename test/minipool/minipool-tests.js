@@ -11,7 +11,6 @@ import { close } from './scenario-close';
 import { dissolve } from './scenario-dissolve';
 import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
-import { withdraw } from './scenario-withdraw';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
@@ -311,175 +310,121 @@ export default function() {
 
         });
 
-
-        //
-        // Withdraw
-        //
-
-
-        it(printTitle('node operator', 'can withdraw a withdrawable minipool after withdrawal delay'), async () => {
-
-            // Wait for withdrawal delay
-            await mineBlocks(web3, withdrawalDelay);
-
-            // Withdraw withdrawable minipool
-            await withdraw(withdrawableMinipool, {
-                from: node,
-            });
-
-        });
-
-
-        it(printTitle('node operator', 'cannot withdraw a minipool which is not withdrawable'), async () => {
-
-            // Wait for withdrawal delay
-            await mineBlocks(web3, withdrawalDelay);
-
-            // Attempt to withdraw staking minipool
-            await shouldRevert(withdraw(stakingMinipool, {
-                from: node,
-            }), 'Withdrew a minipool which was not withdrawable');
-
-        });
-
-
-        it(printTitle('node operator', 'cannot withdraw a withdrawable minipool twice'), async () => {
-
-            // Wait for withdrawal delay
-            await mineBlocks(web3, withdrawalDelay);
-
-            // Withdraw withdrawable minipool
-            await withdraw(withdrawableMinipool, {
-                from: node,
-            });
-
-            // Attempt to withdraw withdrawable minipool again
-            await shouldRevert(withdraw(withdrawableMinipool, {
-                from: node,
-            }), 'Withdrew a minipool twice');
-
-        });
-
-
-        it(printTitle('node operator', 'cannot withdraw a withdrawable minipool before withdrawal delay'), async () => {
-
-            // Attempt to withdraw withdrawable minipool
-            await shouldRevert(withdraw(withdrawableMinipool, {
-                from: node,
-            }), 'Withdrew a minipool before withdrawal delay');
-
-        });
-
-
-        it(printTitle('random address', 'cannot withdraw a minipool'), async () => {
-
-            // Wait for withdrawal delay
-            await mineBlocks(web3, withdrawalDelay);
-
-            // Attempt to withdraw withdrawable minipool
-            await shouldRevert(withdraw(withdrawableMinipool, {
-                from: random,
-            }), 'Random address withdrew a minipool');
-
-        });
-
-
+  
+ 
         //
         // Withdraw validator balance
         //
         
 
-        it(printTitle('system withdrawal contract', 'can send validator balance to a withdrawable minipool'), async () => {
-
-            // Send validator balance
-            await withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
-                value: withdrawalBalance,
-            });
-
-        });
-
         
-
-
-        it(printTitle('system withdrawal contract', 'cannot send validator balance to a minipool which is not withdrawable'), async () => {
+        it(printTitle('node operator', 'cannot send withdraw balance to a minipool which is not withdrawable'), async () => {
 
             // Attempt to send validator balance
-            await shouldRevert(withdrawValidatorBalance(stakingMinipool, {
-                from: random,
+            await shouldRevert(withdrawValidatorBalance(stakingMinipool, true, {
+                from: node,
                 value: withdrawalBalance,
-            }), 'Sent validator balance to a minipool which was not withdrawable');
+            }), 'Withdrew validator balance to a minipool which was not withdrawable', "The minipool's validator balance can only be sent while withdrawable");
 
         });
 
 
-        it(printTitle('system withdrawal contract', 'cannot send validator balance to a withdrawable minipool twice'), async () => {
-
-            // Send validator balance
-            await withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
-                value: withdrawalBalance,
-            });
-
-            // Attempt to send validator balance again
-            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
-                value: withdrawalBalance,
-            }), 'Sent validator balance to a minipool twice');
-
-        });
-
-
-        it(printTitle('system withdrawal contract', 'cannot send validator balance to a withdrawable minipool while processing withdrawals is disabled'), async () => {
+        it(printTitle('node', 'cannot run payout method while processing withdrawals is disabled'), async () => {
 
             // Disable processing withdrawals
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.process.withdrawals.enabled', false, {from: owner});
 
             // Attempt to send validator balance
-            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
                 value: withdrawalBalance,
-            }), 'Sent validator balance to a minipool while processing withdrawals was disabled');
+            }), 'Payout method was run while withdrawals was disabled', "Processing withdrawals is currently disabled");
 
         });
 
 
-        it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
+        it(printTitle('random', 'random address cannot withdraw a node operators minipool balance'), async () => {
 
-            // Send validator balance
-            await withdrawValidatorBalance(withdrawableMinipool, {
+            // Attempt to send validator balance
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, true, {
                 from: random,
+                value: withdrawalBalance,
+            }), 'Random address withdrew validator balance from a node operators minipool', "Invalid minipool owner");
+
+        });
+
+        it(printTitle('node operator', 'cannot withdraw their ETH once it is received if they do not confirm they wish to do so'), async () => {
+
+            // Send validator balance and withdraw
+            await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, false, {
+                from: node,
+                value: withdrawalBalance,
+            }), 'Random address withdrew validator balance from a node operators minipool', "Node operator did not confirm they wish to payout now");
+
+        });
+
+
+        it(printTitle('node operator', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
+
+            // Send validator balance and withdraw
+            await withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
                 value: withdrawalBalance,
             });
 
         });
+        
+        
+        it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
 
+            await web3.eth.sendTransaction({
+                from: random,
+                to: withdrawableMinipool.address,
+                value: withdrawalBalance,
+            });
 
+            // Process validator balance
+            await withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
+                value: 0,
+            });
+
+        });
+
+        
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
 
             // Get tx amount (half of withdrawal balance)
             let amount = web3.utils.toBN(withdrawalBalance).div(web3.utils.toBN(2));
 
-            // Send initial tx
-            await withdrawValidatorBalance(withdrawableMinipool, {
+            await web3.eth.sendTransaction({
                 from: random,
-                value: amount,
-            }, false);
-
-            // Send final tx
-            await withdrawValidatorBalance(withdrawableMinipool, {
-                from: random,
+                to: withdrawableMinipool.address,
                 value: amount,
             });
 
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: withdrawableMinipool.address,
+                value: amount,
+            });
+
+            // Process payout
+            await withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
+                value: 0,
+            }, false);
+
+
         });
+        
         
 
         //
         // Close
         //
 
-
+        
         it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
 
             // Close dissolved minipool
@@ -508,6 +453,7 @@ export default function() {
             }), 'Random address closed a minipool');
 
         });
+        
         
 
     });
