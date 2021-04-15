@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../types/MinipoolDeposit.sol";
+import "./RocketMinipoolInterface.sol";
 
 interface RocketMinipoolManagerInterface {
     function getMinipoolCount() external view returns (uint256);
@@ -18,7 +19,7 @@ interface RocketMinipoolManagerInterface {
     function getMinipoolWithdrawalNodeBalance(address _minipoolAddress) external view returns (uint256);
     function getMinipoolWithdrawable(address _minipoolAddress) external view returns (bool);
     function getMinipoolWithdrawalProcessed(address _minipoolAddress) external view returns (bool);
-    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) external returns (address);
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) external returns (RocketMinipoolInterface);
     function destroyMinipool() external;
     function setMinipoolPubkey(bytes calldata _pubkey) external;
     function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) external;

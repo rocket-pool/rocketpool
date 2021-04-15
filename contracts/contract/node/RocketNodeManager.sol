@@ -59,8 +59,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(rocketDAOProtocolSettingsNode.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
         // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
-        // Check node is not registered
-        require(!getBool(keccak256(abi.encodePacked("node.exists", msg.sender))), "The node is already registered in the Rocket Pool network");
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
         setAddress(keccak256(abi.encodePacked("node.withdrawal.address", msg.sender)), msg.sender);

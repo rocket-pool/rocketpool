@@ -168,11 +168,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Check withdrawal would not undercollateralize node
         require(rplStake.sub(_amount) >= getNodeMinimumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than minimum balance");
-        // Transfer RPL tokens to node address
-        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
+        // Transfer RPL tokens to node address
+        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
         emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
     }

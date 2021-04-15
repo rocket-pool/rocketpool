@@ -62,8 +62,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Create minipool
-        address minipoolAddress = rocketMinipoolManager.createMinipool(msg.sender, depositType);
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
+        RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, depositType);
         // Transfer deposit to minipool
         minipool.nodeDeposit{value: msg.value}();
         // Assign deposits if enabled

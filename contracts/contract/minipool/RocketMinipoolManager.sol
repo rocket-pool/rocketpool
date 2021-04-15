@@ -98,7 +98,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (address) {
+    function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
         // Load contracts
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
@@ -111,7 +111,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             "Minipool count after deposit exceeds limit based on node RPL stake"
         );
         // Create minipool contract
-        address contractAddress = rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType));
+        address contractAddress = address(minipool);
         // Initialize minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
@@ -124,7 +125,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Add minipool to queue
         rocketMinipoolQueue.enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
-        return contractAddress;
+        return minipool;
     }
 
     // Destroy a minipool

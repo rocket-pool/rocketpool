@@ -6,7 +6,7 @@ import "./RocketBase.sol";
 import "../interface/RocketVaultInterface.sol";
 import "../interface/RocketVaultWithdrawerInterface.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
@@ -15,6 +15,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Libs
     using SafeMath for uint;
+    using SafeERC20 for IERC20;
 
     // Network contract balances
     mapping(bytes32 => uint256) etherBalances;
@@ -77,25 +78,19 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
 
     // Accept an token deposit and assign it's balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
-    function depositToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external returns (bool) {
+    function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external returns (bool) {
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");
         // Make sure the network contract is valid (will throw if not)
         require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
-        // Get the token ERC20 instance
-        IERC20 tokenContract = IERC20(_tokenAddress);
-        // Check they can cover the amount
-        require(tokenContract.balanceOf(msg.sender) >= _amount, "Not enough tokens to cover transfer");
-        // Check they have allowed this contract to send their tokens
-        require(tokenContract.allowance(msg.sender, address(this)) >= _amount, "Not enough allowance given for transfer of tokens");
         // Get contract key
-        bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
+        bytes32 contractKey = keccak256(abi.encodePacked(_networkContractName, address(_tokenContract)));
         // Send the tokens to this contract now
-        require(tokenContract.transferFrom(msg.sender, address(this), _amount), "Token transfer was not successful");
+        require(_tokenContract.transferFrom(msg.sender, address(this), _amount), "Token transfer was not successful");
         // Update contract balance
         tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
         // Emit token transfer
-        emit TokenDeposited(contractKey, address(_tokenAddress), _amount, block.timestamp);
+        emit TokenDeposited(contractKey, address(_tokenContract), _amount, block.timestamp);
         // Done
         return true;
     }
@@ -105,14 +100,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     function withdrawToken(address _withdrawalAddress, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
-        // Get the token ERC20 instance
-        IERC20 tokenContract = IERC20(_tokenAddress);
-        // Verify this contract has that amount of tokens at a minimum
-        require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
-        // Withdraw to the desired address
-        require(tokenContract.transfer(_withdrawalAddress, _amount), "Rocket Vault token withdrawal unsuccessful");
         // Update balances
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
+        // Get the token ERC20 instance
+        IERC20 tokenContract = IERC20(_tokenAddress);
+        // Withdraw to the desired address
+        require(tokenContract.transfer(_withdrawalAddress, _amount), "Rocket Vault token withdrawal unsuccessful");
         // Emit token withdrawn event
         emit TokenWithdrawn(contractKey, address(_tokenAddress), _amount, block.timestamp);
         // Done
@@ -128,13 +121,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Get contract keys
         bytes32 contractKeyFrom = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         bytes32 contractKeyTo = keccak256(abi.encodePacked(_networkContractName, _tokenAddress));
+        // Update balances
+        tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
+        tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
         // Get the token ERC20 instance
         IERC20 tokenContract = IERC20(_tokenAddress);
         // Verify this contract has that amount of tokens at a minimum
         require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
-        // Update balances
-        tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
-        tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
         // Emit token withdrawn event
         emit TokenTransfer(contractKeyFrom, contractKeyTo, address(_tokenAddress), _amount, block.timestamp);
         // Done
