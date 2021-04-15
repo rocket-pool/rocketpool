@@ -14,7 +14,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
         version = 1;
         // Initialize settings on deployment

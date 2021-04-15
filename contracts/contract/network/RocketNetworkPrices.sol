@@ -21,7 +21,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 1;
         // Set initial RPL price

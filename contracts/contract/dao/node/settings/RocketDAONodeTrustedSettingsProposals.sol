@@ -10,7 +10,7 @@ import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProp
 contract RocketDAONodeTrustedSettingsProposals is RocketDAONodeTrustedSettings, RocketDAONodeTrustedSettingsProposalsInterface { 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "proposals") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "proposals") {
         // Set version
         version = 1;
         // Initialize settings on deployment

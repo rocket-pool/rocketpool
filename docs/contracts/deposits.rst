@@ -32,7 +32,7 @@ The following describes a basic example contract which forwards deposited ETH in
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) {
+        constructor(RocketStorageInterface _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 

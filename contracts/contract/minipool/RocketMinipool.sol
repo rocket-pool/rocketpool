@@ -42,9 +42,9 @@ contract RocketMinipool {
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
+    constructor(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
         // Check parameters
-        require(_rocketStorageAddress != address(0x0), "Invalid storage address");
+        require(address(_rocketStorageAddress) != address(0x0), "Invalid storage address");
         require(_nodeAddress != address(0x0), "Invalid node address");
         require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
         // Initialise RocketStorage

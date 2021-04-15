@@ -23,7 +23,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

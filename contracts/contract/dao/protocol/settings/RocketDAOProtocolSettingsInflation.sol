@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, RocketDAOProtocolSettingsInflationInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "inflation") {
         // Set version 
         version = 1;
          // Set some initial settings on first deployment

@@ -74,7 +74,7 @@ abstract contract RocketBase {
     /*** Methods **********************************************************/
 
     /// @dev Set the main Rocket Storage address
-    constructor(address _rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) {
         // Update the contract address
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
     }

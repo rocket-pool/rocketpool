@@ -23,7 +23,7 @@ abstract contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrust
 
 
     // Construct
-    constructor(address _rocketStorageAddress, string memory _settingNameSpace) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress, string memory _settingNameSpace) RocketBase(_rocketStorageAddress) {
         // Apply the setting namespace
         settingNameSpace = keccak256(abi.encodePacked("dao.trustednodes.setting", _settingNameSpace));
     }

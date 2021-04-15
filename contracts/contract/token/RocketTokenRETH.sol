@@ -23,7 +23,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
     event TokensBurned(address indexed from, uint256 amount, uint256 ethAmount, uint256 time);
 
     // Construct with our token details
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool ETH", "rETH") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool ETH", "rETH") {
         // Version
         version = 1;
     }

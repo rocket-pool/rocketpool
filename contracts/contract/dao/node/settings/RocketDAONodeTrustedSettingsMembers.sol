@@ -10,7 +10,7 @@ import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMemb
 contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, RocketDAONodeTrustedSettingsMembersInterface { 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "members") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "members") {
         // Set version
         version = 1;
         // Initialize settings on deployment

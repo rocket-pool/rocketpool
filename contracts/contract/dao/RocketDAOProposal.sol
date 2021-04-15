@@ -36,7 +36,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
     }

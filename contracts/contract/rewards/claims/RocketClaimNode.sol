@@ -18,7 +18,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

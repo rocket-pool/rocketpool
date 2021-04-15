@@ -27,7 +27,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

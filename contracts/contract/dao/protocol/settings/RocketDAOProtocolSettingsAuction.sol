@@ -10,7 +10,7 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuc
 contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDAOProtocolSettingsAuctionInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "auction") {
         // Set version
         version = 1;
         // Initialize settings on deployment

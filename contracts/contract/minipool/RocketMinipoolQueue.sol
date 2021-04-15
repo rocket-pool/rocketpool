@@ -24,7 +24,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     event MinipoolRemoved(address indexed minipool, bytes32 indexed queueId, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

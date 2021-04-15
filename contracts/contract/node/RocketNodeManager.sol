@@ -18,7 +18,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 

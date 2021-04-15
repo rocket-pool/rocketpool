@@ -10,7 +10,7 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNod
 contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNodeInterface {
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
         // Set version
         version = 1;
         // Initialize settings on deployment

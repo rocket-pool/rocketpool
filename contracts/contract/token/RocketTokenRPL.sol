@@ -42,7 +42,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
 
 
     // Construct
-    constructor(address _rocketStorageAddress, address _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool Protocol", "RPL") {
+    constructor(RocketStorageInterface _rocketStorageAddress, address _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool Protocol", "RPL") {
         // Version
         version = 1;
         // Set the mainnet RPL fixed supply token address

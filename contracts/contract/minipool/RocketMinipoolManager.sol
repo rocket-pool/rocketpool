@@ -21,7 +21,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 time);
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
