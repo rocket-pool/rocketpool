@@ -33,11 +33,11 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         // Addresses
-        address rplTokenAddress = getContractAddress('rocketTokenRPL');
+        IERC20 rplToken = IERC20(getContractAddress('rocketTokenRPL'));
         // Some initial checks
-        require(_amount > 0 && _amount <= rocketVault.balanceOfToken('rocketClaimDAO', rplTokenAddress), "You cannot send 0 RPL or more than the DAO has in its account");
+        require(_amount > 0 && _amount <= rocketVault.balanceOfToken('rocketClaimDAO', rplToken), "You cannot send 0 RPL or more than the DAO has in its account");
         // Send now
-        require(rocketVault.withdrawToken(_recipientAddress, rplTokenAddress, _amount), "Could not send token balance from vault for network DAO");
+        require(rocketVault.withdrawToken(_recipientAddress, rplToken, _amount), "Could not send token balance from vault for network DAO");
         // Log it
         emit RPLTokensSentByDAOProtocol(_invoiceID, address(this), _recipientAddress, _amount, block.timestamp);
     }

@@ -61,7 +61,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Get the vault contract instance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         // Check per contract
-        return rocketVault.balanceOfToken('rocketRewardsPool', getContractAddress('rocketTokenRPL'));
+        return rocketVault.balanceOfToken('rocketRewardsPool', IERC20(getContractAddress('rocketTokenRPL')));
     }
 
 
@@ -213,7 +213,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         if(getClaimIntervalsPassed() > 0) {
             // Get the balance of tokens that will be transferred to the vault for this contract when the first claim is made
             // Also account for any RPL tokens already in the vault for the rewards pool
-            rewardsTotal = rplContract.inflationCalculate().add(rocketVault.balanceOfToken('rocketRewardsPool', getContractAddress('rocketTokenRPL')));
+            rewardsTotal = rplContract.inflationCalculate().add(rocketVault.balanceOfToken('rocketRewardsPool', IERC20(getContractAddress('rocketTokenRPL'))));
         }else{
             // Claims have already been made, lets retrieve rewards total stored on first claim of this interval
             rewardsTotal = getUintS("rewards.pool.claim.interval.total");
@@ -335,7 +335,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             // Mint any new tokens from the RPL inflation
             if(rplContract.getInlfationIntervalsPassed() > 0) rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
-            setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken('rocketRewardsPool', rplContractAddress));
+            setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken('rocketRewardsPool', rplContract));
             // Set this as the start of the new claim interval
             setUintS("rewards.pool.claim.interval.block.start", claimIntervalBlockStart);
             // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to transfer them to the dao if possible
@@ -345,7 +345,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
                 // Get the DAO claim contract address
                 address daoClaimContractAddress = getContractAddress('rocketClaimDAO');
                 // Transfers the DAO's tokens to it's claiming contract from the rewards pool
-                require(rocketVault.transferToken('rocketClaimDAO', rplContractAddress, daoClaimContractAllowance), "Could not transfer token balance from vault for DAO");
+                require(rocketVault.transferToken('rocketClaimDAO', rplContract, daoClaimContractAllowance), "Could not transfer token balance from vault for DAO");
                 // Set the current claim percentage this contract is entitled to for this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", 'rocketClaimDAO')), getClaimingContractPerc('rocketClaimDAO'));
                 // Store the total RPL rewards claim for this claiming contract in this interval
@@ -373,7 +373,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // First initial checks
         require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // Send tokens now
-        require(rocketVault.withdrawToken(_toAddress, rplContractAddress, claimAmount), "Could not send token balance from vault for claim");
+        require(rocketVault.withdrawToken(_toAddress, rplContract, claimAmount), "Could not send token balance from vault for claim");
         // Store the claiming record for this interval and claiming contract
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalBlockStart, contractName, _claimerAddress)), true);
         // Store the total RPL rewards claim for this claiming contract in this interval

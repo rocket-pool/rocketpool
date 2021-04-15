@@ -32,7 +32,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Get the total RPL balance of the contract
     function getTotalRPLBalance() override public view returns (uint256) {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        return rocketVault.balanceOfToken("rocketAuctionManager", getContractAddress("rocketTokenRPL"));
+        return rocketVault.balanceOfToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")));
     }
 
     // Get/set the allotted RPL balance of the contract
@@ -249,7 +249,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         uint256 rplAmount = calcBase.mul(bidAmount).div(currentPrice);
         // Transfer RPL to bidder
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), rplAmount);
+        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), rplAmount);
         // Decrease allotted RPL balance & update address bid amount
         decreaseAllottedRPLBalance(rplAmount);
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);

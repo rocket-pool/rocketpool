@@ -104,7 +104,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Allow RocketVault to transfer these tokens to itself now
         require(rplInflationContract.approve(rocketVaultAddress, rplBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted RPL bond tokens was not successful");
         // Let vault know it can move these tokens to itself now and credit the balance to this contract
-        require(rocketVault.depositToken(getContractName(address(this)), rocketTokenRPLAddress, rplBondAmount), "Rocket Vault RPL bond deposit deposit was not successful");
+        require(rocketVault.depositToken(getContractName(address(this)), IERC20(rocketTokenRPLAddress), rplBondAmount), "Rocket Vault RPL bond deposit deposit was not successful");
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
         _memberAdd(_nodeAddress, rplBondAmount);
         // Log it
@@ -145,7 +145,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
             // Valid withdrawal address
             require(_rplBondRefundAddress != address(0x0), "Member has not supplied a valid address for their RPL bond refund");
             // Send tokens now
-            require(rocketVault.withdrawToken(_rplBondRefundAddress, getContractAddress('rocketTokenRPL'), rplBondRefundAmount), "Could not send RPL bond token balance from vault");
+            require(rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount), "Could not send RPL bond token balance from vault");
         }
         // Remove them now
         _memberRemove(msg.sender);
@@ -192,7 +192,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Refund
         if(rplBondRefundAmount > 0) {
             // Send tokens now
-            require(rocketVault.withdrawToken(_nodeAddress, getContractAddress('rocketTokenRPL'), rplBondRefundAmount), "Could not send kicked members RPL bond token balance from vault");
+            require(rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount), "Could not send kicked members RPL bond token balance from vault");
         }
         // Remove the member now
         _memberRemove(_nodeAddress);

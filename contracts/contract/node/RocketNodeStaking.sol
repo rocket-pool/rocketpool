@@ -146,7 +146,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(rplToken.transferFrom(msg.sender, address(this), _amount), "Could not transfer RPL to staking contract");
         // Deposit RPL tokens to vault
         require(rplToken.approve(rocketVaultAddress, _amount), "Could not approve vault RPL deposit");
-        rocketVault.depositToken("rocketNodeStaking", rplTokenAddress, _amount);
+        rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(msg.sender, _amount);
@@ -169,7 +169,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Check withdrawal would not undercollateralize node
         require(rplStake.sub(_amount) >= getNodeMinimumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than minimum balance");
         // Transfer RPL tokens to node address
-        rocketVault.withdrawToken(msg.sender, getContractAddress("rocketTokenRPL"), _amount);
+        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
@@ -190,7 +190,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
         if (rplSlashAmount > rplStake) { rplSlashAmount = rplStake; }
         // Transfer slashed amount to auction contract
-        rocketVault.transferToken("rocketAuctionManager", getContractAddress("rocketTokenRPL"), rplSlashAmount);
+        rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
         // Update RPL stake amounts
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
