@@ -55,12 +55,15 @@ export async function rewardsClaimNode(txOptions) {
     await rocketClaimNode.claim(txOptions);
 
     // Get updated balances
-    let balances2 = await getBalances();
+    let [details2, balances2] = await Promise.all([
+        getDetails(),
+        getBalances(),
+    ]);
 
     // Calculate expected RPL claim amount
     let calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
-    let claimPerc = calcBase.mul(details1.nodeRplStake).div(details1.totalRplStake);
-    let expectedClaimAmount = details1.nodesRplShare.mul(claimPerc).div(calcBase);
+    let claimPerc = calcBase.mul(details2.nodeRplStake).div(details2.totalRplStake);
+    let expectedClaimAmount = details2.nodesRplShare.mul(claimPerc).div(calcBase);
 
     // console.log(Number(balances1.claimIntervalBlockStart), Number(balances2.claimIntervalBlockStart));
     // console.log(web3.utils.fromWei(balances2.nodeRpl.sub(balances1.nodeRpl)), web3.utils.fromWei(expectedClaimAmount));
