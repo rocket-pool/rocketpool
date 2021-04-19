@@ -95,7 +95,26 @@ export default function() {
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network balances for the current block or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network balances for a future block'), async () => {
+
+            // Get current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+
+            // Set parameters
+            let block = blockCurrent + 1;
+            let totalBalance = web3.utils.toWei('10', 'ether');
+            let stakingBalance = web3.utils.toWei('9', 'ether');
+            let rethSupply = web3.utils.toWei('8', 'ether');
+
+            // Attempt to submit balances for future block
+            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
+                from: trustedNode1,
+            }), 'Submitted balances for a future block');
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit network balances for the current recorded block or lower'), async () => {
 
             // Set parameters
             let block = 2;

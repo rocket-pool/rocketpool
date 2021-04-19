@@ -51,6 +51,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
         // Check block
+        require(_block < block.number, "Prices can not be submitted for a future block");
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node", msg.sender, _block, _rplPrice));

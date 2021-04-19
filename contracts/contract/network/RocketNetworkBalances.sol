@@ -74,6 +74,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitBalancesEnabled(), "Submitting balances is currently disabled");
         // Check block
+        require(_block < block.number, "Balances can not be submitted for a future block");
         require(_block > getBalancesBlock(), "Network balances for an equal or higher block are set");
         // Check balances
         require(_stakingEth <= _totalEth, "Invalid network balances");

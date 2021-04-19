@@ -91,7 +91,24 @@ export default function() {
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit network prices for the current block or lower'), async () => {
+        it(printTitle('trusted nodes', 'cannot submit network prices for a future block'), async () => {
+
+            // Get current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+
+            // Set parameters
+            let block = blockCurrent + 1;
+            let rplPrice = web3.utils.toWei('0.02', 'ether');
+
+            // Attempt to submit prices for future block
+            await shouldRevert(submitPrices(block, rplPrice, {
+                from: trustedNode1,
+            }), 'Submitted prices for a future block');
+
+        });
+
+
+        it(printTitle('trusted nodes', 'cannot submit network prices for the current recorded block or lower'), async () => {
 
             // Set parameters
             let block = 2;
