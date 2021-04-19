@@ -16,14 +16,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 // The Trusted Node DAO Actions
-contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsInterface { 
+contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsInterface {
 
     using SafeMath for uint;
 
     // Events
     event ActionJoined(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);  
     event ActionLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
-    event ActionReplace(address indexed _currentNodeAddress, address indexed _newNodeAddress, uint256 time);
     event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
     event ActionChallengeMade(address indexed _nodeChallengedAddress, address indexed _nodeChallengerAddress, uint256 time);
     event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengDeciderAddress, bool _success, uint256 time);
@@ -151,33 +150,6 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         _memberRemove(msg.sender);
         // Log it
         emit ActionLeave(msg.sender, rplBondRefundAmount, block.timestamp);
-    }
-
-
-    // A member can choose to have their spot in the DAO replaced by another member 
-    // Must be run by the current member node that wishes to be replaced (so it's verified they want out)
-    function actionReplace() override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
-        // Load contracts
-        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
-        // Get the current member that wishes to be replaced
-        address memberCurrent = rocketDAONode.getMemberReplacedAddress('current', msg.sender);
-        // Get the replacement member 
-        address memberReplacement = rocketDAONode.getMemberReplacedAddress('new', msg.sender);
-        // Verify the replacement member is still a registered node
-        require(getBool(keccak256(abi.encodePacked("node.exists", memberReplacement))), "Replacement member is no longer a registered RP node");
-        // Check they are confirming they wish to be replaced
-        require(memberCurrent == msg.sender, "The replace method must be run by the current member that wishes to be replaced");
-        // The block that the member was successfully allowed to be replaced
-        uint256 memberReplaceBlock = rocketDAONode.getMemberProposalExecutedBlock('replace', msg.sender);
-        // Has their invite expired?
-        require(memberReplaceBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This nodes invitation to replace a node has expired, please apply again");
-        // Add new member now (rpl bond transfers to the new member)
-        _memberAdd(memberReplacement, rocketDAONode.getMemberRPLBondAmount(memberCurrent));
-        // Remove existing member now
-        _memberRemove(memberCurrent);
-        // Log it
-        emit ActionReplace(memberCurrent, msg.sender, block.timestamp);
     }
 
 

@@ -7,7 +7,7 @@ import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade, setDaoNodeTrustedMemberRequired } from './scenario-dao-node-trusted-bootstrap';
-import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberReplace, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
+import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
 
 // Contracts
@@ -489,44 +489,7 @@ export default function() {
         });
 
 
-       it(printTitle('registeredNodeTrusted1', 'creates a proposal to replace themselves with registeredNode2 in the DAO, it is successful and registeredNode2 becomes a member and takes over their RPL bond'), async () => {
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            let proposalActionBlocks = 2; 
-            // Current member to be replaced
-            let currentMember = registeredNodeTrusted1;
-            // New member to replace current member
-            let newMember = registeredNode2;
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.action.blocks', proposalActionBlocks, { from: guardian });
-            // Encode the calldata for the proposal
-            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
-                {name: 'proposalReplace', type: 'function', inputs: [{type: 'address', name: '_memberNodeAddress'}, {type: 'string', name: '_replaceId'},{type: 'string', name: '_replaceEmail'}, {type: 'address', name: '__replaceNodeAddress'}]},
-                [currentMember, 'SaaS_Provider_99', 'registeredNode2@sass.com', newMember]
-            );
-            // Add the proposal
-            let proposalID = await daoNodeTrustedPropose('hey guys, can Id like to be replaced by registeredNode2', proposalCalldata, {
-                from: registeredNodeTrusted2
-            });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
-            // Now lets vote
-            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
-            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
-            // Fast forward to this voting period finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
-            // Proposal should be successful, lets execute it
-            await daoNodeTrustedExecute(proposalID, { from: registeredNodeTrusted2 });
-            // Member can now be replaced
-            await daoNodeTrustedMemberReplace(newMember, {from: currentMember});
-        });
-
-    
+   
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();

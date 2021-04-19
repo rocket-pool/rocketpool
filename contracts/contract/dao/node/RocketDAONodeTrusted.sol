@@ -126,11 +126,6 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress))); 
     }
 
-    // Get an address that's either to be replaced or is being replaced
-    function getMemberReplacedAddress(string memory _type, address _nodeAddress) override public view returns (address) { 
-        return getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", _type, _nodeAddress))); 
-    }
-
     // Is this member currently being 'challenged' to see if their node is responding
     function getMemberIsChallenged(address _nodeAddress) override public view returns (bool) { 
         // Has this member been challenged recently and still within the challenge window to respond? If there is a challenge block recorded against them, they are actively being challenged.
