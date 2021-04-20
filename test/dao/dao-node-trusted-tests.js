@@ -774,6 +774,22 @@ export default function() {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketVault', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
                 from: guardian,
             }), 'Upgraded a protected contract', 'Cannot upgrade the vault');
+            
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRETH', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+                from: guardian,
+            }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
+            
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRPL', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+                from: guardian,
+            }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
+            
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRPLFixedSupply', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+                from: guardian,
+            }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
+
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'casperDeposit', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+                from: guardian,
+            }), 'Upgraded a protected contract', 'Cannot upgrade the casper deposit contract');
         });
 
         it(printTitle('guardian', 'can add a contract in bootstrap mode'), async () => {
