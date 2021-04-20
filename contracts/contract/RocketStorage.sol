@@ -19,10 +19,12 @@ contract RocketStorage is RocketStorageInterface {
     mapping(bytes32 => int256)     private intStorage;
     mapping(bytes32 => bytes32)    private bytes32Storage;
 
+    // Flag storage has been initialised
+    bool storageInit = false;
 
     /// @dev Only allow access from the latest version of a contract in the Rocket Pool network after deployment
     modifier onlyLatestRocketNetworkContract() {
-        if (boolStorage[keccak256(abi.encodePacked("contract.storage.initialised"))] == true) {
+        if (storageInit == true) {
             // Make sure the access is permitted to only contracts in our Dapp
             require(boolStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))], "Invalid or outdated network contract");
         } else {
@@ -38,9 +40,23 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @dev Construct RocketStorage
     constructor() {
-        // Set the main guiardian upon deployment
+        // Set the main guardian upon deployment
         boolStorage[keccak256(abi.encodePacked("access.role", "guardian", msg.sender))] = true;
     }
+
+    // Set this as being deployed now
+    function getDeployedStatus() public view returns (bool) {
+        return storageInit;
+    }
+
+    // Set this as being deployed now
+    function setDeployedStatus() public {
+        // Only guardian can lock this down
+        require(boolStorage[keccak256(abi.encodePacked("access.role", "guardian", msg.sender))] == true, "Is not guardian account");
+        // Set it now
+        storageInit = true;
+    }
+
 
 
     /// @param _key The key for the record
