@@ -6,7 +6,7 @@ import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
-import { setWithdrawalAddress } from './scenario-set-withdrawal-address';
+import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
 
 
 export default function() {
@@ -18,7 +18,8 @@ export default function() {
             owner,
             node,
             registeredNode,
-            withdrawalAddress,
+            withdrawalAddress1,
+            withdrawalAddress2,
             random,
         ] = accounts;
 
@@ -94,11 +95,16 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can set their withdrawal address'), async () => {
+        it(printTitle('node operator', 'can set their withdrawal address immediately'), async () => {
 
             // Set withdrawal address
-            await setWithdrawalAddress(withdrawalAddress, {
+            await setWithdrawalAddress(withdrawalAddress1, true, {
                 from: registeredNode,
+            });
+
+            // Set withdrawal address again
+            await setWithdrawalAddress(withdrawalAddress2, true, {
+                from: withdrawalAddress1,
             });
 
         });
@@ -107,7 +113,7 @@ export default function() {
         it(printTitle('node operator', 'cannot set their withdrawal address to an invalid address'), async () => {
 
             // Attempt to set withdrawal address
-            await shouldRevert(setWithdrawalAddress('0x0000000000000000000000000000000000000000', {
+            await shouldRevert(setWithdrawalAddress('0x0000000000000000000000000000000000000000', true, {
                 from: registeredNode,
             }), 'Set a withdrawal address to an invalid address');
 
@@ -117,9 +123,40 @@ export default function() {
         it(printTitle('random address', 'cannot set a withdrawal address'), async () => {
 
             // Attempt to set withdrawal address
-            await shouldRevert(setWithdrawalAddress(withdrawalAddress, {
+            await shouldRevert(setWithdrawalAddress(withdrawalAddress1, true, {
                 from: random,
             }), 'Random address set a withdrawal address');
+
+        });
+
+
+        it(printTitle('node operator', 'can set and confirm their withdrawal address'), async () => {
+
+            // Set & confirm withdrawal address
+            await setWithdrawalAddress(withdrawalAddress1, false, {
+                from: registeredNode,
+            });
+            await confirmWithdrawalAddress({
+                from: withdrawalAddress1,
+            });
+
+            // Set & confirm withdrawal address again
+            await setWithdrawalAddress(withdrawalAddress2, false, {
+                from: withdrawalAddress1,
+            });
+            await confirmWithdrawalAddress({
+                from: withdrawalAddress2,
+            });
+
+        });
+
+
+        it(printTitle('random address', 'cannot confirm itself as a withdrawal address'), async () => {
+
+            // Attempt to confirm a withdrawal address
+            await shouldRevert(confirmWithdrawalAddress({
+                from: random,
+            }), 'Random address confirmed itself as a withdrawal address');
 
         });
 
