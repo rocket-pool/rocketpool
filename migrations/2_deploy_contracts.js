@@ -270,10 +270,9 @@ module.exports = async (deployer, network) => {
   await addABIs();
 
   // Disable direct access to storage now
-  await rocketStorageInstance.setBool(
-    $web3.utils.soliditySha3('contract.storage.initialised'),
-    true
-  );
+  await rocketStorageInstance.setDeployedStatus();
+  if(await rocketStorageInstance.getDeployedStatus() != true) throw 'Storage Access Not Locked Down!!';
+
   // Log it
   console.log('\n');
   console.log('\x1b[32m%s\x1b[0m', '  Storage Direct Access For Owner Removed... Lets begin! :)');
