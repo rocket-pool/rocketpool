@@ -124,7 +124,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         if (_block >= endBlock) { return endPrice; }
         uint256 tn = _block.sub(startBlock);
         uint256 td = endBlock.sub(startBlock);
-        return startPrice.sub(startPrice.sub(endPrice).mul(tn).div(td).mul(tn).div(td));
+        return startPrice.sub(startPrice.sub(endPrice).mul(tn).mul(tn).div(td).div(td));
     }
 
     // Get the RPL price for a lot at the current block
