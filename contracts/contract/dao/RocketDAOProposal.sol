@@ -191,7 +191,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Update the total proposals
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "total")), proposalID);
         // Log it
-        emit ProposalAdded(msg.sender, _dao, proposalID, _payload, block.timestamp);
+        emit ProposalAdded(_member, _dao, proposalID, _payload, block.timestamp);
         // Done
         return proposalID;
     }
@@ -231,7 +231,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         // Was there an error?
         require(success, getRevertMsg(response));
         // Log it
-        emit ProposalExecuted(_proposalID, msg.sender, block.timestamp);
+        emit ProposalExecuted(_proposalID, tx.origin, block.timestamp);
     }
 
 
