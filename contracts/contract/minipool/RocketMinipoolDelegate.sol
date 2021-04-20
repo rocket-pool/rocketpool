@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../../interface/RocketStorageInterface.sol";
+import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/casper/DepositInterface.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
@@ -13,43 +13,15 @@ import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkWithdrawalInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipoolDelegate is RocketMinipoolInterface {
+contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
 
     // Libs
     using SafeMath for uint;
-
-    // Main Rocket Pool storage contract
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);
-
-    // Status
-    MinipoolStatus private status;
-    uint256 private statusBlock;
-    uint256 private statusTime;
-
-    // Deposit type
-    MinipoolDeposit private depositType;
-
-    // Node details
-    address private nodeAddress;
-    uint256 private nodeFee;
-    uint256 private nodeDepositBalance;
-    uint256 private nodeRefundBalance;
-    bool private nodeDepositAssigned;
- 
-    // User deposit details
-    uint256 private userDepositBalance;
-    bool private userDepositAssigned;
-    uint256 private userDepositAssignedTime;
-
-    // Staking details
-    uint256 private stakingStartBalance;
-    uint256 private stakingEndBalance;
 
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);

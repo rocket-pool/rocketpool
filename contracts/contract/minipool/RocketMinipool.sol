@@ -2,6 +2,7 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -9,34 +10,7 @@ import "../../types/MinipoolStatus.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipool {
-
-    // Main Rocket Pool storage contract
-    RocketStorageInterface private rocketStorage = RocketStorageInterface(0);
-
-    // Status
-    MinipoolStatus private status;
-    uint256 private statusBlock;
-    uint256 private statusTime;
-
-    // Deposit type
-    MinipoolDeposit private depositType;
-
-    // Node details
-    address private nodeAddress;
-    uint256 private nodeFee;
-    uint256 private nodeDepositBalance;
-    uint256 private nodeRefundBalance;
-    bool private nodeDepositAssigned;
-
-    // User deposit details
-    uint256 private userDepositBalance;
-    bool private userDepositAssigned;
-    uint256 private userDepositAssignedTime;
-
-    // Staking details
-    uint256 private stakingStartBalance;
-    uint256 private stakingEndBalance;
+contract RocketMinipool is RocketMinipoolStorageLayout {
 
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
