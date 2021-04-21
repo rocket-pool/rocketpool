@@ -27,7 +27,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
             web3.eth.getBlockNumber(),
             rocketTokenRPL.totalSupply.call(),
             rocketTokenRPL.getInflationIntervalStartBlock.call(),
-            rocketTokenRPL.getInlfationIntervalsPassed.call(),
+            rocketTokenRPL.getInflationIntervalsPassed.call(),
             rocketTokenRPL.getInflationCalcBlock.call(),
             rocketTokenRPL.getInflationIntervalBlocks.call(),
             rocketTokenRPL.balanceOf(rocketVault.address),

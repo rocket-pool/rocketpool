@@ -105,7 +105,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     * Compute interval since last inflation update (on call)
     * @return uint256 Time intervals since last update
     */
-    function getInlfationIntervalsPassed() override public view returns(uint256) {
+    function getInflationIntervalsPassed() override public view returns(uint256) {
         // The block that inflation was last calculated at
         uint256 inflationLastCalculatedBlock = getInflationCalcBlock();
         // Get the daily inflation in blocks
@@ -129,7 +129,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Optimisation
         uint256 inflationRate = getInflationIntervalRate();
         // Compute the number of inflation intervals elapsed since the last time we minted infation tokens
-        uint256 intervalsSinceLastMint = getInlfationIntervalsPassed();
+        uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
         if(intervalsSinceLastMint > 0 && inflationRate > 0) {
             // Our inflation rate
@@ -162,7 +162,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Lets check
         require(newTokens > 0 && rocketVaultAddress != address(0x0), "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
         // Update last inflation calculation block
-        inflationCalcBlock = getInflationCalcBlock().add(getInflationIntervalBlocks().mul(getInlfationIntervalsPassed()));
+        inflationCalcBlock = getInflationCalcBlock().add(getInflationIntervalBlocks().mul(getInflationIntervalsPassed()));
         // Miint to itself, then allocate tokens for transfer to rewards contract, this will Update balance & supply
         _mint(address(this), newTokens);
         // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
