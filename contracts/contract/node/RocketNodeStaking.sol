@@ -119,6 +119,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
             .div(rocketNetworkPrices.getRPLPrice());
     }
 
+    // Get a node's maximum RPL stake to fully collateralize their minipools
+    function getNodeMaximumRPLStake(address _nodeAddress) override public view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Calculate maximum RPL stake
+        return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
+            .div(rocketNetworkPrices.getRPLPrice());
+    }
+
     // Get a node's minipool limit based on RPL stake
     function getNodeMinipoolLimit(address _nodeAddress) override public view returns (uint256) {
         // Load contracts
@@ -167,7 +181,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Check withdrawal would not undercollateralize node
-        require(rplStake.sub(_amount) >= getNodeMinimumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than minimum balance");
+        require(rplStake.sub(_amount) >= getNodeMaximumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than required balance");
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
