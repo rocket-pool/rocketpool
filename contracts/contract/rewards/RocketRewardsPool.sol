@@ -266,8 +266,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     
     // How much this claimer is entitled to claim, checks parameters that claim() will check
     function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) { 
-        // The name of the claiming contract
-        string memory contractName = getContractName(msg.sender);
         // Get the total rewards available for this claiming contract
         uint256 contractClaimTotal = getClaimingContractAllowance(_claimingContract);
         // How much of the above that this claimer will receive
@@ -284,7 +282,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
              // Now calculate how much this claimer would receive 
             claimerTotal = _claimerAmountPerc.mul(contractClaimTotal).div(calcBase);
             // Is it more than currently available + the amount claimed already for this claim interval?
-            claimerTotal = claimerTotal.add(getClaimingContractTotalClaimed(contractName)) <= getClaimingContractAllowance(contractName) ? claimerTotal : 0;
+            claimerTotal = claimerTotal.add(getClaimingContractTotalClaimed(_claimingContract)) <= getClaimingContractAllowance(_claimingContract) ? claimerTotal : 0;
         }
         // Done
         return claimerTotal;
@@ -333,7 +331,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Is this the first claim of this interval? If so, set the rewards total for this interval
         if(getClaimIntervalsPassed() > 0) {
             // Mint any new tokens from the RPL inflation
-            if(rplContract.getInlfationIntervalsPassed() > 0) rplContract.inflationMintTokens();
+            if(rplContract.getInflationIntervalsPassed() > 0) rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
             setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken('rocketRewardsPool', rplContract));
             // Set this as the start of the new claim interval

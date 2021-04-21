@@ -18,7 +18,7 @@ export async function rewardsClaimDAO(txOptions) {
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 
     // Call the mint function on RPL to mint any before we begin so we have accurate figures to work with
-    if(await rocketTokenRPL.getInlfationIntervalsPassed() > 0) await rocketTokenRPL.inflationMintTokens();
+    if(await rocketTokenRPL.getInflationIntervalsPassed() > 0) await rocketTokenRPL.inflationMintTokens();
 
     // Get data about the tx
     function getTxData() {
