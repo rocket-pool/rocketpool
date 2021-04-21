@@ -23,7 +23,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoProposalNameSpace = 'dao.proposal';
+    string private daoProposalNameSpace = 'dao.proposal.';
 
     
     // Only allow the DAO contract to access

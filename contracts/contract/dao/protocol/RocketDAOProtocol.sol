@@ -10,7 +10,7 @@ import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
 contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
     // The namespace for any data stored in the network DAO (do not change)
-    string private daoNameSpace = 'dao.protocol';
+    string private daoNameSpace = 'dao.protocol.';
 
     // Only allow bootstrapping when enabled
     modifier onlyBootstrapMode() {

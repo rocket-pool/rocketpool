@@ -29,7 +29,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoNameSpace = 'dao.trustednodes';
+    string private daoNameSpace = 'dao.trustednodes.';
 
 
     // Construct

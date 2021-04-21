@@ -25,7 +25,7 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress, string memory _settingNameSpace) RocketBase(_rocketStorageAddress) {
         // Apply the setting namespace
-        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting", _settingNameSpace));
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", _settingNameSpace));
     }
 
 

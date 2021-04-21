@@ -25,7 +25,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoNameSpace = 'dao.trustednodes';
+    string private daoNameSpace = 'dao.trustednodes.';
 
     // Min amount of trusted node members required in the DAO
     uint256 private daoMemberMinCount = 3;

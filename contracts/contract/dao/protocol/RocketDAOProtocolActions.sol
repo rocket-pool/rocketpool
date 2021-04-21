@@ -20,7 +20,7 @@ contract RocketDAOProtocolActions is RocketBase, RocketDAOProtocolActionsInterfa
     uint256 private calcBase = 1 ether;
 
     // The namespace for any data stored in the network DAO (do not change)
-    string private daoNameSpace = 'dao.protocol';
+    string private daoNameSpace = 'dao.protocol.';
 
 
     // Construct

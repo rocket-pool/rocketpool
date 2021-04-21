@@ -47,7 +47,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any sender that isn't a trusted node DAO member
     */
     modifier onlyTrustedNode(address _nodeAddress) {
-        require(getBool(keccak256(abi.encodePacked("dao.trustednodes", "member", _nodeAddress))), "Invalid trusted node");
+        require(getBool(keccak256(abi.encodePacked("dao.trustednodes.", "member", _nodeAddress))), "Invalid trusted node");
         _;
     }
 
