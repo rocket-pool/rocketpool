@@ -191,7 +191,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Get the node operators withdrawal address
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
         // The withdrawal address must be the one processing the withdrawal. It can be the node operators address or another one they have set to receive withdrawals instead of their node account
-        require(nodeWithdrawalAddress == msg.sender, "The payout function must be called by the current node operators withdrawal address");
+        require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "The payout function must be called by the current node operators withdrawal address");
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(nodeWithdrawalAddress);

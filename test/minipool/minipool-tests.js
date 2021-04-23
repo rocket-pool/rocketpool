@@ -364,11 +364,21 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
+        it(printTitle('node operator withdrawal address', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
 
             // Send validator balance and withdraw
             await withdrawValidatorBalance(withdrawableMinipool, true, {
                 from: nodeWithdrawalAddress,
+                value: withdrawalBalance,
+            });
+
+        });
+
+        it(printTitle('node operator account', 'can also withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
+
+            // Send validator balance and withdraw
+            await withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
                 value: withdrawalBalance,
             });
 

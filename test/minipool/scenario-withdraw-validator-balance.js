@@ -110,8 +110,10 @@ export async function withdrawValidatorBalance(minipool, confirm = false, txOpti
         assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(withdrawalUserAmount)), 'Incorrect updated deposit pool balance');
     }
 
+    // Was it the node operator running this or the withdrawal address? We'll need to subtract the tx cost if it's the withdrawal address
+    let withdrawalAmount = nodeAddress.toLowerCase() == txOptions.from.toLowerCase() ? withdrawalNodeAmount : withdrawalNodeAmount.sub(txFee);
     // Verify node withdrawal address has the expected ETH
-    assert((balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)).eq(withdrawalNodeAmount.sub(txFee)), 'Incorrect node operator withdrawal address balance');
+    assert((balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)).eq(withdrawalAmount), 'Incorrect node operator withdrawal address balance');
 
 
 }
