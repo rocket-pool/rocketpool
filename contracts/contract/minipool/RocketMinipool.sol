@@ -35,7 +35,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         nodeFee = rocketNetworkFees.getNodeFee();
     }
 
-    // Receive the minipool's withdrawn eth2 validator balance
+    // Receive an ETH deposit
     receive() external payable {
         // Emit ether received event
         emit EtherReceived(msg.sender, msg.value, block.timestamp);

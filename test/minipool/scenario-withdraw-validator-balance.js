@@ -69,10 +69,16 @@ export async function withdrawValidatorBalance(minipool, confirm = false, txOpti
         rocketMinipoolManager.getMinipoolWithdrawalProcessed.call(minipool.address),
     ]);
 
+    // Set gas price
+    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    txOptions.gasPrice = gasPrice;
+
     // Payout the balances now
-    await minipool.payout(confirm, {
+    let txReceipt = await minipool.payout(confirm, {
         from: txOptions.from
     });
+
+    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
     
     // Get updated balances & withdrawal processed status
     let [balances2, withdrawalProcessed2] = await Promise.all([
@@ -105,7 +111,7 @@ export async function withdrawValidatorBalance(minipool, confirm = false, txOpti
     }
 
     // Verify node withdrawal address has the expected ETH
-    assert((balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)).eq(withdrawalNodeAmount), 'Incorrect node operator withdrawal address balance');
+    assert((balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)).eq(withdrawalNodeAmount.sub(txFee)), 'Incorrect node operator withdrawal address balance');
 
 
 }

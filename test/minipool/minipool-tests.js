@@ -15,7 +15,7 @@ import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
-    contract('RocketMinipool', async (accounts) => {
+    contract.only('RocketMinipool', async (accounts) => {
 
 
         // Accounts
@@ -336,7 +336,7 @@ export default function() {
 
             // Attempt to send validator balance
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, true, {
-                from: node,
+                from: nodeWithdrawalAddress,
                 value: withdrawalBalance,
             }), 'Payout method was run while withdrawals was disabled', "Processing withdrawals is currently disabled");
 
@@ -349,7 +349,7 @@ export default function() {
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, true, {
                 from: random,
                 value: withdrawalBalance,
-            }), 'Random address withdrew validator balance from a node operators minipool', "Invalid minipool owner");
+            }), 'Random address withdrew validator balance from a node operators minipool', "The payout function must be called by the current node operators withdrawal address");
 
         });
 
@@ -357,7 +357,7 @@ export default function() {
 
             // Send validator balance and withdraw
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, false, {
-                from: node,
+                from: nodeWithdrawalAddress,
                 value: withdrawalBalance,
             }), 'Random address withdrew validator balance from a node operators minipool', "Node operator did not confirm they wish to payout now");
 
@@ -368,7 +368,7 @@ export default function() {
 
             // Send validator balance and withdraw
             await withdrawValidatorBalance(withdrawableMinipool, true, {
-                from: node,
+                from: nodeWithdrawalAddress,
                 value: withdrawalBalance,
             });
 
@@ -385,7 +385,7 @@ export default function() {
 
             // Process validator balance
             await withdrawValidatorBalance(withdrawableMinipool, true, {
-                from: node,
+                from: nodeWithdrawalAddress,
                 value: 0,
             });
 
@@ -411,7 +411,7 @@ export default function() {
 
             // Process payout
             await withdrawValidatorBalance(withdrawableMinipool, true, {
-                from: node,
+                from: nodeWithdrawalAddress,
                 value: 0,
             }, false);
 

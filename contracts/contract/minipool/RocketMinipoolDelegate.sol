@@ -180,7 +180,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Minipool should be in withdrawable status, and only set that way once it has a balance close to the stakingEndBalance
     // Requires confirmation by the node operator to execute this as it will also destroy the minipool
     // Should only ever be executed once the minipool has received an ETH balance from the SWC, onus is on the node operator
-    function payout(bool _confirmPayout) override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) { 
+    function payout(bool _confirmPayout) override external onlyRegisteredMinipool(address(this)) { 
         // Require confirmation the node operator wishes to pay out now with the current ETH balance on the contract
         require(_confirmPayout, "Node operator did not confirm they wish to payout now");
         // Check current status
@@ -188,9 +188,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        // Get the node operators withdrawal address
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+        // The withdrawal address must be the one processing the withdrawal. It can be the node operators address or another one they have set to receive withdrawals instead of their node account
+        require(nodeWithdrawalAddress == msg.sender, "The payout function must be called by the current node operators withdrawal address");
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
-        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(rocketNodeManager.getNodeWithdrawalAddress(nodeAddress));
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(nodeWithdrawalAddress);
         // Destroy minipool now
         destroy();
     }
