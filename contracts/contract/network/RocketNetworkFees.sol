@@ -72,7 +72,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         // Get fee interpolation factor
         uint256 t = nNodeDemand.div(demandDivisor) ** 3;
         // Interpolate between min / target / max fee
-        if (nNodeDemandSign) { return targetFee.add(maxFee.sub(targetFee).mul(t).div(calcBase)); }
+        if (nNodeDemandSign) { return targetFee.add(maxFee.sub(targetFee).mul(calcBase.sub(t)).div(calcBase)); }
         return minFee.add(targetFee.sub(minFee).mul(calcBase.sub(t)).div(calcBase));
     }
 
