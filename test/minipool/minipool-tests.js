@@ -15,7 +15,7 @@ import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
-    contract.only('RocketMinipool', async (accounts) => {
+    contract('RocketMinipool', async (accounts) => {
 
 
         // Accounts
