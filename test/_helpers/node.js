@@ -80,9 +80,9 @@ export async function setNodeTrusted(_account, _id, _email, owner) {
 
 
 // Set a withdrawal address for a node
-export async function setNodeWithdrawalAddress(withdrawalAddress, txOptions) {
+export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();
-    await rocketNodeManager.setWithdrawalAddress(withdrawalAddress, true, txOptions);
+    await rocketNodeManager.setWithdrawalAddress(nodeAddress, withdrawalAddress, true, txOptions);
 }
 
 
