@@ -49,7 +49,7 @@ export default function() {
 
             // Register node & set withdrawal address
             await registerNode({from: node});
-            await setNodeWithdrawalAddress(nodeWithdrawalAddress, {from: node});
+            await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
 
             // Register trusted node
             await registerNode({from: trustedNode});

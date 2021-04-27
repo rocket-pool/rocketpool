@@ -17,9 +17,11 @@ export default function() {
         const [
             owner,
             node,
-            registeredNode,
+            registeredNode1,
+            registeredNode2,
             withdrawalAddress1,
             withdrawalAddress2,
+            withdrawalAddress3,
             random,
         ] = accounts;
 
@@ -33,8 +35,9 @@ export default function() {
         // Setup
         before(async () => {
 
-            // Register node
-            await registerNode({from: registeredNode});
+            // Register nodes
+            await registerNode({from: registeredNode1});
+            await registerNode({from: registeredNode2});
 
         });
 
@@ -98,12 +101,35 @@ export default function() {
         it(printTitle('node operator', 'can set their withdrawal address immediately'), async () => {
 
             // Set withdrawal address
-            await setWithdrawalAddress(withdrawalAddress1, true, {
-                from: registeredNode,
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
+                from: registeredNode1,
             });
 
             // Set withdrawal address again
-            await setWithdrawalAddress(withdrawalAddress2, true, {
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress2, true, {
+                from: withdrawalAddress1,
+            });
+
+        });
+
+
+        it(printTitle('node operator', 'can set their withdrawal address to the same value as another node operator'), async () => {
+
+            // Set withdrawal addresses
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
+                from: registeredNode1,
+            });
+
+            await setWithdrawalAddress(registeredNode2, withdrawalAddress1, true, {
+                from: registeredNode2,
+            });
+
+            // Set withdrawal addresses again
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress2, true, {
+                from: withdrawalAddress1,
+            });
+
+            await setWithdrawalAddress(registeredNode2, withdrawalAddress2, true, {
                 from: withdrawalAddress1,
             });
 
@@ -113,8 +139,8 @@ export default function() {
         it(printTitle('node operator', 'cannot set their withdrawal address to an invalid address'), async () => {
 
             // Attempt to set withdrawal address
-            await shouldRevert(setWithdrawalAddress('0x0000000000000000000000000000000000000000', true, {
-                from: registeredNode,
+            await shouldRevert(setWithdrawalAddress(registeredNode1, '0x0000000000000000000000000000000000000000', true, {
+                from: registeredNode1,
             }), 'Set a withdrawal address to an invalid address');
 
         });
@@ -123,7 +149,7 @@ export default function() {
         it(printTitle('random address', 'cannot set a withdrawal address'), async () => {
 
             // Attempt to set withdrawal address
-            await shouldRevert(setWithdrawalAddress(withdrawalAddress1, true, {
+            await shouldRevert(setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
                 from: random,
             }), 'Random address set a withdrawal address');
 
@@ -133,18 +159,18 @@ export default function() {
         it(printTitle('node operator', 'can set and confirm their withdrawal address'), async () => {
 
             // Set & confirm withdrawal address
-            await setWithdrawalAddress(withdrawalAddress1, false, {
-                from: registeredNode,
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress1, false, {
+                from: registeredNode1,
             });
-            await confirmWithdrawalAddress({
+            await confirmWithdrawalAddress(registeredNode1, {
                 from: withdrawalAddress1,
             });
 
             // Set & confirm withdrawal address again
-            await setWithdrawalAddress(withdrawalAddress2, false, {
+            await setWithdrawalAddress(registeredNode1, withdrawalAddress2, false, {
                 from: withdrawalAddress1,
             });
-            await confirmWithdrawalAddress({
+            await confirmWithdrawalAddress(registeredNode1, {
                 from: withdrawalAddress2,
             });
 
@@ -154,7 +180,7 @@ export default function() {
         it(printTitle('random address', 'cannot confirm itself as a withdrawal address'), async () => {
 
             // Attempt to confirm a withdrawal address
-            await shouldRevert(confirmWithdrawalAddress({
+            await shouldRevert(confirmWithdrawalAddress(registeredNode1, {
                 from: random,
             }), 'Random address confirmed itself as a withdrawal address');
 
@@ -170,7 +196,7 @@ export default function() {
 
             // Set timezone location
             await setTimezoneLocation('Australia/Sydney', {
-                from: registeredNode,
+                from: registeredNode1,
             });
 
         });
@@ -180,7 +206,7 @@ export default function() {
 
             // Attempt to set timezone location
             await shouldRevert(setTimezoneLocation('a', {
-                from: registeredNode,
+                from: registeredNode1,
             }), 'Set a timezone location to an invalid value');
 
         });

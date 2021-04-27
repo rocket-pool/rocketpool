@@ -89,7 +89,7 @@ export default function() {
             await registerNode({from: registeredNodeTrusted3});
 
             // Set node 1 withdrawal address
-            await setNodeWithdrawalAddress(node1WithdrawalAddress, {from: registeredNode1});
+            await setNodeWithdrawalAddress(registeredNode1, node1WithdrawalAddress, {from: registeredNode1});
 
             // Set nodes as trusted
             await setNodeTrusted(registeredNodeTrusted1, 'saas_1', 'node@home.com', owner);
