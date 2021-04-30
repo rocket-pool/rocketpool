@@ -92,6 +92,8 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // The block that the member was successfully invited to join the DAO
         uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock('invited', _nodeAddress);
+        // Have they been invited
+        require(memberInvitedBlock > 0, "This node has not been invited to join");
         // The current member bond amount in RPL that's required
         uint256 rplBondAmount = rocketDAONodeTrustedSettingsMembers.getRPLBond();
         // Has their invite expired?
