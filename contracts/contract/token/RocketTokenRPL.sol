@@ -188,14 +188,6 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     function swapTokens(uint256 _amount) override external {
         // Valid amount?
         require(_amount > 0, "Please enter valid amount of RPL to swap");
-        // Check they have a valid amount to swap from
-        require(rplFixedSupplyContract.balanceOf(address(msg.sender)) > 0, "No existing RPL fixed supply tokens available to swap");
-        // Check they can cover the amount
-        require(rplFixedSupplyContract.balanceOf(address(msg.sender)) >= _amount, "Not enough RPL fixed supply tokens available to cover swap amount desired");
-        // Check they have allowed this contract to send their tokens
-        uint256 allowance = rplFixedSupplyContract.allowance(msg.sender, address(this));
-        // Enough to cover it?
-        require(allowance >= _amount, "Not enough allowance given for transfer of tokens");
         // Send the tokens to this contract now and mint new ones for them
         require(rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing RPL contract was not successful");
         // Initialise itself and send from it's own balance (cant just do a transfer as it's a user calling this so they are msg.sender)
