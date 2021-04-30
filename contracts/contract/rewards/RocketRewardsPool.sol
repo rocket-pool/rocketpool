@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
-    // Our base calc
-    uint256 calcBase = 1 ether; 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
 
     // Libs
     using SafeMath for uint;

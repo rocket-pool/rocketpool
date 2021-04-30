@@ -17,6 +17,9 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -44,7 +47,6 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     // Get the RP network node fee for a node demand value
     function getNodeFeeByDemand(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
-        uint256 calcBase = 1 ether;
         uint256 demandDivisor = 1000000000000;
         // Get settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));

@@ -21,7 +21,7 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
     /**** Properties ***********/
 
     // How many RPL tokens minted to date (18m from fixed supply)
-    uint256 public totalInitialSupply = 18000000000000000000000000;
+    uint256 constant totalInitialSupply = 18000000000000000000000000;
     // How many RPL tokens have been swapped for new ones
     uint256 public totalSwappedRPL = 0;
 

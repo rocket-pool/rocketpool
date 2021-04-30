@@ -16,6 +16,9 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Events
     event BalancesSubmitted(address indexed from, uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
     event BalancesUpdated(uint256 block, uint256 totalEth, uint256 stakingEth, uint256 rethSupply, uint256 time);
@@ -60,7 +63,6 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH
     // Represents what % of the network's balance is actively earning rewards
     function getETHUtilizationRate() override public view returns (uint256) {
-        uint256 calcBase = 1 ether;
         uint256 totalEthBalance = getTotalETHBalance();
         uint256 stakingEthBalance = getStakingETHBalance();
         if (totalEthBalance == 0) { return calcBase; }
@@ -91,7 +93,6 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Emit balances submitted event
         emit BalancesSubmitted(msg.sender, _block, _totalEth, _stakingEth, _rethSupply, block.timestamp);
         // Check submission count & update network balances
-        uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             updateBalances(_block, _totalEth, _stakingEth, _rethSupply);

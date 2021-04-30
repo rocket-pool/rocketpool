@@ -21,6 +21,9 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Events
     event MinipoolWithdrawableSubmitted(address indexed from, address indexed minipool, uint256 stakingStartBalance, uint256 stakingEndBalance, uint256 time);
     event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
@@ -57,7 +60,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Emit minipool withdrawable status submitted event
         emit MinipoolWithdrawableSubmitted(msg.sender, _minipoolAddress, _stakingStartBalance, _stakingEndBalance, block.timestamp);
         // Check submission count & set minipool withdrawable
-        uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             setMinipoolWithdrawable(_minipoolAddress, _stakingStartBalance, _stakingEndBalance);
@@ -111,7 +113,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
             uint256 nodeShare = rewards.mul(nodeBalance).div(_startBalance);
             rewards = rewards.sub(nodeShare);
             // Calculate node commission on user share of rewards
-            uint256 calcBase = 1 ether;
             uint256 nodeCommission = rewards.mul(_nodeFee).div(calcBase);
             // Update node reward amount
             nodeAmount = nodeBalance.add(nodeShare).add(nodeCommission);

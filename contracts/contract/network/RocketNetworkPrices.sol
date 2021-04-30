@@ -16,6 +16,9 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Events
     event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 time);
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 time);
@@ -66,7 +69,6 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Emit prices submitted event
         emit PricesSubmitted(msg.sender, _block, _rplPrice, block.timestamp);
         // Check submission count & update network prices
-        uint256 calcBase = 1 ether;
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             updatePrices(_block, _rplPrice);

@@ -21,6 +21,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Events
     event RPLStaked(address indexed from, uint256 amount, uint256 time);
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
@@ -198,7 +201,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Calculate RPL amount to slash
-        uint256 calcBase = 1 ether;
         uint256 rplSlashAmount = calcBase.mul(_ethSlashAmount).div(rocketNetworkPrices.getRPLPrice());
         // Cap slashed amount to node's RPL stake
         uint256 rplStake = getNodeRPLStake(_nodeAddress);

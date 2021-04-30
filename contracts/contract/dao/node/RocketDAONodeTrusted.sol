@@ -22,13 +22,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     event MemberLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
 
     // Calculate using this as the base
-    uint256 private calcBase = 1 ether;
+    uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoNameSpace = 'dao.trustednodes.';
+    string constant daoNameSpace = 'dao.trustednodes.';
 
     // Min amount of trusted node members required in the DAO
-    uint256 private daoMemberMinCount = 3;
+    uint256 constant daoMemberMinCount = 3;
 
 
     // Only allow bootstrapping when enabled
@@ -91,8 +91,8 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         return addressSetStorage.getCount(keccak256(abi.encodePacked(daoNameSpace, "member.index")));
     }
 
-    // Min required member count for the DAO
-    function getMemberMinRequired() override public view returns (uint256) {
+    // Min required member count for the DAO 
+    function getMemberMinRequired() override public pure returns (uint256) {
         return daoMemberMinCount;
     }
 

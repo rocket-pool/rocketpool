@@ -18,6 +18,9 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Libs
     using SafeMath for uint;
 
+    // Our calc base
+    uint256 constant calcBase = 1 ether;
+
     // Events
     event LotCreated(uint256 indexed index, address indexed by, uint256 rplAmount, uint256 time);
     event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);
@@ -134,7 +137,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Get the RPL price for a lot based on total ETH amount bid
     function getLotPriceByTotalBids(uint256 _index) override public view returns (uint256) {
-        uint256 calcBase = 1 ether;
         return calcBase.mul(getLotTotalBidAmount(_index)).div(getLotTotalRPLAmount(_index));
     }
 
@@ -149,7 +151,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Get the amount of claimed RPL in a lot
     function getLotClaimedRPLAmount(uint256 _index) override public view returns (uint256) {
-        uint256 calcBase = 1 ether;
         return calcBase.mul(getLotTotalBidAmount(_index)).div(getLotCurrentPrice(_index));
     }
 
@@ -170,8 +171,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Load contracts
         RocketDAOProtocolSettingsAuctionInterface rocketAuctionSettings = RocketDAOProtocolSettingsAuctionInterface(getContractAddress("rocketDAOProtocolSettingsAuction"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        // Calculation base value
-        uint256 calcBase = 1 ether;
         // Get remaining RPL balance & RPL price
         uint256 remainingRplBalance = getRemainingRPLBalance();
         uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
@@ -214,7 +213,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         require(remainingRplAmount > 0, "Lot RPL allocation has been exhausted");
         // Calculate the bid amount
         uint256 bidAmount = msg.value;
-        uint256 calcBase = 1 ether;
         uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtCurrentBlock(_lotIndex)).div(calcBase);
         if (bidAmount > maximumBidAmount) { bidAmount = maximumBidAmount; }
         // Increase lot bid amounts
@@ -245,7 +243,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         if (bidPrice > blockPrice) { currentPrice = bidPrice; }
         else { currentPrice = blockPrice; }
         // Calculate RPL claim amount
-        uint256 calcBase = 1 ether;
         uint256 rplAmount = calcBase.mul(bidAmount).div(currentPrice);
         // Transfer RPL to bidder
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));

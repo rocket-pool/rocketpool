@@ -20,10 +20,10 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     using SafeMath for uint;
 
     // Calculate using this as the base
-    uint256 private calcBase = 1 ether;
+    uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoNameSpace = 'dao.trustednodes.';
+    string constant daoNameSpace = 'dao.trustednodes.';
 
     // Possible types of trusted node proposals
     enum ProposalType {

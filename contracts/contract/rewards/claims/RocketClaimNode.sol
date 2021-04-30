@@ -17,6 +17,9 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     // Libs
     using SafeMath for uint;
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -47,7 +50,6 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         // Load contracts
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Calculate and return share
-        uint256 calcBase = 1 ether;
         uint256 totalRplStake = rocketNodeStaking.getTotalEffectiveRPLStake();
         if (totalRplStake == 0) { return 0; }
         return calcBase.mul(rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress)).div(totalRplStake);
