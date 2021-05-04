@@ -52,6 +52,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         // Check new contract address
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
+        require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
