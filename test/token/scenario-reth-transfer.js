@@ -1,7 +1,7 @@
 import { RocketTokenRETH } from '../_utils/artifacts';
 
 
-// Burn rETH for ETH
+// Transfer rETH between accounts
 export async function transferReth(to, amount, txOptions) {
 
     // Load contracts
