@@ -63,6 +63,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         require(getBalance().add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
+        // Record last deposit to time delay ability to withdraw
+        setUint(keccak256(abi.encodePacked("user.deposit.block", msg.sender)), block.number);
         // Mint rETH to user account
         rocketTokenRETH.mint(msg.value, msg.sender);
         // Emit deposit received event
