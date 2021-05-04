@@ -767,7 +767,14 @@ export default function() {
         it(printTitle('guardian', 'cannot upgrade a contract with an invalid address'), async () => {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketNodeManager', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
                 from: guardian,
-            }), 'Guardian adupgradedded a contract with an invalid address', 'Invalid contract address');
+            }), 'Guardian upgrade a contract with an invalid address', 'Invalid contract address');
+        });
+
+        it(printTitle('guardian', 'cannot upgrade a contract with an existing one'), async () => {
+            const rocketStorageAddress = (await RocketStorage.deployed()).address
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketNodeManager', [], rocketStorageAddress, {
+                from: guardian,
+            }), 'Guardian upgraded a contract with an existing contract', 'Contract address is already in use');
         });
 
         it(printTitle('guardian', 'cannot upgrade a protected contract'), async () => {
