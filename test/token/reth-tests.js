@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
@@ -8,6 +8,7 @@ import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL, setNodeWithdrawalAddress } from '../_helpers/node';
 import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { burnReth } from './scenario-reth-burn';
+import { transferReth } from './scenario-reth-transfer'
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
@@ -23,6 +24,7 @@ export default function() {
             trustedNode,
             staker1,
             staker2,
+            random,
         ] = accounts;
 
 
@@ -37,6 +39,7 @@ export default function() {
         let validatorPubkey = getValidatorPubkey();
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let rethBalance;
+        let submitPricesFrequency = 50;
         before(async () => {
 
             // Get current rETH exchange rate
@@ -55,6 +58,7 @@ export default function() {
 
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
 
 
             // Stake RPL to cover minipools
@@ -83,7 +87,81 @@ export default function() {
         });
 
 
+        it(printTitle('rETH holder', 'cannot burn rETH before enough time has passed'), async () => {
+
+            // Make user deposit
+            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            await userDeposit({from: staker2, value: depositAmount});
+
+            // Check deposit pool excess balance
+            let excessBalance = await getDepositExcessBalance();
+            assert(web3.utils.toBN(excessBalance).eq(depositAmount), 'Incorrect deposit pool excess balance');
+
+            // Burn rETH
+            await shouldRevert(burnReth(rethBalance, {
+                from: staker1,
+            }), 'Burn should have failed before enough time has passed');
+
+        });
+
+
+        it(printTitle('rETH holder', 'cannot transfer rETH before enough time has passed'), async () => {
+
+            // Make user deposit
+            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            await userDeposit({from: staker2, value: depositAmount});
+
+            // Transfer rETH
+            await shouldRevert(transferReth(random, rethBalance, {
+                from: staker1,
+            }), 'Transfer should have failed before enough time has passed');
+
+        });
+
+
+        it(printTitle('rETH holder', 'can transfer rETH after enough time has passed'), async () => {
+
+            // Make user deposit
+            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            await userDeposit({from: staker2, value: depositAmount});
+
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
+
+            // Transfer rETH
+            await transferReth(random, rethBalance, {
+                from: staker1,
+            });
+
+        });
+
+
+        it(printTitle('rETH holder', 'can transfer rETH without waiting if received via transfer'), async () => {
+
+            // Make user deposit
+            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            await userDeposit({from: staker2, value: depositAmount});
+
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
+
+            // Transfer rETH
+            await transferReth(random, rethBalance, {
+                from: staker1,
+            });
+
+            // Transfer rETH again
+            await transferReth(staker1, rethBalance, {
+                from: random,
+            });
+
+        });
+
+
         it(printTitle('rETH holder', 'can burn rETH for ETH collateral'), async () => {
+
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
 
             // Send ETH to the minipool to simulate receving from SWC
             await web3.eth.sendTransaction({
@@ -115,6 +193,9 @@ export default function() {
             let excessBalance = await getDepositExcessBalance();
             assert(web3.utils.toBN(excessBalance).eq(depositAmount), 'Incorrect deposit pool excess balance');
 
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
+
             // Burn rETH
             await burnReth(rethBalance, {
                 from: staker1,
@@ -124,7 +205,10 @@ export default function() {
 
 
         it(printTitle('rETH holder', 'cannot burn an invalid amount of rETH'), async () => {
-            
+
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
+
             // Send ETH to the minipool to simulate receving from SWC
             await web3.eth.sendTransaction({
                 from: trustedNode,
@@ -156,6 +240,9 @@ export default function() {
 
 
         it(printTitle('rETH holder', 'cannot burn rETH with insufficient collateral'), async () => {
+
+            // Wait "network.submit.prices.frequency" blocks
+            await mineBlocks(web3, submitPricesFrequency);
 
             // Attempt to burn rETH for contract collateral
             await shouldRevert(burnReth(rethBalance, {
