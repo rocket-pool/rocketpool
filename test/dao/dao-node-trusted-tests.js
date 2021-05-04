@@ -767,7 +767,7 @@ export default function() {
         it(printTitle('guardian', 'cannot upgrade a contract with an invalid address'), async () => {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketNodeManager', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
                 from: guardian,
-            }), 'Guardian upgrade a contract with an invalid address', 'Invalid contract address');
+            }), 'Guardian upgraded a contract with an invalid address', 'Invalid contract address');
         });
 
         it(printTitle('guardian', 'cannot upgrade a contract with an existing one'), async () => {
