@@ -122,7 +122,13 @@ module.exports = async (deployer, network) => {
   // Live deployment
   if ( network == 'live' ) {
     // Casper live contract address
-    let casperDepositAddress = '0XADDLIVECASPERADDRESS';
+    let casperDepositAddress = '0x00000000219ab540356cBB839Cbe05303d7705Fa';
+    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
+    contracts.casperDeposit = {
+          address: casperDepositAddress,
+              abi: casperDepositABI,
+      precompiled: true
+    };
     // Add our live RPL token address in place
     contracts.rocketTokenRPLFixedSupply.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
