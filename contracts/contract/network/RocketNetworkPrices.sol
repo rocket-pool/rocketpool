@@ -75,6 +75,24 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         }
     }
 
+    // Executes updatePrices if consensus threshold is reached
+    function executeUpdatePrices(uint256 _block, uint256 _rplPrice) override public onlyLatestContract("rocketNetworkPrices", address(this)) {
+        // Check settings
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
+        // Check block
+        require(_block < block.number, "Prices can not be submitted for a future block");
+        require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
+        // Get submission keys
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice));
+        // Get submission count
+        uint256 submissionCount = getUint(submissionCountKey);
+        // Check submission count & update network prices
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
+        updatePrices(_block, _rplPrice);
+    }
+
     // Update network price data
     function updatePrices(uint256 _block, uint256 _rplPrice) private {
         // Update prices

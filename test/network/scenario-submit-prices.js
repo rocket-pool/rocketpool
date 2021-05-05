@@ -57,7 +57,7 @@ export async function submitPrices(block, rplPrice, txOptions) {
     ]);
 
     // Check if prices should be updated
-    let expectUpdatedPrices = submission2.count.mul(web3.utils.toBN(2)).gte(trustedNodeCount);
+    let expectUpdatedPrices = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
@@ -72,6 +72,36 @@ export async function submitPrices(block, rplPrice, txOptions) {
         assert(!prices.block.eq(web3.utils.toBN(block)), 'Incorrectly updated network prices block');
         assert(!prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrectly updated network RPL price');
     }
+
+}
+
+
+// Execute price update
+export async function executeUpdatePrices(block, rplPrice, txOptions) {
+
+    // Load contracts
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+
+    // Get prices
+    function getPrices() {
+        return Promise.all([
+            rocketNetworkPrices.getPricesBlock.call(),
+            rocketNetworkPrices.getRPLPrice.call(),
+        ]).then(
+          ([block, rplPrice]) =>
+            ({block, rplPrice})
+        );
+    }
+
+    // Submit prices
+    await rocketNetworkPrices.executeUpdatePrices(block, rplPrice, txOptions);
+
+    // Get updated submission details & prices
+    let prices = await getPrices();
+
+    // Check the prices
+    assert(prices.block.eq(web3.utils.toBN(block)), 'Incorrect updated network prices block');
+    assert(prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrect updated network RPL price');
 
 }
 
