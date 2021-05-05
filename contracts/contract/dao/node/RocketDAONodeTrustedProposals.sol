@@ -29,7 +29,6 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     enum ProposalType {
         Invite,             // Invite a registered node to join the trusted node DAO
         Leave,              // Leave the DAO 
-        Replace,            // Replace a current trusted node with a new registered node, they take over their bond
         Kick,               // Kick a member from the DAO with optional penalty applied to their RPL deposit
         Setting             // Change a DAO setting (Quorum threshold, RPL deposit size, voting periods etc)
     }
@@ -114,24 +113,11 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Load contracts
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
-        require(daoNodeTrusted.getMemberCount() > daoNodeTrusted.getMemberMinRequired(), "Member count will fall below min required, this member must choose to be replaced");
+        require(daoNodeTrusted.getMemberCount() > daoNodeTrusted.getMemberMinRequired(), "Member count will fall below min required");
         // Their proposal to leave has been accepted, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "leave", _nodeAddress)), block.number);
     }
 
-
-    // A current member proposes replacing themselves as a member with a new member who will take over their RPL bond
-    // Member who is proposing to be replaced, must action the method in the actions contract to confirm they want to be replaced
-    function proposalReplace(address _memberNodeAddress, string memory _replaceId, string memory _replaceEmail, address _replaceNodeAddress) override public onlyExecutingContracts onlyTrustedNode(_memberNodeAddress) onlyRegisteredNode(_replaceNodeAddress) { 
-        // Their proposal to be replaced has been accepted, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "replace", _memberNodeAddress)), block.number);
-        // Initialise the new prospective members details
-        _memberInit(_replaceId, _replaceEmail, _replaceNodeAddress);
-        // Their proposal to be replaced has been accepted
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", "new", _memberNodeAddress)), _replaceNodeAddress);
-        setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.replace", "current", _memberNodeAddress)), _memberNodeAddress);
-    }
-    
 
     // Propose to kick a current member from the DAO with an optional RPL bond fine
     function proposalKick(address _nodeAddress, uint256 _rplFine) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 

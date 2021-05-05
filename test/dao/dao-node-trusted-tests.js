@@ -485,7 +485,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
             // Proposal should be successful, lets execute it
-            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required, this member must choose to be replaced');
+            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required');
         });
 
 
