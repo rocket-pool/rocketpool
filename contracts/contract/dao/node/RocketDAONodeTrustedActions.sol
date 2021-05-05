@@ -13,6 +13,7 @@ import "../../../interface/util/AddressSetStorageInterface.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 
 // The Trusted Node DAO Actions
@@ -157,16 +158,20 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
 
     // A member can be evicted from the DAO by proposal, send their remaining RPL balance to them and remove from the DAO
     // Is run via the main DAO contract when the proposal passes and is executed
-    function actionKick(address _nodeAddress) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
+    function actionKick(address _nodeAddress, uint256 _rplFine) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Get the
         uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(_nodeAddress);
         // Refund
-        if(rplBondRefundAmount > 0) {
+        if (rplBondRefundAmount > 0) {
             // Send tokens now
             require(rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount), "Could not send kicked members RPL bond token balance from vault");
+        }
+        // Burn the fine
+        if (_rplFine > 0) {
+            require(rocketVault.burnToken(ERC20Burnable(getContractAddress('rocketTokenRPL')), _rplFine), "Could not burn the RPL fine");
         }
         // Remove the member now
         _memberRemove(_nodeAddress);
