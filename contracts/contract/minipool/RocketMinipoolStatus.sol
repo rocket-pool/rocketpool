@@ -66,6 +66,27 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         }
     }
 
+    // Executes updateBalances if consensus threshold is reached
+    function executeMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override public
+    onlyLatestContract("rocketMinipoolStatus", address(this)) {
+        // Load contracts
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        // Check settings
+        require(rocketDAOProtocolSettingsMinipool.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
+        // Check minipool status
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
+        // Get submission keys
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress, _stakingStartBalance, _stakingEndBalance));
+        // Get submission count
+        uint256 submissionCount = getUint(submissionCountKey);
+        // Check submission count & set minipool withdrawable
+        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
+        setMinipoolWithdrawable(_minipoolAddress, _stakingStartBalance, _stakingEndBalance);
+    }
+
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
     function setMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) private {
         // Load contracts

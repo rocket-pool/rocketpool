@@ -59,7 +59,7 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
     ]);
 
     // Check if balances should be updated
-    let expectUpdatedBalances = submission2.count.mul(web3.utils.toBN(2)).gte(trustedNodeCount);
+    let expectUpdatedBalances = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
@@ -78,6 +78,39 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
         assert(!balances.stakingEth.eq(web3.utils.toBN(stakingEth)), 'Incorrectly updated network staking ETH balance');
         assert(!balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrectly updated network total rETH supply');
     }
+
+}
+
+// Execute update network balances
+export async function executeUpdateBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
+
+    // Load contracts
+    const rocketNetworkBalances = await RocketNetworkBalances.deployed()
+
+    // Get balances
+    function getBalances() {
+        return Promise.all([
+            rocketNetworkBalances.getBalancesBlock.call(),
+            rocketNetworkBalances.getTotalETHBalance.call(),
+            rocketNetworkBalances.getStakingETHBalance.call(),
+            rocketNetworkBalances.getTotalRETHSupply.call(),
+        ]).then(
+          ([block, totalEth, stakingEth, rethSupply]) =>
+            ({block, totalEth, stakingEth, rethSupply})
+        );
+    }
+
+    // Submit balances
+    await rocketNetworkBalances.executeUpdateBalances(block, totalEth, stakingEth, rethSupply, txOptions);
+
+    // Get updated balances
+    let balances = await getBalances()
+
+    // Check balances
+    assert(balances.block.eq(web3.utils.toBN(block)), 'Incorrect updated network balances block');
+    assert(balances.totalEth.eq(web3.utils.toBN(totalEth)), 'Incorrect updated network total ETH balance');
+    assert(balances.stakingEth.eq(web3.utils.toBN(stakingEth)), 'Incorrect updated network staking ETH balance');
+    assert(balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrect updated network total rETH supply');
 
 }
 

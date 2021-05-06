@@ -1,13 +1,16 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
-import { submitWithdrawable } from './scenario-submit-withdrawable';
-import { RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
+import { executeSetWithdrawable, submitWithdrawable } from './scenario-submit-withdrawable'
+import { RocketDAONodeTrustedSettingsProposals, RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
+import { getDAOProposalEndBlock, getDAOProposalStartBlock } from '../dao/scenario-dao-proposal'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
@@ -19,6 +22,7 @@ export default function() {
             trustedNode1,
             trustedNode2,
             trustedNode3,
+            trustedNode4,
             staker,
             random,
         ] = accounts;
@@ -28,6 +32,11 @@ export default function() {
         let snapshotId;
         beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
         afterEach(async () => { await revertSnapshot(web3, snapshotId); });
+
+
+        // Constants
+        let proposalCooldown = 10
+        let proposalVoteBlocks = 10
 
 
         // Setup
@@ -77,7 +86,46 @@ export default function() {
             assert(stakingStatus2.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
             assert(stakingStatus3.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
 
+            // Set a small proposal cooldown
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+
         });
+
+
+        async function trustedNode4JoinDao() {
+            await registerNode({from: trustedNode4});
+            await setNodeTrusted(trustedNode4, 'saas_4', 'node@home.com', owner);
+        }
+
+
+        async function trustedNode4LeaveDao() {
+            // Wait enough time to do a new proposal
+            await mineBlocks(web3, proposalCooldown);
+            // Encode the calldata for the proposal
+            let proposalCallData = web3.eth.abi.encodeFunctionCall(
+              {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
+              [trustedNode4]
+            );
+            // Add the proposal
+            let proposalId = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCallData, {
+                from: trustedNode4
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalId)-blockCurrent)+2);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalId, true, { from: trustedNode1 });
+            await daoNodeTrustedVote(proposalId, true, { from: trustedNode2 });
+            await daoNodeTrustedVote(proposalId, true, { from: trustedNode3 });
+            // Fast forward to this voting period finishing
+            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalId)-blockCurrent)+1);
+            // Proposal should be successful, lets execute it
+            await daoNodeTrustedExecute(proposalId, { from: trustedNode1 });
+            // Member can now leave and collect any RPL bond
+            await daoNodeTrustedMemberLeave(trustedNode4, { from: trustedNode4 });
+        }
 
 
         //
@@ -221,5 +269,45 @@ export default function() {
         });
 
 
+        it(printTitle('random', 'can execute status update when consensus is reached after member count changes'), async () => {
+            // Setup
+            await trustedNode4JoinDao();
+            // Set parameters
+            let startBalance = web3.utils.toWei('32', 'ether');
+            let endBalance = web3.utils.toWei('36', 'ether');
+            // Submit status from 2 nodes (not enough for 4 member consensus but enough for 3)
+            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: trustedNode1,
+            });
+            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: trustedNode2,
+            });
+            // trustedNode4 leaves the DAO
+            await trustedNode4LeaveDao();
+            // There is now consensus with the remaining 3 trusted nodes about the status, try to execute the update
+            await executeSetWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: random
+            })
+        });
+
+
+        it(printTitle('random', 'cannot execute status update without consensus'), async () => {
+            // Setup
+            await trustedNode4JoinDao();
+            // Set parameters
+            let startBalance = web3.utils.toWei('32', 'ether');
+            let endBalance = web3.utils.toWei('36', 'ether');
+            // Submit same price from 2 nodes (not enough for 4 member consensus)
+            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: trustedNode1,
+            });
+            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: trustedNode2,
+            });
+            // There is no consensus so execute should fail
+            await shouldRevert(executeSetWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+                from: random
+            }), 'Random account could execute update status without consensus')
+        });
     });
 }
