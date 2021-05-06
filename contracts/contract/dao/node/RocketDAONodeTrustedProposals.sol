@@ -131,7 +131,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Set their bond amount minus the fine
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), rplBondAmount.sub(_rplFine));
         // Kick them now
-        daoActionsContract.actionKick(_nodeAddress);
+        daoActionsContract.actionKick(_nodeAddress, _rplFine);
     }
 
 

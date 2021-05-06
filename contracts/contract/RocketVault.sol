@@ -7,6 +7,7 @@ import "../interface/RocketVaultInterface.sol";
 import "../interface/RocketVaultWithdrawerInterface.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
@@ -26,6 +27,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     event EtherWithdrawn(bytes32 indexed by, uint256 amount, uint256 time);
     event TokenDeposited(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenWithdrawn(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
+    event TokenBurned(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenTransfer(bytes32 indexed by, bytes32 indexed to, address indexed tokenAddress, uint256 amount, uint256 time);
 
 	// Construct
@@ -135,4 +137,20 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     }
 
 
+    // Burns an amount of a token that implements a burn(uint256) method
+    // Only accepts calls from Rocket Pool network contracts
+    function burnToken(ERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+        // Get contract key
+        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
+        // Update balances
+        tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
+        // Get the token ERC20 instance
+        ERC20Burnable tokenContract = ERC20Burnable(_tokenAddress);
+        // Burn the tokens
+        tokenContract.burn(_amount);
+        // Emit token burn event
+        emit TokenBurned(contractKey, address(_tokenAddress), _amount, block.timestamp);
+        // Done
+        return true;
+    }
 }

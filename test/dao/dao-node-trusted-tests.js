@@ -489,14 +489,14 @@ export default function() {
         });
 
 
-   
+
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
+            let proposalVoteExecuteBlocks = 10;
             // Update now while in bootstrap mode
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
@@ -508,9 +508,11 @@ export default function() {
             let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div(web3.utils.toBN(3));
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
-                {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
-                [registeredNodeTrusted2, registeredNodeTrusted2BondAmountFine]
+              {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
+              [registeredNodeTrusted2, registeredNodeTrusted2BondAmountFine]
             );
+            // Get the RPL total supply
+            let rplTotalSupply1 = await rocketTokenRPL.totalSupply.call()
             // Add the proposal
             let proposalID = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata, {
                 from: registeredNodeTrusted1
@@ -530,8 +532,11 @@ export default function() {
             //console.log(web3.utils.fromWei(await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2)));
             assert((registeredNodeTrusted2BondAmount.sub(registeredNodeTrusted2BondAmountFine)).eq(rplBalance), "registeredNodeTrusted2 remaining RPL balance is incorrect");
             assert(await getDAOMemberIsValid(registeredNodeTrusted2) === false, "registeredNodeTrusted2 is still a member of the DAO");
+            // The 33% fine should be burned
+            let rplTotalSupply2 = await rocketTokenRPL.totalSupply.call()
+            assert(rplTotalSupply1.sub(rplTotalSupply2).eq(registeredNodeTrusted2BondAmountFine), "RPL total supply did not decrease by fine amount");
         });
-        
+
 
         it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
             // Setup our proposal settings

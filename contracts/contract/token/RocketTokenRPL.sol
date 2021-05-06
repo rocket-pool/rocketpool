@@ -2,7 +2,7 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
@@ -13,7 +13,7 @@ import "../../interface/RocketVaultInterface.sol";
 // RPL Governance and utility token
 // Inlfationary with rate determined by DAO
 
-contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
+contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
     // Libs
     using SafeMath for uint;
@@ -199,6 +199,4 @@ contract RocketTokenRPL is RocketBase, ERC20, RocketTokenRPLInterface {
         // Log it
         emit RPLFixedSupplyBurn(msg.sender, _amount, block.timestamp);
     }
-
-
 }
