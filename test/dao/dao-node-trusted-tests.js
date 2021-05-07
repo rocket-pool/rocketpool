@@ -359,7 +359,7 @@ export default function() {
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted1 });
             // Fast forward to this voting period finishing
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
-            // Verify the proposal is successful
+            // Verify the proposal is defeated
             assert(await getDAOProposalState(proposalID) == proposalStates.Defeated, 'Proposal state is not defeated');
             // Proposal has failed, can we execute it anyway?
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode1 }), 'Executed defeated proposal', 'Proposal has not succeeded, has expired or has already been executed');;
@@ -592,9 +592,41 @@ export default function() {
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing and executing period expiring
             await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
+            // Verify correct expired status
+            assert(await getDAOProposalState(proposalID) == proposalStates.Expired, 'Proposal state is not Expired');
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
         });    
+
+
+        it(printTitle('registeredNodeTrusted2', 'checks to see if a proposal has expired after being successfully voted for, but not executed'), async () => {
+            // Setup our proposal settings
+            let proposalVoteBlocks = 10;
+            let proposalVoteExecuteBlocks = 10; 
+            // Update now while in bootstrap mode
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
+                [registeredNodeTrusted1]
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current block
+            let blockCurrent = await web3.eth.getBlockNumber();
+            // Now mine blocks until the proposal is 'active' and can be voted on
+            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
+            // Fast forward to this voting period finishing and executing period expiring
+            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
+            // Execution should fail
+            await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
+        });  
 
         
 
