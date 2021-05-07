@@ -69,15 +69,16 @@ module.exports = {
         provider: () =>
         new HDWalletProvider({
             mnemonic: {
-                phrase: ""
+                phrase: "",
+                password: null
             },
-            providerOrUrl: "",
+            providerOrUrl: "http://127.0.0.1:8545",
             numberOfAddresses: 1, 
             shareNonce: true,
             derivationPath: "m/44'/60'/0'/0"
         }),
-        host: '',
-        port: 8888,
+        host: 'http://127.0.0.1',
+        port: 8545,
         network_id: "5", 
         from: "0xFfc1f495d6D033Bc3CE027A87bfDe574b09b7BeD",
         gas: 8000000,
