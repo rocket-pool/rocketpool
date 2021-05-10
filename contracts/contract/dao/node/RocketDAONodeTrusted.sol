@@ -17,10 +17,6 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     using SafeMath for uint;
 
-    // Events
-    event MemberJoined(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);  
-    event MemberLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
-
     // Calculate using this as the base
     uint256 constant calcBase = 1 ether;
 
