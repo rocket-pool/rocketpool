@@ -140,13 +140,13 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         } else if (getExecuted(_proposalID)) {
             return ProposalState.Executed;
             // Is the proposal pending? Eg. waiting to be voted on
-        } else if (block.number <= getStart(_proposalID)) {
+        } else if (block.number < getStart(_proposalID)) {
             return ProposalState.Pending;
             // Vote was successful, is now awaiting execution
         } else if (votesFor >= getVotesRequired(_proposalID) && block.number < getExpires(_proposalID)) {
             return ProposalState.Succeeded;
             // The proposal is active and can be voted on
-        } else if (block.number <= getEnd(_proposalID)) {
+        } else if (block.number < getEnd(_proposalID)) {
             return ProposalState.Active;
             // Check the votes, was it defeated?
         } else if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID)) {
