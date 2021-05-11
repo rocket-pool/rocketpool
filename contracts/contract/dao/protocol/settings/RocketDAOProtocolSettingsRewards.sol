@@ -60,7 +60,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", _contractName)));
     } 
 
-    // Get the perc amount that this rewards contract get claim
+    // Get the time of when the claim perc was last updated
     function getRewardsClaimerPercTimeUpdated(string memory _contractName) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)));
     } 
