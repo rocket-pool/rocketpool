@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 interface RocketNodeStakingInterface {
     function getTotalRPLStake() external view returns (uint256);
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
-    function getNodeRPLStakedBlock(address _nodeAddress) external view returns (uint256);
+    function getNodeRPLStakedTime(address _nodeAddress) external view returns (uint256);
     function getTotalEffectiveRPLStake() external view returns (uint256);
     function getNodeEffectiveRPLStake(address _nodeAddress) external view returns (uint256);
     function getNodeMinimumRPLStake(address _nodeAddress) external view returns (uint256);

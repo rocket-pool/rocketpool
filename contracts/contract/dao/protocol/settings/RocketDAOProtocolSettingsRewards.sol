@@ -23,7 +23,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
             setSettingRewardsClaimer('rocketClaimNode', 0.70 ether);                                            // Bonded Node Rewards claim % amount - Percentage given of 1 ether
             setSettingRewardsClaimer('rocketClaimTrustedNode', 0.2 ether);                                      // Trusted Node Rewards claim % amount - Percentage given of 1 ether
             // RPL Claims settings
-            setSettingUint("rpl.rewards.claim.period.blocks", 86380);                                           // The period at which a claim period will span in blocks - 14 days approx by default
+            setSettingUint("rpl.rewards.claim.period.time", 14 days);                                           // The time in which a claim period will span in seconds - 14 days by default
             // Deployment check
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
@@ -44,8 +44,8 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
         setUint(keccak256(abi.encodePacked(settingNameSpace,"rewards.claims", "group.totalPerc")), percTotalUpdate);
         // Update/Add the claimer amount
         setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", _contractName)), _perc);
-        // Set the block it was updated at
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.block", _contractName)), block.number);
+        // Set the time it was updated at
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)), block.timestamp);
     }
 
 
@@ -61,8 +61,8 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
     } 
 
     // Get the perc amount that this rewards contract get claim
-    function getRewardsClaimerPercBlockUpdated(string memory _contractName) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.block", _contractName)));
+    function getRewardsClaimerPercTimeUpdated(string memory _contractName) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)));
     } 
 
     // Get the perc amount total for all claimers (remaining goes to DAO)
@@ -74,8 +74,8 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
     // RPL Rewards General Settings
 
     // The period over which claims can be made
-    function getRewardsClaimIntervalBlocks() override external view returns (uint256) {
-        return getSettingUint("rpl.rewards.claim.period.blocks");
+    function getRewardsClaimIntervalTime() override external view returns (uint256) {
+        return getSettingUint("rpl.rewards.claim.period.time");
     }
 
 
