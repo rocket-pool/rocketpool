@@ -2,6 +2,8 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
@@ -11,6 +13,7 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -18,6 +21,9 @@ import "../../types/MinipoolDeposit.sol";
 // Handles node deposits and minipool creation
 
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
+
+    // Libs
+    using SafeMath for uint;
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
@@ -37,12 +43,14 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsMembersInterface rocketDaoNodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
-        require(rocketNetworkFees.getNodeFee() >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
+        uint256 nodeFee = rocketNetworkFees.getNodeFee();
+        require(nodeFee >= _minimumNodeFee, "Minimum node fee exceeds current network node fee");
         // Get deposit type by node deposit amount
         MinipoolDeposit depositType = MinipoolDeposit.None;
         if (msg.value == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount()) { depositType = MinipoolDeposit.Full; }
@@ -52,9 +60,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
         // Node is trusted
         if (rocketDaoNodeTrusted.getMemberIsValid(msg.sender)) {
-            // If creating an unbonded minipool, check current unbonded minipool count
+            // If creating an unbonded minipool, check current unbonded minipool count and current fee > 80% of max
             if (depositType == MinipoolDeposit.Empty) {
                 require(rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender) < rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax(), "Trusted node member would exceed the amount of unbonded minipools allowed");
+                uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
+                require(nodeFee > maxFee.mul(rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMinFee()).div(1 ether), "Trusted node member can only create an unbonded minipool if current fee > 80% of maximum fee");
             }
         }
         // Node is not trusted - it cannot create unbonded minipools

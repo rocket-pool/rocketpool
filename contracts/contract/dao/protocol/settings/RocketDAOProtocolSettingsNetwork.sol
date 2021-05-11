@@ -86,6 +86,4 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     function getTargetRethCollateralRate() override public view returns (uint256) {
         return getSettingUint("network.reth.collateral.target");
     }
-
-
 }

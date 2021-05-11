@@ -1,4 +1,4 @@
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -13,6 +13,8 @@ import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { getNodeFee } from '../_helpers/network'
+import { getNetworkSetting } from '../_helpers/settings'
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -463,8 +465,48 @@ export default function() {
             }), 'Random address closed a minipool');
 
         });
-        
-        
 
+
+        //
+        // Unbonded minipools
+        //
+
+
+        it(printTitle('trusted node', 'cannot create an unbonded minipool if node fee is < 80% of maximum'), async () => {
+            // Sanity check that current node fee is less than 80% of maximum
+            let nodeFee = await getNodeFee();
+            let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
+            assert(nodeFee.lt(maximumNodeFee.muln(0.8)), 'Node fee is greater than 80% of maximum fee');
+
+            // Stake RPL to cover minipool
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, trustedNode, minipoolRplStake);
+            await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
+
+            // Creating an unbonded minipool should revert
+            await shouldRevert(createMinipool({from: trustedNode, value: '0'}),
+              'Trusted node was able to create unbonded minipool with fee < 80% of max',
+              'Trusted node member can only create an unbonded minipool if current fee > 80% of maximum fee'
+            );
+        });
+
+
+        it(printTitle('trusted node', 'can create an unbonded minipool if node fee is > 80% of maximum'), async () => {
+            // Deposit enough unassigned ETH to increase the fee above 80% of max
+            await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
+
+            // Sanity check that current node fee is greater than 80% of maximum
+            let nodeFee = await getNodeFee();
+            let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
+            assert(nodeFee.gt(maximumNodeFee.muln(0.8)), 'Node fee is not greater than 80% of maximum fee');
+
+            // Stake RPL to cover minipool
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, trustedNode, minipoolRplStake);
+            await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
+
+            // Creating the unbonded minipool
+            await createMinipool({from: trustedNode, value: '0'});
+        });
     });
 }
