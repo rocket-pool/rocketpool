@@ -86,7 +86,7 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
 
 /*** Rewards *******/
 
-// Set the current rewards claim period in blocks
+// Set the current rewards claim period in seconds
 export async function setRewardsClaimIntervalTime(intervalTime, txOptions) {
     // Set it now
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', intervalTime, txOptions);
