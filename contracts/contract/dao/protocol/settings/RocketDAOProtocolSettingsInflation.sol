@@ -35,7 +35,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
         // Check the inflation time interval
         if(keccak256(bytes(_settingPath)) == keccak256(bytes('rpl.inflation.interval.time'))) {
                 // Must be >= 30 mins, set 'rpl.inflation.interval.rate' to 0 if inflation is no longer required
-                require(_value >= 1800, "Inflation interval must be greater than 1 hour");
+                require(_value >= 1800, "Inflation interval must be greater than 30 minutes");
         }
         // The start time for inflation must be in the future and cannot be set again once started
         if(keccak256(bytes(_settingPath)) == keccak256(bytes('rpl.inflation.interval.start'))) {
