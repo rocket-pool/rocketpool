@@ -80,7 +80,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
 
     // Accept an token deposit and assign it's balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
-    function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external returns (bool) {
+    function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external {
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");
         // Make sure the network contract is valid (will throw if not)
@@ -93,13 +93,11 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         tokenBalances[contractKey] = tokenBalances[contractKey].add(_amount);
         // Emit token transfer
         emit TokenDeposited(contractKey, address(_tokenContract), _amount, block.timestamp);
-        // Done
-        return true;
     }
 
     // Withdraw an amount of a ERC20 token to an address
     // Only accepts calls from Rocket Pool network contracts
-    function withdrawToken(address _withdrawalAddress, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+    function withdrawToken(address _withdrawalAddress, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to withdraw");
         // Get contract key
@@ -112,14 +110,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         require(tokenContract.transfer(_withdrawalAddress, _amount), "Rocket Vault token withdrawal unsuccessful");
         // Emit token withdrawn event
         emit TokenWithdrawn(contractKey, address(_tokenAddress), _amount, block.timestamp);
-        // Done
-        return true;
     }
 
 
     // Transfer token from one contract to another
     // Only accepts calls from Rocket Pool network contracts
-    function transferToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+    function transferToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to transfer");
         // Make sure the network contract is valid (will throw if not)
@@ -136,14 +132,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
         // Emit token withdrawn event
         emit TokenTransfer(contractKeyFrom, contractKeyTo, address(_tokenAddress), _amount, block.timestamp);
-        // Done
-        return true;
     }
 
 
     // Burns an amount of a token that implements a burn(uint256) method
     // Only accepts calls from Rocket Pool network contracts
-    function burnToken(ERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+    function burnToken(ERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
@@ -154,7 +148,5 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         tokenContract.burn(_amount);
         // Emit token burn event
         emit TokenBurned(contractKey, address(_tokenAddress), _amount, block.timestamp);
-        // Done
-        return true;
     }
 }
