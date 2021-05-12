@@ -25,15 +25,6 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant daoNameSpace = 'dao.trustednodes.';
 
-    // Possible types of trusted node proposals
-    enum ProposalType {
-        Invite,             // Invite a registered node to join the trusted node DAO
-        Leave,              // Leave the DAO 
-        Kick,               // Kick a member from the DAO with optional penalty applied to their RPL deposit
-        Setting             // Change a DAO setting (Quorum threshold, RPL deposit size, voting periods etc)
-    }
-
-
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
         // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals in rocketDAOProposal
@@ -46,7 +37,6 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Version
         version = 1;
     }
-
 
         
     /*** Proposals **********************/

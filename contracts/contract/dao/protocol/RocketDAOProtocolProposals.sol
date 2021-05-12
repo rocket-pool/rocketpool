@@ -24,12 +24,6 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant daoNameSpace = 'dao.protocol.';
 
-    // Possible types of trusted node proposals
-    enum ProposalType {
-        Setting             // Change a DAO setting (Node operator min/max fees, inflation rate etc)
-    }
-
-
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
         // Methods are either executed by bootstrapping methods in rocketDAONodeTrusted or by people executing passed proposals in rocketDAOProposal
@@ -43,8 +37,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         version = 1;
     }
 
-    
-        
+
     /*** Proposals **********************/
 
     // Change one of the current uint256 settings of the protocol DAO
