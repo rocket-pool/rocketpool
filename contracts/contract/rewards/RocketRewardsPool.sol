@@ -343,7 +343,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
                 // Get the DAO claim contract address
                 address daoClaimContractAddress = getContractAddress('rocketClaimDAO');
                 // Transfers the DAO's tokens to it's claiming contract from the rewards pool
-                require(rocketVault.transferToken('rocketClaimDAO', rplContract, daoClaimContractAllowance), "Could not transfer token balance from vault for DAO");
+                rocketVault.transferToken('rocketClaimDAO', rplContract, daoClaimContractAllowance);
                 // Set the current claim percentage this contract is entitled to for this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", 'rocketClaimDAO')), getClaimingContractPerc('rocketClaimDAO'));
                 // Store the total RPL rewards claim for this claiming contract in this interval
@@ -371,7 +371,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // First initial checks
         require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // Send tokens now
-        require(rocketVault.withdrawToken(_toAddress, rplContract, claimAmount), "Could not send token balance from vault for claim");
+        rocketVault.withdrawToken(_toAddress, rplContract, claimAmount);
         // Store the claiming record for this interval and claiming contract
         setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalBlockStart, contractName, _claimerAddress)), true);
         // Store the total RPL rewards claim for this claiming contract in this interval

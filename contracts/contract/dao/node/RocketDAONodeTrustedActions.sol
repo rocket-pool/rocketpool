@@ -167,7 +167,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Refund
         if (rplBondRefundAmount > 0) {
             // Send tokens now
-            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')));
+            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount);
         }
         // Burn the fine
         if (_rplFine > 0) {
