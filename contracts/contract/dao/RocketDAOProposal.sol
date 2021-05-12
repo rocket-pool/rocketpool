@@ -28,7 +28,6 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     
     // Only allow the DAO contract to access
     modifier onlyDAOContract(string memory _daoName) {
-        // TODO: Potentially lock this down to final DAO contract names
         // Load contracts
         require(keccak256(abi.encodePacked(getContractName(msg.sender))) == keccak256(abi.encodePacked(_daoName)), "Sender is not the required DAO contract");
         _;
@@ -132,7 +131,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         require(getTotal() >= _proposalID && _proposalID > 0, "Invalid proposal ID");
         // Get the amount of votes for and against
         uint256 votesFor = getVotesFor(_proposalID);
-        // uint256 votesAgainst = getVotesAgainst(_proposalID);
+        uint256 votesAgainst = getVotesAgainst(_proposalID);
         // Now return the state of the current proposal
         if (getCancelled(_proposalID)) {
             // Cancelled by the proposer?
@@ -140,22 +139,21 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
             // Has it been executed?
         } else if (getExecuted(_proposalID)) {
             return ProposalState.Executed;
-            // Has it expired?
-        } else if (block.number >= getExpires(_proposalID)) {
-            return ProposalState.Expired;
-            // Vote was successful, is now awaiting execution
-        } else if (votesFor >= getVotesRequired(_proposalID)) {
-            return ProposalState.Succeeded;
             // Is the proposal pending? Eg. waiting to be voted on
-        } else if (block.number <= getStart(_proposalID)) {
+        } else if (block.number < getStart(_proposalID)) {
             return ProposalState.Pending;
+            // Vote was successful, is now awaiting execution
+        } else if (votesFor >= getVotesRequired(_proposalID) && block.number < getExpires(_proposalID)) {
+            return ProposalState.Succeeded;
             // The proposal is active and can be voted on
-        } else if (block.number <= getEnd(_proposalID)) {
+        } else if (block.number < getEnd(_proposalID)) {
             return ProposalState.Active;
-        } else {
             // Check the votes, was it defeated?
-            // if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID))
+        } else if (votesFor <= votesAgainst || votesFor < getVotesRequired(_proposalID)) {
             return ProposalState.Defeated;
+        } else {
+            // Was it successful, but has now expired? and cannot be executed anymore?
+            return ProposalState.Expired;
         }
     }
 
@@ -237,10 +235,8 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
 
     // Cancel a proposal, can be cancelled by the original proposer only if it hasn't been executed yet
     function cancel(address _member, uint256 _proposalID) override public onlyDAOContract(getDAO(_proposalID)) {
-        // Firstly make sure this proposal that hasn't already been executed
-        require(getState(_proposalID) != ProposalState.Executed, "Proposal has already been executed");
-        // Make sure this proposal hasn't already been successful
-        require(getState(_proposalID) != ProposalState.Succeeded, "Proposal has already succeeded");
+        // Firstly make sure this proposal can be cancelled
+        require(getState(_proposalID) == ProposalState.Pending || getState(_proposalID) == ProposalState.Active, "Proposal can only be cancelled if pending or active");
         // Only allow the proposer to cancel
         require(getProposer(_proposalID) == _member, "Proposal can only be cancelled by the proposer");
         // Set as cancelled now
