@@ -43,4 +43,6 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal stakingStartBalance;
     uint256 internal stakingEndBalance;
 
+    // Safety check
+    bool internal initialised;
 }
