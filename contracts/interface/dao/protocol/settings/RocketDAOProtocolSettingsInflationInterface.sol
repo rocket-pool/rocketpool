@@ -4,6 +4,5 @@ pragma solidity 0.7.6;
 
 interface RocketDAOProtocolSettingsInflationInterface {
     function getInflationIntervalRate() external view returns (uint256);
-    function getInflationIntervalTime() external view returns (uint256);
     function getInflationIntervalStartTime() external view returns (uint256);
 }

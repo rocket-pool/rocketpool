@@ -22,6 +22,8 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
     // How many RPL tokens minted to date (18m from fixed supply)
     uint256 constant totalInitialSupply = 18000000000000000000000000;
+    // The RPL inflation interval
+    uint256 constant inflationInterval = 1 days;
     // How many RPL tokens have been swapped for new ones
     uint256 public totalSwappedRPL = 0;
 
@@ -67,8 +69,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * @return uint256 how many seconds to calculate inflation at
     */
     function getInflationIntervalTime() override public view returns(uint256) {
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
-        return daoSettingsInflation.getInflationIntervalTime();
+        return inflationInterval;
     }
 
     /**
@@ -108,8 +109,6 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     function getInflationIntervalsPassed() override public view returns(uint256) {
         // The time that inflation was last calculated at
         uint256 inflationLastCalculatedTime = getInflationCalcTime();
-        // Get the daily inflation in seconds
-        uint256 inflationInterval = getInflationIntervalTime();
         // Calculate now if inflation has begun
         if(inflationLastCalculatedTime > 0) {
             return (block.timestamp).sub(inflationLastCalculatedTime).div(inflationInterval);
@@ -162,7 +161,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Lets check
         require(newTokens > 0 && rocketVaultAddress != address(0x0), "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
         // Update last inflation calculation timestamp
-        inflationCalcTime = getInflationCalcTime().add(getInflationIntervalTime().mul(getInflationIntervalsPassed()));
+        inflationCalcTime = getInflationCalcTime().add(inflationInterval.mul(getInflationIntervalsPassed()));
         // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
         _mint(address(this), newTokens);
         // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
