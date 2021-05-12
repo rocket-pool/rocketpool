@@ -100,6 +100,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     // Withdraw an amount of a ERC20 token to an address
     // Only accepts calls from Rocket Pool network contracts
     function withdrawToken(address _withdrawalAddress, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+        // Valid amount?
+        require(_amount > 0, "No valid amount of tokens given to withdraw");
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
@@ -118,6 +120,8 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     // Transfer token from one contract to another
     // Only accepts calls from Rocket Pool network contracts
     function transferToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract returns (bool) {
+        // Valid amount?
+        require(_amount > 0, "No valid amount of tokens given to transfer");
         // Make sure the network contract is valid (will throw if not)
         require(getContractAddress(_networkContractName) != address(0x0), "Not a valid network contract");
         // Get contract keys
