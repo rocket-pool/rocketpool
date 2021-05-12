@@ -174,7 +174,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
         require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
         // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
-        require(rocketVaultContract.depositToken('rocketRewardsPool', IERC20(address(this)), newTokens), "Rocket Vault deposit was not successful");
+        rocketVaultContract.depositToken('rocketRewardsPool', IERC20(address(this)), newTokens);
         // Log it
         emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
         // return number minted

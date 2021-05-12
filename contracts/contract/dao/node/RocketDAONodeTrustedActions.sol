@@ -106,7 +106,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Allow RocketVault to transfer these tokens to itself now
         require(rplInflationContract.approve(rocketVaultAddress, rplBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted RPL bond tokens was not successful");
         // Let vault know it can move these tokens to itself now and credit the balance to this contract
-        require(rocketVault.depositToken(getContractName(address(this)), IERC20(rocketTokenRPLAddress), rplBondAmount), "Rocket Vault RPL bond deposit deposit was not successful");
+        rocketVault.depositToken(getContractName(address(this)), IERC20(rocketTokenRPLAddress), rplBondAmount);
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
         _memberAdd(_nodeAddress, rplBondAmount);
         // Log it
@@ -147,7 +147,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
             // Valid withdrawal address
             require(_rplBondRefundAddress != address(0x0), "Member has not supplied a valid address for their RPL bond refund");
             // Send tokens now
-            require(rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount), "Could not send RPL bond token balance from vault");
+            rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount);
         }
         // Remove them now
         _memberRemove(msg.sender);
@@ -167,11 +167,11 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Refund
         if (rplBondRefundAmount > 0) {
             // Send tokens now
-            require(rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount), "Could not send kicked members RPL bond token balance from vault");
+            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')));
         }
         // Burn the fine
         if (_rplFine > 0) {
-            require(rocketVault.burnToken(ERC20Burnable(getContractAddress('rocketTokenRPL')), _rplFine), "Could not burn the RPL fine");
+            rocketVault.burnToken(ERC20Burnable(getContractAddress('rocketTokenRPL')), _rplFine);
         }
         // Remove the member now
         _memberRemove(_nodeAddress);

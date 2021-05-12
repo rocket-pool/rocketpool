@@ -37,7 +37,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
         // Some initial checks
         require(_amount > 0 && _amount <= rocketVault.balanceOfToken('rocketClaimDAO', rplToken), "You cannot send 0 RPL or more than the DAO has in its account");
         // Send now
-        require(rocketVault.withdrawToken(_recipientAddress, rplToken, _amount), "Could not send token balance from vault for network DAO");
+        rocketVault.withdrawToken(_recipientAddress, rplToken, _amount);
         // Log it
         emit RPLTokensSentByDAOProtocol(_invoiceID, address(this), _recipientAddress, _amount, block.timestamp);
     }
