@@ -227,12 +227,11 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
             deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
         }else{
             // The challenge refute window has passed, the member can be ejected now
-            if(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.number) {
-                // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
-                _memberRemove(_nodeAddress);
-                // Challenge was successful
-                challengeSuccess = true;
-            }
+            require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.number, "Refute window has not yet passed");
+            // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
+            _memberRemove(_nodeAddress);
+            // Challenge was successful
+            challengeSuccess = true;
         }
         // Log it
         emit ActionChallengeDecided(_nodeAddress, msg.sender, challengeSuccess, block.timestamp);
