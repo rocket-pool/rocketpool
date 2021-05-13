@@ -33,6 +33,8 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         depositType = _depositType;
         nodeAddress = _nodeAddress;
         nodeFee = rocketNetworkFees.getNodeFee();
+        // Set safety check flag
+        initialised = true;
     }
 
     // Receive an ETH deposit
