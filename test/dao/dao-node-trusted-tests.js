@@ -100,7 +100,6 @@ export default function() {
         //
         // Start Tests
         //
-        
         it(printTitle('userOne', 'fails to be added as a trusted node dao member as they are not a registered node'), async () => {
             // Set as trusted dao member via bootstrapping
             await shouldRevert(setDaoNodeTrustedBootstrapMember('rocketpool', 'node@home.com', userOne, {
@@ -664,7 +663,7 @@ export default function() {
             // Have 3rd member respond to the challenge successfully again, but after the challenge window has expired and before another member decides it
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
         });
-
+        
         
         it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond, they do not in the window required and lose their membership + bond'), async () => {
             // Add a 3rd member
@@ -690,14 +689,13 @@ export default function() {
             // Attempt to decide a challenge on a member that hasn't been challenged
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNodeTrusted2, true, { from: registeredNodeTrusted1 }), 'Member decided challenge on member without a challenge', 'Member hasn\'t been challenged or they have successfully responded to the challenge already');
             // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
-            await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 });
+            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 }), 'Member decided challenge before refute window passed', 'Refute window has not yet passed');
             // Fast forward to past the challenge window with the challenged node responding
             await mineBlocks(web3, challengeWindowBlocks);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
-
-        
+                
 
         it(printTitle('registeredNode2', 'as a regular node challenges a DAO members node to respond by paying ETH, they do not respond in the window required and lose their membership + bond'), async () => {
             // Get the DAO settings
