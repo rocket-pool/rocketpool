@@ -307,6 +307,9 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             // Update the total registered claimers for next interval
             setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimers.total.next", contractName)), claimersIntervalTotalUpdate.add(1));
         }else{
+            // Make sure they are already registered
+            require(getClaimingContractUserRegisteredBlock(contractName, _claimerAddress) != 0, "Claimer is not registered");
+            // Update the total registered claimers for next interval
             setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimers.total.next", contractName)), claimersIntervalTotalUpdate.sub(1));
         }
         // Save the registered block
