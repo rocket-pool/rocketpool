@@ -141,11 +141,6 @@ export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
 };
 
-// Set the current RPL inflation rate blocks, how often inflation is calculated
-export async function setRPLInflationIntervalTime(intervalTime, txOptions) {
-    // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.time', intervalTime, txOptions);
-};
 
 // Set the current RPL inflation block interval
 export async function setRPLInflationStartTime(startTime, txOptions) {

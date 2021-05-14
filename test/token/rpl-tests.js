@@ -21,6 +21,8 @@ export default function() {
             userOne,
         ] = accounts;
 
+        // One day in seconds
+        const ONE_DAY = 24 * 60 * 60;
 
         // State snapshotting
         let snapshotId;
@@ -173,7 +175,6 @@ export default function() {
             let currentTime = await getCurrentTime(web3);
 
             let config = {
-                timeInterval: 3600,
                 timeStart: currentTime + 3600,
                 timeClaim: currentTime + 1800,
                 yearlyInflationTarget: 0.05
@@ -192,7 +193,6 @@ export default function() {
             let currentTime = await getCurrentTime(web3);
 
             let config = {
-                timeInterval: 3600,
                 timeStart: currentTime + 1800,
                 timeClaim: currentTime + 3600,      // Mid way through first interval
                 yearlyInflationTarget: 0.05
@@ -211,9 +211,9 @@ export default function() {
             let currentTime = await getCurrentTime(web3);
 
             let config = {
-                timeInterval: 3600,
-                timeStart: currentTime + 1800,
-                timeClaim: currentTime + 5400,      // Claim in 1.5 hours (mid way through second interval)
+                timeInterval: ONE_DAY,
+                timeStart: currentTime + ONE_DAY,
+                timeClaim: currentTime + (ONE_DAY*2.5),      // Claimm mid way through second interval
                 yearlyInflationTarget: 0.05
             }
 
@@ -228,12 +228,12 @@ export default function() {
             await rplClaimInflation(config, { from: userOne });
         });
         
-        
+
         it(printTitle('userOne', 'mint inflation at multiple random intervals'), async () => {
             // Current time
             let currentTime = await getCurrentTime(web3);
 
-            const INTERVAL = 3600
+            const INTERVAL = ONE_DAY
             const HALF_INTERVAL = INTERVAL/2
 
             let config = {
@@ -266,7 +266,7 @@ export default function() {
             await rplClaimInflation(config, { from: userOne });
         });
         
-
+        
         it(printTitle('userOne', 'mint one years inflation after 365 days at 5% which would equal 18,900,000 tokens'), async () => {
             // Current time
             let currentTime = await getCurrentTime(web3);
@@ -370,5 +370,6 @@ export default function() {
             config.timeClaim += (ONE_DAY * 365)
             await shouldRevert(rplClaimInflation(config, { from: userOne }), "Minted inflation after rate set to 0", "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
         });
+        
     });
 }

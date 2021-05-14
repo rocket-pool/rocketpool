@@ -1,13 +1,11 @@
 import { getCurrentTime, increaseTime, mineBlocks } from '../_utils/evm'
 import { RocketTokenRPL, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
-import { setRPLInflationIntervalRate, setRPLInflationIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
+import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 
 // Set inflation config
 export async function rplSetInflationConfig(config, txOptions) {
     // Set the daily inflation start block
     await setRPLInflationStartTime(config.timeStart, txOptions);
-    // Set the daily inflation block count
-    await setRPLInflationIntervalTime(config.timeInterval, txOptions);
     // Set the daily inflation rate
     await setRPLInflationIntervalRate(config.yearlyInflationTarget, txOptions);
 }
