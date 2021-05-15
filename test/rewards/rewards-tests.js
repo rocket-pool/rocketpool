@@ -4,7 +4,7 @@ import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
-import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
+import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { setDAONetworkBootstrapRewardsClaimer, spendRewardsClaimTreasury, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
@@ -18,6 +18,9 @@ import { RocketRewardsPool } from '../_utils/artifacts';
 
 export default function() {
     contract('RocketRewardsPool', async (accounts) => {
+
+        // One day in seconds
+        const ONE_DAY = 24 * 60 * 60;
 
 
         // Accounts
@@ -35,30 +38,27 @@ export default function() {
 
 
         // The testing config
-        let claimIntervalTime = 3600 * 24;
-        // Interval for calculating inflation
-        let rewardIntervalTime = 3600
+        const claimIntervalTime = ONE_DAY * 28;
 
         // Set some RPL inflation scenes
         let rplInflationSetup = async function() {
             // Current time
             let currentTime = await getCurrentTime(web3);
             // Starting block for when inflation will begin
-            let timeStart = currentTime + 3600;
-            // Interval for calculating inflation
-            let timeInterval = rewardIntervalTime;
+            let timeStart = currentTime + ONE_DAY;
             // Yearly inflation target
             let yearlyInflationTarget = 0.05;
 
             // Set the daily inflation start time
             await setRPLInflationStartTime(timeStart, { from: owner });
-            // Set the daily inflation time
-            await setRPLInflationIntervalTime(timeInterval, { from: owner });
             // Set the daily inflation rate
             await setRPLInflationIntervalRate(yearlyInflationTarget, { from: owner });
 
+            // claimIntervalTime must be greater than rewardIntervalTime for tests to properly function
+            assert(claimIntervalTime > ONE_DAY, 'Tests will not function correctly unless claimIntervalTime is greater than inflation period (1 day)')
+
             // Return the starting time for inflation when it will be available
-            return timeStart + timeInterval;
+            return timeStart + ONE_DAY;
         }
 
         // Set a rewards claiming contract
@@ -246,9 +246,6 @@ export default function() {
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
             // Initialize claims contract
             await rewardsContractSetup('rocketClaimNode', 0.5);
-
-            // Move ahead one claim interval
-            await increaseTime(web3, claimIntervalTime);
 
             // Attempt to claim RPL
             await shouldRevert(rewardsClaimNode({
