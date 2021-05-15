@@ -68,7 +68,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * How many seconds to calculate inflation at
     * @return uint256 how many seconds to calculate inflation at
     */
-    function getInflationIntervalTime() override public view returns(uint256) {
+    function getInflationIntervalTime() override public pure returns(uint256) {
         return inflationInterval;
     }
 
