@@ -6,7 +6,7 @@ import { registerNode, nodeStakeRPL, nodeDeposit } from '../_helpers/node';
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
 import { withdrawRpl } from './scenario-withdraw-rpl';
-import { setRewardsClaimIntervalBlocks } from '../dao/scenario-dao-protocol-bootstrap';
+import { setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap'
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -87,7 +87,7 @@ export default function() {
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalBlocks(0, {from: owner});
+            await setRewardsClaimIntervalTime(0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -123,7 +123,7 @@ export default function() {
             const withdrawAmount = web3.utils.toWei('20000', 'ether');
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalBlocks(0, {from: owner});
+            await setRewardsClaimIntervalTime(0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(stakeAmount, {from: node});
@@ -142,7 +142,7 @@ export default function() {
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalBlocks(0, {from: owner});
+            await setRewardsClaimIntervalTime(0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -164,7 +164,7 @@ export default function() {
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
             // Remove withdrawal cooldown period
-            await setRewardsClaimIntervalBlocks(0, {from: owner});
+            await setRewardsClaimIntervalTime(0, {from: owner});
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});

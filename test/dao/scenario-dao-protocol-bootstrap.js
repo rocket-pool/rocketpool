@@ -86,10 +86,10 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
 
 /*** Rewards *******/
 
-// Set the current rewards claim period in blocks
-export async function setRewardsClaimIntervalBlocks(intervalBlocks, txOptions) {
+// Set the current rewards claim period in seconds
+export async function setRewardsClaimIntervalTime(intervalTime, txOptions) {
     // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', intervalBlocks, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', intervalTime, txOptions);
 };
 
 
@@ -141,16 +141,11 @@ export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
 };
 
-// Set the current RPL inflation rate blocks, how often inflation is calculated
-export async function setRPLInflationIntervalBlocks(intervalBlocks, txOptions) {
-    // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.blocks', intervalBlocks, txOptions);
-};
 
 // Set the current RPL inflation block interval
-export async function setRPLInflationStartBlock(startBlock, txOptions) {
+export async function setRPLInflationStartTime(startTime, txOptions) {
     // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startBlock, txOptions);
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startTime, txOptions);
 };
 
 

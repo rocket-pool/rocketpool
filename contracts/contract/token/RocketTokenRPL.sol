@@ -22,11 +22,13 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
     // How many RPL tokens minted to date (18m from fixed supply)
     uint256 constant totalInitialSupply = 18000000000000000000000000;
+    // The RPL inflation interval
+    uint256 constant inflationInterval = 1 days;
     // How many RPL tokens have been swapped for new ones
     uint256 public totalSwappedRPL = 0;
 
     // Last block inflation was calculated at
-    uint256 private inflationCalcBlock = 0;
+    uint256 private inflationCalcTime = 0;
 
 
     /**** Contracts ************/
@@ -37,7 +39,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
     /**** Events ***********/
     
-    event RPLInflationLog(address sender, uint256 value, uint256 inflationCalcBlock);
+    event RPLInflationLog(address sender, uint256 value, uint256 inflationCalcTime);
     event RPLFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
 
 
@@ -52,23 +54,22 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     }
 
     /**
-    * Get the last block that inflation was calculated at
-    * @return uint256 Last block since inflation was calculated
+    * Get the last time that inflation was calculated at
+    * @return uint256 Last timestamp since inflation was calculated
     */
-    function getInflationCalcBlock() override public view returns(uint256) {
+    function getInflationCalcTime() override public view returns(uint256) {
         // Get the last time inflation was calculated if it has even started
-        uint256 inflationStartBlock = getInflationIntervalStartBlock();
+        uint256 inflationStartTime = getInflationIntervalStartTime();
         // If inflation has just begun but not been calculated previously, use the start block as the last calculated point if it has passed
-        return inflationCalcBlock == 0 && inflationStartBlock < block.number ? inflationStartBlock : inflationCalcBlock;
+        return inflationCalcTime == 0 && inflationStartTime < block.timestamp ? inflationStartTime : inflationCalcTime;
     }
 
     /**
-    * How many blocks to calculate inflation at (5760 = 1 day in 15sec blocks)
-    * @return uint256 ow many blocks to calculate inflation at
+    * How many seconds to calculate inflation at
+    * @return uint256 how many seconds to calculate inflation at
     */
-    function getInflationIntervalBlocks() override public view returns(uint256) {
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
-        return daoSettingsInflation.getInflationIntervalBlocks();
+    function getInflationIntervalTime() override public pure returns(uint256) {
+        return inflationInterval;
     }
 
     /**
@@ -85,10 +86,10 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * The current block to begin inflation at
     * @return uint256 The current block to begin inflation at
     */
-    function getInflationIntervalStartBlock() override public view returns(uint256) {
-        // Inflation rate start block controlled by the DAO
+    function getInflationIntervalStartTime() override public view returns(uint256) {
+        // Inflation rate start time controlled by the DAO
         RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
-        return daoSettingsInflation.getInflationIntervalStartBlock();
+        return daoSettingsInflation.getInflationIntervalStartTime();
     }
 
     /**
@@ -106,13 +107,11 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * @return uint256 Time intervals since last update
     */
     function getInflationIntervalsPassed() override public view returns(uint256) {
-        // The block that inflation was last calculated at
-        uint256 inflationLastCalculatedBlock = getInflationCalcBlock();
-        // Get the daily inflation in blocks
-        uint256 inflationInterval = getInflationIntervalBlocks();
+        // The time that inflation was last calculated at
+        uint256 inflationLastCalculatedTime = getInflationCalcTime();
         // Calculate now if inflation has begun
-        if(inflationLastCalculatedBlock > 0) {
-            return (block.number).sub(inflationLastCalculatedBlock).div(inflationInterval);
+        if(inflationLastCalculatedTime > 0) {
+            return (block.timestamp).sub(inflationLastCalculatedTime).div(inflationInterval);
         }else{
             return 0;
         }
@@ -161,9 +160,9 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Lets check
         require(newTokens > 0 && rocketVaultAddress != address(0x0), "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
-        // Update last inflation calculation block
-        inflationCalcBlock = getInflationCalcBlock().add(getInflationIntervalBlocks().mul(getInflationIntervalsPassed()));
-        // Miint to itself, then allocate tokens for transfer to rewards contract, this will Update balance & supply
+        // Update last inflation calculation timestamp
+        inflationCalcTime = getInflationCalcTime().add(inflationInterval.mul(getInflationIntervalsPassed()));
+        // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
         _mint(address(this), newTokens);
         // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
         IERC20 rplInflationContract = IERC20(address(this));
@@ -176,7 +175,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
         rocketVaultContract.depositToken('rocketRewardsPool', IERC20(address(this)), newTokens);
         // Log it
-        emit RPLInflationLog(msg.sender, newTokens, inflationCalcBlock);
+        emit RPLInflationLog(msg.sender, newTokens, inflationCalcTime);
         // return number minted
         return newTokens;
     }   

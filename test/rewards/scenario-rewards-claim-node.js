@@ -37,11 +37,11 @@ export async function rewardsClaimNode(txOptions) {
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketRewardsPool.getClaimIntervalBlockStart(),
+            rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
         ]).then(
-            ([claimIntervalBlockStart, nodeRpl]) =>
-            ({claimIntervalBlockStart, nodeRpl})
+            ([claimIntervalTimeStart, nodeRpl]) =>
+            ({claimIntervalTimeStart, nodeRpl})
         );
     }
 
@@ -65,11 +65,9 @@ export async function rewardsClaimNode(txOptions) {
     let claimPerc = calcBase.mul(details2.nodeRplStake).div(details2.totalRplStake);
     let expectedClaimAmount = details2.nodesRplShare.mul(claimPerc).div(calcBase);
 
-    // console.log(Number(balances1.claimIntervalBlockStart), Number(balances2.claimIntervalBlockStart));
+    // console.log(Number(balances1.claimIntervalTimeStart), Number(balances2.claimIntervalTimeStart));
     // console.log(web3.utils.fromWei(balances2.nodeRpl.sub(balances1.nodeRpl)), web3.utils.fromWei(expectedClaimAmount));
 
     // Check balances
     assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(expectedClaimAmount), 'Incorrect updated node RPL balance');
-
 }
-

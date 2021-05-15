@@ -62,12 +62,12 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).sub(_amount));
     }
 
-    // Get/set the block a node last staked RPL at
-    function getNodeRPLStakedBlock(address _nodeAddress) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("rpl.staked.node.block", _nodeAddress)));
+    // Get/set the time a node last staked RPL at
+    function getNodeRPLStakedTime(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)));
     }
-    function setNodeRPLStakedBlock(address _nodeAddress, uint256 _block) private {
-        setUint(keccak256(abi.encodePacked("rpl.staked.node.block", _nodeAddress)), _block);
+    function setNodeRPLStakedTime(address _nodeAddress, uint256 _time) private {
+        setUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)), _time);
     }
 
     // Get the total effective RPL stake amount
@@ -167,7 +167,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(msg.sender, _amount);
-        setNodeRPLStakedBlock(msg.sender, block.number);
+        setNodeRPLStakedTime(msg.sender, block.timestamp);
         // Emit RPL staked event
         emit RPLStaked(msg.sender, _amount, block.timestamp);
     }
@@ -179,7 +179,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check cooldown period (one claim period) has passed since RPL last staked
-        require(block.number.sub(getNodeRPLStakedBlock(msg.sender)) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalBlocks(), "The withdrawal cooldown period has not passed");
+        require(block.timestamp.sub(getNodeRPLStakedTime(msg.sender)) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");

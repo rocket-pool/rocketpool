@@ -1,4 +1,3 @@
-import { mineBlocks } from '../_utils/evm';
 import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketClaimDAO, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
 
 // Set the address the DAO can receive rewards at
@@ -24,7 +23,7 @@ export async function rewardsClaimDAO(txOptions) {
     function getTxData() {
         return Promise.all([
             rocketRewardsPool.getClaimIntervalsPassed(),
-            rocketRewardsPool.getClaimIntervalBlockStart(),
+            rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketRewardsPool.getRPLBalance(),
             rocketRewardsPool.getClaimingContractPerc('rocketClaimDAO'),
             rocketRewardsPool.getClaimingContractAllowance('rocketClaimDAO'),
@@ -32,8 +31,8 @@ export async function rewardsClaimDAO(txOptions) {
             rocketRewardsPool.getClaimIntervalRewardsTotal(),
             rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address),
         ]).then(
-            ([intervalsPassed, intervalBlockStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance]) =>
-            ({intervalsPassed, intervalBlockStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance})
+            ([intervalsPassed, intervalTimeStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance]) =>
+            ({intervalsPassed, intervalTimeStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance})
         );
     }
 
@@ -46,15 +45,15 @@ export async function rewardsClaimDAO(txOptions) {
     // Capture data
     let ds2 = await getTxData();
 
-    //console.log(Number(ds1.intervalsPassed), Number(ds1.intervalBlockStart), Number(web3.utils.fromWei(ds1.daoClaimAllowance)).toFixed(4), Number(web3.utils.fromWei(ds1.daoClaimPerc)), (Number(web3.utils.fromWei(ds1.daoClaimPerc)) * Number(web3.utils.fromWei((ds1.intervalRewardsTotal)))).toFixed(4));
-    //console.log(Number(ds2.intervalsPassed), Number(ds2.intervalBlockStart), Number(web3.utils.fromWei(ds2.daoClaimAllowance)).toFixed(4), Number(web3.utils.fromWei(ds2.daoClaimPerc)), (Number(web3.utils.fromWei(ds2.daoClaimPerc)) * Number(web3.utils.fromWei((ds2.intervalRewardsTotal)))).toFixed(4));
+    //console.log(Number(ds1.intervalsPassed), Number(ds1.intervalTimeStart), Number(web3.utils.fromWei(ds1.daoClaimAllowance)).toFixed(4), Number(web3.utils.fromWei(ds1.daoClaimPerc)), (Number(web3.utils.fromWei(ds1.daoClaimPerc)) * Number(web3.utils.fromWei((ds1.intervalRewardsTotal)))).toFixed(4));
+    //console.log(Number(ds2.intervalsPassed), Number(ds2.intervalTimeStart), Number(web3.utils.fromWei(ds2.daoClaimAllowance)).toFixed(4), Number(web3.utils.fromWei(ds2.daoClaimPerc)), (Number(web3.utils.fromWei(ds2.daoClaimPerc)) * Number(web3.utils.fromWei((ds2.intervalRewardsTotal)))).toFixed(4));
 
     // Verify the claim allowance is correct
     assert(Number(web3.utils.fromWei(ds2.daoClaimAllowance)).toFixed(4) == Number(Number(web3.utils.fromWei(ds2.daoClaimPerc)) * Number(web3.utils.fromWei((ds2.intervalRewardsTotal)))).toFixed(4), 'Contract claim amount total does not equal the expected claim amount');
     // Should be 1 collect per interval
     assert(ds2.daoContractClaimTotal.eq(ds2.daoClaimAllowance), "Amount claimed exceeds allowance for interval");
     // Now test various outcomes depending on if a claim interval happened or not
-    if(Number(ds1.intervalBlockStart) < Number(ds2.intervalBlockStart)) {
+    if(Number(ds1.intervalTimeStart) < Number(ds2.intervalTimeStart)) {
         // Dao can only receive rewards on the first claim of a claim period
         assert(ds2.daoRewardsAddressBalance.eq(ds1.daoRewardsAddressBalance.add(ds2.daoContractClaimTotal)), "DAO rewards address does not contain the correct balance");
     }else{
