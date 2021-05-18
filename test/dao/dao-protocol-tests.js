@@ -63,6 +63,9 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.blocks', 100, {
                 from: guardian
             });
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'network.reth.deposit.delay', 500, {
+                from: guardian
+            });
         });
 
         // Update a setting, then try again

@@ -26,10 +26,23 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.target", 0.10 ether);          // 10%
             setSettingUint("network.node.fee.maximum", 0.20 ether);         // 20%
             setSettingUint("network.node.fee.demand.range", 1000 ether);
-            setSettingUint("network.reth.collateral.target", 0.1 ether);   
+            setSettingUint("network.reth.collateral.target", 0.1 ether);
+            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
+    }
+
+    // Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        // Some safety guards for certain settings
+        // Prevent DAO from setting the withdraw delay greater than ~24 hours
+        if(keccak256(bytes(_settingPath)) == keccak256(bytes("network.reth.deposit.delay"))) {
+            // Must be a future timestamp
+            require(_value <= 5760, "rETH deposit delay cannot exceed 5760 blocks");
+        }
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     // The threshold of trusted nodes that must reach consensus on oracle data to commit it
@@ -87,5 +100,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.reth.collateral.target");
     }
 
+    // rETH withdraw delay in blocks
+    function getRethDepositDelay() override public view returns (uint256) {
+        return getSettingUint("network.reth.deposit.delay");
+    }
 
 }
