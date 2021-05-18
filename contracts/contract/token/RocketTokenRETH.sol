@@ -147,7 +147,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
                 // Ensure enough blocks have passed
                 RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
                 uint256 blocksPassed = block.number.sub(lastDepositBlock);
-                require(blocksPassed > rocketDAOProtocolSettingsNetwork.getSubmitPricesFrequency(), "Not enough time has passed since deposit");
+                require(blocksPassed > rocketDAOProtocolSettingsNetwork.getRethDepositDelay(), "Not enough time has passed since deposit");
                 // Clear the state as it's no longer necessary to check this until another deposit is made
                 deleteUint(key);
             }
