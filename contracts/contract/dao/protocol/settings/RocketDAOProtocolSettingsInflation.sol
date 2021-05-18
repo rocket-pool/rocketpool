@@ -32,7 +32,7 @@ contract RocketDAOProtocolSettingsInflation is RocketDAOProtocolSettings, Rocket
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         // The start time for inflation must be in the future and cannot be set again once started
-        if(keccak256(bytes(_settingPath)) == keccak256(bytes('rpl.inflation.interval.start'))) {
+        if(keccak256(bytes(_settingPath)) == keccak256(bytes("rpl.inflation.interval.start"))) {
                 // Must be a future timestamp
                 require(_value > block.timestamp, "Inflation interval start time must be in the future");
                 // If it's already set and started, a new start block cannot be set

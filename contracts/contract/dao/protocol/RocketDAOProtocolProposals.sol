@@ -22,7 +22,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant daoNameSpace = 'dao.protocol.';
+    string constant daoNameSpace = "dao.protocol.";
 
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {

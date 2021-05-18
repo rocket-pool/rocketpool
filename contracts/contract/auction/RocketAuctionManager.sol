@@ -22,7 +22,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     uint256 constant calcBase = 1 ether;
 
     // Events
-    event LotCreated(uint256 indexed index, address indexed by, uint256 rplAmount, uint256 time);
+    event LotCreated(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
     event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);
     event BidClaimed(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 rplAmount, uint256 time);
     event RPLRecovered(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);

@@ -290,7 +290,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolManager.destroyMinipool();
         // Send any refund ETH to the node withdrawal account
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        // Self destruct & send any remaining ETH or refund ETH to the node operator account
+        // Self destruct & send any remaining ETH or refund ETH to the node operator's withdrawal address
         selfdestruct(payable(rocketNodeManager.getNodeWithdrawalAddress(nodeAddress)));
     }
 

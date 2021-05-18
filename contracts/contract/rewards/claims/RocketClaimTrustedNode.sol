@@ -28,24 +28,24 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     // Determine if this contract is enabled or not for claims
     function getEnabled() override public view returns (bool) {
         // Init the rewards pool contract
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
-        return rewardsPool.getClaimingContractEnabled('rocketClaimTrustedNode');
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        return rewardsPool.getClaimingContractEnabled("rocketClaimTrustedNode");
     }
 
     // Determine when this trusted node can claim, only after 1 claim period has passed since they were made a trusted node
     function getClaimPossible(address _trustedNodeAddress) override public view onlyTrustedNode(_trustedNodeAddress) returns (bool) {
         // Init the rewards pool contract
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         // Can we make a claim? have we been registered and registered long enough?
-        return rewardsPool.getClaimingContractUserCanClaim('rocketClaimTrustedNode', _trustedNodeAddress);
+        return rewardsPool.getClaimingContractUserCanClaim("rocketClaimTrustedNode", _trustedNodeAddress);
     }
 
     // Calculate in percent how much rewards a claimer here can receive 
     function getClaimRewardsPerc(address _trustedNodeAddress) override public view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
         // Init the rewards pool contract
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         // Get total trusted nodes for this claim interval
-        uint256 trustedNodesClaimIntervalTotal = rewardsPool.getClaimingContractUserTotalCurrent('rocketClaimTrustedNode');
+        uint256 trustedNodesClaimIntervalTotal = rewardsPool.getClaimingContractUserTotalCurrent("rocketClaimTrustedNode");
         // They can only claim until the next claim interval has started if they are a newly trusted node
         // Calculate the perc of the trusted node rewards they are entitled too
         return getClaimPossible(_trustedNodeAddress) && trustedNodesClaimIntervalTotal > 0 ? calcBase.div(trustedNodesClaimIntervalTotal) : 0;
@@ -54,14 +54,14 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     // Return how much they can expect in rpl rewards
     function getClaimRewardsAmount(address _trustedNodeAddress) override public view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
         // Init the rewards pool contract 
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
-        return rewardsPool.getClaimAmount('rocketClaimTrustedNode', _trustedNodeAddress, getClaimRewardsPerc(_trustedNodeAddress));
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        return rewardsPool.getClaimAmount("rocketClaimTrustedNode", _trustedNodeAddress, getClaimRewardsPerc(_trustedNodeAddress));
     }
 
     // Trusted node registering to claim
     function register(address _trustedNodeAddress, bool _enable) override external onlyLatestContract("rocketClaimTrustedNode", address(this)) onlyLatestContract("rocketDAONodeTrustedActions", msg.sender) onlyTrustedNode(_trustedNodeAddress) {
         // Init the rewards pool contract
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         // Register/Unregister now
         rewardsPool.registerClaimer(_trustedNodeAddress, _enable);
     }
@@ -74,7 +74,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
         // Claim RPL
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress('rocketRewardsPool'));
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         rewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
     

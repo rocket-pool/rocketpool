@@ -19,12 +19,12 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     using SafeERC20 for IERC20;
 
     // Network contract balances
-    mapping(bytes32 => uint256) etherBalances;
+    mapping(string => uint256) etherBalances;
     mapping(bytes32 => uint256) tokenBalances;
 
     // Events
-    event EtherDeposited(bytes32 indexed by, uint256 amount, uint256 time);
-    event EtherWithdrawn(bytes32 indexed by, uint256 amount, uint256 time);
+    event EtherDeposited(string indexed by, uint256 amount, uint256 time);
+    event EtherWithdrawn(string indexed by, uint256 amount, uint256 time);
     event TokenDeposited(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenWithdrawn(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
     event TokenBurned(bytes32 indexed by, address indexed tokenAddress, uint256 amount, uint256 time);
@@ -38,7 +38,7 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     // Get a contract's ETH balance by address
     function balanceOf(string memory _networkContractName) override public view returns (uint256) {
         // Return balance
-        return etherBalances[keccak256(abi.encodePacked(_networkContractName))];
+        return etherBalances[_networkContractName];
     }
 
 
@@ -54,11 +54,11 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Valid amount?
         require(msg.value > 0, "No valid amount of ETH given to deposit");
         // Get contract key
-        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender)));
+        string memory contractName = getContractName(msg.sender);
         // Update contract balance
-        etherBalances[contractKey] = etherBalances[contractKey].add(msg.value);
+        etherBalances[contractName] = etherBalances[contractName].add(msg.value);
         // Emit ether deposited event
-        emit EtherDeposited(contractKey, msg.value, block.timestamp);
+        emit EtherDeposited(contractName, msg.value, block.timestamp);
     }
 
     // Withdraw an amount of ETH to a network contract
@@ -67,19 +67,19 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Valid amount?
         require(_amount > 0, "No valid amount of ETH given to withdraw");
         // Get contract key
-        bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender)));
+        string memory contractName = getContractName(msg.sender);
         // Check and update contract balance
-        require(etherBalances[contractKey] >= _amount, "Insufficient contract ETH balance");
-        etherBalances[contractKey] = etherBalances[contractKey].sub(_amount);
+        require(etherBalances[contractName] >= _amount, "Insufficient contract ETH balance");
+        etherBalances[contractName] = etherBalances[contractName].sub(_amount);
         // Withdraw
         RocketVaultWithdrawerInterface withdrawer = RocketVaultWithdrawerInterface(msg.sender);
         withdrawer.receiveVaultWithdrawalETH{value: _amount}();
         // Emit ether withdrawn event
-        emit EtherWithdrawn(contractKey, _amount, block.timestamp);
+        emit EtherWithdrawn(contractName, _amount, block.timestamp);
     }
 
 
-    // Accept an token deposit and assign it's balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
+    // Accept an token deposit and assign its balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
     function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external {
          // Valid amount?
         require(_amount > 0, "No valid amount of tokens given to deposit");

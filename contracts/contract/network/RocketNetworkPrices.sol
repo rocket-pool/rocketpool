@@ -41,10 +41,10 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     // The current RP network RPL price in ETH
     function getRPLPrice() override public view returns (uint256) {
-        return getUintS("network.price.rpl");
+        return getUintS("network.prices.rpl");
     }
     function setRPLPrice(uint256 _value) private {
-        setUintS("network.price.rpl", _value);
+        setUintS("network.prices.rpl", _value);
     }
 
     // Submit network price data for a block
@@ -57,7 +57,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         require(_block < block.number, "Prices can not be submitted for a future block");
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node", msg.sender, _block, _rplPrice));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _rplPrice));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");

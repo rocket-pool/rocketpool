@@ -101,8 +101,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         uint256 nodeAmount = getMinipoolNodeRewardAmount(
             minipool.getNodeFee(),
             userDepositBalance,
-            minipool.getStakingStartBalance(),
-            minipool.getStakingEndBalance()
+            _stakingStartBalance,
+            _stakingEndBalance
         );
         // Set minipool withdrawal balances
         rocketMinipoolManager.setMinipoolWithdrawalBalances(_minipoolAddress, _stakingEndBalance, nodeAmount);

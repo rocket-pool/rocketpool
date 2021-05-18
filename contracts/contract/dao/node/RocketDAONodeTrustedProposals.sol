@@ -23,7 +23,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant daoNameSpace = 'dao.trustednodes.';
+    string constant daoNameSpace = "dao.trustednodes.";
 
     // Only allow certain contracts to execute methods
     modifier onlyExecutingContracts() {
@@ -45,22 +45,22 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // A general message can be passed by the proposer along with the calldata payload that can be executed if the proposal passes
     function propose(string memory _proposalMessage, bytes memory _payload) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) returns (uint256) {
         // Load contracts
-        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
-        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
+        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this user can make a proposal now
         require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAONodeTrustedSettingsProposals.getCooldown()) <= block.number, "Member has not waited long enough to make another proposal");
         // Record the last time this user made a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal
-        return daoProposal.add(msg.sender, 'rocketDAONodeTrustedProposals', _proposalMessage, block.number.add(rocketDAONodeTrustedSettingsProposals.getVoteDelayBlocks()), rocketDAONodeTrustedSettingsProposals.getVoteBlocks(), rocketDAONodeTrustedSettingsProposals.getExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
+        return daoProposal.add(msg.sender, "rocketDAONodeTrustedProposals", _proposalMessage, block.number.add(rocketDAONodeTrustedSettingsProposals.getVoteDelayBlocks()), rocketDAONodeTrustedSettingsProposals.getVoteBlocks(), rocketDAONodeTrustedSettingsProposals.getExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
     }
 
     // Vote on a proposal
     function vote(uint256 _proposalID, bool _support) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
-        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));      
-        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
+        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Did they join after this proposal was created? If so, they can't vote or it'll throw off the set proposalVotesRequired 
         require(daoNodeTrusted.getMemberJoinedBlock(msg.sender) < daoProposal.getCreated(_proposalID), "Member cannot vote on proposal created before they became a member");
         // Vote now, one vote per trusted node member
@@ -70,7 +70,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Cancel a proposal 
     function cancel(uint256 _proposalID) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
-        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         // Cancel now, will succeed if it is the original proposer
         daoProposal.cancel(msg.sender, _proposalID);
     }
@@ -78,7 +78,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Execute a proposal 
     function execute(uint256 _proposalID) override public onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
-        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress('rocketDAOProposal'));
+        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         // Execute now
         daoProposal.execute(_proposalID);
     }
@@ -101,7 +101,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // A current member proposes leaving the trusted node DAO, when successful they will be allowed to collect their RPL bond
     function proposalLeave(address _nodeAddress) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 
         // Load contracts
-        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
+        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
         require(daoNodeTrusted.getMemberCount() > daoNodeTrusted.getMemberMinRequired(), "Member count will fall below min required");
         // Their proposal to leave has been accepted, record the block
@@ -112,8 +112,8 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Propose to kick a current member from the DAO with an optional RPL bond fine
     function proposalKick(address _nodeAddress, uint256 _rplFine) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 
         // Load contracts
-        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
-        RocketDAONodeTrustedActionsInterface daoActionsContract = RocketDAONodeTrustedActionsInterface(getContractAddress('rocketDAONodeTrustedActions'));
+        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedActionsInterface daoActionsContract = RocketDAONodeTrustedActionsInterface(getContractAddress("rocketDAONodeTrustedActions"));
         // How much is their RPL bond?
         uint256 rplBondAmount = daoNodeTrusted.getMemberRPLBondAmount(_nodeAddress);
         // Check fine amount can be covered
@@ -160,7 +160,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Add a new potential members data, they are not official members yet, just propsective
     function _memberInit(string memory _id, string memory _email, address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
         // Load contracts
-        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress('rocketDAONodeTrusted'));
+        RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Check current node status
         require(!daoNodeTrusted.getMemberIsValid(_nodeAddress), "This node is already part of the trusted node DAO");
         // Verify the ID is min 3 chars

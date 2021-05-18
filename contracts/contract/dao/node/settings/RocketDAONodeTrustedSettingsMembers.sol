@@ -16,12 +16,12 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
-            setSettingUint('members.quorum', 0.51 ether);                    // Member quorum threshold that must be met for proposals to pass (51%)
-            setSettingUint('members.rplbond', 15000 ether);                  // Bond amount required for a new member to join
-            setSettingUint('members.minipool.unbonded.max', 250);            // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
-            setSettingUint('members.challenge.cooldown', 43204);             // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
-            setSettingUint('members.challenge.window', 43204);               // How long a member has to respond to a challenge. 7 days worth of blocks
-            setSettingUint('members.challenge.cost', 1 ether);               // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
+            setSettingUint("members.quorum", 0.51 ether);                    // Member quorum threshold that must be met for proposals to pass (51%)
+            setSettingUint("members.rplbond", 15000 ether);                  // Bond amount required for a new member to join
+            setSettingUint("members.minipool.unbonded.max", 250);            // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
+            setSettingUint("members.challenge.cooldown", 43204);             // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
+            setSettingUint("members.challenge.window", 43204);               // How long a member has to respond to a challenge. 7 days worth of blocks
+            setSettingUint("members.challenge.cost", 1 ether);               // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -42,32 +42,32 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
 
     // The member proposal quorum threshold for this DAO
     function getQuorum() override public view returns (uint256) { 
-        return getSettingUint('members.quorum');
+        return getSettingUint("members.quorum");
     }
 
     // Amount of RPL needed for a new member
     function getRPLBond() override public view returns (uint256) { 
-        return getSettingUint('members.rplbond');
+        return getSettingUint("members.rplbond");
     }
 
     // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
     function getMinipoolUnbondedMax() override public view returns (uint256) { 
-        return getSettingUint('members.minipool.unbonded.max');
+        return getSettingUint("members.minipool.unbonded.max");
     }
 
     // How long a member must wait before making consecutive challenges
     function getChallengeCooldown() override public view returns (uint256) { 
-        return getSettingUint('members.challenge.cooldown');
+        return getSettingUint("members.challenge.cooldown");
     }
 
     // The window available to meet any node challenges
     function getChallengeWindow() override public view returns (uint256) { 
-        return getSettingUint('members.challenge.window');
+        return getSettingUint("members.challenge.window");
     }
 
     // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
     function getChallengeCost() override public view returns (uint256) { 
-        return getSettingUint('members.challenge.cost');
+        return getSettingUint("members.challenge.cost");
     }
         
 

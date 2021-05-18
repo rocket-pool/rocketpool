@@ -26,11 +26,11 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     event ActionLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
     event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
     event ActionChallengeMade(address indexed _nodeChallengedAddress, address indexed _nodeChallengerAddress, uint256 time);
-    event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengDeciderAddress, bool _success, uint256 time);
+    event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengeDeciderAddress, bool _success, uint256 time);
 
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoNameSpace = 'dao.trustednodes.';
+    string private daoNameSpace = "dao.trustednodes.";
 
 
     // Construct
@@ -81,10 +81,10 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     }
 
     // A member official joins the DAO with their bond ready, if successful they are added as a member
-    function _memberJoin(address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
+    function _memberJoin(address _nodeAddress) private {
         // Set some intiial contract address
-        address rocketVaultAddress = getContractAddress('rocketVault');
-        address rocketTokenRPLAddress = getContractAddress('rocketTokenRPL');
+        address rocketVaultAddress = getContractAddress("rocketVault");
+        address rocketTokenRPLAddress = getContractAddress("rocketTokenRPL");
         // Load contracts
         IERC20 rplInflationContract = IERC20(rocketTokenRPLAddress);
         RocketVaultInterface rocketVault = RocketVaultInterface(rocketVaultAddress);
@@ -92,7 +92,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // The block that the member was successfully invited to join the DAO
-        uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock('invited', _nodeAddress);
+        uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock("invited", _nodeAddress);
         // Have they been invited
         require(memberInvitedBlock > 0, "This node has not been invited to join");
         // The current member bond amount in RPL that's required
@@ -131,13 +131,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their RPL bond
     function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this wouldn't dip below the min required trusted nodes
         require(rocketDAONode.getMemberCount() > rocketDAONode.getMemberMinRequired(), "Member count will fall below min required");
         // Get the block that they were approved to leave at
-        uint256 leaveAcceptedBlock = rocketDAONode.getMemberProposalExecutedBlock('leave', msg.sender);
+        uint256 leaveAcceptedBlock = rocketDAONode.getMemberProposalExecutedBlock("leave", msg.sender);
         // Has their leave request expired?
         require(leaveAcceptedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This member has not been approved to leave or request has expired, please apply to leave again");
         // They were succesful, lets refund their RPL Bond
@@ -147,7 +147,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
             // Valid withdrawal address
             require(_rplBondRefundAddress != address(0x0), "Member has not supplied a valid address for their RPL bond refund");
             // Send tokens now
-            rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount);
+            rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
         }
         // Remove them now
         _memberRemove(msg.sender);
@@ -160,18 +160,18 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     // Is run via the main DAO contract when the proposal passes and is executed
     function actionKick(address _nodeAddress, uint256 _rplFine) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // Load contracts
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress('rocketVault'));
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Get the
         uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(_nodeAddress);
         // Refund
         if (rplBondRefundAmount > 0) {
             // Send tokens now
-            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress('rocketTokenRPL')), rplBondRefundAmount);
+            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
         }
         // Burn the fine
         if (_rplFine > 0) {
-            rocketVault.burnToken(ERC20Burnable(getContractAddress('rocketTokenRPL')), _rplFine);
+            rocketVault.burnToken(ERC20Burnable(getContractAddress("rocketTokenRPL")), _rplFine);
         }
         // Remove the member now
         _memberRemove(_nodeAddress);
@@ -190,7 +190,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Members can challenge other members for free, but for a regular bonded node to challenge a DAO member, requires non-refundable payment to prevent spamming
         if(rocketDAONode.getMemberIsValid(msg.sender) != true) require(msg.value == rocketDAONodeTrustedSettingsMembers.getChallengeCost(), "Non DAO members must pay ETH to challenge a members node");
         // Can't challenge yourself duh
-        require(msg.sender != _nodeAddress, 'You cannot challenge yourself');
+        require(msg.sender != _nodeAddress, "You cannot challenge yourself");
         // Is this member already being challenged?
         require(!rocketDAONode.getMemberIsChallenged(_nodeAddress), "Member is already being challenged");
         // Has this node recently made another challenge and not waited for the cooldown to pass?

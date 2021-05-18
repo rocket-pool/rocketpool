@@ -78,7 +78,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     */
     function getInflationIntervalRate() override public view returns(uint256) {
         // Inflation rate controlled by the DAO
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress("rocketDAOProtocolSettingsInflation"));
         return daoSettingsInflation.getInflationIntervalRate();
     }
 
@@ -88,7 +88,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     */
     function getInflationIntervalStartTime() override public view returns(uint256) {
         // Inflation rate start time controlled by the DAO
-        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress('rocketDAOProtocolSettingsInflation'));
+        RocketDAOProtocolSettingsInflationInterface daoSettingsInflation = RocketDAOProtocolSettingsInflationInterface(getContractAddress("rocketDAOProtocolSettingsInflation"));
         return daoSettingsInflation.getInflationIntervalStartTime();
     }
 
@@ -155,7 +155,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Calculate the amount of tokens now based on inflation rate
         uint256 newTokens = inflationCalculate();
         // Address of the vault where to send tokens
-        address rocketVaultAddress = getContractAddress('rocketVault');
+        address rocketVaultAddress = getContractAddress("rocketVault");
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
         RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Lets check
@@ -173,7 +173,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
         require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
         // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
-        rocketVaultContract.depositToken('rocketRewardsPool', IERC20(address(this)), newTokens);
+        rocketVaultContract.depositToken("rocketRewardsPool", IERC20(address(this)), newTokens);
         // Log it
         emit RPLInflationLog(msg.sender, newTokens, inflationCalcTime);
         // return number minted

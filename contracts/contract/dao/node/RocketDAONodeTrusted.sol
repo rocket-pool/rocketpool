@@ -21,7 +21,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string constant daoNameSpace = 'dao.trustednodes.';
+    string constant daoNameSpace = "dao.trustednodes.";
 
     // Min amount of trusted node members required in the DAO
     uint256 constant daoMemberMinCount = 3;
@@ -149,10 +149,10 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     /**** Bootstrapping ***************/
 
     
-    // Bootstrap mode - If there are less than the required min amount of node members, the owner can add some to bootstrap the DAO
+    // Bootstrap mode - In bootstrap mode, guardian can add members at will
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyGuardian onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets add them
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, _nodeAddress));
+        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, _nodeAddress));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
@@ -161,7 +161,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Bootstrap mode - Uint Setting
     function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
+        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
@@ -169,7 +169,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Bootstrap mode - Bool Setting
     function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
+        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
@@ -178,14 +178,14 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Bootstrap mode - Upgrade contracts or their ABI
     function bootstrapUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalUpgrade(string,string,string,address)", _type, _name, _contractAbi, _contractAddress));
+        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalUpgrade(string,string,string,address)", _type, _name, _contractAbi, _contractAddress));
         // Was there an error?
         require(success, getRevertMsg(response));
     }
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
     function bootstrapDisable(bool _confirmDisableBootstrapMode) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
-        require(_confirmDisableBootstrapMode == true, 'You must confirm disabling bootstrap mode, it can only be done once!');
+        require(_confirmDisableBootstrapMode == true, "You must confirm disabling bootstrap mode, it can only be done once!");
         setBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")), true); 
     }
 
@@ -196,7 +196,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Must have their ID, email, current RPL bond amount available and must be called by their current registered node account
     function memberJoinRequired(string memory _id, string memory _email) override public onlyLowMemberMode onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets add them 
-        (bool successPropose, bytes memory responsePropose) = getContractAddress('rocketDAONodeTrustedProposals').call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, msg.sender));
+        (bool successPropose, bytes memory responsePropose) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, msg.sender));
         // Was there an error?
         require(successPropose, getRevertMsg(responsePropose));
         // Get the to automatically join as a member (by a regular proposal, they would have to manually accept, but this is no ordinary situation)

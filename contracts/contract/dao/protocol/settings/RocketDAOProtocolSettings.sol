@@ -11,13 +11,13 @@ abstract contract RocketDAOProtocolSettings is RocketBase, RocketDAOProtocolSett
 
 
     // The namespace for a particular group of settings
-    bytes32 settingNameSpace = '';
+    bytes32 settingNameSpace;
 
 
     // Only allow updating from the DAO proposals contract
     modifier onlyDAOProtocolProposal() {
         // If this contract has been initialised, only allow access from the proposals contract
-        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress('rocketDAOProtocolProposals') == msg.sender, "Only DAO Protocol Proposals contract can update a setting");
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) require(getContractAddress("rocketDAOProtocolProposals") == msg.sender, "Only DAO Protocol Proposals contract can update a setting");
         _;
     }
 
