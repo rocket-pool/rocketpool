@@ -19,7 +19,7 @@ export async function submitPrices(block, rplPrice, txOptions) {
     let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node', txOptions.from, block, rplPrice);
+    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, rplPrice);
     let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, rplPrice);
 
     // Get submission details
