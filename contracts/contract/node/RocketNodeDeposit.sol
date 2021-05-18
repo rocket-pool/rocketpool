@@ -64,7 +64,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             if (depositType == MinipoolDeposit.Empty) {
                 require(rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender) < rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax(), "Trusted node member would exceed the amount of unbonded minipools allowed");
                 uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
-                require(nodeFee > maxFee.mul(rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMinFee()).div(1 ether), "Trusted node member can only create an unbonded minipool if current fee > 80% of maximum fee");
+                require(nodeFee > maxFee.mul(rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMinFee()).div(1 ether), "Current commission rate is not high enough to create unbonded minipools");
             }
         }
         // Node is not trusted - it cannot create unbonded minipools
