@@ -28,6 +28,14 @@ export async function getMinipoolWithdrawalUserBalance(minipoolAddress) {
 }
 
 
+// Get the number of minipools a node has
+export async function getNodeMinipoolCount(nodeAddress) {
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    let count = await rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress);
+    return count;
+}
+
+
 // Get the minimum required RPL stake for a minipool
 export async function getMinipoolMinimumRPLStake() {
 

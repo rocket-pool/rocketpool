@@ -30,6 +30,22 @@ export async function getNodeMinimumRPLStake(nodeAddress) {
 }
 
 
+// Get total effective RPL stake
+export async function getTotalEffectiveRPLStake() {
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    let totalStake = await rocketNodeStaking.getTotalEffectiveRPLStake.call();
+    return totalStake;
+}
+
+
+// Get calculated effective RPL stake
+export async function getCalculatedTotalEffectiveRPLStake(price) {
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    let totalStake = await rocketNodeStaking.calculateTotalEffectiveRPLStake.call(0, 0, price);
+    return totalStake;
+}
+
+
 // Register a node
 export async function registerNode(txOptions) {
     const rocketNodeManager = await RocketNodeManager.deployed();

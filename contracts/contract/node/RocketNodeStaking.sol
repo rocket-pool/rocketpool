@@ -13,6 +13,7 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsIn
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
+import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Handles node deposits and minipool creation
 
@@ -73,20 +74,38 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Get the total effective RPL stake amount
     function getTotalEffectiveRPLStake() override public view returns (uint256) {
         // Load contracts
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        return rocketNetworkPrices.getEffectiveRPLStake();
+    }
+
+    // Calculate total effective RPL stake, this features a potentially unbounded loop so can not be called on-chain
+    // Instead, it is intended to be called by oracle nodes to be submitted alongside price updates
+    function calculateTotalEffectiveRPLStake(uint256 offset, uint256 limit, uint256 rplPrice) override public view returns (uint256) {
+        // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        // Get current total RPL stake
-        uint256 rplStake = getTotalRPLStake();
-        // Calculate maximum total RPL stake
-        uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
-            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
-            .mul(rocketMinipoolManager.getMinipoolCount())
-            .div(rocketNetworkPrices.getRPLPrice());
-        // Return effective stake amount
-        if (rplStake < maxRplStake) { return rplStake; }
-        else { return maxRplStake; }
+        // Calculate current max RPL stake per minipool
+        uint256 maxRplStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
+        // Loop all nodes and calculate their effective rate to sum
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        bytes32 key = keccak256(abi.encodePacked("nodes.index"));
+        uint256 totalNodes = addressSetStorage.getCount(key);
+        uint256 max = offset + limit;
+        if (max > totalNodes || limit == 0) { max = totalNodes; }
+        uint256 total = 0;
+        for (uint i = offset; i < max; i++){
+            // Get the node's address from the set
+            address nodeAddress = addressSetStorage.getItem(key, i);
+            // Get node's current RPL stake
+            uint256 rplStake = getNodeRPLStake(nodeAddress);
+            uint256 maxRplStake = maxRplStakePerMinipool.mul(rocketMinipoolManager.getNodeMinipoolCount(nodeAddress)).div(rplPrice);
+            // Calculate node's maximum RPL stake
+            if (rplStake < maxRplStake) { total += rplStake; }
+            else { total += maxRplStake; }
+        }
+        return total;
     }
 
     // Get a node's effective RPL stake amount
@@ -159,14 +178,20 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         address rocketVaultAddress = getContractAddress("rocketVault");
         IERC20 rplToken = IERC20(rplTokenAddress);
         RocketVaultInterface rocketVault = RocketVaultInterface(rocketVaultAddress);
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        // Prevent staking between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Can not stake while network is reaching consensus");
         // Transfer RPL tokens
         require(rplToken.transferFrom(msg.sender, address(this), _amount), "Could not transfer RPL to staking contract");
         // Deposit RPL tokens to vault
         require(rplToken.approve(rocketVaultAddress, _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
+        // Get node's current stake
+        uint256 rplStake = getNodeRPLStake(msg.sender);
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(msg.sender, _amount);
+        updateTotalEffectiveRPLStake(rplStake, rplStake.add(_amount));
         setNodeRPLStakedTime(msg.sender, block.timestamp);
         // Emit RPL staked event
         emit RPLStaked(msg.sender, _amount, block.timestamp);
@@ -178,8 +203,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Check cooldown period (one claim period) has passed since RPL last staked
         require(block.timestamp.sub(getNodeRPLStakedTime(msg.sender)) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
+        // Prevent unstaking between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Can not withdraw while network is reaching consensus");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
@@ -188,10 +216,45 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
+        updateTotalEffectiveRPLStake(rplStake, rplStake.sub(_amount));
         // Transfer RPL tokens to node address
         rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
         emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
+    }
+
+    // Updates the stored total effective rate based on a node's changing staking balance
+    function updateTotalEffectiveRPLStake(uint256 _oldStake, uint256 _newStake) private {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Get the node's maximum possible stake
+        uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Easy out if total stake isn't changing
+        if (_oldStake >= maxRplStake && _newStake >= maxRplStake) {
+            return;
+        }
+        // Check if we have to decrease total
+        if (_oldStake > _newStake) {
+            uint256 decrease = _oldStake.sub(_newStake);
+            uint256 delta = maxRplStake.sub(_newStake);
+            if (decrease < delta) { delta = decrease; }
+            rocketNetworkPrices.decreaseEffectiveRPLStake(delta);
+            return;
+        }
+        // Check if we have to increase total
+        if (_newStake > _oldStake) {
+            uint256 increase = _newStake.sub(_oldStake);
+            uint256 delta = maxRplStake.sub(_oldStake);
+            if (delta > increase) { delta = increase; }
+            rocketNetworkPrices.increaseEffectiveRPLStake(delta);
+        }
+        // _oldStake == _newStake (do nothing but shouldn't happen)
     }
 
     // Slash a node's RPL by an ETH amount
