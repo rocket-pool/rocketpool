@@ -19,8 +19,8 @@ export async function submitPrices(block, rplPrice, txOptions) {
     let trustedNodeCount = await rocketDAONodeTrusted.getMemberCount.call();
 
     // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, rplPrice);
-    let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, rplPrice);
+    let nodeSubmissionKey = web3.utils.soliditySha3('network.prices.submitted.node.key', txOptions.from, block, rplPrice, web3.utils.toBN('0'));
+    let submissionCountKey = web3.utils.soliditySha3('network.prices.submitted.count', block, rplPrice, web3.utils.toBN('0'));
 
     // Get submission details
     function getSubmissionDetails() {
@@ -48,7 +48,7 @@ export async function submitPrices(block, rplPrice, txOptions) {
     let submission1 = await getSubmissionDetails();
 
     // Submit prices
-    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
+    await rocketNetworkPrices.submitPrices(block, rplPrice, '0', txOptions);
 
     // Get updated submission details & prices
     let [submission2, prices] = await Promise.all([
@@ -94,7 +94,7 @@ export async function executeUpdatePrices(block, rplPrice, txOptions) {
     }
 
     // Submit prices
-    await rocketNetworkPrices.executeUpdatePrices(block, rplPrice, txOptions);
+    await rocketNetworkPrices.executeUpdatePrices(block, rplPrice, '0', txOptions);
 
     // Get updated submission details & prices
     let prices = await getPrices();

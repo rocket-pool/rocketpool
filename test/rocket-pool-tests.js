@@ -14,6 +14,7 @@ import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
+import networkStakingTests from './network/network-staking-tests';
 
 // Header
 console.log('\n');
@@ -34,6 +35,7 @@ minipoolStatusTests();
 networkBalancesTests();
 networkFeesTests();
 networkPricesTests();
+networkStakingTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();

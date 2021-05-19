@@ -67,7 +67,7 @@ export default function() {
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(6));
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
@@ -141,6 +141,19 @@ export default function() {
             let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initializedMinipool.address.substr(2));
             assert.equal(withdrawalCredentials.toLowerCase(), expectedWithdrawalCredentials.toLowerCase(), 'Invalid minipool withdrawal credentials');
 
+        });
+
+
+        it(printTitle('node operator', 'cannot create/destroy minipool without price consensus'), async () => {
+            const priceFrequency = 50;
+            // Set price frequency to a low value so we can mine fewer blocks
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', priceFrequency, {from: owner});
+            // Mine blocks until next price window
+            await mineBlocks(web3, priceFrequency);
+            // Creating minipool should fail now because oracles have not submitted price for this window
+            await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when network was not in consensus about price', 'Cannot create a minipool while network is reaching consensus');
+            // Closing a minipool should fail too
+            await shouldRevert(close(dissolvedMinipool, { from: node, }), 'Was able to destroy a minipool when network was not in consensus about price', 'Cannot destroy a minipool while network is reaching consensus');
         });
 
 
