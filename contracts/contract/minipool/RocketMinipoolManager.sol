@@ -113,6 +113,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Check node minipool limit based on RPL stake
         require(
             addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress))) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
@@ -130,6 +131,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
         // Update unbonded validator count if minipool is unbonded
         if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
+        // Prevent creation of minipools between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Can not stake while network is reaching consensus");
         // Update total effective RPL stake
         updateTotalEffectiveRPLStake(_nodeAddress, minipoolCount, minipoolCount.add(1));
         // Emit minipool created event
@@ -146,6 +149,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
@@ -158,6 +162,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
         // Update unbonded validator count if minipool is unbonded
         if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
+        // Prevent destroying minipools between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Can not stake while network is reaching consensus");
         // Update total effective RPL stake
         updateTotalEffectiveRPLStake(msg.sender, minipoolCount, minipoolCount.sub(1));
         // Emit minipool destroyed event
