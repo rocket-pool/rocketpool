@@ -132,7 +132,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update unbonded validator count if minipool is unbonded
         if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
         // Prevent creation of minipools between price update block and price consensus
-        require(rocketNetworkPrices.inConsensus(), "Can not stake while network is reaching consensus");
+        require(rocketNetworkPrices.inConsensus(), "Can not create a minipool while network is reaching consensus");
         // Update total effective RPL stake
         updateTotalEffectiveRPLStake(_nodeAddress, minipoolCount, minipoolCount.add(1));
         // Emit minipool created event
@@ -163,7 +163,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update unbonded validator count if minipool is unbonded
         if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
         // Prevent destroying minipools between price update block and price consensus
-        require(rocketNetworkPrices.inConsensus(), "Can not stake while network is reaching consensus");
+        require(rocketNetworkPrices.inConsensus(), "Can not destroy a minipool while network is reaching consensus");
         // Update total effective RPL stake
         updateTotalEffectiveRPLStake(msg.sender, minipoolCount, minipoolCount.sub(1));
         // Emit minipool destroyed event
