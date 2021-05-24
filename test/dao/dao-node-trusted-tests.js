@@ -15,7 +15,7 @@ import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrusted
 
 
 export default function() {
-    contract('RocketDAONodeTrusted', async (accounts) => {
+    contract.only('RocketDAONodeTrusted', async (accounts) => {
 
 
         // Accounts
@@ -24,6 +24,7 @@ export default function() {
             userOne,
             registeredNode1,
             registeredNode2,
+            registeredNode3,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
         ] = accounts;
@@ -81,6 +82,7 @@ export default function() {
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
+            await registerNode({from: registeredNode3});
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
             // Add members to the DAO now
@@ -95,7 +97,7 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: guardian });
 
         });
-
+        
 
         //
         // Start Tests
@@ -190,7 +192,7 @@ export default function() {
             // Verify
             assert(expectedVotes == Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");         
         });
-        
+
         // The big test
         it(printTitle('registeredNodeTrusted1&2', 'create two proposals for two new members that are voted in, one then chooses to leave and is allowed too'), async () => {
             // Get the DAO settings
@@ -205,6 +207,13 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Disable bootstrap mode
             await setDaoNodeTrustedBootstrapModeDisabled({ from: guardian });
+            // We only have 2 members now that bootstrap mode is disabled and proposals can only be made with 3, lets get a regular node to join via the emergency method
+            // We'll allow the DAO to transfer our RPL bond before joining
+            await rplMint(registeredNode3, rplBondAmount);
+            await rplAllowanceDAO(registeredNode3, rplBondAmount);
+            await setDaoNodeTrustedMemberRequired('rocketpool_emergency_node_op', 'node3@home.com', {
+                from: registeredNode3,
+            });
             // New Member 1
             // Encode the calldata for the proposal
             let proposalCalldata1 = web3.eth.abi.encodeFunctionCall(
@@ -250,7 +259,6 @@ export default function() {
             // Join now
             await daoNodeTrustedMemberJoin({from: registeredNode1});
             await daoNodeTrustedMemberJoin({from: registeredNode2});
-            
             // Now registeredNodeTrusted2 wants to leave
             // Encode the calldata for the proposal
             let proposalCalldata3 = web3.eth.abi.encodeFunctionCall(
@@ -280,8 +288,7 @@ export default function() {
             await daoNodeTrustedMemberLeave(registeredNodeTrusted2, {from: registeredNodeTrusted2});
             
         });
-        
-        
+                
         // Test various proposal states
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it passes and is executed'), async () => {
             // Setup our proposal settings
