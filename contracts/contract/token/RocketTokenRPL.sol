@@ -164,14 +164,12 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         inflationCalcTime = getInflationCalcTime().add(inflationInterval.mul(getInflationIntervalsPassed()));
         // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
         _mint(address(this), newTokens);
-        // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
-        IERC20 rplInflationContract = IERC20(address(this));
         // This is to prevent an allowance reentry style attack
         uint256 vaultAllowance = 0;
         // Get the current allowance for Rocket Vault
         vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
         // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
-        require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
+        require(this.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
         // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
         rocketVaultContract.depositToken("rocketRewardsPool", IERC20(address(this)), newTokens);
         // Log it
@@ -189,10 +187,8 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         require(_amount > 0, "Please enter valid amount of RPL to swap");
         // Send the tokens to this contract now and mint new ones for them
         require(rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing RPL contract was not successful");
-        // Initialise itself and send from it's own balance (cant just do a transfer as it's a user calling this so they are msg.sender)
-        IERC20 rplInflationContract = IERC20(address(this));
         // Transfer from the contracts RPL balance to the user
-        require(rplInflationContract.transfer(msg.sender, _amount), "Token transfer from RPL inflation contract was not successful");
+        require(this.transfer(msg.sender, _amount), "Token transfer from RPL inflation contract was not successful");
         // Update the total swapped
         totalSwappedRPL = totalSwappedRPL.add(_amount);
         // Log it
