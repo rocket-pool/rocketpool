@@ -162,12 +162,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        IERC20 rplToken = IERC20(getContractAddress("rocketTokenRPL"));
         // Get the
         uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(_nodeAddress);
         // Refund
         if (rplBondRefundAmount > 0) {
-            // Send tokens now
-            rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
+            // Send tokens now if the vault can cover it
+            if(rplToken.balanceOf(address(rocketVault)) >= rplBondRefundAmount) rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
         }
         // Burn the fine
         if (_rplFine > 0) {
