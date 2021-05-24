@@ -4,6 +4,7 @@ pragma solidity 0.7.6;
 
 import "../../RocketBase.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
+import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
 
 
 // The Rocket Pool Network DAO - This is a placeholder for the network DAO to come
@@ -39,41 +40,31 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     // Bootstrap mode - Uint Setting
     function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAOProtocolProposals").call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingUint(_settingContractName, _settingPath, _value);
     }
 
     // Bootstrap mode - Bool Setting
     function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAOProtocolProposals").call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingBool(_settingContractName, _settingPath, _value);
     }
 
     // Bootstrap mode - Address Setting
     function bootstrapSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAOProtocolProposals").call(abi.encodeWithSignature("proposalSettingAddress(string,string,address)", _settingContractName, _settingPath, _value));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingAddress(_settingContractName, _settingPath, _value);
     }
 
     // Bootstrap mode - Set a claiming contract to receive a % of RPL inflation rewards
     function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the rewards claiming contract amount 
-        (bool success, bytes memory response) = getContractAddress("rocketDAOProtocolProposals").call(abi.encodeWithSignature("proposalSettingRewardsClaimer(string,uint256)", _contractName, _perc));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingRewardsClaimer(_contractName, _perc);
     } 
 
     // Bootstrap mode -Spend DAO treasury
     function bootstrapSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the rewards claiming contract amount 
-        (bool success, bytes memory response) = getContractAddress("rocketDAOProtocolProposals").call(abi.encodeWithSignature("proposalSpendTreasury(string,address,uint256)", _invoiceID, _recipientAddress, _amount));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSpendTreasury(_invoiceID, _recipientAddress, _amount);
     }
 
 

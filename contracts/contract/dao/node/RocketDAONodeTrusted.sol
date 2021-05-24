@@ -5,6 +5,8 @@ pragma solidity 0.7.6;
 import "../../RocketBase.sol";
 import "../../../interface/RocketVaultInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedProposalsInterface.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedActionsInterface.sol";
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
 import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
@@ -152,35 +154,27 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Bootstrap mode - In bootstrap mode, guardian can add members at will
     function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyGuardian onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets add them
-        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, _nodeAddress));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _email, _nodeAddress);
     }
 
 
     // Bootstrap mode - Uint Setting
     function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalSettingUint(string,string,uint256)", _settingContractName, _settingPath, _value));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalSettingUint(_settingContractName, _settingPath, _value);
     }
 
     // Bootstrap mode - Bool Setting
     function bootstrapSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalSettingBool(string,string,bool)", _settingContractName, _settingPath, _value));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalSettingBool(_settingContractName, _settingPath, _value);
     }
 
 
     // Bootstrap mode - Upgrade contracts or their ABI
     function bootstrapUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        (bool success, bytes memory response) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalUpgrade(string,string,string,address)", _type, _name, _contractAbi, _contractAddress));
-        // Was there an error?
-        require(success, getRevertMsg(response));
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalUpgrade(_type, _name, _contractAbi, _contractAddress);
     }
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
@@ -195,14 +189,10 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // In an explicable black swan scenario where the DAO loses more than the min membership required (3), this method can be used by a regular node operator to join the DAO
     // Must have their ID, email, current RPL bond amount available and must be called by their current registered node account
     function memberJoinRequired(string memory _id, string memory _email) override public onlyLowMemberMode onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
-        // Ok good to go, lets add them 
-        (bool successPropose, bytes memory responsePropose) = getContractAddress("rocketDAONodeTrustedProposals").call(abi.encodeWithSignature("proposalInvite(string,string,address)", _id, _email, msg.sender));
-        // Was there an error?
-        require(successPropose, getRevertMsg(responsePropose));
+        // Ok good to go, lets update the settings 
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _email, msg.sender);
         // Get the to automatically join as a member (by a regular proposal, they would have to manually accept, but this is no ordinary situation)
-        (bool successJoin, bytes memory responseJoin) = getContractAddress("rocketDAONodeTrustedActions").call(abi.encodeWithSignature("actionJoinRequired(address)", msg.sender));
-        // Was there an error?
-        require(successJoin, getRevertMsg(responseJoin));
+        RocketDAONodeTrustedActionsInterface(getContractAddress("rocketDAONodeTrustedActions")).actionJoinRequired(msg.sender);
     }
 
 }
