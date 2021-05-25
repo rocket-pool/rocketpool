@@ -28,9 +28,15 @@ module.exports = {
   fs: FS,
   contract: Contract,
   compilers: {
-      solc: {
-          version: "0.7.6",
-      }
+    solc: {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 15000
+          }
+        }
+    }
   },
   plugins: ["solidity-coverage"],
   networks: {
