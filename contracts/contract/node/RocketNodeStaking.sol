@@ -206,7 +206,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
         if (rplSlashAmount > rplStake) { rplSlashAmount = rplStake; }
         // Transfer slashed amount to auction contract
-        rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
+        if(rplSlashAmount > 0) rocketVault.transferToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")), rplSlashAmount);
         // Update RPL stake amounts
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);

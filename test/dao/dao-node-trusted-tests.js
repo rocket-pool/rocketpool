@@ -15,7 +15,7 @@ import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrusted
 
 
 export default function() {
-    contract.only('RocketDAONodeTrusted', async (accounts) => {
+    contract('RocketDAONodeTrusted', async (accounts) => {
 
 
         // Accounts
