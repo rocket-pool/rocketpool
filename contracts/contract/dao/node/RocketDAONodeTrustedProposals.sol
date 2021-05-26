@@ -50,8 +50,8 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this user can make a proposal now
         require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAONodeTrustedSettingsProposals.getCooldown()) <= block.number, "Member has not waited long enough to make another proposal");
-        // If the DAO is not in bootstrap mode, require the min amount of members are in to make a proposal
-        if(daoNodeTrusted.getBootstrapModeDisabled() == true) require(daoNodeTrusted.getMemberCount() >= daoNodeTrusted.getMemberMinRequired(), "Min member count not met to allow proposals to be added");
+        // Require the min amount of members are in to make a proposal
+        require(daoNodeTrusted.getMemberCount() >= daoNodeTrusted.getMemberMinRequired(), "Min member count not met to allow proposals to be added");
         // Record the last time this user made a proposal
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
         // Create the proposal

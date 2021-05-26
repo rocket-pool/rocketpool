@@ -27,6 +27,7 @@ export default function() {
             registeredNode3,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
+            registeredNodeTrusted3,
         ] = accounts;
 
 
@@ -85,6 +86,7 @@ export default function() {
             await registerNode({from: registeredNode3});
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
+            await registerNode({from: registeredNodeTrusted3});
             // Add members to the DAO now
             await bootstrapMemberAdd(registeredNodeTrusted1, 'rocketpool_1', 'node@home.com');
             await bootstrapMemberAdd(registeredNodeTrusted2, 'rocketpool_2', 'node@home.com');
@@ -98,7 +100,7 @@ export default function() {
 
         });
         
-
+        
         //
         // Start Tests
         //
@@ -369,9 +371,11 @@ export default function() {
             // Proposal has failed, can we execute it anyway?
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode1 }), 'Executed defeated proposal', 'Proposal has not succeeded, has expired or has already been executed');;
         });
-
+        
         
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member but cancels it before it passes'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -401,6 +405,8 @@ export default function() {
 
         
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, then attempts to again for registeredNode2 before cooldown has passed and that fails'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -438,6 +444,8 @@ export default function() {
         
 
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNode2 tries to vote on it, but fails as they joined after it was created'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -465,6 +473,8 @@ export default function() {
         
         
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to leave the DAO and receive their RPL bond refund, proposal is denied as it would be under the min members required for the DAO'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -496,6 +506,8 @@ export default function() {
 
 
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
@@ -530,6 +542,7 @@ export default function() {
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });   // Don't kick me
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted3 });
             // Proposal has passed, lets execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
             // Member should be kicked now, let's check their RPL balance has their 33% bond returned
@@ -544,6 +557,8 @@ export default function() {
 
 
         it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -573,6 +588,8 @@ export default function() {
         
 
         it(printTitle('registeredNodeTrusted2', 'fails to execute a successful proposal after it expires'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -605,6 +622,8 @@ export default function() {
 
 
         it(printTitle('registeredNodeTrusted2', 'checks to see if a proposal has expired after being successfully voted for, but not executed'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
             let proposalVoteBlocks = 10;
             let proposalVoteExecuteBlocks = 10; 
@@ -868,6 +887,8 @@ export default function() {
         });
 
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to upgrade a network contract, it passees and is executed'), async () => {
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Load contracts
             const rocketStorage = await RocketStorage.deployed();
             // Setup our proposal settings
