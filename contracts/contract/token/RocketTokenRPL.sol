@@ -131,16 +131,15 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
         if(intervalsSinceLastMint > 0 && inflationRate > 0) {
-            // Our inflation rate
-            uint256 rate = inflationRate; 
-            // Compute inflation for total inflation intervals elapsed
-            for (uint256 i = 1; i < intervalsSinceLastMint; i++) {
-                rate = rate.mul(inflationRate).div(10 ** 18);
-            }
-            // Get the total supply now 
+            // Get the total supply now
             uint256 totalSupplyCurrent = totalSupply();
+            uint256 newTotalSupply = totalSupplyCurrent;
+            // Compute inflation for total inflation intervals elapsed
+            for (uint256 i = 0; i < intervalsSinceLastMint; i++) {
+                newTotalSupply = newTotalSupply.mul(inflationRate).div(10**18);
+            }
             // Return inflation amount
-            inflationTokenAmount = totalSupplyCurrent.mul(rate).div(10 ** 18).sub(totalSupplyCurrent);
+            inflationTokenAmount = newTotalSupply.sub(totalSupplyCurrent);
         }
         // Done
         return inflationTokenAmount;
