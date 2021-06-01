@@ -374,6 +374,38 @@ export default function() {
             const newTokens = await rplClaimInflation(config, { from: userOne });
             assert(newTokens.eq(web3.utils.toBN(0)), "Minted inflation after rate set to 0");
         });
-        
+
+
+        it(printTitle('userOne', 'mint one years inflation, then set inflation rate to 0 to prevent new inflation, then set inflation back to 5% for another year'), async () => {
+            // Current time
+            let currentTime = await getCurrentTime(web3);
+
+            const ONE_DAY = 24 * 60 * 60
+
+            let config = {
+                timeInterval: ONE_DAY,
+                timeStart: currentTime + ONE_DAY,
+                timeClaim: currentTime + ONE_DAY + (ONE_DAY * 365),
+                yearlyInflationTarget: 0.05
+            }
+
+            // Set config
+            await rplSetInflationConfig(config, { from: owner });
+
+            // Mint inflation now
+            await rplClaimInflation(config, { from: userOne }, '18900000');
+
+            // Now set inflation to 0
+            await setRPLInflationIntervalRate(0, { from: owner });
+            config.yearlyInflationTarget = 0;
+            config.timeClaim += (ONE_DAY * 365);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
+
+            // Now set inflation back to 5%
+            await setRPLInflationIntervalRate(0.05, { from: owner });
+            config.yearlyInflationTarget = 0.05;
+            config.timeClaim += (ONE_DAY * 365);
+            await rplClaimInflation(config, { from: userOne }, '19845000');
+        });
     });
 }
