@@ -12,7 +12,7 @@ import { RocketTokenRPL } from '../_utils/artifacts';
 
 
 export default function() {
-    contract.only('RocketTokenRPL', async (accounts) => {
+    contract('RocketTokenRPL', async (accounts) => {
 
 
         // Accounts
@@ -184,7 +184,8 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Run the test now
-            await shouldRevert(rplClaimInflation(config, { from: userOne }, 'Inflation claimed before start block has passed', 'inflation has not begun'));
+            const newTokens = await rplClaimInflation(config, { from: userOne });
+            assert(newTokens.eq(web3.utils.toBN(0)), 'Inflation claimed before start block has passed')
         });
 
         
@@ -202,7 +203,8 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Run the test now
-            await shouldRevert(rplClaimInflation(config, { from: userOne }, 'Inflation claimed before interval has passed', 'no intervals have passed'));
+            const newTokens = await rplClaimInflation(config, { from: userOne });
+            assert(newTokens.eq(web3.utils.toBN(0)), 'Inflation claimed before interval has passed');
         });
         
 
@@ -288,7 +290,7 @@ export default function() {
         });
        
         
-        it.only(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
+        it(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
             // Current time
             let currentTime = await getCurrentTime(web3);
 
@@ -365,10 +367,12 @@ export default function() {
 
             // Now set inflation to 0
             await setRPLInflationIntervalRate(0, { from: owner });
+            config.yearlyInflationTarget = 0;
 
             // Attempt to collect inflation
-            config.timeClaim += (ONE_DAY * 365)
-            await shouldRevert(rplClaimInflation(config, { from: userOne }), "Minted inflation after rate set to 0", "New tokens cannot be minted at the moment, either no intervals have passed, inflation has not begun or inflation rate is set to 0");
+            config.timeClaim += (ONE_DAY * 365);
+            const newTokens = await rplClaimInflation(config, { from: userOne });
+            assert(newTokens.eq(web3.utils.toBN(0)), "Minted inflation after rate set to 0");
         });
         
     });

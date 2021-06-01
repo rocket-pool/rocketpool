@@ -153,12 +153,12 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     function inflationMintTokens() override public returns (uint256) {
         // Calculate the amount of tokens now based on inflation rate
         uint256 newTokens = 0;
-        // Address of the vault where to send tokens
-        address rocketVaultAddress = getContractAddress("rocketVault");
-        require(rocketVaultAddress != address(0x0), "rocketVault address not set");
         // Only run inflation process if at least 1 interval has passed (function returns 0 otherwise)
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         if (intervalsSinceLastMint > 0) {
+            // Address of the vault where to send tokens
+            address rocketVaultAddress = getContractAddress("rocketVault");
+            require(rocketVaultAddress != address(0x0), "rocketVault address not set");
             // Only mint if we have new tokens to mint since last interval and an address is set to receive them
             RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
             // Calculate the amount of tokens now based on inflation rate
