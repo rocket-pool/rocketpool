@@ -12,7 +12,7 @@ import { RocketTokenRPL } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketTokenRPL', async (accounts) => {
+    contract.only('RocketTokenRPL', async (accounts) => {
 
 
         // Accounts
@@ -284,11 +284,11 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Mint inflation now
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
         });
        
         
-        it(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
+        it.only(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
             // Current time
             let currentTime = await getCurrentTime(web3);
 
@@ -312,7 +312,7 @@ export default function() {
             config.timeClaim += QUARTER_YEAR
             await rplClaimInflation(config, { from: userOne });
             config.timeClaim += QUARTER_YEAR
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
         });
 
         
@@ -340,7 +340,7 @@ export default function() {
             config.timeClaim += HALF_YEAR
             await rplClaimInflation(config, { from: userOne });
             config.timeClaim += HALF_YEAR
-            await rplClaimInflation(config, { from: userOne }, 19845000);
+            await rplClaimInflation(config, { from: userOne }, '19845000');
         });
 
 
@@ -361,7 +361,7 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Mint inflation now
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
 
             // Now set inflation to 0
             await setRPLInflationIntervalRate(0, { from: owner });

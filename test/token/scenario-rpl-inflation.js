@@ -99,6 +99,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // console.log('Inflation calc time expected', Number(expectedInflationLastCalcTime));
     // console.log('Inflation intervals expected', Number(expectedInflationIntervalsPassed));
     // console.log('Inflation next calc time', Number(inflationData1.inflationCalcTime)+Number(inflationData1.intervalTime));
+    // console.log('Daily inflation', Number(dailyInflation))
 
     
     // Claim tokens now
@@ -124,5 +125,8 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // Verify the minted tokens are now stored in Rocket Vault on behalf of Rocket Rewards Pool
     assert(inflationData2.rocketVaultInternalBalanceRPL.eq(inflationData2.rocketVaultBalanceRPL), 'Incorrect amount of tokens stored in Rocket Vault for Rocket Rewards Pool');
     // Are we verifying an exact amount of tokens given as a required parameter on this pass?
-    if(tokenAmountToMatch) assert(tokenAmountToMatch.eq(web3.utils.toBN(totalSupplyEnd)), 'Given token amount does not match total supply made');
+    if (tokenAmountToMatch) {
+        tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
+        assert(tokenAmountToMatch.eq(web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18))), 'Given token amount does not match total supply made');
+    }
 }
