@@ -334,7 +334,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Is this the first claim of this interval? If so, set the rewards total for this interval
         if(getClaimIntervalsPassed() > 0) {
             // Mint any new tokens from the RPL inflation
-            if(rplContract.getInflationIntervalsPassed() > 0) rplContract.inflationMintTokens();
+            rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
             setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken("rocketRewardsPool", rplContract));
             // Set this as the start of the new claim interval
