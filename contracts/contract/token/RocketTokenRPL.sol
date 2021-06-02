@@ -27,7 +27,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     // How many RPL tokens have been swapped for new ones
     uint256 public totalSwappedRPL = 0;
 
-    // Last block inflation was calculated at
+    // Timestamp of last block inflation was calculated at
     uint256 private inflationCalcTime = 0;
 
 
@@ -127,7 +127,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         uint256 inflationTokenAmount = 0;
         // Optimisation
         uint256 inflationRate = getInflationIntervalRate();
-        // Compute the number of inflation intervals elapsed since the last time we minted infation tokens
+        // Compute the number of inflation intervals elapsed since the last time we minted inflation tokens
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
         if(intervalsSinceLastMint > 0 && inflationRate > 0) {
