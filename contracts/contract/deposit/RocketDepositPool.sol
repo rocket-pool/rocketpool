@@ -13,7 +13,6 @@ import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 
-
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 
@@ -27,6 +26,14 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     event DepositRecycled(address indexed from, uint256 amount, uint256 time);
     event DepositAssigned(address indexed minipool, uint256 amount, uint256 time);
     event ExcessWithdrawn(address indexed to, uint256 amount, uint256 time);
+
+
+    // Structs
+    struct MinipoolAssignment {
+        address minipoolAddress;
+        uint256 etherAssigned;
+    }
+
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -111,20 +118,36 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
         require(rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
-        // Assign deposits
-        for (uint256 i = 0; i < rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments(); ++i) {
+        // Setup initial variable values
+        uint256 balance = getBalance();
+        uint256 totalEther = 0;
+        // Calculate minipool assignments
+        uint256 maxAssignments = rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
+        MinipoolAssignment[] memory assignments = new MinipoolAssignment[](maxAssignments);
+        for (uint256 i = 0; i < maxAssignments; ++i) {
             // Get & check next available minipool capacity
             uint256 minipoolCapacity = rocketMinipoolQueue.getNextCapacity();
-            if (minipoolCapacity == 0 || getBalance() < minipoolCapacity) { break; }
+            if (minipoolCapacity == 0 || balance.sub(totalEther) < minipoolCapacity) { break; }
             // Dequeue next available minipool
             address minipoolAddress = rocketMinipoolQueue.dequeueMinipool();
-            RocketMinipoolInterface minipool = RocketMinipoolInterface(minipoolAddress);
+            // Update running total
+            totalEther = totalEther.add(minipoolCapacity);
+            // Add assignment
+            assignments[i].etherAssigned = minipoolCapacity;
+            assignments[i].minipoolAddress = minipoolAddress;
+        }
+        if (totalEther > 0) {
             // Withdraw ETH from vault
-            rocketVault.withdrawEther(minipoolCapacity);
-            // Assign deposit to minipool
-            minipool.userDeposit{value: minipoolCapacity}();
-            // Emit deposit assigned event
-            emit DepositAssigned(minipoolAddress, minipoolCapacity, block.timestamp);
+            rocketVault.withdrawEther(totalEther);
+            // Perform assignments
+            for (uint256 i = 0; i < maxAssignments; ++i) {
+                if (assignments[i].etherAssigned == 0) { break; }
+                RocketMinipoolInterface minipool = RocketMinipoolInterface(assignments[i].minipoolAddress);
+                // Assign deposit to minipool
+                minipool.userDeposit{value: assignments[i].etherAssigned}();
+                // Emit deposit assigned event
+                emit DepositAssigned(assignments[i].minipoolAddress, assignments[i].etherAssigned, block.timestamp);
+            }
         }
     }
 
