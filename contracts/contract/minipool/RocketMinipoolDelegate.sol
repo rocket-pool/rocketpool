@@ -175,8 +175,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         stakingStartBalance = _stakingStartBalance;
         stakingEndBalance = _stakingEndBalance;
         // Remove minipool from queue
-        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(depositType); }
+        if (!userDepositAssigned) {
+            RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+            rocketMinipoolQueue.removeMinipool(depositType);
+        }
         // Progress to withdrawable
         setStatus(MinipoolStatus.Withdrawable);
     }
