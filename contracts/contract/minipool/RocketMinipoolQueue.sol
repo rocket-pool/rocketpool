@@ -120,14 +120,11 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove a minipool from a queue
     // Only accepts calls from registered minipools
-    function removeMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
-        // Initialize minipool & get properties
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
-        MinipoolDeposit depositType = minipool.getDepositType();
+    function removeMinipool(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Remove minipool from queue
-        if (depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", msg.sender); }
-        if (depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", msg.sender); }
-        if (depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", msg.sender); }
+        if (_depositType == MinipoolDeposit.Full) { return removeMinipool("minipools.available.full", msg.sender); }
+        if (_depositType == MinipoolDeposit.Half) { return removeMinipool("minipools.available.half", msg.sender); }
+        if (_depositType == MinipoolDeposit.Empty) { return removeMinipool("minipools.available.empty", msg.sender); }
         require(false, "Invalid minipool deposit type");
     }
     function removeMinipool(string memory _queueId, address _minipool) private {

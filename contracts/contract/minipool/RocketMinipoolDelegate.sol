@@ -176,7 +176,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         stakingEndBalance = _stakingEndBalance;
         // Remove minipool from queue
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(); }
+        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(depositType); }
         // Progress to withdrawable
         setStatus(MinipoolStatus.Withdrawable);
     }
@@ -229,7 +229,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, block.timestamp);
         }
         // Remove minipool from queue
-        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(); }
+        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(depositType); }
         // Progress to dissolved
         setStatus(MinipoolStatus.Dissolved);
     }
