@@ -12,7 +12,7 @@ import { RocketTokenRPL } from '../_utils/artifacts';
 
 
 export default function() {
-    contract.only('RocketTokenRPL', async (accounts) => {
+    contract('RocketTokenRPL', async (accounts) => {
 
 
         // Accounts
@@ -288,7 +288,7 @@ export default function() {
         });
        
         
-        it.only(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
+        it(printTitle('userOne', 'mint one years inflation every quarter at 5% which would equal 18,900,000 tokens'), async () => {
             // Current time
             let currentTime = await getCurrentTime(web3);
 
