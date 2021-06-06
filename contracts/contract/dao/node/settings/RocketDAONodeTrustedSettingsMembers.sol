@@ -56,7 +56,7 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
         return getSettingUint("members.minipool.unbonded.max");
     }
 
-    // Node fee must be over this percentage of the maximum fee before validator members are allowed to make unbonded pools (80%)
+    // Node fee must be over this percentage of the maximum fee before validator members are allowed to make unbonded pools
     function getMinipoolUnbondedMinFee() override public view returns (uint256) {
         return getSettingUint('members.minipool.unbonded.min.fee');
     }
