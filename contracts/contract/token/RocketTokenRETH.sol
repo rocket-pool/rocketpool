@@ -8,6 +8,7 @@ import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // rETH is a tokenized stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
@@ -135,4 +136,21 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         rocketDepositPool.withdrawExcessBalance(_ethRequired.sub(ethBalance));
     }
 
+    // This is called by the base ERC20 contract before all transfer, mint, and burns
+    function _beforeTokenTransfer(address from, address, uint256) internal override {
+        // Don't run check if this is a mint transaction
+        if (from != address(0)) {
+            // Check which block the user's last deposit was
+            bytes32 key = keccak256(abi.encodePacked("user.deposit.block", from));
+            uint256 lastDepositBlock = getUint(key);
+            if (lastDepositBlock > 0) {
+                // Ensure enough blocks have passed
+                uint256 depositDelay = getUintS("dao.protocol.setting.networknetwork.reth.deposit.delay");
+                uint256 blocksPassed = block.number.sub(lastDepositBlock);
+                require(blocksPassed > depositDelay, "Not enough time has passed since deposit");
+                // Clear the state as it's no longer necessary to check this until another deposit is made
+                deleteUint(key);
+            }
+        }
+    }
 }
