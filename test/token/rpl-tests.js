@@ -284,7 +284,7 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Mint inflation now
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
         });
        
         
@@ -312,7 +312,7 @@ export default function() {
             config.timeClaim += QUARTER_YEAR
             await rplClaimInflation(config, { from: userOne });
             config.timeClaim += QUARTER_YEAR
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
         });
 
         
@@ -340,7 +340,7 @@ export default function() {
             config.timeClaim += HALF_YEAR
             await rplClaimInflation(config, { from: userOne });
             config.timeClaim += HALF_YEAR
-            await rplClaimInflation(config, { from: userOne }, 19845000);
+            await rplClaimInflation(config, { from: userOne }, '19845000');
         });
 
 
@@ -361,7 +361,7 @@ export default function() {
             await rplSetInflationConfig(config, { from: owner });
 
             // Mint inflation now
-            await rplClaimInflation(config, { from: userOne }, 18900000);
+            await rplClaimInflation(config, { from: userOne }, '18900000');
 
             // Now set inflation to 0
             await setRPLInflationIntervalRate(0, { from: owner });

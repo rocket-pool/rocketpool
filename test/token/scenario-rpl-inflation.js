@@ -57,12 +57,12 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     //console.log(inflationData1.currentBlock, web3.utils.fromWei(inflationData1.tokenTotalSupply), inflationData1.inflationStartBlock.toString(), web3.utils.fromWei(inflationData1.rocketVaultBalanceRPL), web3.utils.fromWei(inflationData1.rocketVaultInternalBalanceRPL));
 
     // Starting amount of total supply
-    let totalSupplyStart = web3.utils.fromWei(inflationData1.tokenTotalSupply);
+    let totalSupplyStart = web3.utils.toBN(inflationData1.tokenTotalSupply);
 
     //console.log('TOTAL SUPPLY', totalSupplyStart);
 
     // Some expected data results based on the passed parameters
-    let expectedInflationDaily = (1 + config.yearlyInflationTarget) ** (1 / (365));
+    let dailyInflation = web3.utils.toBN((1 + config.yearlyInflationTarget) ** (1 / (365)) * 1e18);
     let expectedInflationLastCalcTime = Number(timeIntervalLastCalc) === 0 && config.timeStart < config.timeClaim ? config.timeStart : Number(timeIntervalLastCalc);
     let expectedInflationIntervalsPassed = Number(inflationData1.inflationIntervalsPassed);
 
@@ -70,24 +70,24 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     currentTime = await getCurrentTime(web3);
 
      // How many tokens to be expected minted
-     let expectedTokensMinted = 0;
+     let expectedTokensMinted = web3.utils.toBN(0);
 
     // Are we expecting inflation? have any intervals passed?
     if(inflationData1.inflationIntervalsPassed > 0) {
         // How much inflation to use based on intervals passed
-        let expectedInflationAmount = expectedInflationDaily;
+        let newTotalSupply = totalSupplyStart;
 
        // console.log("nextExpectedClaimBlock", nextExpectedClaimBlock);
         //console.log("expectedInflationIntervalsPassed", expectedInflationIntervalsPassed);
         //console.log((nextExpectedClaimBlock), (blockCurrent+1));
 
         // Add an extra interval to the calculations match up
-        for(let i=1; i < expectedInflationIntervalsPassed; i++) {
-            expectedInflationAmount = (expectedInflationAmount * expectedInflationDaily);
+        for(let i=0; i < expectedInflationIntervalsPassed; i++) {
+            newTotalSupply = newTotalSupply.mul(dailyInflation).div(web3.utils.toBN(1e18));
         }
 
         // Calculate expected inflation amount
-        expectedTokensMinted = (expectedInflationAmount * totalSupplyStart) - totalSupplyStart;
+        expectedTokensMinted = newTotalSupply.sub(totalSupplyStart);
     }
    
     // console.log('');
@@ -99,6 +99,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // console.log('Inflation calc time expected', Number(expectedInflationLastCalcTime));
     // console.log('Inflation intervals expected', Number(expectedInflationIntervalsPassed));
     // console.log('Inflation next calc time', Number(inflationData1.inflationCalcTime)+Number(inflationData1.intervalTime));
+    // console.log('Daily inflation', Number(dailyInflation))
 
     
     // Claim tokens now
@@ -114,15 +115,18 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     //console.log(inflationData2.currentBlock, web3.utils.fromWei(inflationData2.tokenTotalSupply), inflationData2.inflationStartBlock.toString(), web3.utils.fromWei(inflationData2.rocketVaultBalanceRPL), web3.utils.fromWei(inflationData2.rocketVaultInternalBalanceRPL));
 
     // Ending amount of total supply
-    let totalSupplyEnd = web3.utils.fromWei(inflationData2.tokenTotalSupply);
+    let totalSupplyEnd = web3.utils.toBN(inflationData2.tokenTotalSupply);
 
-    //console.log('RESULT', expectedTokensMinted.toFixed(4), (totalSupplyEnd - totalSupplyStart).toFixed(4));
-    //console.log(Number(tokenAmountToMatch).toFixed(4), Number(totalSupplyEnd).toFixed(4), Number(totalSupplyStart).toFixed(4));
+    // console.log('RESULT', expectedTokensMinted.toString(), (totalSupplyEnd.sub(totalSupplyStart)).toString());
+    // console.log(Number(tokenAmountToMatch).toString(), totalSupplyEnd.toString(), totalSupplyStart.toString());
 
     // Verify the minted amount is correct based on inflation rate etc
-    assert(expectedTokensMinted.toFixed(4) === (totalSupplyEnd - totalSupplyStart).toFixed(4), 'Incorrect amount of minted tokens expected');
+    assert(expectedTokensMinted.eq(totalSupplyEnd.sub(totalSupplyStart)), 'Incorrect amount of minted tokens expected');
     // Verify the minted tokens are now stored in Rocket Vault on behalf of Rocket Rewards Pool
     assert(inflationData2.rocketVaultInternalBalanceRPL.eq(inflationData2.rocketVaultBalanceRPL), 'Incorrect amount of tokens stored in Rocket Vault for Rocket Rewards Pool');
     // Are we verifying an exact amount of tokens given as a required parameter on this pass?
-    if(tokenAmountToMatch) assert(Number(tokenAmountToMatch).toFixed(4) === Number(totalSupplyEnd).toFixed(4), 'Given token amount does not match total supply made');
+    if (tokenAmountToMatch) {
+        tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
+        assert(tokenAmountToMatch.eq(web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18))), 'Given token amount does not match total supply made');
+    }
 }
