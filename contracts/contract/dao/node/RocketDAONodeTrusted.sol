@@ -127,7 +127,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Is this member currently being 'challenged' to see if their node is responding
     function getMemberIsChallenged(address _nodeAddress) override public view returns (bool) { 
         // Has this member been challenged recently and still within the challenge window to respond? If there is a challenge block recorded against them, they are actively being challenged.
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))) > 0 ? true : false;
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress))) > 0 ? true : false;
     }
 
     // How many unbonded validators this member has

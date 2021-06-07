@@ -20,8 +20,8 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
             setSettingUint("members.rplbond", 15000 ether);                  // Bond amount required for a new member to join
             setSettingUint("members.minipool.unbonded.max", 250);            // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
             setSettingUint("members.minipool.unbonded.min.fee", 0.8 ether);  // Node fee must be over this percentage of the maximum fee before validator members are allowed to make unbonded pools (80%)
-            setSettingUint("members.challenge.cooldown", 43204);             // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
-            setSettingUint("members.challenge.window", 43204);               // How long a member has to respond to a challenge. 7 days worth of blocks
+            setSettingUint("members.challenge.cooldown", 7 days);             // How long a member must wait before performing another challenge, approx. 1 day worth of blocks
+            setSettingUint("members.challenge.window", 7 days);               // How long a member has to respond to a challenge. 7 days worth of blocks
             setSettingUint("members.challenge.cost", 1 ether);               // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);

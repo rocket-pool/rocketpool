@@ -75,7 +75,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)));
-        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
+        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
          // Remove from member index now
         addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
     }
@@ -195,12 +195,12 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Is this member already being challenged?
         require(!rocketDAONode.getMemberIsChallenged(_nodeAddress), "Member is already being challenged");
         // Has this node recently made another challenge and not waited for the cooldown to pass?
-        require(getUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.block", msg.sender))).add(rocketDAONodeTrustedSettingsMembers.getChallengeCooldown()) < block.number, "You must wait for the challenge cooldown to pass before issuing another challenge");
+        require(getUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.time", msg.sender))).add(rocketDAONodeTrustedSettingsMembers.getChallengeCooldown()) < block.timestamp, "You must wait for the challenge cooldown to pass before issuing another challenge");
         // Ok challenge accepted
         // Record the last time this member challenged
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.block", msg.sender)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "node.challenge.created.time", msg.sender)), block.timestamp);
         // Record the challenge block now
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)), block.timestamp);
         // Record who made the challenge
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress)), msg.sender);
         // Log it
@@ -216,19 +216,17 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Was the challenge successful?
         bool challengeSuccess = false;
         // Get the block the challenge was initiated at
-        uint256 challengeBlock = getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
-        // If challenge block is 0, the member hasn't been challenged or they have successfully responded to the challenge previously
-        require(challengeBlock > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
-        // The member deciding the challenge, must not be the original initiator to provide some oversight
-        require(getAddress(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.by", _nodeAddress))) != msg.sender, "Challenge cannot be decided by the original initiator, must be another node");
+        uint256 challengeTime = getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
+        // If challenge time is 0, the member hasn't been challenged or they have successfully responded to the challenge previously
+        require(challengeTime > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
         // Allow the challenged member to refute the challenge at anytime. If the window has passed and the challenge node does not run this method, any member can decide the challenge and eject the absent member
         // Is it the node being challenged?
         if(_nodeAddress == msg.sender) {
             // Challenge is defeated, node has responded
-            deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));
+            deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
         }else{
             // The challenge refute window has passed, the member can be ejected now
-            require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.number, "Refute window has not yet passed");
+            require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.timestamp, "Refute window has not yet passed");
             // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
             _memberRemove(_nodeAddress);
             // Challenge was successful

@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, mineBlocks, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { compressABI } from '../_utils/contract';
@@ -666,11 +666,11 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Attempt to challenge a non-member
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode2, { from: registeredNodeTrusted1 }), 'A non member was challenged', 'Invalid trusted node');
             // Challenge the 3rd member
@@ -681,11 +681,11 @@ export default function() {
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNodeTrusted2, { from: registeredNodeTrusted1 }), 'Member challenged another user before cooldown had passed', 'You must wait for the challenge cooldown to pass before issuing another challenge');
             // Have 3rd member respond to the challenge successfully 
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
-            // Wait until the original iniators cooldown window has passed and they attempt another challenge
-            await mineBlocks(web3, challengeCooldownBlocks);
+            // Wait until the original initiator's cooldown window has passed and they attempt another challenge
+            await increaseTime(web3, challengeCooldownTime);
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Have 3rd member respond to the challenge successfully again, but after the challenge window has expired and before another member decides it
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
         });
@@ -701,23 +701,21 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Try to challenge yourself
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNode1 }), 'Member challenged themselves', 'You cannot challenge yourself');
             // Challenge the 3rd member
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
-            // Have the original iniator member try to decide the result
-            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted1 }), 'Member who initiated challenge was able to attempt the decision', 'Challenge cannot be decided by the original initiator, must be another node');
             // Attempt to decide a challenge on a member that hasn't been challenged
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNodeTrusted2, true, { from: registeredNodeTrusted1 }), 'Member decided challenge on member without a challenge', 'Member hasn\'t been challenged or they have successfully responded to the challenge already');
             // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 }), 'Member decided challenge before refute window passed', 'Refute window has not yet passed');
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
@@ -737,11 +735,11 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Attempt to challenge a non member
             await shouldRevert(daoNodeTrustedMemberChallengeMake(userOne, {
                 from: registeredNode2 
@@ -760,7 +758,7 @@ export default function() {
                 from: registeredNode2 
             });
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
