@@ -9,8 +9,9 @@ import { getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/to
 import { getDepositSetting } from '../_helpers/settings';
 import { assignDeposits } from './scenario-assign-deposits';
 import { deposit } from './scenario-deposit';
-import { RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
+import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -137,6 +138,9 @@ export default function() {
 
             // Disable deposit assignment
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
+
+            // Disable minimum unbonded commission threshold
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.minipool.unbonded.min.fee', '0', {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
