@@ -54,7 +54,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Add the bond amount they have paid
         if(_rplBondAmountPaid > 0) setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), _rplBondAmountPaid);
         // Record the block number they joined at
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), block.timestamp);
          // Add to member index now
         addressSetStorage.addItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
         // Register for them to receive rewards now
@@ -74,7 +74,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)));
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)));
-        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)));
+        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
          // Remove from member index now
         addressSetStorage.removeItem(keccak256(abi.encodePacked(daoNameSpace, "member.index")), _nodeAddress); 
@@ -92,13 +92,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // The block that the member was successfully invited to join the DAO
-        uint256 memberInvitedBlock = rocketDAONode.getMemberProposalExecutedBlock("invited", _nodeAddress);
+        uint256 memberInvitedTime = rocketDAONode.getMemberProposalExecutedTime("invited", _nodeAddress);
         // Have they been invited
-        require(memberInvitedBlock > 0, "This node has not been invited to join");
+        require(memberInvitedTime > 0, "This node has not been invited to join");
         // The current member bond amount in RPL that's required
         uint256 rplBondAmount = rocketDAONodeTrustedSettingsMembers.getRPLBond();
         // Has their invite expired?
-        require(memberInvitedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This nodes invitation to join has expired, please apply again");
+        require(memberInvitedTime.add(rocketDAONodeTrustedSettingsProposals.getActionTime()) > block.timestamp, "This node's invitation to join has expired, please apply again");
         // Verify they have allowed this contract to spend their RPL for the bond
         require(rplInflationContract.allowance(_nodeAddress, address(this)) >= rplBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens");
         // Transfer the tokens to this contract now
@@ -136,10 +136,10 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this wouldn't dip below the min required trusted nodes
         require(rocketDAONode.getMemberCount() > rocketDAONode.getMemberMinRequired(), "Member count will fall below min required");
-        // Get the block that they were approved to leave at
-        uint256 leaveAcceptedBlock = rocketDAONode.getMemberProposalExecutedBlock("leave", msg.sender);
+        // Get the time that they were approved to leave at
+        uint256 leaveAcceptedTime = rocketDAONode.getMemberProposalExecutedTime("leave", msg.sender);
         // Has their leave request expired?
-        require(leaveAcceptedBlock.add(rocketDAONodeTrustedSettingsProposals.getActionBlocks()) > block.number, "This member has not been approved to leave or request has expired, please apply to leave again");
+        require(leaveAcceptedTime.add(rocketDAONodeTrustedSettingsProposals.getActionTime()) > block.timestamp, "This member has not been approved to leave or request has expired, please apply to leave again");
         // They were succesful, lets refund their RPL Bond
         uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(msg.sender);
         // Refund

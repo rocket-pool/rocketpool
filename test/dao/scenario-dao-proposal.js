@@ -20,17 +20,24 @@ export async function getDAOProposalState(proposalID, txOptions) {
 };
 
 // Get the block a proposal can start being voted on
-export async function getDAOProposalStartBlock(proposalID, txOptions) {
+export async function getDAOProposalStartTime(proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
     return await rocketDAOProposal.getStart.call(proposalID);
 };
 
 // Get the block a proposal can end being voted on
-export async function getDAOProposalEndBlock(proposalID, txOptions) {
+export async function getDAOProposalEndTime(proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
     return await rocketDAOProposal.getEnd.call(proposalID);
+};
+
+// Get the block a proposal expires
+export async function getDAOProposalExpires(proposalID, txOptions) {
+  // Load contracts
+  const rocketDAOProposal = await RocketDAOProposal.deployed();
+  return await rocketDAOProposal.getExpires.call(proposalID);
 };
 
 // Get the vote count for a proposal

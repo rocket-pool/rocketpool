@@ -49,13 +49,13 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsProposalsInterface rocketDAONodeTrustedSettingsProposals = RocketDAONodeTrustedSettingsProposalsInterface(getContractAddress("rocketDAONodeTrustedSettingsProposals"));
         // Check this user can make a proposal now
-        require(daoNodeTrusted.getMemberLastProposalBlock(msg.sender).add(rocketDAONodeTrustedSettingsProposals.getCooldown()) <= block.number, "Member has not waited long enough to make another proposal");
+        require(daoNodeTrusted.getMemberLastProposalTime(msg.sender).add(rocketDAONodeTrustedSettingsProposals.getCooldownTime()) <= block.timestamp, "Member has not waited long enough to make another proposal");
         // Require the min amount of members are in to make a proposal
         require(daoNodeTrusted.getMemberCount() >= daoNodeTrusted.getMemberMinRequired(), "Min member count not met to allow proposals to be added");
         // Record the last time this user made a proposal
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", msg.sender)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lasttime", msg.sender)), block.timestamp);
         // Create the proposal
-        return daoProposal.add(msg.sender, "rocketDAONodeTrustedProposals", _proposalMessage, block.number.add(rocketDAONodeTrustedSettingsProposals.getVoteDelayBlocks()), rocketDAONodeTrustedSettingsProposals.getVoteBlocks(), rocketDAONodeTrustedSettingsProposals.getExecuteBlocks(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
+        return daoProposal.add(msg.sender, "rocketDAONodeTrustedProposals", _proposalMessage, block.timestamp.add(rocketDAONodeTrustedSettingsProposals.getVoteDelayTime()), rocketDAONodeTrustedSettingsProposals.getVoteTime(), rocketDAONodeTrustedSettingsProposals.getExecuteTime(), daoNodeTrusted.getMemberQuorumVotesRequired(), _payload);
     }
 
     // Vote on a proposal
@@ -64,7 +64,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Did they join after this proposal was created? If so, they can't vote or it'll throw off the set proposalVotesRequired 
-        require(daoNodeTrusted.getMemberJoinedBlock(msg.sender) < daoProposal.getCreated(_proposalID), "Member cannot vote on proposal created before they became a member");
+        require(daoNodeTrusted.getMemberJoinedTime(msg.sender) < daoProposal.getCreated(_proposalID), "Member cannot vote on proposal created before they became a member");
         // Vote now, one vote per trusted node member
         daoProposal.vote(msg.sender, 1 ether, _proposalID, _support);
     }
@@ -93,7 +93,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
     function proposalInvite(string memory _id, string memory _url, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
         // Their proposal executed, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "invited", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _nodeAddress)), block.timestamp);
         // Ok all good, lets get their invitation and member data setup
         // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
         _memberInit(_id, _url, _nodeAddress);
@@ -107,7 +107,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
         require(daoNodeTrusted.getMemberCount() > daoNodeTrusted.getMemberMinRequired(), "Member count will fall below min required");
         // Their proposal to leave has been accepted, record the block
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "leave", _nodeAddress)), block.number);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "leave", _nodeAddress)), block.timestamp);
     }
 
 
@@ -175,7 +175,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
         setString(keccak256(abi.encodePacked(daoNameSpace, "member._url", _nodeAddress)), _url);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), 0);
-        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)), 0);
+        setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), 0);
     }
         
 

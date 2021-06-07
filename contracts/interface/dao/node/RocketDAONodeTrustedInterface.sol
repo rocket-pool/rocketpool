@@ -9,11 +9,11 @@ interface RocketDAONodeTrustedInterface {
     function getMemberCount() external view returns (uint256);
     function getMemberMinRequired() external view returns (uint256);
     function getMemberIsValid(address _nodeAddress) external view returns (bool);
-    function getMemberLastProposalBlock(address _nodeAddress) external view returns (uint256);
+    function getMemberLastProposalTime(address _nodeAddress) external view returns (uint256);
     function getMemberID(address _nodeAddress) external view returns (string memory);
     function getMemberUrl(address _nodeAddress) external view returns (string memory);
-    function getMemberJoinedBlock(address _nodeAddress) external view returns (uint256);
-    function getMemberProposalExecutedBlock(string memory _proposalType, address _nodeAddress) external view returns (uint256);
+    function getMemberJoinedTime(address _nodeAddress) external view returns (uint256);
+    function getMemberProposalExecutedTime(string memory _proposalType, address _nodeAddress) external view returns (uint256);
     function getMemberRPLBondAmount(address _nodeAddress) external view returns (uint256);
     function getMemberIsChallenged(address _nodeAddress) external view returns (bool);
     function getMemberUnbondedValidatorCount(address _nodeAddress) external view returns (uint256);
