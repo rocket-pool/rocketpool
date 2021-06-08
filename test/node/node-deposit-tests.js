@@ -9,6 +9,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getMinipoolSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { deposit } from './scenario-deposit';
+import { userDeposit } from '../_helpers/deposit'
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
@@ -171,6 +172,8 @@ export default function() {
 
 
         it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
+            // Deposit enough unassigned ETH to increase the fee above 80% of max
+            await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
 
             // Stake RPL to cover minipool
             let rplStake = await getMinipoolMinimumRPLStake();

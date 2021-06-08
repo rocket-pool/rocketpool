@@ -486,7 +486,7 @@ export default function() {
             // Creating an unbonded minipool should revert
             await shouldRevert(createMinipool({from: trustedNode, value: '0'}),
               'Trusted node was able to create unbonded minipool with fee < 80% of max',
-              'Trusted node member can only create an unbonded minipool if current fee > 80% of maximum fee'
+              'Current commission rate is not high enough to create unbonded minipools'
             );
         });
 
