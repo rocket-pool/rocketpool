@@ -11,7 +11,9 @@ import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
+import "../../types/MinipoolDeposit.sol";
 
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
@@ -116,22 +118,31 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function assignDeposits() override public onlyLatestContract("rocketDepositPool", address(this)) {
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check deposit settings
         require(rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled(), "Deposit assignments are currently disabled");
         // Setup initial variable values
-        uint256 balance = getBalance();
+        uint256 balance = rocketVault.balanceOf("rocketDepositPool");
         uint256 totalEther = 0;
         // Calculate minipool assignments
         uint256 maxAssignments = rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         MinipoolAssignment[] memory assignments = new MinipoolAssignment[](maxAssignments);
+        MinipoolDeposit depositType;
+        uint256 count = 0;
+        uint256 minipoolCapacity;
         for (uint256 i = 0; i < maxAssignments; ++i) {
-            // Get & check next available minipool capacity
-            uint256 minipoolCapacity = rocketMinipoolQueue.getNextCapacity();
+            // Optimised for multiple of the same deposit type
+            if (count == 0) {
+                (depositType, count) = rocketMinipoolQueue.getNextDeposit();
+                if (depositType == MinipoolDeposit.None) { break; }
+                minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(depositType);
+            }
+            count--;
             if (minipoolCapacity == 0 || balance.sub(totalEther) < minipoolCapacity) { break; }
-            // Dequeue next available minipool
-            address minipoolAddress = rocketMinipoolQueue.dequeueMinipool();
+            // Dequeue the minipool
+            address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(depositType);
             // Update running total
             totalEther = totalEther.add(minipoolCapacity);
             // Add assignment

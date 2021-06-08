@@ -84,6 +84,18 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         return 0;
     }
 
+    // Get the deposit type of the next available minipool and the number of deposits in that queue
+    // Returns None if no minipools are available
+    function getNextDeposit() override public view returns (MinipoolDeposit, uint256) {
+        uint256 length = getLength(MinipoolDeposit.Half);
+        if (length > 0) { return (MinipoolDeposit.Half, length); }
+        length = getLength(MinipoolDeposit.Full);
+        if (length > 0) { return (MinipoolDeposit.Full, length); }
+        length = getLength(MinipoolDeposit.Empty);
+        if (length > 0) { return (MinipoolDeposit.Empty, length); }
+        return (MinipoolDeposit.None, 0);
+    }
+
     // Add a minipool to the end of the appropriate queue
     // Only accepts calls from the RocketMinipoolManager contract
     function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
@@ -106,6 +118,12 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         if (getLength(MinipoolDeposit.Half) > 0) { return dequeueMinipool("minipools.available.half"); }
         if (getLength(MinipoolDeposit.Full) > 0) { return dequeueMinipool("minipools.available.full"); }
         if (getLength(MinipoolDeposit.Empty) > 0) { return dequeueMinipool("minipools.available.empty"); }
+        require(false, "No minipools are available");
+    }
+    function dequeueMinipoolByDeposit(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
+        if (_depositType == MinipoolDeposit.Half) { return dequeueMinipool("minipools.available.half"); }
+        if (_depositType == MinipoolDeposit.Full) { return dequeueMinipool("minipools.available.full"); }
+        if (_depositType == MinipoolDeposit.Empty) { return dequeueMinipool("minipools.available.empty"); }
         require(false, "No minipools are available");
     }
     function dequeueMinipool(string memory _queueId) private returns (address) {

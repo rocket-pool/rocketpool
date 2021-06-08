@@ -28,7 +28,6 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Set initial status
         status = MinipoolStatus.Initialized;
         statusBlock = block.number;
-        statusTime = block.timestamp;
         // Set details
         depositType = _depositType;
         nodeAddress = _nodeAddress;

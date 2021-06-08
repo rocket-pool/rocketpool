@@ -32,7 +32,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Status getters
     function getStatus() override public view returns (MinipoolStatus) { return status; }
     function getStatusBlock() override public view returns (uint256) { return statusBlock; }
-    function getStatusTime() override public view returns (uint256) { return statusTime; }
 
     // Deposit type getter
     function getDepositType() override public view returns (MinipoolDeposit) { return depositType; }
@@ -42,11 +41,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getNodeFee() override public view returns (uint256) { return nodeFee; }
     function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
     function getNodeRefundBalance() override public view returns (uint256) { return nodeRefundBalance; }
-    function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
+    function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositBalance != 0; }
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
-    function getUserDepositAssigned() override public view returns (bool) { return userDepositAssigned; }
+    function getUserDepositAssigned() override public view returns (bool) { return userDepositBalance != 0; }
     function getUserDepositAssignedTime() override public view returns (uint256) { return userDepositAssignedTime; }
 
     // Staking detail getters
@@ -95,14 +94,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function nodeDeposit() override external payable onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) onlyInitialised {
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
-        require(!nodeDepositAssigned, "The node deposit has already been assigned");
-        // Load contracts
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check deposit amount
-        require(msg.value == rocketDAOProtocolSettingsMinipool.getDepositNodeAmount(depositType), "Invalid node deposit amount");
+        require(nodeDepositBalance == 0, "The node deposit has already been assigned");
         // Update node deposit details
         nodeDepositBalance = msg.value;
-        nodeDepositAssigned = true;
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, block.timestamp);
         // Progress full minipool to prelaunch
@@ -114,14 +108,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function userDeposit() override external payable onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
         // Check current status & user deposit status
         require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
-        require(!userDepositAssigned, "The user deposit has already been assigned");
-        // Load contracts
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check deposit amount
-        require(msg.value == rocketDAOProtocolSettingsMinipool.getDepositUserAmount(depositType), "Invalid user deposit amount");
+        require(userDepositBalance == 0, "The user deposit has already been assigned");
         // Update user deposit details
         userDepositBalance = msg.value;
-        userDepositAssigned = true;
         userDepositAssignedTime = block.timestamp;
         // Refinance full minipool
         if (depositType == MinipoolDeposit.Full) {
@@ -175,7 +164,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         stakingStartBalance = _stakingStartBalance;
         stakingEndBalance = _stakingEndBalance;
         // Remove minipool from queue
-        if (!userDepositAssigned) {
+        if (userDepositBalance == 0) {
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             rocketMinipoolQueue.removeMinipool(depositType);
         }
@@ -229,9 +218,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             userDepositBalance = 0; 
             // Emit ether withdrawn event
             emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, block.timestamp);
+        } else {
+            rocketMinipoolQueue.removeMinipool(depositType);
         }
-        // Remove minipool from queue
-        if (!userDepositAssigned) { rocketMinipoolQueue.removeMinipool(depositType); }
         // Progress to dissolved
         setStatus(MinipoolStatus.Dissolved);
     }
@@ -265,7 +254,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Update status
         status = _status;
         statusBlock = block.number;
-        statusTime = block.timestamp;
         // Emit status updated event
         emit StatusUpdated(uint8(_status), block.timestamp);
     }

@@ -22,7 +22,6 @@ abstract contract RocketMinipoolStorageLayout {
     // Status
     MinipoolStatus internal status;
     uint256 internal statusBlock;
-    uint256 internal statusTime;
 
     // Deposit type
     MinipoolDeposit internal depositType;
@@ -32,11 +31,9 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal nodeFee;
     uint256 internal nodeDepositBalance;
     uint256 internal nodeRefundBalance;
-    bool internal nodeDepositAssigned;
 
     // User deposit details
     uint256 internal userDepositBalance;
-    bool internal userDepositAssigned;
     uint256 internal userDepositAssignedTime;
 
     // Staking details
