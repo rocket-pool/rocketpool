@@ -3,7 +3,7 @@ import { compressABI, decompressABI } from '../_utils/contract';
 
 
 // The trusted node DAO can be bootstrapped with several nodes
-export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress, txOptions) {
+export async function setDaoNodeTrustedBootstrapMember(_id, _url, _nodeAddress, txOptions) {
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
@@ -22,7 +22,7 @@ export async function setDaoNodeTrustedBootstrapMember(_id, _email, _nodeAddress
     let ds1 = await getTxData();
 
     // Set as a bootstrapped member
-    await rocketDAONodeTrusted.bootstrapMember(_id, _email, _nodeAddress, txOptions);
+    await rocketDAONodeTrusted.bootstrapMember(_id, _url, _nodeAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
@@ -201,7 +201,7 @@ export async function setDaoNodeTrustedBootstrapUpgrade(_type, _name, _abi, _con
 
 
 // A registered node attempting to join as a member due to low DAO member count
-export async function setDaoNodeTrustedMemberRequired(_id, _email, txOptions) {
+export async function setDaoNodeTrustedMemberRequired(_id, _url, txOptions) {
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
@@ -225,7 +225,7 @@ export async function setDaoNodeTrustedMemberRequired(_id, _email, txOptions) {
     //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceBond), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
-    await rocketDAONodeTrusted.memberJoinRequired(_id, _email, txOptions);
+    await rocketDAONodeTrusted.memberJoinRequired(_id, _url, txOptions);
 
     // Capture data
     let ds2 = await getTxData();

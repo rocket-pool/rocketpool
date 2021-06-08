@@ -91,9 +91,9 @@ Oracle DAO Commands
 * ``rocketpool odao status``: Display the current status of the oracle DAO
 * ``rocketpool odao members``: Display the details of all oracle DAO members
 * ``rocketpool odao proposals``: Display the details of all oracle DAO proposals
-* ``rocketpool odao propose-invite [address] [id] [email]``: Invite a member to join the oracle DAO
+* ``rocketpool odao propose-invite [address] [id] [url]``: Invite a member to join the oracle DAO
 * ``rocketpool odao propose-leave``: Propose leaving the oracle DAO
-* ``rocketpool odao propose-replace [address] [id] [email]``: Propose replacing your position in the oracle DAO with a new member
+* ``rocketpool odao propose-replace [address] [id] [url]``: Propose replacing your position in the oracle DAO with a new member
 * ``rocketpool odao propose-kick``: Propose kicking a member from the oracle DAO
 * ``rocketpool odao cancel-proposal``: Cancel a proposal you created
 * ``rocketpool odao vote-proposal``: Vote on a proposal

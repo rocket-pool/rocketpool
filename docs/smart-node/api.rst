@@ -107,11 +107,11 @@ Oracle DAO Commands
 * ``rocketpool odao members``: Get the details of all oracle DAO members
 * ``rocketpool odao proposals``: Get the details of all oracle DAO proposals
 * ``rocketpool odao can-propose-invite [address]``: Check whether the node can invite a member to join the oracle DAO
-* ``rocketpool odao propose-invite [address] [id] [email]``: Invite a member to join the oracle DAO
+* ``rocketpool odao propose-invite [address] [id] [url]``: Invite a member to join the oracle DAO
 * ``rocketpool odao can-propose-leave``: Check whether the node can propose leaving the oracle DAO
 * ``rocketpool odao propose-leave``: Propose leaving the oracle DAO
 * ``rocketpool odao can-propose-replace [address]``: Check whether the node can propose replacing its position in the oracle DAO
-* ``rocketpool odao propose-replace [address] [id] [email]``: Propose replacing your position in the oracle DAO with a new member
+* ``rocketpool odao propose-replace [address] [id] [url]``: Propose replacing your position in the oracle DAO with a new member
 * ``rocketpool odao can-propose-kick [address] [fine-amount]``: Check whether the node can propose kicking a member from the oracle DAO
 * ``rocketpool odao propose-kick [address] [fine-amount]``: Propose kicking a member from the oracle DAO
 * ``rocketpool odao can-cancel-proposal [proposal-id]``: Check whether the node can cancel a created proposal

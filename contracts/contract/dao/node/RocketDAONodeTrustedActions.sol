@@ -72,7 +72,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)));
         deleteAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)));
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)));
-        deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)));
+        deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress)));

@@ -38,7 +38,7 @@ export async function registerNode(txOptions) {
 
 
 // Make a node a trusted dao member, only works in bootstrap mode (< 3 trusted dao members)
-export async function setNodeTrusted(_account, _id, _email, owner) {
+export async function setNodeTrusted(_account, _id, _url, owner) {
     // Mints fixed supply RPL, burns that for new RPL and gives it to the account
     let rplMint = async function(_account, _amount) {
         // Load contracts
@@ -73,7 +73,7 @@ export async function setNodeTrusted(_account, _id, _email, owner) {
     // Set allowance for the Vault to grab the bond
     await rplAllowanceDAO(_account, rplBondAmount);
     // Create invites for them to become a member
-    await setDaoNodeTrustedBootstrapMember(_id, _email, _account, {from: owner});
+    await setDaoNodeTrustedBootstrapMember(_id, _url, _account, {from: owner});
     // Now get them to join
     await daoNodeTrustedMemberJoin({from: _account});
 }

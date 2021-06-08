@@ -23,9 +23,9 @@ export async function mintRPLBond(owner, node) {
 }
 
 
-export async function bootstrapMember(address, id, email, txOptions) {
+export async function bootstrapMember(address, id, url, txOptions) {
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
-    await rocketDAONodeTrusted.bootstrapMember(id, email, address, txOptions);
+    await rocketDAONodeTrusted.bootstrapMember(id, url, address, txOptions);
 }
 
 
