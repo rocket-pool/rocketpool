@@ -20,6 +20,11 @@ export async function rplInflationIntervalBlocksGet(txOptions) {
 
 // Claim the inflation after a set amount of blocks have passed
 export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = null) {
+    // Convert param to BN
+    if (tokenAmountToMatch) {
+        tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
+    }
+
     // Load contracts
     const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketVault = await RocketVault.deployed();
@@ -129,4 +134,6 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
         tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
         assert(tokenAmountToMatch.eq(web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18))), 'Given token amount does not match total supply made');
     }
+
+    return (totalSupplyEnd.sub(totalSupplyStart));
 }
