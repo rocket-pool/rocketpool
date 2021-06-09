@@ -104,9 +104,9 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
         return getString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress))); 
     }
 
-    // Get the email of a trusted node member
-    function getMemberEmail(address _nodeAddress) override public view returns (string memory) { 
-        return getString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress))); 
+    // Get the URL of a trusted node member
+    function getMemberUrl(address _nodeAddress) override public view returns (string memory) { 
+        return getString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress))); 
     }
 
     // Get the block the member joined at
@@ -152,9 +152,9 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
 
     
     // Bootstrap mode - In bootstrap mode, guardian can add members at will
-    function bootstrapMember(string memory _id, string memory _email, address _nodeAddress) override public onlyGuardian onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+    function bootstrapMember(string memory _id, string memory _url, address _nodeAddress) override public onlyGuardian onlyBootstrapMode onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets add them
-        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _email, _nodeAddress);
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _url, _nodeAddress);
     }
 
 
@@ -187,10 +187,10 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     /**** Recovery ***************/
         
     // In an explicable black swan scenario where the DAO loses more than the min membership required (3), this method can be used by a regular node operator to join the DAO
-    // Must have their ID, email, current RPL bond amount available and must be called by their current registered node account
-    function memberJoinRequired(string memory _id, string memory _email) override public onlyLowMemberMode onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
+    // Must have their ID, URL, current RPL bond amount available and must be called by their current registered node account
+    function memberJoinRequired(string memory _id, string memory _url) override public onlyLowMemberMode onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrusted", address(this)) {
         // Ok good to go, lets update the settings 
-        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _email, msg.sender);
+        RocketDAONodeTrustedProposalsInterface(getContractAddress("rocketDAONodeTrustedProposals")).proposalInvite(_id, _url, msg.sender);
         // Get the to automatically join as a member (by a regular proposal, they would have to manually accept, but this is no ordinary situation)
         RocketDAONodeTrustedActionsInterface(getContractAddress("rocketDAONodeTrustedActions")).actionJoinRequired(msg.sender);
     }

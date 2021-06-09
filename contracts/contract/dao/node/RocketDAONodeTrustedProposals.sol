@@ -91,12 +91,12 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
     // A new DAO member being invited, can only be done via a proposal or in bootstrap mode
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
-    function proposalInvite(string memory _id, string memory _email, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
+    function proposalInvite(string memory _id, string memory _url, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
         // Their proposal executed, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", "invited", _nodeAddress)), block.number);
         // Ok all good, lets get their invitation and member data setup
         // They are initially only invited to join, so their membership isn't set as true until they accept it in RocketDAONodeTrustedActions
-        _memberInit(_id, _email, _nodeAddress);
+        _memberInit(_id, _url, _nodeAddress);
     }
 
 
@@ -160,20 +160,20 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     /*** Internal ***************/
 
     // Add a new potential members data, they are not official members yet, just propsective
-    function _memberInit(string memory _id, string memory _email, address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
+    function _memberInit(string memory _id, string memory _url, address _nodeAddress) private onlyRegisteredNode(_nodeAddress) {
         // Load contracts
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Check current node status
         require(!daoNodeTrusted.getMemberIsValid(_nodeAddress), "This node is already part of the trusted node DAO");
         // Verify the ID is min 3 chars
         require(bytes(_id).length >= 3, "The ID for this new member must be at least 3 characters");
-        // Check email address length
-        require(bytes(_email).length >= 6, "The email for this new member must be at least 6 characters");
+        // Check URL length
+        require(bytes(_url).length >= 6, "The URL for this new member must be at least 6 characters");
         // Member initial data, not official until the bool is flagged as true
         setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), false);
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
         setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
-        setString(keccak256(abi.encodePacked(daoNameSpace, "member.email", _nodeAddress)), _email);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member._url", _nodeAddress)), _url);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), 0);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress)), 0);
     }

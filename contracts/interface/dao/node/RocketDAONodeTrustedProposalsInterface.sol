@@ -7,7 +7,7 @@ interface RocketDAONodeTrustedProposalsInterface {
     function vote(uint256 _proposalID, bool _support) external;
     function cancel(uint256 _proposalID) external;
     function execute(uint256 _proposalID) external;
-    function proposalInvite(string memory _id, string memory _email, address _nodeAddress) external;
+    function proposalInvite(string memory _id, string memory _url, address _nodeAddress) external;
     function proposalLeave(address _nodeAddress) external;
     function proposalKick(address _nodeAddress, uint256 _rplFine) external;
     function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;
