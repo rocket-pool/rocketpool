@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
+import { takeSnapshot, revertSnapshot, increaseTime, getCurrentTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { compressABI } from '../_utils/contract';
@@ -8,7 +8,7 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade, setDaoNodeTrustedMemberRequired } from './scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
-import { proposalStates, getDAOProposalState, getDAOProposalStartBlock, getDAOProposalEndBlock } from './scenario-dao-proposal';
+import { proposalStates, getDAOProposalState, getDAOProposalStartTime, getDAOProposalEndTime, getDAOProposalExpires } from './scenario-dao-proposal';
 
 // Contracts
 import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts'; 
@@ -201,12 +201,6 @@ export default function() {
             let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
             // How much RPL is required for a trusted node bond?
             let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10;
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Disable bootstrap mode
             await setDaoNodeTrustedBootstrapModeDisabled({ from: guardian });
             // We only have 2 members now that bootstrap mode is disabled and proposals can only be made with 3, lets get a regular node to join via the emergency method
@@ -236,19 +230,19 @@ export default function() {
             let proposalID_2 = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata2, {
                 from: registeredNodeTrusted2
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID_1)-blockCurrent)+2);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID_1)-timeCurrent)+2);
             // Now lets vote for the new members
             await daoNodeTrustedVote(proposalID_1, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID_1, true, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalID_2, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID_2, true, { from: registeredNodeTrusted2 });
-            // Current block
-            blockCurrent = await web3.eth.getBlockNumber();
+            // Current time
+            timeCurrent = await getCurrentTime(web3);
             // Fast forward to voting periods finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID_1)-blockCurrent)+2);
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalID_1)-timeCurrent)+2);
             // Proposal should be successful, lets execute it
             await daoNodeTrustedExecute(proposalID_1, { from: registeredNodeTrusted1 });
             await daoNodeTrustedExecute(proposalID_2, { from: registeredNodeTrusted1 });
@@ -261,6 +255,8 @@ export default function() {
             // Join now
             await daoNodeTrustedMemberJoin({from: registeredNode1});
             await daoNodeTrustedMemberJoin({from: registeredNode2});
+            // Add a small wait between member join and proposal
+            await increaseTime(web3, 2);
             // Now registeredNodeTrusted2 wants to leave
             // Encode the calldata for the proposal
             let proposalCalldata3 = web3.eth.abi.encodeFunctionCall(
@@ -271,36 +267,32 @@ export default function() {
             let proposalID_3 = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata3, {
                 from: registeredNodeTrusted2
             });
-            // Current block
-            blockCurrent = await web3.eth.getBlockNumber();
+            // Current time
+            timeCurrent = await getCurrentTime(web3);
             // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID_3)-blockCurrent)+2);
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID_3)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID_3, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID_3, true, { from: registeredNodeTrusted2 });
             await daoNodeTrustedVote(proposalID_3, false, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID_3, true, { from: registeredNode2 });
-            // Current block
-            blockCurrent = await web3.eth.getBlockNumber();
+            // Current time
+            timeCurrent = await getCurrentTime(web3);
             // Fast forward to this voting period finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID_3)-blockCurrent)+1);
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalID_3)-timeCurrent)+2);
             // Proposal should be successful, lets execute it
             await daoNodeTrustedExecute(proposalID_3, { from: registeredNodeTrusted2 });
             // Member can now leave and collect any RPL bond
             await daoNodeTrustedMemberLeave(registeredNodeTrusted2, {from: registeredNodeTrusted2});
-            
+
         });
                 
         // Test various proposal states
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it passes and is executed'), async () => {
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
+            // Pass some time so the next proposal isn't made at the same time the 3rd member joined
+            await increaseTime(web3, 2);
             // Now registeredNodeTrusted2 wants to leave
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
@@ -315,10 +307,10 @@ export default function() {
             assert(await getDAOProposalState(proposalID) == proposalStates.Pending, 'Proposal state is not Pending');
             // Verify voting will not work while pending
             await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode1 }), 'Member voted while proposal was pending', 'Voting is not active for this proposal');
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });   
@@ -334,12 +326,6 @@ export default function() {
 
         // Test various proposal states
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it fails after it expires'), async () => {
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // Now registeredNodeTrusted2 wants to leave
@@ -356,16 +342,16 @@ export default function() {
             assert(await getDAOProposalState(proposalID) == proposalStates.Pending, 'Proposal state is not Pending');
             // Verify voting will not work while pending
             await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode1 }), 'Member voted while proposal was pending', 'Voting is not active for this proposal');
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, await getDAOProposalStartBlock(proposalID)-blockCurrent);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });   
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted1 });
             // Fast forward to this voting period finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalID)-timeCurrent)+2);
             // Verify the proposal is defeated
             assert(await getDAOProposalState(proposalID) == proposalStates.Defeated, 'Proposal state is not defeated');
             // Proposal has failed, can we execute it anyway?
@@ -376,12 +362,6 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member but cancels it before it passes'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
@@ -391,14 +371,12 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
-            // Current block
-            blockCurrent = await web3.eth.getBlockNumber();
             // Cancel now before it passes
             await daoNodeTrustedCancel(proposalID, {from: registeredNodeTrusted1});
         });
@@ -408,19 +386,16 @@ export default function() {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            let proposalCooldownBlocks = 10; 
+            let proposalCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown.time', proposalCooldownTime, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
                 ['SaaS_Provider', 'test@sass.com', registeredNode1]
             );
             // Add the proposal
-            let proposalID = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
+            await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
             // Encode the calldata for the proposal
@@ -433,9 +408,9 @@ export default function() {
                 from: registeredNodeTrusted1
             }), 'Add proposal before cooldown period passed', 'Member has not waited long enough to make another proposal');
             // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the cooldown period expires and proposal can be made again
-            await mineBlocks(web3, blockCurrent+proposalCooldownBlocks);
+            let timeCurrent = await getCurrentTime(web3);
+            // Now wait until the cooldown period expires and proposal can be made again
+            await increaseTime(web3, timeCurrent + proposalCooldownTime);
             // Try again
             await daoNodeTrustedPropose('hey guys, can we add this other cool SaaS member please?', proposalCalldata2, {
                 from: registeredNodeTrusted1
@@ -446,12 +421,6 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNode2 tries to vote on it, but fails as they joined after it was created'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
@@ -463,6 +432,10 @@ export default function() {
             });
             // Now add a new member after that proposal was created
             await bootstrapMemberAdd(registeredNode2, 'rocketpool', 'node@home.com');
+            // Current block
+            let timeCurrent = await getCurrentTime(web3);
+            // Now wait until the cooldown period expires and proposal can be made again
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // registeredNodeTrusted1 votes
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             // registeredNode2 vote fails
@@ -475,12 +448,6 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to leave the DAO and receive their RPL bond refund, proposal is denied as it would be under the min members required for the DAO'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -490,15 +457,15 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1);
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalID)-timeCurrent)+2);
             // Proposal should be successful, lets execute it
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member proposal successful to leave DAO when they shouldnt be able too', 'Member count will fall below min required');
         });
@@ -511,12 +478,6 @@ export default function() {
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10;
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             // How much bond has registeredNodeTrusted2 paid?
@@ -534,10 +495,10 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNode1 });
             await daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted2 });   // Don't kick me
@@ -559,12 +520,6 @@ export default function() {
         it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -576,10 +531,10 @@ export default function() {
             });
             // Register new member now
             await bootstrapMemberAdd(registeredNode2, 'rocketpool', 'node@home.com');
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             // New member attempts to vote on proposal started before they joined, fails
@@ -590,12 +545,6 @@ export default function() {
         it(printTitle('registeredNodeTrusted2', 'fails to execute a successful proposal after it expires'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -605,15 +554,15 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing and executing period expiring
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
+            await increaseTime(web3, (await getDAOProposalExpires(proposalID)-timeCurrent)+2);
             // Verify correct expired status
             assert(await getDAOProposalState(proposalID) == proposalStates.Expired, 'Proposal state is not Expired');
             // Execution should fail
@@ -624,12 +573,6 @@ export default function() {
         it(printTitle('registeredNodeTrusted2', 'checks to see if a proposal has expired after being successfully voted for, but not executed'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -639,15 +582,15 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, can I please leave the DAO?', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });
             // Fast forward to this voting period finishing and executing period expiring
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalID)-blockCurrent)+1+proposalVoteExecuteBlocks);
+            await increaseTime(web3, (await getDAOProposalExpires(proposalID)-timeCurrent)+2);
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
             // Cancel should fail
@@ -659,18 +602,12 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond and it does successfully in the window required'), async () => {
             // Add a 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Attempt to challenge a non-member
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode2, { from: registeredNodeTrusted1 }), 'A non member was challenged', 'Invalid trusted node');
             // Challenge the 3rd member
@@ -681,11 +618,11 @@ export default function() {
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNodeTrusted2, { from: registeredNodeTrusted1 }), 'Member challenged another user before cooldown had passed', 'You must wait for the challenge cooldown to pass before issuing another challenge');
             // Have 3rd member respond to the challenge successfully 
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
-            // Wait until the original iniators cooldown window has passed and they attempt another challenge
-            await mineBlocks(web3, challengeCooldownBlocks);
+            // Wait until the original initiator's cooldown window has passed and they attempt another challenge
+            await increaseTime(web3, challengeCooldownTime);
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Have 3rd member respond to the challenge successfully again, but after the challenge window has expired and before another member decides it
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
         });
@@ -694,30 +631,22 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'challenges another members node to respond, they do not in the window required and lose their membership + bond'), async () => {
             // Add a 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Try to challenge yourself
             await shouldRevert(daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNode1 }), 'Member challenged themselves', 'You cannot challenge yourself');
             // Challenge the 3rd member
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
-            // Have the original iniator member try to decide the result
-            await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted1 }), 'Member who initiated challenge was able to attempt the decision', 'Challenge cannot be decided by the original initiator, must be another node');
             // Attempt to decide a challenge on a member that hasn't been challenged
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNodeTrusted2, true, { from: registeredNodeTrusted1 }), 'Member decided challenge on member without a challenge', 'Member hasn\'t been challenged or they have successfully responded to the challenge already');
             // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 }), 'Member decided challenge before refute window passed', 'Refute window has not yet passed');
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
@@ -730,18 +659,12 @@ export default function() {
             let challengeCost = await daoNodesettings.getChallengeCost();
             // Add a 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Update our challenge settings
-            let challengeWindowBlocks = 10;
-            let challengeCooldownBlocks = 10;
+            let challengeWindowTime = 60 * 60;
+            let challengeCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownBlocks, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.window', challengeWindowTime, { from: guardian });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.challenge.cooldown', challengeCooldownTime, { from: guardian });
             // Attempt to challenge a non member
             await shouldRevert(daoNodeTrustedMemberChallengeMake(userOne, {
                 from: registeredNode2 
@@ -760,7 +683,7 @@ export default function() {
                 from: registeredNode2 
             });
             // Fast forward to past the challenge window with the challenged node responding
-            await mineBlocks(web3, challengeWindowBlocks);
+            await increaseTime(web3, challengeWindowTime);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
@@ -891,12 +814,6 @@ export default function() {
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
             // Load contracts
             const rocketStorage = await RocketStorage.deployed();
-            // Setup our proposal settings
-            let proposalVoteBlocks = 10;
-            let proposalVoteExecuteBlocks = 10; 
-            // Update now while in bootstrap mode
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: guardian });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.execute.blocks', proposalVoteExecuteBlocks, { from: guardian });
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalUpgrade', type: 'function', inputs: [{type: 'string',  name: '_type'},{type: 'string', name: '_name'},{type: 'string', name: '_contractAbi'},{type: 'address', name: '_contractAddress'}]},
@@ -906,10 +823,10 @@ export default function() {
             let proposalID = await daoNodeTrustedPropose('hey guys, we really should upgrade this contracts - here\'s a link to its audit reports https://link.com/audit', proposalCalldata, {
                 from: registeredNodeTrusted1
             });
-            // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
-            // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalID)-blockCurrent)+1);
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted1 });
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });

@@ -95,8 +95,8 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
     // Get the last time this user made a proposal
-    function getMemberLastProposalBlock(address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lastblock", _nodeAddress))); 
+    function getMemberLastProposalTime(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lasttime", _nodeAddress)));
     }
 
     // Get the ID of a trusted node member
@@ -110,13 +110,13 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
     // Get the block the member joined at
-    function getMemberJoinedBlock(address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.block", _nodeAddress))); 
+    function getMemberJoinedTime(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)));
     } 
 
     // Get data that was recorded about a proposal that was executed
-    function getMemberProposalExecutedBlock(string memory _proposalType, address _nodeAddress) override public view returns (uint256) { 
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.block", _proposalType, _nodeAddress))); 
+    function getMemberProposalExecutedTime(string memory _proposalType, address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", _proposalType, _nodeAddress)));
     }
 
     // Get the RPL bond amount the user deposited to join
@@ -127,7 +127,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     // Is this member currently being 'challenged' to see if their node is responding
     function getMemberIsChallenged(address _nodeAddress) override public view returns (bool) { 
         // Has this member been challenged recently and still within the challenge window to respond? If there is a challenge block recorded against them, they are actively being challenged.
-        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.block", _nodeAddress))) > 0 ? true : false;
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress))) > 0 ? true : false;
     }
 
     // How many unbonded validators this member has
