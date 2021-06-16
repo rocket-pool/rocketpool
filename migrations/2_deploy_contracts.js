@@ -88,6 +88,9 @@ const contracts = {
   addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
 };
 
+// Development helper contracts
+const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
+
 // Instance contract ABIs
 const abis = {
   // Minipool
@@ -178,6 +181,8 @@ module.exports = async (deployer, network) => {
       precompiled: true
     };
 
+    // Deploy development helper contracts
+    await deployer.deploy(revertOnTransfer);
   }
 
 
