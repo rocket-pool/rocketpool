@@ -2,7 +2,17 @@ import { takeSnapshot, revertSnapshot, mineBlocks, getCurrentTime, increaseTime 
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
-import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL, nodeDeposit, getNodeRPLStake, getNodeEffectiveRPLStake, getNodeMinimumRPLStake } from '../_helpers/node';
+import {
+    registerNode,
+    setNodeTrusted,
+    setNodeWithdrawalAddress,
+    nodeStakeRPL,
+    nodeDeposit,
+    getNodeRPLStake,
+    getNodeEffectiveRPLStake,
+    getNodeMinimumRPLStake,
+    getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
+} from '../_helpers/node'
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
@@ -96,9 +106,10 @@ export default function() {
             await setNodeTrusted(registeredNodeTrusted2, 'saas_2', 'node@home.com', owner);
 
             // Set max per-minipool stake to 100% and RPL price to 1 ether
+            const block = await web3.eth.getBlockNumber();
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
-            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
-            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted1});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted2});
 
             // Stake RPL against nodes and create minipools to set effective stakes
             await mintRPL(owner, registeredNode1, web3.utils.toWei('32', 'ether'));
@@ -241,7 +252,7 @@ export default function() {
                 from: registeredNode2,
             });
         });
-        
+
 
         it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
             // Initialize claims contract
@@ -307,8 +318,10 @@ export default function() {
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
 
             // Decrease RPL price to undercollateralize node
-            await submitPrices(10, web3.utils.toWei('0.01', 'ether'), {from: registeredNodeTrusted1});
-            await submitPrices(10, web3.utils.toWei('0.01', 'ether'), {from: registeredNodeTrusted2});
+            const block = await web3.eth.getBlockNumber();
+            const calculatedTotalEffectiveStake = await getCalculatedTotalEffectiveRPLStake(web3.utils.toWei('0.01', 'ether'));
+            await submitPrices(block, web3.utils.toWei('0.01', 'ether'), calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
+            await submitPrices(block, web3.utils.toWei('0.01', 'ether'), calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
 
             // Get & check node's current and minimum RPL stakes
             let [currentRplStake, minimumRplStake] = await Promise.all([getNodeRPLStake(registeredNode1), getNodeMinimumRPLStake(registeredNode1)]);

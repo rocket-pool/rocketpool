@@ -108,7 +108,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.reserve', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Set RPL price
-            await submitPrices(1, web3.utils.toWei('1', 'ether'), {from: trustedNode});
+            let block = await web3.eth.getBlockNumber();
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: trustedNode});
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});
