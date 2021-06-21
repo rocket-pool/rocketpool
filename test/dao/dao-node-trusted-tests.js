@@ -291,8 +291,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it passes and is executed'), async () => {
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
-            // Pass some time so the next proposal isn't made at the same time the 3rd member joined
-            await increaseTime(web3, 2);
+            await increaseTime(web3, 60);
             // Now registeredNodeTrusted2 wants to leave
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
@@ -328,6 +327,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal and verifies the proposal states as it fails after it expires'), async () => {
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
+            await increaseTime(web3, 60);
             // Now registeredNodeTrusted2 wants to leave
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
@@ -362,6 +362,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member but cancels it before it passes'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
@@ -385,6 +386,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, then attempts to again for registeredNode2 before cooldown has passed and that fails'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Setup our proposal settings
             let proposalCooldownTime = 60 * 60;
             // Update now while in bootstrap mode
@@ -421,6 +423,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, registeredNode2 tries to vote on it, but fails as they joined after it was created'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
@@ -448,6 +451,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to leave the DAO and receive their RPL bond refund, proposal is denied as it would be under the min members required for the DAO'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -475,11 +479,13 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to kick registeredNodeTrusted2 with a 50% fine, it is successful and registeredNodeTrusted2 is kicked and receives 50% of their bond'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
+            await increaseTime(web3, 60);
             // How much bond has registeredNodeTrusted2 paid?
             let registeredNodeTrusted2BondAmount = await daoNode.getMemberRPLBondAmount.call(registeredNodeTrusted2);
             // How much to fine? 33%
@@ -520,6 +526,7 @@ export default function() {
         it(printTitle('registeredNode2', 'is made a new member after a proposal is created, they fail to vote on that proposal'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -545,6 +552,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted2', 'fails to execute a successful proposal after it expires'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -573,6 +581,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted2', 'checks to see if a proposal has expired after being successfully voted for, but not executed'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
                 {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -659,6 +668,7 @@ export default function() {
             let challengeCost = await daoNodesettings.getChallengeCost();
             // Add a 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool_3', 'node2@home.com');
+            await increaseTime(web3, 60);
             // Update our challenge settings
             let challengeWindowTime = 60 * 60;
             let challengeCooldownTime = 60 * 60;
@@ -683,7 +693,7 @@ export default function() {
                 from: registeredNode2 
             });
             // Fast forward to past the challenge window with the challenged node responding
-            await increaseTime(web3, challengeWindowTime);
+            await increaseTime(web3, challengeWindowTime + 60);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
@@ -812,6 +822,7 @@ export default function() {
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to upgrade a network contract, it passees and is executed'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            await increaseTime(web3, 60);
             // Load contracts
             const rocketStorage = await RocketStorage.deployed();
             // Encode the calldata for the proposal

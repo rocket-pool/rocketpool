@@ -39,7 +39,7 @@ export default function() {
         let validatorPubkey = getValidatorPubkey();
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let rethBalance;
-        let submitPricesFrequency = 50;
+        let submitPricesFrequency = 500;
         let depositDeplay = 100;
         before(async () => {
 

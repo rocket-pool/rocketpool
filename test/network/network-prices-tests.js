@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm'
+import { takeSnapshot, revertSnapshot, mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { nodeDeposit, nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node'
@@ -12,7 +12,7 @@ import {
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
-import { getDAOProposalEndBlock, getDAOProposalStartBlock } from '../dao/scenario-dao-proposal'
+import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { mintRPL } from '../_helpers/tokens'
 
 export default function() {
@@ -38,8 +38,8 @@ export default function() {
 
 
         // Constants
-        let proposalCooldown = 10
-        let proposalVoteBlocks = 10
+        let proposalCooldown = 60 * 60
+        let proposalVoteTime = 60 * 60
 
 
         // Setup
@@ -57,8 +57,8 @@ export default function() {
             await setNodeTrusted(trustedNode3, 'saas_3', 'node@home.com', owner);
 
             // Set a small proposal cooldown
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown.time', proposalCooldown, { from: owner });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.time', proposalVoteTime, { from: owner });
             // Set a small vote delay
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
 
@@ -73,7 +73,7 @@ export default function() {
 
         async function trustedNode4LeaveDao() {
             // Wait enough time to do a new proposal
-            await mineBlocks(web3, proposalCooldown);
+            await increaseTime(web3, proposalCooldown);
             // Encode the calldata for the proposal
             let proposalCallData = web3.eth.abi.encodeFunctionCall(
               {name: 'proposalLeave', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
@@ -84,15 +84,16 @@ export default function() {
                 from: trustedNode4
             });
             // Current block
-            let blockCurrent = await web3.eth.getBlockNumber();
+            let timeCurrent = await getCurrentTime(web3);
             // Now mine blocks until the proposal is 'active' and can be voted on
-            await mineBlocks(web3, (await getDAOProposalStartBlock(proposalId)-blockCurrent)+2);
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalId)-timeCurrent)+2);
             // Now lets vote
             await daoNodeTrustedVote(proposalId, true, { from: trustedNode1 });
             await daoNodeTrustedVote(proposalId, true, { from: trustedNode2 });
             await daoNodeTrustedVote(proposalId, true, { from: trustedNode3 });
             // Fast forward to this voting period finishing
-            await mineBlocks(web3, (await getDAOProposalEndBlock(proposalId)-blockCurrent)+1);
+            timeCurrent = await getCurrentTime(web3);
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalId)-timeCurrent)+2);
             // Proposal should be successful, lets execute it
             await daoNodeTrustedExecute(proposalId, { from: trustedNode1 });
             // Member can now leave and collect any RPL bond
