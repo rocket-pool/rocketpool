@@ -24,6 +24,8 @@ import { rewardsClaimDAO, getRewardsDAOTreasuryBalance } from './scenario-reward
 
 // Contracts
 import { RocketRewardsPool } from '../_utils/artifacts';
+import { createMinipool, stakeMinipool } from '../_helpers/minipool'
+import { userDeposit } from '../_helpers/deposit'
 
 
 export default function() {
@@ -111,16 +113,26 @@ export default function() {
             await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted1});
             await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted2});
 
-            // Stake RPL against nodes and create minipools to set effective stakes
+            // Mint and stake RPL
             await mintRPL(owner, registeredNode1, web3.utils.toWei('32', 'ether'));
             await mintRPL(owner, registeredNode2, web3.utils.toWei('32', 'ether'));
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode1});
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
-            await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
-            await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            
-            // Check node effective stakes
+
+            // User deposits
+            await userDeposit({from: userOne, value: web3.utils.toWei('48', 'ether')});
+
+            // Create minipools
+            let minipool1 = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            let minipool2 = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+            let minipool3 = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+
+            // Stake minipools
+            await stakeMinipool(minipool1, null, {from: registeredNode1});
+            await stakeMinipool(minipool2, null, {from: registeredNode2});
+            await stakeMinipool(minipool3, null, {from: registeredNode2});
+
+          // Check node effective stakes
             let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
             let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
             assert(node1EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Incorrect node 1 effective stake');

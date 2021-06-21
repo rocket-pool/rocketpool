@@ -40,6 +40,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.index")));
     }
 
+    // Get the number of minipools in the network in the Staking state
+    function getStakingMinipoolCount() override public view returns (uint256) {
+        return getUintS("minipools.staking.count");
+    }
+
     // Get a network minipool address by index
     function getMinipoolAt(uint256 _index) override public view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -50,6 +55,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function getNodeMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
+    }
+
+    // Get the number of minipools owned by a node that are in staking status
+    function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress)));
     }
 
     // Get a node minipool address by index
@@ -105,6 +115,34 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)));
     }
 
+    // Increments _nodeAddress' number of minipools in staking status
+    function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Update the node specific count
+        bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+        uint256 nodeValue = getUint(nodeKey);
+        setUint(nodeKey, nodeValue.add(1));
+        // Update the total count
+        bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
+        uint256 totalValue = getUint(totalKey);
+        setUint(totalKey, totalValue.add(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
+    }
+
+    // Decrements _nodeAddress' number of minipools in staking status
+    function decrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Update the node specific count
+        bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+        uint256 nodeValue = getUint(nodeKey);
+        setUint(nodeKey, nodeValue.sub(1));
+        // Update the total count
+        bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
+        uint256 totalValue = getUint(totalKey);
+        setUint(totalKey, totalValue.sub(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
+    }
+
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
@@ -121,8 +159,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Create minipool contract
         RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolFactory.createMinipool(_nodeAddress, _depositType));
         address contractAddress = address(minipool);
-        // Get current minipool count
-        uint256 minipoolCount = getNodeMinipoolCount(_nodeAddress);
         // Initialize minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
@@ -135,8 +171,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
             require(rocketNetworkPrices.inConsensus(), "Cannot create a minipool while network is reaching consensus");
         }
-        // Update total effective RPL stake
-        updateTotalEffectiveRPLStake(_nodeAddress, minipoolCount, minipoolCount.add(1));
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
@@ -155,8 +189,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
-        // Get current minipool count
-        uint256 minipoolCount = getNodeMinipoolCount(nodeAddress);
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
         // Remove minipool from indexes
@@ -166,8 +198,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
         // Prevent destroying minipools between price update block and price consensus
         require(rocketNetworkPrices.inConsensus(), "Cannot destroy a minipool while network is reaching consensus");
-        // Update total effective RPL stake
-        updateTotalEffectiveRPLStake(msg.sender, minipoolCount, minipoolCount.sub(1));
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }

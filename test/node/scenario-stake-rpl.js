@@ -67,9 +67,11 @@ export async function stakeRpl(amount, txOptions) {
         return Promise.all([
             rocketMinipoolManager.getMinipoolCount.call(),
             rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
+            rocketMinipoolManager.getStakingMinipoolCount.call(),
+            rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress),
         ]).then(
-            ([total, node]) =>
-            ({total, node})
+            ([total, node, totalStaking, nodeStaking]) =>
+            ({total, node, totalStaking, nodeStaking})
         );
     }
 
@@ -90,9 +92,9 @@ export async function stakeRpl(amount, txOptions) {
     ]);
 
     // Calculate expected effective stakes & node minipool limit
-    const maxTotalEffectiveStake = depositUserAmount.mul(maxPerMinipoolStake).mul(minipoolCounts.total).div(rplPrice);
+    const maxTotalEffectiveStake = depositUserAmount.mul(maxPerMinipoolStake).mul(minipoolCounts.totalStaking).div(rplPrice);
     const expectedTotalEffectiveStake = (details2.totalStake.lt(maxTotalEffectiveStake)? details2.totalStake : maxTotalEffectiveStake);
-    const maxNodeEffectiveStake = depositUserAmount.mul(maxPerMinipoolStake).mul(minipoolCounts.node).div(rplPrice);
+    const maxNodeEffectiveStake = depositUserAmount.mul(maxPerMinipoolStake).mul(minipoolCounts.nodeStaking).div(rplPrice);
     const expectedNodeEffectiveStake = (details2.nodeStake.lt(maxNodeEffectiveStake)? details2.nodeStake : maxNodeEffectiveStake);
     const expectedNodeMinipoolLimit = details2.nodeStake.mul(rplPrice).div(depositUserAmount.mul(minPerMinipoolStake));
 

@@ -35,6 +35,12 @@ export async function getNodeMinipoolCount(nodeAddress) {
     return count;
 }
 
+// Get the number of minipools a node has in Staking status
+export async function getNodeStakingMinipoolCount(nodeAddress) {
+  const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+  let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
+  return count;
+}
 
 // Get the minimum required RPL stake for a minipool
 export async function getMinipoolMinimumRPLStake() {
