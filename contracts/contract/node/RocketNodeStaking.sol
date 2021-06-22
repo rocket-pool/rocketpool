@@ -36,7 +36,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     // Get/set the total RPL stake amount
-    function getTotalRPLStake() override public view returns (uint256) {
+    function getTotalRPLStake() override external view returns (uint256) {
         return getUint(keccak256("rpl.staked.total.amount"));
     }
     function setTotalRPLStake(uint256 _amount) private {
@@ -72,7 +72,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     // Get the total effective RPL stake amount
-    function getTotalEffectiveRPLStake() override public view returns (uint256) {
+    function getTotalEffectiveRPLStake() override external view returns (uint256) {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         return rocketNetworkPrices.getEffectiveRPLStake();
@@ -80,7 +80,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Calculate total effective RPL stake, this features a potentially unbounded loop so can not be called on-chain
     // Instead, it is intended to be called by oracle nodes to be submitted alongside price updates
-    function calculateTotalEffectiveRPLStake(uint256 offset, uint256 limit, uint256 rplPrice) override public view returns (uint256) {
+    function calculateTotalEffectiveRPLStake(uint256 offset, uint256 limit, uint256 rplPrice) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -109,7 +109,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     // Get a node's effective RPL stake amount
-    function getNodeEffectiveRPLStake(address _nodeAddress) override public view returns (uint256) {
+    function getNodeEffectiveRPLStake(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -128,7 +128,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     // Get a node's minimum RPL stake to collateralize their minipools
-    function getNodeMinimumRPLStake(address _nodeAddress) override public view returns (uint256) {
+    function getNodeMinimumRPLStake(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -156,7 +156,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     // Get a node's minipool limit based on RPL stake
-    function getNodeMinipoolLimit(address _nodeAddress) override public view returns (uint256) {
+    function getNodeMinipoolLimit(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));

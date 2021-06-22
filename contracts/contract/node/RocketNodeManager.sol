@@ -23,19 +23,19 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Get the number of nodes in the network
-    function getNodeCount() override public view returns (uint256) {
+    function getNodeCount() override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.index")));
     }
 
     // Get a node address by index
-    function getNodeAt(uint256 _index) override public view returns (address) {
+    function getNodeAt(uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("nodes.index")), _index);
     }
 
     // Check whether a node exists
-    function getNodeExists(address _nodeAddress) override public view returns (bool) {
+    function getNodeExists(address _nodeAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)));
     }
 
@@ -50,7 +50,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Get a node's timezone location
-    function getNodeTimezoneLocation(address _nodeAddress) override public view returns (string memory) {
+    function getNodeTimezoneLocation(address _nodeAddress) override external view returns (string memory) {
         return getString(keccak256(abi.encodePacked("node.timezone.location", _nodeAddress)));
     }
 

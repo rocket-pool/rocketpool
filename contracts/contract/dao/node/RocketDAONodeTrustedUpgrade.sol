@@ -24,7 +24,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
 
     // Main accessor for performing an upgrade, be it a contract or abi for a contract
     // Will require > 50% of trusted DAO members to run when bootstrap mode is disabled
-    function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
+    function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override external onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // What action are we performing?
         bytes32 typeHash = keccak256(abi.encodePacked(_type));
         // Lets do it!

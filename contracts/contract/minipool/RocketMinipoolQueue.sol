@@ -29,7 +29,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Get the total combined length of the queues
-    function getTotalLength() override public view returns (uint256) {
+    function getTotalLength() override external view returns (uint256) {
         return (
             getLength(MinipoolDeposit.Full)
         ).add(
@@ -53,7 +53,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Get the total combined capacity of the queues
-    function getTotalCapacity() override public view returns (uint256) {
+    function getTotalCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
             getLength(MinipoolDeposit.Full).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
@@ -65,7 +65,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Get the total effective capacity of the queues (used in node demand calculation)
-    function getEffectiveCapacity() override public view returns (uint256) {
+    function getEffectiveCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
             getLength(MinipoolDeposit.Full).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
@@ -76,7 +76,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Get the capacity of the next available minipool
     // Returns 0 if no minipools are available
-    function getNextCapacity() override public view returns (uint256) {
+    function getNextCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         if (getLength(MinipoolDeposit.Half) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
         if (getLength(MinipoolDeposit.Full) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
@@ -86,7 +86,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Get the deposit type of the next available minipool and the number of deposits in that queue
     // Returns None if no minipools are available
-    function getNextDeposit() override public view returns (MinipoolDeposit, uint256) {
+    function getNextDeposit() override external view returns (MinipoolDeposit, uint256) {
         uint256 length = getLength(MinipoolDeposit.Half);
         if (length > 0) { return (MinipoolDeposit.Half, length); }
         length = getLength(MinipoolDeposit.Full);

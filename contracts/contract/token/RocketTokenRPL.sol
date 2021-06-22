@@ -96,7 +96,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * The current rewards pool address that receives the inflation
     * @return address The rewards pool contract address
     */
-    function getInflationRewardsContractAddress() override public view returns(address) {
+    function getInflationRewardsContractAddress() override external view returns(address) {
         // Inflation rate start block controlled by the DAO
         return getContractAddress("rocketRewardsPool");
     }
@@ -150,7 +150,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * @dev Mint new tokens if enough time has elapsed since last mint
     * @return A uint256 specifying number of new tokens that were minted
     */
-    function inflationMintTokens() override public returns (uint256) {
+    function inflationMintTokens() override external returns (uint256) {
         // Only run inflation process if at least 1 interval has passed (function returns 0 otherwise)
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         if (intervalsSinceLastMint == 0) {

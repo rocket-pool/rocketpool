@@ -118,13 +118,13 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     // When a new member has been successfully invited to join, they must call this method to join officially
     // They will be required to have the RPL bond amount in their account
     // This method allows us to only allow them to join if they have a working node account and have been officially invited
-    function actionJoin() override public onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
+    function actionJoin() override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         _memberJoin(msg.sender);
     }
 
     // When the DAO has suffered a loss of members due to unforseen blackswan issue and has < the min required amount (3), a regular bonded node can directly join as a member and recover the DAO
     // They will be required to have the RPL bond amount in their account. This is called directly from RocketDAONodeTrusted.
-    function actionJoinRequired(address _nodeAddress) override public onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
+    function actionJoinRequired(address _nodeAddress) override external onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
         _memberJoin(_nodeAddress);
     }
     

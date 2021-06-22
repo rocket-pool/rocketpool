@@ -30,37 +30,37 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
 
 
     // Lot creation currently enabled
-    function getCreateLotEnabled() override public view returns (bool) {
+    function getCreateLotEnabled() override external view returns (bool) {
         return getSettingBool("auction.lot.create.enabled");
     }
 
     // Bidding on lots currently enabled
-    function getBidOnLotEnabled() override public view returns (bool) {
+    function getBidOnLotEnabled() override external view returns (bool) {
         return getSettingBool("auction.lot.bidding.enabled");
     }
 
     // The minimum lot size relative to ETH value
-    function getLotMinimumEthValue() override public view returns (uint256) {
+    function getLotMinimumEthValue() override external view returns (uint256) {
         return getSettingUint("auction.lot.value.minimum");
     }
 
     // The maximum lot size relative to ETH value
-    function getLotMaximumEthValue() override public view returns (uint256) {
+    function getLotMaximumEthValue() override external view returns (uint256) {
         return getSettingUint("auction.lot.value.maximum");
     }
 
     // The maximum auction duration in blocks
-    function getLotDuration() override public view returns (uint256) {
+    function getLotDuration() override external view returns (uint256) {
         return getSettingUint("auction.lot.duration");
     }
 
     // The starting price relative to current RPL price, as a fraction of 1 ether
-    function getStartingPriceRatio() override public view returns (uint256) {
+    function getStartingPriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.start");
     }
 
     // The reserve price relative to current RPL price, as a fraction of 1 ether
-    function getReservePriceRatio() override public view returns (uint256) {
+    function getReservePriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.reserve");
     }
 

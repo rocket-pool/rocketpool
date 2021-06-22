@@ -29,27 +29,27 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
 
     // Status getters
-    function getStatus() override public view returns (MinipoolStatus) { return status; }
-    function getStatusBlock() override public view returns (uint256) { return statusBlock; }
+    function getStatus() override external view returns (MinipoolStatus) { return status; }
+    function getStatusBlock() override external view returns (uint256) { return statusBlock; }
 
     // Deposit type getter
-    function getDepositType() override public view returns (MinipoolDeposit) { return depositType; }
+    function getDepositType() override external view returns (MinipoolDeposit) { return depositType; }
 
     // Node detail getters
-    function getNodeAddress() override public view returns (address) { return nodeAddress; }
-    function getNodeFee() override public view returns (uint256) { return nodeFee; }
-    function getNodeDepositBalance() override public view returns (uint256) { return nodeDepositBalance; }
-    function getNodeRefundBalance() override public view returns (uint256) { return nodeRefundBalance; }
-    function getNodeDepositAssigned() override public view returns (bool) { return nodeDepositAssigned; }
+    function getNodeAddress() override external view returns (address) { return nodeAddress; }
+    function getNodeFee() override external view returns (uint256) { return nodeFee; }
+    function getNodeDepositBalance() override external view returns (uint256) { return nodeDepositBalance; }
+    function getNodeRefundBalance() override external view returns (uint256) { return nodeRefundBalance; }
+    function getNodeDepositAssigned() override external view returns (bool) { return nodeDepositAssigned; }
 
     // User deposit detail getters
-    function getUserDepositBalance() override public view returns (uint256) { return userDepositBalance; }
-    function getUserDepositAssigned() override public view returns (bool) { return userDepositAssignedTime != 0; }
-    function getUserDepositAssignedTime() override public view returns (uint256) { return userDepositAssignedTime; }
+    function getUserDepositBalance() override external view returns (uint256) { return userDepositBalance; }
+    function getUserDepositAssigned() override external view returns (bool) { return userDepositAssignedTime != 0; }
+    function getUserDepositAssignedTime() override external view returns (uint256) { return userDepositAssignedTime; }
 
     // Staking detail getters
-    function getStakingStartBalance() override public view returns (uint256) { return stakingStartBalance; }
-    function getStakingEndBalance() override public view returns (uint256) { return stakingEndBalance; }
+    function getStakingStartBalance() override external view returns (uint256) { return stakingStartBalance; }
+    function getStakingEndBalance() override external view returns (uint256) { return stakingEndBalance; }
 
     // Get the withdrawal credentials for the minipool contract
     function getWithdrawalCredentials() override public view returns (bytes memory) {

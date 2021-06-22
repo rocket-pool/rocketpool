@@ -21,7 +21,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     }
 
     // Determine if this contract is enabled or not for claims
-    function getEnabled() override public view returns (bool) {
+    function getEnabled() override external view returns (bool) {
         // Init the rewards pool contract
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         return rewardsPool.getClaimingContractEnabled("rocketClaimDAO");
@@ -29,7 +29,7 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
 
 
     // Spend the network DAOs RPL rewards 
-    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
+    function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Addresses

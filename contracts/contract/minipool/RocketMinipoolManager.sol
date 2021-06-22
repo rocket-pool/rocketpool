@@ -35,13 +35,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools in the network
-    function getMinipoolCount() override public view returns (uint256) {
+    function getMinipoolCount() override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.index")));
     }
 
     // Get a network minipool address by index
-    function getMinipoolAt(uint256 _index) override public view returns (address) {
+    function getMinipoolAt(uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("minipools.index")), _index);
     }
@@ -53,55 +53,55 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get a node minipool address by index
-    function getNodeMinipoolAt(address _nodeAddress, uint256 _index) override public view returns (address) {
+    function getNodeMinipoolAt(address _nodeAddress, uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _index);
     }
 
     // Get the number of validating minipools owned by a node
-    function getNodeValidatingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+    function getNodeValidatingMinipoolCount(address _nodeAddress) override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.validating.index", _nodeAddress)));
     }
 
     // Get a validating node minipool address by index
-    function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) override public view returns (address) {
+    function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getItem(keccak256(abi.encodePacked("node.minipools.validating.index", _nodeAddress)), _index);
     }
 
     // Get a minipool address by validator pubkey
-    function getMinipoolByPubkey(bytes memory _pubkey) override public view returns (address) {
+    function getMinipoolByPubkey(bytes memory _pubkey) override external view returns (address) {
         return getAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)));
     }
 
     // Check whether a minipool exists
-    function getMinipoolExists(address _minipoolAddress) override public view returns (bool) {
+    function getMinipoolExists(address _minipoolAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress)));
     }
 
     // Get a minipool's validator pubkey
-    function getMinipoolPubkey(address _minipoolAddress) override public view returns (bytes memory) {
+    function getMinipoolPubkey(address _minipoolAddress) override external view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipoolAddress)));
     }
 
     // Get a minipool's total balance at withdrawal
-    function getMinipoolWithdrawalTotalBalance(address _minipoolAddress) override public view returns (uint256) {
+    function getMinipoolWithdrawalTotalBalance(address _minipoolAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.total", _minipoolAddress)));
     }
 
     // Get a minipool's node balance at withdrawal
-    function getMinipoolWithdrawalNodeBalance(address _minipoolAddress) override public view returns (uint256) {
+    function getMinipoolWithdrawalNodeBalance(address _minipoolAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)));
     }
 
     // Get a minipool's withdrawable status
-    function getMinipoolWithdrawable(address _minipoolAddress) override public view returns (bool) {
+    function getMinipoolWithdrawable(address _minipoolAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked("minipool.withdrawable", _minipoolAddress)));
     }
 
     // Get a minipool's withdrawal processed status
-    function getMinipoolWithdrawalProcessed(address _minipoolAddress) override public view returns (bool) {
+    function getMinipoolWithdrawalProcessed(address _minipoolAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)));
     }
 

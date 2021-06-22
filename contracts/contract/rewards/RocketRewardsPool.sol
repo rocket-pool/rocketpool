@@ -57,7 +57,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * Get how much RPL the Rewards Pool contract currently has assigned to it as a whole
     * @return uint256 Returns rpl balance of rocket rewards contract
     */
-    function getRPLBalance() override public view returns(uint256) { 
+    function getRPLBalance() override external view returns(uint256) {
         // Get the vault contract instance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Check per contract
@@ -109,7 +109,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * Get the last time a claim was made
     * @return uint256 Last time a claim was made
     */
-    function getClaimTimeLastMade() override public view returns(uint256) {
+    function getClaimTimeLastMade() override external view returns(uint256) {
         return getUint(keccak256("rewards.pool.claim.interval.time.last"));
     }
 

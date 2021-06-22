@@ -160,7 +160,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     }
 
     // Check whether a lot has cleared
-    function getLotIsCleared(uint256 _index) override public view returns (bool) {
+    function getLotIsCleared(uint256 _index) override external view returns (bool) {
         if (block.number >= getLotEndBlock(_index)) { return true; }
         if (getLotPriceByTotalBids(_index) >= getLotPriceAtCurrentBlock(_index)) { return true; }
         return false;

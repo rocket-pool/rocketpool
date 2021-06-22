@@ -60,7 +60,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
 
     // Get the current ETH : rETH exchange rate
     // Returns the amount of ETH backing 1 rETH
-    function getExchangeRate() override public view returns (uint256) {
+    function getExchangeRate() override external view returns (uint256) {
         return getEthValue(1 ether);
     }
 
