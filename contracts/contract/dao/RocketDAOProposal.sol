@@ -23,7 +23,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     uint256 constant calcBase = 1 ether;
 
     // The namespace for any data stored in the trusted node DAO (do not change)
-    string private daoProposalNameSpace = "dao.proposal.";
+    string constant private daoProposalNameSpace = "dao.proposal.";
 
     
     // Only allow the DAO contract to access
@@ -219,7 +219,7 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     
 
     // Execute a proposal if it has passed
-    function execute(uint256 _proposalID) override public {
+    function execute(uint256 _proposalID) override external {
         // Firstly make sure this proposal has passed
         require(getState(_proposalID) == ProposalState.Succeeded, "Proposal has not succeeded, has expired or has already been executed");
         // Set as executed now before running payload

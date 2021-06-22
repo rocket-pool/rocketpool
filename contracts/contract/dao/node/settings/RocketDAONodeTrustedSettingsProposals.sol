@@ -30,27 +30,27 @@ contract RocketDAONodeTrustedSettingsProposals is RocketDAONodeTrustedSettings, 
     // Getters
 
     // How long before a member can make sequential proposals
-    function getCooldownTime() override public view returns (uint256) {
+    function getCooldownTime() override external view returns (uint256) {
         return getSettingUint("proposal.cooldown.time");
     }
 
     // How long a proposal can be voted on
-    function getVoteTime() override public view returns (uint256) {
+    function getVoteTime() override external view returns (uint256) {
         return getSettingUint("proposal.vote.time");
     }
 
     // How long before a proposal can be voted on after it is created
-    function getVoteDelayTime() override public view returns (uint256) {
+    function getVoteDelayTime() override external view returns (uint256) {
         return getSettingUint("proposal.vote.delay.time");
     }
 
     // How long a proposal can be executed after its voting period is finished
-    function getExecuteTime() override public view returns (uint256) {
+    function getExecuteTime() override external view returns (uint256) {
         return getSettingUint("proposal.execute.time");
     }
 
     // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
-    function getActionTime() override public view returns (uint256) {
+    function getActionTime() override external view returns (uint256) {
         return getSettingUint("proposal.action.time");
     }
 

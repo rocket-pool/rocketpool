@@ -48,12 +48,12 @@ contract RocketStorage is RocketStorageInterface {
     }
 
     // Set this as being deployed now
-    function getDeployedStatus() public view returns (bool) {
+    function getDeployedStatus() external view returns (bool) {
         return storageInit;
     }
 
     // Set this as being deployed now
-    function setDeployedStatus() public {
+    function setDeployedStatus() external {
         // Only guardian can lock this down
         require(boolStorage[keccak256(abi.encodePacked("access.role", "guardian", msg.sender))] == true, "Is not guardian account");
         // Set it now

@@ -131,7 +131,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     }
 
     // How many unbonded validators this member has
-    function getMemberUnbondedValidatorCount(address _nodeAddress) override public view returns (uint256) {
+    function getMemberUnbondedValidatorCount(address _nodeAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.validator.unbonded.count", _nodeAddress)));
     }
     function setMemberUnbondedValidatorCount(address _nodeAddress, uint256 _value) private {

@@ -73,7 +73,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
 
     // Get the current ETH collateral rate
     // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
-    function getCollateralRate() override public view returns (uint256) {
+    function getCollateralRate() override external view returns (uint256) {
         uint256 totalEthValue = getEthValue(totalSupply());
         if (totalEthValue == 0) { return calcBase; }
         return calcBase.mul(address(this).balance).div(totalEthValue);

@@ -26,22 +26,22 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     }
 
     // Node registrations currently enabled
-    function getRegistrationEnabled() override public view returns (bool) {
+    function getRegistrationEnabled() override external view returns (bool) {
         return getSettingBool("node.registration.enabled");
     }
 
     // Node deposits currently enabled
-    function getDepositEnabled() override public view returns (bool) {
+    function getDepositEnabled() override external view returns (bool) {
         return getSettingBool("node.deposit.enabled");
     }
 
     // Minimum RPL stake per minipool as a fraction of assigned user ETH value
-    function getMinimumPerMinipoolStake() override public view returns (uint256) {
+    function getMinimumPerMinipoolStake() override external view returns (uint256) {
         return getSettingUint("node.per.minipool.stake.minimum");
     }
 
     // Maximum RPL stake per minipool as a fraction of assigned user ETH value
-    function getMaximumPerMinipoolStake() override public view returns (uint256) {
+    function getMaximumPerMinipoolStake() override external view returns (uint256) {
         return getSettingUint("node.per.minipool.stake.maximum");
     }
 

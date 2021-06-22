@@ -27,27 +27,27 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     }
 
     // Deposits currently enabled
-    function getDepositEnabled() override public view returns (bool) {
+    function getDepositEnabled() override external view returns (bool) {
         return getSettingBool("deposit.enabled");
     }
 
     // Deposit assignments currently enabled
-    function getAssignDepositsEnabled() override public view returns (bool) {
+    function getAssignDepositsEnabled() override external view returns (bool) {
         return getSettingBool("deposit.assign.enabled");
     }
 
     // Minimum deposit size
-    function getMinimumDeposit() override public view returns (uint256) {
+    function getMinimumDeposit() override external view returns (uint256) {
         return getSettingUint("deposit.minimum");
     }
 
     // The maximum size of the deposit pool
-    function getMaximumDepositPoolSize() override public view returns (uint256) {
+    function getMaximumDepositPoolSize() override external view returns (uint256) {
         return getSettingUint("deposit.pool.maximum");
     }
 
     // The maximum number of deposit assignments to perform at once
-    function getMaximumDepositAssignments() override public view returns (uint256) {
+    function getMaximumDepositAssignments() override external view returns (uint256) {
         return getSettingUint("deposit.assign.maximum");
     }
 

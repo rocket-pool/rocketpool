@@ -67,7 +67,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     }
 
     // Executes updateBalances if consensus threshold is reached
-    function executeMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override public
+    function executeMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external
     onlyLatestContract("rocketMinipoolStatus", address(this)) {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));

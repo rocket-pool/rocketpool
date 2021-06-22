@@ -174,7 +174,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * Get the number of claimers for the current interval per claiming contract
     * @return uint256 Returns number of claimers for the current interval per claiming contract
     */
-    function getClaimingContractUserTotalCurrent(string memory _claimingContract) override public view returns(uint256) {
+    function getClaimingContractUserTotalCurrent(string memory _claimingContract) override external view returns(uint256) {
         // Return the current interval amount if in that interval, if we are moving to the next one upon next claim, use that
         return getClaimIntervalsPassed() == 0 ? getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimers.total.current", _claimingContract))) : getClaimingContractUserTotalNext(_claimingContract);
     }
