@@ -36,9 +36,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function getTotalRPLStake() override external view returns (uint256) {
         return getUint(keccak256("rpl.staked.total.amount"));
     }
-    function setTotalRPLStake(uint256 _amount) private {
-        setUint(keccak256("rpl.staked.total.amount"), _amount);
-    }
     function increaseTotalRPLStake(uint256 _amount) private {
         addUint(keccak256("rpl.staked.total.amount"), _amount);
     }
@@ -49,9 +46,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Get/set a node's RPL stake amount
     function getNodeRPLStake(address _nodeAddress) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)));
-    }
-    function setNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
     function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
         addUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);

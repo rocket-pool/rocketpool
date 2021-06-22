@@ -39,9 +39,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     function getAllottedRPLBalance() override public view returns (uint256) {
         return getUint(keccak256("auction.rpl.allotted"));
     }
-    function setAllottedRPLBalance(uint256 _amount) private {
-        setUint(keccak256("auction.rpl.allotted"), _amount);
-    }
     function increaseAllottedRPLBalance(uint256 _amount) private {
         addUint(keccak256(abi.encodePacked("auction.rpl.allotted")), _amount);
     }
@@ -85,9 +82,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Get/set the total ETH amount bid on a lot
     function getLotTotalBidAmount(uint256 _index) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("auction.lot.bid.total", _index)));
-    }
-    function setLotTotalBidAmount(uint256 _index, uint256 _amount) private {
-        setUint(keccak256(abi.encodePacked("auction.lot.bid.total", _index)), _amount);
     }
     function increaseLotTotalBidAmount(uint256 _index, uint256 _amount) private {
         addUint(keccak256(abi.encodePacked("auction.lot.bid.total", _index)), _amount);

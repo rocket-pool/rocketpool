@@ -129,9 +129,9 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Calculate minipool assignments
         uint256 maxAssignments = rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         MinipoolAssignment[] memory assignments = new MinipoolAssignment[](maxAssignments);
-        MinipoolDeposit depositType;
+        MinipoolDeposit depositType = MinipoolDeposit.None;
         uint256 count = 0;
-        uint256 minipoolCapacity;
+        uint256 minipoolCapacity = 0;
         for (uint256 i = 0; i < maxAssignments; ++i) {
             // Optimised for multiple of the same deposit type
             if (count == 0) {
