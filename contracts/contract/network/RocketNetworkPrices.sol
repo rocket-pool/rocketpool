@@ -16,9 +16,6 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);

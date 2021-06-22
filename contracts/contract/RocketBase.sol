@@ -9,6 +9,8 @@ import "../interface/RocketStorageInterface.sol";
 
 abstract contract RocketBase {
 
+    // Calculate using this as the base
+    uint256 constant calcBase = 1 ether;
 
     // Version of the contract
     uint8 public version;

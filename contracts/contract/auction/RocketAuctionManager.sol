@@ -18,9 +18,6 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     // Libs
     using SafeMath for uint;
 
-    // Our calc base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event LotCreated(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
     event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);

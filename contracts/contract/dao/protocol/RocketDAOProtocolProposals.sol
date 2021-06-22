@@ -18,9 +18,6 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant daoNameSpace = "dao.protocol.";
 

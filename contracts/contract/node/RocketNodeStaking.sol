@@ -22,9 +22,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event RPLStaked(address indexed from, uint256 amount, uint256 time);
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);

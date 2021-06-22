@@ -18,9 +18,6 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event TokensMinted(address indexed to, uint256 amount, uint256 ethAmount, uint256 time);

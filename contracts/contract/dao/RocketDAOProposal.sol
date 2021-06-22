@@ -19,9 +19,6 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
     event ProposalExecuted(uint256 indexed proposalID, address indexed executer, uint256 time);
     event ProposalCancelled(uint256 indexed proposalID, address indexed canceller, uint256 time);    
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant private daoProposalNameSpace = "dao.proposal.";
 
