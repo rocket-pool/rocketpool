@@ -135,11 +135,6 @@ abstract contract RocketBase {
     function getBool(bytes32 _key) internal view returns (bool) { return rocketStorage.getBool(_key); }
     function getInt(bytes32 _key) internal view returns (int) { return rocketStorage.getInt(_key); }
     function getBytes32(bytes32 _key) internal view returns (bytes32) { return rocketStorage.getBytes32(_key); }
-    function getAddressS(string memory _key) internal view returns (address) { return rocketStorage.getAddress(keccak256(abi.encodePacked(_key))); }
-    function getUintS(string memory _key) internal view returns (uint) { return rocketStorage.getUint(keccak256(abi.encodePacked(_key))); }
-    function getBytesS(string memory _key) internal view returns (bytes memory) { return rocketStorage.getBytes(keccak256(abi.encodePacked(_key))); }
-    function getBoolS(string memory _key) internal view returns (bool) { return rocketStorage.getBool(keccak256(abi.encodePacked(_key))); }
-
 
     /// @dev Storage set methods
     function setAddress(bytes32 _key, address _value) internal { rocketStorage.setAddress(_key, _value); }
@@ -149,10 +144,6 @@ abstract contract RocketBase {
     function setBool(bytes32 _key, bool _value) internal { rocketStorage.setBool(_key, _value); }
     function setInt(bytes32 _key, int _value) internal { rocketStorage.setInt(_key, _value); }
     function setBytes32(bytes32 _key, bytes32 _value) internal { rocketStorage.setBytes32(_key, _value); }
-    function setAddressS(string memory _key, address _value) internal { rocketStorage.setAddress(keccak256(abi.encodePacked(_key)), _value); }
-    function setUintS(string memory _key, uint _value) internal { rocketStorage.setUint(keccak256(abi.encodePacked(_key)), _value); }
-    function setBytesS(string memory _key, bytes memory _value) internal { rocketStorage.setBytes(keccak256(abi.encodePacked(_key)), _value); }
-    function setBoolS(string memory _key, bool _value) internal { rocketStorage.setBool(keccak256(abi.encodePacked(_key)), _value); }
 
     /// @dev Storage delete methods
     function deleteAddress(bytes32 _key) internal { rocketStorage.deleteAddress(_key); }
@@ -163,5 +154,7 @@ abstract contract RocketBase {
     function deleteInt(bytes32 _key) internal { rocketStorage.deleteInt(_key); }
     function deleteBytes32(bytes32 _key) internal { rocketStorage.deleteBytes32(_key); }
 
-
+    /// @dev Storage arithmetic methods
+    function addUint(bytes32 _key, uint256 _amount) internal { rocketStorage.addUint(_key, _amount); }
+    function subUint(bytes32 _key, uint256 _amount) internal { rocketStorage.subUint(_key, _amount); }
 }

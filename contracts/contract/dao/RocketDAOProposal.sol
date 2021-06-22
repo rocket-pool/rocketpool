@@ -205,9 +205,9 @@ contract RocketDAOProposal is RocketBase, RocketDAOProposalInterface {
         require(!getReceiptHasVoted(_proposalID, _member), "Member has already voted on proposal");
         // Add votes to proposal
         if(_support) {
-            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), getVotesFor(_proposalID).add(_votes));
+            addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.for", _proposalID)), _votes);
         }else{
-            setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), getVotesAgainst(_proposalID).add(_votes));
+            addUint(keccak256(abi.encodePacked(daoProposalNameSpace, "votes.against", _proposalID)), _votes);
         }
         // Record the vote receipt now
         setUint(keccak256(abi.encodePacked(daoProposalNameSpace, "receipt.votes", _proposalID, _member)), _votes);

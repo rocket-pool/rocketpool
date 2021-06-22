@@ -3,12 +3,15 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../interface/RocketStorageInterface.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title The primary persistent storage for Rocket Pool
 /// @author David Rugendyke
 
 contract RocketStorage is RocketStorageInterface {
 
+    // Libraries
+    using SafeMath for uint256;
 
     // Storage types
     mapping(bytes32 => uint256)    private uIntStorage;
@@ -167,4 +170,15 @@ contract RocketStorage is RocketStorageInterface {
     }
 
 
+    /// @param _key The key for the record
+    /// @param _amount An amount to add to the record's value
+    function addUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
+        uIntStorage[_key] = uIntStorage[_key].add(_amount);
+    }
+
+    /// @param _key The key for the record
+    /// @param _amount An amount to subtract from the record's value
+    function subUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
+        uIntStorage[_key] = uIntStorage[_key].sub(_amount);
+    }
 }

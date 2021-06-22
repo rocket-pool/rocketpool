@@ -49,7 +49,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Version
         version = 1;
         // Set the claim interval start time as the current time
-        setUintS("rewards.pool.claim.interval.time.start", block.timestamp);
+        setUint(keccak256("rewards.pool.claim.interval.time.start"), block.timestamp);
     }
 
 
@@ -70,7 +70,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * @return uint256 Last set start timestamp for a claim interval
     */
     function getClaimIntervalTimeStart() override public view returns(uint256) {
-        return getUintS("rewards.pool.claim.interval.time.start");
+        return getUint(keccak256("rewards.pool.claim.interval.time.start"));
     }
 
 
@@ -110,7 +110,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * @return uint256 Last time a claim was made
     */
     function getClaimTimeLastMade() override public view returns(uint256) {
-        return getUintS("rewards.pool.claim.interval.time.last");
+        return getUint(keccak256("rewards.pool.claim.interval.time.last"));
     }
 
 
@@ -216,7 +216,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             rewardsTotal = rplContract.inflationCalculate().add(rocketVault.balanceOfToken("rocketRewardsPool", IERC20(getContractAddress("rocketTokenRPL"))));
         }else{
             // Claims have already been made, lets retrieve rewards total stored on first claim of this interval
-            rewardsTotal = getUintS("rewards.pool.claim.interval.total");
+            rewardsTotal = getUint(keccak256("rewards.pool.claim.interval.total"));
         }
         // Done
         return rewardsTotal;
@@ -336,9 +336,9 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             // Mint any new tokens from the RPL inflation
             rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
-            setUintS("rewards.pool.claim.interval.total", rocketVault.balanceOfToken("rocketRewardsPool", rplContract));
+            setUint(keccak256("rewards.pool.claim.interval.total"), rocketVault.balanceOfToken("rocketRewardsPool", rplContract));
             // Set this as the start of the new claim interval
-            setUintS("rewards.pool.claim.interval.time.start", claimIntervalTimeStart);
+            setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeStart);
             // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to transfer them to the dao if possible
             uint256 daoClaimContractAllowance = getClaimingContractAllowance("rocketClaimDAO");
             // Are we sending any?
@@ -380,7 +380,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Store the total RPL rewards claim for this claiming contract in this interval
         setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalTimeStart, contractName)), getClaimingContractTotalClaimed(contractName).add(claimAmount));
         // Store the last time a claim was made
-        setUintS("rewards.pool.claim.interval.time.last", block.timestamp);
+        setUint(keccak256("rewards.pool.claim.interval.time.last"), block.timestamp);
         // Log it
         emit RPLTokensClaimed(getContractAddress(contractName), _claimerAddress, claimAmount, block.timestamp);
     }

@@ -30,34 +30,34 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // The block number which balances are current for
     function getBalancesBlock() override public view returns (uint256) {
-        return getUintS("network.balances.updated.block");
+        return getUint(keccak256("network.balances.updated.block"));
     }
     function setBalancesBlock(uint256 _value) private {
-        setUintS("network.balances.updated.block", _value);
+        setUint(keccak256("network.balances.updated.block"), _value);
     }
 
     // The current RP network total ETH balance
     function getTotalETHBalance() override public view returns (uint256) {
-        return getUintS("network.balance.total");
+        return getUint(keccak256("network.balance.total"));
     }
     function setTotalETHBalance(uint256 _value) private {
-        setUintS("network.balance.total", _value);
+        setUint(keccak256("network.balance.total"), _value);
     }
 
     // The current RP network staking ETH balance
     function getStakingETHBalance() override public view returns (uint256) {
-        return getUintS("network.balance.staking");
+        return getUint(keccak256("network.balance.staking"));
     }
     function setStakingETHBalance(uint256 _value) private {
-        setUintS("network.balance.staking", _value);
+        setUint(keccak256("network.balance.staking"), _value);
     }
 
     // The current RP network total rETH supply
     function getTotalRETHSupply() override public view returns (uint256) {
-        return getUintS("network.balance.reth.supply");
+        return getUint(keccak256("network.balance.reth.supply"));
     }
     function setTotalRETHSupply(uint256 _value) private {
-        setUintS("network.balance.reth.supply", _value);
+        setUint(keccak256("network.balance.reth.supply"), _value);
     }
 
     // Get the current RP network ETH utilization rate as a fraction of 1 ETH

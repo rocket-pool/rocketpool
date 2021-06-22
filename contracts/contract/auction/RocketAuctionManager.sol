@@ -40,16 +40,16 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Get/set the allotted RPL balance of the contract
     function getAllottedRPLBalance() override public view returns (uint256) {
-        return getUintS("auction.rpl.allotted");
+        return getUint(keccak256("auction.rpl.allotted"));
     }
     function setAllottedRPLBalance(uint256 _amount) private {
-        setUintS("auction.rpl.allotted", _amount);
+        setUint(keccak256("auction.rpl.allotted"), _amount);
     }
     function increaseAllottedRPLBalance(uint256 _amount) private {
-        setAllottedRPLBalance(getAllottedRPLBalance().add(_amount));
+        addUint(keccak256(abi.encodePacked("auction.rpl.allotted")), _amount);
     }
     function decreaseAllottedRPLBalance(uint256 _amount) private {
-        setAllottedRPLBalance(getAllottedRPLBalance().sub(_amount));
+        subUint(keccak256(abi.encodePacked("auction.rpl.allotted")), _amount);
     }
 
     // Get the remaining (unallotted) RPL balance of the contract
@@ -59,10 +59,10 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Get/set the number of lots for auction
     function getLotCount() override public view returns (uint256) {
-        return getUintS("auction.lots.count");
+        return getUint(keccak256("auction.lots.count"));
     }
     function setLotCount(uint256 _amount) private {
-        setUintS("auction.lots.count", _amount);
+        setUint(keccak256("auction.lots.count"), _amount);
     }
 
     // Get lot details
@@ -93,7 +93,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         setUint(keccak256(abi.encodePacked("auction.lot.bid.total", _index)), _amount);
     }
     function increaseLotTotalBidAmount(uint256 _index, uint256 _amount) private {
-        setLotTotalBidAmount(_index, getLotTotalBidAmount(_index).add(_amount));
+        addUint(keccak256(abi.encodePacked("auction.lot.bid.total", _index)), _amount);
     }
 
     // Get/set the ETH amount bid on a lot by an address
@@ -104,7 +104,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         setUint(keccak256(abi.encodePacked("auction.lot.bid.address", _index, _bidder)), _amount);
     }
     function increaseLotAddressBidAmount(uint256 _index, address _bidder, uint256 _amount) private {
-        setLotAddressBidAmount(_index, _bidder, getLotAddressBidAmount(_index, _bidder).add(_amount));
+        addUint(keccak256(abi.encodePacked("auction.lot.bid.address", _index, _bidder)), _amount);
     }
 
     // Get/set the lot's RPL recovered status

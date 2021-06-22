@@ -37,16 +37,16 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Get/set the total RPL stake amount
     function getTotalRPLStake() override public view returns (uint256) {
-        return getUintS("rpl.staked.total.amount");
+        return getUint(keccak256("rpl.staked.total.amount"));
     }
     function setTotalRPLStake(uint256 _amount) private {
-        setUintS("rpl.staked.total.amount", _amount);
+        setUint(keccak256("rpl.staked.total.amount"), _amount);
     }
     function increaseTotalRPLStake(uint256 _amount) private {
-        setTotalRPLStake(getTotalRPLStake().add(_amount));
+        addUint(keccak256("rpl.staked.total.amount"), _amount);
     }
     function decreaseTotalRPLStake(uint256 _amount) private {
-        setTotalRPLStake(getTotalRPLStake().sub(_amount));
+        subUint(keccak256("rpl.staked.total.amount"), _amount);
     }
 
     // Get/set a node's RPL stake amount
@@ -57,10 +57,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
     function increaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).add(_amount));
+        addUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
     function decreaseNodeRPLStake(address _nodeAddress, uint256 _amount) private {
-        setNodeRPLStake(_nodeAddress, getNodeRPLStake(_nodeAddress).sub(_amount));
+        subUint(keccak256(abi.encodePacked("rpl.staked.node.amount", _nodeAddress)), _amount);
     }
 
     // Get/set the time a node last staked RPL at
@@ -90,7 +90,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
         // Loop all nodes and calculate their effective rate to sum
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        bytes32 key = keccak256(abi.encodePacked("nodes.index"));
+        bytes32 key = keccak256("nodes.index");
         uint256 totalNodes = addressSetStorage.getCount(key);
         uint256 max = offset.add(limit);
         if (max > totalNodes || limit == 0) { max = totalNodes; }

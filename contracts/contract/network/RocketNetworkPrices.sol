@@ -33,38 +33,38 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     // The block number which prices are current for
     function getPricesBlock() override public view returns (uint256) {
-        return getUintS("network.prices.updated.block");
+        return getUint(keccak256("network.prices.updated.block"));
     }
     function setPricesBlock(uint256 _value) private {
-        setUintS("network.prices.updated.block", _value);
+        setUint(keccak256("network.prices.updated.block"), _value);
     }
 
     // The current RP network RPL price in ETH
     function getRPLPrice() override public view returns (uint256) {
-        return getUintS("network.prices.rpl");
+        return getUint(keccak256("network.prices.rpl"));
     }
     function setRPLPrice(uint256 _value) private {
-        setUintS("network.prices.rpl", _value);
+        setUint(keccak256("network.prices.rpl"), _value);
     }
 
     // The current RP network effective RPL stake
     function getEffectiveRPLStake() override public view returns (uint256) {
-        return getUintS("network.rpl.stake");
+        return getUint(keccak256("network.rpl.stake"));
     }
     function getEffectiveRPLStakeUpdatedBlock() override public view returns (uint256) {
-        return getUintS("network.rpl.stake.updated.block");
+        return getUint(keccak256("network.rpl.stake.updated.block"));
     }
     function setEffectiveRPLStake(uint256 _value) private {
-        setUintS("network.rpl.stake", _value);
-        setUintS("network.rpl.stake.updated.block", block.number);
+        setUint(keccak256("network.rpl.stake"), _value);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function increaseEffectiveRPLStake(uint256 _amount) override public onlyLatestNetworkContract {
-        uint256 current = getEffectiveRPLStake();
-        setEffectiveRPLStake(current.add(_amount));
+        addUint(keccak256("network.rpl.stake"), _amount);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function decreaseEffectiveRPLStake(uint256 _amount) override public onlyLatestNetworkContract {
-        uint256 current = getEffectiveRPLStake();
-        setEffectiveRPLStake(current.sub(_amount));
+        subUint(keccak256("network.rpl.stake"), _amount);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
 
     // Submit network price data for a block

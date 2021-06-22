@@ -31,4 +31,7 @@ interface RocketStorageInterface {
     function deleteInt(bytes32 _key) external;
     function deleteBytes32(bytes32 _key) external;
 
+    // Arithmetic
+    function addUint(bytes32 _key, uint256 _amount) external;
+    function subUint(bytes32 _key, uint256 _amount) external;
 }
