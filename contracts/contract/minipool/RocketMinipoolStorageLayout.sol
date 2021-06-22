@@ -30,6 +30,7 @@ abstract contract RocketMinipoolStorageLayout {
     address internal nodeAddress;
     uint256 internal nodeFee;
     uint256 internal nodeDepositBalance;
+    bool internal nodeDepositAssigned;
     uint256 internal nodeRefundBalance;
 
     // User deposit details
