@@ -94,13 +94,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialized, "The node deposit can only be assigned while initialized");
         require(!nodeDepositAssigned, "The node deposit has already been assigned");
+        // Progress full minipool to prelaunch
+        if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
         // Update node deposit details
         nodeDepositBalance = msg.value;
         nodeDepositAssigned = true;
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, block.timestamp);
-        // Progress full minipool to prelaunch
-        if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
     // Assign user deposited ETH to the minipool and mark it as prelaunch
@@ -109,6 +109,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check current status & user deposit status
         require(status >= MinipoolStatus.Initialized && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialized, in prelaunch, or staking");
         require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
+        // Progress initialized minipool to prelaunch
+        if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
         // Update user deposit details
         userDepositBalance = msg.value;
         userDepositAssignedTime = block.timestamp;
@@ -120,8 +122,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, block.timestamp);
-        // Progress initialized minipool to prelaunch
-        if (status == MinipoolStatus.Initialized) { setStatus(MinipoolStatus.Prelaunch); }
     }
 
     // Refund node ETH refinanced from user deposited ETH
@@ -137,6 +137,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyRegisteredMinipool(address(this)) onlyMinipoolOwner(msg.sender) onlyInitialised {
         // Check current status
         require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
+        // Progress to staking
+        setStatus(MinipoolStatus.Staking);
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
@@ -149,8 +151,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is already in use");
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
-        // Progress to staking
-        setStatus(MinipoolStatus.Staking);
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
     }
@@ -160,6 +160,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external onlyRegisteredMinipool(address(this)) onlyLatestContract("rocketMinipoolStatus", msg.sender) onlyInitialised {
         // Check current status
         require(status == MinipoolStatus.Staking, "The minipool can only become withdrawable while staking");
+        // Progress to withdrawable
+        setStatus(MinipoolStatus.Withdrawable);
         // Set staking details
         stakingStartBalance = _stakingStartBalance;
         stakingEndBalance = _stakingEndBalance;
@@ -169,8 +171,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             rocketMinipoolQueue.removeMinipool(depositType);
         }
-        // Progress to withdrawable
-        setStatus(MinipoolStatus.Withdrawable);
     }
 
     // Payout the ETH to the node operator and rETH contract now
