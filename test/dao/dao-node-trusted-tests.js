@@ -412,7 +412,7 @@ export default function() {
             // Current block
             let timeCurrent = await getCurrentTime(web3);
             // Now wait until the cooldown period expires and proposal can be made again
-            await increaseTime(web3, timeCurrent + proposalCooldownTime);
+            await increaseTime(web3, timeCurrent + proposalCooldownTime + 2);
             // Try again
             await daoNodeTrustedPropose('hey guys, can we add this other cool SaaS member please?', proposalCalldata2, {
                 from: registeredNodeTrusted1
@@ -628,10 +628,10 @@ export default function() {
             // Have 3rd member respond to the challenge successfully 
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
             // Wait until the original initiator's cooldown window has passed and they attempt another challenge
-            await increaseTime(web3, challengeCooldownTime);
+            await increaseTime(web3, challengeCooldownTime + 2);
             await daoNodeTrustedMemberChallengeMake(registeredNode1, { from: registeredNodeTrusted1 });
             // Fast forward to past the challenge window with the challenged node responding
-            await increaseTime(web3, challengeWindowTime);
+            await increaseTime(web3, challengeWindowTime + 2);
             // Have 3rd member respond to the challenge successfully again, but after the challenge window has expired and before another member decides it
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNode1 });
         });
@@ -655,7 +655,7 @@ export default function() {
             // Have another member try to decide the result before the window passes, it shouldn't change and they should still be a member
             await shouldRevert(daoNodeTrustedMemberChallengeDecide(registeredNode1, true, { from: registeredNodeTrusted2 }), 'Member decided challenge before refute window passed', 'Refute window has not yet passed');
             // Fast forward to past the challenge window with the challenged node responding
-            await increaseTime(web3, challengeWindowTime);
+            await increaseTime(web3, challengeWindowTime + 2);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
@@ -693,7 +693,7 @@ export default function() {
                 from: registeredNode2 
             });
             // Fast forward to past the challenge window with the challenged node responding
-            await increaseTime(web3, challengeWindowTime + 60);
+            await increaseTime(web3, challengeWindowTime + 2);
             // Decide the challenge now after the node hasn't responded in the challenge window
             await daoNodeTrustedMemberChallengeDecide(registeredNode1, false, { from: registeredNodeTrusted2 });
         });
