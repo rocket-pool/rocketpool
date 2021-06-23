@@ -4,7 +4,6 @@ pragma solidity 0.7.6;
 
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
-import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
@@ -17,23 +16,14 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
-        // Check parameters
-        require(address(_rocketStorageAddress) != address(0x0), "Invalid storage address");
-        require(_nodeAddress != address(0x0), "Invalid node address");
-        require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
         // Initialise RocketStorage
+        require(address(_rocketStorageAddress) != address(0x0), "Invalid storage address");
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Load contracts
-        RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        // Set initial status
-        status = MinipoolStatus.Initialized;
-        statusBlock = block.number;
-        // Set details
-        depositType = _depositType;
-        nodeAddress = _nodeAddress;
-        nodeFee = rocketNetworkFees.getNodeFee();
         // Set safety check flag
         initialised = true;
+        // Call initialise on delegate
+        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,address,uint8)', address(_rocketStorageAddress), _nodeAddress, uint8(_depositType)));
+        if (!success) { revert(getRevertMessage(data)); }
     }
 
     // Receive an ETH deposit
