@@ -123,10 +123,6 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Update balances
         tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
         tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
-        // Get the token ERC20 instance
-        IERC20 tokenContract = IERC20(_tokenAddress);
-        // Verify this contract has that amount of tokens at a minimum
-        require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
         // Emit token withdrawn event
         emit TokenTransfer(contractKeyFrom, contractKeyTo, address(_tokenAddress), _amount, block.timestamp);
     }
