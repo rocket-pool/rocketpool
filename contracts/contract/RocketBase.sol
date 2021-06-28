@@ -107,7 +107,7 @@ abstract contract RocketBase {
         // Get the contract name
         string memory contractName = getString(keccak256(abi.encodePacked("contract.name", _contractAddress)));
         // Check it
-        require(keccak256(abi.encodePacked(contractName)) != keccak256(abi.encodePacked("")), "Contract not found");
+        require(bytes(contractName).length > 0);
         // Return
         return contractName;
     }
