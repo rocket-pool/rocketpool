@@ -1,4 +1,9 @@
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
+import {
+  RocketDAOProtocolSettingsMinipool,
+  RocketDAOProtocolSettingsNetwork,
+  RocketDAOProtocolSettingsDeposit,
+  RocketMinipoolManager
+} from '../_utils/artifacts'
 import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -110,7 +115,7 @@ export default function() {
         // General
         //
 
-        
+
         it(printTitle('random address', 'cannot send ETH to non-payable minipool delegate methods'), async () => {
 
             // Attempt to send ETH to view method
@@ -157,12 +162,23 @@ export default function() {
         });
 
 
-        //
-        // Refund
-        //
+        it(printTitle('node operator', 'cannot create a minipool if network capacity is reached'), async () => {
+          // Retrieve the current number of minipools
+          const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+          const minipoolCount = (await rocketMinipoolManager.getMinipoolCount()).toNumber();
+          // Set max to the current number
+          await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', minipoolCount, {from: owner});
+          // Creating minipool should fail now
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
+        });
 
 
-        it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
+      //
+      // Refund
+      //
+
+
+      it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
 
             // Refund from minipool with refund balance
             await refund(prelaunchMinipool, {
@@ -325,14 +341,14 @@ export default function() {
 
         });
 
-  
- 
+
+
         //
         // Withdraw validator balance
         //
-        
 
-        
+
+
         it(printTitle('node operator', 'cannot send withdraw balance to a minipool which is not withdrawable'), async () => {
 
             // Attempt to send validator balance
@@ -398,8 +414,8 @@ export default function() {
             });
 
         });
-        
-        
+
+
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
 
             await web3.eth.sendTransaction({
@@ -416,7 +432,7 @@ export default function() {
 
         });
 
-        
+
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
 
             // Get tx amount (half of withdrawal balance)
@@ -442,14 +458,14 @@ export default function() {
 
 
         });
-        
-        
+
+
 
         //
         // Close
         //
 
-        
+
         it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
 
             // Close dissolved minipool

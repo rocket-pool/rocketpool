@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
- 
+
 // Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
@@ -21,7 +21,8 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", true);
-            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours  
+            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
+            setSettingUint("minipool.maximum.count", 100);
             // Settings initialized
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -76,5 +77,9 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return getSettingUint("minipool.launch.timeout");
     }
 
+    // Maximum number of minipools allowed at one time
+    function getMaximumCount() override public view returns (uint256) {
+      return getSettingUint("minipool.maximum.count");
+    }
 
 }
