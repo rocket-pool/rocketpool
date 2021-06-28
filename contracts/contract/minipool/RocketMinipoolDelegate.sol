@@ -201,7 +201,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "The payout function must be called by the node operator");
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
-        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(nodeWithdrawalAddress, true);
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(true);
         // Destroy minipool now
         destroy();
     }
@@ -217,7 +217,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
-        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(nodeWithdrawalAddress, false);
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(false);
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
@@ -237,9 +237,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         );
         // Transfer user balance to deposit pool
         if (userDepositBalance > 0) {
-            // Transfer 
+            // Transfer
             rocketDepositPool.recycleDissolvedDeposit{value: userDepositBalance}();
-            userDepositBalance = 0; 
+            userDepositBalance = 0;
             // Emit ether withdrawn event
             emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, block.timestamp);
         }
