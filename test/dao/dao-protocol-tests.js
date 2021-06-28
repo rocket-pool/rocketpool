@@ -1,10 +1,14 @@
 import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { setDAOProtocolBootstrapSetting, setDaoProtocolBootstrapModeDisabled } from './scenario-dao-protocol-bootstrap';
+import {
+  setDAOProtocolBootstrapSetting,
+  setDaoProtocolBootstrapModeDisabled,
+  setDAOProtocolBootstrapSettingMulti
+} from './scenario-dao-protocol-bootstrap'
 
 // Contracts
-import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsRewards } from '../_utils/artifacts'; 
+import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsRewards } from '../_utils/artifacts';
 
 
 export default function() {
@@ -25,7 +29,7 @@ export default function() {
 
         // Setup - This is a WIP DAO, onlyGuardians will be able to change settings before the DAO is officially rolled out
         before(async () => {
-        
+
         });
 
 
@@ -39,9 +43,9 @@ export default function() {
             await shouldRevert(setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', true, {
                 from: userOne,
             }), "User updated bootstrap setting", "Account is not a temporary guardian");
-            
+
         });
-        
+
         // Verify each setting contract is enabled correctly. These settings are tested in greater detail in the relevent contracts
         it(printTitle('guardian', 'updates a setting in each settings contract while bootstrap mode is enabled'), async () => {
             // Set via bootstrapping
@@ -68,8 +72,31 @@ export default function() {
             });
         });
 
-        // Update a setting, then try again
-        it(printTitle('guardian', 'updates a setting, then fails to update a setting again after bootstrap mode is disabled'), async () => {
+      // Verify each setting contract is enabled correctly. These settings are tested in greater detail in the relevent contracts
+      it(printTitle('guardian', 'updates multiple settings at once while bootstrap mode is enabled'), async () => {
+        // Set via bootstrapping
+        await setDAOProtocolBootstrapSettingMulti([
+            RocketDAOProtocolSettingsAuction,
+            RocketDAOProtocolSettingsDeposit,
+            RocketDAOProtocolSettingsInflation
+          ],
+          [
+            'auction.lot.create.enabled',
+            'deposit.minimum',
+            'rpl.inflation.interval.blocks'
+          ],
+          [
+            true,
+            web3.utils.toWei('2'),
+            400
+          ],
+          {
+          from: guardian
+        });
+      });
+
+      // Update a setting, then try again
+      it(printTitle('guardian', 'updates a setting, then fails to update a setting again after bootstrap mode is disabled'), async () => {
             // Set via bootstrapping
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', true, {
                 from: guardian
@@ -82,9 +109,9 @@ export default function() {
             await shouldRevert(setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', true, {
                 from: guardian,
             }), "Guardian updated bootstrap setting after mode disabled", "Bootstrap mode not engaged");
-            
+
         });
-    
+
 
     });
 }
