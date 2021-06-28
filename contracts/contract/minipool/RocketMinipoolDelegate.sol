@@ -213,8 +213,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        // Get the node operators withdrawal address
-        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(false);
