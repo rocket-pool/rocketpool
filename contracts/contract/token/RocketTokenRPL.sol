@@ -125,21 +125,23 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     function inflationCalculate() override public view returns (uint256) {
         // The inflation amount
         uint256 inflationTokenAmount = 0;
-        // Optimisation
-        uint256 inflationRate = getInflationIntervalRate();
         // Compute the number of inflation intervals elapsed since the last time we minted inflation tokens
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
-        if(intervalsSinceLastMint > 0 && inflationRate > 0) {
-            // Get the total supply now
-            uint256 totalSupplyCurrent = totalSupply();
-            uint256 newTotalSupply = totalSupplyCurrent;
-            // Compute inflation for total inflation intervals elapsed
-            for (uint256 i = 0; i < intervalsSinceLastMint; i++) {
-                newTotalSupply = newTotalSupply.mul(inflationRate).div(10**18);
+        if(intervalsSinceLastMint > 0) {
+            // Optimisation
+            uint256 inflationRate = getInflationIntervalRate();
+            if(inflationRate > 0) {
+                // Get the total supply now
+                uint256 totalSupplyCurrent = totalSupply();
+                uint256 newTotalSupply = totalSupplyCurrent;
+                // Compute inflation for total inflation intervals elapsed
+                for (uint256 i = 0; i < intervalsSinceLastMint; i++) {
+                    newTotalSupply = newTotalSupply.mul(inflationRate).div(10**18);
+                }
+                // Return inflation amount
+                inflationTokenAmount = newTotalSupply.sub(totalSupplyCurrent);
             }
-            // Return inflation amount
-            inflationTokenAmount = newTotalSupply.sub(totalSupplyCurrent);
         }
         // Done
         return inflationTokenAmount;
@@ -171,10 +173,8 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
             _mint(address(this), newTokens);
             // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
             IERC20 rplInflationContract = IERC20(address(this));
-            // This is to prevent an allowance reentry style attack
-            uint256 vaultAllowance = 0;
             // Get the current allowance for Rocket Vault
-            vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
+            uint256 vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
             // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
             require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
             // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
