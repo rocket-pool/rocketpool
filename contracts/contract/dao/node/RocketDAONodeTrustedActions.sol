@@ -216,17 +216,18 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Was the challenge successful?
         bool challengeSuccess = false;
         // Get the block the challenge was initiated at
-        uint256 challengeTime = getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
+        bytes32 challengeTimeKey = keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress));
+        uint256 challengeTime = getUint(challengeTimeKey);
         // If challenge time is 0, the member hasn't been challenged or they have successfully responded to the challenge previously
         require(challengeTime > 0, "Member hasn't been challenged or they have successfully responded to the challenge already");
         // Allow the challenged member to refute the challenge at anytime. If the window has passed and the challenge node does not run this method, any member can decide the challenge and eject the absent member
         // Is it the node being challenged?
         if(_nodeAddress == msg.sender) {
             // Challenge is defeated, node has responded
-            deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
+            deleteUint(challengeTimeKey);
         }else{
             // The challenge refute window has passed, the member can be ejected now
-            require(getUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress))).add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.timestamp, "Refute window has not yet passed");
+            require(challengeTime.add(rocketDAONodeTrustedSettingsMembers.getChallengeWindow()) < block.timestamp, "Refute window has not yet passed");
             // Node has been challenged and failed to respond in the given window, remove them as a member and their bond is burned
             _memberRemove(_nodeAddress);
             // Challenge was successful
