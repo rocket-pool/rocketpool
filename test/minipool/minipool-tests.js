@@ -162,7 +162,7 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot create a minipool if network capacity is reached'), async () => {
+        it(printTitle('node operator', 'cannot create a minipool if network capacity is reached and destroying a minipool reduces the capacity'), async () => {
           // Retrieve the current number of minipools
           const rocketMinipoolManager = await RocketMinipoolManager.deployed();
           const minipoolCount = (await rocketMinipoolManager.getMinipoolCount()).toNumber();
@@ -170,6 +170,13 @@ export default function() {
           await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', minipoolCount, {from: owner});
           // Creating minipool should fail now
           await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
+          // Destroy a pool
+          await withdrawValidatorBalance(withdrawableMinipool, true, {
+            from: nodeWithdrawalAddress,
+            value: withdrawalBalance,
+          });
+          // Creating minipool should no longer fail
+          await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
         });
 
 
