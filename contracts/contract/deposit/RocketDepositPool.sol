@@ -71,71 +71,82 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // Accept a deposit from a user
     function deposit() override external payable onlyThisLatestContract {
-        // Load contracts
-        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         // Check deposit settings
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
-        require(getBalance().add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        require(rocketVault.balanceOf("rocketDepositPool").add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
         // Record last deposit to time delay ability to withdraw
         setUint(keccak256(abi.encodePacked("user.deposit.block", msg.sender)), block.number);
         // Mint rETH to user account
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
         rocketTokenRETH.mint(msg.value, msg.sender);
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Process deposit
-        processDeposit();
+        processDeposit(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
     function recycleDissolvedDeposit() override external payable onlyThisLatestContract onlyRegisteredMinipool(msg.sender) {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        // Recycle ETH
         emit DepositRecycled(msg.sender, msg.value, block.timestamp);
-        processDeposit();
+        processDeposit(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
     // Recycle a deposit from a withdrawn minipool
     // Only accepts calls from the RocketNetworkWithdrawal contract
     function recycleWithdrawnDeposit() override external payable onlyThisLatestContract onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        // Recycle ETH
         emit DepositRecycled(msg.sender, msg.value, block.timestamp);
-        processDeposit();
+        processDeposit(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
     // Recycle a liquidated RPL stake from a slashed minipool
     // Only accepts calls from the RocketAuctionManager contract
     function recycleLiquidatedStake() override external payable onlyThisLatestContract onlyLatestContract("rocketAuctionManager", msg.sender) {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        // Recycle ETH
         emit DepositRecycled(msg.sender, msg.value, block.timestamp);
-        processDeposit();
+        processDeposit(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
     // Process a deposit
-    function processDeposit() private {
-        // Load contracts
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+    function processDeposit(RocketVaultInterface rocketVault, RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit) private {
         // Transfer ETH to vault
         rocketVault.depositEther{value: msg.value}();
         // Assign deposits if enabled
-        _assignDeposits();
+        _assignDeposits(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
     // Assign deposits to available minipools
-    function assignDeposits() override public onlyThisLatestContract {
+    function assignDeposits() override external onlyThisLatestContract {
+        // Load contracts
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         // Revert if assigning is disabled
-        require(_assignDeposits(), "Deposit assignments are currently disabled");
+        require(_assignDeposits(rocketVault, rocketDAOProtocolSettingsDeposit), "Deposit assignments are currently disabled");
     }
 
     // Assigns deposits to available minipools, returns false if assignment is currently disabled
-    function _assignDeposits() private returns (bool) {
+    function _assignDeposits(RocketVaultInterface rocketVault, RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit) private returns (bool) {
         // Check if assigning deposits is enabled
-        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
             return false;
         }
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Setup initial variable values
         uint256 balance = rocketVault.balanceOf("rocketDepositPool");
         uint256 totalEther = 0;
