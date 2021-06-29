@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
+import { getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { submitPrices } from '../_helpers/network';
@@ -78,12 +78,6 @@ export default function() {
             // Set the claim interval blocks
             await setRewardsClaimIntervalTime(claimIntervalTime, { from: owner });
         }
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Setup

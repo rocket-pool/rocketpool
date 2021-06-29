@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, increaseTime, getCurrentTime } from '../_utils/evm'
+import { increaseTime, getCurrentTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { compressABI } from '../_utils/contract';
@@ -29,12 +29,6 @@ export default function() {
             registeredNodeTrusted2,
             registeredNodeTrusted3,
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Mints fixed supply RPL, burns that for new RPL and gives it to the account

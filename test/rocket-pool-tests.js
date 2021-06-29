@@ -15,6 +15,8 @@ import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
 import networkStakingTests from './network/network-staking-tests';
+import { printGasUsage, startGasUsage, endGasUsage } from './_utils/gasusage'
+import { endSnapShot, startSnapShot } from './_utils/snapshotting'
 
 // Header
 console.log('\n');
@@ -24,6 +26,13 @@ console.log('| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |');
 console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
+
+// State snapshotting and gas usage tracking
+beforeEach(startSnapShot);
+beforeEach(startGasUsage);
+afterEach(endGasUsage);
+afterEach(endSnapShot);
+after(printGasUsage);
 
 // Run tests
 daoProtocolTests();

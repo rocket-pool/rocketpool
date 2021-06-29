@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
+import { mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
@@ -26,12 +26,6 @@ export default function() {
             staker,
             random,
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Constants

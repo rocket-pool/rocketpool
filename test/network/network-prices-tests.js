@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
+import { mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { nodeDeposit, nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node'
@@ -29,12 +29,6 @@ export default function() {
             trustedNode4,   // Joins and leaves DAO in certain tests
             random
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Constants

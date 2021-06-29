@@ -1,5 +1,5 @@
 import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
-import { takeSnapshot, revertSnapshot, mineBlocks } from '../_utils/evm';
+import { mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
@@ -29,12 +29,6 @@ export default function() {
             dummySwc,
             random,
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Setup

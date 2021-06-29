@@ -1,5 +1,4 @@
 import { RocketNodeStaking } from '../_utils/artifacts';
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, nodeStakeRPL, nodeDeposit } from '../_helpers/node';
@@ -18,12 +17,6 @@ export default function() {
             node,
             random,
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Setup

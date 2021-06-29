@@ -90,4 +90,7 @@ module.exports = {
         gas: 8000000,
     },
   },
+  mocha: {
+    timeout: 0
+  }
 };

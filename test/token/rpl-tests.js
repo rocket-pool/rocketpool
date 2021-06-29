@@ -24,11 +24,6 @@ export default function() {
         // One day in seconds
         const ONE_DAY = 24 * 60 * 60;
 
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
-
 
         // Setup
         let userOneRPLBalance = web3.utils.toBN(web3.utils.toWei('100', 'ether'));

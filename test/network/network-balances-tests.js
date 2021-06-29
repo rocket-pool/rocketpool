@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, mineBlocks, increaseTime, getCurrentTime } from '../_utils/evm'
+import { mineBlocks, increaseTime, getCurrentTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, setNodeTrusted } from '../_helpers/node';
@@ -28,12 +28,6 @@ export default function() {
         // Constants
         let proposalCooldown = 10
         let proposalVoteBlocks = 10
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Setup

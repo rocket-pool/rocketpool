@@ -1,4 +1,3 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
@@ -22,12 +21,6 @@ export default function() {
             trustedNode,
             random,
         ] = accounts;
-
-
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
 
 
         // Setup
