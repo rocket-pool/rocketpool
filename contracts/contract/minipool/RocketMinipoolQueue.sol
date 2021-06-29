@@ -49,7 +49,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
     function getLength(string memory _queueId) private view returns (uint256) {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        return addressQueueStorage.getLength(keccak256(abi.encodePacked(_queueId)));
+        return addressQueueStorage.getLength(keccak256(bytes(_queueId)));
     }
 
     // Get the total combined capacity of the queues
@@ -107,9 +107,9 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     function enqueueMinipool(string memory _queueId, address _minipool) private {
         // Enqueue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        addressQueueStorage.enqueueItem(keccak256(abi.encodePacked(_queueId)), _minipool);
+        addressQueueStorage.enqueueItem(keccak256(bytes(_queueId)), _minipool);
         // Emit enqueued event
-        emit MinipoolEnqueued(_minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
+        emit MinipoolEnqueued(_minipool, keccak256(bytes(_queueId)), block.timestamp);
     }
 
     // Remove the first available minipool from the highest priority queue and return its address
@@ -129,9 +129,9 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     function dequeueMinipool(string memory _queueId) private returns (address) {
         // Dequeue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        address minipool = addressQueueStorage.dequeueItem(keccak256(abi.encodePacked(_queueId)));
+        address minipool = addressQueueStorage.dequeueItem(keccak256(bytes(_queueId)));
         // Emit dequeued event
-        emit MinipoolDequeued(minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
+        emit MinipoolDequeued(minipool, keccak256(bytes(_queueId)), block.timestamp);
         // Return
         return minipool;
     }
@@ -148,9 +148,9 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     function removeMinipool(string memory _queueId, address _minipool) private {
         // Remove
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        addressQueueStorage.removeItem(keccak256(abi.encodePacked(_queueId)), _minipool);
+        addressQueueStorage.removeItem(keccak256(bytes(_queueId)), _minipool);
         // Emit removed event
-        emit MinipoolRemoved(_minipool, keccak256(abi.encodePacked(_queueId)), block.timestamp);
+        emit MinipoolRemoved(_minipool, keccak256(bytes(_queueId)), block.timestamp);
     }
 
 }
