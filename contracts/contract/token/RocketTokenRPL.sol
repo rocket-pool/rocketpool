@@ -34,11 +34,11 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     /**** Contracts ************/
 
     // The address of our fixed supply RPL ERC20 token contract
-    IERC20 rplFixedSupplyContract = IERC20(address(0));      
+    IERC20 rplFixedSupplyContract = IERC20(address(0));
 
 
     /**** Events ***********/
-    
+
     event RPLInflationLog(address sender, uint256 value, uint256 inflationCalcTime);
     event RPLFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
 
@@ -109,9 +109,13 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     function getInflationIntervalsPassed() override public view returns(uint256) {
         // The time that inflation was last calculated at
         uint256 inflationLastCalculatedTime = getInflationCalcTime();
+        return _getInflationIntervalsPassed(inflationLastCalculatedTime);
+    }
+
+    function _getInflationIntervalsPassed(uint256 _inflationLastCalcTime) private view returns(uint256) {
         // Calculate now if inflation has begun
-        if(inflationLastCalculatedTime > 0) {
-            return (block.timestamp).sub(inflationLastCalculatedTime).div(inflationInterval);
+        if(_inflationLastCalcTime > 0) {
+            return (block.timestamp).sub(_inflationLastCalcTime).div(inflationInterval);
         }else{
             return 0;
         }
@@ -123,10 +127,13 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * @return A uint256 specifying number of new tokens to mint
     */
     function inflationCalculate() override public view returns (uint256) {
+        uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
+        return _inflationCalculate(intervalsSinceLastMint);
+    }
+
+    function _inflationCalculate(uint256 intervalsSinceLastMint) private view returns (uint256) {
         // The inflation amount
         uint256 inflationTokenAmount = 0;
-        // Compute the number of inflation intervals elapsed since the last time we minted inflation tokens
-        uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         // Only update  if last interval has passed and inflation rate is > 0
         if(intervalsSinceLastMint > 0) {
             // Optimisation
@@ -154,7 +161,8 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     */
     function inflationMintTokens() override external returns (uint256) {
         // Only run inflation process if at least 1 interval has passed (function returns 0 otherwise)
-        uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
+        uint256 inflationLastCalcTime = getInflationCalcTime();
+        uint256 intervalsSinceLastMint = _getInflationIntervalsPassed(inflationLastCalcTime);
         if (intervalsSinceLastMint == 0) {
             return 0;
         }
@@ -164,9 +172,9 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
         // Only mint if we have new tokens to mint since last interval and an address is set to receive them
         RocketVaultInterface rocketVaultContract = RocketVaultInterface(rocketVaultAddress);
         // Calculate the amount of tokens now based on inflation rate
-        uint256 newTokens = inflationCalculate();
+        uint256 newTokens = _inflationCalculate(intervalsSinceLastMint);
         // Update last inflation calculation timestamp even if inflation rate is 0
-        inflationCalcTime = getInflationCalcTime().add(inflationInterval.mul(intervalsSinceLastMint));
+        inflationCalcTime = inflationLastCalcTime.add(inflationInterval.mul(intervalsSinceLastMint));
         // Check if actually need to mint tokens (e.g. inflation rate > 0)
         if (newTokens > 0) {
             // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
