@@ -7,7 +7,7 @@ import "../../types/MinipoolStatus.sol";
 import "../RocketStorageInterface.sol";
 
 interface RocketMinipoolInterface {
-    function initialise(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) external;
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) external;
     function getStatus() external view returns (MinipoolStatus);
     function getStatusBlock() external view returns (uint256);
     function getDepositType() external view returns (MinipoolDeposit);

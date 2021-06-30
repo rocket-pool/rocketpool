@@ -22,7 +22,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Set safety check flag
         initialised = true;
         // Call initialise on delegate
-        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,address,uint8)', address(_rocketStorageAddress), _nodeAddress, uint8(_depositType)));
+        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
         if (!success) { revert(getRevertMessage(data)); }
     }
 

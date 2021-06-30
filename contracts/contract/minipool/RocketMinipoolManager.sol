@@ -139,7 +139,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             uint256 minipoolCount = addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
             uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
             // Update total effective RPL stake
-            updateTotalEffectiveRPLStake(_nodeAddress, rplStake, minipoolCount.sub(1), minipoolCount);
+            updateTotalEffectiveRPLStake(rplStake, minipoolCount.sub(1), minipoolCount);
         }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
@@ -174,14 +174,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             uint256 minipoolCount = getNodeMinipoolCount(nodeAddress);
             uint256 rplStake = rocketNodeStaking.getNodeRPLStake(nodeAddress);
             // Update total effective RPL stake
-            updateTotalEffectiveRPLStake(msg.sender, rplStake, minipoolCount, minipoolCount.sub(1));
+            updateTotalEffectiveRPLStake(rplStake, minipoolCount, minipoolCount.sub(1));
         }
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }
 
     // Updates the stored total effective rate based on a node's changing minipool count
-    function updateTotalEffectiveRPLStake(address _nodeAddress, uint256 _rplStake, uint256 _oldCount, uint256 _newCount) private {
+    function updateTotalEffectiveRPLStake(uint256 _rplStake, uint256 _oldCount, uint256 _newCount) private {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));

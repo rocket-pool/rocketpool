@@ -82,7 +82,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         return contractAddress;
     }
 
-    function initialise(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) override external onlyInitialised {
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) override external onlyInitialised {
         // Check parameters
         require(_nodeAddress != address(0x0), "Invalid node address");
         require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
