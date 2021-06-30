@@ -77,7 +77,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimIntervalTimeStartComputed() override public view returns(uint256) {
         // If intervals have passed, a new start timestamp will be used for the next claim, if it's the same interval then return that
-        return getClaimIntervalsPassed() == 0 ? getClaimIntervalTimeStart() : getClaimIntervalTimeStart().add(getClaimIntervalTime().mul(getClaimIntervalsPassed()));
+        uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
+        uint256 claimIntervalTime = getClaimIntervalTime();
+        return _getClaimIntervalTimeStartComputed(claimIntervalTimeStart, claimIntervalTime);
+    }
+
+    function _getClaimIntervalTimeStartComputed(uint256 _claimIntervalTimeStart, uint256 _claimIntervalTime) private view returns (uint256) {
+        uint256 claimIntervalsPassed = _getClaimIntervalsPassed(_claimIntervalTimeStart, _claimIntervalTime);
+        return claimIntervalsPassed == 0 ? _claimIntervalTimeStart : _claimIntervalTimeStart.add(_claimIntervalTime.mul(claimIntervalsPassed));
     }
 
 
@@ -87,7 +94,11 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimIntervalsPassed() override public view returns(uint256) {
         // Calculate now if inflation has begun
-        return block.timestamp.sub(getClaimIntervalTimeStart()).div(getClaimIntervalTime());
+        return _getClaimIntervalsPassed(getClaimIntervalTimeStart(), getClaimIntervalTime());
+    }
+
+    function _getClaimIntervalsPassed(uint256 _claimIntervalTimeStart, uint256 _claimIntervalTime) private view returns (uint256) {
+        return block.timestamp.sub(_claimIntervalTimeStart).div(_claimIntervalTime);
     }
 
 
@@ -132,7 +143,11 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * @return uint256 The current claim amount for this interval for the claiming contract
     */
     function getClaimingContractTotalClaimed(string memory _claimingContract) override public view returns(uint256) {
-        return getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", getClaimIntervalTimeStartComputed(), _claimingContract)));
+        return _getClaimingContractTotalClaimed(_claimingContract, getClaimIntervalTimeStartComputed());
+    }
+
+    function _getClaimingContractTotalClaimed(string memory _claimingContract, uint256 _claimIntervalTimeStartComputed) private view returns(uint256) {
+        return getUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", _claimIntervalTimeStartComputed, _claimingContract)));
     }
 
     
@@ -160,10 +175,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * @return bool Returns true if the _claimerAddress can make a claim
     */
     function getClaimingContractUserCanClaim(string memory _claimingContract, address _claimerAddress) override public view returns(bool) {
+        return _getClaimingContractUserCanClaim(_claimingContract, _claimerAddress, getClaimIntervalTime());
+    }
+
+    function _getClaimingContractUserCanClaim(string memory _claimingContract, address _claimerAddress, uint256 _claimIntervalTime) private view returns(bool) {
         // Get the time they registered at
         uint256 registeredTime = getClaimingContractUserRegisteredTime(_claimingContract, _claimerAddress);
-        // If it's 0 or hasn't passed one interval yet, they can't claim 
-        return registeredTime > 0 && registeredTime.add(getClaimIntervalTime()) <= block.timestamp && getClaimingContractPerc(_claimingContract) > 0 ? true : false;
+        // If it's 0 or hasn't passed one interval yet, they can't claim
+        return registeredTime > 0 && registeredTime.add(_claimIntervalTime) <= block.timestamp && getClaimingContractPerc(_claimingContract) > 0 ? true : false;
     }
 
 
@@ -262,30 +281,38 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     
     // How much this claimer is entitled to claim, checks parameters that claim() will check
-    function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) { 
+    function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) {
+        if (!getClaimingContractUserCanClaim(_claimingContract, _claimerAddress)) {
+            return 0;
+        }
+        uint256 claimIntervalTimeStartComptued = getClaimIntervalTimeStartComputed();
+        uint256 claimingContractTotalClaimed = _getClaimingContractTotalClaimed(_claimingContract, claimIntervalTimeStartComptued);
+        return _getClaimAmount(_claimingContract, _claimerAddress, _claimerAmountPerc, claimIntervalTimeStartComptued, claimingContractTotalClaimed);
+    }
+
+    function _getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc, uint256 _claimIntervalTimeStartComputed, uint256 _claimingContractTotalClaimed) private view returns (uint256) {
         // Get the total rewards available for this claiming contract
         uint256 contractClaimTotal = getClaimingContractAllowance(_claimingContract);
         // How much of the above that this claimer will receive
         uint256 claimerTotal = 0;
         // Are we good to proceed?
-        if(contractClaimTotal > 0 && 
-               _claimerAmountPerc > 0 && 
-               _claimerAmountPerc <= 1 ether &&
-               _claimerAddress != address(0x0) && 
-               getClaimingContractEnabled(_claimingContract) &&
-               getClaimingContractUserCanClaim(_claimingContract, _claimerAddress) && 
-               !getClaimingContractUserHasClaimed(getClaimIntervalTimeStartComputed(), _claimingContract, _claimerAddress)) {
+        if( contractClaimTotal > 0 &&
+            _claimerAmountPerc > 0 &&
+            _claimerAmountPerc <= 1 ether &&
+            _claimerAddress != address(0x0) &&
+            getClaimingContractEnabled(_claimingContract) &&
+            !getClaimingContractUserHasClaimed(_claimIntervalTimeStartComputed, _claimingContract, _claimerAddress)) {
 
-             // Now calculate how much this claimer would receive 
+            // Now calculate how much this claimer would receive
             claimerTotal = _claimerAmountPerc.mul(contractClaimTotal).div(calcBase);
             // Is it more than currently available + the amount claimed already for this claim interval?
-            claimerTotal = claimerTotal.add(getClaimingContractTotalClaimed(_claimingContract)) <= getClaimingContractAllowance(_claimingContract) ? claimerTotal : 0;
+            claimerTotal = claimerTotal.add(_claimingContractTotalClaimed) <= contractClaimTotal ? claimerTotal : 0;
         }
         // Done
         return claimerTotal;
     }
 
-   
+
     // An account must be registered to claim from the rewards pool. They must wait one claim interval before they can collect.
     // Also keeps track of total 
     function registerClaimer(address _claimerAddress, bool _enabled) override external onlyClaimContract { 
@@ -319,7 +346,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // The name of the claiming contract
         string memory contractName = getContractName(msg.sender);
         // Check to see if this registered claimer has waited one interval before collecting
-        require(getClaimingContractUserCanClaim(contractName, _claimerAddress), "Registered claimer is not registered to claim or has not waited one claim interval");
+        uint256 claimIntervalTime = getClaimIntervalTime();
+        require(_getClaimingContractUserCanClaim(contractName, _claimerAddress, claimIntervalTime), "Registered claimer is not registered to claim or has not waited one claim interval");
         // RPL contract address
         address rplContractAddress = getContractAddress("rocketTokenRPL");
         // RPL contract instance
@@ -327,19 +355,21 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Get the vault contract instance
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Get the start of the last claim interval as this may have just changed for a new interval beginning
-        uint256 claimIntervalTimeStart = getClaimIntervalTimeStartComputed();
+        uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
+        uint256 claimIntervalTimeStartComputed = _getClaimIntervalTimeStartComputed(claimIntervalTimeStart, claimIntervalTime);
+        uint256 claimIntervalsPassed = _getClaimIntervalsPassed(claimIntervalTimeStart, claimIntervalTime);
         // Is this the first claim of this interval? If so, set the rewards total for this interval
-        if(getClaimIntervalsPassed() > 0) {
+        if (claimIntervalsPassed > 0) {
             // Mint any new tokens from the RPL inflation
             rplContract.inflationMintTokens();
             // Get how many tokens are in the reward pool to be available for this claim period
             setUint(keccak256("rewards.pool.claim.interval.total"), rocketVault.balanceOfToken("rocketRewardsPool", rplContract));
             // Set this as the start of the new claim interval
-            setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeStart);
+            setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeStartComputed);
             // Soon as we mint new tokens, send the DAO's share to it's claiming contract, then attempt to transfer them to the dao if possible
             uint256 daoClaimContractAllowance = getClaimingContractAllowance("rocketClaimDAO");
             // Are we sending any?
-            if(daoClaimContractAllowance > 0) {
+            if (daoClaimContractAllowance > 0) {
                 // Get the DAO claim contract address
                 address daoClaimContractAddress = getContractAddress("rocketClaimDAO");
                 // Transfers the DAO's tokens to it's claiming contract from the rewards pool
@@ -347,13 +377,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
                 // Set the current claim percentage this contract is entitled to for this interval
                 setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.perc.current", "rocketClaimDAO")), getClaimingContractPerc("rocketClaimDAO"));
                 // Store the total RPL rewards claim for this claiming contract in this interval
-                setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalTimeStart, "rocketClaimDAO")), getClaimingContractTotalClaimed("rocketClaimDAO").add(daoClaimContractAllowance));
+                setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalTimeStartComputed, "rocketClaimDAO")), _getClaimingContractTotalClaimed("rocketClaimDAO", claimIntervalTimeStartComputed).add(daoClaimContractAllowance));
                 // Log it
                 emit RPLTokensClaimed(daoClaimContractAddress, daoClaimContractAddress, daoClaimContractAllowance, block.timestamp);
             }
         }
         // Has anyone claimed from this contract so far in this interval? If not then set the interval settings for the contract
-        if(getClaimingContractTotalClaimed(contractName) == 0) {
+        if (_getClaimingContractTotalClaimed(contractName, claimIntervalTimeStartComputed) == 0) {
             // Get the amount allocated to this claim contract
             uint256 claimContractAllowance = getClaimingContractAllowance(contractName);
             // Make sure this is ok
@@ -364,18 +394,18 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.allowance", contractName)), claimContractAllowance);
             // Set the current amount of claimers for this interval
             setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimers.total.current", contractName)), getClaimingContractUserTotalNext(contractName));
-            
         }
         // Check if they have a valid claim amount
-        uint256 claimAmount = getClaimAmount(contractName, _claimerAddress, _claimerAmountPerc);
+        uint256 claimingContractTotalClaimed = _getClaimingContractTotalClaimed(contractName, claimIntervalTimeStartComputed);
+        uint256 claimAmount = _getClaimAmount(contractName, _claimerAddress, _claimerAmountPerc, claimIntervalTimeStartComputed, claimingContractTotalClaimed);
         // First initial checks
         require(claimAmount > 0, "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract.");
         // Send tokens now
         rocketVault.withdrawToken(_toAddress, rplContract, claimAmount);
         // Store the claiming record for this interval and claiming contract
-        setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalTimeStart, contractName, _claimerAddress)), true);
+        setBool(keccak256(abi.encodePacked("rewards.pool.claim.interval.claimer.address", claimIntervalTimeStartComputed, contractName, _claimerAddress)), true);
         // Store the total RPL rewards claim for this claiming contract in this interval
-        setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalTimeStart, contractName)), getClaimingContractTotalClaimed(contractName).add(claimAmount));
+        setUint(keccak256(abi.encodePacked("rewards.pool.claim.interval.contract.total", claimIntervalTimeStartComputed, contractName)), claimingContractTotalClaimed.add(claimAmount));
         // Store the last time a claim was made
         setUint(keccak256("rewards.pool.claim.interval.time.last"), block.timestamp);
         // Log it
