@@ -19,8 +19,8 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Initialise RocketStorage
         require(address(_rocketStorageAddress) != address(0x0), "Invalid storage address");
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
-        // Set safety check flag
-        initialised = true;
+        // Set storage state to uninitialised
+        storageState = StorageState.Uninitialised;
         // Call initialise on delegate
         (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
         if (!success) { revert(getRevertMessage(data)); }

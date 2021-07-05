@@ -59,7 +59,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Prevent direct calls to this contract
     modifier onlyInitialised() {
-        require(initialised, "Delegate contract cannot be called directly");
+        require(storageState == StorageState.Initialised, "Storage state not initialised");
+        _;
+    }
+
+    modifier onlyUninitialised() {
+        require(storageState == StorageState.Uninitialised, "Storage state already initialised");
         _;
     }
 
@@ -82,7 +87,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         return contractAddress;
     }
 
-    function initialise(address _nodeAddress, MinipoolDeposit _depositType) override external onlyInitialised {
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) override external onlyUninitialised {
         // Check parameters
         require(_nodeAddress != address(0x0), "Invalid node address");
         require(_depositType != MinipoolDeposit.None, "Invalid deposit type");
@@ -95,6 +100,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         depositType = _depositType;
         nodeAddress = _nodeAddress;
         nodeFee = rocketNetworkFees.getNodeFee();
+        // Intialise storage state
+        storageState = StorageState.Initialised;
     }
 
     // Assign the node deposit to the minipool

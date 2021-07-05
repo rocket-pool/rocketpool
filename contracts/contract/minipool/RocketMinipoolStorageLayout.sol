@@ -15,6 +15,12 @@ import "../../types/MinipoolStatus.sol";
 // ******************************************************
 
 abstract contract RocketMinipoolStorageLayout {
+    // Storage state enum
+    enum StorageState {
+        Undefined,
+        Uninitialised,
+        Initialised
+    }
 
 	// Main Rocket Pool storage contract
     RocketStorageInterface internal rocketStorage = RocketStorageInterface(0);
@@ -41,6 +47,6 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal stakingStartBalance;
     uint256 internal stakingEndBalance;
 
-    // Safety check
-    bool internal initialised;
+    // Used to prevent direct access to delegate and prevent calling initialise more than once
+    StorageState storageState = StorageState.Undefined;
 }
