@@ -1,4 +1,4 @@
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit, RevertOnTransfer } from '../_utils/artifacts'
 import { mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -12,6 +12,7 @@ import { dissolve } from './scenario-dissolve';
 import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
+import { withdrawValidatorBalancePublic } from './scenario-withdraw-validator-balance-public';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { getNodeFee } from '../_helpers/network'
 import { getNetworkSetting } from '../_helpers/settings'
@@ -358,7 +359,7 @@ export default function() {
             await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, true, {
                 from: random,
                 value: withdrawalBalance,
-            }), 'Random address withdrew validator balance from a node operators minipool', "The payout function must be called by the current node operators withdrawal address");
+            }), 'Random address withdrew validator balance from a node operators minipool', "The payout function must be called by the node operator");
 
         });
 
@@ -392,7 +393,32 @@ export default function() {
             });
 
         });
-        
+
+
+        it(printTitle('malicious node operator', 'can not prevent a payout by using a reverting contract as withdraw address'), async () => {
+
+            // Set the node's withdraw address to a reverting contract
+            const revertOnTransfer = await RevertOnTransfer.deployed();
+            await setNodeWithdrawalAddress(node, revertOnTransfer.address, {from: nodeWithdrawalAddress});
+            // Send validator balance and withdraw and should not revert
+            await withdrawValidatorBalance(withdrawableMinipool, true, {
+                from: node,
+                value: withdrawalBalance,
+            });
+
+        });
+
+
+        it(printTitle('random', 'can trigger a payout by calling the public payout method'), async () => {
+
+            // Send validator balance and withdraw and should not revert
+            await withdrawValidatorBalancePublic(withdrawableMinipool, random, {
+                from: node,
+                value: withdrawalBalance,
+            });
+
+        });
+
         
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
 

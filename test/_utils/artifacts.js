@@ -38,3 +38,4 @@ export const RocketTokenDummyRPL = artifacts.require('RocketTokenDummyRPL.sol');
 export const RocketTokenRETH = artifacts.require('RocketTokenRETH.sol');
 export const RocketTokenRPL = artifacts.require('RocketTokenRPL.sol');
 export const RocketVault = artifacts.require('RocketVault.sol');
+export const RevertOnTransfer = artifacts.require('RevertOnTransfer.sol');

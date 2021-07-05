@@ -183,7 +183,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         setStatus(MinipoolStatus.Withdrawable);
     }
 
-
     // Payout the ETH to the node operator and rETH contract now
     // Minipool should be in withdrawable status, and only set that way once it has a balance close to the stakingEndBalance
     // Requires confirmation by the node operator to execute this as it will also destroy the minipool
@@ -193,18 +192,30 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(_confirmPayout, "Node operator did not confirm they wish to payout now");
         // Check current status
         require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
-        // load contracts
+        // Load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         // Get the node operators withdrawal address
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
         // The withdrawal address must be the one processing the withdrawal. It can be the node operators address or another one they have set to receive withdrawals instead of their node account
-        require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "The payout function must be called by the current node operators withdrawal address");
+        require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "The payout function must be called by the node operator");
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
         // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
-        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(nodeWithdrawalAddress);
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(true);
         // Destroy minipool now
         destroy();
+    }
+
+    // Similar to payout but can be called by anyone and does not destroy the pool
+    function publicPayout() override external onlyInitialised {
+        // Check current status
+        require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
+        // Load contracts
+        RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
+        // We must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
+        rocketNetworkWithdrawal.processWithdrawal{value: address(this).balance.sub(nodeRefundBalance)}(false);
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
@@ -224,9 +235,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         );
         // Transfer user balance to deposit pool
         if (userDepositBalance > 0) {
-            // Transfer 
+            // Transfer
             rocketDepositPool.recycleDissolvedDeposit{value: userDepositBalance}();
-            userDepositBalance = 0; 
+            userDepositBalance = 0;
             // Emit ether withdrawn event
             emit EtherWithdrawn(address(rocketDepositPool), userDepositBalance, block.timestamp);
         }
@@ -258,6 +269,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Destroy minipool
         destroy();
+    }
+
+    // Increase the node's refund balance by the value sent to this method
+    function payNode() override external payable {
+        nodeRefundBalance = nodeRefundBalance.add(msg.value);
     }
 
     // Set the minipool's current status
