@@ -174,7 +174,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             uint256 minipoolCount = getNodeMinipoolCount(nodeAddress);
             uint256 rplStake = rocketNodeStaking.getNodeRPLStake(nodeAddress);
             // Update total effective RPL stake
-            updateTotalEffectiveRPLStake(rplStake, minipoolCount, minipoolCount.sub(1));
+            updateTotalEffectiveRPLStake(rplStake, minipoolCount.add(1), minipoolCount);
         }
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
