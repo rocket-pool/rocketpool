@@ -107,7 +107,7 @@ abstract contract RocketBase {
         // Get the contract name
         string memory contractName = getString(keccak256(abi.encodePacked("contract.name", _contractAddress)));
         // Check it
-        require(bytes(contractName).length > 0);
+        require(bytes(contractName).length > 0, "Contract not found");
         // Return
         return contractName;
     }
@@ -115,7 +115,7 @@ abstract contract RocketBase {
     /// @dev Get revert error message from a .call method
     function getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) return 'Transaction reverted silently';
+        if (_returnData.length < 68) return "Transaction reverted silently";
         assembly {
             // Slice the sighash.
             _returnData := add(_returnData, 0x04)
