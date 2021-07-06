@@ -48,7 +48,7 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
         if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
         if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO protocol boolean setting not updated in bootstrap mode');
     }
-    
+
 }
 
 // Set a contract that can claim rewards
@@ -80,7 +80,7 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
     // Verify an expected total Perc if given
     if(expectedTotalPerc) {
         assert(dataSet2.rewardsClaimersPercTotal.eq(web3.utils.toBN(web3.utils.toWei(expectedTotalPerc.toString()))), 'Total claim percentage not matching given target');
-    } 
+    }
 };
 
 
@@ -116,7 +116,7 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
     let ds1 = await getTxData();
 
     // console.log(web3.utils.fromWei(ds1.daoClaimTreasuryBalance), web3.utils.fromWei(ds1.recipientBalance), web3.utils.fromWei(_amount));
-    
+
     // Perform tx
     await rocketDAOProtocol.bootstrapSpendTreasury(_invoiceID, _recipientAddress, _amount, txOptions);
 
@@ -179,3 +179,82 @@ export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
 
 }
 
+// Change multiple trusted node DAO settings while bootstrap mode is enabled
+export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstances, _settingPaths, _values, txOptions) {
+
+  // Helper function
+  String.prototype.lowerCaseFirstLetter = function() {
+    return this.charAt(0).toLowerCase() + this.slice(1);
+  }
+
+  // Load contracts
+  const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+
+
+  const contractNames = [];
+  const values = [];
+  const types = [];
+
+  for (let i = 0; i < _settingContractInstances.length; i++) {
+    const value = _values[i];
+    contractNames.push(_settingContractInstances[i]._json.contractName.lowerCaseFirstLetter());
+    if(Web3.utils.isAddress(value)) {
+      values.push(web3.eth.abi.encodeParameter('address', value));
+      types.push(2);
+    }else{
+      if(typeof(value) == 'number' || typeof(value) == 'string' || typeof(value) == 'object') {
+        values.push(web3.eth.abi.encodeParameter('uint256', value));
+        types.push(0);
+      } else if(typeof(value) == 'boolean') {
+        values.push(web3.eth.abi.encodeParameter('bool', value));
+        types.push(1);
+      } else {
+        throw new Error('Invalid value supplied');
+      }
+    }
+  }
+
+  // console.log(contractNames);
+  // console.log(_settingPaths);
+  // console.log(types);
+  // console.log(values);
+
+  // Set as a bootstrapped setting. detect type first, can be a number, string or bn object
+  await rocketDAOProtocol.bootstrapSettingMulti(contractNames, _settingPaths, types, values, txOptions);
+
+  // Get data about the tx
+  async function getTxData() {
+    const instances = await Promise.all(_settingContractInstances.map(instance => instance.deployed()));
+    return Promise.all(instances.map((rocketDAOProtocolSettingsContract, index) => {
+      switch (types[index]) {
+        case 0:
+          return rocketDAOProtocolSettingsContract.getSettingUint.call(_settingPaths[index]);
+        case 1:
+          return rocketDAOProtocolSettingsContract.getSettingBool.call(_settingPaths[index]);
+        case 2:
+          return rocketDAOProtocolSettingsContract.getSettingAddress.call(_settingPaths[index]);
+      }
+    }));
+  }
+
+  // Capture data
+  let data = await getTxData();
+
+  // console.log(data);
+
+  // Check it was updated
+  for (let i = 0; i < _values.length; i++) {
+    const value = _values[i];
+    switch (types[i]) {
+      case 0:
+        assert(data[i].eq(web3.utils.toBN(value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
+        break;
+      case 1:
+        assert(data[i] === value, 'DAO protocol boolean setting not updated in bootstrap mode');
+        break;
+      case 2:
+        await assert(data[i] === value, 'DAO protocol address setting not updated in bootstrap mode');
+        break;
+    }
+  }
+}
