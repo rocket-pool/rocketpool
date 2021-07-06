@@ -46,6 +46,29 @@ export default function() {
 
         });
 
+        // Update multiple settings
+        it(printTitle('userOne', 'fails to update multiple settings as they are not the guardian'), async () => {
+          // Fails to change multiple settings
+          await shouldRevert(setDAOProtocolBootstrapSettingMulti([
+                RocketDAOProtocolSettingsAuction,
+                RocketDAOProtocolSettingsDeposit,
+                RocketDAOProtocolSettingsInflation
+              ],
+              [
+                'auction.lot.create.enabled',
+                'deposit.minimum',
+                'rpl.inflation.interval.blocks'
+              ],
+              [
+                true,
+                web3.utils.toWei('2'),
+                400
+              ],
+              {
+                from: userOne
+              }), "User updated bootstrap setting", "Account is not a temporary guardian");
+        });
+
         // Verify each setting contract is enabled correctly. These settings are tested in greater detail in the relevent contracts
         it(printTitle('guardian', 'updates a setting in each settings contract while bootstrap mode is enabled'), async () => {
             // Set via bootstrapping
@@ -109,6 +132,53 @@ export default function() {
             await shouldRevert(setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.create.enabled', true, {
                 from: guardian,
             }), "Guardian updated bootstrap setting after mode disabled", "Bootstrap mode not engaged");
+
+        });
+
+        // Update multiple settings, then try again
+        it(printTitle('guardian', 'updates multiple settings, then fails to update multiple settings again after bootstrap mode is disabled'), async () => {
+          // Set via bootstrapping
+          await setDAOProtocolBootstrapSettingMulti([
+              RocketDAOProtocolSettingsAuction,
+              RocketDAOProtocolSettingsDeposit,
+              RocketDAOProtocolSettingsInflation
+            ],
+            [
+              'auction.lot.create.enabled',
+              'deposit.minimum',
+              'rpl.inflation.interval.blocks'
+            ],
+            [
+              true,
+              web3.utils.toWei('2'),
+              400
+            ],
+            {
+              from: guardian
+            });
+            // Disable bootstrap mode
+            await setDaoProtocolBootstrapModeDisabled({
+              from: guardian
+            });
+            // Attempt to change a setting again
+            await shouldRevert(setDAOProtocolBootstrapSettingMulti([
+                RocketDAOProtocolSettingsAuction,
+                RocketDAOProtocolSettingsDeposit,
+                RocketDAOProtocolSettingsInflation
+              ],
+              [
+                'auction.lot.create.enabled',
+                'deposit.minimum',
+                'rpl.inflation.interval.blocks'
+              ],
+              [
+                true,
+                web3.utils.toWei('2'),
+                400
+              ],
+              {
+                from: guardian
+              }), "Guardian updated bootstrap setting after mode disabled", "Bootstrap mode not engaged");
 
         });
 
