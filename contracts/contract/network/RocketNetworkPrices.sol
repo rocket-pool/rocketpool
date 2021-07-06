@@ -16,9 +16,6 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);
@@ -33,38 +30,38 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     // The block number which prices are current for
     function getPricesBlock() override public view returns (uint256) {
-        return getUintS("network.prices.updated.block");
+        return getUint(keccak256("network.prices.updated.block"));
     }
     function setPricesBlock(uint256 _value) private {
-        setUintS("network.prices.updated.block", _value);
+        setUint(keccak256("network.prices.updated.block"), _value);
     }
 
     // The current RP network RPL price in ETH
-    function getRPLPrice() override public view returns (uint256) {
-        return getUintS("network.prices.rpl");
+    function getRPLPrice() override external view returns (uint256) {
+        return getUint(keccak256("network.prices.rpl"));
     }
     function setRPLPrice(uint256 _value) private {
-        setUintS("network.prices.rpl", _value);
+        setUint(keccak256("network.prices.rpl"), _value);
     }
 
     // The current RP network effective RPL stake
-    function getEffectiveRPLStake() override public view returns (uint256) {
-        return getUintS("network.rpl.stake");
+    function getEffectiveRPLStake() override external view returns (uint256) {
+        return getUint(keccak256("network.rpl.stake"));
     }
     function getEffectiveRPLStakeUpdatedBlock() override public view returns (uint256) {
-        return getUintS("network.rpl.stake.updated.block");
+        return getUint(keccak256("network.rpl.stake.updated.block"));
     }
     function setEffectiveRPLStake(uint256 _value) private {
-        setUintS("network.rpl.stake", _value);
-        setUintS("network.rpl.stake.updated.block", block.number);
+        setUint(keccak256("network.rpl.stake"), _value);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
-    function increaseEffectiveRPLStake(uint256 _amount) override public onlyLatestNetworkContract {
-        uint256 current = getEffectiveRPLStake();
-        setEffectiveRPLStake(current.add(_amount));
+    function increaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
+        addUint(keccak256("network.rpl.stake"), _amount);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
-    function decreaseEffectiveRPLStake(uint256 _amount) override public onlyLatestNetworkContract {
-        uint256 current = getEffectiveRPLStake();
-        setEffectiveRPLStake(current.sub(_amount));
+    function decreaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
+        subUint(keccak256("network.rpl.stake"), _amount);
+        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
 
     // Submit network price data for a block
@@ -97,7 +94,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // Executes updatePrices if consensus threshold is reached
-    function executeUpdatePrices(uint256 _block, uint256 _rplPrice, uint256 _effectiveRplStake) override public onlyLatestContract("rocketNetworkPrices", address(this)) {
+    function executeUpdatePrices(uint256 _block, uint256 _rplPrice, uint256 _effectiveRplStake) override external onlyLatestContract("rocketNetworkPrices", address(this)) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
@@ -128,7 +125,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // Returns true if consensus has been reached for the last price reportable block
-    function inConsensus() override public view returns (bool) {
+    function inConsensus() override external view returns (bool) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency
@@ -141,7 +138,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // Returns the latest block number that oracles should be reporting prices for
-    function getLatestReportableBlock() override public view returns (uint256) {
+    function getLatestReportableBlock() override external view returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency

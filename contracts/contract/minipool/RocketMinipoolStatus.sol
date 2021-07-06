@@ -21,9 +21,6 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Events
     event MinipoolWithdrawableSubmitted(address indexed from, address indexed minipool, uint256 stakingStartBalance, uint256 stakingEndBalance, uint256 time);
     event MinipoolSetWithdrawable(address indexed minipool, uint256 totalBalance, uint256 nodeBalance, uint256 time);
@@ -67,7 +64,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     }
 
     // Executes updateBalances if consensus threshold is reached
-    function executeMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override public
+    function executeMinipoolWithdrawable(address _minipoolAddress, uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external
     onlyLatestContract("rocketMinipoolStatus", address(this)) {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));

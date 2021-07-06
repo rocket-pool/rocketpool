@@ -18,9 +18,6 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant daoNameSpace = "dao.protocol.";
 
@@ -41,7 +38,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     /*** Proposals **********************/
 
     // Change one of the current uint256 settings of the protocol DAO
-    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
+    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
@@ -49,7 +46,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
 
     // Change one of the current bool settings of the protocol DAO
-    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
+    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
@@ -57,7 +54,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
 
     // Change one of the current address settings of the protocol DAO
-    function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override public onlyExecutingContracts() {
+    function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsInterface rocketDAOProtocolSettings = RocketDAOProtocolSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
@@ -65,7 +62,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
         
     // Update a claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    function proposalSettingRewardsClaimer(string memory _contractName, uint256 _perc) override public onlyExecutingContracts() {
+    function proposalSettingRewardsClaimer(string memory _contractName, uint256 _perc) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         // Update now
@@ -73,7 +70,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     }
 
     // Spend RPL from the DAO's treasury
-    function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override public onlyExecutingContracts() {
+    function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyExecutingContracts() {
         // Load contracts
         RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
         // Update now

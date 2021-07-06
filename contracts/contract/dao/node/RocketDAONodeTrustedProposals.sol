@@ -19,9 +19,6 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // The namespace for any data stored in the trusted node DAO (do not change)
     string constant daoNameSpace = "dao.trustednodes.";
 
@@ -43,7 +40,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
     // Create a DAO proposal with calldata, if successful will be added to a queue where it can be executed
     // A general message can be passed by the proposer along with the calldata payload that can be executed if the proposal passes
-    function propose(string memory _proposalMessage, bytes memory _payload) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) returns (uint256) {
+    function propose(string memory _proposalMessage, bytes memory _payload) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) returns (uint256) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -59,7 +56,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
 
     // Vote on a proposal
-    function vote(uint256 _proposalID, bool _support) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
+    function vote(uint256 _proposalID, bool _support) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -70,7 +67,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
     
     // Cancel a proposal 
-    function cancel(uint256 _proposalID) override public onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
+    function cancel(uint256 _proposalID) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         // Cancel now, will succeed if it is the original proposer
@@ -78,7 +75,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
 
     // Execute a proposal 
-    function execute(uint256 _proposalID) override public onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
+    function execute(uint256 _proposalID) override external onlyLatestContract("rocketDAONodeTrustedProposals", address(this)) {
         // Load contracts
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         // Execute now
@@ -91,7 +88,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
     // A new DAO member being invited, can only be done via a proposal or in bootstrap mode
     // Provide an ID that indicates who is running the trusted node and the address of the registered node that they wish to propose joining the dao
-    function proposalInvite(string memory _id, string memory _url, address _nodeAddress) override public onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
+    function proposalInvite(string memory _id, string memory _url, address _nodeAddress) override external onlyExecutingContracts onlyRegisteredNode(_nodeAddress) {
         // Their proposal executed, record the block
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.executed.time", "invited", _nodeAddress)), block.timestamp);
         // Ok all good, lets get their invitation and member data setup
@@ -101,7 +98,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
 
     // A current member proposes leaving the trusted node DAO, when successful they will be allowed to collect their RPL bond
-    function proposalLeave(address _nodeAddress) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 
+    function proposalLeave(address _nodeAddress) override external onlyExecutingContracts onlyTrustedNode(_nodeAddress) {
         // Load contracts
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Check this wouldn't dip below the min required trusted nodes (also checked when the node has a successful proposal and attempts to exit)
@@ -112,7 +109,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
 
 
     // Propose to kick a current member from the DAO with an optional RPL bond fine
-    function proposalKick(address _nodeAddress, uint256 _rplFine) override public onlyExecutingContracts onlyTrustedNode(_nodeAddress) { 
+    function proposalKick(address _nodeAddress, uint256 _rplFine) override external onlyExecutingContracts onlyTrustedNode(_nodeAddress) {
         // Load contracts
         RocketDAONodeTrustedInterface daoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedActionsInterface daoActionsContract = RocketDAONodeTrustedActionsInterface(getContractAddress("rocketDAONodeTrustedActions"));
@@ -130,7 +127,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     /*** Proposal - Settings ***************/
 
     // Change one of the current uint256 settings of the DAO
-    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override public onlyExecutingContracts() {
+    function proposalSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
@@ -138,7 +135,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     }
 
     // Change one of the current bool settings of the DAO
-    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override public onlyExecutingContracts() {
+    function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAONodeTrustedSettingsInterface rocketDAONodeTrustedSettings = RocketDAONodeTrustedSettingsInterface(getContractAddress(_settingContractName));
         // Lets update
@@ -149,7 +146,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
     /*** Proposal - Upgrades ***************/
 
     // Upgrade contracts or ABI's if the DAO agrees
-    function proposalUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyExecutingContracts() {
+    function proposalUpgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAONodeTrustedUpgradeInterface rocketDAONodeTrustedUpgradeInterface = RocketDAONodeTrustedUpgradeInterface(getContractAddress("rocketDAONodeTrustedUpgrade"));
         // Lets update

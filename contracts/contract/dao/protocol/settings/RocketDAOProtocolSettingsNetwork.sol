@@ -46,62 +46,62 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     }
 
     // The threshold of trusted nodes that must reach consensus on oracle data to commit it
-    function getNodeConsensusThreshold() override public view returns (uint256) {
+    function getNodeConsensusThreshold() override external view returns (uint256) {
         return getSettingUint("network.consensus.threshold");
     }
 
     // Submit balances currently enabled (trusted nodes only)
-    function getSubmitBalancesEnabled() override public view returns (bool) {
+    function getSubmitBalancesEnabled() override external view returns (bool) {
         return getSettingBool("network.submit.balances.enabled");
     }
 
     // The frequency in blocks at which network balances should be submitted by trusted nodes
-    function getSubmitBalancesFrequency() override public view returns (uint256) {
+    function getSubmitBalancesFrequency() override external view returns (uint256) {
         return getSettingUint("network.submit.balances.frequency");
     }
 
     // Submit prices currently enabled (trusted nodes only)
-    function getSubmitPricesEnabled() override public view returns (bool) {
+    function getSubmitPricesEnabled() override external view returns (bool) {
         return getSettingBool("network.submit.prices.enabled");
     }
 
     // The frequency in blocks at which network prices should be submitted by trusted nodes
-    function getSubmitPricesFrequency() override public view returns (uint256) {
+    function getSubmitPricesFrequency() override external view returns (uint256) {
         return getSettingUint("network.submit.prices.frequency");
     }
 
     // Process withdrawals currently enabled (trusted nodes only)
-    function getProcessWithdrawalsEnabled() override public view returns (bool) {
+    function getProcessWithdrawalsEnabled() override external view returns (bool) {
         return getSettingBool("network.process.withdrawals.enabled");
     }
 
     // The minimum node commission rate as a fraction of 1 ether
-    function getMinimumNodeFee() override public view returns (uint256) {
+    function getMinimumNodeFee() override external view returns (uint256) {
         return getSettingUint("network.node.fee.minimum");
     }
 
     // The target node commission rate as a fraction of 1 ether
-    function getTargetNodeFee() override public view returns (uint256) {
+    function getTargetNodeFee() override external view returns (uint256) {
         return getSettingUint("network.node.fee.target");
     }
 
     // The maximum node commission rate as a fraction of 1 ether
-    function getMaximumNodeFee() override public view returns (uint256) {
+    function getMaximumNodeFee() override external view returns (uint256) {
         return getSettingUint("network.node.fee.maximum");
     }
 
     // The range of node demand values to base fee calculations on (from negative to positive value)
-    function getNodeFeeDemandRange() override public view returns (uint256) {
+    function getNodeFeeDemandRange() override external view returns (uint256) {
         return getSettingUint("network.node.fee.demand.range");
     }
 
     // Target rETH collateralization rate as a fraction of 1 ether
-    function getTargetRethCollateralRate() override public view returns (uint256) {
+    function getTargetRethCollateralRate() override external view returns (uint256) {
         return getSettingUint("network.reth.collateral.target");
     }
 
     // rETH withdraw delay in blocks
-    function getRethDepositDelay() override public view returns (uint256) {
+    function getRethDepositDelay() override external view returns (uint256) {
         return getSettingUint("network.reth.deposit.delay");
     }
 }

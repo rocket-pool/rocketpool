@@ -42,37 +42,37 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
     // Getters
 
     // The member proposal quorum threshold for this DAO
-    function getQuorum() override public view returns (uint256) { 
+    function getQuorum() override external view returns (uint256) {
         return getSettingUint("members.quorum");
     }
 
     // Amount of RPL needed for a new member
-    function getRPLBond() override public view returns (uint256) { 
+    function getRPLBond() override external view returns (uint256) {
         return getSettingUint("members.rplbond");
     }
 
     // The amount of unbonded minipool validators members can make (these validators are only used if no regular bonded validators are available)
-    function getMinipoolUnbondedMax() override public view returns (uint256) { 
+    function getMinipoolUnbondedMax() override external view returns (uint256) {
         return getSettingUint("members.minipool.unbonded.max");
     }
 
     // Node fee must be over this percentage of the maximum fee before validator members are allowed to make unbonded pools
-    function getMinipoolUnbondedMinFee() override public view returns (uint256) {
+    function getMinipoolUnbondedMinFee() override external view returns (uint256) {
         return getSettingUint('members.minipool.unbonded.min.fee');
     }
 
     // How long a member must wait before making consecutive challenges in seconds
-    function getChallengeCooldown() override public view returns (uint256) { 
+    function getChallengeCooldown() override external view returns (uint256) {
         return getSettingUint("members.challenge.cooldown");
     }
 
     // The window available to meet any node challenges in seconds
-    function getChallengeWindow() override public view returns (uint256) { 
+    function getChallengeWindow() override external view returns (uint256) {
         return getSettingUint("members.challenge.window");
     }
 
     // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
-    function getChallengeCost() override public view returns (uint256) { 
+    function getChallengeCost() override external view returns (uint256) {
         return getSettingUint("members.challenge.cost");
     }
 }

@@ -17,9 +17,6 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
@@ -40,7 +37,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     }
 
     // Get the current RP network node fee as a fraction of 1 ETH
-    function getNodeFee() override public view returns (uint256) {
+    function getNodeFee() override external view returns (uint256) {
         return getNodeFeeByDemand(getNodeDemand());
     }
 

@@ -15,8 +15,8 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
     /**** Properties ***********/
 
     uint8 constant decimalPlaces = 18;
-    uint256 public exponent = 10**uint256(decimalPlaces);
-    uint256 public totalSupplyCap = 18.5 * (10**6) * exponent;    // 18 Million tokens
+    uint256 constant public exponent = 10**uint256(decimalPlaces);
+    uint256 constant public totalSupplyCap = 18.5 * (10**6) * exponent;    // 18 Million tokens
 
 
     /**** Libs *****************/
@@ -39,7 +39,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
     // @param _to The address that will receive the minted tokens.
     // @param _amount The amount of tokens to mint.
     // @return A boolean that indicates if the operation was successful.
-    function mint(address _to, uint _amount) public onlyOwner returns (bool) {
+    function mint(address _to, uint _amount) external onlyOwner returns (bool) {
         // Check token amount is positive
         require(_amount > 0);
         // Check we don't exceed the supply cap
@@ -54,7 +54,7 @@ contract RocketTokenDummyRPL is ERC20, Ownable {
 
 
     /// @dev Returns the amount of tokens that can still be minted
-    function getRemainingTokens() public view returns(uint256) {
+    function getRemainingTokens() external view returns(uint256) {
         return totalSupplyCap.sub(totalSupply());
     }
 

@@ -24,7 +24,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
 
     // Main accessor for performing an upgrade, be it a contract or abi for a contract
     // Will require > 50% of trusted DAO members to run when bootstrap mode is disabled
-    function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override public onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
+    function upgrade(string memory _type, string memory _name, string memory _contractAbi, address _contractAddress) override external onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // What action are we performing?
         bytes32 typeHash = keccak256(abi.encodePacked(_type));
         // Lets do it!
@@ -69,10 +69,10 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
     function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
-        require(nameHash != keccak256(abi.encodePacked("")), "Invalid contract name");
+        require(bytes(_name).length > 0, "Invalid contract name");
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
-        require(keccak256(abi.encodePacked(existingAbi)) == keccak256(abi.encodePacked("")), "Contract name is already in use");
+        require(bytes(existingAbi).length == 0, "Contract name is already in use");
         // Check contract address
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
@@ -89,7 +89,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
     function _upgradeABI(string memory _name, string memory _contractAbi) internal {
         // Check ABI exists
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
-        require(keccak256(abi.encodePacked(existingAbi)) != keccak256(abi.encodePacked("")), "ABI does not exist");
+        require(bytes(existingAbi).length > 0, "ABI does not exist");
         // Set ABI
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit ABI upgraded event
@@ -100,10 +100,10 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
     function _addABI(string memory _name, string memory _contractAbi) internal {
         // Check ABI name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
-        require(nameHash != keccak256(abi.encodePacked("")), "Invalid ABI name");
+        require(bytes(_name).length > 0, "Invalid ABI name");
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "ABI name is already in use");
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
-        require(keccak256(abi.encodePacked(existingAbi)) == keccak256(abi.encodePacked("")), "ABI name is already in use");
+        require(bytes(existingAbi).length == 0, "ABI name is already in use");
         // Set ABI
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit ABI added event

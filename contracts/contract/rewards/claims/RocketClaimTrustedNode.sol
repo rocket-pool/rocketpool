@@ -13,9 +13,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 // RPL Rewards claiming for nodes (trusted) and minipool validators
 contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Libs
     using SafeMath for uint;
 
@@ -26,7 +23,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
 
     // Determine if this contract is enabled or not for claims
-    function getEnabled() override public view returns (bool) {
+    function getEnabled() override external view returns (bool) {
         // Init the rewards pool contract
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         return rewardsPool.getClaimingContractEnabled("rocketClaimTrustedNode");
@@ -52,7 +49,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
     }
 
     // Return how much they can expect in rpl rewards
-    function getClaimRewardsAmount(address _trustedNodeAddress) override public view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
+    function getClaimRewardsAmount(address _trustedNodeAddress) override external view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
         // Init the rewards pool contract 
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         return rewardsPool.getClaimAmount("rocketClaimTrustedNode", _trustedNodeAddress, getClaimRewardsPerc(_trustedNodeAddress));

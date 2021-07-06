@@ -36,14 +36,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
     }
 
     // Get a contract's ETH balance by address
-    function balanceOf(string memory _networkContractName) override public view returns (uint256) {
+    function balanceOf(string memory _networkContractName) override external view returns (uint256) {
         // Return balance
         return etherBalances[_networkContractName];
     }
 
-
     // Get the balance of a token held by a network contract
-    function balanceOfToken(string memory _networkContractName, IERC20 _tokenAddress) override public view returns (uint256) {
+    function balanceOfToken(string memory _networkContractName, IERC20 _tokenAddress) override external view returns (uint256) {
         // Return balance
         return tokenBalances[keccak256(abi.encodePacked(_networkContractName, _tokenAddress))];
     }
@@ -78,7 +77,6 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         emit EtherWithdrawn(contractName, _amount, block.timestamp);
     }
 
-
     // Accept an token deposit and assign its balance to a network contract (saves a large amount of gas this way through not needing a double token transfer via a network contract first)
     function depositToken(string memory _networkContractName, IERC20 _tokenContract, uint256 _amount) override external {
          // Valid amount?
@@ -112,7 +110,6 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         emit TokenWithdrawn(contractKey, address(_tokenAddress), _amount, block.timestamp);
     }
 
-
     // Transfer token from one contract to another
     // Only accepts calls from Rocket Pool network contracts
     function transferToken(string memory _networkContractName, IERC20 _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
@@ -126,14 +123,9 @@ contract RocketVault is RocketBase, RocketVaultInterface {
         // Update balances
         tokenBalances[contractKeyFrom] = tokenBalances[contractKeyFrom].sub(_amount);
         tokenBalances[contractKeyTo] = tokenBalances[contractKeyTo].add(_amount);
-        // Get the token ERC20 instance
-        IERC20 tokenContract = IERC20(_tokenAddress);
-        // Verify this contract has that amount of tokens at a minimum
-        require(tokenContract.balanceOf(address(this)) >= _amount, "Insufficient contract token balance");
         // Emit token withdrawn event
         emit TokenTransfer(contractKeyFrom, contractKeyTo, address(_tokenAddress), _amount, block.timestamp);
     }
-
 
     // Burns an amount of a token that implements a burn(uint256) method
     // Only accepts calls from Rocket Pool network contracts

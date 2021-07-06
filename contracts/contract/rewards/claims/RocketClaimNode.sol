@@ -17,16 +17,13 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     // Libs
     using SafeMath for uint;
 
-    // Calculate using this as the base
-    uint256 constant calcBase = 1 ether;
-
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
     // Get whether the contract is enabled for claims
-    function getEnabled() override public view returns (bool) {
+    function getEnabled() override external view returns (bool) {
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         return rocketRewardsPool.getClaimingContractEnabled("rocketClaimNode");
     }
@@ -56,7 +53,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
     }
 
     // Get the amount of rewards for a node for the reward period
-    function getClaimRewardsAmount(address _nodeAddress) override public view onlyRegisteredNode(_nodeAddress) returns (uint256) {
+    function getClaimRewardsAmount(address _nodeAddress) override external view onlyRegisteredNode(_nodeAddress) returns (uint256) {
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         return rocketRewardsPool.getClaimAmount("rocketClaimNode", _nodeAddress, getClaimRewardsPerc(_nodeAddress));
     }

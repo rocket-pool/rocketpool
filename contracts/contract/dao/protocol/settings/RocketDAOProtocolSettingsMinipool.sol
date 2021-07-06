@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
- 
+import "../../../../types/MinipoolDeposit.sol";
+
 // Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
@@ -33,7 +34,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     // Required node deposit amounts
-    function getDepositNodeAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
+    function getDepositNodeAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
         if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
@@ -50,7 +51,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     // Required user deposit amounts
-    function getDepositUserAmount(MinipoolDeposit _depositType) override public pure returns (uint256) {
+    function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
@@ -67,14 +68,13 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     // Submit minipool withdrawable events currently enabled (trusted nodes only)
-    function getSubmitWithdrawableEnabled() override public view returns (bool) {
+    function getSubmitWithdrawableEnabled() override external view returns (bool) {
         return getSettingBool("minipool.submit.withdrawable.enabled");
     }
 
     // Timeout period in blocks for prelaunch minipools to launch
-    function getLaunchTimeout() override public view returns (uint256) {
+    function getLaunchTimeout() override external view returns (uint256) {
         return getSettingUint("minipool.launch.timeout");
     }
-
 
 }

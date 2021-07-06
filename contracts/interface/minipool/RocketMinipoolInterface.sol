@@ -4,11 +4,12 @@ pragma solidity 0.7.6;
 
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
+import "../RocketStorageInterface.sol";
 
 interface RocketMinipoolInterface {
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) external;
     function getStatus() external view returns (MinipoolStatus);
     function getStatusBlock() external view returns (uint256);
-    function getStatusTime() external view returns (uint256);
     function getDepositType() external view returns (MinipoolDeposit);
     function getNodeAddress() external view returns (address);
     function getNodeFee() external view returns (uint256);

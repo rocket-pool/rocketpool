@@ -17,7 +17,7 @@ contract AddressQueueStorage is RocketBase, AddressQueueStorageInterface {
     using SafeMath for uint256;
 
     // Settings
-    uint256 public capacity = 2 ** 255; // max uint256 / 2
+    uint256 constant public capacity = 2 ** 255; // max uint256 / 2
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {

@@ -37,6 +37,9 @@ fi
 
 sleep 3
 
+# Clean build directory
+rm -rf ./build
+
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   node_modules/.bin/solidity-coverage
 

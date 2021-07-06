@@ -56,19 +56,23 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         if (msg.value == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount()) { depositType = MinipoolDeposit.Full; }
         else if (msg.value == rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount()) { depositType = MinipoolDeposit.Half; }
         else if (msg.value == rocketDAOProtocolSettingsMinipool.getEmptyDepositNodeAmount()) { depositType = MinipoolDeposit.Empty; }
-        // Check deposit type is valid
-        require(depositType != MinipoolDeposit.None, "Invalid node deposit amount");
-        // Node is trusted
-        if (rocketDaoNodeTrusted.getMemberIsValid(msg.sender)) {
-            // If creating an unbonded minipool, check current unbonded minipool count and current fee > 80% of max
-            if (depositType == MinipoolDeposit.Empty) {
+        else {
+            // Invalid deposit amount
+            revert("Invalid node deposit amount");
+        }
+        // If creating an unbonded minipool, check current unbonded minipool count and current fee > 80% of max
+        if (depositType == MinipoolDeposit.Empty) {
+            // Node is trusted
+            if (rocketDaoNodeTrusted.getMemberIsValid(msg.sender)) {
                 require(rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender) < rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax(), "Trusted node member would exceed the amount of unbonded minipools allowed");
                 uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
                 require(nodeFee > maxFee.mul(rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMinFee()).div(1 ether), "Current commission rate is not high enough to create unbonded minipools");
             }
+            // Node is not trusted - it cannot create unbonded minipools
+            else {
+                revert("Only members of the trusted node DAO may create unbonded minipools");
+            }
         }
-        // Node is not trusted - it cannot create unbonded minipools
-        else { require(depositType != MinipoolDeposit.Empty, "Only members of the trusted node DAO may create unbonded minipools"); }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Create minipool

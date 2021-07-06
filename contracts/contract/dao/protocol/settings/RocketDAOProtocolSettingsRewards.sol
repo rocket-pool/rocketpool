@@ -61,7 +61,7 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
     } 
 
     // Get the time of when the claim perc was last updated
-    function getRewardsClaimerPercTimeUpdated(string memory _contractName) override public view returns (uint256) {
+    function getRewardsClaimerPercTimeUpdated(string memory _contractName) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)));
     } 
 
@@ -77,6 +77,5 @@ contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDA
     function getRewardsClaimIntervalTime() override external view returns (uint256) {
         return getSettingUint("rpl.rewards.claim.period.time");
     }
-
 
 }
