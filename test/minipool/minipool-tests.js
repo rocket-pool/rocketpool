@@ -1,4 +1,4 @@
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit, RevertOnTransfer } from '../_utils/artifacts'
+import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit, RocketMinipoolManager, RevertOnTransfer } from '../_utils/artifacts'
 import { mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -18,7 +18,7 @@ import { getNodeFee } from '../_helpers/network'
 import { getNetworkSetting } from '../_helpers/settings'
 
 export default function() {
-    contract('RocketMinipool', async (accounts) => {
+    contract.only('RocketMinipool', async (accounts) => {
 
 
         // Accounts
@@ -105,7 +105,7 @@ export default function() {
         // General
         //
 
-        
+
         it(printTitle('random address', 'cannot send ETH to non-payable minipool delegate methods'), async () => {
 
             // Attempt to send ETH to view method
@@ -152,12 +152,30 @@ export default function() {
         });
 
 
-        //
-        // Refund
-        //
+        it(printTitle('node operator', 'cannot create a minipool if network capacity is reached and destroying a minipool reduces the capacity'), async () => {
+          // Retrieve the current number of minipools
+          const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+          const minipoolCount = (await rocketMinipoolManager.getMinipoolCount()).toNumber();
+          // Set max to the current number
+          await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', minipoolCount, {from: owner});
+          // Creating minipool should fail now
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
+          // Destroy a pool
+          await withdrawValidatorBalance(withdrawableMinipool, true, {
+            from: nodeWithdrawalAddress,
+            value: withdrawalBalance,
+          });
+          // Creating minipool should no longer fail
+          await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+        });
 
 
-        it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
+      //
+      // Refund
+      //
+
+
+      it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
 
             // Refund from minipool with refund balance
             await refund(prelaunchMinipool, {
@@ -320,14 +338,14 @@ export default function() {
 
         });
 
-  
- 
+
+
         //
         // Withdraw validator balance
         //
-        
 
-        
+
+
         it(printTitle('node operator', 'cannot send withdraw balance to a minipool which is not withdrawable'), async () => {
 
             // Attempt to send validator balance
@@ -436,7 +454,7 @@ export default function() {
 
         });
 
-        
+
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
 
             // Get tx amount (half of withdrawal balance)
@@ -462,14 +480,14 @@ export default function() {
 
 
         });
-        
-        
+
+
 
         //
         // Close
         //
 
-        
+
         it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
 
             // Close dissolved minipool

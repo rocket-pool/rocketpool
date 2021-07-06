@@ -35,7 +35,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools in the network
-    function getMinipoolCount() override external view returns (uint256) {
+    function getMinipoolCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.index")));
     }
@@ -116,6 +116,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress))) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
             "Minipool count after deposit exceeds limit based on node RPL stake"
         );
+        { // Local scope to prevent stack too deep error
+          RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+          // Check global minipool limit
+          uint256 totalMinipoolCount = getMinipoolCount();
+          require(totalMinipoolCount.add(1) <= rocketDAOProtocolSettingsMinipool.getMaximumCount(), "Global minipool limit reached");
+        }
         // Create minipool contract
         address contractAddress = address(new RocketMinipool(RocketStorageInterface(rocketStorage), _nodeAddress, _depositType));
         RocketMinipoolInterface minipool = RocketMinipoolInterface(contractAddress);
