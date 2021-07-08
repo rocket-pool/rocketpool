@@ -47,6 +47,11 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal stakingStartBalance;
     uint256 internal stakingEndBalance;
 
+    // Upgrade options
+    bool internal useLatestDelegate = false;
+    address internal rocketMinipoolDelegate;
+    address internal rocketMinipoolDelegatePrev;
+
     // Used to prevent direct access to delegate and prevent calling initialise more than once
     StorageState storageState = StorageState.Undefined;
 }
