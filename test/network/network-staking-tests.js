@@ -19,10 +19,11 @@ import { mintRPL } from '../_helpers/tokens';
 import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
-import { createMinipool, getNodeMinipoolCount, submitMinipoolWithdrawable } from '../_helpers/minipool'
+import { createMinipool, getNodeStakingMinipoolCount, stakeMinipool } from '../_helpers/minipool'
 import BN from 'bn.js'
 import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
+import { userDeposit } from '../_helpers/deposit'
 
 
 export default function() {
@@ -127,7 +128,7 @@ export default function() {
 
           for(const node of nodes){
               let nodeStakedRpl = await getNodeRPLStake(node);
-              let minipoolCount = await getNodeMinipoolCount(node);
+              let minipoolCount = await getNodeStakingMinipoolCount(node);
               let maxStake = web3.utils.toBN(minipoolCount).mul(web3.utils.toBN(web3.utils.toWei(maxStakePerMinipool, 'ether'))).mul(web3.utils.toBN(web3.utils.toWei('16', 'ether'))).div(rplPrice);
               let expectedEffectiveStake = BN.min(maxStake, nodeStakedRpl);
               let effectiveStake = await getNodeEffectiveRPLStake(node);
@@ -254,12 +255,14 @@ export default function() {
             let calculatedTotalEffectiveStake = await getCalculatedTotalEffectiveRPLStake(price);
             await submitPrices(blockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
             await submitPrices(blockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
-            // Stake so that effective rpl stake is updated
+            // Stake and setup a minipool so that effective rpl stake is updated
             await mineBlocks(web3, 1);
             let oldBlockNumber = await web3.eth.getBlockNumber();
             await mineBlocks(web3, 1);
-            await nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
-            await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            await nodeStakeRPL(web3.utils.toWei('10', 'ether'), {from: registeredNode1});
+            let minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
+            await stakeMinipool(minipool, null, {from: registeredNode1});
             // Should not be able to submit a price change at oldBlockNumber as effective stake changed after it
             await submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
             await shouldRevert(submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');

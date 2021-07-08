@@ -1,7 +1,7 @@
 import { mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { RocketDAOProtocolSettingsAuction } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsAuction, RocketNetworkPrices, RocketNodeStaking } from '../_utils/artifacts'
 import { auctionCreateLot, auctionPlaceBid, getLotStartBlock, getLotPriceAtBlock } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
@@ -96,6 +96,9 @@ export default function() {
 
         it(printTitle('auction lot', 'has correct price at block'), async () => {
 
+            // Get contracts
+            const rocketNodeStaking = await RocketNodeStaking.deployed();
+
             // Set lot settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.lot.duration', 100, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsAuction, 'auction.price.start', web3.utils.toWei('1', 'ether'), {from: owner});
@@ -103,7 +106,8 @@ export default function() {
 
             // Set RPL price
             let block = await web3.eth.getBlockNumber();
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: trustedNode});
+            let effectiveRPLStake = await rocketNodeStaking.calculateTotalEffectiveRPLStake(0, 0, web3.utils.toWei('1', 'ether'));
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), effectiveRPLStake, {from: trustedNode});
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), web3.utils.toWei('0', 'ether'), {from: trustedNode});

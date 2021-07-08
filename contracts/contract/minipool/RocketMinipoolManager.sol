@@ -37,7 +37,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Get the number of minipools in the network
     function getMinipoolCount() override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        return addressSetStorage.getCount(keccak256(abi.encodePacked("minipools.index")));
+        return addressSetStorage.getCount(keccak256(bytes("minipools.index")));
+    }
+
+    // Get the number of minipools in the network in the Staking state
+    function getStakingMinipoolCount() override public view returns (uint256) {
+        return getUint(keccak256(bytes("minipools.staking.count")));
     }
 
     // Get a network minipool address by index
@@ -50,6 +55,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function getNodeMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
+    }
+
+    // Get the number of minipools owned by a node that are in staking status
+    function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress)));
     }
 
     // Get a node minipool address by index
@@ -105,6 +115,34 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)));
     }
 
+    // Increments _nodeAddress' number of minipools in staking status
+    function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Update the node specific count
+        bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+        uint256 nodeValue = getUint(nodeKey);
+        setUint(nodeKey, nodeValue.add(1));
+        // Update the total count
+        bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
+        uint256 totalValue = getUint(totalKey);
+        setUint(totalKey, totalValue.add(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
+    }
+
+    // Decrements _nodeAddress' number of minipools in staking status
+    function decrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Update the node specific count
+        bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+        uint256 nodeValue = getUint(nodeKey);
+        setUint(nodeKey, nodeValue.sub(1));
+        // Update the total count
+        bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
+        uint256 totalValue = getUint(totalKey);
+        setUint(totalKey, totalValue.sub(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
+    }
+
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
@@ -140,13 +178,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
             require(rocketNetworkPrices.inConsensus(), "Cannot create a minipool while network is reaching consensus");
         }
-        { // This scope is to prevent a stack too deep error
-            // Get current minipool count and rpl stake
-            uint256 minipoolCount = addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
-            uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
-            // Update total effective RPL stake
-            updateTotalEffectiveRPLStake(rplStake, minipoolCount.sub(1), minipoolCount);
-        }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
@@ -162,7 +193,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
@@ -175,23 +205,19 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
         // Prevent destroying minipools between price update block and price consensus
         require(rocketNetworkPrices.inConsensus(), "Cannot destroy a minipool while network is reaching consensus");
-        { // This scope is to prevent a stack too deep error
-            // Get current minipool count and rpl stake
-            uint256 minipoolCount = getNodeMinipoolCount(nodeAddress);
-            uint256 rplStake = rocketNodeStaking.getNodeRPLStake(nodeAddress);
-            // Update total effective RPL stake
-            updateTotalEffectiveRPLStake(rplStake, minipoolCount.add(1), minipoolCount);
-        }
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }
 
     // Updates the stored total effective rate based on a node's changing minipool count
-    function updateTotalEffectiveRPLStake(uint256 _rplStake, uint256 _oldCount, uint256 _newCount) private {
+    function updateTotalEffectiveRPLStake(address _nodeAddress, uint256 _oldCount, uint256 _newCount) private {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        // Get node's RPL stake
+        uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
         // Get the node's maximum possible stake
         uint256 maxRplStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
@@ -203,22 +229,22 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             .div(rocketNetworkPrices.getRPLPrice());
         // Check if we have to decrease total
         if (_oldCount > _newCount) {
-            if (_rplStake <= newMaxRplStake) {
+            if (rplStake <= newMaxRplStake) {
                 return;
             }
             uint256 decrease = oldMaxRplStake.sub(newMaxRplStake);
-            uint256 delta = _rplStake.sub(newMaxRplStake);
+            uint256 delta = rplStake.sub(newMaxRplStake);
             if (delta > decrease) { delta = decrease; }
             rocketNetworkPrices.decreaseEffectiveRPLStake(delta);
             return;
         }
         // Check if we have to increase total
         if (_newCount > _oldCount) {
-            if (_rplStake <= oldMaxRplStake) {
+            if (rplStake <= oldMaxRplStake) {
                 return;
             }
             uint256 increase = newMaxRplStake.sub(oldMaxRplStake);
-            uint256 delta = _rplStake.sub(oldMaxRplStake);
+            uint256 delta = rplStake.sub(oldMaxRplStake);
             if (delta > increase) { delta = increase; }
             rocketNetworkPrices.increaseEffectiveRPLStake(delta);
             return;

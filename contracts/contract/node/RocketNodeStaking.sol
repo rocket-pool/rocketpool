@@ -91,7 +91,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
             address nodeAddress = addressSetStorage.getItem(key, i);
             // Get node's current RPL stake
             uint256 rplStake = getNodeRPLStake(nodeAddress);
-            uint256 maxRplStake = maxRplStakePerMinipool.mul(rocketMinipoolManager.getNodeMinipoolCount(nodeAddress)).div(rplPrice);
+            uint256 maxRplStake = maxRplStakePerMinipool.mul(rocketMinipoolManager.getNodeStakingMinipoolCount(nodeAddress)).div(rplPrice);
             // Calculate node's maximum RPL stake
             if (rplStake < maxRplStake) { total = total.add(rplStake); }
             else { total = total.add(maxRplStake); }
@@ -111,7 +111,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Calculate node's maximum RPL stake
         uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
-            .mul(rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress))
+            .mul(rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress))
             .div(rocketNetworkPrices.getRPLPrice());
         // Return effective stake amount
         if (rplStake < maxRplStake) { return rplStake; }
@@ -224,7 +224,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Get the node's maximum possible stake
         uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
-            .mul(rocketMinipoolManager.getNodeMinipoolCount(msg.sender))
+            .mul(rocketMinipoolManager.getNodeStakingMinipoolCount(msg.sender))
             .div(rocketNetworkPrices.getRPLPrice());
         // Easy out if total stake isn't changing
         if (_oldStake >= maxRplStake && _newStake >= maxRplStake) {

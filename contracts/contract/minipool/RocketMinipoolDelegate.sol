@@ -169,11 +169,17 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        // Progress to staking
+        setStatus(MinipoolStatus.Staking);
+        // Increment node's number of staking minipools
+        rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
 
     // Mark the minipool as withdrawable and record its final balance
     // Only accepts calls from the RocketMinipoolStatus contract
     function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) override external onlyLatestContract("rocketMinipoolStatus", msg.sender) onlyInitialised {
+        // Get contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Check current status
         require(status == MinipoolStatus.Staking, "The minipool can only become withdrawable while staking");
         // Progress to withdrawable
@@ -187,6 +193,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             rocketMinipoolQueue.removeMinipool(depositType);
         }
+        // Progress to withdrawable
+        setStatus(MinipoolStatus.Withdrawable);
+        // Decrements node's number of staking minipools
+        rocketMinipoolManager.decrementNodeStakingMinipoolCount(nodeAddress);
     }
 
     // Payout the ETH to the node operator and rETH contract now

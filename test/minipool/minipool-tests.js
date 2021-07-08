@@ -18,7 +18,7 @@ import { getNodeFee } from '../_helpers/network'
 import { getNetworkSetting } from '../_helpers/settings'
 
 export default function() {
-    contract.only('RocketMinipool', async (accounts) => {
+    contract('RocketMinipool', async (accounts) => {
 
 
         // Accounts
