@@ -19,7 +19,8 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
     // Only allow access from the owning node address
     modifier onlyMinipoolOwner() {
         // Only the node operator can upgrade
-        require(msg.sender == nodeAddress, "Only the node operator can access this method");
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
         _;
     }
 

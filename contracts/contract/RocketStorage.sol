@@ -10,12 +10,19 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract RocketStorage is RocketStorageInterface {
 
+    // Events
+    event NodeWithdrawalAddressSet(address indexed node, address indexed withdrawalAddress, uint256 time);
+
     // Libraries
     using SafeMath for uint256;
 
     // Complex storage maps
     mapping(bytes32 => string)     private stringStorage;
     mapping(bytes32 => bytes)      private bytesStorage;
+
+    // Protected storage
+    mapping(address => address)    private withdrawalAddresses;
+    mapping(address => address)    private pendingWithdrawalAddresses;
 
     // Flag storage has been initialised
     bool storageInit = false;
@@ -55,7 +62,60 @@ contract RocketStorage is RocketStorageInterface {
         storageInit = true;
     }
 
+    // Protected storage
 
+    // Get a node's withdrawal address
+    function getNodeWithdrawalAddress(address _nodeAddress) external override view returns (address) {
+        // Check if _nodeAddress is a valid node
+        if (!_getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)))) {
+            return address(0);
+        }
+        // If no withdrawal address has been set, return the nodes address
+        address withdrawalAddress = withdrawalAddresses[_nodeAddress];
+        if (withdrawalAddress == address(0)) {
+            return _nodeAddress;
+        }
+        return withdrawalAddress;
+    }
+
+    // Get a node's pending withdrawal address
+    function getNodePendingWithdrawalAddress(address _nodeAddress) external override view returns (address) {
+        return pendingWithdrawalAddresses[_nodeAddress];
+    }
+
+    // Set a node's withdrawal address
+    function setWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress, bool _confirm) external override {
+        // Check new withdrawal address
+        require(_newWithdrawalAddress != address(0x0), "Invalid withdrawal address");
+        // Confirm the transaction is from the node's current withdrawal address
+        address withdrawalAddress = withdrawalAddresses[_nodeAddress];
+        require(withdrawalAddress == msg.sender, "Only a tx from a node's withdrawal address can update it");
+        // Update immediately if confirmed
+        if (_confirm) {
+            updateWithdrawalAddress(_nodeAddress, _newWithdrawalAddress);
+        }
+        // Set pending withdrawal address if not confirmed
+        else {
+            pendingWithdrawalAddresses[_nodeAddress] = _newWithdrawalAddress;
+        }
+    }
+
+    // Confirm a node's new withdrawal address
+    function confirmWithdrawalAddress(address _nodeAddress) external override {
+        // Get node by pending withdrawal address
+        require(pendingWithdrawalAddresses[_nodeAddress] == msg.sender, "Confirmation must come from the pending withdrawal address");
+        delete pendingWithdrawalAddresses[_nodeAddress];
+        // Update withdrawal address
+        updateWithdrawalAddress(_nodeAddress, msg.sender);
+    }
+
+    // Update a node's withdrawal address
+    function updateWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress) private {
+        // Set new withdrawal address
+        withdrawalAddresses[_nodeAddress] = _newWithdrawalAddress;
+        // Emit withdrawal address set event
+        emit NodeWithdrawalAddressSet(_nodeAddress, _newWithdrawalAddress, block.timestamp);
+    }
 
     /// @param _key The key for the record
     function getAddress(bytes32 _key) override external view returns (address r) {
@@ -126,14 +186,14 @@ contract RocketStorage is RocketStorageInterface {
     function setBytes(bytes32 _key, bytes calldata _value) onlyLatestRocketNetworkContract override external {
         bytesStorage[_key] = _value;
     }
-    
+
     /// @param _key The key for the record
     function setBool(bytes32 _key, bool _value) onlyLatestRocketNetworkContract override external {
         assembly {
             sstore (_key, _value)
         }
     }
-    
+
     /// @param _key The key for the record
     function setInt(bytes32 _key, int _value) onlyLatestRocketNetworkContract override external {
         assembly {
@@ -172,14 +232,14 @@ contract RocketStorage is RocketStorageInterface {
     function deleteBytes(bytes32 _key) onlyLatestRocketNetworkContract override external {
         delete bytesStorage[_key];
     }
-    
+
     /// @param _key The key for the record
     function deleteBool(bytes32 _key) onlyLatestRocketNetworkContract override external {
         assembly {
             sstore (_key, 0)
         }
     }
-    
+
     /// @param _key The key for the record
     function deleteInt(bytes32 _key) onlyLatestRocketNetworkContract override external {
         assembly {

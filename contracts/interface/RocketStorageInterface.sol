@@ -34,4 +34,10 @@ interface RocketStorageInterface {
     // Arithmetic
     function addUint(bytes32 _key, uint256 _amount) external;
     function subUint(bytes32 _key, uint256 _amount) external;
+
+    // Protected storage
+    function getNodeWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function getNodePendingWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function setWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress, bool _confirm) external;
+    function confirmWithdrawalAddress(address _nodeAddress) external;
 }

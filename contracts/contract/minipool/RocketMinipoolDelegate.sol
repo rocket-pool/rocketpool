@@ -210,9 +210,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(status == MinipoolStatus.Withdrawable, "The minipool's validator balance can only be sent while withdrawable");
         // Load contracts
         RocketNetworkWithdrawalInterface rocketNetworkWithdrawal = RocketNetworkWithdrawalInterface(getContractAddress("rocketNetworkWithdrawal"));
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         // Get the node operators withdrawal address
-        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         // The withdrawal address must be the one processing the withdrawal. It can be the node operators address or another one they have set to receive withdrawals instead of their node account
         require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "The payout function must be called by the node operator");
         // Process validator withdrawal for minipool, send ETH to the node owner and rETH contract
@@ -278,8 +277,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             nodeDepositBalance = 0;
             nodeRefundBalance = 0;
             // Get node withdrawal address
-            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-            address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+            address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
             // Transfer balance
             (bool success,) = nodeWithdrawalAddress.call{value: nodeBalance}("");
             require(success, "Node ETH balance was not successfully transferred to node operator");
@@ -310,8 +308,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 refundAmount = nodeRefundBalance;
         nodeRefundBalance = 0;
         // Get node withdrawal address
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
-        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(nodeAddress);
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         // Transfer refund amount
         (bool success,) = nodeWithdrawalAddress.call{value: refundAmount}("");
         require(success, "ETH refund amount was not successfully transferred to node operator");
@@ -325,9 +322,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         rocketMinipoolManager.destroyMinipool();
         // Send any refund ETH to the node withdrawal account
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         // Self destruct & send any remaining ETH or refund ETH to the node operator's withdrawal address
-        selfdestruct(payable(rocketNodeManager.getNodeWithdrawalAddress(nodeAddress)));
+        selfdestruct(payable(rocketStorage.getNodeWithdrawalAddress(nodeAddress)));
     }
 
 }

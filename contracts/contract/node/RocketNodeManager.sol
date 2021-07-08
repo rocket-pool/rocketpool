@@ -14,7 +14,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Events
     event NodeRegistered(address indexed node, uint256 time);
-    event NodeWithdrawalAddressSet(address indexed node, address indexed withdrawalAddress, uint256 time);
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
 
     // Construct
@@ -41,12 +40,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Get a node's current withdrawal address
     function getNodeWithdrawalAddress(address _nodeAddress) override public view returns (address) {
-        return getAddress(keccak256(abi.encodePacked("node.withdrawal.address", _nodeAddress)));
+        return rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
     }
 
     // Get a node's pending withdrawal address
     function getNodePendingWithdrawalAddress(address _nodeAddress) override public view returns (address) {
-        return getAddress(keccak256(abi.encodePacked("node.withdrawal.address.pending", _nodeAddress)));
+        return rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
     }
 
     // Get a node's timezone location
@@ -66,7 +65,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
-        setAddress(keccak256(abi.encodePacked("node.withdrawal.address", msg.sender)), msg.sender);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
@@ -74,34 +72,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         rocketClaimNode.register(msg.sender, true);
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
-    }
-
-    // Set a node's withdrawal address
-    function setWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress, bool _confirm) override external onlyLatestContract("rocketNodeManager", address(this)) {
-        // Check new withdrawal address
-        require(_newWithdrawalAddress != address(0x0), "Invalid withdrawal address");
-        // Confirm the transaction is from the node's current withdrawal address
-        address withdrawalAddress = getNodeWithdrawalAddress(_nodeAddress);
-        require(withdrawalAddress == msg.sender, "Only a tx from a node's withdrawal address can update it");
-        // Update immediately if confirmed
-        if (_confirm) {
-            updateWithdrawalAddress(_nodeAddress, _newWithdrawalAddress);
-        }
-        // Set pending withdrawal address if not confirmed
-        else {
-            setAddress(keccak256(abi.encodePacked("node.withdrawal.address.pending", _nodeAddress)), _newWithdrawalAddress);
-        }
-    }
-
-    // Confirm a node's new withdrawal address
-    function confirmWithdrawalAddress(address _nodeAddress) override external onlyLatestContract("rocketNodeManager", address(this)) {
-        // Get node by pending withdrawal address
-        address pendingWithdrawalAddress = getNodePendingWithdrawalAddress(_nodeAddress);
-        require(pendingWithdrawalAddress == msg.sender, "Confirmation must come from the pending withdrawal address");
-        // Deregister pending withdrawal address
-        deleteAddress(keccak256(abi.encodePacked("node.withdrawal.address.pending", _nodeAddress)));
-        // Update withdrawal address
-        updateWithdrawalAddress(_nodeAddress, msg.sender);
     }
 
     // Set a node's timezone location
@@ -113,14 +83,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Emit node timezone location set event
         emit NodeTimezoneLocationSet(msg.sender, block.timestamp);
-    }
-
-    // Update a node's withdrawal address
-    function updateWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress) private {
-        // Set new withdrawal address
-        setAddress(keccak256(abi.encodePacked("node.withdrawal.address", _nodeAddress)), _newWithdrawalAddress);
-        // Emit withdrawal address set event
-        emit NodeWithdrawalAddressSet(_nodeAddress, _newWithdrawalAddress, block.timestamp);
     }
 
 }
