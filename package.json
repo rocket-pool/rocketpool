@@ -26,7 +26,8 @@
     "truffle": "^5.1.51",
     "truffle-contract": "^3.*",
     "typedarray-to-buffer": "^3.1.5",
-    "web3": "^1.2.8"
+    "web3": "^1.2.8",
+    "bip39": "^3.0.4"
   },
   "prettier": {
     "singleQuote": true,

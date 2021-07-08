@@ -9,6 +9,7 @@ const Web3 = require('web3');
 const FS = require('fs');
 const Contract = require('truffle-contract');
 const HDWalletProvider = require("@truffle/hdwallet-provider");
+const mnemonicPhrase = process.env.MNEMONIC;
 
 // Importing babel to be able to use ES6 imports
 require("babel-register")({
@@ -41,10 +42,20 @@ module.exports = {
   plugins: ["solidity-coverage"],
   networks: {
     development: {
-      host: '127.0.0.1',
-      port: 8545,
+      provider: () =>
+      new HDWalletProvider({
+          mnemonic: {
+              phrase: mnemonicPhrase
+          },
+          providerOrUrl: "http://127.0.0.1:8545",
+          numberOfAddresses: 1, 
+          shareNonce: true,
+          derivationPath: "m/44'/60'/0'/0"
+      }),
       network_id: '*', // Match any network id
       gas: 12450000,
+      host: '127.0.0.1',
+      port: 8545,
     },
     // Solidity coverage test
     coverage: {
@@ -68,6 +79,7 @@ module.exports = {
       network_id: "88", 
       from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
       gas: 12450000,
+
     },
     // Geth RP Testnet Development
     // Remove accounts[0] lookup in migrations script when deploying
@@ -75,8 +87,7 @@ module.exports = {
         provider: () =>
         new HDWalletProvider({
             mnemonic: {
-                phrase: "",
-                password: null
+                phrase: mnemonicPhrase
             },
             providerOrUrl: "http://127.0.0.1:8545",
             numberOfAddresses: 1, 
