@@ -8,6 +8,11 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+  - task: NodeTool@0 
+    inputs:
+      versionSpec: '16.4.2'
+  - script: npm install
+  - script: npm run compile
   - task: DownloadSecureFile@1
     name: githubPEM
     displayName: 'Download Github PEM'
