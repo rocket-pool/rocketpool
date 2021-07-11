@@ -20,7 +20,7 @@ contract RocketStorage is RocketStorageInterface {
     mapping(bytes32 => string)     private stringStorage;
     mapping(bytes32 => bytes)      private bytesStorage;
 
-    // Protected storage
+    // Protected storage (not accessible by network contracts)
     mapping(address => address)    private withdrawalAddresses;
     mapping(address => address)    private pendingWithdrawalAddresses;
 

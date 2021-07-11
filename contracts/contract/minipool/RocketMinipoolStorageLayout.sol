@@ -28,6 +28,7 @@ abstract contract RocketMinipoolStorageLayout {
     // Status
     MinipoolStatus internal status;
     uint256 internal statusBlock;
+    bool internal withdrawn;
 
     // Deposit type
     MinipoolDeposit internal depositType;
@@ -38,19 +39,19 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal nodeDepositBalance;
     bool internal nodeDepositAssigned;
     uint256 internal nodeRefundBalance;
+    uint256 internal nodeSlashBalance;
 
     // User deposit details
     uint256 internal userDepositBalance;
     uint256 internal userDepositAssignedTime;
 
-    // Staking details
-    uint256 internal stakingStartBalance;
-    uint256 internal stakingEndBalance;
-
     // Upgrade options
     bool internal useLatestDelegate = false;
     address internal rocketMinipoolDelegate;
     address internal rocketMinipoolDelegatePrev;
+
+    // Local copy of RETH address
+    address internal rocketTokenRETH;
 
     // Used to prevent direct access to delegate and prevent calling initialise more than once
     StorageState storageState = StorageState.Undefined;
