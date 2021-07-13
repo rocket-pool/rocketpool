@@ -65,7 +65,7 @@ contract RocketStorage is RocketStorageInterface {
     // Protected storage
 
     // Get a node's withdrawal address
-    function getNodeWithdrawalAddress(address _nodeAddress) external override view returns (address) {
+    function getNodeWithdrawalAddress(address _nodeAddress) public override view returns (address) {
         // Check if _nodeAddress is a valid node
         if (!_getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)))) {
             return address(0);
@@ -88,7 +88,7 @@ contract RocketStorage is RocketStorageInterface {
         // Check new withdrawal address
         require(_newWithdrawalAddress != address(0x0), "Invalid withdrawal address");
         // Confirm the transaction is from the node's current withdrawal address
-        address withdrawalAddress = withdrawalAddresses[_nodeAddress];
+        address withdrawalAddress = getNodeWithdrawalAddress(_nodeAddress);
         require(withdrawalAddress == msg.sender, "Only a tx from a node's withdrawal address can update it");
         // Update immediately if confirmed
         if (_confirm) {

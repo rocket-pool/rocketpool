@@ -216,7 +216,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Processes a withdrawal and then destroys in a single transaction
-    function processWithdrawalAndDestroy() override external onlyInitialised onlyMinipoolOwner(msg.sender) {
+    // Can only be called by owner (_destroy reverts if not called by owner)
+    function processWithdrawalAndDestroy() override external onlyInitialised {
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         // Process withdrawal
@@ -376,6 +377,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         nodeRefundBalance = 0;
         // Get node withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        // Only the owner can destroy a minipool
+        require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "Only node operator can destroy minipool");
         // Transfer refund amount
         (bool success,) = nodeWithdrawalAddress.call{value: refundAmount}("");
         require(success, "ETH refund amount was not successfully transferred to node operator");

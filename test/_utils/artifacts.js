@@ -28,7 +28,6 @@ export const RocketMinipoolStatus = artifacts.require('RocketMinipoolStatus.sol'
 export const RocketNetworkBalances = artifacts.require('RocketNetworkBalances.sol');
 export const RocketNetworkFees = artifacts.require('RocketNetworkFees.sol');
 export const RocketNetworkPrices = artifacts.require('RocketNetworkPrices.sol');
-export const RocketNetworkWithdrawal = artifacts.require('RocketNetworkWithdrawal.sol');
 export const RocketNodeDeposit = artifacts.require('RocketNodeDeposit.sol');
 export const RocketNodeManager = artifacts.require('RocketNodeManager.sol');
 export const RocketNodeStaking = artifacts.require('RocketNodeStaking.sol');

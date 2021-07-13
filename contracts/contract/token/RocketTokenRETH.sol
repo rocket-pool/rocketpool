@@ -29,6 +29,12 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         version = 1;
     }
 
+    // Receive an ETH deposit from a minipool or generous individual
+    receive() external payable {
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
+    }
+
     // Calculate the amount of ETH backing an amount of rETH
     function getEthValue(uint256 _rethAmount) override public view returns (uint256) {
         // Get network balances
@@ -74,13 +80,6 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         uint256 totalEthValue = getEthValue(totalSupply());
         if (totalEthValue == 0) { return calcBase; }
         return calcBase.mul(address(this).balance).div(totalEthValue);
-    }
-
-    // Deposit ETH rewards
-    // Only accepts calls from the RocketNetworkWithdrawal contract
-    function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
 
     // Deposit excess ETH from deposit pool
