@@ -12,6 +12,7 @@ contract RocketStorage is RocketStorageInterface {
 
     // Events
     event NodeWithdrawalAddressSet(address indexed node, address indexed withdrawalAddress, uint256 time);
+    event GuardianChanged(address oldGuardian, address newGuardian);
 
     // Libraries
     using SafeMath for uint256;
@@ -23,6 +24,10 @@ contract RocketStorage is RocketStorageInterface {
     // Protected storage (not accessible by network contracts)
     mapping(address => address)    private withdrawalAddresses;
     mapping(address => address)    private pendingWithdrawalAddresses;
+
+    // Guardian address
+    address guardian;
+    address newGuardian;
 
     // Flag storage has been initialised
     bool storageInit = false;
@@ -36,7 +41,7 @@ contract RocketStorage is RocketStorageInterface {
             // Only Dapp and the guardian account are allowed access during initialisation.
             // tx.origin is only safe to use in this case for deployment since no external contracts are interacted with
             require((
-                _getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))) || _getBool(keccak256(abi.encodePacked("access.role", "guardian", tx.origin)))
+                _getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))) || tx.origin == guardian
             ), "Invalid or outdated network contract attempting access during deployment");
         }
         _;
@@ -45,8 +50,34 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @dev Construct RocketStorage
     constructor() {
-        // Set the main guardian upon deployment
-        _setBool(keccak256(abi.encodePacked("access.role", "guardian", msg.sender)), true);
+        // Set the guardian upon deployment
+        guardian = msg.sender;
+    }
+
+    // Get guardian address
+    function getGuardian() external override view returns (address) {
+        return guardian;
+    }
+
+    // Transfers guardianship to a new address
+    function setGuardian(address _newAddress) external override {
+        // Check tx comes from current guardian
+        require(msg.sender == guardian, "Is not guardian account");
+        // Store new address awaiting confirmation
+        newGuardian = _newAddress;
+    }
+
+    // Confirms change of guardian
+    function confirmGuardian() external override {
+        // Check tx came from new guardian address
+        require(msg.sender == newGuardian, "Confirmation must come from new guardian address");
+        // Store old guardian for event
+        address oldGuardian = guardian;
+        // Update guardian and clear storage
+        guardian = newGuardian;
+        delete newGuardian;
+        // Emit event
+        emit GuardianChanged(oldGuardian, guardian);
     }
 
     // Set this as being deployed now
@@ -57,7 +88,7 @@ contract RocketStorage is RocketStorageInterface {
     // Set this as being deployed now
     function setDeployedStatus() external {
         // Only guardian can lock this down
-        require(_getBool(keccak256(abi.encodePacked("access.role", "guardian", msg.sender))) == true, "Is not guardian account");
+        require(msg.sender == guardian, "Is not guardian account");
         // Set it now
         storageInit = true;
     }
