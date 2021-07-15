@@ -33,6 +33,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Status getters
     function getStatus() override external view returns (MinipoolStatus) { return status; }
     function getStatusBlock() override external view returns (uint256) { return statusBlock; }
+    function getStatusTime() override external view returns (uint256) { return statusTime; }
 
     // Deposit type getter
     function getDepositType() override external view returns (MinipoolDeposit) { return depositType; }
@@ -93,6 +94,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Set initial status
         status = MinipoolStatus.Initialized;
         statusBlock = block.number;
+        statusTime = block.timestamp;
         // Set details
         depositType = _depositType;
         nodeAddress = _nodeAddress;
@@ -156,7 +158,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Owner can call to destroy the minipool, freeing up locked RPL to withdraw
-    function destroy() external override onlyMinipoolOwner(msg.sender) onlyInitialised {
+    function destroy() external override onlyInitialised {
         // Check status
         require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
         // Check processWithdrawal has been called at least once
@@ -234,21 +236,23 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Processes a withdrawal
     // When called during staking status, requires 16 ether in the pool
-    // When called by non-owner with less than 16 ether, requires 50000 blocks to have passed since being made withdrawable
+    // When called by non-owner with less than 16 ether, requires 7 days to have passed since being made withdrawable
     function processWithdrawal() override external onlyInitialised {
         // Must be called while staking or withdrawable
         require(status == MinipoolStatus.Staking || status == MinipoolStatus.Withdrawable, "Minipool must be staking or withdrawable");
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
+        // Get node withdrawal address
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         // If minipool is still staking
         if (status == MinipoolStatus.Staking) {
             // Then this can only be run if balance >= 16 ether
-            require(totalBalance >= 16 ether, "Minipool does not have enough ETH to process a withdrawal");
+            require(msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress || totalBalance >= 16 ether, "Minipool does not have enough ETH to process a withdrawal");
         } else {
             // If it's not the node operator calling and less than 16 ether in pool
-            if (msg.sender != nodeAddress && totalBalance < 16 ether) {
+            if ((msg.sender != nodeAddress && msg.sender != nodeWithdrawalAddress) && totalBalance < 16 ether) {
                 // Then enough blocks have to have elapsed
-                require(block.number > statusBlock.add(50000), "Non-owner must wait longer to process sub 16 ETH withdrawal");
+                require(block.timestamp > statusTime.add(7 days), "Non-owner must wait longer to process sub 16 ETH withdrawal");
             }
         }
         // Process withdrawal
@@ -351,6 +355,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Update status
         status = _status;
         statusBlock = block.number;
+        statusTime = block.timestamp;
         // Emit status updated event
         emit StatusUpdated(uint8(_status), block.timestamp);
     }

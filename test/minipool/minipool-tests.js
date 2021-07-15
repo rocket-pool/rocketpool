@@ -1,4 +1,11 @@
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsDeposit, RocketMinipoolManager, RevertOnTransfer } from '../_utils/artifacts'
+import {
+  RocketDAOProtocolSettingsMinipool,
+  RocketDAOProtocolSettingsNetwork,
+  RocketDAOProtocolSettingsDeposit,
+  RocketMinipoolManager,
+  RevertOnTransfer,
+  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL
+} from '../_utils/artifacts'
 import { mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -203,6 +210,87 @@ export default function() {
             await shouldRevert(refund(prelaunchMinipool, {
                 from: random,
             }), 'Random address refunded from a minipool');
+
+        });
+
+
+        //
+        // Destroy
+        //
+
+
+        it(printTitle('node operator', 'can destroy a withdrawn minipool'), async () => {
+
+          // Withdraw without destroying
+          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+
+          // Destroy
+          await withdrawableMinipool.destroy({ from: nodeWithdrawalAddress });
+
+          // Minipool contract should be dead
+          let code = await web3.eth.getCode(withdrawableMinipool.address);
+          assert(code === '0x', 'Minipool contract was not destroyed')
+
+        });
+
+
+        it(printTitle('node operator', 'cannot destroy a non-withdrawn minipool'), async () => {
+
+          // Destroy
+          await shouldRevert(withdrawableMinipool.destroy({ from: nodeWithdrawalAddress }), 'Minipool was destroyed before withdrawn', 'Minipool must have been withdrawn before destroying');
+
+        });
+
+
+        it(printTitle('random address', 'cannot destroy a withdrawn minipool'), async () => {
+
+          // Withdraw without destroying
+          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+
+          // Destroy
+          await shouldRevert(withdrawableMinipool.destroy({ from: random }), 'Minipool was destroyed by random', 'Only node operator can destroy minipool');
+        });
+
+
+        //
+        // Slash
+        //
+
+
+        it(printTitle('random address', 'can slash node operator if withdrawal balance is less than 16 ETH'), async () => {
+
+          // Stake the prelaunch minipool (it has 16 ETH user funds)
+          await stakeMinipool(prelaunchMinipool, null, {from: node});
+          // Mark it as withdrawable
+          await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
+          // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+          await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, false);
+          // Call slash method
+          await prelaunchMinipool.slash({ from: random });
+
+          // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
+          const rocketVault = await RocketVault.deployed();
+          const rocketTokenRPL = await RocketTokenRPL.deployed();
+          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+          assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
+
+        });
+
+
+        it(printTitle('node operator', 'is slashed if withdraw is processed when balance is less than 16 ETH'), async () => {
+
+          // Stake the prelaunch minipool (it has 16 ETH user funds)
+          await stakeMinipool(prelaunchMinipool, null, {from: node});
+          // Mark it as withdrawable
+          await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
+          // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+          await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, true);
+
+          // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
+          const rocketVault = await RocketVault.deployed();
+          const rocketTokenRPL = await RocketTokenRPL.deployed();
+          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+          assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
 
         });
 
@@ -425,7 +513,6 @@ export default function() {
 
 
         });
-
 
 
         //
