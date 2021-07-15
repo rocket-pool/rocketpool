@@ -28,7 +28,7 @@ abstract contract RocketMinipoolStorageLayout {
     // Status
     MinipoolStatus internal status;
     uint256 internal statusBlock;
-    bool internal withdrawn;
+    uint256 internal withdrawalBlock;
 
     // Deposit type
     MinipoolDeposit internal depositType;

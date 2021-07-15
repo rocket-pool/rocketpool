@@ -160,7 +160,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check status
         require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
         // Check processWithdrawal has been called at least once
-        require(withdrawn, "Minipool must have been withdrawn before destroying");
+        require(withdrawalBlock > 0, "Minipool must have been withdrawn before destroying");
         // Check if owner's RPL requires slashing and slash it
         if (nodeSlashBalance > 0) {
             _slash();
@@ -256,6 +256,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     function _processWithdrawal(uint256 _balance) private {
+        // Rate limit this method to prevent front running
+        require(block.number > withdrawalBlock + 100, "Withdrawal of this minipool is on cooldown");
         // Deposit amounts
         uint256 stakingDepositTotal = 32 ether;
         uint256 userAmount = userDepositBalance;
@@ -282,8 +284,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         nodeRefundBalance = nodeRefundBalance.add(nodeAmount);
         // Send user amount to rETH contract
         payable(rocketTokenRETH).transfer(userAmount);
-        // Set withdrawn flag to allow owner to destroy if desired
-        withdrawn = true;
+        // Save block to prevent multiple withdrawals within a few blocks
+        withdrawalBlock = block.number;
         // Log it
         emit EtherWithdrawalProcessed(msg.sender, nodeAmount, userAmount, _balance, block.timestamp);
     }
@@ -382,7 +384,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Transfer refund amount
         (bool success,) = nodeWithdrawalAddress.call{value: refundAmount}("");
         require(success, "ETH refund amount was not successfully transferred to node operator");
-        // Send user amount to rETH contract
+        // Send any remaining balance to rETH contract
         payable(rocketTokenRETH).transfer(address(this).balance);
         // Self destruct to node withdrawal address (should be 0 ETH due to above line)
         selfdestruct(payable(nodeWithdrawalAddress));
