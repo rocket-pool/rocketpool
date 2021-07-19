@@ -164,7 +164,7 @@ export default function() {
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
-            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, false), 'Processed withdrawal before 50k blocks passed', 'Non-owner must wait longer to process sub 16 ETH withdrawal');
+            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, random, false), 'Processed withdrawal before 7 days have passed', 'Non-owner must wait longer to process sub 16 ETH withdrawal');
         });
 
 
