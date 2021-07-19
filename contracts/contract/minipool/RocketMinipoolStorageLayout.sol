@@ -54,6 +54,9 @@ abstract contract RocketMinipoolStorageLayout {
     // Local copy of RETH address
     address internal rocketTokenRETH;
 
+    // Local copy of slashing contract
+    address internal rocketMinipoolSlashing;
+
     // Used to prevent direct access to delegate and prevent calling initialise more than once
     StorageState storageState = StorageState.Undefined;
 }

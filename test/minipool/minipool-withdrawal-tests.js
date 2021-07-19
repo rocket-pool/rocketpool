@@ -1,6 +1,7 @@
 import {
+    RocketDAONodeTrustedUpgrade,
     RocketDAOProtocolSettingsMinipool,
-    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsNetwork, RocketMinipoolSlashing, RocketMinipoolStatus, RocketStorage, SlashTest,
 } from '../_utils/artifacts'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -11,6 +12,7 @@ import { mintRPL } from '../_helpers/tokens';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { increaseTime, mineBlocks } from '../_utils/evm'
+import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap'
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -30,6 +32,8 @@ export default function() {
         let launchTimeout = 20;
         let withdrawalDelay = 20;
         let minipool;
+        let maxSlashRate = web3.utils.toWei('0.5', 'ether');
+        let slashTestContract;
 
         before(async () => {
 
@@ -44,6 +48,17 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
+
+            // Add slashing helper contract
+            const rocketStorage = await RocketStorage.deployed();
+            slashTestContract = await SlashTest.new(rocketStorage.address, {from: owner});
+            await setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketSlashTest', slashTestContract.abi, slashTestContract.address, {
+                from: owner,
+            });
+
+            // Enable slashing
+            const rocketMinipoolSlashing = await RocketMinipoolSlashing.deployed();
+            await rocketMinipoolSlashing.setMaxSlashRate(maxSlashRate, {from: owner})
 
             // Hard code fee to 50%
             const fee = web3.utils.toWei('0.5', 'ether');
@@ -185,6 +200,42 @@ export default function() {
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
             await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and destroyed pool while status was not withdrawable', 'Minipool must be withdrawable to destroy');
+        });
+
+
+        // ETH slashing events
+
+
+        it(printTitle('node operator withdrawal address', 'can process withdrawal and destroy pool when slashed by DAO'), async () => {
+            // Slash the minipool 50% of it's ETH
+            await slashTestContract.setSlashRate(minipool.address, maxSlashRate);
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% slash, and extra 9.5 goes to the user
+            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '26.5', '9.5');
+        });
+
+
+        it(printTitle('node operator withdrawal address', 'cannot be slashed greater than the max slash rate set by DAO'), async () => {
+            // Try to slash the minipool 75% of it's ETH (max is 50%)
+            await slashTestContract.setSlashRate(minipool.address, web3.utils.toWei('0.75'));
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% slash, and extra 9.5 goes to the user
+            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '26.5', '9.5');
+        });
+
+
+        it(printTitle('guardian', 'can disable slashing all together'), async () => {
+            // Disable slashing by setting rate to 0
+            const rocketMinipoolSlashing = await RocketMinipoolSlashing.deployed();
+            await rocketMinipoolSlashing.setMaxSlashRate('0', {from: owner})
+            // Try to slash the minipool 50%
+            await slashTestContract.setSlashRate(minipool.address, web3.utils.toWei('0.5'));
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '17', '19');
         });
     })
 }

@@ -10,6 +10,7 @@ import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../interface/minipool/RocketMinipoolSlashingInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -20,6 +21,9 @@ import "../../types/MinipoolStatus.sol";
 // An individual minipool in the Rocket Pool network
 
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
+
+    // Constants
+    uint256 constant calcBase = 1 ether;
 
     // Libs
     using SafeMath for uint;
@@ -284,6 +288,16 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Calculate node amount as what's left over after user amount
         uint256 nodeAmount = _balance.sub(userAmount);
+        // Check if node needs to be slashed
+        uint256 slashRate = RocketMinipoolSlashingInterface(rocketMinipoolSlashing).getSlashRate(address(this));
+        if (slashRate > 0) {
+            uint256 slashAmount = nodeAmount.mul(slashRate).div(calcBase);
+            if (slashAmount > nodeAmount) {
+                slashAmount = nodeAmount;
+            }
+            nodeAmount = nodeAmount.sub(slashAmount);
+            userAmount = userAmount.add(slashAmount);
+        }
         // Pay node operator via refund
         nodeRefundBalance = nodeRefundBalance.add(nodeAmount);
         // Send user amount to rETH contract

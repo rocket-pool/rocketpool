@@ -1,4 +1,11 @@
-import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketMinipoolManager, RocketNodeManager, RocketTokenRETH } from '../_utils/artifacts';
+import {
+    RocketDAOProtocolSettingsNetwork,
+    RocketDepositPool,
+    RocketMinipoolManager,
+    RocketMinipoolSlashing,
+    RocketNodeManager,
+    RocketTokenRETH
+} from '../_utils/artifacts'
 
 
 export async function withdrawValidatorBalance(minipool, withdrawalBalance, from, destroy = false) {
@@ -120,6 +127,10 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // console.log('Node Withdrawal Address Amount:', web3.utils.fromWei(balances1.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)));
     // console.log('rETH Contract Amount:', web3.utils.fromWei(balances1.rethContractEth), web3.utils.fromWei(balances2.rethContractEth), web3.utils.fromWei(balances2.rethContractEth.sub(balances1.rethContractEth)));
 
+    // Get slash rate for this minipool
+    const rocketMinipoolSlashing = await RocketMinipoolSlashing.deployed();
+    const slashRate = await rocketMinipoolSlashing.getSlashRate(minipool.address);
+
     // Calculate rewards
     let depositBalance = web3.utils.toBN(web3.utils.toWei('32'));
     if (withdrawalBalance.gte(depositBalance)) {
@@ -129,6 +140,16 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
         userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
         let nodeAmount = withdrawalBalance.sub(userAmount);
+
+        // Adjust amounts according to slash rate
+        if (slashRate.gt(0)) {
+            let slashAmount = nodeAmount.mul(slashRate).div(web3.utils.toBN(web3.utils.toWei('1')));
+            if (slashRate.gt(nodeAmount)) {
+                slashAmount = nodeAmount;
+            }
+            nodeAmount = nodeAmount.sub(slashAmount);
+            userAmount = userAmount.add(slashAmount);
+        }
 
         // console.log('Rewards: ', web3.utils.fromWei(rewards));
         // console.log('Node amount: ', web3.utils.fromWei(nodeAmount));
