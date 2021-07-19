@@ -1,4 +1,3 @@
-import { mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
@@ -6,7 +5,7 @@ import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
 import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL, setNodeWithdrawalAddress } from '../_helpers/node';
-import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
+import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens'
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer'
 import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketNetworkBalances, RocketTokenRETH } from '../_utils/artifacts'
@@ -262,7 +261,19 @@ export default function() {
             }), 'Burned rETH with an insufficient deposit pool excess ETH balance');
 
         });
-        
 
+
+        it(printTitle('random', 'can deposit excess collateral into the deposit pool'), async () => {
+            // Get rETH contract
+            const rocketTokenRETH = await RocketTokenRETH.deployed();
+            // Send enough ETH to rETH contract to exceed target collateralisation rate
+            await web3.eth.sendTransaction({from: random, to: rocketTokenRETH.address, value: web3.utils.toWei('32')});
+            // Call the deposit excess function
+            await depositExcessCollateral({from: random});
+            // Collateral should now be at the target rate
+            const collateralRate = await getRethCollateralRate();
+            // Collateral rate should now be 1 (the target rate)
+            assert(collateralRate.eq(web3.utils.toBN(web3.utils.toWei('1'))));
+        });
     });
 }

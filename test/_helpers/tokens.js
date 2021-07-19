@@ -74,3 +74,8 @@ export async function approveRPL(spender, amount, txOptions) {
     await rocketTokenRPL.approve(spender, amount, txOptions);
 }
 
+
+export async function depositExcessCollateral(txOptions) {
+    const rocketTokenRETH = await RocketTokenRETH.deployed();
+    await rocketTokenRETH.depositExcessCollateral(txOptions);
+}
