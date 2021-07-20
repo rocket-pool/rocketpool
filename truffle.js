@@ -46,10 +46,10 @@ module.exports = {
   plugins: ["solidity-coverage"],
   networks: {
     development: {
-      network_id: '*', // Match any network id
-      gas: 12450000,
       host: '127.0.0.1',
       port: 8545,
+      network_id: '*', // Match any network id
+      gas: 12450000,
     },
     // Solidity coverage test
     coverage: {
