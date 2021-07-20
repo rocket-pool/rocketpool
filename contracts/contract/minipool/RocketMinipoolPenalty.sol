@@ -11,6 +11,9 @@ import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 
 contract RocketMinipoolPenalty is RocketBase, RocketMinipoolPenaltyInterface {
 
+    // Events
+    event MaxPenaltyRateUpdated(uint256 rate, uint256 time);
+
     // Libs
     using SafeMath for uint;
 
@@ -23,7 +26,10 @@ contract RocketMinipoolPenalty is RocketBase, RocketMinipoolPenaltyInterface {
 
     // Get/set the current max penalty rate
     function setMaxPenaltyRate(uint256 _rate) external override onlyGuardian {
+        // Update rate
         maxPenaltyRate = _rate;
+        // Emit event
+        emit MaxPenaltyRateUpdated(_rate, block.timestamp);
     }
     function getMaxPenaltyRate() external override view returns (uint256) {
         return maxPenaltyRate;

@@ -24,6 +24,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Constants
     uint256 constant calcBase = 1 ether;
+    uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
 
     // Libs
     using SafeMath for uint;
@@ -224,12 +225,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Processes a withdrawal and then destroys in a single transaction
     // Can only be called by owner (_destroy reverts if not called by owner)
     function distributeBalanceAndDestroy() override external onlyInitialised {
+        // Check status
+        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         // Process withdrawal
         _distributeBalance(totalBalance);
-        // Check status
-        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
         // If slash is required then perform it
         if (nodeSlashBalance > 0) {
             _slash();
@@ -265,7 +266,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     function _distributeBalance(uint256 _balance) private {
         // Rate limit this method to prevent front running
-        require(block.number > withdrawalBlock + 100, "Withdrawal of this minipool is on cooldown");
+        require(block.number > withdrawalBlock + distributeBalance, "Distribution of this minipool's balance is on cooldown");
         // Deposit amounts
         uint256 stakingDepositTotal = 32 ether;
         uint256 userAmount = userDepositBalance;

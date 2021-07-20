@@ -133,7 +133,7 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
     }
 
     // Sends any excess ETH from this contract to the deposit pool (as determined by target collateral rate)
-    function depositExcessCollateral() public {
+    function depositExcessCollateral() external {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
