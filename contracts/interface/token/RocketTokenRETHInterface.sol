@@ -11,6 +11,7 @@ interface RocketTokenRETHInterface is IERC20 {
     function getTotalCollateral() external view returns (uint256);
     function getCollateralRate() external view returns (uint256);
     function depositExcess() external payable;
+    function depositExcessCollateral() external;
     function mint(uint256 _ethAmount, address _to) external;
     function burn(uint256 _rethAmount) external;
 }

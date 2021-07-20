@@ -15,6 +15,7 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
@@ -405,6 +406,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "Only node operator can destroy minipool");
         // Send any remaining balance to rETH contract
         payable(rocketTokenRETH).transfer(address(this).balance.sub(refundAmount));
+        // Send any overcollateralised ETH to the deposit pool
+        RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
         // Self destruct the refund amount to node withdrawal address
         selfdestruct(payable(nodeWithdrawalAddress));
     }
