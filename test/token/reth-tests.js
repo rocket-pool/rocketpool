@@ -11,7 +11,7 @@ import { transferReth } from './scenario-reth-transfer'
 import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketNetworkBalances, RocketTokenRETH } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
-import { mineBlocks } from '../_utils/evm'
+import { increaseTime, mineBlocks } from '../_utils/evm'
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -173,6 +173,8 @@ export default function() {
                 value: withdrawalBalance
             });
 
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Run the payout function now
             await withdrawValidatorBalance(minipool, '0', random, false);
 
@@ -217,6 +219,8 @@ export default function() {
                 value: withdrawalBalance
             });
 
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Run the payout function now
             await withdrawValidatorBalance(minipool, '0', random, false);
 
