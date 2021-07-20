@@ -10,6 +10,10 @@ const FS = require('fs');
 const Contract = require('truffle-contract');
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const mnemonicPhrase = process.env.MNEMONIC;
+const mnemonicPassword = process.env.MNEMONIC_PASSWORD;
+const providerHost = process.env.PROVIDER_HOST || 'localhost'; 
+const providerPort = process.env.PROVIDER_PORT || 8545;
+const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
 
 // Importing babel to be able to use ES6 imports
 require("babel-register")({
@@ -42,16 +46,6 @@ module.exports = {
   plugins: ["solidity-coverage"],
   networks: {
     development: {
-      provider: () =>
-      new HDWalletProvider({
-          mnemonic: {
-              phrase: mnemonicPhrase
-          },
-          providerOrUrl: "http://127.0.0.1:8545",
-          numberOfAddresses: 1, 
-          shareNonce: true,
-          derivationPath: "m/44'/60'/0'/0"
-      }),
       network_id: '*', // Match any network id
       gas: 12450000,
       host: '127.0.0.1',
@@ -79,7 +73,6 @@ module.exports = {
       network_id: "88", 
       from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
       gas: 12450000,
-
     },
     // Geth RP Testnet Development
     // Remove accounts[0] lookup in migrations script when deploying
@@ -87,18 +80,18 @@ module.exports = {
         provider: () =>
         new HDWalletProvider({
             mnemonic: {
-                phrase: mnemonicPhrase
+                phrase: mnemonicPhrase,
+                password: mnemonicPassword
             },
-            providerOrUrl: "http://127.0.0.1:8545",
+            providerOrUrl: `${providerProtocol}://${providerHost}:${providerPort}`,
             numberOfAddresses: 1, 
             shareNonce: true,
-            derivationPath: "m/44'/60'/0'/0"
         }),
-        host: 'http://127.0.0.1',
-        port: 8545,
+        host: providerHost,
+        port: providerPort,
         network_id: "5", 
-        from: "0xFfc1f495d6D033Bc3CE027A87bfDe574b09b7BeD",
         gas: 8000000,
+        hasProvider: true
     },
   },
   mocha: {
