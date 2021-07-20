@@ -249,15 +249,17 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         // Get node withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        // If minipool is still staking
-        if (status == MinipoolStatus.Staking) {
-            // Then this can only be run if balance >= 16 ether
-            require(msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress || totalBalance >= 16 ether, "Minipool does not have enough ETH to process a withdrawal");
-        } else {
-            // If it's not the node operator calling and less than 16 ether in pool
-            if ((msg.sender != nodeAddress && msg.sender != nodeWithdrawalAddress) && totalBalance < 16 ether) {
-                // Then enough blocks have to have elapsed
-                require(block.timestamp > statusTime.add(7 days), "Non-owner must wait longer to process sub 16 ETH withdrawal");
+        // If it's not the owner calling
+        if (msg.sender != nodeAddress && msg.sender != nodeWithdrawalAddress) {
+            // And the pool is in staking status
+            if (status == MinipoolStatus.Staking) {
+                // Then balance must be greater than 16 ETH
+                require(totalBalance >= 16 ether, "Balance must be greater than 16 ETH");
+            } else {
+                // Then enough time must have elapsed
+                require(block.timestamp > statusTime.add(14 days), "Non-owner must wait 14 days after withdrawal to distribute balance");
+                // And balance must be greater than 4 ETH
+                require(address(this).balance >= 4 ether, "Balance must be greater than 4 ETH");
             }
         }
         // Process withdrawal
