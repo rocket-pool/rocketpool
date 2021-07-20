@@ -66,7 +66,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any account other than a guardian account (temporary account allowed access to settings before DAO is fully enabled)
     */
     modifier onlyGuardian() {
-        require(getBool(keccak256(abi.encodePacked("access.role", "guardian", msg.sender))), "Account is not a temporary guardian");
+        require(msg.sender == rocketStorage.getGuardian(), "Account is not a temporary guardian");
         _;
     }
 

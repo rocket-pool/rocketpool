@@ -99,9 +99,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         processDeposit(rocketVault, rocketDAOProtocolSettingsDeposit);
     }
 
-    // Recycle a deposit from a withdrawn minipool
-    // Only accepts calls from the RocketNetworkWithdrawal contract
-    function recycleWithdrawnDeposit() override external payable onlyThisLatestContract onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
+    // Recycle excess ETH from the rETH token contract
+    function recycleExcessCollateral() override external payable onlyThisLatestContract onlyLatestContract("rocketTokenRETH", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));

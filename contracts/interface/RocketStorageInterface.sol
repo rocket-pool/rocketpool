@@ -4,6 +4,11 @@ pragma solidity 0.7.6;
 
 interface RocketStorageInterface {
 
+    // Guardian
+    function getGuardian() external view returns(address);
+    function setGuardian(address _newAddress) external;
+    function confirmGuardian() external;
+
     // Getters
     function getAddress(bytes32 _key) external view returns (address);
     function getUint(bytes32 _key) external view returns (uint);
@@ -34,4 +39,10 @@ interface RocketStorageInterface {
     // Arithmetic
     function addUint(bytes32 _key, uint256 _amount) external;
     function subUint(bytes32 _key, uint256 _amount) external;
+
+    // Protected storage
+    function getNodeWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function getNodePendingWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function setWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress, bool _confirm) external;
+    function confirmWithdrawalAddress(address _nodeAddress) external;
 }

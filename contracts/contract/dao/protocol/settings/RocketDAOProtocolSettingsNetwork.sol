@@ -21,7 +21,6 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.submit.balances.frequency", 5760);      // ~24 hours
             setSettingBool("network.submit.prices.enabled", true);
             setSettingUint("network.submit.prices.frequency", 5760);        // ~24 hours
-            setSettingBool("network.process.withdrawals.enabled", true);
             setSettingUint("network.node.fee.minimum", 0.05 ether);         // 5%
             setSettingUint("network.node.fee.target", 0.10 ether);          // 10%
             setSettingUint("network.node.fee.maximum", 0.20 ether);         // 20%
@@ -68,11 +67,6 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     // The frequency in blocks at which network prices should be submitted by trusted nodes
     function getSubmitPricesFrequency() override external view returns (uint256) {
         return getSettingUint("network.submit.prices.frequency");
-    }
-
-    // Process withdrawals currently enabled (trusted nodes only)
-    function getProcessWithdrawalsEnabled() override external view returns (bool) {
-        return getSettingBool("network.process.withdrawals.enabled");
     }
 
     // The minimum node commission rate as a fraction of 1 ether

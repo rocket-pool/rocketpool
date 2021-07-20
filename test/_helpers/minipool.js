@@ -3,31 +3,6 @@ import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '.
 import { getTxContractEvents } from '../_utils/contract';
 
 
-// Get a minipool's total balance at withdrawal
-export async function getMinipoolWithdrawalTotalBalance(minipoolAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let balance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
-    return balance;
-}
-
-
-// Get a minipool's node balance at withdrawal
-export async function getMinipoolWithdrawalNodeBalance(minipoolAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let balance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
-    return balance;
-}
-
-
-// Get a minipool's user balance at withdrawal
-export async function getMinipoolWithdrawalUserBalance(minipoolAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let totalBalance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
-    let nodeBalance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
-    return totalBalance.sub(nodeBalance);
-}
-
-
 // Get the number of minipools a node has
 export async function getNodeMinipoolCount(nodeAddress) {
     const rocketMinipoolManager = await RocketMinipoolManager.deployed();
@@ -107,9 +82,6 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 // Progress a minipool to staking
 export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
-    // Load contracts
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-
     // Create validator pubkey
     if (!validatorPubkey) validatorPubkey = getValidatorPubkey();
 
@@ -132,21 +104,9 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
 
 // Submit a minipool withdrawable event
-export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions) {
+export async function submitMinipoolWithdrawable(minipoolAddress, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions);
-}
-
-
-// Send validator balance to a minipool
-export async function payoutMinipool(minipool, confirm = false, txOptions) {
-    await minipool.payout(confirm, txOptions);
-}
-
-
-// Withdraw node balances & rewards from a minipool and destroy it
-export async function withdrawMinipool(minipool, txOptions) {
-    await minipool.withdraw(txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, txOptions);
 }
 
 

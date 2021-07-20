@@ -95,26 +95,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipoolAddress)));
     }
 
-    // Get a minipool's total balance at withdrawal
-    function getMinipoolWithdrawalTotalBalance(address _minipoolAddress) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.total", _minipoolAddress)));
-    }
-
-    // Get a minipool's node balance at withdrawal
-    function getMinipoolWithdrawalNodeBalance(address _minipoolAddress) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)));
-    }
-
-    // Get a minipool's withdrawable status
-    function getMinipoolWithdrawable(address _minipoolAddress) override external view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("minipool.withdrawable", _minipoolAddress)));
-    }
-
-    // Get a minipool's withdrawal processed status
-    function getMinipoolWithdrawalProcessed(address _minipoolAddress) override external view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)));
-    }
-
     // Increments _nodeAddress' number of minipools in staking status
     function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Update the node specific count
@@ -265,20 +245,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), msg.sender);
         // Add minipool to node validating minipools index
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), msg.sender);
-    }
-
-    // Set a minipool's withdrawal balances and withdrawable status
-    // Only accepts calls from the RocketMinipoolStatus contract
-    function setMinipoolWithdrawalBalances(address _minipoolAddress, uint256 _total, uint256 _node) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketMinipoolStatus", msg.sender) {
-        setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.total", _minipoolAddress)), _total);
-        setUint(keccak256(abi.encodePacked("minipool.withdrawal.balance.node", _minipoolAddress)), _node);
-        setBool(keccak256(abi.encodePacked("minipool.withdrawable", _minipoolAddress)), true);
-    }
-
-    // Set a minipool's withdrawal processed status
-    // Only accepts calls from the RocketNetworkWithdrawal contract
-    function setMinipoolWithdrawalProcessed(address _minipoolAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        setBool(keccak256(abi.encodePacked("minipool.withdrawal.processed", _minipoolAddress)), true);
     }
 
 }

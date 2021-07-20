@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../RocketBase.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedUpgradeInterface.sol";
- 
+
 // Handles network contract upgrades
 
 contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeInterface {
@@ -46,6 +46,7 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         require(nameHash != keccak256(abi.encodePacked("rocketTokenRPL")),            "Cannot upgrade token contracts");
         require(nameHash != keccak256(abi.encodePacked("rocketTokenRPLFixedSupply")), "Cannot upgrade token contracts");
         require(nameHash != keccak256(abi.encodePacked("casperDeposit")),             "Cannot upgrade the casper deposit contract");
+        require(nameHash != keccak256(abi.encodePacked("rocketMinipoolPenalty")),      "Cannot upgrade minipool penalty contract");
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
         require(oldContractAddress != address(0x0), "Contract does not exist");

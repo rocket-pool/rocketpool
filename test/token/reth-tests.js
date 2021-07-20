@@ -1,16 +1,17 @@
-import { mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { getDepositExcessBalance, userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, getMinipoolWithdrawalUserBalance, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, payoutMinipool } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL, setNodeWithdrawalAddress } from '../_helpers/node';
-import { getRethBalance, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
+import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens'
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer'
-import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketNetworkBalances, RocketTokenRETH } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
+import { mineBlocks } from '../_utils/evm'
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -65,12 +66,18 @@ export default function() {
             // Create withdrawable minipool
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, validatorPubkey, {from: node});
-            await submitMinipoolWithdrawable(minipool.address, web3.utils.toWei('32', 'ether'), withdrawalBalance, {from: trustedNode});
+            await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
 
             // Update network ETH total to alter rETH exchange rate
-            let minipoolUserBalance = await getMinipoolWithdrawalUserBalance(minipool.address);
             let rethSupply = await getRethTotalSupply();
-            await submitBalances(1, minipoolUserBalance, 0, rethSupply, {from: trustedNode});
+            let nodeFee = await minipool.getNodeFee.call()
+            let depositBalance = web3.utils.toBN(web3.utils.toWei('32'));
+            let userAmount = web3.utils.toBN(web3.utils.toWei('16'));
+            let rewards = web3.utils.toBN(withdrawalBalance).sub(depositBalance);
+            let halfRewards = rewards.divn(2);
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
+            let ethBalance = userAmount.add(halfRewards.sub(nodeCommissionFee));
+            await submitBalances(1, ethBalance, 0, rethSupply, {from: trustedNode});
 
             // Get & check staker rETH balance
             rethBalance = await getRethBalance(staker1);
@@ -159,7 +166,7 @@ export default function() {
             // Wait "network.reth.deposit.delay" blocks
             await mineBlocks(web3, depositDeplay);
 
-            // Send ETH to the minipool to simulate receving from SWC
+            // Send ETH to the minipool to simulate receiving from SWC
             await web3.eth.sendTransaction({
                 from: trustedNode,
                 to: minipool.address,
@@ -167,9 +174,7 @@ export default function() {
             });
 
             // Run the payout function now
-            await payoutMinipool(minipool, true, {
-                from: node
-            });
+            await withdrawValidatorBalance(minipool, '0', random, false);
 
             // Burn rETH
             await burnReth(rethBalance, {
@@ -178,7 +183,7 @@ export default function() {
 
         });
 
-        
+
         it(printTitle('rETH holder', 'can burn rETH for excess deposit pool ETH'), async () => {
 
             // Make user deposit
@@ -213,9 +218,7 @@ export default function() {
             });
 
             // Run the payout function now
-            await payoutMinipool(minipool, true, {
-                from: node
-            });
+            await withdrawValidatorBalance(minipool, '0', random, false);
 
             // Get burn amounts
             let burnZero = web3.utils.toWei('0', 'ether');
@@ -259,7 +262,19 @@ export default function() {
             }), 'Burned rETH with an insufficient deposit pool excess ETH balance');
 
         });
-        
 
+
+        it(printTitle('random', 'can deposit excess collateral into the deposit pool'), async () => {
+            // Get rETH contract
+            const rocketTokenRETH = await RocketTokenRETH.deployed();
+            // Send enough ETH to rETH contract to exceed target collateralisation rate
+            await web3.eth.sendTransaction({from: random, to: rocketTokenRETH.address, value: web3.utils.toWei('32')});
+            // Call the deposit excess function
+            await depositExcessCollateral({from: random});
+            // Collateral should now be at the target rate
+            const collateralRate = await getRethCollateralRate();
+            // Collateral rate should now be 1 (the target rate)
+            assert(collateralRate.eq(web3.utils.toBN(web3.utils.toWei('1'))));
+        });
     });
 }
