@@ -10,7 +10,7 @@ import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/minipool/RocketMinipoolSlashingInterface.sol";
+import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -288,15 +288,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Calculate node amount as what's left over after user amount
         uint256 nodeAmount = _balance.sub(userAmount);
-        // Check if node needs to be slashed
-        uint256 slashRate = RocketMinipoolSlashingInterface(rocketMinipoolSlashing).getSlashRate(address(this));
-        if (slashRate > 0) {
-            uint256 slashAmount = nodeAmount.mul(slashRate).div(calcBase);
-            if (slashAmount > nodeAmount) {
-                slashAmount = nodeAmount;
+        // Check if node has an ETH penalty
+        uint256 penaltyRate = RocketMinipoolPenaltyInterface(rocketMinipoolPenalty).getPenaltyRate(address(this));
+        if (penaltyRate > 0) {
+            uint256 penaltyAmount = nodeAmount.mul(penaltyRate).div(calcBase);
+            if (penaltyAmount > nodeAmount) {
+                penaltyAmount = nodeAmount;
             }
-            nodeAmount = nodeAmount.sub(slashAmount);
-            userAmount = userAmount.add(slashAmount);
+            nodeAmount = nodeAmount.sub(penaltyAmount);
+            userAmount = userAmount.add(penaltyAmount);
         }
         // Pay node operator via refund
         nodeRefundBalance = nodeRefundBalance.add(nodeAmount);

@@ -11,6 +11,7 @@ import { transferReth } from './scenario-reth-transfer'
 import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketNetworkBalances, RocketTokenRETH } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
+import { mineBlocks } from '../_utils/evm'
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -182,7 +183,7 @@ export default function() {
 
         });
 
-        
+
         it(printTitle('rETH holder', 'can burn rETH for excess deposit pool ETH'), async () => {
 
             // Make user deposit
