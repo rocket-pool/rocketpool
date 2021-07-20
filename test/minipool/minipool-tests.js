@@ -6,7 +6,7 @@ import {
   RevertOnTransfer,
   RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL
 } from '../_utils/artifacts'
-import { mineBlocks } from '../_utils/evm';
+import { increaseTime, mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
@@ -61,6 +61,9 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
+
+            // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
 
             // Make user deposit to refund first prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
@@ -221,6 +224,8 @@ export default function() {
 
         it(printTitle('node operator', 'can destroy a withdrawn minipool'), async () => {
 
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Withdraw without destroying
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
 
@@ -244,6 +249,8 @@ export default function() {
 
         it(printTitle('random address', 'cannot destroy a withdrawn minipool'), async () => {
 
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Withdraw without destroying
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
 
@@ -431,6 +438,8 @@ export default function() {
 
         it(printTitle('random', 'random address cannot withdraw and destroy a node operators minipool balance'), async () => {
 
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Attempt to send validator balance
           await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Only node operator can destroy minipool");
 
@@ -438,6 +447,8 @@ export default function() {
 
         it(printTitle('random', 'random address can trigger a payout of withdrawal balance if balance is greater than 16 ETH'), async () => {
 
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Attempt to send validator balance
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
 
@@ -446,7 +457,7 @@ export default function() {
         it(printTitle('random', 'random address cannot trigger a payout of withdrawal balance if balance is less than 16 ETH'), async () => {
 
           // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Non-owner must wait longer to process sub 16 ETH withdrawal');
+          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Non-owner must wait 14 days after withdrawal to distribute balance');
 
         });
 
@@ -470,6 +481,8 @@ export default function() {
             // Set the node's withdraw address to a reverting contract
             const revertOnTransfer = await RevertOnTransfer.deployed();
             await setNodeWithdrawalAddress(node, revertOnTransfer.address, {from: nodeWithdrawalAddress});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Send validator balance and withdraw and should not revert
             await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
 
@@ -484,6 +497,8 @@ export default function() {
                 value: withdrawalBalance,
             });
 
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process validator balance
             await withdrawValidatorBalance(withdrawableMinipool, '0', random, false);
 
@@ -508,7 +523,9 @@ export default function() {
                 value: amount2,
             });
 
-            // Process payout
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+          // Process payout
           await withdrawValidatorBalance(withdrawableMinipool, '0', random, false);
 
 

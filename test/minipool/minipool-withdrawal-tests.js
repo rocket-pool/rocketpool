@@ -49,6 +49,9 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
 
+            // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+
             // Add penalty helper contract
             const rocketStorage = await RocketStorage.deployed();
             penaltyTestContract = await PenaltyTest.new(rocketStorage.address, {from: owner});
@@ -164,22 +167,22 @@ export default function() {
         });
 
 
-        it(printTitle('random address', 'can process withdrawal when balance is less than 16 ETH and marked as withdrawable after 7 days'), async () => {
+        it(printTitle('random address', 'can process withdrawal when balance is less than 16 ETH and marked as withdrawable after 14 days'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
-            // Wait 7 days
-            await increaseTime(web3, 60 * 60 * 24 * 7 + 1)
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process withdraw
             await withdrawAndCheck('15', random, false, '15', '0');
         });
 
 
-        it(printTitle('random address', 'cannot process withdrawal when balance is less than 16 ETH and marked as withdrawable before 7 days'), async () => {
+        it(printTitle('random address', 'cannot process withdrawal when balance is less than 16 ETH and marked as withdrawable before 14 days'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
-            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, random, false), 'Processed withdrawal before 7 days have passed', 'Non-owner must wait longer to process sub 16 ETH withdrawal');
+            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, random, false), 'Processed withdrawal before 14 days have passed', 'Non-owner must wait 14 days after withdrawal to distribute balance');
         });
 
 
