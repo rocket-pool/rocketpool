@@ -41,7 +41,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools in the network in the Staking state
-    function getStakingMinipoolCount() override public view returns (uint256) {
+    function getStakingMinipoolCount() override external view returns (uint256) {
         return getUint(keccak256(bytes("minipools.staking.count")));
     }
 
@@ -52,13 +52,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools owned by a node
-    function getNodeMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+    function getNodeMinipoolCount(address _nodeAddress) override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
     }
 
     // Get the number of minipools owned by a node that are in staking status
-    function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
+    function getNodeStakingMinipoolCount(address _nodeAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress)));
     }
 

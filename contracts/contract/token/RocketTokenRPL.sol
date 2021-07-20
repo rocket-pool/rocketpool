@@ -126,7 +126,7 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
     * @dev Function to compute how many tokens should be minted
     * @return A uint256 specifying number of new tokens to mint
     */
-    function inflationCalculate() override public view returns (uint256) {
+    function inflationCalculate() override external view returns (uint256) {
         uint256 intervalsSinceLastMint = getInflationIntervalsPassed();
         return _inflationCalculate(intervalsSinceLastMint);
     }

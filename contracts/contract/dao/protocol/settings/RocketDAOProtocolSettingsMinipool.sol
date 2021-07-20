@@ -79,7 +79,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     // Maximum number of minipools allowed at one time
-    function getMaximumCount() override public view returns (uint256) {
+    function getMaximumCount() override external view returns (uint256) {
       return getSettingUint("minipool.maximum.count");
     }
 

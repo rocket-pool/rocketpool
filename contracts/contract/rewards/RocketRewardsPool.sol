@@ -142,7 +142,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     * The current claim amount total for this interval per claiming contract
     * @return uint256 The current claim amount for this interval for the claiming contract
     */
-    function getClaimingContractTotalClaimed(string memory _claimingContract) override public view returns(uint256) {
+    function getClaimingContractTotalClaimed(string memory _claimingContract) override external view returns(uint256) {
         return _getClaimingContractTotalClaimed(_claimingContract, getClaimIntervalTimeStartComputed());
     }
 
@@ -281,7 +281,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     
     // How much this claimer is entitled to claim, checks parameters that claim() will check
-    function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) override public view returns (uint256) {
+    function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) override external view returns (uint256) {
         if (!getClaimingContractUserCanClaim(_claimingContract, _claimerAddress)) {
             return 0;
         }

@@ -39,12 +39,12 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Get a node's current withdrawal address
-    function getNodeWithdrawalAddress(address _nodeAddress) override public view returns (address) {
+    function getNodeWithdrawalAddress(address _nodeAddress) override external view returns (address) {
         return rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
     }
 
     // Get a node's pending withdrawal address
-    function getNodePendingWithdrawalAddress(address _nodeAddress) override public view returns (address) {
+    function getNodePendingWithdrawalAddress(address _nodeAddress) override external view returns (address) {
         return rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
     }
 

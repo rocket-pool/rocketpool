@@ -46,7 +46,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Get the length of a queue
     // Returns 0 for invalid queues
-    function getLength(MinipoolDeposit _depositType) override public view returns (uint256) {
+    function getLength(MinipoolDeposit _depositType) override external view returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getLength(queueKeyFull); }
         if (_depositType == MinipoolDeposit.Half) { return getLength(queueKeyHalf); }
         if (_depositType == MinipoolDeposit.Empty) { return getLength(queueKeyEmpty); }
