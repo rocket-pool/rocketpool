@@ -46,11 +46,11 @@ const contracts = {
   rocketMinipoolManager:                    artifacts.require('RocketMinipoolManager.sol'),
   rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueue.sol'),
   rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
+  rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
   // Network
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
   rocketNetworkPrices:                      artifacts.require('RocketNetworkPrices.sol'),
-  rocketNetworkWithdrawal:                  artifacts.require('RocketNetworkWithdrawal.sol'),
   // Rewards
   rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
   rocketClaimDAO:                           artifacts.require('RocketClaimDAO.sol'),
@@ -155,18 +155,18 @@ module.exports = async (deployer, network) => {
     // Precompiled - Casper Deposit Contract
     const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     const casperDeposit = new $web3.eth.Contract(casperDepositABI, null, {
-        from: accounts[0], 
+        from: accounts[0],
         gasPrice: '20000000000' // 20 gwei
     });
 
     // Create the contract now
     const casperDepositContract = await casperDeposit.deploy(
-      // Casper deployment 
-      {               
+      // Casper deployment
+      {
         data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin')
       }).send({
-          from: accounts[0], 
-          gas: 8000000, 
+          from: accounts[0],
+          gas: 8000000,
           gasPrice: '20000000000'
       });
 
@@ -251,7 +251,7 @@ module.exports = async (deployer, network) => {
           $web3.utils.soliditySha3('contract.abi', contract),
           compressABI(contracts[contract].abi)
         );
-      } 
+      }
     }
   };
 
@@ -286,7 +286,7 @@ module.exports = async (deployer, network) => {
   // Log it
   console.log('\n');
   console.log('\x1b[32m%s\x1b[0m', '  Storage Direct Access For Owner Removed... Lets begin! :)');
-  console.log('\n');  
+  console.log('\n');
 
 };
 

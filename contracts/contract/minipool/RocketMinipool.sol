@@ -14,6 +14,16 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
 
+    // Modifiers
+
+    // Only allow access from the owning node address
+    modifier onlyMinipoolOwner() {
+        // Only the node operator can upgrade
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        require(msg.sender == nodeAddress || msg.sender == withdrawalAddress, "Only the node operator can access this method");
+        _;
+    }
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
         // Initialise RocketStorage
@@ -21,6 +31,10 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
+        // Set the current delegate
+        rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
+        // Set local copy of penalty contract
+        rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
         // Call initialise on delegate
         (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
         if (!success) { revert(getRevertMessage(data)); }
@@ -32,9 +46,54 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         emit EtherReceived(msg.sender, msg.value, block.timestamp);
     }
 
+    // Upgrade this minipool to the latest network delegate contract
+    function delegateUpgrade() external onlyMinipoolOwner {
+        // Set previous address
+        rocketMinipoolDelegatePrev = rocketMinipoolDelegate;
+        // Set new delegate
+        rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
+        // Verify
+        require(rocketMinipoolDelegate != rocketMinipoolDelegatePrev, "New delegate is the same as the existing one");
+    }
+
+    // Rollback to previous delegate contract
+    function delegateRollback() external onlyMinipoolOwner {
+        // Make sure they have upgraded before
+        require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
+        // Set previous address
+        rocketMinipoolDelegate = rocketMinipoolDelegatePrev;
+    }
+
+    // If set to true, will automatically use the latest delegate contract
+    function setUseLatestDelegate(bool _setting) external onlyMinipoolOwner {
+        useLatestDelegate = _setting;
+    }
+
+    // Getter for useLatestDelegate setting
+    function getUseLatestDelegate() external view returns (bool) {
+        return useLatestDelegate;
+    }
+
+    // Returns the address of the minipool's stored delegate
+    function getDelegate() external view returns (address) {
+        return rocketMinipoolDelegate;
+    }
+
+    // Returns the address of the minipool's previous delegate (or address(0) if not set)
+    function getPreviousDelegate() external view returns (address) {
+        return rocketMinipoolDelegatePrev;
+    }
+
+    // Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
+    function getEffectiveDelegate() external view returns (address) {
+        return useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
+    }
+
     // Delegate all other calls to minipool delegate contract
     fallback(bytes calldata _input) external payable returns (bytes memory) {
-        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(_input);
+        // If useLatestDelegate is set, use the latest delegate contract
+        address delegateContract = useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
+        (bool success, bytes memory data) = delegateContract.delegatecall(_input);
         if (!success) { revert(getRevertMessage(data)); }
         return data;
     }

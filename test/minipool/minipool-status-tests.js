@@ -132,48 +132,29 @@ export default function() {
 
         it(printTitle('trusted nodes', 'can submit a withdrawable event for a staking minipool'), async () => {
 
-            // Set parameters
-            let startBalance1 = web3.utils.toWei('32', 'ether');
-            let endBalance1 = web3.utils.toWei('36', 'ether');
-            let startBalance2 = web3.utils.toWei('32', 'ether');
-            let endBalance2 = web3.utils.toWei('28', 'ether');
-            let startBalance3 = web3.utils.toWei('32', 'ether');
-            let endBalance3 = web3.utils.toWei('14', 'ether');
-
-            // Submit different withdrawable events
-            await submitWithdrawable(stakingMinipool1.address, startBalance1, web3.utils.toWei('37', 'ether'), {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool1.address, startBalance1, web3.utils.toWei('38', 'ether'), {
-                from: trustedNode2,
-            });
-            await submitWithdrawable(stakingMinipool1.address, startBalance1, web3.utils.toWei('39', 'ether'), {
-                from: trustedNode3,
-            });
-
             // Submit identical withdrawable events to trigger update:
 
             // Minipool 1 - rewards earned
-            await submitWithdrawable(stakingMinipool1.address, startBalance1, endBalance1, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool1.address, startBalance1, endBalance1, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode2,
             });
 
             // Minipool 2 - penalties applied
-            await submitWithdrawable(stakingMinipool2.address, startBalance2, endBalance2, {
+            await submitWithdrawable(stakingMinipool2.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool2.address, startBalance2, endBalance2, {
+            await submitWithdrawable(stakingMinipool2.address, {
                 from: trustedNode2,
             });
 
             // Minipool 3 - penalties applied & RPL slashed
-            await submitWithdrawable(stakingMinipool3.address, startBalance3, endBalance3, {
+            await submitWithdrawable(stakingMinipool3.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool3.address, startBalance3, endBalance3, {
+            await submitWithdrawable(stakingMinipool3.address, {
                 from: trustedNode2,
             });
 
@@ -182,15 +163,11 @@ export default function() {
 
         it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool while withdrawable submissions are disabled'), async () => {
 
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
-
             // Disable submissions
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.submit.withdrawable.enabled', false, {from: owner});
 
             // Attempt to submit withdrawable event for staking minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             }), 'Submitted a withdrawable event while withdrawable submissions were disabled');
 
@@ -199,20 +176,16 @@ export default function() {
 
         it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool which is not staking'), async () => {
 
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
-
             // Submit withdrawable events to trigger update
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode2,
             });
 
             // Attempt to submit withdrawable event for withdrawable minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode3,
             }), 'Submitted a withdrawable event for a minipool which was not staking');
 
@@ -221,12 +194,8 @@ export default function() {
 
         it(printTitle('trusted nodes', 'cannot submit a withdrawable event for an invalid minipool'), async () => {
 
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
-
             // Attempt to submit withdrawable event for invalid minipool
-            await shouldRevert(submitWithdrawable(random, startBalance, endBalance, {
+            await shouldRevert(submitWithdrawable(random, {
                 from: trustedNode1,
             }), 'Submitted a withdrawable event for an invalid minipool');
 
@@ -235,17 +204,13 @@ export default function() {
 
         it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool twice'), async () => {
 
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
-
             // Submit withdrawable event for staking minipool
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             });
 
             // Attempt to submit withdrawable event for staking minipool again
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             }), 'Submitted the same withdrawable event for a minipool twice');
 
@@ -254,12 +219,8 @@ export default function() {
 
         it(printTitle('regular nodes', 'cannot submit a withdrawable event for a minipool'), async () => {
 
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
-
             // Attempt to submit withdrawable event for staking minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
                 from: node,
             }), 'Regular node submitted a withdrawable event for a minipool');
 
@@ -269,20 +230,17 @@ export default function() {
         it(printTitle('random', 'can execute status update when consensus is reached after member count changes'), async () => {
             // Setup
             await trustedNode4JoinDao();
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
             // Submit status from 2 nodes (not enough for 4 member consensus but enough for 3)
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode2,
             });
             // trustedNode4 leaves the DAO
             await trustedNode4LeaveDao();
             // There is now consensus with the remaining 3 trusted nodes about the status, try to execute the update
-            await executeSetWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await executeSetWithdrawable(stakingMinipool1.address, {
                 from: random
             })
         });
@@ -291,18 +249,15 @@ export default function() {
         it(printTitle('random', 'cannot execute status update without consensus'), async () => {
             // Setup
             await trustedNode4JoinDao();
-            // Set parameters
-            let startBalance = web3.utils.toWei('32', 'ether');
-            let endBalance = web3.utils.toWei('36', 'ether');
             // Submit same price from 2 nodes (not enough for 4 member consensus)
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode1,
             });
-            await submitWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await submitWithdrawable(stakingMinipool1.address, {
                 from: trustedNode2,
             });
             // There is no consensus so execute should fail
-            await shouldRevert(executeSetWithdrawable(stakingMinipool1.address, startBalance, endBalance, {
+            await shouldRevert(executeSetWithdrawable(stakingMinipool1.address, {
                 from: random
             }), 'Random account could execute update status without consensus')
         });

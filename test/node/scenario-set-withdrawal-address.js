@@ -1,18 +1,18 @@
-import { RocketNodeManager } from '../_utils/artifacts';
+import { RocketNodeManager, RocketStorage } from '../_utils/artifacts'
 
 
 // Set a node's withdrawal address
 export async function setWithdrawalAddress(nodeAddress, withdrawalAddress, confirm, txOptions) {
 
     // Load contracts
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketStorage = await RocketStorage.deployed();
 
     // Set withdrawal address
-    await rocketNodeManager.setWithdrawalAddress(nodeAddress, withdrawalAddress, confirm, txOptions);
+    await rocketStorage.setWithdrawalAddress(nodeAddress, withdrawalAddress, confirm, txOptions);
 
     // Get current & pending withdrawal addresses
-    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
-    let nodePendingWithdrawalAddress = await rocketNodeManager.getNodePendingWithdrawalAddress.call(nodeAddress);
+    let nodeWithdrawalAddress = await rocketStorage.getNodeWithdrawalAddress.call(nodeAddress);
+    let nodePendingWithdrawalAddress = await rocketStorage.getNodePendingWithdrawalAddress.call(nodeAddress);
 
     // Confirmed update check
     if (confirm) {
@@ -31,14 +31,14 @@ export async function setWithdrawalAddress(nodeAddress, withdrawalAddress, confi
 export async function confirmWithdrawalAddress(nodeAddress, txOptions) {
 
     // Load contracts
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketStorage = await RocketStorage.deployed();
 
     // Confirm withdrawal address
-    await rocketNodeManager.confirmWithdrawalAddress(nodeAddress, txOptions);
+    await rocketStorage.confirmWithdrawalAddress(nodeAddress, txOptions);
 
     // Get current & pending withdrawal addresses
-    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
-    let nodePendingWithdrawalAddress = await rocketNodeManager.getNodePendingWithdrawalAddress.call(nodeAddress);
+    let nodeWithdrawalAddress = await rocketStorage.getNodeWithdrawalAddress.call(nodeAddress);
+    let nodePendingWithdrawalAddress = await rocketStorage.getNodePendingWithdrawalAddress.call(nodeAddress);
 
     // Check
     assert.equal(nodeWithdrawalAddress, txOptions.from, 'Incorrect updated withdrawal address');

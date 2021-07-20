@@ -29,6 +29,12 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         version = 1;
     }
 
+    // Receive an ETH deposit from a minipool or generous individual
+    receive() external payable {
+        // Emit ether deposited event
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
+    }
+
     // Calculate the amount of ETH backing an amount of rETH
     function getEthValue(uint256 _rethAmount) override public view returns (uint256) {
         // Get network balances
@@ -70,17 +76,10 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
 
     // Get the current ETH collateral rate
     // Returns the portion of rETH backed by ETH in the contract as a fraction of 1 ether
-    function getCollateralRate() override external view returns (uint256) {
+    function getCollateralRate() override public view returns (uint256) {
         uint256 totalEthValue = getEthValue(totalSupply());
         if (totalEthValue == 0) { return calcBase; }
         return calcBase.mul(address(this).balance).div(totalEthValue);
-    }
-
-    // Deposit ETH rewards
-    // Only accepts calls from the RocketNetworkWithdrawal contract
-    function depositRewards() override external payable onlyLatestContract("rocketNetworkWithdrawal", msg.sender) {
-        // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
 
     // Deposit excess ETH from deposit pool
@@ -131,6 +130,24 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         // Withdraw
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         rocketDepositPool.withdrawExcessBalance(_ethRequired.sub(ethBalance));
+    }
+
+    // Sends any excess ETH from this contract to the deposit pool (as determined by target collateral rate)
+    function depositExcessCollateral() external {
+        // Load contracts
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        // Get collateral and target collateral rate
+        uint256 collateralRate = getCollateralRate();
+        uint256 targetCollateralRate = rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate();
+        // Check if we are in excess
+        if (collateralRate > targetCollateralRate) {
+            // Calculate ETH excess
+            uint256 targetCollateral = address(this).balance.mul(targetCollateralRate).div(collateralRate);
+            uint256 excessCollateral = address(this).balance.sub(targetCollateral);
+            // Send excess to deposit pool
+            rocketDepositPool.recycleExcessCollateral{value: excessCollateral}();
+        }
     }
 
     // This is called by the base ERC20 contract before all transfer, mint, and burns

@@ -1,4 +1,12 @@
-import { RocketNodeDeposit, RocketNodeManager, RocketNodeStaking, RocketTokenRPL, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
+import {
+    RocketNodeDeposit,
+    RocketNodeManager,
+    RocketNodeStaking,
+    RocketTokenRPL,
+    RocketDAONodeTrustedActions,
+    RocketDAONodeTrustedSettingsMembers,
+    RocketStorage
+} from '../_utils/artifacts'
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
@@ -97,8 +105,8 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
 
 // Set a withdrawal address for a node
 export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, txOptions) {
-    const rocketNodeManager = await RocketNodeManager.deployed();
-    await rocketNodeManager.setWithdrawalAddress(nodeAddress, withdrawalAddress, true, txOptions);
+    const rocketStorage = await RocketStorage.deployed();
+    await rocketStorage.setWithdrawalAddress(nodeAddress, withdrawalAddress, true, txOptions);
 }
 
 
