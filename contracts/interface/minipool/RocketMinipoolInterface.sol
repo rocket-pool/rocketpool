@@ -1,11 +1,13 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
+import "../RocketStorageInterface.sol";
 
 interface RocketMinipoolInterface {
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) external;
     function getStatus() external view returns (MinipoolStatus);
     function getStatusBlock() external view returns (uint256);
     function getStatusTime() external view returns (uint256);
@@ -18,14 +20,16 @@ interface RocketMinipoolInterface {
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
     function getUserDepositAssignedTime() external view returns (uint256);
-    function getStakingStartBalance() external view returns (uint256);
-    function getStakingEndBalance() external view returns (uint256);
+    function getWithdrawalCredentials() external view returns (bytes memory);
     function nodeDeposit() external payable;
     function userDeposit() external payable;
+    function distributeBalance() external;
+    function distributeBalanceAndDestroy() external;
     function refund() external;
+    function slash() external;
+    function destroy() external;
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
-    function setWithdrawable(uint256 _stakingStartBalance, uint256 _stakingEndBalance) external;
-    function withdraw() external;
+    function setWithdrawable() external;
     function dissolve() external;
     function close() external;
 }

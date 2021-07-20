@@ -1,4 +1,4 @@
-import { RocketMinipool, RocketMinipoolManager, RocketNodeDeposit } from '../_utils/artifacts';
+import { RocketMinipoolDelegate, RocketMinipoolManager, RocketNodeDeposit } from '../_utils/artifacts';
 import { getTxContractEvents } from '../_utils/contract';
 
 
@@ -18,17 +18,16 @@ export async function deposit(minimumNodeFee, txOptions) {
     function getMinipoolCounts(nodeAddress) {
         return Promise.all([
             rocketMinipoolManager.getMinipoolCount.call(),
-            rocketMinipoolManager.getUnprocessedMinipoolCount.call(),
             rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
         ]).then(
-            ([network, unprocessed, node]) =>
-            ({network, unprocessed, node})
+            ([network, node]) =>
+            ({network, node})
         );
     }
 
     // Get minipool details
     function getMinipoolDetails(minipoolAddress) {
-        return RocketMinipool.at(minipoolAddress).then(minipool => Promise.all([
+        return RocketMinipoolDelegate.at(minipoolAddress).then(minipool => Promise.all([
             rocketMinipoolManager.getMinipoolExists.call(minipoolAddress),
             minipool.getNodeAddress.call(),
             minipool.getNodeDepositBalance.call(),
@@ -60,12 +59,10 @@ export async function deposit(minimumNodeFee, txOptions) {
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
     let [
         lastMinipoolAddress,
-        lastUnprocessedMinipoolAddress,
         lastNodeMinipoolAddress,
         minipoolDetails,
     ] = await Promise.all([
         rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub(web3.utils.toBN(1))),
-        rocketMinipoolManager.getUnprocessedMinipoolAt.call(minipoolCounts2.unprocessed.sub(web3.utils.toBN(1))),
         rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.node.sub(web3.utils.toBN(1))),
         getMinipoolDetails(minipoolAddress),
     ]);
@@ -73,8 +70,6 @@ export async function deposit(minimumNodeFee, txOptions) {
     // Check minipool indexes
     assert(minipoolCounts2.network.eq(minipoolCounts1.network.add(web3.utils.toBN(1))), 'Incorrect updated network minipool count');
     assert.equal(lastMinipoolAddress, minipoolAddress, 'Incorrect updated network minipool index');
-    assert(minipoolCounts2.unprocessed.eq(minipoolCounts1.unprocessed.add(web3.utils.toBN(1))), 'Incorrect updated unprocessed minipool count');
-    assert.equal(lastUnprocessedMinipoolAddress, minipoolAddress, 'Incorrect updated unprocessed minipool index');
     assert(minipoolCounts2.node.eq(minipoolCounts1.node.add(web3.utils.toBN(1))), 'Incorrect updated node minipool count');
     assert.equal(lastNodeMinipoolAddress, minipoolAddress, 'Incorrect updated node minipool index');
 

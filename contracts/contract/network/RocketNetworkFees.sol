@@ -1,13 +1,14 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
+
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
-import "../../interface/settings/RocketNetworkSettingsInterface.sol";
-import "../../lib/SafeMath.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network node demand and commission rate
 
@@ -17,7 +18,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     using SafeMath for uint;
 
     // Construct
-    constructor(address _rocketStorageAddress) RocketBase(_rocketStorageAddress) public {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
@@ -36,21 +37,20 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     }
 
     // Get the current RP network node fee as a fraction of 1 ETH
-    function getNodeFee() override public view returns (uint256) {
+    function getNodeFee() override external view returns (uint256) {
         return getNodeFeeByDemand(getNodeDemand());
     }
 
     // Get the RP network node fee for a node demand value
     function getNodeFeeByDemand(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
-        uint256 calcBase = 1 ether;
         uint256 demandDivisor = 1000000000000;
         // Get settings
-        RocketNetworkSettingsInterface rocketNetworkSettings = RocketNetworkSettingsInterface(getContractAddress("rocketNetworkSettings"));
-        uint256 minFee = rocketNetworkSettings.getMinimumNodeFee();
-        uint256 targetFee = rocketNetworkSettings.getTargetNodeFee();
-        uint256 maxFee = rocketNetworkSettings.getMaximumNodeFee();
-        uint256 demandRange = rocketNetworkSettings.getNodeFeeDemandRange();
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        uint256 minFee = rocketDAOProtocolSettingsNetwork.getMinimumNodeFee();
+        uint256 targetFee = rocketDAOProtocolSettingsNetwork.getTargetNodeFee();
+        uint256 maxFee = rocketDAOProtocolSettingsNetwork.getMaximumNodeFee();
+        uint256 demandRange = rocketDAOProtocolSettingsNetwork.getNodeFeeDemandRange();
         // Normalize node demand
         uint256 nNodeDemand;
         bool nNodeDemandSign;

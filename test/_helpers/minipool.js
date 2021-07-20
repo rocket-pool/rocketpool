@@ -1,30 +1,46 @@
-import { RocketMinipool, RocketMinipoolManager, RocketMinipoolStatus, RocketNetworkWithdrawal, RocketNodeDeposit } from '../_utils/artifacts';
+import { RocketMinipoolDelegate, RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketMinipoolStatus, RocketNetworkPrices, RocketNetworkWithdrawal, RocketNodeDeposit, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
 
 
-// Get a minipool's total balance at withdrawal
-export async function getMinipoolWithdrawalTotalBalance(minipoolAddress) {
+// Get the number of minipools a node has
+export async function getNodeMinipoolCount(nodeAddress) {
     const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let balance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
-    return balance;
+    let count = await rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress);
+    return count;
 }
 
-
-// Get a minipool's node balance at withdrawal
-export async function getMinipoolWithdrawalNodeBalance(minipoolAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let balance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
-    return balance;
+// Get the number of minipools a node has in Staking status
+export async function getNodeStakingMinipoolCount(nodeAddress) {
+  const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+  let count = await rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress);
+  return count;
 }
 
+// Get the minimum required RPL stake for a minipool
+export async function getMinipoolMinimumRPLStake() {
 
-// Get a minipool's user balance at withdrawal
-export async function getMinipoolWithdrawalUserBalance(minipoolAddress) {
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
-    let totalBalance = await rocketMinipoolManager.getMinipoolWithdrawalTotalBalance.call(minipoolAddress);
-    let nodeBalance = await rocketMinipoolManager.getMinipoolWithdrawalNodeBalance.call(minipoolAddress);
-    return totalBalance.sub(nodeBalance);
+    // Load contracts
+    const [
+        rocketDAOProtocolSettingsMinipool,
+        rocketNetworkPrices,
+        rocketDAOProtocolSettingsNode,
+    ] = await Promise.all([
+        RocketDAOProtocolSettingsMinipool.deployed(),
+        RocketNetworkPrices.deployed(),
+        RocketDAOProtocolSettingsNode.deployed(),
+    ]);
+
+    // Load data
+    let [depositUserAmount, minMinipoolStake, rplPrice] = await Promise.all([
+        rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(),
+        rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake(),
+        rocketNetworkPrices.getRPLPrice(),
+    ]);
+
+    // Calculate & return
+    return depositUserAmount.mul(minMinipoolStake).div(rplPrice);
+
 }
 
 
@@ -52,7 +68,7 @@ export async function createMinipool(txOptions) {
 
     // Return minipool instance
     if (!minipoolCreatedEvents.length) return;
-    return RocketMinipool.at(minipoolCreatedEvents[0].minipool);
+    return RocketMinipoolDelegate.at(minipoolCreatedEvents[0].minipool);
 
 }
 
@@ -66,14 +82,11 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 // Progress a minipool to staking
 export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
-    // Load contracts
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-
     // Create validator pubkey
     if (!validatorPubkey) validatorPubkey = getValidatorPubkey();
 
-    // Get withdrawal credentials
-    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
+    // Get minipool withdrawal credentials
+    let withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
 
     // Get validator deposit data
     let depositData = {
@@ -91,15 +104,9 @@ export async function stakeMinipool(minipool, validatorPubkey, txOptions) {
 
 
 // Submit a minipool withdrawable event
-export async function submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions) {
+export async function submitMinipoolWithdrawable(minipoolAddress, txOptions) {
     const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, stakingStartBalance, stakingEndBalance, txOptions);
-}
-
-
-// Withdraw node balances & rewards from a minipool and destroy it
-export async function withdrawMinipool(minipool, txOptions) {
-    await minipool.withdraw(txOptions);
+    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, txOptions);
 }
 
 

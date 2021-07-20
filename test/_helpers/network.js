@@ -1,4 +1,4 @@
-import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkWithdrawal } from '../_utils/artifacts';
+import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkPrices, RocketNetworkWithdrawal } from '../_utils/artifacts';
 
 
 // Get the network total ETH balance
@@ -32,6 +32,21 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
 }
 
 
+// Submit network token prices
+export async function submitPrices(block, rplPrice, effectiveRplStake, txOptions) {
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    await rocketNetworkPrices.submitPrices(block, rplPrice, effectiveRplStake, txOptions);
+}
+
+
+// Get network RPL price
+export async function getRPLPrice() {
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    let price = await rocketNetworkPrices.getRPLPrice.call();
+    return price;
+}
+
+
 // Get the network node demand
 export async function getNodeDemand() {
     const rocketNetworkFees = await RocketNetworkFees.deployed();
@@ -56,25 +71,4 @@ export async function getNodeFeeByDemand(nodeDemand) {
 }
 
 
-// Get the network withdrawal credentials
-export async function getWithdrawalCredentials() {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    let withdrawalCredentials = await rocketNetworkWithdrawal.getWithdrawalCredentials.call();
-    return withdrawalCredentials;
-}
-
-
-// Accept a validator withdrawal
-export async function depositValidatorWithdrawal(txOptions) {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    txOptions.to = rocketNetworkWithdrawal.address;
-    await web3.eth.sendTransaction(txOptions);
-}
-
-
-// Process a validator withdrawal
-export async function processValidatorWithdrawal(validatorPubkey, txOptions) {
-    const rocketNetworkWithdrawal = await RocketNetworkWithdrawal.deployed();
-    await rocketNetworkWithdrawal.processWithdrawal(validatorPubkey, txOptions);
-}
 

@@ -34,7 +34,7 @@ To begin interacting with the Rocket Pool network, first create an instance of t
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) public {
+        constructor(RocketStorageInterface _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 
@@ -54,7 +54,7 @@ Other contract instances can be created using the appropriate interface taken fr
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) public {
+        constructor(RocketStorageInterface _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 
@@ -86,13 +86,13 @@ The Rocket Pool contracts, as defined in ``RocketStorage``, are:
     * ``rocketNodeDeposit`` - Handles node deposits for minipool creation
     * ``rocketNodeManager`` - Registers & manages all nodes in the network
 
-    * ``rocketDepositSettings`` - Provides network settings relating to deposits
-    * ``rocketMinipoolSettings`` - Provides network settings relating to minipools
-    * ``rocketNetworkSettings`` - Provides miscellaneous network settings
-    * ``rocketNodeSettings`` - Provides network settings relating to nodes
+    * ``rocketDAOProtocolSettingsDeposit`` - Provides network settings relating to deposits
+    * ``rocketDAOProtocolSettingsMinipool`` - Provides network settings relating to minipools
+    * ``rocketDAOProtocolSettingsNetwork`` - Provides miscellaneous network settings
+    * ``rocketDAOProtocolSettingsNode`` - Provides network settings relating to nodes
 
-    * ``rocketETHToken`` - The rETH token contract (not upgradeable)
-    * ``rocketNodeETHToken`` - The nETH token contract (not upgradeable)
+    * ``rocketTokenRETH`` - The rETH token contract (not upgradeable)
+    * ``rocketTokenNETH`` - The nETH token contract (not upgradeable)
 
     * ``addressQueueStorage`` - A utility contract (internal)
     * ``addressSetStorage`` - A utility contract (internal)

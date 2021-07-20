@@ -26,13 +26,13 @@ The following describes a basic example contract which forwards deposited ETH in
 
     import "RocketStorageInterface.sol";
     import "RocketDepositPoolInterface.sol";
-    import "RocketETHTokenInterface.sol";
+    import "RocketTokenRETHInterface.sol";
 
     contract Example {
 
         RocketStorageInterface rocketStorage = RocketStorageInterface(0);
 
-        constructor(address _rocketStorageAddress) public {
+        constructor(RocketStorageInterface _rocketStorageAddress) {
             rocketStorage = RocketStorageInterface(_rocketStorageAddress);
         }
 
@@ -42,16 +42,16 @@ The following describes a basic example contract which forwards deposited ETH in
             // Load contracts
             address rocketDepositPoolAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketDepositPool")));
             RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(rocketDepositPoolAddress);
-            address rocketETHTokenAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketETHToken")));
-            RocketETHTokenInterface rocketETHToken = RocketETHTokenInterface(rocketETHTokenAddress);
+            address rocketTokenRETHAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketTokenRETH")));
+            RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(rocketTokenRETHAddress);
             // Forward deposit to RP & get amount of rETH minted
-            uint256 rethBalance1 = rocketETHToken.balanceOf(address(this));
+            uint256 rethBalance1 = rocketTokenRETH.balanceOf(address(this));
             rocketDepositPool.deposit{value: msg.value}();
-            uint256 rethBalance2 = rocketETHToken.balanceOf(address(this));
+            uint256 rethBalance2 = rocketTokenRETH.balanceOf(address(this));
             require(rethBalance2 > rethBalance1, "No rETH was minted");
             uint256 rethMinted = rethBalance2 - rethBalance1;
             // Transfer rETH to caller
-            require(rocketETHToken.transfer(msg.sender, rethMinted), "rETH was not transferred to caller");
+            require(rocketTokenRETH.transfer(msg.sender, rethMinted), "rETH was not transferred to caller");
         }
 
     }

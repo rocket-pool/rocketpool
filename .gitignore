@@ -8,4 +8,6 @@ coverage.json
 coverage/
 coverageEnv/
 .vscode
+@openzeppelin
 1.0
+.idea

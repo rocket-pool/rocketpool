@@ -49,7 +49,7 @@ The Rocket Pool library is divided into several modules, each for interacting wi
     * ``node``: Manages the nodes making up the Rocket Pool network
     * ``settings.deposit``: Provides information on user deposit settings
     * ``settings.minipool``: Provides information on minipool settings
-    * ``settings.network``: Provides information on network settings
+    * ``network``: Provides information on network settings
     * ``settings.node``: Provides information on smart node settings
     * ``tokens.neth``: Manages nETH token interactions
     * ``tokens.reth``: Manages rETH token interactions

@@ -1,10 +1,14 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
+import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
-import { registerNode, setNodeTrusted } from '../_helpers/node';
-import { getMinipoolSetting, setNodeSetting } from '../_helpers/settings';
+import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
+import { getMinipoolSetting } from '../_helpers/settings';
+import { mintRPL } from '../_helpers/tokens';
 import { deposit } from './scenario-deposit';
+import { userDeposit } from '../_helpers/deposit'
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
@@ -19,12 +23,6 @@ export default function() {
         ] = accounts;
 
 
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
-
-
         // Setup
         let noMinimumNodeFee = web3.utils.toWei('0', 'ether');
         let fullDepositNodeAmount;
@@ -37,7 +35,7 @@ export default function() {
 
             // Register trusted node
             await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Get settings
             fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');
@@ -48,6 +46,12 @@ export default function() {
 
 
         it(printTitle('node operator', 'can make a deposit to create a minipool'), async () => {
+
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(2));
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Deposit
             await deposit(noMinimumNodeFee, {
@@ -66,8 +70,13 @@ export default function() {
 
         it(printTitle('node operator', 'cannot make a deposit while deposits are disabled'), async () => {
 
+            // Stake RPL to cover minipool
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
             // Disable deposits
-            await setNodeSetting('DepositEnabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.deposit.enabled', false, {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {
@@ -85,6 +94,11 @@ export default function() {
 
 
         it(printTitle('node operator', 'cannot make a deposit with a minimum node fee exceeding the current network node fee'), async () => {
+
+            // Stake RPL to cover minipool
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Settings
             let nodeFee = await getNodeFee();
@@ -107,6 +121,11 @@ export default function() {
 
         it(printTitle('node operator', 'cannot make a deposit with an invalid amount'), async () => {
 
+            // Stake RPL to cover minipool
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
             // Get deposit amount
             let depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
             assert(!depositAmount.eq(fullDepositNodeAmount), 'Deposit amount is not invalid');
@@ -122,7 +141,37 @@ export default function() {
         });
 
 
+        it(printTitle('node operator', 'cannot make a deposit with insufficient RPL staked'), async () => {
+
+            // Attempt deposit with no RPL staked
+            await shouldRevert(deposit(noMinimumNodeFee, {
+                from: node,
+                value: fullDepositNodeAmount,
+            }), 'Made a deposit with insufficient RPL staked');
+
+            // Stake insufficient RPL amount
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.div(web3.utils.toBN(2));
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
+
+            // Attempt deposit with insufficient RPL staked
+            await shouldRevert(deposit(noMinimumNodeFee, {
+                from: node,
+                value: fullDepositNodeAmount,
+            }), 'Made a deposit with insufficient RPL staked');
+
+        });
+
+
         it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
+            // Deposit enough unassigned ETH to increase the fee above 80% of max
+            await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
+
+            // Stake RPL to cover minipool
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, trustedNode, rplStake);
+            await nodeStakeRPL(rplStake, {from: trustedNode});
 
             // Deposit
             await deposit(noMinimumNodeFee, {
@@ -134,6 +183,11 @@ export default function() {
 
 
         it(printTitle('regular node operator', 'cannot make a deposit to create an empty minipool'), async () => {
+
+            // Stake RPL to cover minipool
+            let rplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, rplStake);
+            await nodeStakeRPL(rplStake, {from: node});
 
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {

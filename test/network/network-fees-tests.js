@@ -1,7 +1,7 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { getNodeFeeByDemand } from '../_helpers/network';
-import { setNetworkSetting } from '../_helpers/settings';
+import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNetworkFees', async (accounts) => {
@@ -17,12 +17,6 @@ export default function() {
         ] = accounts;
 
 
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
-
-
         // Setup
         let minNodeFee = web3.utils.toWei('0.00', 'ether');
         let targetNodeFee = web3.utils.toWei('0.50', 'ether');
@@ -31,10 +25,10 @@ export default function() {
         before(async () => {
 
             // Set network settings
-            await setNetworkSetting('MinimumNodeFee', minNodeFee, {from: owner});
-            await setNetworkSetting('TargetNodeFee', targetNodeFee, {from: owner});
-            await setNetworkSetting('MaximumNodeFee', maxNodeFee, {from: owner});
-            await setNetworkSetting('NodeFeeDemandRange', demandRange, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', minNodeFee, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', targetNodeFee, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', maxNodeFee, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.demand.range', demandRange, {from: owner});
 
         });
 

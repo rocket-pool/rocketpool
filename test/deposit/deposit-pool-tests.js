@@ -1,13 +1,16 @@
-import { takeSnapshot, revertSnapshot } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
+import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
-import { registerNode, setNodeTrusted, nodeDeposit } from '../_helpers/node';
-import { getRethExchangeRate, getRethTotalSupply } from '../_helpers/tokens';
-import { getDepositSetting, setDepositSetting } from '../_helpers/settings';
+import { registerNode, setNodeTrusted, nodeDeposit, nodeStakeRPL } from '../_helpers/node';
+import { getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
+import { getDepositSetting } from '../_helpers/settings';
 import { assignDeposits } from './scenario-assign-deposits';
 import { deposit } from './scenario-deposit';
+import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts'
+import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -23,12 +26,6 @@ export default function() {
         ] = accounts;
 
 
-        // State snapshotting
-        let snapshotId;
-        beforeEach(async () => { snapshotId = await takeSnapshot(web3); });
-        afterEach(async () => { await revertSnapshot(web3, snapshotId); });
-
-
         // Setup
         before(async () => {
 
@@ -37,7 +34,7 @@ export default function() {
 
             // Register trusted node
             await registerNode({from: trustedNode});
-            await setNodeTrusted(trustedNode, {from: owner});
+            await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
         });
 
@@ -79,7 +76,7 @@ export default function() {
         it(printTitle('staker', 'cannot make a deposit while deposits are disabled'), async () => {
 
             // Disable deposits
-            await setDepositSetting('DepositEnabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.enabled', false, {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit({
@@ -109,7 +106,7 @@ export default function() {
         it(printTitle('staker', 'cannot make a deposit which would exceed the maximum deposit pool size'), async () => {
 
             // Set max deposit pool size
-            await setDepositSetting('MaximumDepositPoolSize', web3.utils.toWei('100', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', web3.utils.toWei('100', 'ether'), {from: owner});
 
             // Attempt deposit
             await shouldRevert(deposit({
@@ -133,17 +130,26 @@ export default function() {
             });
 
             // Disable deposit assignment
-            await setDepositSetting('AssignDepositsEnabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
+
+            // Disable minimum unbonded commission threshold
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMembers, 'members.minipool.unbonded.min.fee', '0', {from: owner});
+
+            // Stake RPL to cover minipools
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            await mintRPL(owner, trustedNode, rplStake);
+            await nodeStakeRPL(rplStake, {from: trustedNode});
 
             // Make user & node deposits
             await userDeposit({from: staker, value: web3.utils.toWei('100', 'ether')});
-            await nodeDeposit({from: node, value: web3.utils.toWei('16', 'ether')});
-            await nodeDeposit({from: node, value: web3.utils.toWei('32', 'ether')});
+            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('32', 'ether')});
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('0', 'ether')});
 
             // Re-enable deposit assignment & set limit
-            await setDepositSetting('AssignDepositsEnabled', true, {from: owner});
-            await setDepositSetting('MaximumDepositAssignments', 3, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.maximum', 3, {from: owner});
 
             // Assign deposits with assignable deposits
             await assignDeposits({
@@ -156,7 +162,7 @@ export default function() {
         it(printTitle('random address', 'cannot assign deposits while deposit assignment is disabled'), async () => {
 
             // Disable deposit assignment
-            await setDepositSetting('AssignDepositsEnabled', false, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
 
             // Attempt to assign deposits
             await shouldRevert(assignDeposits({

@@ -1,7 +1,7 @@
-pragma solidity 0.6.12;
+pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketVaultWithdrawerInterface {
-    function receiveVaultWithdrawal() external payable;
+    function receiveVaultWithdrawalETH() external payable; 
 }

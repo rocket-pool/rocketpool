@@ -24,7 +24,7 @@ ganache_running() {
 }
 
 start_ganache() {
-  node_modules/.bin/ganache-cli -l 8000000 -e 2000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" --port "$ganache_port" > /dev/null &
+  node_modules/.bin/ganache-cli -l 12450000 -e 2000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" --port "$ganache_port" > /dev/null &
   ganache_pid=$!
 }
 
@@ -36,6 +36,9 @@ else
 fi
 
 sleep 3
+
+# Clean build directory
+rm -rf ./build
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   node_modules/.bin/solidity-coverage
