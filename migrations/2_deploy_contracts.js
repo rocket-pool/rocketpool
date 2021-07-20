@@ -6,7 +6,6 @@ const pako = require('pako');
 
 /*** Settings ************************/
 
-
 const config = require('../truffle.js');
 
 
@@ -107,8 +106,9 @@ module.exports = async (deployer, network) => {
   network = network.replace("-fork", "");
 
   // Set our web3 provider
-  let $web3 = new config.web3('http://' + config.networks[network].host + ':' + config.networks[network].port);
   console.log(`Web3 1.0 provider using network: `+network);
+  const provider = network.hasProvider ? config.networks[network].provider(): `http://${config.networks[network].host}:${config.networks[network].port}`;
+  let $web3 = new config.web3(provider);
   console.log('\n');
 
   // Accounts
@@ -119,6 +119,8 @@ module.exports = async (deployer, network) => {
     }
     return result;
   });
+
+  console.log(accounts);
 
 
   // Live deployment
