@@ -405,9 +405,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Only the owner can destroy a minipool
         require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "Only node operator can destroy minipool");
         // Send any remaining balance to rETH contract
-        payable(rocketTokenRETH).transfer(address(this).balance.sub(refundAmount));
-        // Send any overcollateralised ETH to the deposit pool
-        RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
+        uint256 userAmount = address(this).balance.sub(refundAmount);
+        if (userAmount > 0) {
+            payable(rocketTokenRETH).transfer(userAmount);
+            // Send any overcollateralised ETH to the deposit pool
+            RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
+        }
         // Self destruct the refund amount to node withdrawal address
         selfdestruct(payable(nodeWithdrawalAddress));
     }

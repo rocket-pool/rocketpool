@@ -142,11 +142,14 @@ contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {
         uint256 targetCollateralRate = rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate();
         // Check if we are in excess
         if (collateralRate > targetCollateralRate) {
-            // Calculate ETH excess
+            // Calculate our target collateral in ETH
             uint256 targetCollateral = address(this).balance.mul(targetCollateralRate).div(collateralRate);
-            uint256 excessCollateral = address(this).balance.sub(targetCollateral);
-            // Send excess to deposit pool
-            rocketDepositPool.recycleExcessCollateral{value: excessCollateral}();
+            // If we have excess
+            if (address(this).balance > targetCollateral) {
+                // Send that excess to deposit pool
+                uint256 excessCollateral = address(this).balance.sub(targetCollateral);
+                rocketDepositPool.recycleExcessCollateral{value: excessCollateral}();
+            }
         }
     }
 
