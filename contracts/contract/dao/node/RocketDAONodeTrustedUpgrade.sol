@@ -53,6 +53,8 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(_contractAddress != oldContractAddress, "The contract address cannot be set to its current address");
         require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
+        // Check ABI isn't empty
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
         // Register new contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
@@ -70,12 +72,16 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         // Check contract name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(bytes(_name).length > 0, "Invalid contract name");
+        // Cannot add contract if it already exists (use upgradeContract instead)
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");
+        // Cannot add contract if already in use as ABI only
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
         require(bytes(existingAbi).length == 0, "Contract name is already in use");
         // Check contract address
         require(_contractAddress != address(0x0), "Invalid contract address");
         require(!getBool(keccak256(abi.encodePacked("contract.exists", _contractAddress))), "Contract address is already in use");
+        // Check ABI isn't empty
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
         // Register contract
         setBool(keccak256(abi.encodePacked("contract.exists", _contractAddress)), true);
         setString(keccak256(abi.encodePacked("contract.name", _contractAddress)), _name);
@@ -90,6 +96,9 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         // Check ABI exists
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
         require(bytes(existingAbi).length > 0, "ABI does not exist");
+        // Sanity checks
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        require(keccak256(bytes(existingAbi)) != keccak256(bytes(_contractAbi)), "ABIs are identical");
         // Set ABI
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
         // Emit ABI upgraded event
@@ -101,7 +110,11 @@ contract RocketDAONodeTrustedUpgrade is RocketBase, RocketDAONodeTrustedUpgradeI
         // Check ABI name
         bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(bytes(_name).length > 0, "Invalid ABI name");
+        // Sanity check
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        // Cannot add ABI if name is already used for an existing network contract
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "ABI name is already in use");
+        // Cannot add ABI if ABI already exists for this name (use upgradeABI instead)
         string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
         require(bytes(existingAbi).length == 0, "ABI name is already in use");
         // Set ABI

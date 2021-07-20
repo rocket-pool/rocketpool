@@ -766,6 +766,12 @@ export default function() {
             }), 'Guardian upgraded a contract with an existing contract', 'Contract address is already in use');
         });
 
+        it(printTitle('guardian', 'cannot upgrade a contract with an empty ABI'), async () => {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketDAONodeTrustedUpgrade', '', rocketDAONodeTrustedUpgradeNew.address, {
+                  from: guardian,
+              }), 'Guardian upgraded a contract with an empty ABI', 'Empty ABI is invalid');
+        });
+
         it(printTitle('guardian', 'cannot upgrade a protected contract'), async () => {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketVault', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
                 from: guardian,
@@ -813,6 +819,12 @@ export default function() {
             }), 'Added a new contract with an invalid name', 'Invalid contract name');
         });
 
+        it(printTitle('guardian', 'cannot add a new contract with an empty ABI'), async () => {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('addContract', 'rocketNewContract', '', rocketMinipoolManagerNew.address, {
+                from: guardian,
+            }), 'Added a new contract with an empty ABI', 'Empty ABI is invalid');
+        });
+
         it(printTitle('registeredNodeTrusted1', 'creates a proposal to upgrade a network contract, it passees and is executed'), async () => {
             // Add our 3rd member so proposals can pass
             await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
@@ -850,6 +862,17 @@ export default function() {
             });
         });
 
+        it(printTitle('guardian', 'cannot upgrade a contract ABI to an identical one in bootstrap mode'), async () => {
+            await setDaoNodeTrustedBootstrapUpgrade('upgradeABI', 'rocketNodeManager', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
+                from: guardian,
+            });
+
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeABI', 'rocketNodeManager', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
+                from: guardian,
+            }), 'Upgraded a contract ABI to an identical one', 'ABIs are identical');
+        });
+
+
         it(printTitle('guardian', 'cannot upgrade a contract ABI which does not exist'), async () => {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeABI', 'fooBarBaz', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
                 from: guardian,
@@ -872,6 +895,12 @@ export default function() {
             await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('addABI', '', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
                 from: guardian,
             }), 'Added a new contract ABI with an invalid name', 'Invalid ABI name');
+        });
+
+        it(printTitle('guardian', 'cannot add a new contract ABI with an empty ABI'), async () => {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('addABI', 'rocketNewFeatures', '', '0x0000000000000000000000000000000000000000', {
+                from: guardian,
+            }), 'Added a new contract ABI with an empty ABI', 'Empty ABI is invalid');
         });
 
         it(printTitle('guardian', 'cannot add a new contract ABI with an existing name'), async () => {

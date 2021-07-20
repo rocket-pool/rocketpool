@@ -119,20 +119,23 @@ export async function setDaoNodeTrustedBootstrapUpgrade(_type, _name, _abi, _con
     ]);
 
     // Add test method to ABI
-    let testAbi = _abi.slice();
-    testAbi.push({
-        "constant": true,
-        "inputs": [],
-        "name": "testMethod",
-        "outputs": [{
-            "name": "",
-            "type": "uint8"
-        }],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function",
-    });
-    let compressedAbi = compressABI(testAbi);
+    let compressedAbi = ''
+    if (Array.isArray(_abi)){
+        let testAbi = _abi.slice();
+        testAbi.push({
+            "constant": true,
+            "inputs": [],
+            "name": "testMethod",
+            "outputs": [{
+                "name": "",
+                "type": "uint8"
+            }],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function",
+        });
+        compressedAbi = compressABI(testAbi);
+    }
 
     // Get contract data
     function getContractData() {
