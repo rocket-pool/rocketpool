@@ -269,7 +269,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     function _distributeBalance(uint256 _balance) private {
         // Rate limit this method to prevent front running
-        require(block.number > withdrawalBlock + distributeBalance, "Distribution of this minipool's balance is on cooldown");
+        require(block.number > withdrawalBlock + distributionCooldown, "Distribution of this minipool's balance is on cooldown");
         // Deposit amounts
         uint256 stakingDepositTotal = 32 ether;
         uint256 userAmount = userDepositBalance;
