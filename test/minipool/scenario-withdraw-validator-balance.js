@@ -92,12 +92,12 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     let txReceipt;
 
     if (destroy) {
-        txReceipt = await minipool.processWithdrawalAndDestroy({
+        txReceipt = await minipool.distributeBalanceAndDestroy({
             from: from,
             gasPrice: gasPrice
         });
     } else {
-        txReceipt = await minipool.processWithdrawal({
+        txReceipt = await minipool.distributeBalance({
             from: from,
             gasPrice: gasPrice
         });

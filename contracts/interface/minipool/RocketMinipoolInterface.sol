@@ -23,8 +23,8 @@ interface RocketMinipoolInterface {
     function getWithdrawalCredentials() external view returns (bytes memory);
     function nodeDeposit() external payable;
     function userDeposit() external payable;
-    function processWithdrawal() external;
-    function processWithdrawalAndDestroy() external;
+    function distributeBalance() external;
+    function distributeBalanceAndDestroy() external;
     function refund() external;
     function slash() external;
     function destroy() external;

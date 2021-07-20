@@ -165,7 +165,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function destroy() external override onlyInitialised {
         // Check status
         require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
-        // Check processWithdrawal has been called at least once
+        // Check distributeBalance has been called at least once
         require(withdrawalBlock > 0, "Minipool must have been withdrawn before destroying");
         // Check if owner's RPL requires slashing and slash it
         if (nodeSlashBalance > 0) {
@@ -223,11 +223,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Processes a withdrawal and then destroys in a single transaction
     // Can only be called by owner (_destroy reverts if not called by owner)
-    function processWithdrawalAndDestroy() override external onlyInitialised {
+    function distributeBalanceAndDestroy() override external onlyInitialised {
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         // Process withdrawal
-        _processWithdrawal(totalBalance);
+        _distributeBalance(totalBalance);
         // Check status
         require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
         // If slash is required then perform it
@@ -241,7 +241,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Processes a withdrawal
     // When called during staking status, requires 16 ether in the pool
     // When called by non-owner with less than 16 ether, requires 7 days to have passed since being made withdrawable
-    function processWithdrawal() override external onlyInitialised {
+    function distributeBalance() override external onlyInitialised {
         // Must be called while staking or withdrawable
         require(status == MinipoolStatus.Staking || status == MinipoolStatus.Withdrawable, "Minipool must be staking or withdrawable");
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
@@ -260,10 +260,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             }
         }
         // Process withdrawal
-        _processWithdrawal(totalBalance);
+        _distributeBalance(totalBalance);
     }
 
-    function _processWithdrawal(uint256 _balance) private {
+    function _distributeBalance(uint256 _balance) private {
         // Rate limit this method to prevent front running
         require(block.number > withdrawalBlock + 100, "Withdrawal of this minipool is on cooldown");
         // Deposit amounts
