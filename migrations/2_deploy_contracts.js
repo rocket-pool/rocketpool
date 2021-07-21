@@ -122,14 +122,6 @@ module.exports = async (deployer, network) => {
 
   console.log(accounts);
 
-  // Patch deployer to include chainId for EIP-155 compliant transactions
-  const chainId = await $web3.eth.net.getId();
-  deployer._deploy = deployer.deploy;
-  deployer.deploy = function() {
-    let args = [...arguments, { from: accounts[0], chainId: `0x${chainId.toString(16)}` }];
-    return this._deploy.apply(this, args);
-  }
-
   // Live deployment
   if ( network == 'live' ) {
     // Casper live contract address
