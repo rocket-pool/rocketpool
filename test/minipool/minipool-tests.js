@@ -4,7 +4,7 @@ import {
   RocketDAOProtocolSettingsDeposit,
   RocketMinipoolManager,
   RevertOnTransfer,
-  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL
+  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL, RocketMinipoolQueue
 } from '../_utils/artifacts'
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
@@ -107,6 +107,20 @@ export default function() {
             assert(prelaunchRefundBalance.eq(web3.utils.toBN(refundAmount)), 'Incorrect prelaunch minipool refund balance');
             assert(prelaunch2RefundBalance.eq(web3.utils.toBN(0)), 'Incorrect prelaunch minipool refund balance');
 
+            // Check minipool queues
+            const rocketMinipoolQueue = await RocketMinipoolQueue.deployed()
+            const [totalLength, fullLength, halfLength, emptyLength] = await Promise.all([
+              rocketMinipoolQueue.getTotalLength(),   // Total
+              rocketMinipoolQueue.getLength(1),       // Full
+              rocketMinipoolQueue.getLength(2),       // Half
+              rocketMinipoolQueue.getLength(3),       // Empty
+            ])
+
+            // Total should match sum
+            assert(totalLength.eq(fullLength.add(halfLength).add(emptyLength)));
+            assert(fullLength.toNumber() === 2, 'Incorrect number of minipools in full queue')
+            assert(halfLength.toNumber() === 1, 'Incorrect number of minipools in half queue')
+            assert(emptyLength.toNumber() === 0, 'Incorrect number of minipools in empty queue')
         });
 
 

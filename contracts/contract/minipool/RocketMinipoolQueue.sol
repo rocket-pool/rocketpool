@@ -38,7 +38,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         return (
             getLength(queueKeyFull)
         ).add(
-            getLength(queueKeyFull)
+            getLength(queueKeyHalf)
         ).add(
             getLength(queueKeyEmpty)
         );
@@ -85,7 +85,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         if (getLength(queueKeyHalf) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
         if (getLength(queueKeyFull) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
-        if (getLength(queueKeyFull) > 0) { return rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount(); }
+        if (getLength(queueKeyEmpty) > 0) { return rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount(); }
         return 0;
     }
 
