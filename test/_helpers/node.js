@@ -5,7 +5,7 @@ import {
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketStorage
+    RocketStorage, RocketDAONodeTrusted
 } from '../_utils/artifacts'
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -100,6 +100,16 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
     await setDaoNodeTrustedBootstrapMember(_id, _url, _account, {from: owner});
     // Now get them to join
     await daoNodeTrustedMemberJoin({from: _account});
+    // Check registration was successful and details are correct
+    const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
+    const id = await rocketDAONodeTrusted.getMemberID(_account);
+    assert(id === _id, "Member ID is wrong");
+    const url = await rocketDAONodeTrusted.getMemberUrl(_account);
+    assert(url === _url, "Member URL is wrong");
+    const joinedTime = await rocketDAONodeTrusted.getMemberJoinedTime(_account);
+    assert(!joinedTime.eq(0), "Member joined time is wrong");
+    const valid = await rocketDAONodeTrusted.getMemberIsValid(_account);
+    assert(valid, "Member valid flag is not set");
 }
 
 

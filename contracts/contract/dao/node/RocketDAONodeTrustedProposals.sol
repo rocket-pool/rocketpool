@@ -170,7 +170,7 @@ contract RocketDAONodeTrustedProposals is RocketBase, RocketDAONodeTrustedPropos
         setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), false);
         setAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)), _nodeAddress);
         setString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)), _id);
-        setString(keccak256(abi.encodePacked(daoNameSpace, "member._url", _nodeAddress)), _url);
+        setString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress)), _url);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), 0);
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), 0);
     }
