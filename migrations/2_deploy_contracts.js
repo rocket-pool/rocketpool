@@ -92,7 +92,7 @@ const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:                           artifacts.require('RocketMinipoolDelegate.sol'),
+  rocketMinipool:                           [artifacts.require('RocketMinipoolDelegate.sol'), artifacts.require('RocketMinipool.sol')],
 };
 
 
@@ -259,11 +259,24 @@ module.exports = async (deployer, network) => {
       if(abis.hasOwnProperty(contract)) {
         console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ABI');
         console.log('     '+contract);
-        // Compress and store the ABI
-        await rocketStorageInstance.setString(
-          $web3.utils.soliditySha3('contract.abi', contract),
-          compressABI(abis[contract].abi)
-        );
+        if(Array.isArray(abis[contract])) {
+          // Merge ABIs from multiple artifacts
+          let combinedAbi = [];
+          for (const artifact of abis[contract]) {
+            combinedAbi = combinedAbi.concat(artifact.abi);
+          }
+          // Compress and store the ABI
+          await rocketStorageInstance.setString(
+            $web3.utils.soliditySha3('contract.abi', contract),
+            compressABI(combinedAbi)
+          );
+        } else {
+          // Compress and store the ABI
+          await rocketStorageInstance.setString(
+            $web3.utils.soliditySha3('contract.abi', contract),
+            compressABI(abis[contract].abi)
+          );
+        }
       }
     }
   };
