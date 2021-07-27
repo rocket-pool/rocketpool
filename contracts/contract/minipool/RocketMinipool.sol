@@ -13,6 +13,8 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
 
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
+    event DelegateUpgraded(address oldDelegate, address newDelegate, uint256 time);
+    event DelegateRolledBack(address oldDelegate, address newDelegate, uint256 time);
 
     // Modifiers
 
@@ -54,14 +56,21 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
         // Verify
         require(rocketMinipoolDelegate != rocketMinipoolDelegatePrev, "New delegate is the same as the existing one");
+        // Log event
+        emit DelegateUpgraded(rocketMinipoolDelegatePrev, rocketMinipoolDelegate, block.timestamp);
     }
 
     // Rollback to previous delegate contract
     function delegateRollback() external onlyMinipoolOwner {
         // Make sure they have upgraded before
         require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
-        // Set previous address
+        // Store original
+        address originalDelegate = rocketMinipoolDelegate;
+        // Update delegate to previous and zero out previous
         rocketMinipoolDelegate = rocketMinipoolDelegatePrev;
+        rocketMinipoolDelegatePrev = address(0x0);
+        // Log event
+        emit DelegateRolledBack(originalDelegate, rocketMinipoolDelegate, block.timestamp);
     }
 
     // If set to true, will automatically use the latest delegate contract
