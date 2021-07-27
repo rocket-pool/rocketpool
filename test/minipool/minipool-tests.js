@@ -645,19 +645,19 @@ export default function() {
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Store original delegate
-          let originalDelegate = await minipool.getEffectiveDelegate.call()
+          let originalDelegate = await minipool.getEffectiveDelegate.call();
           // Call upgrade delegate
-          await minipool.delegateUpgrade({from: node})
+          await minipool.delegateUpgrade({from: node});
           // Check delegate settings
-          let effectiveDelegate = await minipool.getEffectiveDelegate.call()
-          let previousDelegate = await minipool.getPreviousDelegate.call()
-          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
-          assert(previousDelegate === originalDelegate, "Previous delegate was not updated")
+          let effectiveDelegate = await minipool.getEffectiveDelegate.call();
+          let previousDelegate = await minipool.getPreviousDelegate.call();
+          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated");
+          assert(previousDelegate === originalDelegate, "Previous delegate was not updated");
           // Call upgrade rollback
-          await minipool.delegateRollback({from: node})
+          await minipool.delegateRollback({from: node});
           // Check effective delegate
-          effectiveDelegate = await minipool.getEffectiveDelegate.call()
-          assert(effectiveDelegate === originalDelegate, "Effective delegate was not rolled back")
+          effectiveDelegate = await minipool.getEffectiveDelegate.call();
+          assert(effectiveDelegate === originalDelegate, "Effective delegate was not rolled back");
         });
 
 
@@ -681,8 +681,22 @@ export default function() {
             from: owner,
           });
           // Check effective delegate
-          effectiveDelegate = await minipool.getEffectiveDelegate.call()
-          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
+          effectiveDelegate = await minipool.getEffectiveDelegate.call();
+          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated");
+        });
+
+
+        it(printTitle('random', 'cannot upgrade, rollback or set use latest delegate contract'), async () => {
+          // Get contract
+          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          // Call upgrade delegate from random
+          await shouldRevert(minipool.delegateUpgrade({from: random}), "Random was able to upgrade delegate", "Only the node operator can access this method");
+          // Call upgrade delegate from node
+          await minipool.delegateUpgrade({from: node});
+          // Call upgrade rollback from random
+          await shouldRevert(minipool.delegateRollback({from: random}), "Random was able to rollback delegate", "Only the node operator can access this method") ;
+          // Call set use latest from random
+          await shouldRevert(minipool.setUseLatestDelegate(true, {from: random}), "Random was able to set use latest delegate", "Only the node operator can access this method") ;
         });
     });
 }
