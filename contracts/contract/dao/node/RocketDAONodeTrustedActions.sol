@@ -22,11 +22,11 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     using SafeMath for uint;
 
     // Events
-    event ActionJoined(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);  
-    event ActionLeave(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
-    event ActionKick(address indexed _nodeAddress, uint256 _rplBondAmount, uint256 time);
-    event ActionChallengeMade(address indexed _nodeChallengedAddress, address indexed _nodeChallengerAddress, uint256 time);
-    event ActionChallengeDecided(address indexed _nodeChallengedAddress, address indexed _nodeChallengeDeciderAddress, bool _success, uint256 time);
+    event ActionJoined(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
+    event ActionLeave(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
+    event ActionKick(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
+    event ActionChallengeMade(address indexed nodeChallengedAddress, address indexed nodeChallengerAddress, uint256 time);
+    event ActionChallengeDecided(address indexed nodeChallengedAddress, address indexed nodeChallengeDeciderAddress, bool success, uint256 time);
 
 
     // The namespace for any data stored in the trusted node DAO (do not change)
