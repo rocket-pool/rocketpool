@@ -4,7 +4,7 @@ import {
   RocketDAOProtocolSettingsDeposit,
   RocketMinipoolManager,
   RevertOnTransfer,
-  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL, RocketMinipoolQueue
+  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL, RocketMinipoolQueue, RocketMinipool
 } from '../_utils/artifacts'
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
@@ -22,6 +22,7 @@ import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { getNodeFee } from '../_helpers/network'
 import { getNetworkSetting } from '../_helpers/settings'
+import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap'
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -48,6 +49,8 @@ export default function() {
         let withdrawableMinipool;
         let dissolvedMinipool;
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
+        let newDelegateAddress = '0x0000000000000000000000000000000000000001'
+
         before(async () => {
 
             // Register node & set withdrawal address
@@ -121,6 +124,16 @@ export default function() {
             assert(fullLength.toNumber() === 2, 'Incorrect number of minipools in full queue')
             assert(halfLength.toNumber() === 1, 'Incorrect number of minipools in half queue')
             assert(emptyLength.toNumber() === 0, 'Incorrect number of minipools in empty queue')
+
+            // Upgrade the delegate contract
+            await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
+              from: owner,
+            });
+
+            // Check effective delegate is still the original
+            const minipool = await RocketMinipool.at(stakingMinipool.address);
+            const effectiveDelegate = await minipool.getEffectiveDelegate.call()
+            assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
         });
 
 
@@ -621,6 +634,55 @@ export default function() {
 
             // Creating the unbonded minipool
             await createMinipool({from: trustedNode, value: '0'});
+        });
+
+
+        //
+        // Delegate upgrades
+        //
+
+        it(printTitle('node operator', 'can upgrade and rollback their delegate contract'), async () => {
+          // Get contract
+          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          // Store original delegate
+          let originalDelegate = await minipool.getEffectiveDelegate.call()
+          // Call upgrade delegate
+          await minipool.delegateUpgrade({from: node})
+          // Check delegate settings
+          let effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          let previousDelegate = await minipool.getPreviousDelegate.call()
+          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
+          assert(previousDelegate === originalDelegate, "Previous delegate was not updated")
+          // Call upgrade rollback
+          await minipool.delegateRollback({from: node})
+          // Check effective delegate
+          effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          assert(effectiveDelegate === originalDelegate, "Effective delegate was not rolled back")
+        });
+
+
+        it(printTitle('node operator', 'can use latest delegate contract'), async () => {
+          // Get contract
+          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          // Store original delegate
+          let originalDelegate = await minipool.getEffectiveDelegate.call()
+          // Call upgrade delegate
+          await minipool.setUseLatestDelegate(true, {from: node})
+          let useLatest = await minipool.getUseLatestDelegate.call()
+          assert(useLatest, "Use latest flag was not set")
+          // Check delegate settings
+          let effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          let currentDelegate = await minipool.getDelegate.call()
+          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
+          assert(currentDelegate === originalDelegate, "Current delegate was updated")
+          // Upgrade the delegate contract again
+          newDelegateAddress = '0x0000000000000000000000000000000000000002'
+          await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
+            from: owner,
+          });
+          // Check effective delegate
+          effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
         });
     });
 }
