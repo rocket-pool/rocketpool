@@ -45,6 +45,41 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getUint(keccak256(bytes("minipools.staking.count")));
     }
 
+    // Get the number of minipools in each status.
+    // Returns the counts for Initialized, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
+    function getMinipoolCountPerStatus(uint256 offset, uint256 limit) override external view 
+    returns (uint256 initializedCount, uint256 prelaunchCount, uint256 stakingCount, uint256 withdrawableCount, uint256 dissolvedCount) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Precompute minipool key
+        bytes32 minipoolKey = keccak256(abi.encodePacked("minipools.index"));
+        // Iterate over the requested minipool range
+        uint256 totalMinipools = getMinipoolCount();
+        uint256 max = offset.add(limit);
+        if (max > totalMinipools || limit == 0) { max = totalMinipools; }
+        for (uint256 i = offset; i < max; i++) {
+            // Get the minipool at index i
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
+            // Get the minipool's status, and update the appropriate counter
+            MinipoolStatus status = minipool.getStatus();
+            if (status == MinipoolStatus.Initialized) {
+                initializedCount++;
+            }
+            else if (status == MinipoolStatus.Prelaunch) {
+                prelaunchCount++;
+            }
+            else if (status == MinipoolStatus.Staking) {
+                stakingCount++;
+            }
+            else if (status == MinipoolStatus.Withdrawable) {
+                withdrawableCount++;
+            }
+            else if (status == MinipoolStatus.Dissolved) {
+                dissolvedCount++;
+            }
+        }
+    }
+
     // Get a network minipool address by index
     function getMinipoolAt(uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
