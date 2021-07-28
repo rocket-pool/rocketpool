@@ -209,7 +209,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         decreaseNodeRPLStake(msg.sender, _amount);
         updateTotalEffectiveRPLStake(msg.sender, rplStake, rplStake.sub(_amount));
         // Transfer RPL tokens to node address
-        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), _amount);
+        rocketVault.withdrawToken(rocketStorage.getNodeWithdrawalAddress(msg.sender), IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
         emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
     }
