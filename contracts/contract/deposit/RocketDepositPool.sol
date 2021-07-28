@@ -203,4 +203,8 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         emit ExcessWithdrawn(msg.sender, _amount, block.timestamp);
     }
 
+    // Returns the block that _address last deposited ether on
+    function getUserLastDepositBlock(address _address) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("user.deposit.block", _address)));
+    }
 }

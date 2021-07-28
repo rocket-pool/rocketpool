@@ -334,6 +334,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         return _balance.sub(calculateNodeShare(_balance));
     }
 
+
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
     // Only accepts calls from the minipool owner (node), or from any address if timed out
     function dissolve() override external onlyInitialised {
