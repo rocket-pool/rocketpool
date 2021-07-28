@@ -271,17 +271,40 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Rate limit this method to prevent front running
         require(block.number > withdrawalBlock + distributionCooldown, "Distribution of this minipool's balance is on cooldown");
         // Deposit amounts
+        uint256 nodeAmount = 0;
+        // Check if node operator was slashed
+        if (_balance < userDepositBalance) {
+            // Record shortfall for slashing
+            nodeSlashBalance = userDepositBalance.sub(_balance);
+        } else {
+            // Calculate node's share of the balance
+            nodeAmount = calculateNodeShare(_balance);
+        }
+        // User amount is what's left over from node's share
+        uint256 userAmount = _balance.sub(nodeAmount);
+        // Pay node operator via refund
+        nodeRefundBalance = nodeRefundBalance.add(nodeAmount);
+        // Send user amount to rETH contract
+        payable(rocketTokenRETH).transfer(userAmount);
+        // Save block to prevent multiple withdrawals within a few blocks
+        withdrawalBlock = block.number;
+        // Log it
+        emit EtherWithdrawalProcessed(msg.sender, nodeAmount, userAmount, _balance, block.timestamp);
+    }
+
+    // Given a validator balance, this function returns what portion of it belongs to the node taking into consideration
+    // the minipool's commission rate and any penalties it may have attracted
+    function calculateNodeShare(uint256 _balance) override public view returns (uint256) {
+        // Get fee and balances from minipool contract
         uint256 stakingDepositTotal = 32 ether;
         uint256 userAmount = userDepositBalance;
         // Check if node operator was slashed
         if (userAmount > _balance) {
-            // Record shortfall
-            nodeSlashBalance = userAmount.sub(_balance);
-            // Send remaining amount to user
-            userAmount = _balance;
+            // None of balance belongs to the node
+            return 0;
         }
         // Check if there are rewards to pay out
-        else if (_balance > stakingDepositTotal) {
+        if (_balance > stakingDepositTotal) {
             // Calculate rewards earned
             uint256 totalRewards = _balance.sub(stakingDepositTotal);
             // Calculate node share of rewards for the user
@@ -300,16 +323,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
                 penaltyAmount = nodeAmount;
             }
             nodeAmount = nodeAmount.sub(penaltyAmount);
-            userAmount = userAmount.add(penaltyAmount);
         }
-        // Pay node operator via refund
-        nodeRefundBalance = nodeRefundBalance.add(nodeAmount);
-        // Send user amount to rETH contract
-        payable(rocketTokenRETH).transfer(userAmount);
-        // Save block to prevent multiple withdrawals within a few blocks
-        withdrawalBlock = block.number;
-        // Log it
-        emit EtherWithdrawalProcessed(msg.sender, nodeAmount, userAmount, _balance, block.timestamp);
+        return nodeAmount;
+    }
+
+    // Given a validator balance, this function returns what portion of it belongs to rETH users taking into consideration
+    // the minipool's commission rate and any penalties it may have attracted
+    function calculateUserShare(uint256 _balance) override external view returns (uint256) {
+        // User's share is just the balance minus node's share
+        return _balance.sub(calculateNodeShare(_balance));
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
