@@ -48,22 +48,18 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Get the number of minipools in each status.
     // Returns the counts for Initialized, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
     function getMinipoolCountPerStatus(uint256 offset, uint256 limit) override external view 
-    returns (uint256, uint256, uint256, uint256, uint256) {
-        uint256 initializedCount = 0;
-        uint256 prelaunchCount = 0;
-        uint256 stakingCount = 0;
-        uint256 withdrawableCount = 0;
-        uint256 dissolvedCount = 0;
-
+    returns (uint256 initializedCount, uint256 prelaunchCount, uint256 stakingCount, uint256 withdrawableCount, uint256 dissolvedCount) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Precompute minipool key
+        bytes32 minipoolKey = keccak256(abi.encodePacked("minipools.index"));
         // Iterate over the requested minipool range
         uint256 totalMinipools = getMinipoolCount();
         uint256 max = offset.add(limit);
         if (max > totalMinipools || limit == 0) { max = totalMinipools; }
         for (uint256 i = offset; i < max; i++) {
             // Get the minipool at index i
-            address minipoolAddress = getMinipoolAt(i);
-            RocketMinipool minipool = RocketMinipoolInterface(minipoolAddress);
-
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and update the appropriate counter
             MinipoolStatus status = minipool.getStatus();
             if (status == MinipoolStatus.Initialized) {
@@ -82,14 +78,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
                 dissolvedCount++;
             }
         }
-
-        // Return all of the counters
-        return (
-            initializedCount, 
-            prelaunchCount, 
-            stakingCount, 
-            withdrawableCount, 
-            dissolvedCount);
     }
 
     // Get a network minipool address by index
