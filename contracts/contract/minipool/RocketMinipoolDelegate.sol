@@ -246,7 +246,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Distributes the contract's balance
     // When called during staking status, requires 16 ether in the pool
-    // When called by non-owner with less than 16 ether, requires 7 days to have passed since being made withdrawable
+    // When called by non-owner with less than 16 ether, requires 14 days to have passed since being made withdrawable
     function distributeBalance() override external onlyInitialised {
         // Must be called while staking or withdrawable
         require(status == MinipoolStatus.Staking || status == MinipoolStatus.Withdrawable, "Minipool must be staking or withdrawable");
