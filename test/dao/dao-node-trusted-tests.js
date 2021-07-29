@@ -855,6 +855,72 @@ export default function() {
         });
 
 
+        it(printTitle('registeredNodeTrusted1', 'creates a proposal for registeredNode1 to join as a new member, member joins, is kicked, then cannot rejoin'), async () => {
+            // Get the DAO settings
+            let daoNodesettings = await RocketDAONodeTrustedSettingsMembers.deployed();
+            // How much RPL is required for a trusted node bond?
+            let rplBondAmount = web3.utils.fromWei(await daoNodesettings.getRPLBond());
+            // Add our 3rd member so proposals can pass
+            await bootstrapMemberAdd(registeredNodeTrusted3, 'rocketpool_3', 'node3@home.com');
+            // New Member
+            // Encode the calldata for the proposal
+            let proposalCalldata1 = web3.eth.abi.encodeFunctionCall(
+              {name: 'proposalInvite', type: 'function', inputs: [{type: 'string', name: '_id'},{type: 'string', name: '_url'}, {type: 'address', name: '_nodeAddress'}]},
+              ['SaaS_Provider1', 'test@sass.com', registeredNode1]
+            );
+            // Add the proposal
+            let proposalId1 = await daoNodeTrustedPropose('hey guys, can we add this cool SaaS member please?', proposalCalldata1, {
+                from: registeredNodeTrusted1
+            });
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalId1)-timeCurrent)+2);
+            // Now lets vote for the new members
+            await daoNodeTrustedVote(proposalId1, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalId1, true, { from: registeredNodeTrusted2 });
+            // Current time
+            timeCurrent = await getCurrentTime(web3);
+            // Fast forward to voting periods finishing
+            await increaseTime(web3, (await getDAOProposalEndTime(proposalId1)-timeCurrent)+2);
+            // Proposal should be successful, lets execute it
+            await daoNodeTrustedExecute(proposalId1, { from: registeredNodeTrusted1 });
+            // Member has now been invited to join, so lets do that
+            // We'll allow the DAO to transfer our RPL bond before joining
+            await rplMint(registeredNode1, rplBondAmount);
+            await rplAllowanceDAO(registeredNode1, rplBondAmount);
+            // Join now
+            await daoNodeTrustedMemberJoin({from: registeredNode1});
+            // Add a small wait
+            await increaseTime(web3, 2);
+            // Check the member is now valid
+            assert(await getDAOMemberIsValid(registeredNode1), "registeredNode1 is not a membmer of the DAO");
+            // Now we kick the member
+            let proposalCalldata2 = web3.eth.abi.encodeFunctionCall(
+              {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
+              [registeredNode1, 0]
+            );
+            // Add the proposal
+            let proposalId2 = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata2, {
+                from: registeredNodeTrusted1
+            });
+            // Current time
+            timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalId2)-timeCurrent)+2);
+            // Now lets vote
+            await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted1 });
+            await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted2 });
+            await daoNodeTrustedVote(proposalId2, true, { from: registeredNodeTrusted3 });
+            // Proposal has passed, lets execute it now
+            await daoNodeTrustedExecute(proposalId2, { from: registeredNodeTrusted1 });
+            // The new member has now been kicked
+            assert(await getDAOMemberIsValid(registeredNode1) === false, "registeredNode1 is still a member of the DAO");
+            // They should not be able to rejoin
+            await rplAllowanceDAO(registeredNode1, rplBondAmount);
+            await shouldRevert(daoNodeTrustedMemberJoin({from: registeredNode1}), "Member was able to join after being kicked", "This node has not been invited to join");
+        });
+
         // ABIs - contract address field is ignored
         it(printTitle('guardian', 'can upgrade a contract ABI in bootstrap mode'), async () => {
             await setDaoNodeTrustedBootstrapUpgrade('upgradeABI', 'rocketNodeManager', rocketMinipoolManagerNew.abi, '0x0000000000000000000000000000000000000000', {
