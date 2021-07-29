@@ -40,6 +40,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Status getters
     function getStatus() override external view returns (MinipoolStatus) { return status; }
+    function getFinalised() override external view returns (bool) { return finalised; }
     function getStatusBlock() override external view returns (uint256) { return statusBlock; }
     function getStatusTime() override external view returns (uint256) { return statusTime; }
 
