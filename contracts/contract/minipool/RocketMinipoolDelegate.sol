@@ -225,11 +225,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Decrement the node operator's staking minipool count
         rocketMinipoolManager.decrementNodeStakingMinipoolCount(nodeAddress);
-        // Update unbonded validator count if minipool is unbonded
-        if (depositType == MinipoolDeposit.Empty) {
-            RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-            rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress);
-        }
     }
 
     // Distributes the contract's balance and finalises the pool
@@ -294,6 +289,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Unlock node operator's RPL
         rocketMinipoolManager.incrementNodeFinalisedMinipoolCount(nodeAddress);
+        // Update unbonded validator count if minipool is unbonded
+        if (depositType == MinipoolDeposit.Empty) {
+            RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+            rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress);
+        }
         // Set finalised flag
         finalised = true;
     }
