@@ -188,11 +188,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
             if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
         }
-        { // This scope is to prevent a stack too deep error
-            // Prevent creation of minipools between price update block and price consensus
-            RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-            require(rocketNetworkPrices.inConsensus(), "Cannot create a minipool while network is reaching consensus");
-        }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
@@ -206,8 +201,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function destroyMinipool() override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
@@ -216,10 +209,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
-        // Update unbonded validator count if minipool is unbonded
-        if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
-        // Prevent destroying minipools between price update block and price consensus
-        require(rocketNetworkPrices.inConsensus(), "Cannot destroy a minipool while network is reaching consensus");
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }
