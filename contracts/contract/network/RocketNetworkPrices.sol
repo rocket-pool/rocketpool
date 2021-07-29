@@ -56,12 +56,10 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function increaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        require(inConsensus(), "Network is not in consensus");
         addUint(keccak256("network.rpl.stake"), _amount);
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function decreaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        require(inConsensus(), "Network is not in consensus");
         subUint(keccak256("network.rpl.stake"), _amount);
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
@@ -127,7 +125,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // Returns true if consensus has been reached for the last price reportable block
-    function inConsensus() override public view returns (bool) {
+    function inConsensus() override external view returns (bool) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency

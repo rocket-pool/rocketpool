@@ -85,7 +85,7 @@ export default function() {
         });
 
 
-        async function withdrawAndCheck(withdrawalBalance, from, finalise, expectedUser, expectedNode) {
+        async function withdrawAndCheck(withdrawalBalance, from, destroy, expectedUser, expectedNode) {
             const withdrawalBalanceBN = web3.utils.toBN(web3.utils.toWei(withdrawalBalance, 'ether'));
             const expectedUserBN = web3.utils.toBN(web3.utils.toWei(expectedUser, 'ether'));
             const expectedNodeBN = web3.utils.toBN(web3.utils.toWei(expectedNode, 'ether'));
@@ -95,7 +95,7 @@ export default function() {
                 nodeBalanceChange,
                 rethBalanceChange
             }
-              = await withdrawValidatorBalance(minipool, withdrawalBalanceBN, nodeWithdrawalAddress, finalise);
+              = await withdrawValidatorBalance(minipool, withdrawalBalanceBN, nodeWithdrawalAddress, destroy);
 
             // Check results
             assert(expectedUserBN.eq(rethBalanceChange), "User balance was incorrect");
@@ -186,10 +186,10 @@ export default function() {
         });
 
 
-        it(printTitle('node operator withdrawal address', 'cannot process withdrawal and finalise minipool while not marked as withdrawable'), async () => {
+        it(printTitle('node operator withdrawal address', 'cannot process withdrawal and destroy minipool while not marked as withdrawable'), async () => {
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('32', 'ether');
-            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and finalise pool while status was not withdrawable', 'Minipool must be withdrawable');
+            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and destroyed pool while status was not withdrawable', 'Minipool must be withdrawable to destroy');
         });
 
 
@@ -199,17 +199,17 @@ export default function() {
         });
 
 
-        it(printTitle('node operator withdrawal address', 'cannot process withdrawal and finalise pool when balance is less than 16 ETH and not marked as withdrawable'), async () => {
+        it(printTitle('node operator withdrawal address', 'cannot process withdrawal and destroy pool when balance is less than 16 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
-            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and finalise pool while status was not withdrawable', 'Minipool must be withdrawable');
+            await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and destroyed pool while status was not withdrawable', 'Minipool must be withdrawable to destroy');
         });
 
 
         // ETH penalty events
 
 
-        it(printTitle('node operator withdrawal address', 'can process withdrawal and finalise pool when penalised by DAO'), async () => {
+        it(printTitle('node operator withdrawal address', 'can process withdrawal and destroy pool when penalised by DAO'), async () => {
             // Penalise the minipool 50% of it's ETH
             await penaltyTestContract.setPenaltyRate(minipool.address, maxPenaltyRate);
             // Mark minipool withdrawable

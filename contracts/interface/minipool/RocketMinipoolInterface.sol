@@ -26,10 +26,10 @@ interface RocketMinipoolInterface {
     function nodeDeposit() external payable;
     function userDeposit() external payable;
     function distributeBalance() external;
-    function distributeBalanceAndFinalise() external;
+    function distributeBalanceAndDestroy() external;
     function refund() external;
     function slash() external;
-    function finalise() external;
+    function destroy() external;
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
     function setWithdrawable() external;
     function dissolve() external;

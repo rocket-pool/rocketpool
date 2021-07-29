@@ -169,6 +169,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         address rocketVaultAddress = getContractAddress("rocketVault");
         IERC20 rplToken = IERC20(rplTokenAddress);
         RocketVaultInterface rocketVault = RocketVaultInterface(rocketVaultAddress);
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        // Prevent staking between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Cannot stake while network is reaching consensus");
         // Transfer RPL tokens
         require(rplToken.transferFrom(msg.sender, address(this), _amount), "Could not transfer RPL to staking contract");
         // Deposit RPL tokens to vault
@@ -191,8 +194,11 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Check cooldown period (one claim period) has passed since RPL last staked
         require(block.timestamp.sub(getNodeRPLStakedTime(msg.sender)) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
+        // Prevent unstaking between price update block and price consensus
+        require(rocketNetworkPrices.inConsensus(), "Cannot withdraw while network is reaching consensus");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
