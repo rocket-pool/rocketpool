@@ -1,17 +1,22 @@
 import {
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
-  RocketDAOProtocolSettingsDeposit,
   RocketMinipoolManager,
-  RevertOnTransfer,
-  RocketTokenRETH, RocketAuctionManager, RocketVault, RocketTokenRPL, RocketMinipoolQueue, RocketMinipool
+  RevertOnTransfer, RocketVault, RocketTokenRPL, RocketMinipoolQueue, RocketMinipool
 } from '../_utils/artifacts'
-import { increaseTime, mineBlocks } from '../_utils/evm'
+import { increaseTime, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, submitMinipoolWithdrawable, dissolveMinipool } from '../_helpers/minipool';
+import {
+  getMinipoolMinimumRPLStake,
+  createMinipool,
+  stakeMinipool,
+  submitMinipoolWithdrawable,
+  dissolveMinipool,
+  getNodeActiveMinipoolCount
+} from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
@@ -20,9 +25,9 @@ import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
-import { getNodeFee } from '../_helpers/network'
-import { getNetworkSetting } from '../_helpers/settings'
-import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap'
+import { getNodeFee } from '../_helpers/network';
+import { getNetworkSetting } from '../_helpers/settings';
+import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -175,19 +180,6 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot create/destroy minipool without price consensus'), async () => {
-            const priceFrequency = 50;
-            // Set price frequency to a low value so we can mine fewer blocks
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', priceFrequency, {from: owner});
-            // Mine blocks until next price window
-            await mineBlocks(web3, priceFrequency);
-            // Creating minipool should fail now because oracles have not submitted price for this window
-            await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when network was not in consensus about price', 'Cannot create a minipool while network is reaching consensus');
-            // Closing a minipool should fail too
-            await shouldRevert(close(dissolvedMinipool, { from: node, }), 'Was able to destroy a minipool when network was not in consensus about price', 'Cannot destroy a minipool while network is reaching consensus');
-        });
-
-
         it(printTitle('node operator', 'cannot create a minipool if network capacity is reached and destroying a minipool reduces the capacity'), async () => {
           // Retrieve the current number of minipools
           const rocketMinipoolManager = await RocketMinipoolManager.deployed();
@@ -245,44 +237,59 @@ export default function() {
 
 
         //
-        // Destroy
+        // Finalise
         //
 
 
-        it(printTitle('node operator', 'can destroy a withdrawn minipool'), async () => {
+        it(printTitle('node operator', 'can finalise a withdrawn minipool'), async () => {
 
           // Wait 14 days
           await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Withdraw without destroying
+          // Withdraw without finalising
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
-
-          // Destroy
-          await withdrawableMinipool.destroy({ from: nodeWithdrawalAddress });
-
-          // Minipool contract should be dead
-          let code = await web3.eth.getCode(withdrawableMinipool.address);
-          assert(code === '0x', 'Minipool contract was not destroyed')
+          // Get number of active minipools before
+          const count1 = await getNodeActiveMinipoolCount(node);
+          // Finalise
+          await withdrawableMinipool.finalise({ from: nodeWithdrawalAddress });
+          // Get number of active minipools after
+          const count2 = await getNodeActiveMinipoolCount(node);
+          // Make sure active minipool count reduced by one
+          assert(count1.sub(count2).eq(web3.utils.toBN(1)), "Active minipools did not decrement by 1");
 
         });
 
 
-        it(printTitle('node operator', 'cannot destroy a non-withdrawn minipool'), async () => {
+        it(printTitle('node operator', 'cannot finalise a withdrawn minipool twice'), async () => {
 
-          // Destroy
-          await shouldRevert(withdrawableMinipool.destroy({ from: nodeWithdrawalAddress }), 'Minipool was destroyed before withdrawn', 'Minipool must have been withdrawn before destroying');
+          // Wait 14 days
+          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+          // Withdraw without finalising
+          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+          // Finalise
+          await withdrawableMinipool.finalise({ from: nodeWithdrawalAddress });
+          // Second time should fail
+          await shouldRevert(withdrawableMinipool.finalise({ from: nodeWithdrawalAddress }), "Was able to finalise pool twice", "Minipool has already been finalised");
 
         });
 
 
-        it(printTitle('random address', 'cannot destroy a withdrawn minipool'), async () => {
+      it(printTitle('node operator', 'cannot finalise a non-withdrawn minipool'), async () => {
+
+          // Finalise
+          await shouldRevert(withdrawableMinipool.finalise({ from: nodeWithdrawalAddress }), 'Minipool was finalised before withdrawn', 'Minipool balance must have been distributed at least once');
+
+        });
+
+
+        it(printTitle('random address', 'cannot finalise a withdrawn minipool'), async () => {
 
           // Wait 14 days
           await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Withdraw without destroying
+          // Withdraw without finalising
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+          // Finalise
+          await shouldRevert(withdrawableMinipool.finalise({ from: random }), 'Minipool was finalised by random', 'Invalid minipool owner');
 
-          // Destroy
-          await shouldRevert(withdrawableMinipool.destroy({ from: random }), 'Minipool was destroyed by random', 'Only node operator can destroy minipool');
         });
 
 
@@ -457,7 +464,6 @@ export default function() {
         });
 
 
-
         //
         // Withdraw validator balance
         //
@@ -468,9 +474,10 @@ export default function() {
           // Wait 14 days
           await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Only node operator can destroy minipool");
+          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Invalid minipool owner");
 
         });
+
 
         it(printTitle('random', 'random address can trigger a payout of withdrawal balance if balance is greater than 16 ETH'), async () => {
 
@@ -481,6 +488,7 @@ export default function() {
 
         });
 
+
         it(printTitle('random', 'random address cannot trigger a payout of withdrawal balance if balance is less than 16 ETH'), async () => {
 
           // Attempt to send validator balance
@@ -488,12 +496,14 @@ export default function() {
 
         });
 
+
         it(printTitle('node operator withdrawal address', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
 
           // Send validator balance and withdraw
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
 
         });
+
 
         it(printTitle('node operator account', 'can also withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
 

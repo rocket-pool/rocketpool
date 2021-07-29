@@ -8,9 +8,13 @@ import "./RocketMinipoolInterface.sol";
 interface RocketMinipoolManagerInterface {
     function getMinipoolCount() external view returns (uint256);
     function getStakingMinipoolCount() external view returns (uint256);
+    function getFinalisedMinipoolCount() external view returns (uint256);
+    function getActiveMinipoolCount() external view returns (uint256);
     function getMinipoolCountPerStatus(uint256 offset, uint256 limit) external view returns (uint256, uint256, uint256, uint256, uint256);
     function getMinipoolAt(uint256 _index) external view returns (address);
     function getNodeMinipoolCount(address _nodeAddress) external view returns (uint256);
+    function getNodeActiveMinipoolCount(address _nodeAddress) external view returns (uint256);
+    function getNodeFinalisedMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeStakingMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
     function getNodeValidatingMinipoolCount(address _nodeAddress) external view returns (uint256);
@@ -22,5 +26,6 @@ interface RocketMinipoolManagerInterface {
     function destroyMinipool() external;
     function incrementNodeStakingMinipoolCount(address _nodeAddress) external;
     function decrementNodeStakingMinipoolCount(address _nodeAddress) external;
+    function incrementNodeFinalisedMinipoolCount(address _nodeAddress) external;
     function setMinipoolPubkey(bytes calldata _pubkey) external;
 }

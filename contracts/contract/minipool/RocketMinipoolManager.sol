@@ -45,6 +45,19 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getUint(keccak256(bytes("minipools.staking.count")));
     }
 
+    // Get the number of finalised minipools in the network
+    function getFinalisedMinipoolCount() override external view returns (uint256) {
+        return getUint(keccak256(bytes("minipools.finalised.count")));
+    }
+
+    // Get the number of active minipools in the network
+    function getActiveMinipoolCount() override public view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        uint256 total = addressSetStorage.getCount(keccak256(bytes("minipools.index")));
+        uint256 finalised = getUint(keccak256(bytes("minipools.finalised.count")));
+        return total.sub(finalised);
+    }
+
     // Get the number of minipools in each status.
     // Returns the counts for Initialized, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
     function getMinipoolCountPerStatus(uint256 offset, uint256 limit) override external view 
@@ -90,6 +103,19 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function getNodeMinipoolCount(address _nodeAddress) override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
+    }
+
+    // Get the number of minipools owned by a node that are not finalised
+    function getNodeActiveMinipoolCount(address _nodeAddress) override external view returns (uint256) {
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        uint256 finalised = getUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)));
+        uint256 total = addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
+        return total.sub(finalised);
+    }
+
+    // Get the number of minipools owned by a node that are finalised
+    function getNodeFinalisedMinipoolCount(address _nodeAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)));
     }
 
     // Get the number of minipools owned by a node that are in staking status
@@ -158,6 +184,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
     }
 
+    // Increments _nodeAddress' number of minipools that have been finalised
+    function incrementNodeFinalisedMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Update the node specific count
+        addUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)), 1);
+        // Update the total count
+        addUint(keccak256(bytes("minipools.finalised.count")), 1);
+    }
+
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
@@ -172,7 +206,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         { // Local scope to prevent stack too deep error
           RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
           // Check global minipool limit
-          uint256 totalMinipoolCount = getMinipoolCount();
+          uint256 totalMinipoolCount = getActiveMinipoolCount();
           require(totalMinipoolCount.add(1) <= rocketDAOProtocolSettingsMinipool.getMaximumCount(), "Global minipool limit reached");
         }
         // Create minipool contract
@@ -188,11 +222,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
             if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
         }
-        { // This scope is to prevent a stack too deep error
-            // Prevent creation of minipools between price update block and price consensus
-            RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-            require(rocketNetworkPrices.inConsensus(), "Cannot create a minipool while network is reaching consensus");
-        }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
@@ -206,8 +235,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function destroyMinipool() override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
@@ -216,10 +243,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
-        // Update unbonded validator count if minipool is unbonded
-        if (minipool.getDepositType() == MinipoolDeposit.Empty) { rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress); }
-        // Prevent destroying minipools between price update block and price consensus
-        require(rocketNetworkPrices.inConsensus(), "Cannot destroy a minipool while network is reaching consensus");
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }

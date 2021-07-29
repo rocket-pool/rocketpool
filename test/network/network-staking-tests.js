@@ -19,7 +19,7 @@ import { mintRPL } from '../_helpers/tokens';
 import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
-import { createMinipool, getNodeStakingMinipoolCount, stakeMinipool } from '../_helpers/minipool'
+import { createMinipool, getNodeStakingMinipoolCount, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool'
 import BN from 'bn.js'
 import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
@@ -220,7 +220,7 @@ export default function() {
         });
 
 
-        it(printTitle('node1', 'cannot stake or withdraw RPL while network is not in consensus'), async () => {
+        it(printTitle('node1', 'cannot stake RPL while network is not in consensus'), async () => {
             const priceFrequency = 50;
             // Set price frequency to a low value so we can mine fewer blocks
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', priceFrequency, {from: owner});
@@ -230,19 +230,18 @@ export default function() {
             await setPrice(web3.utils.toWei('1', 'ether'))
             // Should be able to stake at current time as price is in consensus
             await nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
+            // Create a minipool to increase our max RPL stake
+            await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
+            const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            await stakeMinipool(minipool, null, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
             // Staking should fail now because oracles have not submitted price for this window
-            await shouldRevert(nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1}), 'Was able to stake when network was not in consensus about price', 'Cannot stake while network is reaching consensus');
-            // Unstaking should also fail
-            await shouldRevert(nodeWithdrawRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1}), 'Was able to withdraw when network was not in consensus about price', 'Cannot withdraw while network is reaching consensus');
-            // Set the price for current block
-            await setPrice(web3.utils.toWei('1', 'ether'))
-            // Should work now
-            await nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
-            await nodeWithdrawRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
+            await shouldRevert(nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1}), 'Was able to stake when network was not in consensus about price', 'Network is not in consensus');
+            // Test effective stake values
             await testEffectiveStakeValues()
         });
+
 
 
         /*** Trusted Nodes *************************/
@@ -266,6 +265,37 @@ export default function() {
             // Should not be able to submit a price change at oldBlockNumber as effective stake changed after it
             await submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
             await shouldRevert(submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');
+        });
+
+
+        it(printTitle('node1', 'cannot mark a minipool as withdrawable while network is not in consensus'), async () => {
+            const priceFrequency = 50;
+            // Set price frequency to a low value so we can mine fewer blocks
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', priceFrequency, {from: owner});
+            // Set withdrawal cooldown to 0
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', 0, {from: owner});
+            // Set price at current block
+            await setPrice(web3.utils.toWei('1', 'ether'))
+            // Should be able to stake at current time as price is in consensus
+            await nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
+            // Create a minipool to increase our max RPL stake
+            await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
+            const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
+            await stakeMinipool(minipool, null, {from: registeredNode1});
+            // Mine blocks until next price window
+            await mineBlocks(web3, priceFrequency);
+            // Mark it as withdrawable
+            await submitMinipoolWithdrawable(minipool.address, {from: registeredNodeTrusted1});
+            // This one where consensus is reached should fail while not in network consensus about prices
+            await shouldRevert(submitMinipoolWithdrawable(minipool.address, {from: registeredNodeTrusted2}), 'Was able to mark minipool as withdrawable when network was not in consensus about price', 'Network is not in consensus');
+            // Test effective stake values
+            await testEffectiveStakeValues();
+            // Set price at current block to bring the network back into consensus about prices
+            await setPrice(web3.utils.toWei('1', 'ether'));
+            // Should be able to set withdrawable now
+            await submitMinipoolWithdrawable(minipool.address, {from: registeredNodeTrusted2});
+            // Test effective stake values again
+            await testEffectiveStakeValues();
         });
     });
 }

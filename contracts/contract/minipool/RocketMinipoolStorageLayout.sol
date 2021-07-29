@@ -59,4 +59,7 @@ abstract contract RocketMinipoolStorageLayout {
 
     // Used to prevent direct access to delegate and prevent calling initialise more than once
     StorageState storageState = StorageState.Undefined;
+
+    // Whether node operator has finalised the pool
+    bool internal finalised;
 }

@@ -8,7 +8,7 @@ import {
 } from '../_utils/artifacts'
 
 
-export async function withdrawValidatorBalance(minipool, withdrawalBalance, from, destroy = false) {
+export async function withdrawValidatorBalance(minipool, withdrawalBalance, from, finalise = false) {
     // Convert to BN
     withdrawalBalance = web3.utils.toBN(withdrawalBalance);
 
@@ -48,8 +48,8 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Get minipool balances
-    function getMinipoolBalances(destroyed = false) {
-        if (destroyed) {
+    function getMinipoolBalances(finalised = false) {
+        if (finalised) {
             return {
                 nodeDepositBalance: web3.utils.toBN('0'),
                 nodeRefundBalance: web3.utils.toBN('0'),
@@ -91,8 +91,8 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Payout the balances now
     let txReceipt;
 
-    if (destroy) {
-        txReceipt = await minipool.distributeBalanceAndDestroy({
+    if (finalise) {
+        txReceipt = await minipool.distributeBalanceAndFinalise({
             from: from,
             gasPrice: gasPrice
         });
@@ -108,7 +108,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Get updated balances & withdrawal processed status
     let [balances2, minipoolBalances2] = await Promise.all([
         getBalances(),
-        getMinipoolBalances(destroy)
+        getMinipoolBalances(finalise)
     ]);
 
     // Add the fee back into the balance to make assertions easier
