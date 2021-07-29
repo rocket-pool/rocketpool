@@ -164,7 +164,7 @@ module.exports = async (deployer, network) => {
     const casperDepositContract = await casperDeposit.deploy(
       // Casper deployment
       {
-        data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin')
+        data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin').toString()
       }).send({
           from: accounts[0],
           gas: 8000000,
