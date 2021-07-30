@@ -106,7 +106,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools owned by a node that are not finalised
-    function getNodeActiveMinipoolCount(address _nodeAddress) override external view returns (uint256) {
+    function getNodeActiveMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         uint256 finalised = getUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)));
         uint256 total = addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)));
@@ -200,7 +200,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node minipool limit based on RPL stake
         require(
-            addressSetStorage.getCount(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress))) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
+            getNodeActiveMinipoolCount(_nodeAddress) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
             "Minipool count after deposit exceeds limit based on node RPL stake"
         );
         { // Local scope to prevent stack too deep error
