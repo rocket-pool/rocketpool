@@ -142,7 +142,13 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
     // Get the amount of claimed RPL in a lot
     function getLotClaimedRPLAmount(uint256 _index) override public view returns (uint256) {
-        return calcBase.mul(getLotTotalBidAmount(_index)).div(getLotCurrentPrice(_index));
+        uint256 claimed = calcBase.mul(getLotTotalBidAmount(_index)).div(getLotCurrentPrice(_index));
+        uint256 total = getLotTotalRPLAmount(_index);
+        // Due to integer arithmetic, the calculated claimed amount may be slightly greater than the total
+        if (claimed > total) {
+            return total;
+        }
+        return claimed;
     }
 
     // Get the amount of remaining RPL in a lot
@@ -235,6 +241,11 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         else { currentPrice = blockPrice; }
         // Calculate RPL claim amount
         uint256 rplAmount = calcBase.mul(bidAmount).div(currentPrice);
+        // Due to integer arithmetic, there may be a tiny bit less than calculated
+        uint256 allottedAmount = getAllottedRPLBalance();
+        if (rplAmount > allottedAmount) {
+            rplAmount = allottedAmount;
+        }
         // Transfer RPL to bidder
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), rplAmount);
