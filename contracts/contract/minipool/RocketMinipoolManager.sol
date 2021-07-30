@@ -254,6 +254,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        // Require price consensus
+        require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
         // Get node's RPL stake
         uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
         // Get the node's maximum possible stake

@@ -215,6 +215,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Require price consensus
+        require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
         // Get the node's maximum possible stake
         uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())

@@ -56,12 +56,10 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function increaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        require(inConsensus(), "Network is not in consensus");
         addUint(keccak256("network.rpl.stake"), _amount);
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
     function decreaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        require(inConsensus(), "Network is not in consensus");
         subUint(keccak256("network.rpl.stake"), _amount);
         setUint(keccak256("network.rpl.stake.updated.block"), block.number);
     }
