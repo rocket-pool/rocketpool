@@ -285,9 +285,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         if (address(this).balance > 0) {
             // Send user amount to rETH contract
             payable(rocketTokenRETH).transfer(address(this).balance);
-            // Send any overcollateralised ETH to the deposit pool
-            RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
         }
+        // Trigger a deposit of excess collateral from rETH contract to deposit pool
+        RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
         // Unlock node operator's RPL
         rocketMinipoolManager.incrementNodeFinalisedMinipoolCount(nodeAddress);
         // Update unbonded validator count if minipool is unbonded
