@@ -37,15 +37,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     // Only accepts calls from registered nodes
     function deposit(uint256 _minimumNodeFee) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
-        RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        RocketDAONodeTrustedSettingsMembersInterface rocketDaoNodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
         // Check current node fee
@@ -62,6 +58,9 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         }
         // If creating an unbonded minipool, check current unbonded minipool count and current fee > 80% of max
         if (depositType == MinipoolDeposit.Empty) {
+            RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+            RocketDAONodeTrustedInterface rocketDaoNodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+            RocketDAONodeTrustedSettingsMembersInterface rocketDaoNodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
             // Node is trusted
             if (rocketDaoNodeTrusted.getMemberIsValid(msg.sender)) {
                 require(rocketDaoNodeTrusted.getMemberUnbondedValidatorCount(msg.sender) < rocketDaoNodeTrustedSettingsMembers.getMinipoolUnbondedMax(), "Trusted node member would exceed the amount of unbonded minipools allowed");
@@ -80,7 +79,10 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Transfer deposit to minipool
         minipool.nodeDeposit{value: msg.value}();
         // Assign deposits if enabled
-        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) { rocketDepositPool.assignDeposits(); }
+        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
+            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+            rocketDepositPool.assignDeposits();
+        }
     }
 
 }

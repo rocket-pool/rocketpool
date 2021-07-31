@@ -217,10 +217,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Add minipool to indexes
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.index")), contractAddress);
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), contractAddress);
-        { // This scope is to prevent a stack too deep error
-            // Update unbonded validator count if minipool is unbonded
+        // Update unbonded validator count if minipool is unbonded
+        if (_depositType == MinipoolDeposit.Empty) {
             RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-            if (_depositType == MinipoolDeposit.Empty) { rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress); }
+            rocketDAONodeTrusted.incrementMemberUnbondedValidatorCount(_nodeAddress);
         }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
