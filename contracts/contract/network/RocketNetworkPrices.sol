@@ -125,7 +125,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // Returns true if consensus has been reached for the last price reportable block
-    function inConsensus() override external view returns (bool) {
+    function inConsensus() override public view returns (bool) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Get the block prices were lasted updated and the update frequency

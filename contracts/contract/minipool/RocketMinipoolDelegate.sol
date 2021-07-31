@@ -11,9 +11,11 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
+import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -38,6 +40,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // Status getters
     function getStatus() override external view returns (MinipoolStatus) { return status; }
+    function getFinalised() override external view returns (bool) { return finalised; }
     function getStatusBlock() override external view returns (uint256) { return statusBlock; }
     function getStatusTime() override external view returns (uint256) { return statusTime; }
 
@@ -75,6 +78,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Only allow access from the owning node address
     modifier onlyMinipoolOwner(address _nodeAddress) {
         require(_nodeAddress == nodeAddress, "Invalid minipool owner");
+        _;
+    }
+
+    // Only allow access from the owning node address or their withdrawal address
+    modifier onlyMinipoolOwnerOrWithdrawalAddress(address _nodeAddress) {
+        require(_nodeAddress == nodeAddress || _nodeAddress == rocketStorage.getNodeWithdrawalAddress(nodeAddress), "Invalid minipool owner");
         _;
     }
 
@@ -163,18 +172,14 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         _slash();
     }
 
-    // Owner can call to destroy the minipool, freeing up locked RPL to withdraw
-    function destroy() external override onlyInitialised {
-        // Check status
-        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
-        // Check distributeBalance has been called at least once
-        require(withdrawalBlock > 0, "Minipool must have been withdrawn before destroying");
-        // Check if owner's RPL requires slashing and slash it
-        if (nodeSlashBalance > 0) {
-            _slash();
-        }
-        // Destroy
-        _destroy();
+    // Called by node operator to finalise the pool and unlock their RPL stake
+    function finalise() external override onlyInitialised onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) {
+        // Can only call if withdrawable and can only be called once
+        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable");
+        // Node operator cannot finalise the pool unless distributeBalance has been called
+        require(withdrawalBlock > 0, "Minipool balance must have been distributed at least once");
+        // Finalise the pool
+        _finalise();
     }
 
     // Progress the minipool to staking, sending its ETH deposit to the VRC
@@ -219,30 +224,25 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
             rocketMinipoolQueue.removeMinipool(depositType);
         }
-        // Decrements node's number of staking minipools
+        // Decrement the node operator's staking minipool count
         rocketMinipoolManager.decrementNodeStakingMinipoolCount(nodeAddress);
     }
 
-    // Processes a withdrawal and then destroys in a single transaction
-    // Can only be called by owner (_destroy reverts if not called by owner)
-    function distributeBalanceAndDestroy() override external onlyInitialised {
-        // Check status
-        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable to destroy");
+    // Distributes the contract's balance and finalises the pool
+    function distributeBalanceAndFinalise() override external onlyInitialised onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) {
+        // Can only call if withdrawable and can only be called once
+        require(status == MinipoolStatus.Withdrawable, "Minipool must be withdrawable");
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         // Process withdrawal
         _distributeBalance(totalBalance);
-        // If slash is required then perform it
-        if (nodeSlashBalance > 0) {
-            _slash();
-        }
-        // Destroy the pool
-        _destroy();
+        // Finalise the pool
+        _finalise();
     }
 
-    // Processes a withdrawal
+    // Distributes the contract's balance
     // When called during staking status, requires 16 ether in the pool
-    // When called by non-owner with less than 16 ether, requires 7 days to have passed since being made withdrawable
+    // When called by non-owner with less than 16 ether, requires 14 days to have passed since being made withdrawable
     function distributeBalance() override external onlyInitialised {
         // Must be called while staking or withdrawable
         require(status == MinipoolStatus.Staking || status == MinipoolStatus.Withdrawable, "Minipool must be staking or withdrawable");
@@ -267,6 +267,38 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         _distributeBalance(totalBalance);
     }
 
+    // Perform any slashings, refunds, and unlock NO's stake
+    function _finalise() private {
+        // Get contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Can only finalise the pool once
+        require(!finalised, "Minipool has already been finalised");
+        // If slash is required then perform it
+        if (nodeSlashBalance > 0) {
+            _slash();
+        }
+        // Refund node operator if required
+        if (nodeRefundBalance > 0) {
+            _refund();
+        }
+        // Send any left over ETH to rETH contract
+        if (address(this).balance > 0) {
+            // Send user amount to rETH contract
+            payable(rocketTokenRETH).transfer(address(this).balance);
+        }
+        // Trigger a deposit of excess collateral from rETH contract to deposit pool
+        RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
+        // Unlock node operator's RPL
+        rocketMinipoolManager.incrementNodeFinalisedMinipoolCount(nodeAddress);
+        // Update unbonded validator count if minipool is unbonded
+        if (depositType == MinipoolDeposit.Empty) {
+            RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+            rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress);
+        }
+        // Set finalised flag
+        finalised = true;
+    }
+
     function _distributeBalance(uint256 _balance) private {
         // Rate limit this method to prevent front running
         require(block.number > withdrawalBlock + distributionCooldown, "Distribution of this minipool's balance is on cooldown");
@@ -284,8 +316,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 userAmount = _balance.sub(nodeAmount);
         // Pay node operator via refund
         nodeRefundBalance = nodeRefundBalance.add(nodeAmount);
-        // Send user amount to rETH contract
-        payable(rocketTokenRETH).transfer(userAmount);
+        // Pay user amount to rETH contract
+        if (userAmount > 0) {
+            // Send user amount to rETH contract
+            payable(rocketTokenRETH).transfer(userAmount);
+        }
         // Save block to prevent multiple withdrawals within a few blocks
         withdrawalBlock = block.number;
         // Log it
@@ -333,7 +368,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // User's share is just the balance minus node's share
         return _balance.sub(calculateNodeShare(_balance));
     }
-
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
     // Only accepts calls from the minipool owner (node), or from any address if timed out
@@ -387,8 +421,16 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             // Emit ether withdrawn event
             emit EtherWithdrawn(nodeWithdrawalAddress, nodeBalance, block.timestamp);
         }
+        // Update unbonded validator count if minipool is unbonded
+        if (depositType == MinipoolDeposit.Empty) {
+            RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+            rocketDAONodeTrusted.decrementMemberUnbondedValidatorCount(nodeAddress);
+        }
         // Destroy minipool
-        _destroy();
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        rocketMinipoolManager.destroyMinipool();
+        // Self destruct
+        selfdestruct(payable(rocketTokenRETH));
     }
 
     // Set the minipool's current status
@@ -413,29 +455,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(success, "ETH refund amount was not successfully transferred to node operator");
         // Emit ether withdrawn event
         emit EtherWithdrawn(nodeWithdrawalAddress, refundAmount, block.timestamp);
-    }
-
-    // Destroy the minipool
-    function _destroy() private {
-        // Destroy minipool
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        rocketMinipoolManager.destroyMinipool();
-        // Update refund balance
-        uint256 refundAmount = nodeRefundBalance;
-        nodeRefundBalance = 0;
-        // Get node withdrawal address
-        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-        // Only the owner can destroy a minipool
-        require(nodeWithdrawalAddress == msg.sender || nodeAddress == msg.sender, "Only node operator can destroy minipool");
-        // Send any remaining balance to rETH contract
-        uint256 userAmount = address(this).balance.sub(refundAmount);
-        if (userAmount > 0) {
-            payable(rocketTokenRETH).transfer(userAmount);
-            // Send any overcollateralised ETH to the deposit pool
-            RocketTokenRETHInterface(rocketTokenRETH).depositExcessCollateral();
-        }
-        // Self destruct the refund amount to node withdrawal address
-        selfdestruct(payable(nodeWithdrawalAddress));
     }
 
     // Slash node operator's RPL balance based on nodeSlashBalance
