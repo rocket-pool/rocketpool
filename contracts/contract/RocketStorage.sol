@@ -289,20 +289,27 @@ contract RocketStorage is RocketStorageInterface {
     /// @param _key The key for the record
     /// @param _amount An amount to add to the record's value
     function addUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
+        uint256 a;
+        uint256 b;
         assembly {
-            let v := sload (_key)
-            v := add(v, _amount)
-            sstore (_key, v)
+            a := sload (_key)
+            b := add(a, _amount)
+            sstore (_key, b)
         }
+        require(b >= a, "SafeMath: addition overflow");
     }
 
     /// @param _key The key for the record
     /// @param _amount An amount to subtract from the record's value
     function subUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
+        uint256 a;
         assembly {
-            let v := sload (_key)
-            v := sub(v, _amount)
-            sstore (_key, v)
+            a := sload (_key)
+        }
+        require(_amount <= a, "SafeMath: subtraction overflow");
+        assembly {
+            a := sub(a, _amount)
+            sstore (_key, a)
         }
     }
 
