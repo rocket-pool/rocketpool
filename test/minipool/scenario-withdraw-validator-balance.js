@@ -118,6 +118,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
 
     let nodeBalanceChange = balances2.nodeWithdrawalEth.add(minipoolBalances2.nodeRefundBalance).sub(balances1.nodeWithdrawalEth.add(minipoolBalances1.nodeRefundBalance));
     let rethBalanceChange = balances2.rethContractEth.sub(balances1.rethContractEth);
+    let depositPoolChange = balances2.depositPoolEth.sub(balances1.depositPoolEth);
 
     // console.log('Node deposit balance:', web3.utils.fromWei(minipoolBalances1.nodeDepositBalance), web3.utils.fromWei(minipoolBalances2.nodeDepositBalance));
     // console.log('Node refund balance:', web3.utils.fromWei(minipoolBalances1.nodeRefundBalance), web3.utils.fromWei(minipoolBalances2.nodeRefundBalance));
@@ -156,7 +157,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         // console.log('User amount: ', web3.utils.fromWei(userAmount));
 
         // Check balances
-        assert(rethBalanceChange.eq(userAmount), "rETH balance was not correct");
+        assert(rethBalanceChange.add(depositPoolChange).eq(userAmount), "rETH balance was not correct");
         assert(nodeBalanceChange.eq(nodeAmount), "Node balance was not correct");
 
         // If not sent from node operator then refund balance should be correct
