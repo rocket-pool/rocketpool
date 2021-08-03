@@ -3,6 +3,8 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
@@ -12,6 +14,9 @@ import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Node registration and management 
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
+
+    // Libraries
+    using SafeMath for uint256;
 
     // Events
     event NodeRegistered(address indexed node, uint256 time);
@@ -32,38 +37,39 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getNodeCountPerTimezone(uint256 offset, uint256 limit) override external view returns (TimezoneCount[] memory) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        
         // Precompute node key
         bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
-        
-        // Create a dictionary of timezones to counts 
-        mapping(string => uint256) memory timezoneMap;
-        string[] memory timezones = new string[](0);
-        
-        // Iterate over the requested node range
+        // Calculate range
         uint256 totalNodes = addressSetStorage.getCount(nodeKey);
         uint256 max = offset.add(limit);
         if (max > totalNodes || limit == 0) { max = totalNodes; }
+        // Create an array with as many elements as there are potential values to return
+        TimezoneCount[] memory counts = new TimezoneCount[](max.sub(offset));
+        uint256 uniqueTimezoneCount = 0;
+        // Iterate the minipool range
         for (uint256 i = offset; i < max; i++) {
             address nodeAddress = addressSetStorage.getItem(nodeKey, i);
             string memory timezone = getString(keccak256(abi.encodePacked("node.timezone.location", nodeAddress)));
-            uint256 count = timezoneMap[timezone];
-            // If this is a new timezone
-            if (count == 0) {
-                // Add this timezone to the list
-                timezones.length = timezones.length + 1;
-                timezones[timezones.length - 1] = timezone;
+            // Find existing entry in our array
+            bool existing = false;
+            for (uint256 j = 0; j < uniqueTimezoneCount; j++) {
+                if (keccak256(bytes(counts[j].timezone)) == keccak256(bytes(timezone))) {
+                    existing = true;
+                    // Increment the counter
+                    counts[j].count++;
+                    break;
+                }
             }
-
-            timezoneMap[timezone] = count + 1;
+            // Entry was not found, so create a new one
+            if (!existing) {
+                counts[uniqueTimezoneCount].timezone = timezone;
+                counts[uniqueTimezoneCount].count = 1;
+                uniqueTimezoneCount++;
+            }
         }
-
-        // Create the returned struct array
-        TimezoneCount[] memory counts = new TimezoneCount[](timezones.length);
-        for (uint256 i = 0; i < timezones.length; i++) {
-            TimezoneCount memory countStruct = counts[i];
-            countStruct.timezone = timezones[i];
-            countStruct.count = timezoneMap[countStruct.timezone];
+        // Dirty hack to cut unused elements off end of return value
+        assembly {
+            mstore(counts, uniqueTimezoneCount)
         }
         return counts;
     }

@@ -1,7 +1,7 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
-import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsNode, RocketNodeManager } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
@@ -22,6 +22,8 @@ export default function() {
             withdrawalAddress2,
             withdrawalAddress3,
             random,
+            random2,
+            random3,
         ] = accounts;
 
 
@@ -215,6 +217,29 @@ export default function() {
         });
 
 
+        //
+        // Misc
+        //
 
+
+        it(printTitle('random', 'can query timezone counts'), async () => {
+
+            const rocketNodeManager = await RocketNodeManager.deployed();
+            await rocketNodeManager.registerNode('Australia/Sydney', {from: random2});
+            await rocketNodeManager.registerNode('Australia/Perth', {from: random3});
+
+            const timezones = await rocketNodeManager.getNodeCountPerTimezone(0, 0)
+
+            const expects = {
+                'Australia/Brisbane': 2,
+                'Australia/Sydney': 1,
+                'Australia/Perth': 1,
+            }
+
+            for (const expectTimezone in expects) {
+              const actual = timezones.find(tz => tz.timezone === expectTimezone)
+              assert(actual && Number(actual.count) === expects[expectTimezone], "Timezone count was incorrect for " + expectTimezone + ", expected " + expects[expectTimezone] + " but got " + actual);
+            }
+        });
     });
 }
