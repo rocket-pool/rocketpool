@@ -1,4 +1,5 @@
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -25,6 +26,46 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getNodeCount() override external view returns (uint256) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         return addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.index")));
+    }
+
+    // Get a breakdown of the number of nodes per timezone
+    function getNodeCountPerTimezone(uint256 offset, uint256 limit) override external view returns (TimezoneCount[] memory) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        
+        // Precompute node key
+        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
+        
+        // Create a dictionary of timezones to counts 
+        mapping(string => uint256) memory timezoneMap;
+        string[] memory timezones = new string[](0);
+        
+        // Iterate over the requested node range
+        uint256 totalNodes = addressSetStorage.getCount(nodeKey);
+        uint256 max = offset.add(limit);
+        if (max > totalNodes || limit == 0) { max = totalNodes; }
+        for (uint256 i = offset; i < max; i++) {
+            address nodeAddress = addressSetStorage.getItem(nodeKey, i);
+            string memory timezone = getString(keccak256(abi.encodePacked("node.timezone.location", nodeAddress)));
+            uint256 count = timezoneMap[timezone];
+            // If this is a new timezone
+            if (count == 0) {
+                // Add this timezone to the list
+                timezones.length = timezones.length + 1;
+                timezones[timezones.length - 1] = timezone;
+            }
+
+            timezoneMap[timezone] = count + 1;
+        }
+
+        // Create the returned struct array
+        TimezoneCount[] memory counts = new TimezoneCount[](timezones.length);
+        for (uint256 i = 0; i < timezones.length; i++) {
+            TimezoneCount memory countStruct = counts[i];
+            countStruct.timezone = timezones[i];
+            countStruct.count = timezoneMap[countStruct.timezone];
+        }
+        return counts;
     }
 
     // Get a node address by index
