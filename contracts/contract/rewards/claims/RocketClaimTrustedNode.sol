@@ -43,6 +43,11 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         // Get total trusted nodes for this claim interval
         uint256 trustedNodesClaimIntervalTotal = rewardsPool.getClaimingContractUserTotalCurrent("rocketClaimTrustedNode");
+        // Edge case for when there are no trusted nodes in the current interval
+        if (trustedNodesClaimIntervalTotal == 0) {
+            // Use the number of trusted nodes in the next interval instead
+            trustedNodesClaimIntervalTotal = rewardsPool.getClaimingContractUserTotalNext("rocketClaimTrustedNode");
+        }
         // They can only claim until the next claim interval has started if they are a newly trusted node
         // Calculate the perc of the trusted node rewards they are entitled too
         return getClaimPossible(_trustedNodeAddress) && trustedNodesClaimIntervalTotal > 0 ? calcBase.div(trustedNodesClaimIntervalTotal) : 0;
