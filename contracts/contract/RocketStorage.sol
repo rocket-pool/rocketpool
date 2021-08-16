@@ -17,9 +17,14 @@ contract RocketStorage is RocketStorageInterface {
     // Libraries
     using SafeMath for uint256;
 
-    // Complex storage maps
+    // Storage maps
     mapping(bytes32 => string)     private stringStorage;
     mapping(bytes32 => bytes)      private bytesStorage;
+    mapping(bytes32 => uint256)    private uintStorage;
+    mapping(bytes32 => int256)     private intStorage;
+    mapping(bytes32 => address)    private addressStorage;
+    mapping(bytes32 => bool)       private booleanStorage;
+    mapping(bytes32 => bytes32)    private bytes32Storage;
 
     // Protected storage (not accessible by network contracts)
     mapping(address => address)    private withdrawalAddresses;
@@ -36,12 +41,12 @@ contract RocketStorage is RocketStorageInterface {
     modifier onlyLatestRocketNetworkContract() {
         if (storageInit == true) {
             // Make sure the access is permitted to only contracts in our Dapp
-            require(_getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
+            require(booleanStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))], "Invalid or outdated network contract");
         } else {
             // Only Dapp and the guardian account are allowed access during initialisation.
             // tx.origin is only safe to use in this case for deployment since no external contracts are interacted with
             require((
-                _getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))) || tx.origin == guardian
+                booleanStorage[keccak256(abi.encodePacked("contract.exists", msg.sender))] || tx.origin == guardian
             ), "Invalid or outdated network contract attempting access during deployment");
         }
         _;
@@ -98,7 +103,7 @@ contract RocketStorage is RocketStorageInterface {
     // Get a node's withdrawal address
     function getNodeWithdrawalAddress(address _nodeAddress) public override view returns (address) {
         // Check if _nodeAddress is a valid node
-        if (!_getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress)))) {
+        if (!booleanStorage[keccak256(abi.encodePacked("node.exists", _nodeAddress))]) {
             return address(0);
         }
         // If no withdrawal address has been set, return the nodes address
@@ -150,16 +155,12 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @param _key The key for the record
     function getAddress(bytes32 _key) override external view returns (address r) {
-        assembly {
-            r := sload (_key)
-        }
+        return addressStorage[_key];
     }
 
     /// @param _key The key for the record
     function getUint(bytes32 _key) override external view returns (uint256 r) {
-        assembly {
-            r := sload (_key)
-        }
+        return uintStorage[_key];
     }
 
     /// @param _key The key for the record
@@ -174,38 +175,28 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @param _key The key for the record
     function getBool(bytes32 _key) override external view returns (bool r) {
-        assembly {
-            r := sload (_key)
-        }
+        return booleanStorage[_key];
     }
 
     /// @param _key The key for the record
     function getInt(bytes32 _key) override external view returns (int r) {
-        assembly {
-            r := sload (_key)
-        }
+        return intStorage[_key];
     }
 
     /// @param _key The key for the record
     function getBytes32(bytes32 _key) override external view returns (bytes32 r) {
-        assembly {
-            r := sload (_key)
-        }
+        return bytes32Storage[_key];
     }
 
 
     /// @param _key The key for the record
     function setAddress(bytes32 _key, address _value) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, _value)
-        }
+        addressStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
     function setUint(bytes32 _key, uint _value) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, _value)
-        }
+        uintStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
@@ -220,38 +211,28 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @param _key The key for the record
     function setBool(bytes32 _key, bool _value) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, _value)
-        }
+        booleanStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
     function setInt(bytes32 _key, int _value) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, _value)
-        }
+        intStorage[_key] = _value;
     }
 
     /// @param _key The key for the record
     function setBytes32(bytes32 _key, bytes32 _value) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, _value)
-        }
+        bytes32Storage[_key] = _value;
     }
 
 
     /// @param _key The key for the record
     function deleteAddress(bytes32 _key) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, 0)
-        }
+        delete addressStorage[_key];
     }
 
     /// @param _key The key for the record
     function deleteUint(bytes32 _key) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, 0)
-        }
+        delete uintStorage[_key];
     }
 
     /// @param _key The key for the record
@@ -266,64 +247,29 @@ contract RocketStorage is RocketStorageInterface {
 
     /// @param _key The key for the record
     function deleteBool(bytes32 _key) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, 0)
-        }
+        delete booleanStorage[_key];
     }
 
     /// @param _key The key for the record
     function deleteInt(bytes32 _key) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, 0)
-        }
+        delete intStorage[_key];
     }
 
     /// @param _key The key for the record
     function deleteBytes32(bytes32 _key) onlyLatestRocketNetworkContract override external {
-        assembly {
-            sstore (_key, 0)
-        }
+        delete bytes32Storage[_key];
     }
 
 
     /// @param _key The key for the record
     /// @param _amount An amount to add to the record's value
     function addUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
-        uint256 a;
-        uint256 b;
-        assembly {
-            a := sload (_key)
-            b := add(a, _amount)
-            sstore (_key, b)
-        }
-        require(b >= a, "SafeMath: addition overflow");
+        uintStorage[_key] = uintStorage[_key].add(_amount);
     }
 
     /// @param _key The key for the record
     /// @param _amount An amount to subtract from the record's value
     function subUint(bytes32 _key, uint256 _amount) onlyLatestRocketNetworkContract override external {
-        uint256 a;
-        assembly {
-            a := sload (_key)
-        }
-        require(_amount <= a, "SafeMath: subtraction overflow");
-        assembly {
-            a := sub(a, _amount)
-            sstore (_key, a)
-        }
-    }
-
-    // Private methods
-
-    function _getBool(bytes32 _key) private view returns (bool r) {
-        assembly {
-            r := sload (_key)
-        }
-    }
-
-    function _setBool(bytes32 _key, bool _value) private {
-        assembly {
-            sstore (_key, _value)
-        }
+        uintStorage[_key] = uintStorage[_key].sub(_amount);
     }
 }
