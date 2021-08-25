@@ -1,8 +1,13 @@
 import {
     RocketDAONodeTrustedUpgrade,
     RocketDAOProtocolSettingsMinipool,
-    RocketDAOProtocolSettingsNetwork, RocketMinipoolPenalty, RocketMinipoolStatus, RocketStorage, PenaltyTest,
-} from '../_utils/artifacts'
+    RocketDAOProtocolSettingsNetwork,
+    RocketMinipoolPenalty,
+    RocketMinipoolStatus,
+    RocketStorage,
+    PenaltyTest,
+    RocketNodeStaking,
+} from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
@@ -13,6 +18,7 @@ import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap'
+import { submitPrices } from '../_helpers/network';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -51,6 +57,10 @@ export default function() {
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+
+            // Set RPL price
+            let block = await web3.eth.getBlockNumber();
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: trustedNode});
 
             // Add penalty helper contract
             const rocketStorage = await RocketStorage.deployed();
@@ -100,6 +110,17 @@ export default function() {
             // Check results
             assert(expectedUserBN.eq(rethBalanceChange), "User balance was incorrect");
             assert(expectedNodeBN.eq(nodeBalanceChange), "Node balance was incorrect");
+        }
+
+
+        async function slashAndCheck(from, expectedSlash) {
+            // Get contracts
+            const rocketNodeStaking = await RocketNodeStaking.deployed()
+            const rplStake1 = await rocketNodeStaking.getNodeRPLStake(node)
+            await minipool.slash({from: from})
+            const rplStake2 = await rocketNodeStaking.getNodeRPLStake(node)
+            const slashedAmount = rplStake1.sub(rplStake2)
+            assert(expectedSlash.eq(slashedAmount), 'Slashed amount was incorrect')
         }
 
 
@@ -172,8 +193,23 @@ export default function() {
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-            // Process withdraw
+            // Process withdraw and check slash
             await withdrawAndCheck('15', random, false, '15', '0');
+            await slashAndCheck(random, web3.utils.toBN(web3.utils.toWei('1')))
+        });
+
+
+        it(printTitle('random address', 'cannot slash a node operator by sending 4 ETH and distribute after 14 days'), async () => {
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck('28', trustedNode, true, '16', '12');
+            // Wait 14 days and mine enough blocks to pass cooldown
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await mineBlocks(web3, 101)
+            // Process withdraw and attempt to slash
+            await withdrawAndCheck('4', random, false, '4', '0');
+            await shouldRevert(minipool.slash(), 'Was able to slash minipool', 'No balance to slash')
         });
 
 
