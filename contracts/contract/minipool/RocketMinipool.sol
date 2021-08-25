@@ -35,8 +35,6 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         storageState = StorageState.Uninitialised;
         // Set the current delegate
         rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
-        // Set local copy of penalty contract
-        rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
         // Call initialise on delegate
         (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
         if (!success) { revert(getRevertMessage(data)); }
