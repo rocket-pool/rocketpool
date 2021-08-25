@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
@@ -16,6 +17,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     // Libs
     using SafeMath for uint;
+    using SafeCast for uint;
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -29,8 +31,8 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         // Calculate & return
-        int256 depositPoolBalance = int256(rocketDepositPool.getBalance());
-        int256 minipoolCapacity = int256(rocketMinipoolQueue.getEffectiveCapacity());
+        int256 depositPoolBalance = rocketDepositPool.getBalance().toInt256();
+        int256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity().toInt256();
         int256 demand = depositPoolBalance - minipoolCapacity;
         require(demand <= depositPoolBalance);
         return demand;
