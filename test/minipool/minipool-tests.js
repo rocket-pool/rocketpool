@@ -47,7 +47,7 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
-        let initializedMinipool;
+        let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
         let stakingMinipool;
@@ -88,7 +88,7 @@ export default function() {
             prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            initializedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(stakingMinipool, null, {from: node});
             await stakeMinipool(withdrawableMinipool, null, {from: node});
@@ -96,13 +96,13 @@ export default function() {
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
-            let initializedStatus = await initializedMinipool.getStatus.call();
+            let initialisedStatus = await initialisedMinipool.getStatus.call();
             let prelaunchStatus = await prelaunchMinipool.getStatus.call();
             let prelaunch2Status = await prelaunchMinipool2.getStatus.call();
             let stakingStatus = await stakingMinipool.getStatus.call();
             let withdrawableStatus = await withdrawableMinipool.getStatus.call();
             let dissolvedStatus = await dissolvedMinipool.getStatus.call();
-            assert(initializedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialized minipool status');
+            assert(initialisedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialised minipool status');
             assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
@@ -171,10 +171,10 @@ export default function() {
             const padding = '0000000000000000000000';
 
             // Get minipool withdrawal credentials
-            let withdrawalCredentials = await initializedMinipool.getWithdrawalCredentials.call();
+            let withdrawalCredentials = await initialisedMinipool.getWithdrawalCredentials.call();
 
             // Check withdrawal credentials
-            let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initializedMinipool.address.substr(2));
+            let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initialisedMinipool.address.substr(2));
             assert.equal(withdrawalCredentials.toLowerCase(), expectedWithdrawalCredentials.toLowerCase(), 'Invalid minipool withdrawal credentials');
 
         });
@@ -344,7 +344,7 @@ export default function() {
         it(printTitle('node operator', 'can dissolve their own minipools'), async () => {
 
             // Dissolve minipools
-            await dissolve(initializedMinipool, {
+            await dissolve(initialisedMinipool, {
                 from: node,
             });
             await dissolve(prelaunchMinipool, {
@@ -382,8 +382,8 @@ export default function() {
             // Time prelaunch minipool out
             await mineBlocks(web3, launchTimeout);
 
-            // Attempt to dissolve initialized minipool
-            await shouldRevert(dissolve(initializedMinipool, {
+            // Attempt to dissolve initialised minipool
+            await shouldRevert(dissolve(initialisedMinipool, {
                 from: random,
             }), 'Random address dissolved a minipool which was not at prelaunch');
 
@@ -417,8 +417,8 @@ export default function() {
 
         it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
 
-            // Attempt to stake initialized minipool
-            await shouldRevert(stake(initializedMinipool, getValidatorPubkey(), null, {
+            // Attempt to stake initialised minipool
+            await shouldRevert(stake(initialisedMinipool, getValidatorPubkey(), null, {
                 from: node,
             }), 'Staked a minipool which was not at prelaunch');
 

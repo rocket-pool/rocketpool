@@ -24,7 +24,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             setSettingBool("minipool.submit.withdrawable.enabled", true);
             setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
             setSettingUint("minipool.maximum.count", 100);
-            // Settings initialized
+            // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }

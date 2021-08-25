@@ -313,7 +313,7 @@ export default function() {
         });
 
 
-        it(printTitle('node', 'cannot claim RPL while their node is undercollateralized'), async () => {
+        it(printTitle('node', 'cannot claim RPL while their node is undercollateralised'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('rocketClaimNode', 0.5);
@@ -336,7 +336,7 @@ export default function() {
             // Attempt to claim RPL
             await shouldRevert(rewardsClaimNode({
                 from: registeredNode1,
-            }), 'Node claimed RPL while under collateralized');
+            }), 'Node claimed RPL while under collateralised');
         });
         
 

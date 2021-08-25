@@ -59,9 +59,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools in each status.
-    // Returns the counts for Initialized, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
+    // Returns the counts for Initialised, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
     function getMinipoolCountPerStatus(uint256 offset, uint256 limit) override external view 
-    returns (uint256 initializedCount, uint256 prelaunchCount, uint256 stakingCount, uint256 withdrawableCount, uint256 dissolvedCount) {
+    returns (uint256 initialisedCount, uint256 prelaunchCount, uint256 stakingCount, uint256 withdrawableCount, uint256 dissolvedCount) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Precompute minipool key
@@ -75,8 +75,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
             RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and update the appropriate counter
             MinipoolStatus status = minipool.getStatus();
-            if (status == MinipoolStatus.Initialized) {
-                initializedCount++;
+            if (status == MinipoolStatus.Initialised) {
+                initialisedCount++;
             }
             else if (status == MinipoolStatus.Prelaunch) {
                 prelaunchCount++;

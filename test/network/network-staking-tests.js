@@ -184,7 +184,7 @@ export default function() {
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
             await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            let initializedMinipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+            let initialisedMinipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
             await testEffectiveStakeValues()
 
             // Increase the price of RPL and create some more minipools
@@ -198,10 +198,10 @@ export default function() {
 
             // Decrease the price of RPL and destroy some minipools
             await setPrice(web3.utils.toWei('0.75', 'ether'))
-            await dissolve(initializedMinipool, {
+            await dissolve(initialisedMinipool, {
                 from: registeredNode2,
             });
-            await close(initializedMinipool, {
+            await close(initialisedMinipool, {
                 from: registeredNode2,
             });
             await testEffectiveStakeValues()
