@@ -157,7 +157,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Refund node ETH refinanced from user deposited ETH
-    function refund() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
+    function refund() override external onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) onlyInitialised {
         // Check refund balance
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
         // Refund node
