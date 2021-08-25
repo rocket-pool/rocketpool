@@ -203,8 +203,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Send staking deposit to casper
         casperDeposit.deposit{value: launchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
-        // Progress to staking
-        setStatus(MinipoolStatus.Staking);
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
