@@ -34,11 +34,18 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set the current delegate
-        rocketMinipoolDelegate = getContractAddress("rocketMinipoolDelegate");
+        address delegateAddress = getContractAddress("rocketMinipoolDelegate");
+        rocketMinipoolDelegate = delegateAddress;
         // Set local copy of penalty contract
         rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
+        // Check for contract existence
+        uint32 codeSize;
+        assembly {
+            codeSize := extcodesize(delegateAddress)
+        }
+        require(codeSize > 0, "Delegate contract does not exist");
         // Call initialise on delegate
-        (bool success, bytes memory data) = getContractAddress("rocketMinipoolDelegate").delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
+        (bool success, bytes memory data) = delegateAddress.delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
         if (!success) { revert(getRevertMessage(data)); }
     }
 
@@ -102,6 +109,13 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
     fallback(bytes calldata _input) external payable returns (bytes memory) {
         // If useLatestDelegate is set, use the latest delegate contract
         address delegateContract = useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
+        // Check for contract existence
+        uint32 codeSize;
+        assembly {
+            codeSize := extcodesize(delegateContract)
+        }
+        require(codeSize > 0, "Delegate contract does not exist");
+        // Execute delegatecall
         (bool success, bytes memory data) = delegateContract.delegatecall(_input);
         if (!success) { revert(getRevertMessage(data)); }
         return data;

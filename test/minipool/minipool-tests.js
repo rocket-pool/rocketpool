@@ -129,17 +129,20 @@ export default function() {
             assert(fullLength.toNumber() === 2, 'Incorrect number of minipools in full queue')
             assert(halfLength.toNumber() === 1, 'Incorrect number of minipools in half queue')
             assert(emptyLength.toNumber() === 0, 'Incorrect number of minipools in empty queue')
-
-            // Upgrade the delegate contract
-            await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
-              from: owner,
-            });
-
-            // Check effective delegate is still the original
-            const minipool = await RocketMinipool.at(stakingMinipool.address);
-            const effectiveDelegate = await minipool.getEffectiveDelegate.call()
-            assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
         });
+
+
+        async function upgradeNetworkDelegateContract() {
+          // Upgrade the delegate contract
+          await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
+            from: owner,
+          });
+
+          // Check effective delegate is still the original
+          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
+        }
 
 
         //
@@ -652,6 +655,7 @@ export default function() {
         //
 
         it(printTitle('node operator', 'can upgrade and rollback their delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Store original delegate
@@ -672,6 +676,7 @@ export default function() {
 
 
         it(printTitle('node operator', 'can use latest delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Store original delegate
@@ -697,6 +702,7 @@ export default function() {
 
 
         it(printTitle('random', 'cannot upgrade, rollback or set use latest delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Call upgrade delegate from random
