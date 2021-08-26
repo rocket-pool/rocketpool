@@ -31,7 +31,7 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
-        let minipool;
+        let minipool, unbondedMinipool, fullDepositMinipool;
         let maxPenaltyRate = web3.utils.toWei('0.5', 'ether');
         let penaltyTestContract;
 
@@ -69,23 +69,29 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
 
-            // Deposit some user funds to assign to pool
-            let userDepositAmount = web3.utils.toWei('16', 'ether');
+            // Deposit some user funds to assign to pools
+            let userDepositAmount = web3.utils.toWei('48', 'ether');
             await userDeposit({from: random, value: userDepositAmount});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(8));
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
+            await mintRPL(owner, trustedNode, rplStake);
+            await nodeStakeRPL(rplStake, {from: trustedNode});
 
             // Create minipools
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await stakeMinipool(minipool, null, {from: node});
+            unbondedMinipool = await createMinipool({from: trustedNode});
+            await stakeMinipool(unbondedMinipool, null, {from: trustedNode});
+            fullDepositMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            await stakeMinipool(fullDepositMinipool, null, {from: node});
         });
 
 
-        async function withdrawAndCheck(withdrawalBalance, from, finalise, expectedUser, expectedNode) {
+        async function withdrawAndCheck(minipool, withdrawalBalance, from, finalise, expectedUser, expectedNode) {
             const withdrawalBalanceBN = web3.utils.toBN(web3.utils.toWei(withdrawalBalance, 'ether'));
             const expectedUserBN = web3.utils.toBN(web3.utils.toWei(expectedUser, 'ether'));
             const expectedNodeBN = web3.utils.toBN(web3.utils.toWei(expectedNode, 'ether'));
@@ -95,7 +101,7 @@ export default function() {
                 nodeBalanceChange,
                 rethBalanceChange
             }
-              = await withdrawValidatorBalance(minipool, withdrawalBalanceBN, nodeWithdrawalAddress, finalise);
+              = await withdrawValidatorBalance(minipool, withdrawalBalanceBN, from, finalise);
 
             // Check results
             assert(expectedUserBN.eq(rethBalanceChange), "User balance was incorrect");
@@ -107,27 +113,29 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
-            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '17', '19');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '17', '19');
         });
 
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 32 ETH and marked as withdrawable'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process withdraw
-            await withdrawAndCheck('36', random, false, '17', '19');
+            await withdrawAndCheck(minipool, '36', random, false, '17', '19');
         });
 
 
         it(printTitle('node operator withdrawal address', 'can process withdrawal when balance is greater than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck('36', nodeWithdrawalAddress, false, '17', '19');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, false, '17', '19');
         });
 
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck('36', random, false, '17', '19');
+            await withdrawAndCheck(minipool, '36', random, false, '17', '19');
         });
 
 
@@ -135,27 +143,29 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
-            await withdrawAndCheck('28', nodeWithdrawalAddress, true, '16', '12');
+            await withdrawAndCheck(minipool, '28', nodeWithdrawalAddress, true, '16', '12');
         });
 
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 16 ETH, less than 32 ETH and marked as withdrawable'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process withdraw
-            await withdrawAndCheck('28', random, false, '16', '12');
+            await withdrawAndCheck(minipool, '28', random, false, '16', '12');
         });
 
 
         it(printTitle('node operator withdrawal address', 'can process withdrawal when balance is greater than 16 ETH, less than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck('28', nodeWithdrawalAddress, false, '16', '12');
+            await withdrawAndCheck(minipool, '28', nodeWithdrawalAddress, false, '16', '12');
         });
 
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 16 ETH, less than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck('28', random, false, '16', '12');
+            await withdrawAndCheck(minipool, '28', random, false, '16', '12');
         });
 
 
@@ -163,7 +173,7 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
-            await withdrawAndCheck('15', nodeWithdrawalAddress, true, '15', '0');
+            await withdrawAndCheck(minipool, '15', nodeWithdrawalAddress, true, '15', '0');
         });
 
 
@@ -173,7 +183,7 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process withdraw
-            await withdrawAndCheck('15', random, false, '15', '0');
+            await withdrawAndCheck(minipool, '15', random, false, '15', '0');
         });
 
 
@@ -195,7 +205,7 @@ export default function() {
 
         it(printTitle('node operator withdrawal address', 'can process withdrawal when balance is less than 16 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
-            await withdrawAndCheck('15', nodeWithdrawalAddress, false, '15', '0');
+            await withdrawAndCheck(minipool, '15', nodeWithdrawalAddress, false, '15', '0');
         });
 
 
@@ -203,6 +213,44 @@ export default function() {
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
             await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and finalise pool while status was not withdrawable', 'Minipool must be withdrawable');
+        });
+
+
+        // Unbonded pools
+
+
+        it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck(unbondedMinipool, '36', trustedNode, true, '35', '1');
+        });
+
+
+        it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck(unbondedMinipool, '30', trustedNode, true, '30', '0');
+        });
+
+
+        // Full deposit minipools
+
+
+        it.only(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck(fullDepositMinipool, '36', node, true, '1', '35');
+        });
+
+
+        it.only(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
+            // Mark minipool withdrawable
+            await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
+            // Process withdraw
+            await withdrawAndCheck(fullDepositMinipool, '30', node, true, '0', '30');
         });
 
 
@@ -215,7 +263,7 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% penalty, and extra 9.5 goes to the user
-            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '26.5', '9.5');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.5', '9.5');
         });
 
 
@@ -225,7 +273,7 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw - 36 ETH would normally give node operator 19 and user 17 but with a 50% penalty, and extra 9.5 goes to the user
-            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '26.5', '9.5');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '26.5', '9.5');
         });
 
 
@@ -238,7 +286,7 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
-            await withdrawAndCheck('36', nodeWithdrawalAddress, true, '17', '19');
+            await withdrawAndCheck(minipool, '36', nodeWithdrawalAddress, true, '17', '19');
         });
     })
 }

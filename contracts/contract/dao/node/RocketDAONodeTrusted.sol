@@ -137,7 +137,7 @@ contract RocketDAONodeTrusted is RocketBase, RocketDAONodeTrustedInterface {
     function incrementMemberUnbondedValidatorCount(address _nodeAddress) override external onlyLatestContract("rocketDAONodeTrusted", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
         addUint(keccak256(abi.encodePacked(daoNameSpace, "member.validator.unbonded.count", _nodeAddress)), 1);
     }
-    function decrementMemberUnbondedValidatorCount(address _nodeAddress) override external onlyLatestContract("rocketDAONodeTrusted", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
+    function decrementMemberUnbondedValidatorCount(address _nodeAddress) override external onlyLatestContract("rocketDAONodeTrusted", address(this)) onlyRegisteredMinipool(msg.sender) {
         subUint(keccak256(abi.encodePacked(daoNameSpace, "member.validator.unbonded.count", _nodeAddress)), 1);
     }
 
