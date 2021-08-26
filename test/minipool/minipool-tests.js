@@ -210,7 +210,7 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot create a minipool if delegate address is set to a non-contract'), async () => {
+        it(printTitle('node operator', 'cannot delegatecall to a delgate address that is a non-contract'), async () => {
 
           // Creating minipool should fail now
           let newMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
