@@ -10,7 +10,7 @@ import "../../interface/network/RocketNetworkBalancesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
-// rETH is a tokenized stake in the Rocket Pool network
+// rETH is a tokenised stake in the Rocket Pool network
 // rETH is backed by ETH (subject to liquidity) at a variable exchange rate
 
 contract RocketTokenRETH is RocketBase, ERC20, RocketTokenRETHInterface {

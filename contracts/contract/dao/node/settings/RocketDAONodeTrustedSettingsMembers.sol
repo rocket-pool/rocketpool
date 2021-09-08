@@ -23,7 +23,7 @@ contract RocketDAONodeTrustedSettingsMembers is RocketDAONodeTrustedSettings, Ro
             setSettingUint("members.challenge.cooldown", 7 days);             // How long a member must wait before performing another challenge in seconds
             setSettingUint("members.challenge.window", 7 days);               // How long a member has to respond to a challenge in seconds
             setSettingUint("members.challenge.cost", 1 ether);               // How much it costs a non-member to challenge a members node. It's free for current members to challenge other members.
-            // Settings initialized
+            // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }

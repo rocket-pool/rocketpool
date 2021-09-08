@@ -23,7 +23,7 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
             setSettingUint("auction.lot.duration", 40320);          // 7 days
             setSettingUint("auction.price.start", 1 ether);         // 100%
             setSettingUint("auction.price.reserve", 0.5 ether);     // 50%
-            // Settings initialized
+            // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }

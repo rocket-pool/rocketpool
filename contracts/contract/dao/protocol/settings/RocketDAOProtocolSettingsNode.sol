@@ -20,7 +20,7 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
             setSettingBool("node.deposit.enabled", true); 
             setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value
             setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of user ETH value
-            // Settings initialized
+            // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }

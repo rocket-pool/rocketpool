@@ -139,7 +139,7 @@ export default function() {
         });
 
 
-        it(printTitle('node operator', 'cannot withdraw RPL leaving the node undercollateralized'), async () => {
+        it(printTitle('node operator', 'cannot withdraw RPL leaving the node undercollateralised'), async () => {
 
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
@@ -156,7 +156,7 @@ export default function() {
             // Withdraw staked RPL
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
-            }), 'Withdrew RPL leaving the node undercollateralized');
+            }), 'Withdrew RPL leaving the node undercollateralised');
 
         });
 
@@ -180,7 +180,7 @@ export default function() {
             // Cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
-            }), 'Withdrew RPL leaving the node undercollateralized');
+            }), 'Withdrew RPL leaving the node undercollateralised');
 
             // Mark pool as withdrawable
             await submitWithdrawable(minipool.address, {
@@ -190,7 +190,7 @@ export default function() {
             // Still cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
-            }), 'Withdrew RPL leaving the node undercollateralized');
+            }), 'Withdrew RPL leaving the node undercollateralised');
 
             // Withdraw and finalise
             await withdrawValidatorBalance(minipool, web3.utils.toWei('32', 'ether'), node, true);
@@ -233,7 +233,7 @@ export default function() {
             // Cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
-            }), 'Withdrew RPL leaving the node undercollateralized');
+            }), 'Withdrew RPL leaving the node undercollateralised');
 
             // Finalise the pool
             await minipool.finalise({from: node});

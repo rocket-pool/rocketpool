@@ -36,8 +36,6 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Set the current delegate
         address delegateAddress = getContractAddress("rocketMinipoolDelegate");
         rocketMinipoolDelegate = delegateAddress;
-        // Set local copy of penalty contract
-        rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
         // Check for contract existence
         require(contractExists(delegateAddress), "Delegate contract does not exist");
         // Call initialise on delegate

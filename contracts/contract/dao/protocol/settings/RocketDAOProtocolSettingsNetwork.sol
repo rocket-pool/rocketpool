@@ -27,7 +27,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.demand.range", 1000 ether);
             setSettingUint("network.reth.collateral.target", 0.1 ether);
             setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
-            // Settings initialized
+            // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
