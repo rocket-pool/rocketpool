@@ -129,17 +129,20 @@ export default function() {
             assert(fullLength.toNumber() === 2, 'Incorrect number of minipools in full queue')
             assert(halfLength.toNumber() === 1, 'Incorrect number of minipools in half queue')
             assert(emptyLength.toNumber() === 0, 'Incorrect number of minipools in empty queue')
-
-            // Upgrade the delegate contract
-            await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
-              from: owner,
-            });
-
-            // Check effective delegate is still the original
-            const minipool = await RocketMinipool.at(stakingMinipool.address);
-            const effectiveDelegate = await minipool.getEffectiveDelegate.call()
-            assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
         });
+
+
+        async function upgradeNetworkDelegateContract() {
+          // Upgrade the delegate contract
+          await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
+            from: owner,
+          });
+
+          // Check effective delegate is still the original
+          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const effectiveDelegate = await minipool.getEffectiveDelegate.call()
+          assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
+        }
 
 
         //
@@ -181,6 +184,7 @@ export default function() {
 
 
         it(printTitle('node operator', 'cannot create a minipool if network capacity is reached and destroying a minipool reduces the capacity'), async () => {
+
           // Retrieve the current number of minipools
           const rocketMinipoolManager = await RocketMinipoolManager.deployed();
           const minipoolCount = (await rocketMinipoolManager.getMinipoolCount()).toNumber();
@@ -192,15 +196,41 @@ export default function() {
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
           // Creating minipool should no longer fail
           await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+
         });
 
 
-      //
-      // Refund
-      //
+        it(printTitle('node operator', 'cannot create a minipool if delegate address is set to a non-contract'), async () => {
+
+          // Upgrade network delegate contract to random address
+          await upgradeNetworkDelegateContract();
+          // Creating minipool should fail now
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
+
+        });
 
 
-      it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
+        it(printTitle('node operator', 'cannot delegatecall to a delgate address that is a non-contract'), async () => {
+
+          // Creating minipool should fail now
+          let newMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+          const newMinipoolBase = await RocketMinipool.at(newMinipool.address);
+          // Upgrade network delegate contract to random address
+          await upgradeNetworkDelegateContract();
+          // Call upgrade delegate
+          await newMinipoolBase.setUseLatestDelegate(true, {from: node})
+          // Staking should fail now
+          await shouldRevert(stakeMinipool(newMinipool, null, {from: node}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
+
+        });
+
+
+        //
+        // Refund
+        //
+
+
+        it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
 
             // Refund from minipool with refund balance
             await refund(prelaunchMinipool, {
@@ -652,6 +682,7 @@ export default function() {
         //
 
         it(printTitle('node operator', 'can upgrade and rollback their delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Store original delegate
@@ -672,6 +703,7 @@ export default function() {
 
 
         it(printTitle('node operator', 'can use latest delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Store original delegate
@@ -697,6 +729,7 @@ export default function() {
 
 
         it(printTitle('random', 'cannot upgrade, rollback or set use latest delegate contract'), async () => {
+          await upgradeNetworkDelegateContract();
           // Get contract
           const minipool = await RocketMinipool.at(stakingMinipool.address);
           // Call upgrade delegate from random
