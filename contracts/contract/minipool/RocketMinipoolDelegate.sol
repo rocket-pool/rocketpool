@@ -306,8 +306,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 nodeAmount = 0;
         // Check if node operator was slashed
         if (_balance < userDepositBalance) {
-            // Record shortfall for slashing
-            nodeSlashBalance = userDepositBalance.sub(_balance);
+            // Only slash on first call to distribute
+            if (withdrawalBlock == 0) {
+                // Record shortfall for slashing
+                nodeSlashBalance = userDepositBalance.sub(_balance);
+            }
         } else {
             // Calculate node's share of the balance
             nodeAmount = calculateNodeShare(_balance);

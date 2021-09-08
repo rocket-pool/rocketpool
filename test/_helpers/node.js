@@ -127,7 +127,10 @@ export async function nodeStakeRPL(amount, txOptions) {
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
+    const before = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
     await rocketNodeStaking.stakeRPL(amount, txOptions);
+    const after = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
+    assert(after.sub(before).eq(web3.utils.toBN(amount)), 'Staking balance did not increase by amount staked')
 }
 
 
