@@ -274,7 +274,7 @@ export default function() {
         // Full deposit minipools
 
 
-        it.only(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
+        it(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
             // Process withdraw
@@ -282,7 +282,7 @@ export default function() {
         });
 
 
-        it.only(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
+        it(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
             // Process withdraw
