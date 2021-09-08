@@ -348,8 +348,14 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             // Calculate node share of rewards for the user
             uint256 halfRewards = totalRewards.div(2);
             uint256 nodeCommissionFee = halfRewards.mul(nodeFee).div(1 ether);
-            // Add user's share of rewards to their running total
-            userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
+            // Check for un-bonded minipool
+            if (depositType == MinipoolDeposit.Empty) {
+                // Add the total rewards minus the commission to the user's total
+                userAmount = userAmount.add(totalRewards.sub(nodeCommissionFee));
+            } else {
+                // Add half the rewards minus the commission fee to the user's total
+                userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
+            }
         }
         // Calculate node amount as what's left over after user amount
         uint256 nodeAmount = _balance.sub(userAmount);
