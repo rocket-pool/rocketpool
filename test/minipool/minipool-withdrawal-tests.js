@@ -204,7 +204,7 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Process withdraw and check slash
-            await withdrawAndCheck('15', random, false, '15', '0');
+            await withdrawAndCheck(minipool, '15', random, false, '15', '0');
             await slashAndCheck(random, web3.utils.toBN(web3.utils.toWei('1')))
         });
 
@@ -213,12 +213,12 @@ export default function() {
             // Mark minipool withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
             // Process withdraw
-            await withdrawAndCheck('28', trustedNode, true, '16', '12');
+            await withdrawAndCheck(minipool, '28', nodeWithdrawalAddress, true, '16', '12');
             // Wait 14 days and mine enough blocks to pass cooldown
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             await mineBlocks(web3, 101)
             // Process withdraw and attempt to slash
-            await withdrawAndCheck('4', random, false, '4', '0');
+            await withdrawAndCheck(minipool, '4', random, false, '4', '0');
             await shouldRevert(minipool.slash(), 'Was able to slash minipool', 'No balance to slash')
         });
 
