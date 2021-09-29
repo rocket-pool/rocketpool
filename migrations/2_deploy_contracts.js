@@ -8,7 +8,6 @@ const pako = require('pako');
 
 const config = require('../truffle.js');
 
-
 /*** Utility Methods *****************/
 
 
@@ -184,7 +183,9 @@ module.exports = async (deployer, network) => {
 
 
   // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
-  await deployer.deploy(rocketStorage);
+  const rs = await deployer.deploy(rocketStorage);
+  const rsTx = await web3.eth.getTransactionReceipt(rs.transactionHash);
+  const deployBlock = rsTx.blockNumber;
   // Update the storage with the new addresses
   let rocketStorageInstance = await rocketStorage.deployed();
   // Deploy other contracts - have to be inside an async loop
@@ -289,6 +290,14 @@ module.exports = async (deployer, network) => {
   console.log('\x1b[34m%s\x1b[0m', '  Set ABI Only Storage');
   console.log('\x1b[34m%s\x1b[0m', '  ******************************************');
   await addABIs();
+
+  // Store deployed block
+  console.log('\n');
+  console.log('Setting deploy.block to ' + deployBlock);
+  await rocketStorageInstance.setUint(
+    $web3.utils.soliditySha3('deploy.block'),
+    deployBlock
+  );
 
   // Disable direct access to storage now
   await rocketStorageInstance.setDeployedStatus();
