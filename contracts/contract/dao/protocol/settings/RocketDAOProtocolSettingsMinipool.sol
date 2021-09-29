@@ -21,9 +21,9 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
-            setSettingBool("minipool.submit.withdrawable.enabled", true);
+            setSettingBool("minipool.submit.withdrawable.enabled", false);
             setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
-            setSettingUint("minipool.maximum.count", 100);
+            setSettingUint("minipool.maximum.count", 14);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
