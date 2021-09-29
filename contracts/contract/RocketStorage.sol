@@ -102,10 +102,6 @@ contract RocketStorage is RocketStorageInterface {
 
     // Get a node's withdrawal address
     function getNodeWithdrawalAddress(address _nodeAddress) public override view returns (address) {
-        // Check if _nodeAddress is a valid node
-        if (!booleanStorage[keccak256(abi.encodePacked("node.exists", _nodeAddress))]) {
-            return address(0);
-        }
         // If no withdrawal address has been set, return the nodes address
         address withdrawalAddress = withdrawalAddresses[_nodeAddress];
         if (withdrawalAddress == address(0)) {
