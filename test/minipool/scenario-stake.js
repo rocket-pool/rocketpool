@@ -1,9 +1,9 @@
 import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts';
-import { getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
+import { getValidatorSignature, getDepositDataRoot, getValidatorPubkey } from '../_utils/beacon';
 
 
 // Stake a minipool
-export async function stake(minipool, validatorPubkey, withdrawalCredentials, txOptions) {
+export async function stake(minipool, withdrawalCredentials, txOptions, validatorPubkey = null) {
 
     // Load contracts
     const [
@@ -14,17 +14,17 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
         RocketDAOProtocolSettingsMinipool.deployed(),
     ]);
 
-    // Get parameters
-    let launchBalance = await rocketDAOProtocolSettingsMinipool.getLaunchBalance.call();
+    // Get minipool validator pubkey
+    if (!validatorPubkey) validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
 
     // Get minipool withdrawal credentials
     if (!withdrawalCredentials) withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
 
     // Get validator deposit data
     let depositData = {
-        pubkey: validatorPubkey,
+        pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(32000000000), // gwei
+        amount: BigInt(16000000000), // gwei
         signature: getValidatorSignature(),
     };
     let depositDataRoot = getDepositDataRoot(depositData);
@@ -59,10 +59,9 @@ export async function stake(minipool, validatorPubkey, withdrawalCredentials, tx
     const staking = web3.utils.toBN(2);
     assert(!details1.status.eq(staking), 'Incorrect initial minipool status');
     assert(details2.status.eq(staking), 'Incorrect updated minipool status');
-    assert(details2.balance.eq(details1.balance.sub(launchBalance)), 'Incorrect updated minipool ETH balance');
+    assert(details2.balance.eq(details1.balance.sub(web3.utils.toBN(web3.utils.toWei('16', 'ether')))), 'Incorrect updated minipool ETH balance');
 
     // Check minipool by validator pubkey
-    assert.equal(validatorMinipool1, '0x0000000000000000000000000000000000000000', 'Incorrect initial minipool by validator pubkey');
     assert.equal(validatorMinipool2, minipool.address, 'Incorrect updated minipool by validator pubkey');
 
 }

@@ -37,6 +37,7 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
         let minipool, unbondedMinipool, fullDepositMinipool;
         let maxPenaltyRate = web3.utils.toWei('0.5', 'ether');
         let penaltyTestContract;
@@ -54,6 +55,7 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
@@ -80,7 +82,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
 
             // Deposit some user funds to assign to pools
-            let userDepositAmount = web3.utils.toWei('48', 'ether');
+            let userDepositAmount = web3.utils.toWei('16', 'ether');
             await userDeposit({from: random, value: userDepositAmount});
 
             // Stake RPL to cover minipools
@@ -93,11 +95,16 @@ export default function() {
 
             // Create minipools
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: node});
-            unbondedMinipool = await createMinipool({from: trustedNode});
-            await stakeMinipool(unbondedMinipool, null, {from: trustedNode});
+            // unbondedMinipool = await createMinipool({from: trustedNode});
             fullDepositMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            await stakeMinipool(fullDepositMinipool, null, {from: node});
+
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+
+            // Stake minipools
+            await stakeMinipool(minipool, {from: node});
+            // await stakeMinipool(unbondedMinipool, {from: trustedNode});
+            await stakeMinipool(fullDepositMinipool, {from: node});
         });
 
 
@@ -252,23 +259,23 @@ export default function() {
         });
 
 
-        // Unbonded pools
+        // Unbonded pools (temporarily disabled)
 
 
-        it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
-            // Mark minipool withdrawable
-            await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
-            // Process withdraw
-            await withdrawAndCheck(unbondedMinipool, '36', trustedNode, true, '35', '1');
-        });
-
-
-        it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
-            // Mark minipool withdrawable
-            await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
-            // Process withdraw
-            await withdrawAndCheck(unbondedMinipool, '30', trustedNode, true, '30', '0');
-        });
+        // it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
+        //     // Mark minipool withdrawable
+        //     await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
+        //     // Process withdraw
+        //     await withdrawAndCheck(unbondedMinipool, '36', trustedNode, true, '35', '1');
+        // });
+        //
+        //
+        // it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
+        //     // Mark minipool withdrawable
+        //     await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
+        //     // Process withdraw
+        //     await withdrawAndCheck(unbondedMinipool, '30', trustedNode, true, '30', '0');
+        // });
 
 
         // Full deposit minipools

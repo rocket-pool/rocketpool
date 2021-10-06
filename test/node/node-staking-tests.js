@@ -1,11 +1,11 @@
-import { RocketNodeStaking } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsMinipool, RocketNodeStaking } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, nodeStakeRPL, nodeDeposit, setNodeTrusted } from '../_helpers/node'
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
 import { withdrawRpl } from './scenario-withdraw-rpl';
-import { setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap'
+import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { submitWithdrawable } from '../minipool/scenario-submit-withdrawable'
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
@@ -24,6 +24,7 @@ export default function() {
             random,
         ] = accounts;
 
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
 
         // Setup
         let rocketNodeStaking;
@@ -31,6 +32,9 @@ export default function() {
 
             // Load contracts
             rocketNodeStaking = await RocketNodeStaking.deployed();
+
+            // Set settings
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -175,7 +179,8 @@ export default function() {
             // Create a staking minipool
             await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: node});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: node});
 
             // Cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
@@ -217,7 +222,8 @@ export default function() {
             // Create a staking minipool
             await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: node});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: node});
 
             // Mark pool as withdrawable
             await submitWithdrawable(minipool.address, {

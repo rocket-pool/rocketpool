@@ -164,22 +164,24 @@ export default function() {
         });
 
 
-        it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
-            // Deposit enough unassigned ETH to increase the fee above 80% of max
-            await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
+        // Unbonded minipools temporarily disabled
 
-            // Stake RPL to cover minipool
-            let rplStake = await getMinipoolMinimumRPLStake();
-            await mintRPL(owner, trustedNode, rplStake);
-            await nodeStakeRPL(rplStake, {from: trustedNode});
-
-            // Deposit
-            await deposit(noMinimumNodeFee, {
-                from: trustedNode,
-                value: emptyDepositNodeAmount,
-            });
-
-        });
+        // it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
+        //     // Deposit enough unassigned ETH to increase the fee above 80% of max
+        //     await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
+        //
+        //     // Stake RPL to cover minipool
+        //     let rplStake = await getMinipoolMinimumRPLStake();
+        //     await mintRPL(owner, trustedNode, rplStake);
+        //     await nodeStakeRPL(rplStake, {from: trustedNode});
+        //
+        //     // Deposit
+        //     await deposit(noMinimumNodeFee, {
+        //         from: trustedNode,
+        //         value: emptyDepositNodeAmount,
+        //     });
+        //
+        // });
 
 
         it(printTitle('regular node operator', 'cannot make a deposit to create an empty minipool'), async () => {

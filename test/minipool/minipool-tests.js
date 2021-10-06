@@ -25,8 +25,6 @@ import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
-import { getNodeFee } from '../_helpers/network';
-import { getNetworkSetting } from '../_helpers/settings';
 import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
@@ -47,6 +45,7 @@ export default function() {
         // Setup
         let launchTimeout = 20;
         let withdrawalDelay = 20;
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
         let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
@@ -69,6 +68,7 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
@@ -90,8 +90,13 @@ export default function() {
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(stakingMinipool, null, {from: node});
-            await stakeMinipool(withdrawableMinipool, null, {from: node});
+
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+
+            // Progress minipools into desired statuses
+            await stakeMinipool(stakingMinipool, {from: node});
+            await stakeMinipool(withdrawableMinipool, {from: node});
             await submitMinipoolWithdrawable(withdrawableMinipool.address, {from: trustedNode});
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
@@ -205,7 +210,7 @@ export default function() {
           // Upgrade network delegate contract to random address
           await upgradeNetworkDelegateContract();
           // Creating minipool should fail now
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Contract creation failed');
 
         });
 
@@ -220,7 +225,7 @@ export default function() {
           // Call upgrade delegate
           await newMinipoolBase.setUseLatestDelegate(true, {from: node})
           // Staking should fail now
-          await shouldRevert(stakeMinipool(newMinipool, null, {from: node}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
+          await shouldRevert(stakeMinipool(newMinipool, {from: node}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
 
         });
 
@@ -331,7 +336,7 @@ export default function() {
         it(printTitle('random address', 'can slash node operator if withdrawal balance is less than 16 ETH'), async () => {
 
           // Stake the prelaunch minipool (it has 16 ETH user funds)
-          await stakeMinipool(prelaunchMinipool, null, {from: node});
+          await stakeMinipool(prelaunchMinipool, {from: node});
           // Mark it as withdrawable
           await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
           // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
@@ -351,7 +356,7 @@ export default function() {
         it(printTitle('node operator', 'is slashed if withdraw is processed when balance is less than 16 ETH'), async () => {
 
           // Stake the prelaunch minipool (it has 16 ETH user funds)
-          await stakeMinipool(prelaunchMinipool, null, {from: node});
+          await stakeMinipool(prelaunchMinipool, {from: node});
           // Mark it as withdrawable
           await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
           // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
@@ -438,7 +443,7 @@ export default function() {
         it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
 
             // Stake prelaunch minipool
-            await stake(prelaunchMinipool, getValidatorPubkey(), null, {
+            await stake(prelaunchMinipool, null, {
                 from: node,
             });
 
@@ -448,7 +453,7 @@ export default function() {
         it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
 
             // Attempt to stake initialised minipool
-            await shouldRevert(stake(initialisedMinipool, getValidatorPubkey(), null, {
+            await shouldRevert(stake(initialisedMinipool, null, {
                 from: node,
             }), 'Staked a minipool which was not at prelaunch');
 
@@ -457,16 +462,19 @@ export default function() {
 
         it(printTitle('node operator', 'cannot stake a minipool with a reused validator pubkey'), async () => {
 
-            // Get pubkey
-            let pubkey = getValidatorPubkey();
+          // Load contracts
+          const rocketMinipoolManager = await RocketMinipoolManager.deployed();
 
-            // Stake prelaunch minipool
-            await stake(prelaunchMinipool, pubkey, null, {from: node});
+          // Get minipool validator pubkey
+          const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(prelaunchMinipool.address);
 
-            // Attempt to stake second prelaunch minipool with same pubkey
-            await shouldRevert(stake(prelaunchMinipool2, pubkey, null, {
-                from: node,
-            }), 'Staked a minipool with a reused validator pubkey');
+          // Stake prelaunch minipool
+          await stake(prelaunchMinipool, null, {from: node});
+
+          // Attempt to stake second prelaunch minipool with same pubkey
+          await shouldRevert(stake(prelaunchMinipool2, null, {
+              from: node,
+          }, validatorPubkey), 'Staked a minipool with a reused validator pubkey');
 
         });
 
@@ -477,7 +485,7 @@ export default function() {
             let invalidWithdrawalCredentials = '0x1111111111111111111111111111111111111111111111111111111111111111';
 
             // Attempt to stake prelaunch minipool
-            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), invalidWithdrawalCredentials, {
+            await shouldRevert(stake(prelaunchMinipool, invalidWithdrawalCredentials, {
                 from: node,
             }), 'Staked a minipool with incorrect withdrawal credentials');
 
@@ -487,7 +495,7 @@ export default function() {
         it(printTitle('random address', 'cannot stake a minipool'), async () => {
 
             // Attempt to stake prelaunch minipool
-            await shouldRevert(stake(prelaunchMinipool, getValidatorPubkey(), null, {
+            await shouldRevert(stake(prelaunchMinipool, null, {
                 from: random,
             }), 'Random address staked a minipool');
 
@@ -635,46 +643,46 @@ export default function() {
 
 
         //
-        // Unbonded minipools
+        // Unbonded minipools (temporarily removed)
         //
 
 
-        it(printTitle('trusted node', 'cannot create an unbonded minipool if node fee is < 80% of maximum'), async () => {
-            // Sanity check that current node fee is less than 80% of maximum
-            let nodeFee = await getNodeFee();
-            let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
-            assert(nodeFee.lt(maximumNodeFee.muln(0.8)), 'Node fee is greater than 80% of maximum fee');
-
-            // Stake RPL to cover minipool
-            let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            await mintRPL(owner, trustedNode, minipoolRplStake);
-            await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
-
-            // Creating an unbonded minipool should revert
-            await shouldRevert(createMinipool({from: trustedNode, value: '0'}),
-              'Trusted node was able to create unbonded minipool with fee < 80% of max',
-              'Current commission rate is not high enough to create unbonded minipools'
-            );
-        });
-
-
-        it(printTitle('trusted node', 'can create an unbonded minipool if node fee is > 80% of maximum'), async () => {
-            // Deposit enough unassigned ETH to increase the fee above 80% of max
-            await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
-
-            // Sanity check that current node fee is greater than 80% of maximum
-            let nodeFee = await getNodeFee();
-            let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
-            assert(nodeFee.gt(maximumNodeFee.muln(0.8)), 'Node fee is not greater than 80% of maximum fee');
-
-            // Stake RPL to cover minipool
-            let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            await mintRPL(owner, trustedNode, minipoolRplStake);
-            await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
-
-            // Creating the unbonded minipool
-            await createMinipool({from: trustedNode, value: '0'});
-        });
+        // it(printTitle('trusted node', 'cannot create an unbonded minipool if node fee is < 80% of maximum'), async () => {
+        //     // Sanity check that current node fee is less than 80% of maximum
+        //     let nodeFee = await getNodeFee();
+        //     let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
+        //     assert(nodeFee.lt(maximumNodeFee.muln(0.8)), 'Node fee is greater than 80% of maximum fee');
+        //
+        //     // Stake RPL to cover minipool
+        //     let minipoolRplStake = await getMinipoolMinimumRPLStake();
+        //     await mintRPL(owner, trustedNode, minipoolRplStake);
+        //     await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
+        //
+        //     // Creating an unbonded minipool should revert
+        //     await shouldRevert(createMinipool({from: trustedNode, value: '0'}),
+        //       'Trusted node was able to create unbonded minipool with fee < 80% of max',
+        //       'Current commission rate is not high enough to create unbonded minipools'
+        //     );
+        // });
+        //
+        //
+        // it(printTitle('trusted node', 'can create an unbonded minipool if node fee is > 80% of maximum'), async () => {
+        //     // Deposit enough unassigned ETH to increase the fee above 80% of max
+        //     await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
+        //
+        //     // Sanity check that current node fee is greater than 80% of maximum
+        //     let nodeFee = await getNodeFee();
+        //     let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
+        //     assert(nodeFee.gt(maximumNodeFee.muln(0.8)), 'Node fee is not greater than 80% of maximum fee');
+        //
+        //     // Stake RPL to cover minipool
+        //     let minipoolRplStake = await getMinipoolMinimumRPLStake();
+        //     await mintRPL(owner, trustedNode, minipoolRplStake);
+        //     await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
+        //
+        //     // Creating the unbonded minipool
+        //     await createMinipool({from: trustedNode, value: '0'});
+        // });
 
 
         //

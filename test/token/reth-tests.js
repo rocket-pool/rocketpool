@@ -8,7 +8,13 @@ import { registerNode, setNodeTrusted, nodeStakeRPL, setNodeWithdrawalAddress } 
 import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens'
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer'
-import { RocketDAOProtocolSettingsNetwork, RocketDepositPool, RocketNetworkBalances, RocketTokenRETH } from '../_utils/artifacts'
+import {
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDepositPool,
+    RocketNetworkBalances,
+    RocketTokenRETH
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { increaseTime, mineBlocks } from '../_utils/evm'
@@ -28,10 +34,10 @@ export default function() {
             random,
         ] = accounts;
 
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
 
         // Setup
         let minipool;
-        let validatorPubkey = getValidatorPubkey();
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let rethBalance;
         let submitPricesFrequency = 500;
@@ -56,7 +62,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
-
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
@@ -65,7 +71,8 @@ export default function() {
 
             // Create withdrawable minipool
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, validatorPubkey, {from: node});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: node});
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
 
             // Update network ETH total to alter rETH exchange rate

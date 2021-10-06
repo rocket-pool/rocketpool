@@ -62,4 +62,8 @@ abstract contract RocketMinipoolStorageLayout {
 
     // Whether node operator has finalised the pool
     bool internal finalised;
+
+    // Trusted member scrub votes
+    mapping(address => bool) memberScrubVotes;
+    uint256 totalScrubVotes;
 }
