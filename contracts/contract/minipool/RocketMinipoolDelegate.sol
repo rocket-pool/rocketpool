@@ -45,6 +45,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getFinalised() override external view returns (bool) { return finalised; }
     function getStatusBlock() override external view returns (uint256) { return statusBlock; }
     function getStatusTime() override external view returns (uint256) { return statusTime; }
+    function getScrubVoted(address _member) override external view returns (bool) { return memberScrubVotes[_member]; }
 
     // Deposit type getter
     function getDepositType() override external view returns (MinipoolDeposit) { return depositType; }
