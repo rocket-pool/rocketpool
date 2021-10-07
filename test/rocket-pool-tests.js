@@ -21,7 +21,7 @@ import { printGasUsage, startGasUsage, endGasUsage } from './_utils/gasusage';
 import { endSnapShot, startSnapShot } from './_utils/snapshotting';
 import { setDAOProtocolBootstrapSetting } from './dao/scenario-dao-protocol-bootstrap';
 import {
-  RocketDAOProtocolSettingsDeposit,
+  RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
   RocketDAOProtocolSettingsNode
@@ -52,10 +52,11 @@ before(async function() {
   await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.registration.enabled', true, { from: guardian });
   await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.deposit.enabled', true, { from: guardian });
   await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.submit.withdrawable.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', web3.utils.toWei('0.5', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', web3.utils.toWei('1', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', web3.utils.toWei('2', 'ether'), { from: guardian });
+  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', web3.utils.toWei('0.05', 'ether'), { from: guardian });
+  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', web3.utils.toWei('0.1', 'ether'), { from: guardian });
+  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', web3.utils.toWei('0.2', 'ether'), { from: guardian });
   await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.demand.range', web3.utils.toWei('1000', 'ether'), { from: guardian });
+  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', Math.floor(new Date().getTime() / 1000) + (60 * 60 * 24 * 14), { from: guardian });
 });
 
 // Run tests

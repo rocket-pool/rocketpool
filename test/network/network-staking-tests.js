@@ -13,7 +13,13 @@ import {
     getNodeEffectiveRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
-import { RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsNode, RocketDAOProtocolSettingsRewards, RocketNetworkPrices } from '../_utils/artifacts'
+import {
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsNode,
+    RocketDAOProtocolSettingsRewards,
+    RocketNetworkPrices
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
@@ -31,6 +37,7 @@ export default function() {
 
         // One day in seconds
         const ONE_DAY = 24 * 60 * 60;
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
         const maxStakePerMinipool = '1.5'
 
 
@@ -87,7 +94,10 @@ export default function() {
         before(async () => {
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
-            
+
+            // Set settings
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
@@ -233,7 +243,8 @@ export default function() {
             // Create a minipool to increase our max RPL stake
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
             // Staking should fail now because oracles have not submitted price for this window
@@ -261,7 +272,8 @@ export default function() {
             await nodeStakeRPL(web3.utils.toWei('10', 'ether'), {from: registeredNode1});
             let minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Should not be able to submit a price change at oldBlockNumber as effective stake changed after it
             await submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
             await shouldRevert(submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');
@@ -281,7 +293,8 @@ export default function() {
             // Create a minipool to increase our max RPL stake
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
             // Mark it as withdrawable
