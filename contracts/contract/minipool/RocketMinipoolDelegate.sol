@@ -229,7 +229,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
 
-    // Stakes 1 ETH into the deposit contract to set withdrawal credentials to this contract
+    // Stakes 16 ETH into the deposit contract to set withdrawal credentials to this contract
     function preStake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) internal {
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
