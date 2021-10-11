@@ -42,8 +42,8 @@ export async function close(minipool, txOptions) {
         web3.eth.getCode(minipool.address),
     ]);
 
-    // Check balances (16 ETH prelaunch balance is trapped on beacon chain for now, sorry)
-    let expectedNodeBalance = nodeBalance1.add(minipoolBalances.nodeDeposit).add(minipoolBalances.nodeRefund).sub(web3.utils.toBN(web3.utils.toWei('16', 'ether')));
+    // Check balances
+    let expectedNodeBalance = nodeBalance1.add(minipoolBalances.nodeDeposit).add(minipoolBalances.nodeRefund);
     if (nodeWithdrawalAddress == nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
     assert(nodeBalance2.eq(expectedNodeBalance), 'Incorrect updated node nETH balance');
 

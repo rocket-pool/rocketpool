@@ -614,6 +614,13 @@ export default function() {
 
         it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
 
+            // Send 16 ETH to minipool
+            await web3.eth.sendTransaction({
+              from: random,
+              to: dissolvedMinipool.address,
+              value: web3.utils.toWei('16', 'ether'),
+            });
+
             // Close dissolved minipool
             await close(dissolvedMinipool, {
                 from: node,
@@ -627,7 +634,7 @@ export default function() {
             // Attempt to close staking minipool
             await shouldRevert(close(stakingMinipool, {
                 from: node,
-            }), 'Closed a minipool which was not dissolved');
+            }), 'Closed a minipool which was not dissolved', 'The minipool can only be closed while dissolved');
 
         });
 
@@ -637,7 +644,7 @@ export default function() {
             // Attempt to close dissolved minipool
             await shouldRevert(close(dissolvedMinipool, {
                 from: random,
-            }), 'Random address closed a minipool');
+            }), 'Random address closed a minipool', 'Invalid minipool owner');
 
         });
 

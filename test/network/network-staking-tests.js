@@ -211,6 +211,12 @@ export default function() {
             await dissolve(initialisedMinipool, {
                 from: registeredNode2,
             });
+            // Send 16 ETH to minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: initialisedMinipool.address,
+                value: web3.utils.toWei('16', 'ether'),
+            });
             await close(initialisedMinipool, {
                 from: registeredNode2,
             });
