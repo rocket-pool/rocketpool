@@ -14,6 +14,7 @@ import {
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
 import {
+    RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsNode,
@@ -30,6 +31,7 @@ import BN from 'bn.js'
 import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
 import { userDeposit } from '../_helpers/deposit'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 
 export default function() {
@@ -96,7 +98,7 @@ export default function() {
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register nodes
             await registerNode({from: registeredNode1});

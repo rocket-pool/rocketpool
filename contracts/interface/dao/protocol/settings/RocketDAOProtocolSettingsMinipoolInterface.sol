@@ -16,6 +16,5 @@ interface RocketDAOProtocolSettingsMinipoolInterface {
     function getEmptyDepositUserAmount() external view returns (uint256);
     function getSubmitWithdrawableEnabled() external view returns (bool);
     function getLaunchTimeout() external view returns (uint256);
-    function getScrubPeriod() external view returns (uint256);
     function getMaximumCount() external view returns (uint256);
 }

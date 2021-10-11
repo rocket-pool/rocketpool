@@ -23,7 +23,6 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", false);
             setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
-            setSettingUint("minipool.scrub.period", 24 hours);
             setSettingUint("minipool.maximum.count", 14);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -77,11 +76,6 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     // Timeout period in blocks for prelaunch minipools to launch
     function getLaunchTimeout() override external view returns (uint256) {
         return getSettingUint("minipool.launch.timeout");
-    }
-
-    // How long minipools must wait before moving to staking status (can be scrubbed by ODAO before then)
-    function getScrubPeriod() override external view returns (uint256) {
-        return getSettingUint("minipool.scrub.period");
     }
 
     // Maximum number of minipools allowed at one time

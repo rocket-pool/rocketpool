@@ -9,6 +9,7 @@ import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getReth
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer'
 import {
+    RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
     RocketDepositPool,
@@ -18,6 +19,7 @@ import {
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { increaseTime, mineBlocks } from '../_utils/evm'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -62,7 +64,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();

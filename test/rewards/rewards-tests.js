@@ -13,7 +13,11 @@ import {
     getNodeMinimumRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
-import { RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNode
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
@@ -26,6 +30,7 @@ import { rewardsClaimDAO, getRewardsDAOTreasuryBalance } from './scenario-reward
 import { RocketRewardsPool } from '../_utils/artifacts';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 
 export default function() {
@@ -89,7 +94,7 @@ export default function() {
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register nodes
             await registerNode({from: registeredNode1});

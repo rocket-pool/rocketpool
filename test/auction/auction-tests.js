@@ -2,6 +2,7 @@ import { increaseTime, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
+    RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsAuction,
     RocketDAOProtocolSettingsMinipool,
     RocketNetworkPrices,
@@ -19,6 +20,7 @@ import { placeBid } from './scenario-place-bid';
 import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketAuctionManager', async (accounts) => {
@@ -40,7 +42,7 @@ export default function() {
         before(async () => {
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register node
             await registerNode({from: node});

@@ -15,6 +15,7 @@ import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
@@ -197,9 +198,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             return false;
         }
         // Get contracts
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
         // Get scrub period
-        uint256 scrubPeriod = rocketDAOProtocolSettingsMinipool.getScrubPeriod();
+        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
         // Check if we have been in prelaunch status for long enough
         return block.timestamp > statusTime + scrubPeriod;
     }
@@ -208,8 +209,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Only accepts calls from the minipool owner (node) while in prelaunch and once scrub period has ended
     function stake(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         // Get scrub period
+        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        uint256 scrubPeriod = rocketDAOProtocolSettingsMinipool.getScrubPeriod();
+        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
         // Check current status
         require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
         require(block.timestamp > statusTime + scrubPeriod, "Not enough time has passed to stake");
@@ -235,7 +237,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check minipool balance
         require(address(this).balance >= prelaunchAmount, "Insufficient balance to pre-stake");
         // Check validator pubkey is not in use

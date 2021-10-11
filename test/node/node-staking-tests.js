@@ -1,4 +1,8 @@
-import { RocketDAOProtocolSettingsMinipool, RocketNodeStaking } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsMinipool,
+    RocketNodeStaking
+} from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode, nodeStakeRPL, nodeDeposit, setNodeTrusted } from '../_helpers/node'
@@ -11,6 +15,7 @@ import { submitWithdrawable } from '../minipool/scenario-submit-withdrawable'
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -34,7 +39,7 @@ export default function() {
             rocketNodeStaking = await RocketNodeStaking.deployed();
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register node
             await registerNode({from: node});

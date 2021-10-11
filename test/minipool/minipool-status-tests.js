@@ -6,7 +6,11 @@ import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_h
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { executeSetWithdrawable, submitWithdrawable } from './scenario-submit-withdrawable'
-import { RocketDAONodeTrustedSettingsProposals, RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts'
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsProposals,
+    RocketDAOProtocolSettingsMinipool
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
@@ -87,7 +91,7 @@ export default function() {
             // Set a small proposal cooldown
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             // Set a small vote delay
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
 

@@ -2,8 +2,13 @@ import {
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
   RocketMinipoolManager,
-  RevertOnTransfer, RocketVault, RocketTokenRPL, RocketMinipoolQueue, RocketMinipool
-} from '../_utils/artifacts'
+  RevertOnTransfer,
+  RocketVault,
+  RocketTokenRPL,
+  RocketMinipoolQueue,
+  RocketMinipool,
+  RocketDAONodeTrustedSettingsMinipool
+} from '../_utils/artifacts';
 import { increaseTime, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
@@ -25,7 +30,10 @@ import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
 import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
-import { setDaoNodeTrustedBootstrapUpgrade } from '../dao/scenario-dao-node-trusted-bootstrap';
+import {
+  setDAONodeTrustedBootstrapSetting,
+  setDaoNodeTrustedBootstrapUpgrade
+} from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -68,7 +76,7 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
