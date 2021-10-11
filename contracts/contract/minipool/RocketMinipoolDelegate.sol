@@ -438,7 +438,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check current status
         require(status == MinipoolStatus.Dissolved, "The minipool can only be closed while dissolved");
         // Transfer node balance to node operator
-        uint256 nodeBalance = nodeDepositBalance.sub(prelaunchAmount).add(nodeRefundBalance);
+        uint256 nodeBalance = nodeDepositBalance.add(nodeRefundBalance);
         if (nodeBalance > 0) {
             // Update node balances
             nodeDepositBalance = 0;
