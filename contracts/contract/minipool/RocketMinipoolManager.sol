@@ -93,6 +93,37 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         }
     }
 
+    // Returns an array of all minipools in the prelaunch state
+    function getPrelaunchMinipools(uint256 offset, uint256 limit) override external view
+    returns (address[] memory) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Precompute minipool key
+        bytes32 minipoolKey = keccak256(abi.encodePacked("minipools.index"));
+        // Iterate over the requested minipool range
+        uint256 totalMinipools = getMinipoolCount();
+        uint256 max = offset.add(limit);
+        if (max > totalMinipools || limit == 0) { max = totalMinipools; }
+        // Create array big enough for every minipool
+        address[] memory minipools = new address[](max.sub(offset));
+        uint256 total = 0;
+        for (uint256 i = offset; i < max; i++) {
+            // Get the minipool at index i
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
+            // Get the minipool's status, and to array if it's in prelaunch
+            MinipoolStatus status = minipool.getStatus();
+            if (status == MinipoolStatus.Prelaunch) {
+                minipools[total] = address(minipool);
+                total++;
+            }
+        }
+        // Dirty hack to cut unused elements off end of return value
+        assembly {
+            mstore(minipools, total)
+        }
+        return minipools;
+    }
+
     // Get a network minipool address by index
     function getMinipoolAt(uint256 _index) override external view returns (address) {
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
