@@ -37,7 +37,7 @@ export default function() {
 
 
         // Setup
-        let launchTimeout = 20;
+        let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
 

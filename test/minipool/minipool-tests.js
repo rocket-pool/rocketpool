@@ -51,7 +51,7 @@ export default function() {
 
 
         // Setup
-        let launchTimeout = 20;
+        let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let initialisedMinipool;
@@ -410,7 +410,7 @@ export default function() {
         it(printTitle('random address', 'can dissolve a timed out minipool at prelaunch'), async () => {
 
             // Time prelaunch minipool out
-            await mineBlocks(web3, launchTimeout);
+            await increaseTime(web3, launchTimeout);
 
             // Dissolve prelaunch minipool
             await dissolve(prelaunchMinipool, {
@@ -423,7 +423,7 @@ export default function() {
         it(printTitle('random address', 'cannot dissolve a minipool which is not at prelaunch'), async () => {
 
             // Time prelaunch minipool out
-            await mineBlocks(web3, launchTimeout);
+            await increaseTime(web3, launchTimeout);
 
             // Attempt to dissolve initialised minipool
             await shouldRevert(dissolve(initialisedMinipool, {
