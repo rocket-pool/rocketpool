@@ -73,7 +73,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return getSettingBool("minipool.submit.withdrawable.enabled");
     }
 
-    // Timeout period in blocks for prelaunch minipools to launch
+    // Timeout period in seconds for prelaunch minipools to launch
     function getLaunchTimeout() override external view returns (uint256) {
         return getSettingUint("minipool.launch.timeout");
     }
