@@ -18,7 +18,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     if (!validatorPubkey) validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
 
     // Get minipool withdrawal credentials
-    if (!withdrawalCredentials) withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
+    if (!withdrawalCredentials) withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(minipool.address);
 
     // Get validator deposit data
     let depositData = {

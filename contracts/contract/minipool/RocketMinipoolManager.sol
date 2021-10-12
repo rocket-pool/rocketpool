@@ -187,6 +187,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipoolAddress)));
     }
 
+    // Get the withdrawal credentials for the minipool contract
+    function getMinipoolWithdrawalCredentials(address _minipoolAddress) override public view returns (bytes memory) {
+        return abi.encodePacked(byte(0x01), bytes11(0x0), address(_minipoolAddress));
+    }
+
     // Increments _nodeAddress' number of minipools in staking status
     function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Update the node specific count

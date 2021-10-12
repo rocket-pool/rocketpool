@@ -152,7 +152,7 @@ export async function stakeMinipool(minipool, txOptions) {
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
 
     // Get minipool withdrawal credentials
-    let withdrawalCredentials = await minipool.getWithdrawalCredentials.call();
+    let withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(minipool.address);
 
     // Get validator deposit data
     let depositData = {

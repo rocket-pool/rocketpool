@@ -182,12 +182,15 @@ export default function() {
 
         it(printTitle('minipool', 'has correct withdrawal credentials'), async () => {
 
+            // Get contracts
+            const rocketMinipoolManager = await RocketMinipoolManager.deployed()
+
             // Withdrawal credentials settings
             const withdrawalPrefix = '01';
             const padding = '0000000000000000000000';
 
             // Get minipool withdrawal credentials
-            let withdrawalCredentials = await initialisedMinipool.getWithdrawalCredentials.call();
+            let withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(initialisedMinipool.address);
 
             // Check withdrawal credentials
             let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initialisedMinipool.address.substr(2));

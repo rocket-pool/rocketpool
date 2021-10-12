@@ -64,11 +64,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getUserDepositAssignedTime() override external view returns (uint256) { return userDepositAssignedTime; }
     function getTotalScrubVotes() override external view returns (uint256) { return totalScrubVotes; }
 
-    // Get the withdrawal credentials for the minipool contract
-    function getWithdrawalCredentials() override public view returns (bytes memory) {
-        return abi.encodePacked(byte(0x01), bytes11(0x0), address(this));
-    }
-
     // Prevent direct calls to this contract
     modifier onlyInitialised() {
         require(storageState == StorageState.Initialised, "Storage state not initialised");
@@ -227,7 +222,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check validator pubkey is not in use
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(this), "Validator pubkey is not correct");
         // Send staking deposit to casper
-        casperDeposit.deposit{value : launchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : launchAmount}(_validatorPubkey, rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)), _validatorSignature, _depositDataRoot);
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }
@@ -244,7 +239,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
         // Send staking deposit to casper
-        casperDeposit.deposit{value : prelaunchAmount}(_validatorPubkey, getWithdrawalCredentials(), _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : prelaunchAmount}(_validatorPubkey, rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)), _validatorSignature, _depositDataRoot);
     }
 
     // Mark the minipool as withdrawable
