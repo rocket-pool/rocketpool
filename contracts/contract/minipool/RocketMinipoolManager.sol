@@ -188,7 +188,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the withdrawal credentials for the minipool contract
-    function getMinipoolWithdrawalCredentials(address _minipoolAddress) override public view returns (bytes memory) {
+    function getMinipoolWithdrawalCredentials(address _minipoolAddress) override public pure returns (bytes memory) {
         return abi.encodePacked(byte(0x01), bytes11(0x0), address(_minipoolAddress));
     }
 
@@ -343,7 +343,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Returns the bytecode for RocketMinipool
-    function getMinipoolBytecode() override public view returns (bytes memory) {
+    function getMinipoolBytecode() override public pure returns (bytes memory) {
         return type(RocketMinipool).creationCode;
     }
 
