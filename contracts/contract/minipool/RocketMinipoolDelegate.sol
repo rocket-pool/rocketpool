@@ -465,6 +465,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(status == MinipoolStatus.Prelaunch, "The minipool can only be scrubbed while in prelaunch");
         // Get contracts
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
         // Must be a trusted member
         require(rocketDAONode.getMemberIsValid(msg.sender), "Not a trusted member");
         // Can only vote once
@@ -472,8 +473,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         memberScrubVotes[msg.sender] = true;
         // Emit event
         emit ScrubVoted(msg.sender, block.timestamp);
-        // Check if 51%
-        uint256 quorum = rocketDAONode.getMemberCount().div(2);
+        // Check if required quorum has voted
+        uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(1 ether);
         if (totalScrubVotes.add(1) > quorum) {
             // Dissolve this minipool, recycling ETH back to deposit pool
             _dissolve();
