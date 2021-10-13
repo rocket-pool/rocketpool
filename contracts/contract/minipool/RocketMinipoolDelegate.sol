@@ -474,7 +474,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Emit event
         emit ScrubVoted(msg.sender, block.timestamp);
         // Check if required quorum has voted
-        uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(1 ether);
+        uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(calcBase);
         if (totalScrubVotes.add(1) > quorum) {
             // Dissolve this minipool, recycling ETH back to deposit pool
             _dissolve();
