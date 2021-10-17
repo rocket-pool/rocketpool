@@ -146,5 +146,20 @@ export default function() {
           // Should not be able to vote scrub
           await shouldRevert(voteScrub(prelaunchMinipool, {from: trustedNode1}), 'Was able to vote scrub a staking minipool', 'The minipool can only be scrubbed while in prelaunch');
         });
+
+
+        //
+        // Misc
+        //
+
+
+        it(printTitle('guardian', 'can not set launch timeout lower than scrub period'), async () => {
+          await shouldRevert(setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', scrubPeriod-1, {from: owner}), 'Set launch timeout lower than scrub period', 'Launch timeout must be greater than scrub period');
+        });
+
+
+        it(printTitle('guardian', 'can not set scrub period higher than launch timeout'), async () => {
+          await shouldRevert(setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', launchTimeout+1, {from: owner}), 'Set scrub period higher than launch timeout', 'Scrub period must be less than launch timeout');
+        });
     });
 }

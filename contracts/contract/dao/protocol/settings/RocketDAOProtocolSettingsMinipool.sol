@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../../../types/MinipoolDeposit.sol";
 
 // Network minipool settings
@@ -27,6 +28,19 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
+    }
+
+    // Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        // Some safety guards for certain settings
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
+                RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+                require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod().add(1 hours)), "Launch timeout must be greater than scrub period");
+            }
+        }
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     // Balance required to launch minipool
