@@ -37,6 +37,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);
     event ScrubVoted(address indexed member, uint256 time);
+    event MinipoolScrubbed(uint256 time);
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event EtherWithdrawalProcessed(address indexed executed, uint256 nodeAmount, uint256 userAmount, uint256 totalBalance, uint256 time);
@@ -478,6 +479,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         if (totalScrubVotes.add(1) > quorum) {
             // Dissolve this minipool, recycling ETH back to deposit pool
             _dissolve();
+            // Emit event
+            emit MinipoolScrubbed(block.timestamp);
         } else {
             // Increment total
             totalScrubVotes = totalScrubVotes.add(1);
