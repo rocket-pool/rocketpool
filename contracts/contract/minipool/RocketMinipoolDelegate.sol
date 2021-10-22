@@ -16,6 +16,7 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
@@ -27,6 +28,7 @@ import "../../types/MinipoolStatus.sol";
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
 
     // Constants
+    uint8 public constant version = 2;                            // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;
     uint256 constant prelaunchAmount = 16 ether;                  // The amount of ETH initially deposited when minipool is created
     uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
@@ -38,6 +40,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     event StatusUpdated(uint8 indexed status, uint256 time);
     event ScrubVoted(address indexed member, uint256 time);
     event MinipoolScrubbed(uint256 time);
+    event MinipoolPrestaked(bytes validatorPubkey, bytes validatorSignature, bytes32 depositDataRoot, uint256 amount, bytes withdrawalCredentials, uint256 time);
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event EtherWithdrawalProcessed(address indexed executed, uint256 nodeAmount, uint256 userAmount, uint256 totalBalance, uint256 time);
@@ -239,8 +242,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is in use");
         // Set minipool pubkey
         rocketMinipoolManager.setMinipoolPubkey(_validatorPubkey);
+        // Get withdrawal credentials
+        bytes memory withdrawalCredentials = rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this));
         // Send staking deposit to casper
-        casperDeposit.deposit{value : prelaunchAmount}(_validatorPubkey, rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)), _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : prelaunchAmount}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
+        // Emit event
+        emit MinipoolPrestaked(_validatorPubkey, _validatorSignature, _depositDataRoot, prelaunchAmount, withdrawalCredentials, block.timestamp);
     }
 
     // Mark the minipool as withdrawable
@@ -479,6 +486,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         if (totalScrubVotes.add(1) > quorum) {
             // Dissolve this minipool, recycling ETH back to deposit pool
             _dissolve();
+            // Slash RPL equal to minimum stake amount (if enabled)
+            if (rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()){
+                RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+                RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+                RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+                rocketNodeStaking.slashRPL(nodeAddress, rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+                .mul(rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake())
+                );
+            }
             // Emit event
             emit MinipoolScrubbed(block.timestamp);
         } else {

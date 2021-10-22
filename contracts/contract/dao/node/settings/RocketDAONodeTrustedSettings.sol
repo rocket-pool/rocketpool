@@ -46,12 +46,12 @@ abstract contract RocketDAONodeTrustedSettings is RocketBase, RocketDAONodeTrust
     /*** Bools  ****************/
 
     // A general method to return any setting given the setting path is correct, only accepts bools
-    function getSettingBool(string memory _settingPath) external view override returns (bool) {
+    function getSettingBool(string memory _settingPath) public view override returns (bool) {
         return getBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)));
     } 
 
     // Update a setting, can only be executed by the DAO contract when a majority on a setting proposal has passed and been executed
-    function setSettingBool(string memory _settingPath, bool _value) virtual external override onlyDAONodeTrustedProposal {
+    function setSettingBool(string memory _settingPath, bool _value) virtual public override onlyDAONodeTrustedProposal {
         // Update setting now
         setBool(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }

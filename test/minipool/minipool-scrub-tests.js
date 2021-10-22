@@ -126,7 +126,16 @@ export default function() {
         //
 
 
-        it(printTitle('trusted node', 'can scrub a prelaunch minipool'), async () => {
+        it(printTitle('trusted node', 'can scrub a prelaunch minipool (no penalty)'), async () => {
+          // 2 out of 3 should dissolve the minipool
+          await voteScrub(prelaunchMinipool, {from: trustedNode1});
+          await voteScrub(prelaunchMinipool, {from: trustedNode2});
+        });
+
+
+        it(printTitle('trusted node', 'can scrub a prelaunch minipool (with penalty)'), async () => {
+          // Enabled penalty
+          await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.penalty.enabled', true, {from: owner});
           // 2 out of 3 should dissolve the minipool
           await voteScrub(prelaunchMinipool, {from: trustedNode1});
           await voteScrub(prelaunchMinipool, {from: trustedNode2});

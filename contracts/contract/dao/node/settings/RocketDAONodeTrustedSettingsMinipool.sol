@@ -33,6 +33,7 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
         // Init settings
         setSettingUint("minipool.scrub.period", 12 hours);
         setSettingUint("minipool.scrub.quorum", 0.51 ether);
+        setSettingBool("minipool.scrub.penalty.enabled", false);
         // Settings initialised
         setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
     }
@@ -63,4 +64,8 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
         return getSettingUint("minipool.scrub.quorum");
     }
 
+    // True if scrubbing results in an RPL penalty for the node operator
+    function getScrubPenaltyEnabled() override external view returns (bool) {
+        return getSettingBool("minipool.scrub.penalty.enabled");
+    }
 }

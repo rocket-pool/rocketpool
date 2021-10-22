@@ -1,8 +1,23 @@
 // Dissolve a minipool
-import { RocketDAONodeTrusted } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrusted,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketNodeStaking,
+    RocketTokenRPL,
+    RocketVault
+} from '../_utils/artifacts';
 
 
 export async function voteScrub(minipool, txOptions) {
+
+    // Get minipool owner
+    const nodeAddress = await minipool.getNodeAddress.call();
+
+    // Get contracts
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketVault = await RocketVault.deployed();
+    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
 
     // Get minipool details
     function getMinipoolDetails() {
@@ -10,9 +25,12 @@ export async function voteScrub(minipool, txOptions) {
             minipool.getStatus.call(),
             minipool.getUserDepositBalance.call(),
             minipool.getTotalScrubVotes.call(),
+            rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
+            rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
+            rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()
         ]).then(
-            ([status, userDepositBalance, votes]) =>
-            ({status, userDepositBalance, votes})
+            ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled]) =>
+            ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled})
         );
     }
 
@@ -35,9 +53,15 @@ export async function voteScrub(minipool, txOptions) {
     if (details1.votes.add(web3.utils.toBN(1)).gt(quorum)){
         assert(details2.status.eq(dissolved), 'Incorrect updated minipool status');
         assert(details2.userDepositBalance.eq(web3.utils.toBN(0)), 'Incorrect updated minipool user deposit balance');
+        if (details1.penaltyEnabled) {
+            assert(details2.nodeRPLStake.lt(details1.nodeRPLStake), 'RPL was not slashed');
+            const slashAmount = details1.nodeRPLStake.sub(details2.nodeRPLStake);
+            assert(details2.auctionBalance.sub(details1.auctionBalance).eq(slashAmount), 'RPL was not sent to auction manager');
+        }
     } else {
         assert(details2.votes.sub(details1.votes).eq(web3.utils.toBN(1)), 'Vote count not incremented');
         assert(!details2.status.eq(dissolved), 'Incorrect updated minipool status');
+        assert(details2.nodeRPLStake.eq(details1.nodeRPLStake), 'RPL was slashed');
     }
 
 }
