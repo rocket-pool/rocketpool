@@ -47,7 +47,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     ]);
 
     // Stake
-    await minipool.stake(depositData.pubkey, depositData.signature, depositDataRoot, txOptions);
+    await minipool.stake(depositData.signature, depositDataRoot, txOptions);
 
     // Get updated minipool details & minipool by validator pubkey
     let [details2, validatorMinipool2] = await Promise.all([

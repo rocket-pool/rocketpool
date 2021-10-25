@@ -167,7 +167,7 @@ export async function stakeMinipool(minipool, txOptions) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Stake
-    await minipool.stake(depositData.pubkey, depositData.signature, depositDataRoot, txOptions);
+    await minipool.stake(depositData.signature, depositDataRoot, txOptions);
 
 }
 
