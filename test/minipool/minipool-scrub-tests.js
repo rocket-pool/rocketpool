@@ -41,6 +41,8 @@ export default function() {
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
 
+        let minipoolSalt = 1;
+
         let prelaunchMinipool;
 
         before(async () => {
@@ -76,7 +78,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipool
-            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt);
         });
 
 
@@ -118,6 +120,24 @@ export default function() {
           });
 
           await close(prelaunchMinipool, { from: node, });
+        });
+
+
+        it(printTitle('node', 'can not create a minipool at the same address after closing'), async () => {
+          await voteScrub(prelaunchMinipool, {from: trustedNode1});
+          await voteScrub(prelaunchMinipool, {from: trustedNode2});
+
+          // Send 16 ETH to minipool
+          await web3.eth.sendTransaction({
+            from: random,
+            to: prelaunchMinipool.address,
+            value: web3.utils.toWei('16', 'ether'),
+          });
+
+          await close(prelaunchMinipool, { from: node, });
+
+          // Try to create the pool again
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt), 'Was able to recreate minipool at same address', 'Minipool already exists or was previously destroyed');
         });
 
 

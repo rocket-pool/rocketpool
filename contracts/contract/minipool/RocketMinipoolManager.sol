@@ -182,6 +182,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress)));
     }
 
+    // Check whether a minipool previously existed at the given address
+    function getMinipoolDestroyed(address _minipoolAddress) override external view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("minipool.destroyed", _minipoolAddress)));
+    }
+
     // Get a minipool's validator pubkey
     function getMinipoolPubkey(address _minipoolAddress) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipoolAddress)));
@@ -275,6 +280,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         address nodeAddress = minipool.getNodeAddress();
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
+        // Record minipool as destroyed to prevent recreation at same address
+        setBool(keccak256(abi.encodePacked("minipool.destroyed", msg.sender)), true);
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);

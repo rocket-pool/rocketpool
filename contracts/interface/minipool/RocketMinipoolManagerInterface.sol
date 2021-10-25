@@ -22,6 +22,7 @@ interface RocketMinipoolManagerInterface {
     function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
     function getMinipoolByPubkey(bytes calldata _pubkey) external view returns (address);
     function getMinipoolExists(address _minipoolAddress) external view returns (bool);
+    function getMinipoolDestroyed(address _minipoolAddress) external view returns (bool);
     function getMinipoolPubkey(address _minipoolAddress) external view returns (bytes memory);
     function getMinipoolWithdrawalCredentials(address _minipoolAddress) external pure returns (bytes memory);
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) external returns (RocketMinipoolInterface);

@@ -63,7 +63,7 @@ export async function getMinipoolMinimumRPLStake() {
 let minipoolSalt = 1
 
 // Create a minipool
-export async function createMinipool(txOptions) {
+export async function createMinipool(txOptions, salt = null) {
 
     // Load contracts
     const [
@@ -86,7 +86,10 @@ export async function createMinipool(txOptions) {
     // Construct creation code for minipool deploy
     const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
     const deployCode = contractBytecode + constructorArgs.substr(2);
-    const salt = minipoolSalt++;
+
+    if(salt === null){
+        salt = minipoolSalt++;
+    }
 
     // Calculate keccak(nodeAddress, salt)
     const nodeSalt = web3.utils.soliditySha3(

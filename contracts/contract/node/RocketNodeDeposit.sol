@@ -40,6 +40,8 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Check deposits are enabled
         checkDepositsEnabled();
+        // Check minipool doesn't exist or previously exist
+        require(!rocketMinipoolManager.getMinipoolExists(_expectedMinipoolAddress) && !rocketMinipoolManager.getMinipoolDestroyed(_expectedMinipoolAddress), "Minipool already exists or was previously destroyed");
         // Check node fee
         checkNodeFee(_minimumNodeFee);
         // Get Deposit type
