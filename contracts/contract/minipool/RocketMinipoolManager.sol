@@ -183,7 +183,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get a minipool's validator pubkey
-    function getMinipoolPubkey(address _minipoolAddress) override external view returns (bytes memory) {
+    function getMinipoolPubkey(address _minipoolAddress) override public view returns (bytes memory) {
         return getBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipoolAddress)));
     }
 
@@ -278,6 +278,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove minipool from indexes
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.index")), msg.sender);
         addressSetStorage.removeItem(keccak256(abi.encodePacked("node.minipools.index", nodeAddress)), msg.sender);
+        // Clean up pubkey state
+        bytes memory pubkey = getMinipoolPubkey(msg.sender);
+        deleteBytes(keccak256(abi.encodePacked("minipool.pubkey", msg.sender)));
+        deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
     }
