@@ -81,15 +81,20 @@ export default function() {
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
 
-            // Make user deposit to refund first prelaunch minipool
-            let refundAmount = web3.utils.toWei('16', 'ether');
-            await userDeposit({from: random, value: refundAmount});
-
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
             let rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
+
+            // Create a dissolved minipool
+            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            await increaseTime(web3, launchTimeout + 1);
+            await dissolveMinipool(dissolvedMinipool, {from: node});
+
+            // Make user deposit to refund first prelaunch minipool
+            let refundAmount = web3.utils.toWei('16', 'ether');
+            await userDeposit({from: random, value: refundAmount});
 
             // Create minipools
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
@@ -97,7 +102,6 @@ export default function() {
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
             initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);
@@ -106,7 +110,6 @@ export default function() {
             await stakeMinipool(stakingMinipool, {from: node});
             await stakeMinipool(withdrawableMinipool, {from: node});
             await submitMinipoolWithdrawable(withdrawableMinipool.address, {from: trustedNode});
-            await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Check minipool statuses
             let initialisedStatus = await initialisedMinipool.getStatus.call();
@@ -385,19 +388,6 @@ export default function() {
         //
         // Dissolve
         //
-
-
-        it(printTitle('node operator', 'can dissolve their own minipools'), async () => {
-
-            // Dissolve minipools
-            await dissolve(initialisedMinipool, {
-                from: node,
-            });
-            await dissolve(prelaunchMinipool, {
-                from: node,
-            });
-
-        });
 
 
         it(printTitle('node operator', 'cannot dissolve their own staking minipools'), async () => {

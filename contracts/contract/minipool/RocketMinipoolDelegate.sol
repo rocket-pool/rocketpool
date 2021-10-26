@@ -428,9 +428,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check if being dissolved by minipool owner or minipool is timed out
         require(
-            msg.sender == nodeAddress ||
             (status == MinipoolStatus.Prelaunch && block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout()),
-            "The minipool can only be dissolved by its owner unless it has timed out"
+            "The minipool can only be dissolved once it has timed out"
         );
         // Perform the dissolution
         _dissolve();
