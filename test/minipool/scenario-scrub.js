@@ -1,7 +1,7 @@
 // Dissolve a minipool
 import {
     RocketDAONodeTrusted,
-    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsNode, RocketNetworkPrices,
     RocketNodeStaking,
     RocketTokenRPL,
     RocketVault
@@ -18,6 +18,8 @@ export async function voteScrub(minipool, txOptions) {
     const rocketVault = await RocketVault.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
     const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
+    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    const rocketDAOProtocolSettingsNode = await RocketDAOProtocolSettingsNode.deployed();
 
     // Get minipool details
     function getMinipoolDetails() {
@@ -53,9 +55,19 @@ export async function voteScrub(minipool, txOptions) {
     if (details1.votes.add(web3.utils.toBN(1)).gt(quorum)){
         assert(details2.status.eq(dissolved), 'Incorrect updated minipool status');
         assert(details2.userDepositBalance.eq(web3.utils.toBN(0)), 'Incorrect updated minipool user deposit balance');
+        // Check slashing if penalties are enabled
         if (details1.penaltyEnabled) {
-            assert(details2.nodeRPLStake.lt(details1.nodeRPLStake), 'RPL was not slashed');
+            // Calculate amount slashed
             const slashAmount = details1.nodeRPLStake.sub(details2.nodeRPLStake);
+            // Get current RPL price
+            const rplPrice = await rocketNetworkPrices.getRPLPrice.call();
+            // Calculate amount slashed in ETH
+            const slashAmountEth = slashAmount.mul(rplPrice).div(web3.utils.toBN(web3.utils.toWei('1', 'ether')));
+            // Calculate expected slash amount
+            const minimumStake = await rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
+            const expectedSlash = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(minimumStake).div(web3.utils.toBN(web3.utils.toWei('1', 'ether')));
+            // Perform checks
+            assert(slashAmountEth.eq(expectedSlash), 'Amount of RPL slashed is incorrect');
             assert(details2.auctionBalance.sub(details1.auctionBalance).eq(slashAmount), 'RPL was not sent to auction manager');
         }
     } else {
