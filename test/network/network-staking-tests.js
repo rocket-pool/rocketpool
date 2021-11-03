@@ -40,6 +40,7 @@ export default function() {
         // One day in seconds
         const ONE_DAY = 24 * 60 * 60;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
+        let launchTimeout =  (60 * 60 * 72); // 72 hours
         const maxStakePerMinipool = '1.5'
 
 
@@ -99,6 +100,7 @@ export default function() {
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
 
             // Register nodes
             await registerNode({from: registeredNode1});
@@ -196,7 +198,7 @@ export default function() {
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
             await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            let initialisedMinipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+            let minipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('32', 'ether')}, 3);
             await testEffectiveStakeValues()
 
             // Increase the price of RPL and create some more minipools
@@ -210,16 +212,17 @@ export default function() {
 
             // Decrease the price of RPL and destroy some minipools
             await setPrice(web3.utils.toWei('0.75', 'ether'))
-            await dissolve(initialisedMinipool, {
+            await increaseTime(web3, launchTimeout);
+            await dissolve(minipool, {
                 from: registeredNode2,
             });
             // Send 16 ETH to minipool
             await web3.eth.sendTransaction({
                 from: owner,
-                to: initialisedMinipool.address,
+                to: minipool.address,
                 value: web3.utils.toWei('16', 'ether'),
             });
-            await close(initialisedMinipool, {
+            await close(minipool, {
                 from: registeredNode2,
             });
             await testEffectiveStakeValues()
