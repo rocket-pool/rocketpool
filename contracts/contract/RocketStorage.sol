@@ -86,7 +86,7 @@ contract RocketStorage is RocketStorageInterface {
     }
 
     // Set this as being deployed now
-    function getDeployedStatus() external view returns (bool) {
+    function getDeployedStatus() external override view returns (bool) {
         return storageInit;
     }
 

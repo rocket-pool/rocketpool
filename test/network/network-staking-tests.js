@@ -13,7 +13,14 @@ import {
     getNodeEffectiveRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
-import { RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsNode, RocketDAOProtocolSettingsRewards, RocketNetworkPrices } from '../_utils/artifacts'
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDAOProtocolSettingsNode,
+    RocketDAOProtocolSettingsRewards,
+    RocketNetworkPrices
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
@@ -24,6 +31,7 @@ import BN from 'bn.js'
 import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
 import { userDeposit } from '../_helpers/deposit'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 
 export default function() {
@@ -31,6 +39,8 @@ export default function() {
 
         // One day in seconds
         const ONE_DAY = 24 * 60 * 60;
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
+        let launchTimeout =  (60 * 60 * 72); // 72 hours
         const maxStakePerMinipool = '1.5'
 
 
@@ -87,7 +97,11 @@ export default function() {
         before(async () => {
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
-            
+
+            // Set settings
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
+
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
@@ -184,7 +198,7 @@ export default function() {
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
             await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            let initialisedMinipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
+            let minipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('32', 'ether')}, 3);
             await testEffectiveStakeValues()
 
             // Increase the price of RPL and create some more minipools
@@ -198,10 +212,17 @@ export default function() {
 
             // Decrease the price of RPL and destroy some minipools
             await setPrice(web3.utils.toWei('0.75', 'ether'))
-            await dissolve(initialisedMinipool, {
+            await increaseTime(web3, launchTimeout);
+            await dissolve(minipool, {
                 from: registeredNode2,
             });
-            await close(initialisedMinipool, {
+            // Send 16 ETH to minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: minipool.address,
+                value: web3.utils.toWei('16', 'ether'),
+            });
+            await close(minipool, {
                 from: registeredNode2,
             });
             await testEffectiveStakeValues()
@@ -233,7 +254,8 @@ export default function() {
             // Create a minipool to increase our max RPL stake
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
             // Staking should fail now because oracles have not submitted price for this window
@@ -261,7 +283,8 @@ export default function() {
             await nodeStakeRPL(web3.utils.toWei('10', 'ether'), {from: registeredNode1});
             let minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Should not be able to submit a price change at oldBlockNumber as effective stake changed after it
             await submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
             await shouldRevert(submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');
@@ -281,7 +304,8 @@ export default function() {
             // Create a minipool to increase our max RPL stake
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: registeredNode1});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
             // Mark it as withdrawable

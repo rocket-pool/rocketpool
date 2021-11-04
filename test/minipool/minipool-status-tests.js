@@ -6,7 +6,11 @@ import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_h
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { executeSetWithdrawable, submitWithdrawable } from './scenario-submit-withdrawable'
-import { RocketDAONodeTrustedSettingsProposals, RocketDAOProtocolSettingsMinipool } from '../_utils/artifacts'
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsProposals,
+    RocketDAOProtocolSettingsMinipool
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
@@ -31,6 +35,7 @@ export default function() {
         // Constants
         let proposalCooldown = 10
         let proposalVoteBlocks = 10
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
 
 
         // Setup
@@ -67,10 +72,13 @@ export default function() {
             await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
             await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
 
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+
             // Stake minipools
-            await stakeMinipool(stakingMinipool1, null, {from: node});
-            await stakeMinipool(stakingMinipool2, null, {from: node});
-            await stakeMinipool(stakingMinipool3, null, {from: node});
+            await stakeMinipool(stakingMinipool1, {from: node});
+            await stakeMinipool(stakingMinipool2, {from: node});
+            await stakeMinipool(stakingMinipool3, {from: node});
 
             // Check minipool statuses
             let stakingStatus1 = await stakingMinipool1.getStatus.call();
@@ -83,6 +91,7 @@ export default function() {
             // Set a small proposal cooldown
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.blocks', proposalVoteBlocks, { from: owner });
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             // Set a small vote delay
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
 

@@ -66,6 +66,7 @@ const contracts = {
   rocketDAONodeTrustedUpgrade:              artifacts.require('RocketDAONodeTrustedUpgrade.sol'),
   rocketDAONodeTrustedSettingsMembers:      artifacts.require('RocketDAONodeTrustedSettingsMembers.sol'),
   rocketDAONodeTrustedSettingsProposals:    artifacts.require('RocketDAONodeTrustedSettingsProposals.sol'),
+  rocketDAONodeTrustedSettingsMinipool:     artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
   rocketDAOProtocol:                        artifacts.require('RocketDAOProtocol.sol'),
   rocketDAOProtocolProposals:               artifacts.require('RocketDAOProtocolProposals.sol'),
   rocketDAOProtocolActions:                 artifacts.require('RocketDAOProtocolActions.sol'),

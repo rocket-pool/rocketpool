@@ -7,6 +7,7 @@ export const RocketDAONodeTrustedActions = artifacts.require('RocketDAONodeTrust
 export const RocketDAONodeTrustedProposals = artifacts.require('RocketDAONodeTrustedProposals.sol');
 export const RocketDAONodeTrustedSettingsMembers = artifacts.require('RocketDAONodeTrustedSettingsMembers.sol');
 export const RocketDAONodeTrustedSettingsProposals = artifacts.require('RocketDAONodeTrustedSettingsProposals.sol');
+export const RocketDAONodeTrustedSettingsMinipool = artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol');
 export const RocketDAONodeTrustedUpgrade = artifacts.require('RocketDAONodeTrustedUpgrade.sol');
 export const RocketDAOProtocol = artifacts.require('RocketDAOProtocol.sol');
 export const RocketDAOProtocolActions = artifacts.require('RocketDAOProtocolActions.sol');

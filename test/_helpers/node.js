@@ -5,13 +5,15 @@ import {
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketStorage, RocketDAONodeTrusted
-} from '../_utils/artifacts'
+    RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate
+} from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
 import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
+import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
+import { getTxContractEvents } from '../_utils/contract';
 
 
 // Get a node's RPL stake
@@ -142,8 +144,64 @@ export async function nodeWithdrawRPL(amount, txOptions) {
 
 
 // Make a node deposit
+let minipoolSalt = 0;
 export async function nodeDeposit(txOptions) {
-    const rocketNodeDeposit = await RocketNodeDeposit.deployed();
-    await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), txOptions);
-}
 
+    // Load contracts
+    const [
+        rocketMinipoolManager,
+        rocketNodeDeposit,
+        rocketStorage,
+    ] = await Promise.all([
+        RocketMinipoolManager.deployed(),
+        RocketNodeDeposit.deployed(),
+        RocketStorage.deployed()
+    ]);
+
+    // Get artifact and bytecode
+    const RocketMinipool = artifacts.require('RocketMinipool');
+    const contractBytecode = RocketMinipool.bytecode;
+
+    // Get deposit type from tx amount
+    const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+
+    // Construct creation code for minipool deploy
+    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
+    const deployCode = contractBytecode + constructorArgs.substr(2);
+    const salt = minipoolSalt++;
+
+    // Calculate keccak(nodeAddress, salt)
+    const nodeSalt = web3.utils.soliditySha3(
+      {type: 'address', value: txOptions.from},
+      {type: 'uint256', value: salt}
+    )
+
+    // Calculate hash of deploy code
+    const bytecodeHash = web3.utils.soliditySha3(
+      {type: 'bytes', value: deployCode}
+    )
+
+    // Construct deterministic minipool address
+    const raw = web3.utils.soliditySha3(
+      {type: 'bytes1', value: '0xff'},
+      {type: 'address', value: rocketMinipoolManager.address},
+      {type: 'bytes32', value: nodeSalt},
+      {type: 'bytes32', value: bytecodeHash}
+    )
+
+    const minipoolAddress = raw.substr(raw.length - 40);
+    let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
+
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(16000000000), // gwei
+        signature: getValidatorSignature(),
+    };
+
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    // Make node deposit
+    await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+}

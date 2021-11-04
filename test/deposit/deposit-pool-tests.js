@@ -145,7 +145,7 @@ export default function() {
             await userDeposit({from: staker, value: web3.utils.toWei('100', 'ether')});
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('32', 'ether')});
-            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('0', 'ether')});
+            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
 
             // Re-enable deposit assignment & set limit
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});

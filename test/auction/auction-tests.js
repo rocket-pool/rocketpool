@@ -1,7 +1,13 @@
-import { mineBlocks } from '../_utils/evm';
+import { increaseTime, mineBlocks } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { RocketDAOProtocolSettingsAuction, RocketNetworkPrices, RocketNodeStaking } from '../_utils/artifacts'
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsAuction,
+    RocketDAOProtocolSettingsMinipool,
+    RocketNetworkPrices,
+    RocketNodeStaking
+} from '../_utils/artifacts';
 import { auctionCreateLot, auctionPlaceBid, getLotStartBlock, getLotPriceAtBlock } from '../_helpers/auction';
 import { userDeposit } from '../_helpers/deposit';
 import { createMinipool, stakeMinipool, submitMinipoolWithdrawable } from '../_helpers/minipool';
@@ -14,6 +20,7 @@ import { placeBid } from './scenario-place-bid';
 import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketAuctionManager', async (accounts) => {
@@ -30,8 +37,12 @@ export default function() {
 
 
         // Setup
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
         let minipool;
         before(async () => {
+
+            // Set settings
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -46,7 +57,8 @@ export default function() {
             await nodeStakeRPL(rplAmount, {from: node});
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await userDeposit({from: random1, value: web3.utils.toWei('16', 'ether')});
-            await stakeMinipool(minipool, null, {from: node});
+            await increaseTime(web3, scrubPeriod + 1);
+            await stakeMinipool(minipool, {from: node});
 
         });
 

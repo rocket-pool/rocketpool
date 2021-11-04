@@ -4,6 +4,9 @@ pragma solidity 0.7.6;
 
 interface RocketStorageInterface {
 
+    // Deploy status
+    function getDeployedStatus() external view returns (bool);
+
     // Guardian
     function getGuardian() external view returns(address);
     function setGuardian(address _newAddress) external;

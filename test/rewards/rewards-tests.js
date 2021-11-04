@@ -13,7 +13,11 @@ import {
     getNodeMinimumRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
-import { RocketDAOProtocolSettingsNode } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNode
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
@@ -26,6 +30,7 @@ import { rewardsClaimDAO, getRewardsDAOTreasuryBalance } from './scenario-reward
 import { RocketRewardsPool } from '../_utils/artifacts';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 
 export default function() {
@@ -51,6 +56,7 @@ export default function() {
 
         // The testing config
         const claimIntervalTime = ONE_DAY * 28;
+        let scrubPeriod = (60 * 60 * 24); // 24 hours
 
         // Set some RPL inflation scenes
         let rplInflationSetup = async function() {
@@ -86,7 +92,10 @@ export default function() {
         before(async () => {
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
-            
+
+            // Set settings
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
@@ -121,10 +130,13 @@ export default function() {
             let minipool2 = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
             let minipool3 = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
 
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+
             // Stake minipools
-            await stakeMinipool(minipool1, null, {from: registeredNode1});
-            await stakeMinipool(minipool2, null, {from: registeredNode2});
-            await stakeMinipool(minipool3, null, {from: registeredNode2});
+            await stakeMinipool(minipool1, {from: registeredNode1});
+            await stakeMinipool(minipool2, {from: registeredNode2});
+            await stakeMinipool(minipool3, {from: registeredNode2});
 
           // Check node effective stakes
             let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);

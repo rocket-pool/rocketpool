@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../../../types/MinipoolDeposit.sol";
 
 // Network minipool settings
@@ -22,11 +23,24 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", false);
-            setSettingUint("minipool.launch.timeout", 5760);                // ~24 hours
+            setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
+    }
+
+    // Update a setting, overrides inherited setting method with extra checks for this contract
+    function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
+        // Some safety guards for certain settings
+        if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            if(keccak256(abi.encodePacked(_settingPath)) == keccak256(abi.encodePacked("minipool.launch.timeout"))) {
+                RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+                require(_value >= (rocketDAONodeTrustedSettingsMinipool.getScrubPeriod().add(1 hours)), "Launch timeout must be greater than scrub period");
+            }
+        }
+        // Update setting now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
     // Balance required to launch minipool
@@ -73,7 +87,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return getSettingBool("minipool.submit.withdrawable.enabled");
     }
 
-    // Timeout period in blocks for prelaunch minipools to launch
+    // Timeout period in seconds for prelaunch minipools to launch
     function getLaunchTimeout() override external view returns (uint256) {
         return getSettingUint("minipool.launch.timeout");
     }
