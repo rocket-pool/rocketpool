@@ -78,4 +78,17 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         rocketRewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
 
+    // Make an RPL claim and stake it
+    // Only accepts calls from registered nodes
+    function claimAndStake() override external onlyLatestContract("rocketClaimNode", address(this)) onlyRegisteredNode(msg.sender) {
+        // Check that the node can claim
+        require(getClaimPossible(msg.sender), "The node is currently unable to claim");
+        // Get node withdrawal address in case we reach the max RPL stake
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
+        // Claim and stake RPL
+        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        rocketRewardsPool.claimAndStake(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
+    }
+
 }

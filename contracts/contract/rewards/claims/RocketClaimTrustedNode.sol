@@ -79,6 +79,18 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         rewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
-    
+
+    // Make an RPL claim and stake it
+    // Only accepts calls from registered nodes
+    function claimAndStake() override external onlyLatestContract("rocketClaimNode", address(this)) onlyRegisteredNode(msg.sender) {
+        // Verify this trusted node is able to claim
+        require(getClaimPossible(msg.sender), "This trusted node is not able to claim yet and must wait until a full claim interval passes");
+        // Get node withdrawal address in case we reach the max RPL stake
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
+        // Claim and stake RPL
+        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        rewardsPool.claimAndStake(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
+    }
 
 }

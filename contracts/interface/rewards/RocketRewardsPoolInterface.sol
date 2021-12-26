@@ -24,4 +24,5 @@ interface RocketRewardsPoolInterface {
     function getClaimAmount(string memory _claimingContract, address _claimerAddress, uint256 _claimerAmountPerc) external view returns (uint256);
     function registerClaimer(address _claimerAddress, bool _enabled) external;
     function claim(address _claimerAddress, address _toAddress, uint256 _claimerAmount) external;
+    function claimAndStake(address _claimerAddress, address _withdrawalAddress, uint256 _claimerAmountPerc) external;
 }

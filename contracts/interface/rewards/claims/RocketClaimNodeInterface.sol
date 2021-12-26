@@ -9,4 +9,5 @@ interface RocketClaimNodeInterface {
     function getClaimRewardsAmount(address _nodeAddress) external view returns (uint256);
     function register(address _nodeAddress, bool _enable) external;
     function claim() external;
+    function claimAndStake() external;
 }
