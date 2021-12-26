@@ -44,7 +44,7 @@ Join our Discord chat channel! https://discordapp.com/invite/9mwXaDY
 
 # A Step-by-Step Beginners Guide
 
-The following worked example uses macOS Sierra 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 15/09/2017.
+The following worked example uses macOS Sierra 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 25/12/2021.
 
 Download and install Ubuntu onto a new VM -> https://www.ubuntu.com/download/desktop - tested with v16.04
 
@@ -64,7 +64,7 @@ $ sudo apt -y install npm
 ```
 install node.js:
 ```bash
-$ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+$ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 $ sudo apt-get -y install nodejs
 ```
 get rocketpool:
