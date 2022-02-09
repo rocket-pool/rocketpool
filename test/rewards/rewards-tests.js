@@ -31,6 +31,7 @@ import { RocketRewardsPool } from '../_utils/artifacts';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeDistributor } from '../_utils/upgrade';
 
 
 export default function() {
@@ -90,6 +91,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade distributor
+            await upgradeDistributor(owner);
+
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 

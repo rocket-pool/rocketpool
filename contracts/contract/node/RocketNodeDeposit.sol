@@ -17,6 +17,7 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkIn
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembersInterface.sol";
 import "../../types/MinipoolDeposit.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 
 // Handles node deposits and minipool creation
 
@@ -30,7 +31,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Accept a node deposit and create a new minipool under the node
@@ -42,6 +43,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         checkDepositsEnabled();
         // Check minipool doesn't exist or previously exist
         require(!rocketMinipoolManager.getMinipoolExists(_expectedMinipoolAddress) && !rocketMinipoolManager.getMinipoolDestroyed(_expectedMinipoolAddress), "Minipool already exists or was previously destroyed");
+        {
+            // Check node has initialised their fee distributor
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            require(rocketNodeManager.getFeeDistributorInitialised(msg.sender), "Fee distributor not initialised");
+        }
         // Check node fee
         checkNodeFee(_minimumNodeFee);
         // Get Deposit type

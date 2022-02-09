@@ -6,11 +6,13 @@ import minipoolTests from './minipool/minipool-tests';
 import minipoolStatusTests from './minipool/minipool-status-tests';
 import minipoolWithdrawalTests from './minipool/minipool-withdrawal-tests';
 import networkBalancesTests from './network/network-balances-tests';
+import networkPenaltiesTests from './network/network-penalties-tests';
 import networkFeesTests from './network/network-fees-tests';
 import networkPricesTests from './network/network-prices-tests';
 import nodeDepositTests from './node/node-deposit-tests';
 import nodeManagerTests from './node/node-manager-tests';
 import nodeStakingTests from './node/node-staking-tests';
+import nodeDistributorTests from './node/node-distributor-tests';
 import daoProtocolTests from './dao/dao-protocol-tests';
 import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
 import rethTests from './token/reth-tests';
@@ -24,7 +26,7 @@ import {
   RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
-  RocketDAOProtocolSettingsNode
+  RocketDAOProtocolSettingsNode, RocketUpgradeDistributor
 } from './_utils/artifacts';
 
 // Header
@@ -69,12 +71,14 @@ minipoolTests();
 minipoolStatusTests();
 minipoolWithdrawalTests();
 networkBalancesTests();
+networkPenaltiesTests();
 networkFeesTests();
 networkPricesTests();
 networkStakingTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();
+nodeDistributorTests();
 rethTests();
 rplTests();
 rewardsPoolTests();

@@ -6,13 +6,15 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./RocketMinipool.sol";
 import "../RocketBase.sol";
+import "../../types/MinipoolStatus.sol";
+import "../../types/MinipoolDeposit.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../types/MinipoolDeposit.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
@@ -31,7 +33,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Get the number of minipools in the network
@@ -199,6 +201,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Increments _nodeAddress' number of minipools in staking status
     function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Get contracts
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -209,10 +214,15 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.add(1));
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
+        // Update node fee average
+        rocketNodeManager.increaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
     function decrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Get contracts
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -223,6 +233,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.sub(1));
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
+        // Update node fee average
+        rocketNodeManager.decreaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
     }
 
     // Increments _nodeAddress' number of minipools that have been finalised

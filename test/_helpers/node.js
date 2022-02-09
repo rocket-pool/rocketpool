@@ -5,7 +5,7 @@ import {
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate
+    RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate, RocketNodeManagerNew
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';

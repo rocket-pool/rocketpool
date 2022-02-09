@@ -6,6 +6,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
+import { upgradeDistributor } from '../_utils/upgrade';
 
 
 export default function() {
@@ -29,6 +30,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade distributor
+            await upgradeDistributor(owner);
 
             // Register nodes
             await registerNode({from: registeredNode1});

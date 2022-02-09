@@ -32,6 +32,7 @@ import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeDistributor } from '../_utils/upgrade';
 
 
 export default function() {
@@ -95,6 +96,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade distributor
+            await upgradeDistributor(owner);
+
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
@@ -255,6 +259,7 @@ export default function() {
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
+            await setPrice(web3.utils.toWei('1', 'ether'))
             await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
@@ -305,6 +310,7 @@ export default function() {
             await userDeposit({from: userOne, value: web3.utils.toWei('16', 'ether')});
             const minipool = await createMinipool({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
+            await setPrice(web3.utils.toWei('1', 'ether'))
             await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
             await mineBlocks(web3, priceFrequency);
