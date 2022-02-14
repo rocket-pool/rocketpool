@@ -164,6 +164,15 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Accept an RPL stake
     // Only accepts calls from registered nodes
     function stakeRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
+        _stakeRPL(msg.sender, _amount);
+    }
+
+    // Accept an RPL stake from any address for a specified node
+    function stakeRPLFor(address _nodeAddress, uint256 _amount) external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
+        _stakeRPL(_nodeAddress, _amount);
+    }
+
+    function _stakeRPL(address _nodeAddress, uint256 _amount) {
         // Load contracts
         address rplTokenAddress = getContractAddress("rocketTokenRPL");
         address rocketVaultAddress = getContractAddress("rocketVault");
@@ -175,14 +184,14 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(rplToken.approve(rocketVaultAddress, _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
         // Get node's current stake
-        uint256 rplStake = getNodeRPLStake(msg.sender);
+        uint256 rplStake = getNodeRPLStake(_nodeAddress);
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
-        increaseNodeRPLStake(msg.sender, _amount);
-        updateTotalEffectiveRPLStake(msg.sender, rplStake, rplStake.add(_amount));
-        setNodeRPLStakedTime(msg.sender, block.timestamp);
+        increaseNodeRPLStake(_nodeAddress, _amount);
+        updateTotalEffectiveRPLStake(_nodeAddress, rplStake, rplStake.add(_amount));
+        setNodeRPLStakedTime(_nodeAddress, block.timestamp);
         // Emit RPL staked event
-        emit RPLStaked(msg.sender, _amount, block.timestamp);
+        emit RPLStaked(_nodeAddress, _amount, block.timestamp);
     }
 
     // Withdraw staked RPL back to the node account
