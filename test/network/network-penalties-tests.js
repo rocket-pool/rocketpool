@@ -19,7 +19,7 @@ import { mintRPL } from '../_helpers/tokens';
 import { upgradeDistributor } from '../_utils/upgrade';
 
 export default function() {
-    contract.only('RocketNetworkPenalties', async (accounts) => {
+    contract('RocketNetworkPenalties', async (accounts) => {
 
 
         // Accounts
