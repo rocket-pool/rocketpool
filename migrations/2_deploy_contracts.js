@@ -75,7 +75,7 @@ const contracts = {
   rocketDAOProtocolSettingsRewards:         artifacts.require('RocketDAOProtocolSettingsRewards.sol'),
   rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
   rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
-  rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
+  rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetworkOld.sol'),
   rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
   // Tokens
@@ -86,6 +86,7 @@ const contracts = {
   rocketNodeDepositNew:                     artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeManagerNew:                     artifacts.require('RocketNodeManager.sol'),
   rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
+  rocketDAOProtocolSettingsNetworkNew:      artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
   rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketUpgradeDistributor:                 artifacts.require('RocketUpgradeDistributor.sol'),
@@ -224,11 +225,13 @@ module.exports = async (deployer, network) => {
               contracts.rocketNodeDepositNew.address,
               contracts.rocketNodeDistributorFactory.address,
               contracts.rocketNodeDistributorDelegate.address,
+              contracts.rocketDAOProtocolSettingsNetworkNew.address,
               compressABI(contracts.rocketMinipoolManagerNew.abi),
               compressABI(contracts.rocketNodeManagerNew.abi),
               compressABI(contracts.rocketNodeManagerNew.abi),
               compressABI(contracts.rocketNodeDistributorFactory.abi),
-              compressABI(contracts.rocketNodeDistributorDelegate.abi)
+              compressABI(contracts.rocketNodeDistributorDelegate.abi),
+              compressABI(contracts.rocketDAOProtocolSettingsNetworkNew.abi),
             );
             break;
 
@@ -259,6 +262,7 @@ module.exports = async (deployer, network) => {
           case 'rocketMinipoolManagerNew':
           case 'rocketNodeManagerNew':
           case 'rocketNodeDepositNew':
+          case 'rocketDAOProtocolSettingsNetworkNew':
           case 'rocketNodeDistributorFactory':
           case 'rocketNodeDistributorDelegate':
             break;

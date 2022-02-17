@@ -8,6 +8,7 @@ import "../minipool/RocketMinipoolManager.sol";
 import "../node/RocketNodeManager.sol";
 import "../node/RocketNodeDistributorFactory.sol";
 import "../node/RocketNodeDistributorDelegate.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 contract RocketUpgradeDistributor is RocketBase {
 
@@ -17,12 +18,14 @@ contract RocketUpgradeDistributor is RocketBase {
     address public newRocketMinipoolManager;
     address public newRocketNodeManager;
     address public newRocketNodeDeposit;
+    address public newRocketDAOProtocolSettingsNetwork;
     address public rocketNodeDistributorFactory;
     address public rocketNodeDistributorDelegate;
 
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeManagerAbi;
     string public newRocketNodeDepositAbi;
+    string public newRocketDAOProtocolSettingsNetworkAbi;
     string public rocketNodeDistributorFactoryAbi;
     string public rocketNodeDistributorDelegateAbi;
 
@@ -34,11 +37,13 @@ contract RocketUpgradeDistributor is RocketBase {
         address _newRocketNodeDeposit,
         address _rocketNodeDistributorFactory,
         address _rocketNodeDistributorDelegate,
+        address _rocketDAOProtocolSettingsNetwork,
         string memory _rocketMinipoolManagerAbi,
         string memory _rocketNodeManagerAbi,
         string memory _rocketNodeDepositAbi,
         string memory _rocketNodeDistributorFactoryAbi,
-        string memory _rocketNodeDistributorDelegateAbi
+        string memory _rocketNodeDistributorDelegateAbi,
+        string memory _rocketDAOProtocolSettingsNetworkAbi
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
@@ -47,6 +52,7 @@ contract RocketUpgradeDistributor is RocketBase {
         newRocketMinipoolManager = _newRocketMinipoolManager;
         newRocketNodeManager = _newRocketNodeManager;
         newRocketNodeDeposit = _newRocketNodeDeposit;
+        newRocketDAOProtocolSettingsNetwork = _rocketDAOProtocolSettingsNetwork;
         rocketNodeDistributorFactory = _rocketNodeDistributorFactory;
         rocketNodeDistributorDelegate = _rocketNodeDistributorDelegate;
 
@@ -54,6 +60,7 @@ contract RocketUpgradeDistributor is RocketBase {
         newRocketMinipoolManagerAbi = _rocketMinipoolManagerAbi;
         newRocketNodeManagerAbi = _rocketNodeManagerAbi;
         newRocketNodeDepositAbi = _rocketNodeDepositAbi;
+        newRocketDAOProtocolSettingsNetworkAbi = _rocketDAOProtocolSettingsNetworkAbi;
         rocketNodeDistributorFactoryAbi = _rocketNodeDistributorFactoryAbi;
         rocketNodeDistributorDelegateAbi = _rocketNodeDistributorDelegateAbi;
     }
@@ -61,11 +68,19 @@ contract RocketUpgradeDistributor is RocketBase {
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
         require(!executed, "Already executed");
+        // Upgrade contracts
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeManager", newRocketNodeManager, newRocketNodeManagerAbi);
         _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
+        _upgradeContract("rocketDAOProtocolSettingsNetwork", newRocketDAOProtocolSettingsNetwork, newRocketDAOProtocolSettingsNetworkAbi);
+        // Add new contracts
         _addContract("rocketNodeDistributorFactory", rocketNodeDistributorFactory, rocketNodeDistributorFactoryAbi);
         _addContract("rocketNodeDistributorDelegate", rocketNodeDistributorDelegate, rocketNodeDistributorDelegateAbi);
+        // Migrate settings
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);
+        // Complete
         executed = true;
     }
 

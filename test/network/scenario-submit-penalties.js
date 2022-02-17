@@ -1,5 +1,5 @@
 import {
-    RocketDAONodeTrusted,
+    RocketDAONodeTrusted, RocketDAOProtocolSettingsNetwork,
     RocketMinipoolPenalty,
     RocketNetworkPenalties,
     RocketStorage
@@ -16,11 +16,13 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
         rocketNetworkPenalties,
         rocketMinipoolPenalty,
         rocketStorage,
+        rocketDAOProtocolSettingsNetwork
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
         RocketNetworkPenalties.deployed(),
         RocketMinipoolPenalty.deployed(),
         RocketStorage.deployed(),
+        RocketDAOProtocolSettingsNetwork.deployed()
     ]);
 
     // Get parameters
@@ -33,6 +35,7 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
     let executionKey = web3.utils.soliditySha3('network.penalties.executed', minipoolAddress, block);
 
     let maxPenaltyRate = await rocketMinipoolPenalty.getMaxPenaltyRate.call();
+    let penaltyThreshold = await rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold.call();
 
     // Get submission details
     function getSubmissionDetails() {
@@ -76,7 +79,7 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
     ]);
 
     // Check if balances should be updated
-    let expectedUpdatedPenalty = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
+    let expectedUpdatedPenalty = web3.utils.toBN(web3.utils.toWei('1', 'ether')).mul(submission2.count).div(trustedNodeCount).gte(penaltyThreshold);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');

@@ -46,7 +46,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         emit PenaltySubmitted(msg.sender, _minipoolAddress, _block, block.timestamp);
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
+        if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold()) {
             setBool(executedKey, true);
             incrementPenalty(_minipoolAddress);
         }
@@ -72,12 +72,14 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
 
     // Update network balances
     function incrementPenalty(address _minipoolAddress) private {
+        // Get contracts
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         // Calculate key
         bytes32 key = keccak256(abi.encodePacked("network.penalties.penalty", _minipoolAddress));
         // Get the current penalty
         uint256 newPenaltyCount = getUint(key).add(1);
-        // Calculate the penalty rate (TODO: determine how this will actually be calculated, 10% per infringement in this example)
-        uint256 penalty = newPenaltyCount.mul(0.1 ether);
+        // Calculate the penalty rate
+        uint256 penalty = newPenaltyCount.mul(rocketDAOProtocolSettingsNetwork.getPerPenaltyRate());
         // Update the node's penalty count
         setUint(key, newPenaltyCount);
         // Set the penalty
