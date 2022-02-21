@@ -27,5 +27,8 @@ jobs:
       - name: Update NPM
         run: npm install -g npm@latest
 
-      - name: Run NPM CI
-        run: npm ci
+      - name: Install Dependencies
+        run: npm i
+
+      - name: Run Tests
+        run: npm test
