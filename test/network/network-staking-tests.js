@@ -32,6 +32,7 @@ import { close } from '../minipool/scenario-close'
 import { dissolve } from '../minipool/scenario-dissolve'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeRewards } from '../_utils/upgrade';
 
 
 export default function() {
@@ -95,6 +96,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade
+            await upgradeRewards(owner);
+
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
 
@@ -298,7 +302,7 @@ export default function() {
             // Set withdrawal cooldown to 0
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', 0, {from: owner});
             // Set price at current block
-            await setPrice(web3.utils.toWei('1', 'ether'))
+            await setPrice(web3.utils.toWei('1', 'ether'));
             // Should be able to stake at current time as price is in consensus
             await nodeStakeRPL(web3.utils.toWei('1.6', 'ether'), {from: registeredNode1});
             // Create a minipool to increase our max RPL stake
@@ -307,7 +311,7 @@ export default function() {
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: registeredNode1});
             // Mine blocks until next price window
-            await mineBlocks(web3, priceFrequency);
+            await mineBlocks(web3, priceFrequency + 10);
             // Mark it as withdrawable
             await submitMinipoolWithdrawable(minipool.address, {from: registeredNodeTrusted1});
             // This one where consensus is reached should fail while not in network consensus about prices

@@ -15,6 +15,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
+import { upgradeRewards } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
@@ -43,6 +44,8 @@ export default function() {
         let stakingMinipool2;
         let stakingMinipool3;
         before(async () => {
+            // Upgrade
+            await upgradeRewards(owner);
 
             // Register node
             await registerNode({from: node});

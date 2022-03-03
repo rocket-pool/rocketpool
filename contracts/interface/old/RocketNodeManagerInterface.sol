@@ -3,7 +3,7 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-interface RocketNodeManagerInterface {
+interface RocketNodeManagerInterfaceOld {
 
     // Structs
     struct TimezoneCount {
@@ -20,6 +20,4 @@ interface RocketNodeManagerInterface {
     function getNodeTimezoneLocation(address _nodeAddress) external view returns (string memory);
     function registerNode(string calldata _timezoneLocation) external;
     function setTimezoneLocation(string calldata _timezoneLocation) external;
-    function setRewardNetwork(address _nodeAddress, uint256 network) external;
-    function getRewardNetwork(address _nodeAddress) external view returns (uint256);
 }

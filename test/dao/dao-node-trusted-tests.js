@@ -11,7 +11,8 @@ import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoN
 import { proposalStates, getDAOProposalState, getDAOProposalStartTime, getDAOProposalEndTime, getDAOProposalExpires } from './scenario-dao-proposal';
 
 // Contracts
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts'; 
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts';
+import { upgradeRewards } from '../_utils/upgrade';
 
 
 export default function() {
@@ -70,6 +71,8 @@ export default function() {
         let rocketDAONodeTrustedUpgradeNew;
 
         before(async () => {
+            // Upgrade
+            await upgradeRewards(guardian);
             // Load contracts
             // Get RocketStorage
             const rocketStorage = await RocketStorage.deployed();

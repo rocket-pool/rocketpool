@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/old/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
@@ -17,7 +17,7 @@ import "../../interface/util/AddressSetStorageInterface.sol";
 
 // Handles node deposits and minipool creation
 
-contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
+contract RocketNodeStakingOld is RocketBase, RocketNodeStakingInterfaceOld {
 
     // Libs
     using SafeMath for uint;
@@ -29,7 +29,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 1;
     }
 
     // Get/set the total RPL stake amount
@@ -165,11 +165,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     // Only accepts calls from registered nodes
     function stakeRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
         _stakeRPL(msg.sender, _amount);
-    }
-
-    // Accept an RPL stake from any address for a specified node
-    function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
-        _stakeRPL(_nodeAddress, _amount);
     }
 
     function _stakeRPL(address _nodeAddress, uint256 _amount) internal {

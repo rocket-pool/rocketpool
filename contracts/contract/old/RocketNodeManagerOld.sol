@@ -6,7 +6,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/old/RocketNodeManagerInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol"; 
 import "../../interface/util/AddressSetStorageInterface.sol";
@@ -14,7 +14,7 @@ import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInt
 
 
 // Node registration and management 
-contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
+contract RocketNodeManagerOld is RocketBase, RocketNodeManagerInterfaceOld {
 
     // Libraries
     using SafeMath for uint256;
@@ -26,7 +26,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 1;
     }
 
     // Get the number of nodes in the network
@@ -105,6 +105,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     // Register a new node with Rocket Pool
     function registerNode(string calldata _timezoneLocation) override external onlyLatestContract("rocketNodeManager", address(this)) {
         // Load contracts
+        RocketClaimNodeInterface rocketClaimNode = RocketClaimNodeInterface(getContractAddress("rocketClaimNode"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node settings
@@ -116,6 +117,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
+        // Register node for RPL claims
+        rocketClaimNode.register(msg.sender, true);
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
     }
@@ -129,22 +132,5 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Emit node timezone location set event
         emit NodeTimezoneLocationSet(msg.sender, block.timestamp);
-    }
-
-    function setRewardNetwork(address _nodeAddress, uint256 _network) override external onlyLatestContract("rocketNodeManager", address(this)) {
-        // Confirm the transaction is from the node's current withdrawal address
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-        require(withdrawalAddress == msg.sender, "Only a tx from a node's withdrawal address can change reward network");
-        // Check network is enabled
-        RocketDAONodeTrustedSettingsRewardsInterface rocketDAONodeTrustedSettingsRewards = RocketDAONodeTrustedSettingsRewardsInterface(getContractAddress("rocketDAONodeTrustedSettingsRewards"));
-        require(rocketDAONodeTrustedSettingsRewards.getNetworkEnabled(_network), "Network is not enabled");
-        // Set the network
-        setUint(keccak256(abi.encodePacked("node.reward.network", _nodeAddress)), _network);
-        // Emit event
-        emit NodeRewardNetworkChanged(_nodeAddress, _network);
-    }
-
-    function getRewardNetwork(address _nodeAddress) override external view onlyLatestContract("rocketNodeManager", address(this)) returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("node.reward.network", _nodeAddress)));
     }
 }

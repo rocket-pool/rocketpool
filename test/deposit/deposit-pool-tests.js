@@ -11,6 +11,7 @@ import { deposit } from './scenario-deposit';
 import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
+import { upgradeRewards } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -28,6 +29,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade
+            await upgradeRewards(owner);
 
             // Register node
             await registerNode({from: node});

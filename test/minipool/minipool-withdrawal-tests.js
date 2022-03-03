@@ -22,6 +22,7 @@ import {
     setDaoNodeTrustedBootstrapUpgrade
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { submitPrices } from '../_helpers/network';
+import { upgradeRewards } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -46,6 +47,8 @@ export default function() {
         let penaltyTestContract;
 
         before(async () => {
+            // Upgrade
+            await upgradeRewards(owner);
 
             // Register node & set withdrawal address
             await registerNode({from: node});

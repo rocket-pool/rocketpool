@@ -4,11 +4,11 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../../RocketBase.sol";
-import "../../../interface/node/RocketNodeManagerInterface.sol";
-import "../../../interface/node/RocketNodeStakingInterface.sol";
-import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
-import "../../../interface/rewards/claims/RocketClaimNodeInterface.sol";
+import "../RocketBase.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
+import "../../interface/old/RocketRewardsPoolInterface.sol";
 
 // RPL Rewards claiming for regular nodes
 
@@ -24,14 +24,14 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
 
     // Get whether the contract is enabled for claims
     function getEnabled() override external view returns (bool) {
-        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        RocketRewardsPoolInterfaceOld rocketRewardsPool = RocketRewardsPoolInterfaceOld(getContractAddress("rocketRewardsPool"));
         return rocketRewardsPool.getClaimingContractEnabled("rocketClaimNode");
     }
 
     // Get whether a node can make a claim
     function getClaimPossible(address _nodeAddress) override public view onlyRegisteredNode(_nodeAddress) returns (bool) {
         // Load contracts
-        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        RocketRewardsPoolInterfaceOld rocketRewardsPool = RocketRewardsPoolInterfaceOld(getContractAddress("rocketRewardsPool"));
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Return claim possible status
         return (
@@ -54,14 +54,14 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
 
     // Get the amount of rewards for a node for the reward period
     function getClaimRewardsAmount(address _nodeAddress) override external view onlyRegisteredNode(_nodeAddress) returns (uint256) {
-        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        RocketRewardsPoolInterfaceOld rocketRewardsPool = RocketRewardsPoolInterfaceOld(getContractAddress("rocketRewardsPool"));
         return rocketRewardsPool.getClaimAmount("rocketClaimNode", _nodeAddress, getClaimRewardsPerc(_nodeAddress));
     }
 
     // Register or deregister a node for RPL claims
     // Only accepts calls from the RocketNodeManager contract
     function register(address _nodeAddress, bool _enable) override external onlyLatestContract("rocketClaimNode", address(this)) onlyLatestContract("rocketNodeManager", msg.sender) onlyRegisteredNode(_nodeAddress) {
-        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        RocketRewardsPoolInterfaceOld rocketRewardsPool = RocketRewardsPoolInterfaceOld(getContractAddress("rocketRewardsPool"));
         rocketRewardsPool.registerClaimer(_nodeAddress, _enable);
     }
 
@@ -74,7 +74,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
         // Claim RPL
-        RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
+        RocketRewardsPoolInterfaceOld rocketRewardsPool = RocketRewardsPoolInterfaceOld(getContractAddress("rocketRewardsPool"));
         rocketRewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }
 
