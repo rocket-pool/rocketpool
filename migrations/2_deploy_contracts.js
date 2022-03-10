@@ -7,6 +7,7 @@ const pako = require('pako');
 /*** Settings ************************/
 
 const config = require('../truffle.js');
+const { RocketUpgradeDistributor } = require('../test/_utils/artifacts');
 
 /*** Utility Methods *****************/
 
@@ -354,5 +355,11 @@ module.exports = async (deployer, network) => {
   if (network !== 'live' && network !== 'goerli') {
     await deployer.deploy(revertOnTransfer);
   }
-};
 
+  // Perform distributor upgrade if we are not running in test environment
+  if (network !== 'development') {
+    const RocketUpgradeDistributor = artifacts.require('RocketUpgradeDistributor')
+    const rocketUpgradeDistributor = await RocketUpgradeDistributor.deployed();
+    await rocketUpgradeDistributor.execute({ from: accounts[0] });
+  }
+};
