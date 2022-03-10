@@ -7,7 +7,6 @@ const pako = require('pako');
 /*** Settings ************************/
 
 const config = require('../truffle.js');
-const { RocketUpgradeDistributor } = require('../test/_utils/artifacts');
 
 /*** Utility Methods *****************/
 
