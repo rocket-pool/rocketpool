@@ -228,7 +228,7 @@ module.exports = async (deployer, network) => {
               contracts.rocketDAOProtocolSettingsNetworkNew.address,
               compressABI(contracts.rocketMinipoolManagerNew.abi),
               compressABI(contracts.rocketNodeManagerNew.abi),
-              compressABI(contracts.rocketNodeManagerNew.abi),
+              compressABI(contracts.rocketNodeDepositNew.abi),
               compressABI(contracts.rocketNodeDistributorFactory.abi),
               compressABI(contracts.rocketNodeDistributorDelegate.abi),
               compressABI(contracts.rocketDAOProtocolSettingsNetworkNew.abi),
