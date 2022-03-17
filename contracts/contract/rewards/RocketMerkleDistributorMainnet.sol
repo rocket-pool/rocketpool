@@ -34,58 +34,76 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     }
 
     // Called by RocketRewardsPool to include a snapshot into this distributor
-    function relayRewards(uint256 _index, bytes32 _root, uint256 _rewards) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
+    function relayRewards(uint256 _index, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
         require(merkleRoots[_index] == bytes32(0), "Index already in use");
         merkleRoots[_index] = _root;
     }
 
-    function claim(uint256[] calldata _index, uint256[] calldata _amount, bytes32[][] calldata _merkleProof) external override {
+    function claim(uint256[] calldata _index, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) external override {
+        // Validate input
+        require(_index.length == _amountRPL.length && _index.length == _amountETH.length && _index.length == _merkleProof.length, "Invalid array lengths");
         // Get contracts
         RocketTokenRPLInterface rocketTokenRPL = RocketTokenRPLInterface(getContractAddress("rocketTokenRPL"));
         // Get withdrawal address
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(msg.sender);
         // Verify claims
-        uint256 totalAmount = 0;
+        uint256 totalAmountRPL = 0;
+        uint256 totalAmountETH = 0;
         for (uint256 i = 0; i < _index.length; i++) {
-            _claim(_index[i], msg.sender, _amount[i], _merkleProof[i]);
-            totalAmount = totalAmount.add(_amount[i]);
+            _claim(_index[i], msg.sender, _amountRPL[i], _amountETH[i], _merkleProof[i]);
+            totalAmountRPL = totalAmountRPL.add(_amountRPL[i]);
+            totalAmountETH = totalAmountETH.add(_amountETH[i]);
         }
-        // Distribute the reward
-        rocketTokenRPL.transfer(withdrawalAddress, totalAmount);
+        // Distribute the rewards
+        if (totalAmountRPL > 0) {
+            rocketTokenRPL.transfer(withdrawalAddress, totalAmountRPL);
+        }
+        if (totalAmountETH > 0) {
+            (bool success,) = withdrawalAddress.call{value: totalAmountETH}("");
+            require(success, "Failed to withdraw ETH rewards");
+        }
     }
 
-    function claimAndStake(uint256[] calldata _index, uint256[] calldata _amount, bytes32[][] calldata _merkleProof, uint256 _stakeAmount) external override {
+    function claimAndStake(uint256[] calldata _index, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof, uint256 _stakeAmount) external override {
         // Get contracts
         RocketTokenRPLInterface rocketTokenRPL = RocketTokenRPLInterface(getContractAddress("rocketTokenRPL"));
         // Get withdrawal address
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(msg.sender);
         // Verify claims
-        uint256 totalAmount = 0;
+        uint256 totalAmountRPL = 0;
+        uint256 totalAmountETH = 0;
         for (uint256 i = 0; i < _index.length; i++) {
-            _claim(_index[i], msg.sender, _amount[i], _merkleProof[i]);
-            totalAmount = totalAmount.add(_amount[i]);
+            _claim(_index[i], msg.sender, _amountRPL[i], _amountETH[i], _merkleProof[i]);
+            totalAmountRPL = totalAmountRPL.add(_amountRPL[i]);
+            totalAmountETH = totalAmountETH.add(_amountETH[i]);
         }
         // Validate input
-        require(_stakeAmount <= totalAmount, "Invalid stake amount");
+        require(_stakeAmount <= totalAmountRPL, "Invalid stake amount");
+        require(_stakeAmount > 0, "Invalid stake amount");
         // Get contracts
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Distribute any remaining tokens to the node's withdrawal address
-        uint256 remaining = totalAmount.sub(_stakeAmount);
+        uint256 remaining = totalAmountRPL.sub(_stakeAmount);
         if (remaining > 0) {
             rocketTokenRPL.transfer(withdrawalAddress, remaining);
         }
         // Restake requested amount
         rocketTokenRPL.approve(address(rocketNodeStaking), _stakeAmount);
         rocketNodeStaking.stakeRPLFor(msg.sender, _stakeAmount);
+        // Distribute ETH
+        if (totalAmountETH > 0) {
+            (bool success,) = withdrawalAddress.call{value: totalAmountETH}("");
+            require(success, "Failed to withdraw ETH rewards");
+        }
     }
 
-    function _claim(uint256 _index, address _nodeAddress, uint256 _amount, bytes32[] calldata _merkleProof) internal {
+    function _claim(uint256 _index, address _nodeAddress, uint256 _amountRPL, uint256 _amountETH, bytes32[] calldata _merkleProof) internal {
         // Ensure not already claimed
         require(!isClaimed(_index, _nodeAddress), "Already claimed");
         // Prevent accidental claim of 0
-        require(_amount > 0, "Invalid amount");
+        require(_amountRPL > 0 || _amountETH > 0, "Invalid amount");
         // Verify the merkle proof
-        bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amount));
+        bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amountRPL, _amountETH));
         bytes32 merkleRoot = merkleRoots[_index];
         require(MerkleProof.verify(_merkleProof, merkleRoot, node), "Invalid proof");
         // Mark it claimed and mint
