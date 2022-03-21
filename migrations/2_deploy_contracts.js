@@ -87,6 +87,7 @@ const contracts = {
   rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
   rocketMerkleDistributorMainnet:           artifacts.require('RocketMerkleDistributorMainnet.sol'),
   rocketDAONodeTrustedSettingsRewards:      artifacts.require('RocketDAONodeTrustedSettingsRewards.sol'),
+  rocketSmoothingPool:                      artifacts.require('RocketSmoothingPool.sol'),
   rocketUpgradeRewards:                     artifacts.require('RocketUpgradeRewards.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -222,12 +223,14 @@ module.exports = async (deployer, network) => {
               contracts.rocketNodeStakingNew.address,
               contracts.rocketMerkleDistributorMainnet.address,
               contracts.rocketDAONodeTrustedSettingsRewards.address,
+              contracts.rocketSmoothingPool.address,
               compressABI(contracts.rocketRewardsPoolNew.abi),
               compressABI(contracts.rocketNodeManagerNew.abi),
               compressABI(contracts.rocketNodeStakingNew.abi),
               compressABI(contracts.rocketMerkleDistributorMainnet.abi),
-              compressABI(contracts.rocketDAONodeTrustedSettingsRewards.abi)
-            );
+              compressABI(contracts.rocketDAONodeTrustedSettingsRewards.abi),
+              compressABI(contracts.rocketSmoothingPool.abi)
+          );
           break;
 
           // All other contracts - pass storage address
@@ -259,6 +262,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeStakingNew':
           case 'rocketMerkleDistributorMainnet':
           case 'rocketDAONodeTrustedSettingsRewards':
+          case 'rocketSmoothingPool':
             break;
 
           default:

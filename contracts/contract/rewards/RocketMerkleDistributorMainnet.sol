@@ -8,6 +8,7 @@ import "../../interface/token/RocketTokenRPLInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/rewards/RocketRewardsRelayInterface.sol";
+import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
@@ -26,6 +27,9 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     // Merkle tree mappings
     mapping(uint256 => bytes32) public merkleRoots;
     mapping(address => mapping(uint256 => uint256)) private claimedBitMap;
+
+    // Allow receiving ETH
+    receive() payable external {}
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -59,8 +63,8 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
             rocketTokenRPL.transfer(withdrawalAddress, totalAmountRPL);
         }
         if (totalAmountETH > 0) {
-            (bool success,) = withdrawalAddress.call{value: totalAmountETH}("");
-            require(success, "Failed to withdraw ETH rewards");
+            (bool result,) = withdrawalAddress.call{value: totalAmountETH}("");
+            require(result, "Failed to claim ETH");
         }
     }
 
@@ -92,8 +96,8 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         rocketNodeStaking.stakeRPLFor(msg.sender, _stakeAmount);
         // Distribute ETH
         if (totalAmountETH > 0) {
-            (bool success,) = withdrawalAddress.call{value: totalAmountETH}("");
-            require(success, "Failed to withdraw ETH rewards");
+            (bool result,) = withdrawalAddress.call{value: totalAmountETH}("");
+            require(result, "Failed to claim ETH");
         }
     }
 

@@ -138,15 +138,15 @@ export class MerkleTree {
 export class RewardClaimTree {
   constructor(balances) {
     this.tree = new MerkleTree(
-      balances.map(({ address, network, amount }) => {
-        return RewardClaimTree.toNode(address, network, amount);
+      balances.map(({ address, network, amountRPL, amountETH }) => {
+        return RewardClaimTree.toNode(address, network, amountRPL, amountETH);
       })
     );
   }
 
 
-  static verifyProof(address, network, amount, proof, root) {
-    let pair = RewardClaimTree.toNode(address, network, amount);
+  static verifyProof(address, network, amountRPL, amountETH, proof, root) {
+    let pair = RewardClaimTree.toNode(address, network, amountRPL, amountETH);
     for (const item of proof) {
       pair = MerkleTree.combinedHash(pair, item);
     }
@@ -155,13 +155,14 @@ export class RewardClaimTree {
   }
 
 
-  // keccak256(abi.encode(nodeAddress, network, amount))
-  static toNode(nodeAddress, network, amount) {
+  // keccak256(abi.encode(nodeAddress, network, amountRPL, amountETH))
+  static toNode(nodeAddress, network, amountRPL, amountETH) {
     let node = Buffer.from(
       web3.utils.soliditySha3(
         {t: 'address', v: nodeAddress},
         {t: 'uint256', v: network},
-        {t: 'uint256', v: amount}
+        {t: 'uint256', v: amountRPL},
+        {t: 'uint256', v: amountETH},
       ).substr(2), 'hex'
     );
     return node;
@@ -174,40 +175,52 @@ export class RewardClaimTree {
 
 
   // returns the hex bytes32 values of the proof
-  getProof(address, network, amount) {
-    return this.tree.getHexProof(RewardClaimTree.toNode(address, network, amount));
+  getProof(address, network, amountRPL, amountETH) {
+    return this.tree.getHexProof(RewardClaimTree.toNode(address, network, amountRPL, amountETH));
   }
 }
 
 
-// Takes an array of objects with the form [{address, id, network, amount},...] and returns a RewardClaimTree object
+// Takes an array of objects with the form [{address, id, network, amountRPL, amountETH},...] and returns a RewardClaimTree object
 export function parseRewardsMap(rewards) {
 
-  // Transform input into a mapping of address => { address, network, amount }
-  const dataByAddress = rewards.reduce((memo, { address, network, amount }) => {
+  console.log(rewards)
+
+  // Transform input into a mapping of address => { address, network, amountRPL, amountETH }
+  const dataByAddress = rewards.reduce((memo, { address, network, amountRPL, amountETH }) => {
     if (!web3.utils.isAddress(address)) {
       throw new Error(`Found invalid address: ${address}`);
     }
 
+    console.log(amountRPL)
+    console.log(amountETH)
+
     memo[address] = {
       address: web3.utils.toChecksumAddress(address),
-      amount: web3.utils.toBN(amount),
+      amountRPL: web3.utils.toBN(amountRPL),
+      amountETH: web3.utils.toBN(amountETH),
       network: web3.utils.toBN(network)
     };
     return memo;
   }, {});
 
-  const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, amount}) => {
+  const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, amountRPL, amountETH}) => {
     if(!(network in perNetwork)){
-      perNetwork[network] = web3.utils.toBN(0);
+      perNetwork[network] = {
+        RPL: web3.utils.toBN(0),
+        ETH: web3.utils.toBN(0),
+      };
     }
-    perNetwork[network] = perNetwork[network].add(web3.utils.toBN(amount));
+    perNetwork[network].RPL = perNetwork[network].RPL.add(web3.utils.toBN(amountRPL));
+    perNetwork[network].ETH = perNetwork[network].ETH.add(web3.utils.toBN(amountETH));
     return perNetwork;
   }, {})
 
 
-  const rewardsPerNetwork = {}
-  Object.keys(rewardsPerNetworkBN).map(network => rewardsPerNetwork[network] = rewardsPerNetworkBN[network].toString());
+  const rewardsPerNetworkRPL = {}
+  const rewardsPerNetworkETH = {}
+  Object.keys(rewardsPerNetworkBN).map(network => rewardsPerNetworkRPL[network] = rewardsPerNetworkBN[network].RPL.toString());
+  Object.keys(rewardsPerNetworkBN).map(network => rewardsPerNetworkETH[network] = rewardsPerNetworkBN[network].ETH.toString());
 
   // Sort
   const sortedAddresses = Object.keys(dataByAddress).sort();
@@ -217,23 +230,30 @@ export function parseRewardsMap(rewards) {
     sortedAddresses.map((address) => ({
       address: dataByAddress[address].address,
       network: dataByAddress[address].network,
-      amount: dataByAddress[address].amount
+      amountRPL: dataByAddress[address].amountRPL,
+      amountETH: dataByAddress[address].amountETH
     }))
   );
 
   // Generate claims
   const claims = sortedAddresses.reduce((memo, _address) => {
-    const { address, network, amount } = dataByAddress[_address];
+    const { address, network, amountRPL, amountETH } = dataByAddress[_address];
     memo[address] = {
       network: Number(network),
-      amount: amount.toString(),
-      proof: tree.getProof(address, network, amount),
+      amountRPL: amountRPL.toString(),
+      amountETH: amountETH.toString(),
+      proof: tree.getProof(address, network, amountRPL, amountETH),
     };
     return memo;
   }, {});
 
-  const totalRewards = sortedAddresses.reduce(
-    (memo, key) => memo.add(dataByAddress[key].amount),
+  const totalRewardsRPL = sortedAddresses.reduce(
+    (memo, key) => memo.add(dataByAddress[key].amountRPL),
+    web3.utils.toBN(0)
+  );
+
+  const totalRewardsETH = sortedAddresses.reduce(
+    (memo, key) => memo.add(dataByAddress[key].amountETH),
     web3.utils.toBN(0)
   );
 
@@ -241,8 +261,10 @@ export function parseRewardsMap(rewards) {
     tree: tree,
     proof: {
       merkleRoot: tree.getHexRoot(),
-      rewardsPerNetwork: rewardsPerNetwork,
-      totalRewards: totalRewards.toString(),
+      rewardsPerNetworkRPL: rewardsPerNetworkRPL,
+      rewardsPerNetworkETH: rewardsPerNetworkETH,
+      totalRewardsRPL: totalRewardsRPL.toString(),
+      totalRewardsETH: totalRewardsETH.toString(),
       claims,
     }
   };

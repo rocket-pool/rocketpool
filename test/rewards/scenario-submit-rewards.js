@@ -22,16 +22,23 @@ export async function submitRewards(index, rewards, txOptions) {
     // Construct the merkle tree
     let treeData = parseRewardsMap(rewards);
 
-    const total = treeData.proof.totalRewards;
-    const perNetwork = [];
+    const totalRPL = treeData.proof.totalRewardsRPL;
+    const totalETH = treeData.proof.totalRewardsETH;
+    const perNetworkRPL = [];
+    const perNetworkETH = [];
 
-    let maxNetwork = Object.keys(treeData.proof.rewardsPerNetwork).reduce((a,b) => Math.max(Number(a), Number(b)), 0)
+    let maxNetwork = Object.keys(treeData.proof.rewardsPerNetworkRPL).reduce((a,b) => Math.max(Number(a), Number(b)), 0)
 
     for(let i = 0; i <= maxNetwork; i++) {
-        if (i in treeData.proof.rewardsPerNetwork){
-            perNetwork.push(treeData.proof.rewardsPerNetwork[i]);
+        if (i in treeData.proof.rewardsPerNetworkRPL){
+            perNetworkRPL.push(treeData.proof.rewardsPerNetworkRPL[i]);
         } else {
-            perNetwork.push('0');
+            perNetworkRPL.push('0');
+        }
+        if (i in treeData.proof.rewardsPerNetworkETH){
+            perNetworkETH.push(treeData.proof.rewardsPerNetworkETH[i]);
+        } else {
+            perNetworkETH.push('0');
         }
     }
 
@@ -43,19 +50,19 @@ export async function submitRewards(index, rewards, txOptions) {
       {t: 'string', v: 'rewards.snapshot.submitted.node'},
       {t: 'address', v: txOptions.from},
       {t: 'uint256', v: index},
-      {t: 'uint256', v: total},
-      {t: 'uint256[]', v: perNetwork},
+      {t: 'uint256', v: totalRPL},
+      {t: 'uint256', v: totalETH},
       {t: 'bytes32', v: root},
       {t: 'string', v: cid}
     );
     let submissionCountKey = web3.utils.soliditySha3(
       {t: 'string', v: 'rewards.snapshot.submitted.count'},
       {t: 'uint256', v: index},
-      {t: 'uint256', v: total},
-      {t: 'uint256[]', v: perNetwork},
+      {t: 'uint256', v: totalRPL},
+      {t: 'uint256', v: totalETH},
       {t: 'bytes32', v: root},
       {t: 'string', v: cid}
-    )
+    );
 
     // Get submission details
     function getSubmissionDetails() {
@@ -74,8 +81,14 @@ export async function submitRewards(index, rewards, txOptions) {
         rocketRewardsPool.getRewardIndex()
     ]);
 
+    console.log(index);
+    console.log(perNetworkRPL);
+    console.log(perNetworkETH);
+    console.log(root);
+    console.log(cid);
+
     // Submit prices
-    await rocketRewardsPool.submitRewardSnapshot(index, total, perNetwork, root, cid, txOptions);
+    await rocketRewardsPool.submitRewardSnapshot(index, perNetworkRPL, perNetworkETH, root, cid, txOptions);
 
     // Get updated submission details & prices
     let [submission2, rewardIndex2] = await Promise.all([
@@ -97,36 +110,6 @@ export async function submitRewards(index, rewards, txOptions) {
     } else {
         assert(rewardIndex2.eq(rewardIndex1), 'Incorrect updated network prices block');
     }
-
-}
-
-
-// Execute price update
-export async function executeUpdatePrices(block, rplPrice, txOptions) {
-
-    // Load contracts
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
-
-    // Get prices
-    function getPrices() {
-        return Promise.all([
-            rocketNetworkPrices.getPricesBlock.call(),
-            rocketNetworkPrices.getRPLPrice.call(),
-        ]).then(
-          ([block, rplPrice]) =>
-            ({block, rplPrice})
-        );
-    }
-
-    // Submit prices
-    await rocketNetworkPrices.executeUpdatePrices(block, rplPrice, '0', txOptions);
-
-    // Get updated submission details & prices
-    let prices = await getPrices();
-
-    // Check the prices
-    assert(prices.block.eq(web3.utils.toBN(block)), 'Incorrect updated network prices block');
-    assert(prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrect updated network RPL price');
 
 }
 

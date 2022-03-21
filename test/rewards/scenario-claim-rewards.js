@@ -34,9 +34,10 @@ export async function claimRewards(indices, rewards, txOptions) {
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
+            web3.eth.getBalance(nodeWithdrawalAddress)
         ]).then(
-          ([claimIntervalTimeStart, nodeRpl]) =>
-            ({claimIntervalTimeStart, nodeRpl})
+          ([claimIntervalTimeStart, nodeRpl, nodeEth]) =>
+            ({claimIntervalTimeStart, nodeRpl, nodeEth: web3.utils.toBN(nodeEth)})
         );
     }
 
@@ -46,9 +47,11 @@ export async function claimRewards(indices, rewards, txOptions) {
 
     // Construct claim arguments
     let claimer = txOptions.from;
-    let amounts = [];
+    let amountsRPL = [];
+    let amountsETH = [];
     let proofs = [];
-    let totalAmount = web3.utils.toBN(0);
+    let totalAmountRPL = web3.utils.toBN(0);
+    let totalAmountETH = web3.utils.toBN(0);
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -59,18 +62,26 @@ export async function claimRewards(indices, rewards, txOptions) {
             throw new Error('No proof in merkle tree for ' + claimer)
         }
 
-        amounts.push(proof.amount);
+        amountsRPL.push(proof.amountRPL);
+        amountsETH.push(proof.amountETH);
         proofs.push(proof.proof);
 
-        totalAmount = totalAmount.add(web3.utils.toBN(proof.amount));
+        totalAmountRPL = totalAmountRPL.add(web3.utils.toBN(proof.amountRPL));
+        totalAmountETH = totalAmountETH.add(web3.utils.toBN(proof.amountETH));
     }
 
-    await rocketMerkleDistributorMainnet.claim(indices, amounts, proofs, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.claim(indices, amountsRPL, amountsETH, proofs, txOptions);
+    let gasUsed = web3.utils.toBN('0');
+
+    if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {
+        gasUsed = web3.utils.toBN(tx.receipt.gasUsed).mul(web3.utils.toBN(tx.receipt.effectiveGasPrice));
+    }
 
     let [balances2] = await Promise.all([
         getBalances(),
     ]);
 
-    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmount), 'Incorrect updated node RPL balance');
+    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmountRPL), 'Incorrect updated node RPL balance');
+    assert(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed).eq(totalAmountETH), 'Incorrect updated node ETH balance');
 }
 

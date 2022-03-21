@@ -16,12 +16,14 @@ contract RocketUpgradeRewards is RocketBase {
     address public newRocketNodeStaking;
     address public rocketMerkleDistributorMainnet;
     address public rocketDAONodeTrustedSettingsRewards;
+    address public rocketSmoothingPool;
 
     string public newRocketRewardsPoolAbi;
     string public newRocketNodeManagerAbi;
     string public newRocketNodeStakingAbi;
     string public rocketMerkleDistributorMainnetAbi;
     string public rocketDAONodeTrustedSettingsRewardsAbi;
+    string public rocketSmoothingPoolAbi;
 
     // Construct
     constructor(
@@ -31,11 +33,13 @@ contract RocketUpgradeRewards is RocketBase {
         address _newRocketNodeStaking,
         address _rocketMerkleDistributorMainnet,
         address _rocketDAONodeTrustedSettingsRewards,
+        address _rocketSmoothingPool,
         string memory _newRocketRewardsPoolAbi,
         string memory _newRocketNodeManagerAbi,
         string memory _newRocketNodeStakingAbi,
         string memory _rocketMerkleDistributorMainnetAbi,
-        string memory _rocketDAONodeTrustedSettingsRewardsAbi
+        string memory _rocketDAONodeTrustedSettingsRewardsAbi,
+        string memory _rocketSmoothingPoolAbi
         ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
@@ -46,6 +50,7 @@ contract RocketUpgradeRewards is RocketBase {
         newRocketNodeStaking = _newRocketNodeStaking;
         rocketMerkleDistributorMainnet = _rocketMerkleDistributorMainnet;
         rocketDAONodeTrustedSettingsRewards = _rocketDAONodeTrustedSettingsRewards;
+        rocketSmoothingPool = _rocketSmoothingPool;
 
         // Set ABIs
         newRocketRewardsPoolAbi = _newRocketRewardsPoolAbi;
@@ -53,6 +58,7 @@ contract RocketUpgradeRewards is RocketBase {
         newRocketNodeStakingAbi = _newRocketNodeStakingAbi;
         rocketMerkleDistributorMainnetAbi = _rocketMerkleDistributorMainnetAbi;
         rocketDAONodeTrustedSettingsRewardsAbi = _rocketDAONodeTrustedSettingsRewardsAbi;
+        rocketSmoothingPoolAbi = _rocketSmoothingPoolAbi;
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -68,6 +74,7 @@ contract RocketUpgradeRewards is RocketBase {
         // Add new contracts
         _addContract("rocketMerkleDistributorMainnet", rocketMerkleDistributorMainnet, rocketMerkleDistributorMainnetAbi);
         _addContract("rocketDAONodeTrustedSettingsRewards", rocketDAONodeTrustedSettingsRewards, rocketDAONodeTrustedSettingsRewardsAbi);
+        _addContract("rocketSmoothingPool", rocketSmoothingPool, rocketSmoothingPoolAbi);
         // Migrate settings
         RocketDAONodeTrustedSettingsRewardsInterface rewardsSettings = RocketDAONodeTrustedSettingsRewardsInterface(rocketDAONodeTrustedSettingsRewards);
         rewardsSettings.initialise();

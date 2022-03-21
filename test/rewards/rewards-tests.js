@@ -14,7 +14,7 @@ import {
 } from '../_helpers/node'
 import {
     RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet
+    RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet, RocketSmoothingPool,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
@@ -244,17 +244,26 @@ export default function() {
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
 
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('1', 'ether')});
+
+            const rocketRewardsPool = await RocketRewardsPool.deployed();
+            const pendingRewards = await rocketRewardsPool.getPendingETHRewards.call();
+
             // Submit rewards snapshot
             const rewards = [
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether')
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amount: web3.utils.toWei('2', 'ether')
+                    amountRPL: web3.utils.toWei('2', 'ether'),
+                    amountETH: web3.utils.toWei('1', 'ether')
                 }
             ]
             await submitRewards(0, rewards, {from: registeredNodeTrusted1});

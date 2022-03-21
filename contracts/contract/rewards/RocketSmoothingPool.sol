@@ -29,6 +29,9 @@ contract RocketSmoothingPool is RocketBase, RocketSmoothingPoolInterface {
         version = 1;
     }
 
+    // Allow receiving ETH
+    receive() payable external {}
+
     // Withdraws ETH to given address
     // Only accepts calls from Rocket Pool network contracts
     function withdrawEther(address _to, uint256 _amount) override external onlyLatestNetworkContract {
