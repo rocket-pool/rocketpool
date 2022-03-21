@@ -14,7 +14,7 @@ import {
     RocketDAOProtocolSettingsNetwork,
     RocketDepositPool,
     RocketNetworkBalances,
-    RocketTokenRETH
+    GoGoTokenGGPAVAX
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
@@ -22,7 +22,7 @@ import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
-    contract('RocketTokenRETH', async (accounts) => {
+    contract('GoGoTokenGGPAVAX', async (accounts) => {
 
 
         // Accounts
@@ -279,9 +279,9 @@ export default function() {
 
         it(printTitle('random', 'can deposit excess collateral into the deposit pool'), async () => {
             // Get rETH contract
-            const rocketTokenRETH = await RocketTokenRETH.deployed();
+            const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
             // Send enough ETH to rETH contract to exceed target collateralisation rate
-            await web3.eth.sendTransaction({from: random, to: rocketTokenRETH.address, value: web3.utils.toWei('32')});
+            await web3.eth.sendTransaction({from: random, to: gogoTokenGGPAVAX.address, value: web3.utils.toWei('32')});
             // Call the deposit excess function
             await depositExcessCollateral({from: random});
             // Collateral should now be at the target rate

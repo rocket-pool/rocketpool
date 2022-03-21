@@ -29,6 +29,7 @@ const privateKeys = [
   '0xcdbfd34f687ced8c6968854f8a99ae47712c4f4183b78dcc4a903d1bfe8cbf60',
   '0x86f78c5416151fe3546dece84fda4b4b1e36089f2dbc48496faf3a950f16157c',
   '0x750839e9dbbd2a0910efe40f50b2f3b2f2f59f5580bb4b83bd8c1201cf9a010a',
+  '0x79650c4920776bc10f1c0c7e8d6fc44c44ea77049b183d5000fc08d7aed76cdf',
 ];
 
 // Importing babel to be able to use ES6 imports
@@ -69,6 +70,19 @@ module.exports = {
         return new HDWalletProvider(privateKeys, `${protocol}://${ip}:${port}/ext/bc/C/rpc`, 0, 10);
       },
       network_id: '*',
+      gas: 8000000,
+      gasPrice: 225000000000,
+    },
+    fuji: {
+      networkCheckTimeout: 999999,
+      provider: () =>
+        new HDWalletProvider(
+          'genre siege wild share garment mention garden scissors usage occur brown pulp amount comic scrap analyst coast prefer drift vital hurdle uncle original nominee',
+          `https://api.avax-test.network/ext/bc/C/rpc`
+        ),
+      network_id: 43113,
+      timeoutBlocks: 2000,
+      confirmation: 10,
       gas: 8000000,
       gasPrice: 225000000000,
     },

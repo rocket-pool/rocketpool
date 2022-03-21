@@ -35,12 +35,12 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
         return getSettingBool("node.deposit.enabled");
     }
 
-    // Minimum RPL stake per minipool as a fraction of assigned user ETH value
+    // Minimum GGP stake per minipool as a fraction of assigned user ETH value
     function getMinimumPerMinipoolStake() override external view returns (uint256) {
         return getSettingUint("node.per.minipool.stake.minimum");
     }
 
-    // Maximum RPL stake per minipool as a fraction of assigned user ETH value
+    // Maximum GGP stake per minipool as a fraction of assigned user ETH value
     function getMaximumPerMinipoolStake() override external view returns (uint256) {
         return getSettingUint("node.per.minipool.stake.maximum");
     }

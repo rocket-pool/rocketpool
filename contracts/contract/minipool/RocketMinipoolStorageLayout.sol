@@ -39,6 +39,7 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal nodeFee;
     uint256 internal nodeDepositBalance;
     bool internal nodeDepositAssigned;
+    string internal nodeId;
     uint256 internal nodeRefundBalance;
     uint256 internal nodeSlashBalance;
 
@@ -52,7 +53,7 @@ abstract contract RocketMinipoolStorageLayout {
     address internal rocketMinipoolDelegatePrev;
 
     // Local copy of RETH address
-    address internal rocketTokenRETH;
+    address internal gogoTokenGGPAVAX;
 
     // Local copy of penalty contract
     address internal rocketMinipoolPenalty;

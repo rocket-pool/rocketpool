@@ -1,5 +1,5 @@
 import { getCurrentTime, increaseTime, mineBlocks } from '../_utils/evm'
-import { RocketTokenRPL, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
+import { GoGoTokenGGP, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
 import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 
 // Set inflation config
@@ -13,8 +13,8 @@ export async function rplSetInflationConfig(config, txOptions) {
 // Get the current inflation period in blocks
 export async function rplInflationIntervalBlocksGet(txOptions) {
     // Load contracts
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    return await rocketTokenRPL.getInflationIntervalBlocks.call();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
+    return await gogoTokenGGP.getInflationIntervalBlocks.call();
 };
 
 
@@ -26,23 +26,23 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     }
 
     // Load contracts
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
     const rocketVault = await RocketVault.deployed();
 
     // Get the previously last inflation calculated block
-    const timeIntervalLastCalc = web3.utils.toBN(await rocketTokenRPL.getInflationCalcTime.call());
+    const timeIntervalLastCalc = web3.utils.toBN(await gogoTokenGGP.getInflationCalcTime.call());
 
     // Get data about the current inflation
     function getInflationData() {
         return Promise.all([
             getCurrentTime(web3),
-            rocketTokenRPL.totalSupply.call(),
-            rocketTokenRPL.getInflationIntervalStartTime.call(),
-            rocketTokenRPL.getInflationIntervalsPassed.call(),
-            rocketTokenRPL.getInflationCalcTime.call(),
-            rocketTokenRPL.getInflationIntervalTime.call(),
-            rocketTokenRPL.balanceOf(rocketVault.address),
-            rocketVault.balanceOfToken('rocketRewardsPool', rocketTokenRPL.address),
+            gogoTokenGGP.totalSupply.call(),
+            gogoTokenGGP.getInflationIntervalStartTime.call(),
+            gogoTokenGGP.getInflationIntervalsPassed.call(),
+            gogoTokenGGP.getInflationCalcTime.call(),
+            gogoTokenGGP.getInflationIntervalTime.call(),
+            gogoTokenGGP.balanceOf(rocketVault.address),
+            rocketVault.balanceOfToken('rocketRewardsPool', gogoTokenGGP.address),
         ]).then(
             ([currentTime, tokenTotalSupply, inflationStartTime, inflationIntervalsPassed, inflationCalcTime, intervalTime, rocketVaultBalanceRPL, rocketVaultInternalBalanceRPL]) =>
             ({currentTime, tokenTotalSupply, inflationStartTime, inflationIntervalsPassed, inflationCalcTime, intervalTime, rocketVaultBalanceRPL, rocketVaultInternalBalanceRPL})
@@ -108,7 +108,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
 
     
     // Claim tokens now
-    await rocketTokenRPL.inflationMintTokens(txOptions);
+    await gogoTokenGGP.inflationMintTokens(txOptions);
 
     // Get inflation data
     let inflationData2 = await getInflationData();

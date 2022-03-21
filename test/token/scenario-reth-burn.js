@@ -1,20 +1,20 @@
-import { RocketTokenRETH } from '../_utils/artifacts';
+import { GoGoTokenGGPAVAX } from '../_utils/artifacts';
 
 
 // Burn rETH for ETH
 export async function burnReth(amount, txOptions) {
 
     // Load contracts
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
 
     // Get parameters
-    let rethExchangeRate = await rocketTokenRETH.getExchangeRate.call();
+    let rethExchangeRate = await gogoTokenGGPAVAX.getExchangeRate.call();
 
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketTokenRETH.totalSupply.call(),
-            rocketTokenRETH.balanceOf.call(txOptions.from),
+            gogoTokenGGPAVAX.totalSupply.call(),
+            gogoTokenGGPAVAX.balanceOf.call(txOptions.from),
             web3.eth.getBalance(txOptions.from).then(value => web3.utils.toBN(value)),
         ]).then(
             ([tokenSupply, userTokenBalance, userEthBalance]) =>
@@ -30,7 +30,7 @@ export async function burnReth(amount, txOptions) {
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
-    let txReceipt = await rocketTokenRETH.burn(amount, txOptions);
+    let txReceipt = await gogoTokenGGPAVAX.burn(amount, txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
     // Get updated balances

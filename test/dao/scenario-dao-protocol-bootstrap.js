@@ -1,5 +1,5 @@
 import Web3 from 'web3';
-import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, GoGoTokenGGP, RocketVault } from '../_utils/artifacts';
 
 
 
@@ -98,14 +98,14 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
 
     // Load contracts
     const rocketDAOProtocol = await RocketDAOProtocol.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
     const rocketVault = await RocketVault.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address),
-            rocketTokenRPL.balanceOf(_recipientAddress),
+            rocketVault.balanceOfToken('rocketClaimDAO', gogoTokenGGP.address),
+            gogoTokenGGP.balanceOf(_recipientAddress),
         ]).then(
             ([daoClaimTreasuryBalance, recipientBalance]) =>
             ({daoClaimTreasuryBalance, recipientBalance})

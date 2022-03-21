@@ -73,9 +73,9 @@ const contracts = {
   rocketDAOProtocolSettingsDeposit: artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketDAOProtocolSettingsMinipool: artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
   // Tokens
-  rocketTokenRPLFixedSupply: artifacts.require('RocketTokenDummyRPL.sol'),
-  rocketTokenRETH: artifacts.require('RocketTokenRETH.sol'),
-  rocketTokenRPL: artifacts.require('RocketTokenRPL.sol'),
+  gogoTokenGGPFixedSupply: artifacts.require('RocketTokenDummyGGP.sol'),
+  gogoTokenGGPAVAX: artifacts.require('GoGoTokenGGPAVAX.sol'),
+  gogoTokenGGP: artifacts.require('GoGoTokenGGP.sol'),
   // Utils
   addressQueueStorage: artifacts.require('AddressQueueStorage.sol'),
   addressSetStorage: artifacts.require('AddressSetStorage.sol'),
@@ -146,7 +146,7 @@ module.exports = async (deployer, network) => {
       precompiled: true,
     };
     // Add our live RPL token address in place
-    contracts.rocketTokenRPLFixedSupply.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
+    contracts.gogoTokenGGPFixedSupply.address = '0xb4efd85c19999d84251304bda99e90b92300bd93';
   }
 
   // Goerli test network
@@ -163,17 +163,21 @@ module.exports = async (deployer, network) => {
 
   // Test network deployment
   else {
+    console.log("deploying test network")
     // Precompiled - Casper Deposit Contract
-    const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
+   /* const casperDepositABI = loadABI('./contracts/contract/casper/compiled/Deposit.abi');
     const casperDeposit = new $web3.eth.Contract(casperDepositABI, null, {
       from: accounts[0],
       gasPrice: '25000000000', // 20 gwei
     });
+    console.log("1deploying test network")
 
     // Create the contract now
     const casperDepositContract = await casperDeposit
       .deploy(
-        // Casper deployment
+
+
+    // Casper deployment
         {
           data: config.fs.readFileSync('./contracts/contract/casper/compiled/Deposit.bin').toString(),
         }
@@ -183,24 +187,29 @@ module.exports = async (deployer, network) => {
         gas: 8000000,
         gasPrice: '25000000000',
       });
+    console.log("11deploying test network")
 
     // Set the Casper deposit address
     let casperDepositAddress = casperDepositContract._address;
+    console.log("111deploying test network")
 
     // Store it in storage
     contracts.casperDeposit = {
       address: casperDepositAddress,
       abi: casperDepositABI,
       precompiled: true,
-    };
+    };*/
+    console.log("finished deploying test network")
   }
-
+  console.log("deploying rocketstorage")
   // Deploy rocketStorage first - has to be done in this order so that the following contracts already know the storage address
   const rs = await deployer.deploy(rocketStorage);
   const rsTx = await web3.eth.getTransactionReceipt(rs.transactionHash);
   const deployBlock = rsTx.blockNumber;
+  console.log("deployed rocketstorage")
   // Update the storage with the new addresses
   let rocketStorageInstance = await rocketStorage.deployed();
+  console.log("got rs instance")
   // Deploy other contracts - have to be inside an async loop
   const deployContracts = async function() {
     for (let contract in contracts) {
@@ -208,11 +217,11 @@ module.exports = async (deployer, network) => {
       if (!contracts[contract].hasOwnProperty('precompiled')) {
         switch (contract) {
           // New RPL contract - pass storage address & existing RPL contract address
-          case 'rocketTokenRPL':
+          case 'gogoTokenGGP':
             await deployer.deploy(
               contracts[contract],
               rocketStorage.address,
-              contracts.rocketTokenRPLFixedSupply.address
+              contracts.gogoTokenGGPFixedSupply.address
             );
             break;
 

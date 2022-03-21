@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
-// ETH and rETH are stored here to prevent contract upgrades from affecting balances
+// ETH and ggpAVAX are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
 
 contract RocketVault is RocketBase, RocketVaultInterface {

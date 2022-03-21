@@ -22,9 +22,9 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     using SafeMath for uint;
 
     // Events
-    event ActionJoined(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
-    event ActionLeave(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
-    event ActionKick(address indexed nodeAddress, uint256 rplBondAmount, uint256 time);
+    event ActionJoined(address indexed nodeAddress, uint256 ggpBondAmount, uint256 time);
+    event ActionLeave(address indexed nodeAddress, uint256 ggpBondAmount, uint256 time);
+    event ActionKick(address indexed nodeAddress, uint256 ggpBondAmount, uint256 time);
     event ActionChallengeMade(address indexed nodeChallengedAddress, address indexed nodeChallengerAddress, uint256 time);
     event ActionChallengeDecided(address indexed nodeChallengedAddress, address indexed nodeChallengeDeciderAddress, bool success, uint256 time);
 
@@ -42,7 +42,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     /*** Internal Methods **********************/
 
     // Add a new member to the DAO
-    function _memberAdd(address _nodeAddress, uint256 _rplBondAmountPaid) private onlyRegisteredNode(_nodeAddress) {
+    function _memberAdd(address _nodeAddress, uint256 _ggpBondAmountPaid) private onlyRegisteredNode(_nodeAddress) {
         // Load contracts
         RocketClaimTrustedNodeInterface rocketClaimTrustedNode = RocketClaimTrustedNodeInterface(getContractAddress("rocketClaimTrustedNode"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -52,7 +52,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         // Flag them as a member now that they have accepted the invitation and record the size of the bond they paid
         setBool(keccak256(abi.encodePacked(daoNameSpace, "member", _nodeAddress)), true);
         // Add the bond amount they have paid
-        if(_rplBondAmountPaid > 0) setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)), _rplBondAmountPaid);
+        if(_ggpBondAmountPaid > 0) setUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.ggp", _nodeAddress)), _ggpBondAmountPaid);
         // Record the block number they joined at
         setUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)), block.timestamp);
          // Add to member index now
@@ -73,7 +73,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         deleteAddress(keccak256(abi.encodePacked(daoNameSpace, "member.address", _nodeAddress)));
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.id", _nodeAddress)));
         deleteString(keccak256(abi.encodePacked(daoNameSpace, "member.url", _nodeAddress)));
-        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.rpl", _nodeAddress)));
+        deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.bond.ggp", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.joined.time", _nodeAddress)));
         deleteUint(keccak256(abi.encodePacked(daoNameSpace, "member.challenged.time", _nodeAddress)));
         // Clean up the invited/leave proposals
@@ -87,9 +87,9 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
     function _memberJoin(address _nodeAddress) private {
         // Set some intiial contract address
         address rocketVaultAddress = getContractAddress("rocketVault");
-        address rocketTokenRPLAddress = getContractAddress("rocketTokenRPL");
+        address GoGoTokenGGPAddress = getContractAddress("gogoTokenGGP");
         // Load contracts
-        IERC20 rplInflationContract = IERC20(rocketTokenRPLAddress);
+        IERC20 ggpInflationContract = IERC20(GoGoTokenGGPAddress);
         RocketVaultInterface rocketVault = RocketVaultInterface(rocketVaultAddress);
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAONodeTrustedSettingsMembersInterface rocketDAONodeTrustedSettingsMembers = RocketDAONodeTrustedSettingsMembersInterface(getContractAddress("rocketDAONodeTrustedSettingsMembers"));
@@ -98,41 +98,41 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         uint256 memberInvitedTime = rocketDAONode.getMemberProposalExecutedTime("invited", _nodeAddress);
         // Have they been invited?
         require(memberInvitedTime > 0, "This node has not been invited to join");
-        // The current member bond amount in RPL that's required
-        uint256 rplBondAmount = rocketDAONodeTrustedSettingsMembers.getRPLBond();
+        // The current member bond amount in GGP that's required
+        uint256 ggpBondAmount = rocketDAONodeTrustedSettingsMembers.getGGPBond();
         // Has their invite expired?
         require(memberInvitedTime.add(rocketDAONodeTrustedSettingsProposals.getActionTime()) > block.timestamp, "This node's invitation to join has expired, please apply again");
-        // Verify they have allowed this contract to spend their RPL for the bond
-        require(rplInflationContract.allowance(_nodeAddress, address(this)) >= rplBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of RPL bond tokens");
+        // Verify they have allowed this contract to spend their GGP for the bond
+        require(ggpInflationContract.allowance(_nodeAddress, address(this)) >= ggpBondAmount, "Not enough allowance given to RocketDAONodeTrusted contract for transfer of GGP bond tokens");
         // Transfer the tokens to this contract now
-        require(rplInflationContract.transferFrom(_nodeAddress, address(this), rplBondAmount), "Token transfer to RocketDAONodeTrusted contract was not successful");
+        require(ggpInflationContract.transferFrom(_nodeAddress, address(this), ggpBondAmount), "Token transfer to RocketDAONodeTrusted contract was not successful");
         // Allow RocketVault to transfer these tokens to itself now
-        require(rplInflationContract.approve(rocketVaultAddress, rplBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted RPL bond tokens was not successful");
+        require(ggpInflationContract.approve(rocketVaultAddress, ggpBondAmount), "Approval for RocketVault to spend RocketDAONodeTrusted GGP bond tokens was not successful");
         // Let vault know it can move these tokens to itself now and credit the balance to this contract
-        rocketVault.depositToken(getContractName(address(this)), IERC20(rocketTokenRPLAddress), rplBondAmount);
+        rocketVault.depositToken(getContractName(address(this)), IERC20(GoGoTokenGGPAddress), ggpBondAmount);
         // Add them as a member now that they have accepted the invitation and record the size of the bond they paid
-        _memberAdd(_nodeAddress, rplBondAmount);
+        _memberAdd(_nodeAddress, ggpBondAmount);
         // Log it
-        emit ActionJoined(_nodeAddress, rplBondAmount, block.timestamp);
+        emit ActionJoined(_nodeAddress, ggpBondAmount, block.timestamp);
     }
   
     /*** Action Methods ************************/
 
     // When a new member has been successfully invited to join, they must call this method to join officially
-    // They will be required to have the RPL bond amount in their account
+    // They will be required to have the GGP bond amount in their account
     // This method allows us to only allow them to join if they have a working node account and have been officially invited
     function actionJoin() override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         _memberJoin(msg.sender);
     }
 
     // When the DAO has suffered a loss of members due to unforseen blackswan issue and has < the min required amount (3), a regular bonded node can directly join as a member and recover the DAO
-    // They will be required to have the RPL bond amount in their account. This is called directly from RocketDAONodeTrusted.
+    // They will be required to have the GGP bond amount in their account. This is called directly from RocketDAONodeTrusted.
     function actionJoinRequired(address _nodeAddress) override external onlyRegisteredNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrusted", msg.sender) {
         _memberJoin(_nodeAddress);
     }
     
-    // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their RPL bond
-    function actionLeave(address _rplBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
+    // When a new member has successfully requested to leave with a proposal, they must call this method to leave officially and receive their GGP bond
+    function actionLeave(address _ggpBondRefundAddress) override external onlyTrustedNode(msg.sender) onlyLatestContract("rocketDAONodeTrustedActions", address(this)) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -143,44 +143,44 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         uint256 leaveAcceptedTime = rocketDAONode.getMemberProposalExecutedTime("leave", msg.sender);
         // Has their leave request expired?
         require(leaveAcceptedTime.add(rocketDAONodeTrustedSettingsProposals.getActionTime()) > block.timestamp, "This member has not been approved to leave or request has expired, please apply to leave again");
-        // They were successful, lets refund their RPL Bond
-        uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(msg.sender);
+        // They were successful, lets refund their GGP Bond
+        uint256 ggpBondRefundAmount = rocketDAONode.getMemberGGPBondAmount(msg.sender);
         // Refund
-        if(rplBondRefundAmount > 0) {
+        if(ggpBondRefundAmount > 0) {
             // Valid withdrawal address
-            require(_rplBondRefundAddress != address(0x0), "Member has not supplied a valid address for their RPL bond refund");
+            require(_ggpBondRefundAddress != address(0x0), "Member has not supplied a valid address for their GGP bond refund");
             // Send tokens now
-            rocketVault.withdrawToken(_rplBondRefundAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
+            rocketVault.withdrawToken(_ggpBondRefundAddress, IERC20(getContractAddress("gogoTokenGGP")), ggpBondRefundAmount);
         }
         // Remove them now
         _memberRemove(msg.sender);
         // Log it
-        emit ActionLeave(msg.sender, rplBondRefundAmount, block.timestamp);
+        emit ActionLeave(msg.sender, ggpBondRefundAmount, block.timestamp);
     }
 
 
-    // A member can be evicted from the DAO by proposal, send their remaining RPL balance to them and remove from the DAO
+    // A member can be evicted from the DAO by proposal, send their remaining GGP balance to them and remove from the DAO
     // Is run via the main DAO contract when the proposal passes and is executed
-    function actionKick(address _nodeAddress, uint256 _rplFine) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
+    function actionKick(address _nodeAddress, uint256 _ggpFine) override external onlyTrustedNode(_nodeAddress) onlyLatestContract("rocketDAONodeTrustedProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        IERC20 rplToken = IERC20(getContractAddress("rocketTokenRPL"));
+        IERC20 ggpToken = IERC20(getContractAddress("gogoTokenGGP"));
         // Get the
-        uint256 rplBondRefundAmount = rocketDAONode.getMemberRPLBondAmount(_nodeAddress);
+        uint256 ggpBondRefundAmount = rocketDAONode.getMemberGGPBondAmount(_nodeAddress);
         // Refund
-        if (rplBondRefundAmount > 0) {
+        if (ggpBondRefundAmount > 0) {
             // Send tokens now if the vault can cover it
-            if(rplToken.balanceOf(address(rocketVault)) >= rplBondRefundAmount) rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress("rocketTokenRPL")), rplBondRefundAmount);
+            if(ggpToken.balanceOf(address(rocketVault)) >= ggpBondRefundAmount) rocketVault.withdrawToken(_nodeAddress, IERC20(getContractAddress("gogoTokenGGP")), ggpBondRefundAmount);
         }
         // Burn the fine
-        if (_rplFine > 0) {
-            rocketVault.burnToken(ERC20Burnable(getContractAddress("rocketTokenRPL")), _rplFine);
+        if (_ggpFine > 0) {
+            rocketVault.burnToken(ERC20Burnable(getContractAddress("gogoTokenGGP")), _ggpFine);
         }
         // Remove the member now
         _memberRemove(_nodeAddress);
         // Log it
-        emit ActionKick(_nodeAddress, rplBondRefundAmount, block.timestamp);   
+        emit ActionKick(_nodeAddress, ggpBondRefundAmount, block.timestamp);
     }
 
 

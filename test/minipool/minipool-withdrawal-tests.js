@@ -132,9 +132,9 @@ export default function() {
         async function slashAndCheck(from, expectedSlash) {
             // Get contracts
             const rocketNodeStaking = await RocketNodeStaking.deployed()
-            const rplStake1 = await rocketNodeStaking.getNodeRPLStake(node)
+            const rplStake1 = await rocketNodeStaking.getNodeGGPStake(node)
             await minipool.slash({from: from})
-            const rplStake2 = await rocketNodeStaking.getNodeRPLStake(node)
+            const rplStake2 = await rocketNodeStaking.getNodeGGPStake(node)
             const slashedAmount = rplStake1.sub(rplStake2)
             assert(expectedSlash.eq(slashedAmount), 'Slashed amount was incorrect')
         }

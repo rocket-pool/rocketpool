@@ -8,11 +8,11 @@ import { rplClaimInflation, rplSetInflationConfig } from './scenario-rpl-inflati
 import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
-import { RocketTokenRPL } from '../_utils/artifacts';
+import { GoGoTokenGGP } from '../_utils/artifacts';
 
 
 export default function() {
-    contract('RocketTokenRPL', async (accounts) => {
+    contract('GoGoTokenGGP', async (accounts) => {
 
 
         // Accounts
@@ -37,9 +37,9 @@ export default function() {
         
         it(printTitle('userOne', 'burn all their current fixed supply RPL for new RPL'), async () => {
             // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             // Give allowance for all to be sent
-            await allowDummyRPL(rocketTokenRPL.address, userOneRPLBalance, {
+            await allowDummyRPL(gogoTokenGGP.address, userOneRPLBalance, {
                 from: userOne,
             });
             // Burn existing fixed supply RPL for new RPL
@@ -51,11 +51,11 @@ export default function() {
 
         it(printTitle('userOne', 'burn less fixed supply RPL than they\'ve given an allowance for'), async () => {
             // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             // The allowance
             let allowance = userOneRPLBalance.div(web3.utils.toBN(2));
             // Give allowance for half to be spent
-            await allowDummyRPL(rocketTokenRPL.address, allowance, {
+            await allowDummyRPL(gogoTokenGGP.address, allowance, {
                 from: userOne,
             });
             // Burn existing fixed supply RPL for new RPL
@@ -67,11 +67,11 @@ export default function() {
 
         it(printTitle('userOne', 'fails to burn more fixed supply RPL than they\'ve given an allowance for'), async () => {
              // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             // The allowance
             let allowance = userOneRPLBalance.sub(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether')));
             // Give allowance for all to be sent
-            await allowDummyRPL(rocketTokenRPL.address, allowance, {
+            await allowDummyRPL(gogoTokenGGP.address, allowance, {
                 from: userOne,
             });
             // Burn existing fixed supply RPL for new RPL
@@ -83,11 +83,11 @@ export default function() {
 
         it(printTitle('userOne', 'fails to burn more fixed supply RPL than they have'), async () => {
             // Load contracts
-           const rocketTokenRPL = await RocketTokenRPL.deployed();
+           const gogoTokenGGP = await GoGoTokenGGP.deployed();
            // The allowance
            let allowance = userOneRPLBalance;
            // Give allowance for all to be sent
-           await allowDummyRPL(rocketTokenRPL.address, allowance, {
+           await allowDummyRPL(gogoTokenGGP.address, allowance, {
                from: userOne,
            });
            // Burn existing fixed supply RPL for new RPL

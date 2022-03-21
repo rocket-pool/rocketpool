@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface RocketTokenRPLInterface is IERC20 {
+interface GoGoTokenGGPInterface is IERC20 {
     function getInflationCalcTime() external view returns(uint256);
     function getInflationIntervalTime() external view returns(uint256);
     function getInflationIntervalRate() external view returns(uint256);
@@ -13,5 +13,5 @@ interface RocketTokenRPLInterface is IERC20 {
     function getInflationRewardsContractAddress() external view returns(address);
     function inflationCalculate() external view returns (uint256);
     function inflationMintTokens() external returns (uint256);
-    function swapTokens(uint256 _amount) external;
+    function faucetMint(address _to, uint256 _amount) external returns(bool);
 }

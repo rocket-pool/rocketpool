@@ -54,12 +54,12 @@ contract RocketDAOProtocolSettingsAuction is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("auction.lot.duration");
     }
 
-    // The starting price relative to current RPL price, as a fraction of 1 ether
+    // The starting price relative to current GGP price, as a fraction of 1 ether
     function getStartingPriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.start");
     }
 
-    // The reserve price relative to current RPL price, as a fraction of 1 ether
+    // The reserve price relative to current GGP price, as a fraction of 1 ether
     function getReservePriceRatio() override external view returns (uint256) {
         return getSettingUint("auction.price.reserve");
     }

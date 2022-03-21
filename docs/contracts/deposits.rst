@@ -26,7 +26,7 @@ The following describes a basic example contract which forwards deposited ETH in
 
     import "RocketStorageInterface.sol";
     import "RocketDepositPoolInterface.sol";
-    import "RocketTokenRETHInterface.sol";
+    import "GoGoTokenGGPAVAXInterface.sol";
 
     contract Example {
 
@@ -42,16 +42,16 @@ The following describes a basic example contract which forwards deposited ETH in
             // Load contracts
             address rocketDepositPoolAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketDepositPool")));
             RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(rocketDepositPoolAddress);
-            address rocketTokenRETHAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketTokenRETH")));
-            RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(rocketTokenRETHAddress);
+            address gogoTokenGGPAVAXAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "gogoTokenGGPAVAX")));
+            GoGoTokenGGPAVAXInterface gogoTokenGGPAVAX = GoGoTokenGGPAVAXInterface(gogoTokenGGPAVAXAddress);
             // Forward deposit to RP & get amount of rETH minted
-            uint256 rethBalance1 = rocketTokenRETH.balanceOf(address(this));
+            uint256 rethBalance1 = gogoTokenGGPAVAX.balanceOf(address(this));
             rocketDepositPool.deposit{value: msg.value}();
-            uint256 rethBalance2 = rocketTokenRETH.balanceOf(address(this));
+            uint256 rethBalance2 = gogoTokenGGPAVAX.balanceOf(address(this));
             require(rethBalance2 > rethBalance1, "No rETH was minted");
             uint256 rethMinted = rethBalance2 - rethBalance1;
             // Transfer rETH to caller
-            require(rocketTokenRETH.transfer(msg.sender, rethMinted), "rETH was not transferred to caller");
+            require(gogoTokenGGPAVAX.transfer(msg.sender, rethMinted), "rETH was not transferred to caller");
         }
 
     }
