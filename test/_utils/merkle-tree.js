@@ -184,16 +184,11 @@ export class RewardClaimTree {
 // Takes an array of objects with the form [{address, id, network, amountRPL, amountETH},...] and returns a RewardClaimTree object
 export function parseRewardsMap(rewards) {
 
-  console.log(rewards)
-
   // Transform input into a mapping of address => { address, network, amountRPL, amountETH }
   const dataByAddress = rewards.reduce((memo, { address, network, amountRPL, amountETH }) => {
     if (!web3.utils.isAddress(address)) {
       throw new Error(`Found invalid address: ${address}`);
     }
-
-    console.log(amountRPL)
-    console.log(amountETH)
 
     memo[address] = {
       address: web3.utils.toChecksumAddress(address),

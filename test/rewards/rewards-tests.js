@@ -234,7 +234,7 @@ export default function() {
         /*** Regular Nodes *************************/
 
         
-        it(printTitle('node', 'can claim RPL'), async () => {
+        it(printTitle('node', 'can claim RPL and ETH'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('rocketClaimNode', 0.5);
@@ -246,10 +246,12 @@ export default function() {
 
             // Send ETH to rewards pool
             const rocketSmoothingPool = await RocketSmoothingPool.deployed();
-            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('1', 'ether')});
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('2', 'ether')});
 
             const rocketRewardsPool = await RocketRewardsPool.deployed();
             const pendingRewards = await rocketRewardsPool.getPendingETHRewards.call();
+
+            console.log('Pending rewards:' + pendingRewards.toString());
 
             // Submit rewards snapshot
             const rewards = [
@@ -306,7 +308,8 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 },
             ]
 
@@ -316,13 +319,14 @@ export default function() {
 
             let treeData = parseRewardsMap(rewards);
             let proof = treeData.proof.claims[web3.utils.toChecksumAddress(registeredNode1)];
-            let amounts = [proof.amount];
+            let amountsRPL = [proof.amountRPL];
+            let amountsETH = [proof.amountETH];
             let proofs = [proof.proof];
 
             let rocketMerkleDistributorMainnet = await RocketMerkleDistributorMainnet.deployed();
 
             // Attempt to claim reward for registeredNode1 with registeredNode2
-            await shouldRevert(rocketMerkleDistributorMainnet.claim([0], amounts, proofs, {from: registeredNode2}), 'Was able to claim with invalid proof', 'Invalid proof');
+            await shouldRevert(rocketMerkleDistributorMainnet.claim([0], amountsRPL, amountsETH, proofs, {from: registeredNode2}), 'Was able to claim with invalid proof', 'Invalid proof');
         });
 
 
@@ -341,7 +345,8 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 },
             ]
 
@@ -387,12 +392,14 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amount: web3.utils.toWei('2', 'ether')
+                    amountRPL: web3.utils.toWei('2', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 }
             ]
 
@@ -432,12 +439,14 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amount: web3.utils.toWei('2', 'ether')
+                    amountRPL: web3.utils.toWei('2', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 }
             ]
             await submitRewards(0, rewards, {from: registeredNodeTrusted1});
@@ -480,7 +489,8 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 },
             ]
             await submitRewards(0, rewards, {from: registeredNodeTrusted1});
@@ -508,7 +518,8 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amount: web3.utils.toWei('1', 'ether')
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether'),
                 }
             ]
             await submitRewards(0, rewards, {from: registeredNodeTrusted1});

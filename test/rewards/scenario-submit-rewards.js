@@ -81,12 +81,6 @@ export async function submitRewards(index, rewards, txOptions) {
         rocketRewardsPool.getRewardIndex()
     ]);
 
-    console.log(index);
-    console.log(perNetworkRPL);
-    console.log(perNetworkETH);
-    console.log(root);
-    console.log(cid);
-
     // Submit prices
     await rocketRewardsPool.submitRewardSnapshot(index, perNetworkRPL, perNetworkETH, root, cid, txOptions);
 

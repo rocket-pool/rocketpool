@@ -36,10 +36,11 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
-            rocketNodeStaking.getNodeRPLStake(txOptions.from)
+            rocketNodeStaking.getNodeRPLStake(txOptions.from),
+            web3.eth.getBalance(nodeWithdrawalAddress)
         ]).then(
-          ([claimIntervalTimeStart, nodeRpl, rplStake]) =>
-            ({claimIntervalTimeStart, nodeRpl, rplStake})
+          ([claimIntervalTimeStart, nodeRpl, rplStake, nodeEth]) =>
+            ({claimIntervalTimeStart, nodeRpl, rplStake, nodeEth: web3.utils.toBN(nodeEth)})
         );
     }
 
@@ -50,9 +51,11 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
     // Construct claim arguments
     let claimer = txOptions.from;
     let claimerIndices = [];
-    let amounts = [];
+    let amountsRPL = [];
+    let amountsETH = [];
     let proofs = [];
-    let totalAmount = web3.utils.toBN(0);
+    let totalAmountRPL = web3.utils.toBN(0);
+    let totalAmountETH = web3.utils.toBN(0);
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -64,13 +67,19 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
         }
 
         claimerIndices.push(proof.index);
-        amounts.push(proof.amount);
+        amountsRPL.push(proof.amountRPL);
+        amountsETH.push(proof.amountETH);
         proofs.push(proof.proof);
 
-        totalAmount = totalAmount.add(web3.utils.toBN(proof.amount));
+        totalAmountRPL = totalAmountRPL.add(web3.utils.toBN(proof.amountRPL));
     }
 
-    await rocketMerkleDistributorMainnet.claimAndStake(indices, amounts, proofs, stakeAmount, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.claimAndStake(indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
+    let gasUsed = web3.utils.toBN('0');
+
+    if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {
+        gasUsed = web3.utils.toBN(tx.receipt.gasUsed).mul(web3.utils.toBN(tx.receipt.effectiveGasPrice));
+    }
 
     let [balances2] = await Promise.all([
         getBalances(),
@@ -78,7 +87,7 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
 
     let amountStaked = balances2.rplStake.sub(balances1.rplStake);
 
-    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmount.sub(amountStaked)), 'Incorrect updated node RPL balance');
-    assert(amountStaked.eq(web3.utils.toBN(stakeAmount)), 'Incorrect amount staked')
+    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmountRPL.sub(amountStaked)), 'Incorrect updated node RPL balance');
+    assert(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed).eq(totalAmountETH), 'Incorrect updated node ETH balance');
 }
 
