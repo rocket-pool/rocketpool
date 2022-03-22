@@ -38,8 +38,7 @@ export async function burnReth(amount, txOptions) {
 
     // Calculate values
     let burnAmount = web3.utils.toBN(amount);
-    let calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
-    let expectedEthTransferred = burnAmount.mul(rethExchangeRate).div(calcBase);
+    let expectedEthTransferred = await rocketTokenRETH.getEthValue(burnAmount);
 
     // Check balances
     assert(balances2.tokenSupply.eq(balances1.tokenSupply.sub(burnAmount)), 'Incorrect updated token supply');
