@@ -25,8 +25,8 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
             setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
             setSettingUint("network.node.fee.demand.range", 160 ether);
-            setSettingUint("network.reth.collateral.target", 0.1 ether);
-            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
+            setSettingUint("network.ggpavax.collateral.target", 0.1 ether);
+            setSettingUint("network.ggpavax.deposit.delay", 5760);            // ~24 hours
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -36,9 +36,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         // Prevent DAO from setting the withdraw delay greater than ~24 hours
-        if(keccak256(bytes(_settingPath)) == keccak256(bytes("network.reth.deposit.delay"))) {
+        if(keccak256(bytes(_settingPath)) == keccak256(bytes("network.ggpavax.deposit.delay"))) {
             // Must be a future timestamp
-            require(_value <= 5760, "rETH deposit delay cannot exceed 5760 blocks");
+            require(_value <= 5760, "ggpAVAX deposit delay cannot exceed 5760 blocks");
         }
         // Update setting now
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
@@ -89,13 +89,13 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.node.fee.demand.range");
     }
 
-    // Target rETH collateralization rate as a fraction of 1 ether
+    // Target ggpAVAX collateralization rate as a fraction of 1 ether
     function getTargetRethCollateralRate() override external view returns (uint256) {
-        return getSettingUint("network.reth.collateral.target");
+        return getSettingUint("network.ggpavax.collateral.target");
     }
 
-    // rETH withdraw delay in blocks
+    // ggpAVAX withdraw delay in blocks
     function getRethDepositDelay() override external view returns (uint256) {
-        return getSettingUint("network.reth.deposit.delay");
+        return getSettingUint("network.ggpavax.deposit.delay");
     }
 }

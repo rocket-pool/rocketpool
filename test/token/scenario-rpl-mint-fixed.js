@@ -1,11 +1,11 @@
-import { RocketTokenDummyRPL } from '../_utils/artifacts';
+import { RocketTokenDummyGGP } from '../_utils/artifacts';
 
 
 // Mint RPL from the dummy RPL contract to simulate a user having existing fixed supply RPL
 export async function mintDummyRPL(to, amount, txOptions) {
 
     // Load contracts
-    const rocketTokenDummyRPL = await RocketTokenDummyRPL.deployed();
+    const rocketTokenDummyRPL = await RocketTokenDummyGGP.deployed();
 
     // Get balances
     function getBalances() {

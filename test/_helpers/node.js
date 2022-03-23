@@ -2,7 +2,7 @@ import {
     RocketNodeDeposit,
     RocketNodeManager,
     RocketNodeStaking,
-    RocketTokenRPL,
+    GoGoTokenGGP,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
     RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate
@@ -17,9 +17,9 @@ import { getTxContractEvents } from '../_utils/contract';
 
 
 // Get a node's RPL stake
-export async function getNodeRPLStake(nodeAddress) {
+export async function getNodeGGPStake(nodeAddress) {
     const rocketNodeStaking = await RocketNodeStaking.deployed();
-    let stake = await rocketNodeStaking.getNodeRPLStake.call(nodeAddress);
+    let stake = await rocketNodeStaking.getNodeGGPStake.call(nodeAddress);
     return stake;
 }
 
@@ -68,13 +68,13 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
     // Mints fixed supply RPL, burns that for new RPL and gives it to the account
     let rplMint = async function(_account, _amount) {
         // Load contracts
-        const rocketTokenRPL = await RocketTokenRPL.deployed();
+        const gogoTokenGGP = await GoGoTokenGGP.deployed();
         // Convert
         _amount = web3.utils.toWei(_amount.toString(), 'ether');
         // Mint RPL fixed supply for the users to simulate current users having RPL
         await mintDummyRPL(_account, _amount, { from: owner });
         // Mint a large amount of dummy RPL to owner, who then burns it for real RPL which is sent to nodes for testing below
-        await allowDummyRPL(rocketTokenRPL.address, _amount, { from: _account });
+        await allowDummyRPL(gogoTokenGGP.address, _amount, { from: _account });
         // Burn existing fixed supply RPL for new RPL
         await burnFixedRPL(_amount, { from: _account }); 
     }
@@ -82,12 +82,12 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
     // Allow the given account to spend this users RPL
     let rplAllowanceDAO = async function(_account, _amount) {
         // Load contracts
-        const rocketTokenRPL = await RocketTokenRPL.deployed();
+        const gogoTokenGGP = await GoGoTokenGGP.deployed();
         const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
         // Convert
         _amount = web3.utils.toWei(_amount.toString(), 'ether');
         // Approve now
-        await rocketTokenRPL.approve(rocketDAONodeTrustedActions.address, _amount, { from: _account });
+        await gogoTokenGGP.approve(rocketDAONodeTrustedActions.address, _amount, { from: _account });
     }
 
     // Get the DAO settings
@@ -124,14 +124,14 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
 
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
-    const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
+    const [rocketNodeStaking, gogoTokenGGP] = await Promise.all([
         RocketNodeStaking.deployed(),
-        RocketTokenRPL.deployed(),
+        GoGoTokenGGP.deployed(),
     ]);
-    await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
-    const before = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
+    await gogoTokenGGP.approve(rocketNodeStaking.address, amount, txOptions);
+    const before = await rocketNodeStaking.getNodeGGPStake(txOptions.from)
     await rocketNodeStaking.stakeRPL(amount, txOptions);
-    const after = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
+    const after = await rocketNodeStaking.getNodeGGPStake(txOptions.from)
     assert(after.sub(before).eq(web3.utils.toBN(amount)), 'Staking balance did not increase by amount staked')
 }
 

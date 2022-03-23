@@ -11,7 +11,7 @@ import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoN
 import { proposalStates, getDAOProposalState, getDAOProposalStartTime, getDAOProposalEndTime, getDAOProposalExpires } from './scenario-dao-proposal';
 
 // Contracts
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts'; 
+import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, GoGoTokenGGP, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts'; 
 
 
 export default function() {
@@ -34,14 +34,14 @@ export default function() {
         // Mints fixed supply RPL, burns that for new RPL and gives it to the account
         let rplMint = async function(_account, _amount) {
             // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             
             // Convert
             _amount = web3.utils.toWei(_amount.toString(), 'ether');
             // Mint RPL fixed supply for the users to simulate current users having RPL
             await mintDummyRPL(_account, _amount, { from: guardian });
             // Mint a large amount of dummy RPL to guardian, who then burns it for real RPL which is sent to nodes for testing below
-            await allowDummyRPL(rocketTokenRPL.address, _amount, { from: _account });
+            await allowDummyRPL(gogoTokenGGP.address, _amount, { from: _account });
             // Burn existing fixed supply RPL for new RPL
             await burnFixedRPL(_amount, { from: _account }); 
 
@@ -50,12 +50,12 @@ export default function() {
         // Allow the given account to spend this users RPL
         let rplAllowanceDAO = async function(_account, _amount) {
             // Load contracts
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
             // Convert
             _amount = web3.utils.toWei(_amount.toString(), 'ether');
             // Approve now
-            await rocketTokenRPL.approve(rocketDAONodeTrustedActions.address, _amount, { from: _account });
+            await gogoTokenGGP.approve(rocketDAONodeTrustedActions.address, _amount, { from: _account });
         }
 
         // Add a new DAO member via bootstrap mode
@@ -476,7 +476,7 @@ export default function() {
             await increaseTime(web3, 60);
             // Get the DAO settings
             const daoNode = await RocketDAONodeTrusted.deployed();
-            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const gogoTokenGGP = await GoGoTokenGGP.deployed();
             // Add our 3rd member
             await bootstrapMemberAdd(registeredNode1, 'rocketpool', 'node@home.com');
             await increaseTime(web3, 60);
@@ -490,7 +490,7 @@ export default function() {
               [registeredNodeTrusted2, registeredNodeTrusted2BondAmountFine]
             );
             // Get the RPL total supply
-            let rplTotalSupply1 = await rocketTokenRPL.totalSupply.call()
+            let rplTotalSupply1 = await gogoTokenGGP.totalSupply.call()
             // Add the proposal
             let proposalID = await daoNodeTrustedPropose('hey guys, this member hasn\'t logged on for weeks, lets boot them with a 33% fine!', proposalCalldata, {
                 from: registeredNodeTrusted1
@@ -507,12 +507,12 @@ export default function() {
             // Proposal has passed, lets execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
             // Member should be kicked now, let's check their RPL balance has their 33% bond returned
-            let rplBalance = await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2);
-            //console.log(web3.utils.fromWei(await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2)));
+            let rplBalance = await gogoTokenGGP.balanceOf.call(registeredNodeTrusted2);
+            //console.log(web3.utils.fromWei(await gogoTokenGGP.balanceOf.call(registeredNodeTrusted2)));
             assert((registeredNodeTrusted2BondAmount.sub(registeredNodeTrusted2BondAmountFine)).eq(rplBalance), "registeredNodeTrusted2 remaining RPL balance is incorrect");
             assert(await getDAOMemberIsValid(registeredNodeTrusted2) === false, "registeredNodeTrusted2 is still a member of the DAO");
             // The 33% fine should be burned
-            let rplTotalSupply2 = await rocketTokenRPL.totalSupply.call()
+            let rplTotalSupply2 = await gogoTokenGGP.totalSupply.call()
             assert(rplTotalSupply1.sub(rplTotalSupply2).eq(registeredNodeTrusted2BondAmountFine), "RPL total supply did not decrease by fine amount");
         });
 
@@ -777,15 +777,15 @@ export default function() {
                 from: guardian,
             }), 'Upgraded a protected contract', 'Cannot upgrade the vault');
             
-            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRETH', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'gogoTokenGGPAVAX', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
                 from: guardian,
             }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
             
-            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRPL', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'gogoTokenGGP', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
                 from: guardian,
             }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
             
-            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketTokenRPLFixedSupply', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
+            await shouldRevert(setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'gogoTokenGGPFixedSupply', rocketMinipoolManagerNew.abi, rocketMinipoolManagerNew.address, {
                 from: guardian,
             }), 'Upgraded a protected contract', 'Cannot upgrade token contracts');
 

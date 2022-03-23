@@ -1,17 +1,17 @@
-import { RocketTokenRETH } from '../_utils/artifacts';
+import { GoGoTokenGGPAVAX } from '../_utils/artifacts';
 
 
 // Transfer rETH between accounts
 export async function transferReth(to, amount, txOptions) {
 
     // Load contracts
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
 
     // Get balances
     function getBalances() {
         return Promise.all([
-            rocketTokenRETH.balanceOf.call(txOptions.from),
-            rocketTokenRETH.balanceOf.call(to)
+            gogoTokenGGPAVAX.balanceOf.call(txOptions.from),
+            gogoTokenGGPAVAX.balanceOf.call(to)
         ]).then(
             ([userFromTokenBalance, userToTokenBalance]) =>
             ({userFromTokenBalance, userToTokenBalance})
@@ -22,7 +22,7 @@ export async function transferReth(to, amount, txOptions) {
     let balances1 = await getBalances();
 
     // Transfer tokens
-    await rocketTokenRETH.transfer(to, amount, txOptions);
+    await gogoTokenGGPAVAX.transfer(to, amount, txOptions);
 
     // Get updated balances
     let balances2 = await getBalances();

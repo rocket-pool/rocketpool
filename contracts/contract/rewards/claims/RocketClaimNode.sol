@@ -10,7 +10,7 @@ import "../../../interface/node/RocketNodeStakingInterface.sol";
 import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimNodeInterface.sol";
 
-// RPL Rewards claiming for regular nodes
+// GGP Rewards claiming for regular nodes
 
 contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
 
@@ -36,7 +36,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         // Return claim possible status
         return (
             rocketRewardsPool.getClaimingContractUserCanClaim("rocketClaimNode", _nodeAddress) &&
-            rocketNodeStaking.getNodeRPLStake(_nodeAddress) >= rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress)
+            rocketNodeStaking.getNodeGGPStake(_nodeAddress) >= rocketNodeStaking.getNodeMinimumGGPStake(_nodeAddress)
         );
     }
 
@@ -47,9 +47,9 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         // Load contracts
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Calculate and return share
-        uint256 totalRplStake = rocketNodeStaking.getTotalEffectiveRPLStake();
-        if (totalRplStake == 0) { return 0; }
-        return calcBase.mul(rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress)).div(totalRplStake);
+        uint256 totalGgpStake = rocketNodeStaking.getTotalEffectiveGGPStake();
+        if (totalGgpStake == 0) { return 0; }
+        return calcBase.mul(rocketNodeStaking.getNodeEffectiveGGPStake(_nodeAddress)).div(totalGgpStake);
     }
 
     // Get the amount of rewards for a node for the reward period
@@ -58,14 +58,14 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         return rocketRewardsPool.getClaimAmount("rocketClaimNode", _nodeAddress, getClaimRewardsPerc(_nodeAddress));
     }
 
-    // Register or deregister a node for RPL claims
+    // Register or deregister a node for GGP claims
     // Only accepts calls from the RocketNodeManager contract
     function register(address _nodeAddress, bool _enable) override external onlyLatestContract("rocketClaimNode", address(this)) onlyLatestContract("rocketNodeManager", msg.sender) onlyRegisteredNode(_nodeAddress) {
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         rocketRewardsPool.registerClaimer(_nodeAddress, _enable);
     }
 
-    // Make an RPL claim
+    // Make an GGP claim
     // Only accepts calls from registered nodes
     function claim() override external onlyLatestContract("rocketClaimNode", address(this)) onlyRegisteredNode(msg.sender) {
         // Check that the node can claim
@@ -73,7 +73,7 @@ contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
         // Get node withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
-        // Claim RPL
+        // Claim GGP
         RocketRewardsPoolInterface rocketRewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         rocketRewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }

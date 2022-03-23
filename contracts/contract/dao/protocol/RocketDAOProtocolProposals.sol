@@ -84,7 +84,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOProtocolSettings.setSettingAddress(_settingPath, _value);
     }
 
-    // Update a claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
+    // Update a claimer for the ggp rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
     function proposalSettingRewardsClaimer(string memory _contractName, uint256 _perc) override external onlyExecutingContracts() {
         // Load contracts
         RocketDAOProtocolSettingsRewardsInterface rocketDAOProtocolSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
@@ -92,7 +92,7 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOProtocolSettingsRewards.setSettingRewardsClaimer(_contractName, _perc);
     }
 
-    // Spend RPL from the DAO's treasury
+    // Spend GGP from the DAO's treasury
     function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyExecutingContracts() {
         // Load contracts
         RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));

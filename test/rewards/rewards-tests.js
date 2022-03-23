@@ -8,7 +8,7 @@ import {
     setNodeWithdrawalAddress,
     nodeStakeRPL,
     nodeDeposit,
-    getNodeRPLStake,
+    getNodeGGPStake,
     getNodeEffectiveRPLStake,
     getNodeMinimumRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
@@ -342,7 +342,7 @@ export default function() {
             await submitPrices(block, web3.utils.toWei('0.01', 'ether'), calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
 
             // Get & check node's current and minimum RPL stakes
-            let [currentRplStake, minimumRplStake] = await Promise.all([getNodeRPLStake(registeredNode1), getNodeMinimumRPLStake(registeredNode1)]);
+            let [currentRplStake, minimumRplStake] = await Promise.all([getNodeGGPStake(registeredNode1), getNodeMinimumRPLStake(registeredNode1)]);
             assert(currentRplStake.lt(minimumRplStake), 'Node\'s current RPL stake should be below their minimum RPL stake');
 
             // Attempt to claim RPL

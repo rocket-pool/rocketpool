@@ -208,7 +208,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.add(1));
         // Update total effective stake
-        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
+        updateTotalEffectiveGGPStake(_nodeAddress, nodeValue, nodeValue.add(1));
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
@@ -222,7 +222,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.sub(1));
         // Update total effective stake
-        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
+        updateTotalEffectiveGGPStake(_nodeAddress, nodeValue, nodeValue.sub(1));
     }
 
     // Increments _nodeAddress' number of minipools that have been finalised
@@ -239,10 +239,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Load contracts
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Check node minipool limit based on RPL stake
+        // Check node minipool limit based on GGP stake
         require(
             getNodeActiveMinipoolCount(_nodeAddress) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
-            "Minipool count after deposit exceeds limit based on node RPL stake"
+            "Minipool count after deposit exceeds limit based on node GGP stake"
         );
         { // Local scope to prevent stack too deep error
           RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -294,7 +294,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Updates the stored total effective rate based on a node's changing minipool count
-    function updateTotalEffectiveRPLStake(address _nodeAddress, uint256 _oldCount, uint256 _newCount) private {
+    function updateTotalEffectiveGGPStake(address _nodeAddress, uint256 _oldCount, uint256 _newCount) private {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -302,37 +302,37 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         // Require price consensus
         require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
-        // Get node's RPL stake
-        uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
+        // Get node's GGP stake
+        uint256 ggpStake = rocketNodeStaking.getNodeGGPStake(_nodeAddress);
         // Get the node's maximum possible stake
-        uint256 maxRplStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+        uint256 maxGgpStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
             .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
-        uint256 oldMaxRplStake = maxRplStakePerMinipool
+        uint256 oldMaxGgpStake = maxGgpStakePerMinipool
             .mul(_oldCount)
-            .div(rocketNetworkPrices.getRPLPrice());
-        uint256 newMaxRplStake = maxRplStakePerMinipool
+            .div(rocketNetworkPrices.getGGPPrice());
+        uint256 newMaxGgpStake = maxGgpStakePerMinipool
             .mul(_newCount)
-            .div(rocketNetworkPrices.getRPLPrice());
+            .div(rocketNetworkPrices.getGGPPrice());
         // Check if we have to decrease total
         if (_oldCount > _newCount) {
-            if (rplStake <= newMaxRplStake) {
+            if (ggpStake <= newMaxGgpStake) {
                 return;
             }
-            uint256 decrease = oldMaxRplStake.sub(newMaxRplStake);
-            uint256 delta = rplStake.sub(newMaxRplStake);
+            uint256 decrease = oldMaxGgpStake.sub(newMaxGgpStake);
+            uint256 delta = ggpStake.sub(newMaxGgpStake);
             if (delta > decrease) { delta = decrease; }
-            rocketNetworkPrices.decreaseEffectiveRPLStake(delta);
+            rocketNetworkPrices.decreaseEffectiveGGPStake(delta);
             return;
         }
         // Check if we have to increase total
         if (_newCount > _oldCount) {
-            if (rplStake <= oldMaxRplStake) {
+            if (ggpStake <= oldMaxGgpStake) {
                 return;
             }
-            uint256 increase = newMaxRplStake.sub(oldMaxRplStake);
-            uint256 delta = rplStake.sub(oldMaxRplStake);
+            uint256 increase = newMaxGgpStake.sub(oldMaxGgpStake);
+            uint256 delta = ggpStake.sub(oldMaxGgpStake);
             if (delta > increase) { delta = increase; }
-            rocketNetworkPrices.increaseEffectiveRPLStake(delta);
+            rocketNetworkPrices.increaseEffectiveGGPStake(delta);
             return;
         }
         // _oldCount == _newCount (do nothing but shouldn't happen)

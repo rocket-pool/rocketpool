@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedProposals, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedProposals, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal, GoGoTokenGGP, RocketVault } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
 
@@ -159,14 +159,14 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
     const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
-            rocketTokenRPL.balanceOf(txOptions.from),
-            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
+            gogoTokenGGP.balanceOf(txOptions.from),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', gogoTokenGGP.address),
         ]).then(
             ([memberTotal, rplBalanceBond, rplBalanceVault]) =>
             ({memberTotal, rplBalanceBond, rplBalanceVault})
@@ -199,14 +199,14 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
     const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
-            rocketTokenRPL.balanceOf(_rplRefundAddress),
-            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
+            gogoTokenGGP.balanceOf(_rplRefundAddress),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', gogoTokenGGP.address),
         ]).then(
             ([memberTotal, rplBalanceRefund, rplBalanceVault]) =>
             ({memberTotal, rplBalanceRefund, rplBalanceVault})

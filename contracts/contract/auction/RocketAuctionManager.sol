@@ -11,7 +11,7 @@ import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsAuctionInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
-// Facilitates RPL liquidation auctions
+// Facilitates GGP liquidation auctions
 
 contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
 
@@ -19,36 +19,36 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     using SafeMath for uint;
 
     // Events
-    event LotCreated(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
+    event LotCreated(uint256 indexed lotIndex, address indexed by, uint256 ggpAmount, uint256 time);
     event BidPlaced(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 time);
-    event BidClaimed(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 rplAmount, uint256 time);
-    event RPLRecovered(uint256 indexed lotIndex, address indexed by, uint256 rplAmount, uint256 time);
+    event BidClaimed(uint256 indexed lotIndex, address indexed by, uint256 bidAmount, uint256 ggpAmount, uint256 time);
+    event GGPRecovered(uint256 indexed lotIndex, address indexed by, uint256 ggpAmount, uint256 time);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 1;
     }
 
-    // Get the total RPL balance of the contract
-    function getTotalRPLBalance() override public view returns (uint256) {
+    // Get the total GGP balance of the contract
+    function getTotalGGPBalance() override public view returns (uint256) {
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        return rocketVault.balanceOfToken("rocketAuctionManager", IERC20(getContractAddress("rocketTokenRPL")));
+        return rocketVault.balanceOfToken("rocketAuctionManager", IERC20(getContractAddress("gogoTokenGGP")));
     }
 
-    // Get/set the allotted RPL balance of the contract
-    function getAllottedRPLBalance() override public view returns (uint256) {
-        return getUint(keccak256("auction.rpl.allotted"));
+    // Get/set the allotted GGP balance of the contract
+    function getAllottedGGPBalance() override public view returns (uint256) {
+        return getUint(keccak256("auction.ggp.allotted"));
     }
-    function increaseAllottedRPLBalance(uint256 _amount) private {
-        addUint(keccak256(abi.encodePacked("auction.rpl.allotted")), _amount);
+    function increaseAllottedGGPBalance(uint256 _amount) private {
+        addUint(keccak256(abi.encodePacked("auction.ggp.allotted")), _amount);
     }
-    function decreaseAllottedRPLBalance(uint256 _amount) private {
-        subUint(keccak256(abi.encodePacked("auction.rpl.allotted")), _amount);
+    function decreaseAllottedGGPBalance(uint256 _amount) private {
+        subUint(keccak256(abi.encodePacked("auction.ggp.allotted")), _amount);
     }
 
-    // Get the remaining (unallotted) RPL balance of the contract
-    function getRemainingRPLBalance() override public view returns (uint256) {
-        return getTotalRPLBalance().sub(getAllottedRPLBalance());
+    // Get the remaining (unallotted) GGP balance of the contract
+    function getRemainingGGPBalance() override public view returns (uint256) {
+        return getTotalGGPBalance().sub(getAllottedGGPBalance());
     }
 
     // Get/set the number of lots for auction
@@ -75,8 +75,8 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
     function getLotReservePrice(uint256 _index) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("auction.lot.price.reserve", _index)));
     }
-    function getLotTotalRPLAmount(uint256 _index) override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("auction.lot.rpl.total", _index)));
+    function getLotTotalGGPAmount(uint256 _index) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("auction.lot.ggp.total", _index)));
     }
 
     // Get/set the total ETH amount bid on a lot
@@ -98,15 +98,15 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         addUint(keccak256(abi.encodePacked("auction.lot.bid.address", _index, _bidder)), _amount);
     }
 
-    // Get/set the lot's RPL recovered status
-    function getLotRPLRecovered(uint256 _index) override public view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("auction.lot.rpl.recovered", _index)));
+    // Get/set the lot's GGP recovered status
+    function getLotGGPRecovered(uint256 _index) override public view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("auction.lot.ggp.recovered", _index)));
     }
-    function setLotRPLRecovered(uint256 _index, bool _recovered) private {
-        setBool(keccak256(abi.encodePacked("auction.lot.rpl.recovered", _index)), _recovered);
+    function setLotGGPRecovered(uint256 _index, bool _recovered) private {
+        setBool(keccak256(abi.encodePacked("auction.lot.ggp.recovered", _index)), _recovered);
     }
 
-    // Get the RPL price for a lot at a block
+    // Get the GGP price for a lot at a block
     function getLotPriceAtBlock(uint256 _index, uint256 _block) override public view returns (uint256) {
         // Get lot parameters
         uint256 startBlock = getLotStartBlock(_index);
@@ -121,17 +121,17 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         return startPrice.sub(startPrice.sub(endPrice).mul(tn).mul(tn).div(td).div(td));
     }
 
-    // Get the RPL price for a lot at the current block
+    // Get the GGP price for a lot at the current block
     function getLotPriceAtCurrentBlock(uint256 _index) override public view returns (uint256) {
         return getLotPriceAtBlock(_index, block.number);
     }
 
-    // Get the RPL price for a lot based on total ETH amount bid
+    // Get the GGP price for a lot based on total ETH amount bid
     function getLotPriceByTotalBids(uint256 _index) override public view returns (uint256) {
-        return calcBase.mul(getLotTotalBidAmount(_index)).div(getLotTotalRPLAmount(_index));
+        return calcBase.mul(getLotTotalBidAmount(_index)).div(getLotTotalGGPAmount(_index));
     }
 
-    // Get the current RPL price for a lot
+    // Get the current GGP price for a lot
     // Returns the clearing price if cleared, or the price at the current block otherwise
     function getLotCurrentPrice(uint256 _index) override public view returns (uint256) {
         uint256 blockPrice = getLotPriceAtCurrentBlock(_index);
@@ -140,10 +140,10 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         else { return blockPrice; }
     }
 
-    // Get the amount of claimed RPL in a lot
-    function getLotClaimedRPLAmount(uint256 _index) override public view returns (uint256) {
+    // Get the amount of claimed GGP in a lot
+    function getLotClaimedGGPAmount(uint256 _index) override public view returns (uint256) {
         uint256 claimed = calcBase.mul(getLotTotalBidAmount(_index)).div(getLotCurrentPrice(_index));
-        uint256 total = getLotTotalRPLAmount(_index);
+        uint256 total = getLotTotalGGPAmount(_index);
         // Due to integer arithmetic, the calculated claimed amount may be slightly greater than the total
         if (claimed > total) {
             return total;
@@ -151,9 +151,9 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         return claimed;
     }
 
-    // Get the amount of remaining RPL in a lot
-    function getLotRemainingRPLAmount(uint256 _index) override public view returns (uint256) {
-        return getLotTotalRPLAmount(_index).sub(getLotClaimedRPLAmount(_index));
+    // Get the amount of remaining GGP in a lot
+    function getLotRemainingGGPAmount(uint256 _index) override public view returns (uint256) {
+        return getLotTotalGGPAmount(_index).sub(getLotClaimedGGPAmount(_index));
     }
 
     // Check whether a lot has cleared
@@ -168,29 +168,29 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Load contracts
         RocketDAOProtocolSettingsAuctionInterface rocketAuctionSettings = RocketDAOProtocolSettingsAuctionInterface(getContractAddress("rocketDAOProtocolSettingsAuction"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
-        // Get remaining RPL balance & RPL price
-        uint256 remainingRplBalance = getRemainingRPLBalance();
-        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
+        // Get remaining GGP balance & GGP price
+        uint256 remainingGgpBalance = getRemainingGGPBalance();
+        uint256 ggpPrice = rocketNetworkPrices.getGGPPrice();
         // Check lot can be created
         require(rocketAuctionSettings.getCreateLotEnabled(), "Creating lots is currently disabled");
-        require(remainingRplBalance >= calcBase.mul(rocketAuctionSettings.getLotMinimumEthValue()).div(rplPrice), "Insufficient RPL balance to create new lot");
-        // Calculate lot RPL amount
-        uint256 lotRplAmount = remainingRplBalance;
-        uint256 maximumLotRplAmount = calcBase.mul(rocketAuctionSettings.getLotMaximumEthValue()).div(rplPrice);
-        if (lotRplAmount > maximumLotRplAmount) { lotRplAmount = maximumLotRplAmount; }
+        require(remainingGgpBalance >= calcBase.mul(rocketAuctionSettings.getLotMinimumEthValue()).div(ggpPrice), "Insufficient GGP balance to create new lot");
+        // Calculate lot GGP amount
+        uint256 lotGgpAmount = remainingGgpBalance;
+        uint256 maximumLotGgpAmount = calcBase.mul(rocketAuctionSettings.getLotMaximumEthValue()).div(ggpPrice);
+        if (lotGgpAmount > maximumLotGgpAmount) { lotGgpAmount = maximumLotGgpAmount; }
         // Create lot
         uint256 lotIndex = getLotCount();
         setBool(keccak256(abi.encodePacked("auction.lot.exists", lotIndex)), true);
         setUint(keccak256(abi.encodePacked("auction.lot.block.start", lotIndex)), block.number);
         setUint(keccak256(abi.encodePacked("auction.lot.block.end", lotIndex)), block.number.add(rocketAuctionSettings.getLotDuration()));
-        setUint(keccak256(abi.encodePacked("auction.lot.price.start", lotIndex)), rplPrice.mul(rocketAuctionSettings.getStartingPriceRatio()).div(calcBase));
-        setUint(keccak256(abi.encodePacked("auction.lot.price.reserve", lotIndex)), rplPrice.mul(rocketAuctionSettings.getReservePriceRatio()).div(calcBase));
-        setUint(keccak256(abi.encodePacked("auction.lot.rpl.total", lotIndex)), lotRplAmount);
-        // Increment lot count & increase allotted RPL balance
+        setUint(keccak256(abi.encodePacked("auction.lot.price.start", lotIndex)), ggpPrice.mul(rocketAuctionSettings.getStartingPriceRatio()).div(calcBase));
+        setUint(keccak256(abi.encodePacked("auction.lot.price.reserve", lotIndex)), ggpPrice.mul(rocketAuctionSettings.getReservePriceRatio()).div(calcBase));
+        setUint(keccak256(abi.encodePacked("auction.lot.ggp.total", lotIndex)), lotGgpAmount);
+        // Increment lot count & increase allotted GGP balance
         setLotCount(lotIndex.add(1));
-        increaseAllottedRPLBalance(lotRplAmount);
+        increaseAllottedGGPBalance(lotGgpAmount);
         // Emit lot created event
-        emit LotCreated(lotIndex, msg.sender, lotRplAmount, block.timestamp);
+        emit LotCreated(lotIndex, msg.sender, lotGgpAmount, block.timestamp);
     }
 
     // Bid on a lot
@@ -205,12 +205,12 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         // Check lot can be bid on
         require(rocketAuctionSettings.getBidOnLotEnabled(), "Bidding on lots is currently disabled");
         require(block.number < getLotEndBlock(_lotIndex), "Lot bidding period has concluded");
-        // Check lot has RPL remaining
-        uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);
-        require(remainingRplAmount > 0, "Lot RPL allocation has been exhausted");
+        // Check lot has GGP remaining
+        uint256 remainingGgpAmount = getLotRemainingGGPAmount(_lotIndex);
+        require(remainingGgpAmount > 0, "Lot GGP allocation has been exhausted");
         // Calculate the bid amount
         uint256 bidAmount = msg.value;
-        uint256 maximumBidAmount = remainingRplAmount.mul(getLotPriceAtCurrentBlock(_lotIndex)).div(calcBase);
+        uint256 maximumBidAmount = remainingGgpAmount.mul(getLotPriceAtCurrentBlock(_lotIndex)).div(calcBase);
         if (bidAmount > maximumBidAmount) { bidAmount = maximumBidAmount; }
         // Increase lot bid amounts
         increaseLotTotalBidAmount(_lotIndex, bidAmount);
@@ -223,7 +223,7 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         emit BidPlaced(_lotIndex, msg.sender, bidAmount, block.timestamp);
     }
 
-    // Claim RPL from a lot
+    // Claim GGP from a lot
     function claimBid(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
         // Check lot exists
         require(getLotExists(_lotIndex), "Lot does not exist");
@@ -234,43 +234,43 @@ contract RocketAuctionManager is RocketBase, RocketAuctionManagerInterface {
         require(block.number >= getLotEndBlock(_lotIndex) || bidPrice >= blockPrice, "Lot has not cleared yet");
         // Get & check address bid amount
         uint256 bidAmount = getLotAddressBidAmount(_lotIndex, msg.sender);
-        require(bidAmount > 0, "Address has no RPL to claim");
+        require(bidAmount > 0, "Address has no GGP to claim");
         // Calculate current lot price
         uint256 currentPrice;
         if (bidPrice > blockPrice) { currentPrice = bidPrice; }
         else { currentPrice = blockPrice; }
-        // Calculate RPL claim amount
-        uint256 rplAmount = calcBase.mul(bidAmount).div(currentPrice);
+        // Calculate GGP claim amount
+        uint256 ggpAmount = calcBase.mul(bidAmount).div(currentPrice);
         // Due to integer arithmetic, there may be a tiny bit less than calculated
-        uint256 allottedAmount = getAllottedRPLBalance();
-        if (rplAmount > allottedAmount) {
-            rplAmount = allottedAmount;
+        uint256 allottedAmount = getAllottedGGPBalance();
+        if (ggpAmount > allottedAmount) {
+            ggpAmount = allottedAmount;
         }
-        // Transfer RPL to bidder
+        // Transfer GGP to bidder
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("rocketTokenRPL")), rplAmount);
-        // Decrease allotted RPL balance & update address bid amount
-        decreaseAllottedRPLBalance(rplAmount);
+        rocketVault.withdrawToken(msg.sender, IERC20(getContractAddress("gogoTokenGGP")), ggpAmount);
+        // Decrease allotted GGP balance & update address bid amount
+        decreaseAllottedGGPBalance(ggpAmount);
         setLotAddressBidAmount(_lotIndex, msg.sender, 0);
         // Emit bid claimed event
-        emit BidClaimed(_lotIndex, msg.sender, bidAmount, rplAmount, block.timestamp);
+        emit BidClaimed(_lotIndex, msg.sender, bidAmount, ggpAmount, block.timestamp);
     }
 
-    // Recover unclaimed RPL from a lot
-    function recoverUnclaimedRPL(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
-        // Check lot exists and has not already had RPL recovered
+    // Recover unclaimed GGP from a lot
+    function recoverUnclaimedGGP(uint256 _lotIndex) override external onlyLatestContract("rocketAuctionManager", address(this)) {
+        // Check lot exists and has not already had GGP recovered
         require(getLotExists(_lotIndex), "Lot does not exist");
-        require(!getLotRPLRecovered(_lotIndex), "Unclaimed RPL has already been recovered from the lot");
-        // Check RPL can be reclaimed from lot
+        require(!getLotGGPRecovered(_lotIndex), "Unclaimed GGP has already been recovered from the lot");
+        // Check GGP can be reclaimed from lot
         require(block.number >= getLotEndBlock(_lotIndex), "Lot bidding period has not concluded yet");
-        // Get & check remaining RPL amount
-        uint256 remainingRplAmount = getLotRemainingRPLAmount(_lotIndex);
-        require(remainingRplAmount > 0, "No unclaimed RPL is available to recover");
-        // Decrease allotted RPL balance & set RPL recovered status
-        decreaseAllottedRPLBalance(remainingRplAmount);
-        setLotRPLRecovered(_lotIndex, true);
-        // Emit RPL recovered event
-        emit RPLRecovered(_lotIndex, msg.sender, remainingRplAmount, block.timestamp);
+        // Get & check remaining GGP amount
+        uint256 remainingGgpAmount = getLotRemainingGGPAmount(_lotIndex);
+        require(remainingGgpAmount > 0, "No unclaimed GGP is available to recover");
+        // Decrease allotted GGP balance & set GGP recovered status
+        decreaseAllottedGGPBalance(remainingGgpAmount);
+        setLotGGPRecovered(_lotIndex, true);
+        // Emit GGP recovered event
+        emit GGPRecovered(_lotIndex, msg.sender, remainingGgpAmount, block.timestamp);
     }
 
 }

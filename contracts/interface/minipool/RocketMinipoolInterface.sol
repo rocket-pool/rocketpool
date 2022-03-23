@@ -9,6 +9,7 @@ import "../RocketStorageInterface.sol";
 interface RocketMinipoolInterface {
     function initialise(address _nodeAddress, MinipoolDeposit _depositType) external;
     function getStatus() external view returns (MinipoolStatus);
+    function getNodeId() external view returns ( string memory );
     function getFinalised() external view returns (bool);
     function getStatusBlock() external view returns (uint256);
     function getStatusTime() external view returns (uint256);
@@ -25,7 +26,7 @@ interface RocketMinipoolInterface {
     function getTotalScrubVotes() external view returns (uint256);
     function calculateNodeShare(uint256 _balance) external view returns (uint256);
     function calculateUserShare(uint256 _balance) external view returns (uint256);
-    function nodeDeposit(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
+    function nodeDeposit(bytes calldata _validatorPubkey, string memory nodeId) external payable;
     function userDeposit() external payable;
     function distributeBalance() external;
     function distributeBalanceAndFinalise() external;
@@ -33,7 +34,7 @@ interface RocketMinipoolInterface {
     function slash() external;
     function finalise() external;
     function canStake() external view returns (bool);
-    function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
+    function stake() external;
     function setWithdrawable() external;
     function dissolve() external;
     function close() external;

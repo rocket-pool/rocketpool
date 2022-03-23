@@ -3,7 +3,7 @@ import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsNode, RocketNetworkPrices,
     RocketNodeStaking,
-    RocketTokenRPL,
+    GoGoTokenGGP,
     RocketVault
 } from '../_utils/artifacts';
 
@@ -16,7 +16,7 @@ export async function voteScrub(minipool, txOptions) {
     // Get contracts
     const rocketNodeStaking = await RocketNodeStaking.deployed();
     const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
     const rocketDAONodeTrustedSettingsMinipool = await RocketDAONodeTrustedSettingsMinipool.deployed();
     const rocketNetworkPrices = await RocketNetworkPrices.deployed();
     const rocketDAOProtocolSettingsNode = await RocketDAOProtocolSettingsNode.deployed();
@@ -27,8 +27,8 @@ export async function voteScrub(minipool, txOptions) {
             minipool.getStatus.call(),
             minipool.getUserDepositBalance.call(),
             minipool.getTotalScrubVotes.call(),
-            rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
-            rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
+            rocketNodeStaking.getNodeGGPStake.call(nodeAddress),
+            rocketVault.balanceOfToken('rocketAuctionManager', gogoTokenGGP.address),
             rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()
         ]).then(
             ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled]) =>

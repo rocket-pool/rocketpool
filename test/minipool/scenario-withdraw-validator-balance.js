@@ -4,7 +4,7 @@ import {
     RocketMinipoolManager,
     RocketMinipoolPenalty,
     RocketNodeManager,
-    RocketTokenRETH
+    GoGoTokenGGPAVAX
 } from '../_utils/artifacts'
 
 
@@ -15,11 +15,11 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Load contracts
     const [
         rocketDepositPool,
-        rocketTokenRETH,
+        gogoTokenGGPAVAX,
         rocketNodeManager
     ] = await Promise.all([
         RocketDepositPool.deployed(),
-        RocketTokenRETH.deployed(),
+        GoGoTokenGGPAVAX.deployed(),
         RocketNodeManager.deployed(),
     ]);
 
@@ -37,7 +37,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Get balances
     function getBalances() {
         return Promise.all([
-            web3.eth.getBalance(rocketTokenRETH.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(gogoTokenGGPAVAX.address).then(value => web3.utils.toBN(value)),
             rocketDepositPool.getBalance.call(),
             web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
             web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),

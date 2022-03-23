@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedUpgrade, RocketStorage, RocketVault, RocketTokenRPL } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketDAONodeTrustedUpgrade, RocketStorage, RocketVault, GoGoTokenGGP } from '../_utils/artifacts';
 import { compressABI, decompressABI } from '../_utils/contract';
 
 
@@ -209,14 +209,14 @@ export async function setDaoNodeTrustedMemberRequired(_id, _url, txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
 
     // Get data about the tx
     function getTxData() {
         return Promise.all([
             rocketDAONodeTrusted.getMemberCount.call(),
-            rocketTokenRPL.balanceOf(txOptions.from),
-            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', rocketTokenRPL.address),
+            gogoTokenGGP.balanceOf(txOptions.from),
+            rocketVault.balanceOfToken('rocketDAONodeTrustedActions', gogoTokenGGP.address),
         ]).then(
             ([memberTotal, rplBalanceBond, rplBalanceVault]) =>
             ({memberTotal, rplBalanceBond, rplBalanceVault})

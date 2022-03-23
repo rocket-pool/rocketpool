@@ -60,21 +60,21 @@ before(async function() {
 });
 
 // Run tests
-daoProtocolTests();
-daoNodeTrustedTests();
-auctionTests();
-depositPoolTests();
-minipoolScrubTests();
-minipoolTests();
-minipoolStatusTests();
-minipoolWithdrawalTests();
-networkBalancesTests();
-networkFeesTests();
-networkPricesTests();
-networkStakingTests();
-nodeDepositTests();
-nodeManagerTests();
+// daoProtocolTests();
+// daoNodeTrustedTests();
+// auctionTests();
+// depositPoolTests();
+// minipoolScrubTests();
+// minipoolTests();
+// minipoolStatusTests();
+// minipoolWithdrawalTests();
+// networkBalancesTests();
+// networkFeesTests();
+// networkPricesTests();
+// networkStakingTests();
+// nodeDepositTests();
+// nodeManagerTests();
 nodeStakingTests();
-rethTests();
-rplTests();
-rewardsPoolTests();
+// rethTests();
+// rplTests();
+// rewardsPoolTests();

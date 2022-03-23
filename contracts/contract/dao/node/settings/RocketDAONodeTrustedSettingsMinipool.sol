@@ -64,7 +64,7 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
         return getSettingUint("minipool.scrub.quorum");
     }
 
-    // True if scrubbing results in an RPL penalty for the node operator
+    // True if scrubbing results in an GGP penalty for the node operator
     function getScrubPenaltyEnabled() override external view returns (bool) {
         return getSettingBool("minipool.scrub.penalty.enabled");
     }
