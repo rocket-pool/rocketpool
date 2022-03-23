@@ -114,12 +114,9 @@ module.exports = async (deployer, network) => {
   ];
   const protocol = 'http';
   const ip = 'localhost';
-  const port = 9650;
+  const port = 63975;
   const url = `${protocol}://${ip}:${port}/ext/bc/C/rpc`;
-  const provider = new HDWalletProvider(
-    '0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027',
-    `${protocol}://${ip}:${port}/ext/bc/C/rpc`
-  );
+  const provider = new HDWalletProvider(privateKeys[0], url);
 
   let $web3 = new config.web3(provider);
   console.log('\n');

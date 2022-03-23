@@ -16,7 +16,7 @@ const providerPort = process.env.PROVIDER_PORT || 9650;
 const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
 const protocol = 'http';
 const ip = 'localhost';
-const port = 9650;
+const port = 63975;
 const provider = new Web3.providers.HttpProvider(`${protocol}://${ip}:${port}/ext/bc/C/rpc`);
 const privateKeys = [
   '0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027',
