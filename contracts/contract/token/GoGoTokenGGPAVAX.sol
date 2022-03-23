@@ -48,7 +48,7 @@ contract GoGoTokenGGPAVAX is RocketBase, ERC20, GoGoTokenGGPAVAXInterface {
     }
 
     // Calculate the amount of ggpAVAX backed by an amount of ETH
-    function getRethValue(uint256 _ethAmount) override public view returns (uint256) {
+    function getGgpavaxValue(uint256 _ethAmount) override public view returns (uint256) {
         // Get network balances
         RocketNetworkBalancesInterface rocketNetworkBalances = RocketNetworkBalancesInterface(getContractAddress("rocketNetworkBalances"));
         uint256 totalEthBalance = rocketNetworkBalances.getTotalETHBalance();
@@ -66,7 +66,7 @@ contract GoGoTokenGGPAVAX is RocketBase, ERC20, GoGoTokenGGPAVAXInterface {
     function getExchangeRate() override external view returns (uint256) {
         return getEthValue(1 ether);
     }
-
+    
     // Get the total amount of collateral available
     // Includes ggpAVAX contract balance & excess deposit pool balance
     function getTotalCollateral() override public view returns (uint256) {
@@ -93,7 +93,7 @@ contract GoGoTokenGGPAVAX is RocketBase, ERC20, GoGoTokenGGPAVAXInterface {
     // Only accepts calls from the RocketDepositPool contract
     function mint(uint256 _ethAmount, address _to) override external onlyLatestContract("rocketDepositPool", msg.sender) {
         // Get ggpAVAX amount
-        uint256 ggpavaxAmount = getRethValue(_ethAmount);
+        uint256 ggpavaxAmount = getGgpavaxValue(_ethAmount);
         // Check ggpAVAX amount
         require(ggpavaxAmount > 0, "Invalid token mint amount");
         // Update balance & supply
@@ -139,7 +139,7 @@ contract GoGoTokenGGPAVAX is RocketBase, ERC20, GoGoTokenGGPAVAXInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Get collateral and target collateral rate
         uint256 collateralRate = getCollateralRate();
-        uint256 targetCollateralRate = rocketDAOProtocolSettingsNetwork.getTargetRethCollateralRate();
+        uint256 targetCollateralRate = rocketDAOProtocolSettingsNetwork.getTargetGgpavaxCollateralRate();
         // Check if we are in excess
         if (collateralRate > targetCollateralRate) {
             // Calculate our target collateral in ETH

@@ -90,12 +90,12 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     }
 
     // Target ggpAVAX collateralization rate as a fraction of 1 ether
-    function getTargetRethCollateralRate() override external view returns (uint256) {
+    function getTargetGgpavaxCollateralRate() override external view returns (uint256) {
         return getSettingUint("network.ggpavax.collateral.target");
     }
 
     // ggpAVAX withdraw delay in blocks
-    function getRethDepositDelay() override external view returns (uint256) {
+    function getGgpavaxDepositDelay() override external view returns (uint256) {
         return getSettingUint("network.ggpavax.deposit.delay");
     }
 }
