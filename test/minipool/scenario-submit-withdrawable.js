@@ -50,7 +50,7 @@ export async function submitWithdrawable(minipoolAddress, txOptions) {
     function getNodeDetails() {
         return RocketMinipoolDelegate.at(minipoolAddress)
             .then(minipool => minipool.getNodeAddress.call())
-            .then(nodeAddress => rocketNodeStaking.getNodeRPLStake.call(nodeAddress))
+            .then(nodeAddress => rocketNodeStaking.getNodeGGPStake.call(nodeAddress))
             .then(rplStake => ({rplStake}));
     }
 
@@ -115,7 +115,7 @@ export async function executeSetWithdrawable(minipoolAddress, txOptions) {
     function getNodeDetails() {
         return RocketMinipoolDelegate.at(minipoolAddress)
           .then(minipool => minipool.getNodeAddress.call())
-          .then(nodeAddress => rocketNodeStaking.getNodeRPLStake.call(nodeAddress))
+          .then(nodeAddress => rocketNodeStaking.getNodeGGPStake.call(nodeAddress))
           .then(rplStake => ({rplStake}));
     }
 

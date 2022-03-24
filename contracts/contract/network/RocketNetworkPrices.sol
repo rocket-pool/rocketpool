@@ -17,15 +17,15 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     using SafeMath for uint;
 
     // Events
-    event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);
-    event PricesUpdated(uint256 block, uint256 rplPrice, uint256 effectiveRplStake, uint256 time);
+    event PricesSubmitted(address indexed from, uint256 block, uint256 ggpPrice, uint256 effectiveGgpStake, uint256 time);
+    event PricesUpdated(uint256 block, uint256 ggpPrice, uint256 effectiveGgpStake, uint256 time);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 1;
-        // Set initial RPL price
-        setRPLPrice(0.01 ether);
+        // Set initial GGP price
+        setGGPPrice(0.01 ether);
     }
 
     // The block number which prices are current for
@@ -36,37 +36,37 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         setUint(keccak256("network.prices.updated.block"), _value);
     }
 
-    // The current RP network RPL price in ETH
-    function getRPLPrice() override external view returns (uint256) {
-        return getUint(keccak256("network.prices.rpl"));
+    // The current RP network GGP price in ETH
+    function getGGPPrice() override external view returns (uint256) {
+        return getUint(keccak256("network.prices.ggp"));
     }
-    function setRPLPrice(uint256 _value) private {
-        setUint(keccak256("network.prices.rpl"), _value);
+    function setGGPPrice(uint256 _value) private {
+        setUint(keccak256("network.prices.ggp"), _value);
     }
 
-    // The current RP network effective RPL stake
-    function getEffectiveRPLStake() override external view returns (uint256) {
-        return getUint(keccak256("network.rpl.stake"));
+    // The current RP network effective GGP stake
+    function getEffectiveGGPStake() override external view returns (uint256) {
+        return getUint(keccak256("network.ggp.stake"));
     }
-    function getEffectiveRPLStakeUpdatedBlock() override public view returns (uint256) {
-        return getUint(keccak256("network.rpl.stake.updated.block"));
+    function getEffectiveGGPStakeUpdatedBlock() override public view returns (uint256) {
+        return getUint(keccak256("network.ggp.stake.updated.block"));
     }
-    function setEffectiveRPLStake(uint256 _value) private {
-        setUint(keccak256("network.rpl.stake"), _value);
-        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
+    function setEffectiveGGPStake(uint256 _value) private {
+        setUint(keccak256("network.ggp.stake"), _value);
+        setUint(keccak256("network.ggp.stake.updated.block"), block.number);
     }
-    function increaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        addUint(keccak256("network.rpl.stake"), _amount);
-        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
+    function increaseEffectiveGGPStake(uint256 _amount) override external onlyLatestNetworkContract {
+        addUint(keccak256("network.ggp.stake"), _amount);
+        setUint(keccak256("network.ggp.stake.updated.block"), block.number);
     }
-    function decreaseEffectiveRPLStake(uint256 _amount) override external onlyLatestNetworkContract {
-        subUint(keccak256("network.rpl.stake"), _amount);
-        setUint(keccak256("network.rpl.stake.updated.block"), block.number);
+    function decreaseEffectiveGGPStake(uint256 _amount) override external onlyLatestNetworkContract {
+        subUint(keccak256("network.ggp.stake"), _amount);
+        setUint(keccak256("network.ggp.stake.updated.block"), block.number);
     }
 
     // Submit network price data for a block
     // Only accepts calls from trusted (oracle) nodes
-    function submitPrices(uint256 _block, uint256 _rplPrice, uint256 _effectiveRplStake) override external onlyLatestContract("rocketNetworkPrices", address(this)) onlyTrustedNode(msg.sender) {
+    function submitPrices(uint256 _block, uint256 _ggpPrice, uint256 _effectiveGgpStake) override external onlyLatestContract("rocketNetworkPrices", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
@@ -74,8 +74,8 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         require(_block < block.number, "Prices can not be submitted for a future block");
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
-        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _rplPrice, _effectiveRplStake));
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice, _effectiveRplStake));
+        bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.prices.submitted.node.key", msg.sender, _block, _ggpPrice, _effectiveGgpStake));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _ggpPrice, _effectiveGgpStake));
         // Check & update node submission status
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         setBool(nodeSubmissionKey, true);
@@ -84,17 +84,17 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);
         // Emit prices submitted event
-        emit PricesSubmitted(msg.sender, _block, _rplPrice, _effectiveRplStake, block.timestamp);
+        emit PricesSubmitted(msg.sender, _block, _ggpPrice, _effectiveGgpStake, block.timestamp);
         // Check submission count & update network prices
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             // Update the price
-            updatePrices(_block, _rplPrice, _effectiveRplStake);
+            updatePrices(_block, _ggpPrice, _effectiveGgpStake);
         }
     }
 
     // Executes updatePrices if consensus threshold is reached
-    function executeUpdatePrices(uint256 _block, uint256 _rplPrice, uint256 _effectiveRplStake) override external onlyLatestContract("rocketNetworkPrices", address(this)) {
+    function executeUpdatePrices(uint256 _block, uint256 _ggpPrice, uint256 _effectiveGgpStake) override external onlyLatestContract("rocketNetworkPrices", address(this)) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(rocketDAOProtocolSettingsNetwork.getSubmitPricesEnabled(), "Submitting prices is currently disabled");
@@ -102,26 +102,26 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         require(_block < block.number, "Prices can not be submitted for a future block");
         require(_block > getPricesBlock(), "Network prices for an equal or higher block are set");
         // Get submission keys
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _rplPrice, _effectiveRplStake));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("network.prices.submitted.count", _block, _ggpPrice, _effectiveGgpStake));
         // Get submission count
         uint256 submissionCount = getUint(submissionCountKey);
         // Check submission count & update network prices
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
         // Update the price
-        updatePrices(_block, _rplPrice, _effectiveRplStake);
+        updatePrices(_block, _ggpPrice, _effectiveGgpStake);
     }
 
     // Update network price data
-    function updatePrices(uint256 _block, uint256 _rplPrice, uint256 _effectiveRplStake) private {
+    function updatePrices(uint256 _block, uint256 _ggpPrice, uint256 _effectiveGgpStake) private {
         // Ensure effective stake hasn't been updated on chain since `_block`
-        require(_block >= getEffectiveRPLStakeUpdatedBlock(), "Cannot update effective RPL stake based on block lower than when it was last updated on chain");
-        // Update price and effective RPL stake
-        setRPLPrice(_rplPrice);
+        require(_block >= getEffectiveGGPStakeUpdatedBlock(), "Cannot update effective GGP stake based on block lower than when it was last updated on chain");
+        // Update price and effective GGP stake
+        setGGPPrice(_ggpPrice);
         setPricesBlock(_block);
-        setEffectiveRPLStake(_effectiveRplStake);
+        setEffectiveGGPStake(_effectiveGgpStake);
         // Emit prices updated event
-        emit PricesUpdated(_block, _rplPrice, _effectiveRplStake, block.timestamp);
+        emit PricesUpdated(_block, _ggpPrice, _effectiveGgpStake, block.timestamp);
     }
 
     // Returns true if consensus has been reached for the last price reportable block
@@ -147,9 +147,9 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         // Calculate the last reportable block based on update frequency
         uint256 latestReportableBlock = block.number.div(updateFrequency).mul(updateFrequency);
         // There is an edge case where the update frequency is modified by the DAO and the latest reportable block calculated
-        // via the above method is older than the most recent block the effective RPL stake was updated on chain. If we don't
+        // via the above method is older than the most recent block the effective GGP stake was updated on chain. If we don't
         // handle that then price updates will fail for that block
-        uint256 lastOnChainUpdate = getEffectiveRPLStakeUpdatedBlock();
+        uint256 lastOnChainUpdate = getEffectiveGGPStakeUpdatedBlock();
         if (pricesBlock < latestReportableBlock && lastOnChainUpdate > latestReportableBlock) {
             return lastOnChainUpdate;
         }

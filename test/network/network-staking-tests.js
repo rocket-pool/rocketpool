@@ -9,7 +9,7 @@ import {
     nodeStakeRPL,
     nodeWithdrawRPL,
     nodeDeposit,
-    getNodeRPLStake,
+    getNodeGGPStake,
     getNodeEffectiveRPLStake,
     getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
@@ -141,7 +141,7 @@ export default function() {
           let rplPrice = await getRPLPrice();
 
           for(const node of nodes){
-              let nodeStakedRpl = await getNodeRPLStake(node);
+              let nodeStakedRpl = await getNodeGGPStake(node);
               let minipoolCount = await getNodeStakingMinipoolCount(node);
               let maxStake = web3.utils.toBN(minipoolCount).mul(web3.utils.toBN(web3.utils.toWei(maxStakePerMinipool, 'ether'))).mul(web3.utils.toBN(web3.utils.toWei('16', 'ether'))).div(rplPrice);
               let expectedEffectiveStake = BN.min(maxStake, nodeStakedRpl);

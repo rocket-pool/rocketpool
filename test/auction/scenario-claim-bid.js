@@ -1,4 +1,4 @@
-import { RocketAuctionManager, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketAuctionManager, GoGoTokenGGP, RocketVault } from '../_utils/artifacts';
 
 
 // Claim RPL from a lot
@@ -7,11 +7,11 @@ export async function claimBid(lotIndex, txOptions) {
     // Load contracts
     const [
         rocketAuctionManager,
-        rocketTokenRPL,
+        gogoTokenGGP,
         rocketVault,
     ] = await Promise.all([
         RocketAuctionManager.deployed(),
-        RocketTokenRPL.deployed(),
+        GoGoTokenGGP.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -40,9 +40,9 @@ export async function claimBid(lotIndex, txOptions) {
     // Get balances
     function getBalances(bidderAddress) {
         return Promise.all([
-        	rocketTokenRPL.balanceOf.call(bidderAddress),
-        	rocketTokenRPL.balanceOf.call(rocketVault.address),
-            rocketVault.balanceOfToken.call('rocketAuctionManager', rocketTokenRPL.address),
+        	gogoTokenGGP.balanceOf.call(bidderAddress),
+        	gogoTokenGGP.balanceOf.call(rocketVault.address),
+            rocketVault.balanceOfToken.call('rocketAuctionManager', gogoTokenGGP.address),
         ]).then(
             ([bidderRpl, vaultRpl, contractRpl]) =>
             ({bidderRpl, vaultRpl, contractRpl})

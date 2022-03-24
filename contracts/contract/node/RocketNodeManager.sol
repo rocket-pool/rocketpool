@@ -115,7 +115,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
-        // Register node for RPL claims
+        // Register node for GGP claims
         rocketClaimNode.register(msg.sender, true);
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);

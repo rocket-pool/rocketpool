@@ -1,4 +1,4 @@
-import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketNetworkPrices, RocketDAOProtocolSettingsNode, RocketNodeStaking, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import { RocketMinipoolManager, RocketDAOProtocolSettingsMinipool, RocketNetworkPrices, RocketDAOProtocolSettingsNode, RocketNodeStaking, GoGoTokenGGP, RocketVault } from '../_utils/artifacts';
 
 
 // Withdraw RPL staked against the node
@@ -11,7 +11,7 @@ export async function withdrawRpl(amount, txOptions) {
         rocketNetworkPrices,
         rocketDAOProtocolSettingsNode,
         rocketNodeStaking,
-        rocketTokenRPL,
+        gogoTokenGGP,
         rocketVault,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
@@ -19,7 +19,7 @@ export async function withdrawRpl(amount, txOptions) {
         RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
         RocketNodeStaking.deployed(),
-        RocketTokenRPL.deployed(),
+        GoGoTokenGGP.deployed(),
         RocketVault.deployed(),
     ]);
 
@@ -39,9 +39,9 @@ export async function withdrawRpl(amount, txOptions) {
     // Get token balances
     function getTokenBalances(nodeAddress) {
         return Promise.all([
-            rocketTokenRPL.balanceOf.call(nodeAddress),
-            rocketTokenRPL.balanceOf.call(rocketVault.address),
-            rocketVault.balanceOfToken.call('rocketNodeStaking', rocketTokenRPL.address),
+            gogoTokenGGP.balanceOf.call(nodeAddress),
+            gogoTokenGGP.balanceOf.call(rocketVault.address),
+            rocketVault.balanceOfToken.call('rocketNodeStaking', gogoTokenGGP.address),
         ]).then(
             ([nodeRpl, vaultRpl, stakingRpl]) =>
             ({nodeRpl, vaultRpl, stakingRpl})
@@ -53,7 +53,7 @@ export async function withdrawRpl(amount, txOptions) {
         return Promise.all([
             rocketNodeStaking.getTotalRPLStake.call(),
             rocketNodeStaking.getTotalEffectiveRPLStake.call(),
-            rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
+            rocketNodeStaking.getNodeGGPStake.call(nodeAddress),
             rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress),
             rocketNodeStaking.getNodeMinipoolLimit.call(nodeAddress),
         ]).then(

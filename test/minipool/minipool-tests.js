@@ -4,7 +4,7 @@ import {
   RocketMinipoolManager,
   RevertOnTransfer,
   RocketVault,
-  RocketTokenRPL,
+  GoGoTokenGGP,
   RocketMinipoolQueue,
   RocketMinipool,
   RocketDAONodeTrustedSettingsMinipool
@@ -360,8 +360,8 @@ export default function() {
 
           // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
           const rocketVault = await RocketVault.deployed();
-          const rocketTokenRPL = await RocketTokenRPL.deployed();
-          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+          const gogoTokenGGP = await GoGoTokenGGP.deployed();
+          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', gogoTokenGGP.address);
           assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
 
         });
@@ -378,8 +378,8 @@ export default function() {
 
           // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
           const rocketVault = await RocketVault.deployed();
-          const rocketTokenRPL = await RocketTokenRPL.deployed();
-          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+          const gogoTokenGGP = await GoGoTokenGGP.deployed();
+          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', gogoTokenGGP.address);
           assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
 
         });

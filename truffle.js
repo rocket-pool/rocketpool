@@ -16,9 +16,14 @@ const providerPort = process.env.PROVIDER_PORT || 8545;
 const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
 const protocol = 'http';
 const ip = 'localhost';
+<<<<<<< HEAD
 const port = 9650;
 const { mnemonicPersonalPhrase, snowtraceApiKey } = require("./.env.json");
 
+=======
+const port = 63975;
+const provider = new Web3.providers.HttpProvider(`${protocol}://${ip}:${port}/ext/bc/C/rpc`);
+>>>>>>> 51bdf207030d40456c87d33f783aa2d5cb300b92
 const privateKeys = [
   '0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027',
   '0x7b4198529994b0dc604278c99d153cfd069d594753d471171a1d102a10438e07',
@@ -30,6 +35,7 @@ const privateKeys = [
   '0xcdbfd34f687ced8c6968854f8a99ae47712c4f4183b78dcc4a903d1bfe8cbf60',
   '0x86f78c5416151fe3546dece84fda4b4b1e36089f2dbc48496faf3a950f16157c',
   '0x750839e9dbbd2a0910efe40f50b2f3b2f2f59f5580bb4b83bd8c1201cf9a010a',
+  '0x79650c4920776bc10f1c0c7e8d6fc44c44ea77049b183d5000fc08d7aed76cdf',
 ];
 
 // Importing babel to be able to use ES6 imports

@@ -10,7 +10,7 @@ import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-// RPL Rewards claiming for nodes (trusted) and minipool validators
+// GGP Rewards claiming for nodes (trusted) and minipool validators
 contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
 
     // Libs
@@ -53,7 +53,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         return getClaimPossible(_trustedNodeAddress) && trustedNodesClaimIntervalTotal > 0 ? calcBase.div(trustedNodesClaimIntervalTotal) : 0;
     }
 
-    // Return how much they can expect in rpl rewards
+    // Return how much they can expect in ggp rewards
     function getClaimRewardsAmount(address _trustedNodeAddress) override external view onlyTrustedNode(_trustedNodeAddress) returns (uint256) {
         // Init the rewards pool contract 
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
@@ -75,7 +75,7 @@ contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
         // Get node withdrawal address
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         address nodeWithdrawalAddress = rocketNodeManager.getNodeWithdrawalAddress(msg.sender);
-        // Claim RPL
+        // Claim GGP
         RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
         rewardsPool.claim(msg.sender, nodeWithdrawalAddress, getClaimRewardsPerc(msg.sender));
     }

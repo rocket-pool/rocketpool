@@ -1,11 +1,11 @@
-import { RocketTokenRPL,  RocketRewardsPool, RocketClaimTrustedNode, RocketClaimDAO, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
+import { GoGoTokenGGP,  RocketRewardsPool, RocketClaimTrustedNode, RocketClaimDAO, RocketDAOProtocol, RocketVault } from '../_utils/artifacts';
 
 // Set the address the DAO can receive rewards at
 export async function getRewardsDAOTreasuryBalance(txOptions) {
     // Load contracts
     const rocketVault = await RocketVault.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    return rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address);
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
+    return rocketVault.balanceOfToken('rocketClaimDAO', gogoTokenGGP.address);
 }
 
 // Set the address the DAO can receive rewards at
@@ -14,10 +14,10 @@ export async function rewardsClaimDAO(txOptions) {
     const rocketVault = await RocketVault.deployed();
     const rocketClaimTrustedNode = await RocketClaimTrustedNode.deployed();
     const rocketRewardsPool = await RocketRewardsPool.deployed();
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
 
     // Call the mint function on RPL to mint any before we begin so we have accurate figures to work with
-    await rocketTokenRPL.inflationMintTokens();
+    await gogoTokenGGP.inflationMintTokens();
 
     // Get data about the tx
     function getTxData() {
@@ -29,7 +29,7 @@ export async function rewardsClaimDAO(txOptions) {
             rocketRewardsPool.getClaimingContractAllowance('rocketClaimDAO'),
             rocketRewardsPool.getClaimingContractTotalClaimed('rocketClaimDAO'),
             rocketRewardsPool.getClaimIntervalRewardsTotal(),
-            rocketVault.balanceOfToken('rocketClaimDAO', rocketTokenRPL.address),
+            rocketVault.balanceOfToken('rocketClaimDAO', gogoTokenGGP.address),
         ]).then(
             ([intervalsPassed, intervalTimeStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance]) =>
             ({intervalsPassed, intervalTimeStart, poolRPLBalance, daoClaimPerc, daoClaimAllowance, daoContractClaimTotal, intervalRewardsTotal, daoRewardsAddressBalance})

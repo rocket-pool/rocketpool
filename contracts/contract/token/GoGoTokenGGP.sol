@@ -7,25 +7,25 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../RocketBase.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsInflationInterface.sol";
-import "../../interface/token/RocketTokenRPLInterface.sol";
+import "../../interface/token/GoGoTokenGGPInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 
-// RPL Governance and utility token
+// GGP Governance and utility token
 // Inlfationary with rate determined by DAO
 
-contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
+contract GoGoTokenGGP is RocketBase, ERC20Burnable, GoGoTokenGGPInterface {
 
     // Libs
     using SafeMath for uint;
 
     /**** Properties ***********/
 
-    // How many RPL tokens minted to date (18m from fixed supply)
+    // How many GGP tokens minted to date (18m from fixed supply)
     uint256 constant totalInitialSupply = 18000000000000000000000000;
-    // The RPL inflation interval
+    // The GGP inflation interval
     uint256 constant inflationInterval = 1 days;
-    // How many RPL tokens have been swapped for new ones
-    uint256 public totalSwappedRPL = 0;
+    // How many GGP tokens have been swapped for new ones
+    uint256 public totalSwappedGGP = 0;
 
     // Timestamp of last block inflation was calculated at
     uint256 private inflationCalcTime = 0;
@@ -33,23 +33,24 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
 
     /**** Contracts ************/
 
-    // The address of our fixed supply RPL ERC20 token contract
-    IERC20 rplFixedSupplyContract = IERC20(address(0));
+    // The address of our fixed supply GGP ERC20 token contract
+    IERC20 ggpFixedSupplyContract = IERC20(address(0));
 
 
     /**** Events ***********/
 
-    event RPLInflationLog(address sender, uint256 value, uint256 inflationCalcTime);
-    event RPLFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
+    event GGPInflationLog(address sender, uint256 value, uint256 inflationCalcTime);
+    event GGPFixedSupplyBurn(address indexed from, uint256 amount, uint256 time);
+    event MintGGPToken(address _minter, address _address, uint256 _value);
 
 
     // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress, IERC20 _rocketTokenRPLFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("Rocket Pool Protocol", "RPL") {
+    constructor(RocketStorageInterface _rocketStorageAddress, IERC20 _GoGoTokenGGPFixedSupplyAddress) RocketBase(_rocketStorageAddress) ERC20("GoGoPool  Protocol", "GGP") {
         // Version
         version = 1;
-        // Set the mainnet RPL fixed supply token address
-        rplFixedSupplyContract = IERC20(_rocketTokenRPLFixedSupplyAddress);
-        // Mint the 18m tokens that currently exist and allow them to be sent to people burning existing fixed supply RPL
+        // Set the mainnet GGP fixed supply token address
+        ggpFixedSupplyContract = IERC20(_GoGoTokenGGPFixedSupplyAddress);
+        // Mint the 18m tokens that currently exist and allow them to be sent to people burning existing fixed supply GGP
         _mint(address(this), totalInitialSupply);
     }
 
@@ -180,34 +181,40 @@ contract RocketTokenRPL is RocketBase, ERC20Burnable, RocketTokenRPLInterface {
             // Mint to itself, then allocate tokens for transfer to rewards contract, this will update balance & supply
             _mint(address(this), newTokens);
             // Initialise itself and allow from it's own balance (cant just do an allow as it could be any user calling this so they are msg.sender)
-            IERC20 rplInflationContract = IERC20(address(this));
+            IERC20 ggpInflationContract = IERC20(address(this));
             // Get the current allowance for Rocket Vault
-            uint256 vaultAllowance = rplFixedSupplyContract.allowance(rocketVaultAddress, address(this));
+            uint256 vaultAllowance = ggpFixedSupplyContract.allowance(rocketVaultAddress, address(this));
             // Now allow Rocket Vault to move those tokens, we also need to account of any other allowances for this token from other contracts in the same block
-            require(rplInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
-            // Let vault know it can move these tokens to itself now and credit the balance to the RPL rewards pool contract
+            require(ggpInflationContract.approve(rocketVaultAddress, vaultAllowance.add(newTokens)), "Allowance for Rocket Vault could not be approved");
+            // Let vault know it can move these tokens to itself now and credit the balance to the GGP rewards pool contract
             rocketVaultContract.depositToken("rocketRewardsPool", IERC20(address(this)), newTokens);
         }
         // Log it
-        emit RPLInflationLog(msg.sender, newTokens, inflationCalcTime);
+        emit GGPInflationLog(msg.sender, newTokens, inflationCalcTime);
         // return number minted
         return newTokens;
     }   
 
    /**
-   * @dev Swap current RPL fixed supply tokens for new RPL 1:1 to the same address from the user calling it
-   * @param _amount The amount of RPL fixed supply tokens to swap
+   * @dev Swap current GGP fixed supply tokens for new GGP 1:1 to the same address from the user calling it
+   * @param _amount The amount of GGP fixed supply tokens to swap
    */
-    function swapTokens(uint256 _amount) override external {
+    function faucetMint(address _to, uint256 _amount) override external returns(bool) {
         // Valid amount?
-        require(_amount > 0, "Please enter valid amount of RPL to swap");
+        require(_amount > 0, "Please enter valid amount of GGP to swap");
         // Send the tokens to this contract now and mint new ones for them
-        require(rplFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing RPL contract was not successful");
-        // Transfer from the contracts RPL balance to the user
-        require(this.transfer(msg.sender, _amount), "Token transfer from RPL inflation contract was not successful");
+//        require(ggpFixedSupplyContract.transferFrom(msg.sender, address(this), _amount), "Token transfer from existing GGP contract was not successful");
+        // Transfer from the contracts GGP balance to the user
+//        require(this.transfer(msg.sender, _amount), "Token transfer from GGP inflation contract was not successful");
         // Update the total swapped
-        totalSwappedRPL = totalSwappedRPL.add(_amount);
+
+        _mint(_to, _amount);
+
+        totalSwappedGGP = totalSwappedGGP.add(_amount);
+        emit MintGGPToken(msg.sender, _to, _amount);
+
+        return true;
         // Log it
-        emit RPLFixedSupplyBurn(msg.sender, _amount, block.timestamp);
+//        emit GGPFixedSupplyBurn(msg.sender, _amount, block.timestamp);
     }
 }

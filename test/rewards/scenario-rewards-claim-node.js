@@ -1,4 +1,4 @@
-import { RocketClaimNode, RocketNodeManager, RocketNodeStaking, RocketRewardsPool, RocketTokenRPL } from '../_utils/artifacts';
+import { RocketClaimNode, RocketNodeManager, RocketNodeStaking, RocketRewardsPool, GoGoTokenGGP } from '../_utils/artifacts';
 
 
 // Perform rewards claims for a regular node
@@ -10,13 +10,13 @@ export async function rewardsClaimNode(txOptions) {
         rocketNodeManager,
         rocketNodeStaking,
         rocketRewardsPool,
-        rocketTokenRPL,
+        gogoTokenGGP,
     ] = await Promise.all([
         RocketClaimNode.deployed(),
         RocketNodeManager.deployed(),
         RocketNodeStaking.deployed(),
         RocketRewardsPool.deployed(),
-        RocketTokenRPL.deployed(),
+        GoGoTokenGGP.deployed(),
     ]);
 
     // Get node withdrawal address
@@ -38,7 +38,7 @@ export async function rewardsClaimNode(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
-            rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
+            gogoTokenGGP.balanceOf.call(nodeWithdrawalAddress),
         ]).then(
             ([claimIntervalTimeStart, nodeRpl]) =>
             ({claimIntervalTimeStart, nodeRpl})

@@ -1,11 +1,11 @@
-import { RocketTokenDummyRPL } from '../_utils/artifacts';
+import { RocketTokenDummyGGP } from '../_utils/artifacts';
 
 
 // Allow RPL from the fixed contract to be spent
 export async function allowDummyRPL(to, amount, txOptions) {
 
     // Load contracts
-    const rocketTokenDummyRPL = await RocketTokenDummyRPL.deployed();
+    const rocketTokenDummyRPL = await RocketTokenDummyGGP.deployed();
 
     // Get balances
     function getBalances() {

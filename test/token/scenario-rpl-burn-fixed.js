@@ -1,21 +1,21 @@
-import { RocketTokenRPL } from '../_utils/artifacts';
-import { RocketTokenDummyRPL } from '../_utils/artifacts';
+import { GoGoTokenGGP } from '../_utils/artifacts';
+import { RocketTokenDummyGGP } from '../_utils/artifacts';
 
 // Burn current fixed supply RPL for new RPL
 export async function burnFixedRPL(amount, txOptions) {
 
     // Load contracts
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    const rocketTokenDummyRPL = await RocketTokenDummyRPL.deployed();
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
+    const rocketTokenDummyRPL = await RocketTokenDummyGGP.deployed();
 
     // Get balances
     function getBalances() {
         return Promise.all([
             rocketTokenDummyRPL.balanceOf.call(txOptions.from),
-            rocketTokenRPL.totalSupply.call(),
-            rocketTokenRPL.balanceOf.call(txOptions.from),
-            rocketTokenDummyRPL.balanceOf.call(rocketTokenRPL.address),
-            rocketTokenRPL.balanceOf.call(rocketTokenRPL.address),
+            gogoTokenGGP.totalSupply.call(),
+            gogoTokenGGP.balanceOf.call(txOptions.from),
+            rocketTokenDummyRPL.balanceOf.call(gogoTokenGGP.address),
+            gogoTokenGGP.balanceOf.call(gogoTokenGGP.address),
         ]).then(
             ([rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply, rplContractBalanceOfSelf]) =>
             ({rplFixedUserBalance, rplTokenSupply, rplUserBalance, rplContractBalanceOfFixedSupply, rplContractBalanceOfSelf})
@@ -33,7 +33,7 @@ export async function burnFixedRPL(amount, txOptions) {
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
-    let txReceipt = await rocketTokenRPL.swapTokens(amount, txOptions);
+    let txReceipt = await gogoTokenGGP.swapTokens(amount, txOptions);
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
     // Get updated balances

@@ -1,42 +1,42 @@
-import { RocketTokenRETH, RocketTokenNETH, RocketTokenDummyRPL, RocketTokenRPL } from '../_utils/artifacts';
+import { GoGoTokenGGPAVAX, RocketTokenNETH, RocketTokenDummyGGP, GoGoTokenGGP } from '../_utils/artifacts';
 
 
 // Get the RPL balance of an address
 export async function getRplBalance(address) {
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    let balance = rocketTokenRPL.balanceOf.call(address);
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
+    let balance = gogoTokenGGP.balanceOf.call(address);
     return balance;
 }
 
 
 // Get the rETH balance of an address
 export async function getRethBalance(address) {
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
-    let balance = rocketTokenRETH.balanceOf.call(address);
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
+    let balance = gogoTokenGGPAVAX.balanceOf.call(address);
     return balance;
 }
 
 
 // Get the current rETH exchange rate
 export async function getRethExchangeRate() {
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
-    let exchangeRate = await rocketTokenRETH.getExchangeRate.call();
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
+    let exchangeRate = await gogoTokenGGPAVAX.getExchangeRate.call();
     return exchangeRate;
 }
 
 
 // Get the current rETH collateral rate
 export async function getRethCollateralRate() {
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
-    let collateralRate = await rocketTokenRETH.getCollateralRate.call();
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
+    let collateralRate = await gogoTokenGGPAVAX.getCollateralRate.call();
     return collateralRate;
 }
 
 
 // Get the current rETH token supply
 export async function getRethTotalSupply() {
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
-    let totalSupply = await rocketTokenRETH.totalSupply.call();
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
+    let totalSupply = await gogoTokenGGPAVAX.totalSupply.call();
     return totalSupply;
 }
 
@@ -53,29 +53,29 @@ export async function getNethBalance(address) {
 export async function mintRPL(owner, toAddress, amount) {
 
     // Load contracts
-    const [rocketTokenDummyRPL, rocketTokenRPL] = await Promise.all([
-        RocketTokenDummyRPL.deployed(),
-        RocketTokenRPL.deployed(),
+    const [rocketTokenDummyRPL, gogoTokenGGP] = await Promise.all([
+        RocketTokenDummyGGP.deployed(),
+        GoGoTokenGGP.deployed(),
     ]);
 
     // Mint dummy RPL to address
     await rocketTokenDummyRPL.mint(toAddress, amount, {from: owner});
 
     // Swap dummy RPL for RPL
-    await rocketTokenDummyRPL.approve(rocketTokenRPL.address, amount, {from: toAddress});
-    await rocketTokenRPL.swapTokens(amount, {from: toAddress});
+    await rocketTokenDummyRPL.approve(gogoTokenGGP.address, amount, {from: toAddress});
+    await gogoTokenGGP.swapTokens(amount, {from: toAddress});
 
 }
 
 
 // Approve RPL to be spend by an address
 export async function approveRPL(spender, amount, txOptions) {
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    await rocketTokenRPL.approve(spender, amount, txOptions);
+    const gogoTokenGGP = await GoGoTokenGGP.deployed();
+    await gogoTokenGGP.approve(spender, amount, txOptions);
 }
 
 
 export async function depositExcessCollateral(txOptions) {
-    const rocketTokenRETH = await RocketTokenRETH.deployed();
-    await rocketTokenRETH.depositExcessCollateral(txOptions);
+    const gogoTokenGGPAVAX = await GoGoTokenGGPAVAX.deployed();
+    await gogoTokenGGPAVAX.depositExcessCollateral(txOptions);
 }
