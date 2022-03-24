@@ -1,23 +1,24 @@
 /**
-  Rocket Pool
-  @author David Rugendyke
-  @email david@rocketpool.net
-  @version 0.2 
-*/
+ Rocket Pool
+ @author David Rugendyke
+ @email david@rocketpool.net
+ @version 0.2
+ */
 
 const Web3 = require('web3');
 const FS = require('fs');
 const Contract = require('truffle-contract');
-const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 const mnemonicPhrase = process.env.MNEMONIC;
 const mnemonicPassword = process.env.MNEMONIC_PASSWORD;
 const providerHost = process.env.PROVIDER_HOST || 'localhost';
-const providerPort = process.env.PROVIDER_PORT || 9650;
+const providerPort = process.env.PROVIDER_PORT || 8545;
 const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
 const protocol = 'http';
 const ip = 'localhost';
 const port = 9650;
-const provider = new Web3.providers.HttpProvider(`${protocol}://${ip}:${port}/ext/bc/C/rpc`);
+const { mnemonicPersonalPhrase, snowtraceApiKey } = require("./.env.json");
+
 const privateKeys = [
   '0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027',
   '0x7b4198529994b0dc604278c99d153cfd069d594753d471171a1d102a10438e07',
@@ -32,20 +33,17 @@ const privateKeys = [
 ];
 
 // Importing babel to be able to use ES6 imports
-require('babel-register')({
+require("babel-register")({
   presets: [
-    [
-      'env',
-      {
-        targets: {
-          node: '8.0',
-        },
-      },
-    ],
+    ["env", {
+      "targets" : {
+        "node" : "8.0"
+      }
+    }]
   ],
   retainLines: true,
 });
-require('babel-polyfill');
+require("babel-polyfill");
 
 module.exports = {
   web3: Web3,
@@ -53,32 +51,28 @@ module.exports = {
   contract: Contract,
   compilers: {
     solc: {
-      version: '0.7.6',
+      version: "0.7.6",
       settings: {
         optimizer: {
           enabled: true,
-          runs: 15000,
-        },
-      },
-    },
+          runs: 15000
+        }
+      }
+    }
   },
-  plugins: ['solidity-coverage'],
+  plugins: ["solidity-coverage", "truffle-plugin-verify"],
+  api_keys: {
+    snowtrace: snowtraceApiKey
+  },
   networks: {
     development: {
       provider: () => {
         return new HDWalletProvider(privateKeys, `${protocol}://${ip}:${port}/ext/bc/C/rpc`, 0, 10);
       },
-      network_id: '*',
+      network_id: '*', // Match any network id
       gas: 8000000,
       gasPrice: 225000000000,
     },
-    // development: {
-    //   host: '127.0.0.1',
-    //   port: 9650,
-    //   network_id: '*', // Match any network id
-    //   gas: 3000000,
-    //   gasPrice: 225000000000,
-    // },
     // Solidity coverage test
     coverage: {
       host: '127.0.0.1',
@@ -86,27 +80,61 @@ module.exports = {
       network_id: '*', // Match any network id
       gas: 12450000,
     },
+    fuji: {
+      hasProvider: true,
+      provider: () =>
+          new HDWalletProvider({
+            mnemonic: {
+              phrase: mnemonicPersonalPhrase,
+            },
+            providerOrUrl: "https://api.avax-test.network/ext/bc/C/rpc",
+            pollingInterval: 8000
+          }),
+      network_id: 43113, // Match any network id
+      gas: 7000000,
+      from: "0x8245044a6448b6bd2d2294ea828a2a15ef830701",
+      timeoutBlocks: 2000,
+      confirmation: 10,
+      networkCheckTimeout: 999999,
+      gasPrice: 225000000000
+    },
+    // Geth RP Testnet Development
+    'betatest': {
+      host: "127.0.0.1",
+      port: 8999,
+      network_id: "77",
+      from: "0x2f6812e7005c61835B12544EEb45958099eF45f4",
+      gas: 12450000,
+    },
+    // Workshop network
+    'workshop': {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "88",
+      from: "0x9ad8fd4c83b752914a9b22484686666d9a30619c",
+      gas: 12450000,
+    },
     // Geth RP Testnet Development
     // Remove accounts[0] lookup in migrations script when deploying
-    goerli: {
+    'goerli': {
       provider: () =>
-        new HDWalletProvider({
-          mnemonic: {
-            phrase: mnemonicPhrase,
-            password: mnemonicPassword,
-          },
-          providerOrUrl: `${providerProtocol}://${providerHost}:${providerPort}`,
-          numberOfAddresses: 1,
-          shareNonce: true,
-        }),
+          new HDWalletProvider({
+            mnemonic: {
+              phrase: mnemonicPhrase,
+              password: mnemonicPassword
+            },
+            providerOrUrl: `${providerProtocol}://${providerHost}:${providerPort}`,
+            numberOfAddresses: 1,
+            shareNonce: true,
+          }),
       host: providerHost,
       port: providerPort,
-      network_id: '5',
+      network_id: "5",
       gas: 8000000,
-      hasProvider: true,
+      hasProvider: true
     },
   },
   mocha: {
-    timeout: 0,
-  },
+    timeout: 0
+  }
 };

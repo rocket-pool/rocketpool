@@ -28,6 +28,7 @@
     "solidity-coverage": "^0.5.11",
     "truffle": "^5.1.51",
     "truffle-contract": "^3.*",
+    "truffle-plugin-verify": "^0.5.21",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.8"
   },
