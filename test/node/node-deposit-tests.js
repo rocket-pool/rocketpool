@@ -9,7 +9,7 @@ import { getMinipoolSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { deposit } from './scenario-deposit';
 import { userDeposit } from '../_helpers/deposit'
-import { upgradeRewards } from '../_utils/upgrade';
+import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
@@ -31,7 +31,7 @@ export default function() {
         let emptyDepositNodeAmount;
         before(async () => {
             // Upgrade
-            await upgradeRewards(owner);
+            await upgradeOneDotOne(owner);
 
             // Register node
             await registerNode({from: node});

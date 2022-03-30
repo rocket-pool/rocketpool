@@ -8,12 +8,11 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../RocketBase.sol";
 import "../../interface/old/RocketNodeManagerInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol"; 
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
 
 
-// Node registration and management 
+// Node registration and management
 contract RocketNodeManagerOld is RocketBase, RocketNodeManagerInterfaceOld {
 
     // Libraries
@@ -22,7 +21,6 @@ contract RocketNodeManagerOld is RocketBase, RocketNodeManagerInterfaceOld {
     // Events
     event NodeRegistered(address indexed node, uint256 time);
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
-    event NodeRewardNetworkChanged(address indexed node, uint256 network);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -133,4 +131,5 @@ contract RocketNodeManagerOld is RocketBase, RocketNodeManagerInterfaceOld {
         // Emit node timezone location set event
         emit NodeTimezoneLocationSet(msg.sender, block.timestamp);
     }
+
 }

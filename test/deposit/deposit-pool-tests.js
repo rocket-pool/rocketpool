@@ -11,7 +11,7 @@ import { deposit } from './scenario-deposit';
 import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
-import { upgradeRewards } from '../_utils/upgrade';
+import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -30,7 +30,7 @@ export default function() {
         // Setup
         before(async () => {
             // Upgrade
-            await upgradeRewards(owner);
+            await upgradeOneDotOne(owner);
 
             // Register node
             await registerNode({from: node});
@@ -125,7 +125,7 @@ export default function() {
         //
 
 
-        it(printTitle('random address', 'can assign deposits'), async () => {
+        it.only(printTitle('random address', 'can assign deposits'), async () => {
 
             // Assign deposits with no assignable deposits
             await assignDeposits({

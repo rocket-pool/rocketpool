@@ -1,0 +1,51 @@
+pragma solidity 0.7.6;
+
+// SPDX-License-Identifier: GPL-3.0-only
+
+import "../RocketBase.sol";
+import "./RocketNodeDistributor.sol";
+import "./RocketNodeDistributorStorageLayout.sol";
+import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+
+contract RocketNodeDistributorFactory is RocketBase, RocketNodeDistributorFactoryInterface {
+    // Events
+    event ProxyCreated(address _address);
+
+    // Construct
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+        version = 1;
+    }
+
+    function getProxyBytecode() override public pure returns (bytes memory) {
+        return type(RocketNodeDistributor).creationCode;
+    }
+
+    // Calculates the predetermined distributor contract address from given node address
+    function getProxyAddress(address _nodeAddress) override external view returns(address) {
+        bytes memory contractCode = getProxyBytecode();
+        bytes memory initCode = abi.encodePacked(contractCode, abi.encode(_nodeAddress, rocketStorage));
+
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(initCode)));
+
+        return address(uint160(uint(hash)));
+    }
+
+    function createProxy(address _nodeAddress) override external {
+        bytes memory contractCode = getProxyBytecode();
+        bytes memory initCode = abi.encodePacked(contractCode, abi.encode(_nodeAddress, rocketStorage));
+
+        address contractAddress;
+
+        assembly {
+            // Create the proxy
+            contractAddress := create2(
+                0,
+                add(initCode, 0x20),
+                mload(initCode),
+                0
+            )
+        }
+
+        emit ProxyCreated(contractAddress);
+    }
+}

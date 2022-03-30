@@ -26,7 +26,7 @@ import { RocketRewardsPool } from '../_utils/artifacts';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeRewards } from '../_utils/upgrade';
+import { upgradeOneDotOne } from '../_utils/upgrade'
 import { submitRewards } from './scenario-submit-rewards';
 import { claimRewards } from './scenario-claim-rewards';
 import { claimAndStakeRewards } from './scenario-claim-and-stake-rewards';
@@ -91,7 +91,7 @@ export default function() {
         // Setup
         before(async () => {
             // Upgrade
-            await upgradeRewards(owner);
+            await upgradeOneDotOne(owner);
 
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
@@ -250,8 +250,6 @@ export default function() {
 
             const rocketRewardsPool = await RocketRewardsPool.deployed();
             const pendingRewards = await rocketRewardsPool.getPendingETHRewards.call();
-
-            console.log('Pending rewards:' + pendingRewards.toString());
 
             // Submit rewards snapshot
             const rewards = [

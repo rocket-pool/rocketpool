@@ -8,6 +8,7 @@ import {
 
 // Contracts
 import { RocketDAOProtocolSettingsAuction, RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation, RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork, RocketDAOProtocolSettingsRewards } from '../_utils/artifacts';
+import { upgradeOneDotOne } from '../_utils/upgrade';
 
 
 export default function() {
@@ -22,7 +23,8 @@ export default function() {
 
         // Setup - This is a WIP DAO, onlyGuardians will be able to change settings before the DAO is officially rolled out
         before(async () => {
-
+          // Upgrade distributor
+          await upgradeOneDotOne(guardian);
         });
 
 

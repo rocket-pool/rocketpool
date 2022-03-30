@@ -2,16 +2,34 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import "../dao/protocol/settings/RocketDAOProtocolSettings.sol";
+import "../../interface/old/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network auction settings
 
-contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterface {
+contract RocketDAOProtocolSettingsNetworkOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterfaceOld {
+
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         // Set version
-        version = 2;
+        version = 1;
+        // Initialize settings on deployment
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Apply settings
+            setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
+            setSettingBool("network.submit.balances.enabled", true);
+            setSettingUint("network.submit.balances.frequency", 5760);      // ~24 hours
+            setSettingBool("network.submit.prices.enabled", true);
+            setSettingUint("network.submit.prices.frequency", 5760);        // ~24 hours
+            setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
+            setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
+            setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
+            setSettingUint("network.node.fee.demand.range", 160 ether);
+            setSettingUint("network.reth.collateral.target", 0.1 ether);
+            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
+            // Settings initialised
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        }
     }
 
     // Update a setting, overrides inherited setting method with extra checks for this contract
@@ -31,17 +49,7 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.consensus.threshold");
     }
 
-    // The threshold of trusted nodes that must reach consensus on a penalty
-    function getNodePenaltyThreshold() override external view returns (uint256) {
-        return getSettingUint("network.penalty.threshold");
-    }
-
-    // The amount to penalise a minipool for each feeDistributor infraction
-    function getPerPenaltyRate() override external view returns (uint256) {
-        return getSettingUint("network.penalty.per.rate");
-    }
-
-// Submit balances currently enabled (trusted nodes only)
+    // Submit balances currently enabled (trusted nodes only)
     function getSubmitBalancesEnabled() override external view returns (bool) {
         return getSettingBool("network.submit.balances.enabled");
     }

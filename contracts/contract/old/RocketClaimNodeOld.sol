@@ -12,7 +12,7 @@ import "../../interface/old/RocketRewardsPoolInterface.sol";
 
 // RPL Rewards claiming for regular nodes
 
-contract RocketClaimNode is RocketBase, RocketClaimNodeInterface {
+contract RocketClaimNodeOld is RocketBase, RocketClaimNodeInterface {
 
     // Libs
     using SafeMath for uint;

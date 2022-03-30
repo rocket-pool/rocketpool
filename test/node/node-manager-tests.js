@@ -6,7 +6,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
-import { upgradeRewards } from '../_utils/upgrade';
+import { upgradeOneDotOne } from '../_utils/upgrade';
 
 
 export default function() {
@@ -31,7 +31,7 @@ export default function() {
         // Setup
         before(async () => {
             // Upgrade
-            await upgradeRewards(owner);
+            await upgradeOneDotOne(owner);
 
             // Register nodes
             await registerNode({from: registeredNode1});

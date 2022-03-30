@@ -21,7 +21,7 @@ import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeRewards } from '../_utils/upgrade';
+import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketAuctionManager', async (accounts) => {
@@ -42,7 +42,7 @@ export default function() {
         let minipool;
         before(async () => {
             // Upgrade
-            await upgradeRewards(owner);
+            await upgradeOneDotOne(owner);
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});

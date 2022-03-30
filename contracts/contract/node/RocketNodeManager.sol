@@ -6,10 +6,14 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
+import "../../types/MinipoolStatus.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol"; 
 import "../../interface/util/AddressSetStorageInterface.sol";
+import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
 
 
@@ -116,6 +120,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
+        // Initialise fee distributor for this node
+        _initialiseFeeDistributor(msg.sender);
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
     }
@@ -131,6 +137,83 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         emit NodeTimezoneLocationSet(msg.sender, block.timestamp);
     }
 
+    // Returns true if node has initialised their fee distributor contract
+    function getFeeDistributorInitialised(address _nodeAddress) override public returns (bool) {
+        // Load contracts
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        // Get distributor address
+        address contractAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        // Check if contract exists at that address
+        uint32 codeSize;
+        assembly {
+            codeSize := extcodesize(contractAddress)
+        }
+        return codeSize > 0;
+    }
+
+    // Node operators created before the distributor was implemented must call this to setup their distributor contract
+    function initialiseFeeDistributor() override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
+        // Prevent multiple calls
+        require(!getFeeDistributorInitialised(msg.sender), "Already initialised");
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Calculate and set current average fee numerator
+        uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
+        if (count > 0){
+            uint256 numerator;
+            for (uint256 i = 0; i < count; i++) {
+                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getMinipoolAt(i));
+                if (minipool.getStatus() == MinipoolStatus.Staking){
+                    numerator = numerator.add(minipool.getNodeFee());
+                }
+            }
+            setUint(keccak256(abi.encodePacked("node.average.fee.numerator", msg.sender)), numerator);
+        }
+        // Create the distributor contract
+        _initialiseFeeDistributor(msg.sender);
+    }
+
+    function _initialiseFeeDistributor(address _nodeAddress) internal {
+        // Load contracts
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        // Create the distributor proxy
+        rocketNodeDistributorFactory.createProxy(_nodeAddress);
+    }
+
+    function increaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
+        // Increase node fee numerator
+        addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
+        _distribute(_nodeAddress);
+    }
+
+    function decreaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
+        // Decrease node fee numerator
+        subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
+        _distribute(_nodeAddress);
+    }
+
+    function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Calculate average
+        uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)));
+        uint256 denominator = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress);
+        if (denominator == 0) {
+            return 0;
+        }
+        return numerator.div(denominator);
+    }
+
+    function _distribute(address _nodeAddress) internal {
+        // Get contracts
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        address distributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        // If there are funds to distribute than call distribute
+        if (distributorAddress.balance > 0) {
+            RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(distributorAddress);
+            distributor.distribute();
+        }
+    }
     function setRewardNetwork(address _nodeAddress, uint256 _network) override external onlyLatestContract("rocketNodeManager", address(this)) {
         // Confirm the transaction is from the node's current withdrawal address
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);

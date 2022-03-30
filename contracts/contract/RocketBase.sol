@@ -33,7 +33,7 @@ abstract contract RocketBase {
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
-        require(_contractAddress == getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), string(abi.encodePacked("Invalid or outdated contract: ", _contractName)));
+        require(_contractAddress == getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), "Invalid or outdated contract");
         _;
     }
 
@@ -87,7 +87,7 @@ abstract contract RocketBase {
         // Get the current contract address
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
         // Check it
-        require(contractAddress != address(0x0), "Contract not found");
+        require(contractAddress != address(0x0), string(abi.encodePacked("Contract not found: ", _contractName)));
         // Return
         return contractAddress;
     }

@@ -4,19 +4,21 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./RocketMinipool.sol";
 import "../RocketBase.sol";
+import "../../types/MinipoolStatus.sol";
+import "../../types/MinipoolDeposit.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../types/MinipoolDeposit.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 
 // Minipool creation, removal and management
 
@@ -31,7 +33,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Get the number of minipools in the network
@@ -199,6 +201,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Increments _nodeAddress' number of minipools in staking status
     function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Get contracts
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -209,10 +214,15 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.add(1));
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
+        // Update node fee average
+        rocketNodeManager.increaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
     function decrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Get contracts
+        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -223,6 +233,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.sub(1));
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
+        // Update node fee average
+        rocketNodeManager.decreaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
     }
 
     // Increments _nodeAddress' number of minipools that have been finalised
@@ -251,7 +263,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
           require(totalMinipoolCount.add(1) <= rocketDAOProtocolSettingsMinipool.getMaximumCount(), "Global minipool limit reached");
         }
         // Create minipool contract
-        address contractAddress = deployContract(address(rocketStorage), _nodeAddress, _depositType, _salt);
+        address contractAddress = deployContract(_nodeAddress, _depositType, _salt);
         // Initialize minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", contractAddress)), true);
         // Add minipool to indexes
@@ -353,35 +365,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), msg.sender);
     }
 
-    // Returns the bytecode for RocketMinipool
-    function getMinipoolBytecode() override public pure returns (bytes memory) {
-        return type(RocketMinipool).creationCode;
-    }
-
     // Performs a CREATE2 deployment of a minipool contract with given salt
-    function deployContract(address rocketStorage, address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) private returns (address) {
-        // Construct deployment bytecode
-        bytes memory creationCode = getMinipoolBytecode();
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage, _nodeAddress, _depositType));
-        // Construct final salt
-        uint256 salt = uint256(keccak256(abi.encodePacked(_nodeAddress, _salt)));
-        // CREATE2 deployment
-        address contractAddress;
-        uint256 codeSize;
-        assembly {
-            contractAddress := create2(
-            0,
-            add(bytecode, 0x20),
-            mload(bytecode),
-            salt
-            )
-
-            codeSize := extcodesize(contractAddress)
-        }
-        // Ensure deployment was successful
-        require(codeSize > 0, "Contract creation failed");
-        // Return address
-        return contractAddress;
+    function deployContract(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) private returns (address) {
+        RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        return rocketMinipoolFactory.deployContract(_nodeAddress, _depositType, _salt);
     }
-
 }

@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 // RPL Rewards claiming for nodes (trusted) and minipool validators
-contract RocketClaimTrustedNode is RocketBase, RocketClaimTrustedNodeInterface {
+contract RocketClaimTrustedNodeOld is RocketBase, RocketClaimTrustedNodeInterface {
 
     // Libs
     using SafeMath for uint;

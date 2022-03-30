@@ -5,8 +5,13 @@ import {
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate
-} from '../_utils/artifacts';
+    RocketStorage,
+    RocketDAONodeTrusted,
+    RocketMinipoolManager,
+    RocketMinipoolDelegate,
+    RocketNodeManagerNew,
+    RocketMinipoolFactory, RocketNodeStakingOld
+} from '../_utils/artifacts'
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
@@ -123,9 +128,9 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
 
 
 // Submit a node RPL stake
-export async function nodeStakeRPL(amount, txOptions) {
+export async function nodeStakeRPL(amount, txOptions, preUpdate = false) {
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
@@ -150,10 +155,12 @@ export async function nodeDeposit(txOptions) {
     // Load contracts
     const [
         rocketMinipoolManager,
+          rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
+        RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
@@ -184,7 +191,7 @@ export async function nodeDeposit(txOptions) {
     // Construct deterministic minipool address
     const raw = web3.utils.soliditySha3(
       {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolManager.address},
+      {type: 'address', value: rocketMinipoolFactory.address},
       {type: 'bytes32', value: nodeSalt},
       {type: 'bytes32', value: bytecodeHash}
     )

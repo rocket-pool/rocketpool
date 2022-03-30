@@ -1,7 +1,7 @@
-import { RocketUpgradeRewards } from './artifacts';
+import { RocketUpgradeOneDotOne } from './artifacts';
 
 
-export async function upgradeRewards(guardian) {
-  const rocketUpgradeDistributor = await RocketUpgradeRewards.deployed();
-  await rocketUpgradeDistributor.execute({ from: guardian });
+export async function upgradeOneDotOne(guardian) {
+  const rocketUpgradeOneDotOne = await RocketUpgradeOneDotOne.deployed();
+  await rocketUpgradeOneDotOne.execute({ from: guardian });
 }

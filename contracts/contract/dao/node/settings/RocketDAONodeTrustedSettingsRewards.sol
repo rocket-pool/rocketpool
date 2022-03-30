@@ -22,7 +22,7 @@ contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, Ro
 
 
     // Initialise
-    function initialise() public override onlyLatestContract("rocketUpgradeRewards", msg.sender) {
+    function initialise() public override onlyLatestContract("rocketUpgradeOneDotOne", msg.sender) {
         // Initialize settings on deployment
         require(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
         // Enable main net rewards
