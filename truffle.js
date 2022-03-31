@@ -16,14 +16,9 @@ const providerPort = process.env.PROVIDER_PORT || 8545;
 const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
 const protocol = 'http';
 const ip = 'localhost';
-<<<<<<< HEAD
 const port = 9650;
 const { mnemonicPersonalPhrase, snowtraceApiKey } = require("./.env.json");
-
-=======
-const port = 63975;
 const provider = new Web3.providers.HttpProvider(`${protocol}://${ip}:${port}/ext/bc/C/rpc`);
->>>>>>> 51bdf207030d40456c87d33f783aa2d5cb300b92
 const privateKeys = [
   '0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027',
   '0x7b4198529994b0dc604278c99d153cfd069d594753d471171a1d102a10438e07',
@@ -71,21 +66,21 @@ module.exports = {
     snowtrace: snowtraceApiKey
   },
   networks: {
-    development: {
-      provider: () => {
-        return new HDWalletProvider(privateKeys, `${protocol}://${ip}:${port}/ext/bc/C/rpc`, 0, 10);
-      },
-      network_id: '*', // Match any network id
-      gas: 8000000,
-      gasPrice: 225000000000,
-    },
-    // Solidity coverage test
-    coverage: {
-      host: '127.0.0.1',
-      port: 8555,
-      network_id: '*', // Match any network id
-      gas: 12450000,
-    },
+    // development: {
+    //   provider: () => {
+    //     return new HDWalletProvider(privateKeys, `${protocol}://${ip}:${port}/ext/bc/C/rpc`, 0, 10);
+    //   },
+    //   network_id: '*', // Match any network id
+    //   gas: 8000000,
+    //   gasPrice: 225000000000,
+    // },
+    // //Solidity coverage test
+    // coverage: {
+    //   host: '127.0.0.1',
+    //   port: 8555,
+    //   network_id: '*', // Match any network id
+    //   gas: 12450000,
+    // },
     fuji: {
       hasProvider: true,
       provider: () =>
