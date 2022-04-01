@@ -19,7 +19,7 @@ import { shouldRevert } from '../_utils/testing';
 import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
-    contract.only('RocketNodeDistributor', async (accounts) => {
+    contract('RocketNodeDistributor', async (accounts) => {
 
         // Accounts
         const [

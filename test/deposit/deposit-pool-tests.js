@@ -125,7 +125,7 @@ export default function() {
         //
 
 
-        it.only(printTitle('random address', 'can assign deposits'), async () => {
+        it(printTitle('random address', 'can assign deposits'), async () => {
 
             // Assign deposits with no assignable deposits
             await assignDeposits({
