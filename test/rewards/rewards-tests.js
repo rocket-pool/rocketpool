@@ -246,7 +246,7 @@ export default function() {
 
             // Send ETH to rewards pool
             const rocketSmoothingPool = await RocketSmoothingPool.deployed();
-            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('2', 'ether')});
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('20', 'ether')});
 
             const rocketRewardsPool = await RocketRewardsPool.deployed();
             const pendingRewards = await rocketRewardsPool.getPendingETHRewards.call();
@@ -264,7 +264,49 @@ export default function() {
                     network: 0,
                     amountRPL: web3.utils.toWei('2', 'ether'),
                     amountETH: web3.utils.toWei('1', 'ether')
-                }
+                },
+                {
+                    address: registeredNodeTrusted1,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('2', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether')
+                },
+                {
+                    address: registeredNodeTrusted2,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('1.5', 'ether'),
+                    amountETH: web3.utils.toWei('2.5', 'ether')
+                },
+                {
+                    address: registeredNodeTrusted3,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('0', 'ether'),
+                    amountETH: web3.utils.toWei('2', 'ether')
+                },
+                {
+                    address: owner,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('1.333', 'ether'),
+                    amountETH: web3.utils.toWei('0.3', 'ether')
+                },
+                {
+                    address: userOne,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('1.333', 'ether'),
+                    amountETH: web3.utils.toWei('0.3', 'ether')
+                },
+                {
+                    address: node1WithdrawalAddress,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('0.1', 'ether'),
+                    amountETH: web3.utils.toWei('0.3', 'ether')
+                },
+                {
+                    address: daoInvoiceRecipient,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('0.1', 'ether'),
+                    amountETH: web3.utils.toWei('0.3', 'ether')
+                },
             ]
             await submitRewards(0, rewards, {from: registeredNodeTrusted1});
             await submitRewards(0, rewards, {from: registeredNodeTrusted2});
@@ -275,6 +317,12 @@ export default function() {
             });
             await claimRewards([0], [rewards], {
                 from: registeredNode2,
+            });
+            await claimRewards([0], [rewards], {
+                from: registeredNodeTrusted1,
+            });
+            await claimRewards([0], [rewards], {
+                from: userOne,
             });
 
             // Do a second claim interval

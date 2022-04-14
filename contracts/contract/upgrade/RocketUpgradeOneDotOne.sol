@@ -16,6 +16,9 @@ contract RocketUpgradeOneDotOne is RocketBase {
     // Whether the upgrade has been performed or not
     bool public executed;
 
+    // Whether the setup method has been called
+    bool public setup;
+
     address public newRocketMinipoolManager;
     address public newRocketNodeManager;
     address public newRocketNodeDeposit;
@@ -44,12 +47,15 @@ contract RocketUpgradeOneDotOne is RocketBase {
 
     // Construct
     constructor(
-        RocketStorageInterface _rocketStorageAddress,
-        address[12] memory _addresses,
-        string[12] memory _abis
+        RocketStorageInterface _rocketStorageAddress
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
+    }
+
+    function set(address[12] memory _addresses, string[12] memory _abis) external {
+        require(!setup, "Already setup");
+        setup = true;
 
         // Set contract addresses
         newRocketMinipoolManager = _addresses[0];

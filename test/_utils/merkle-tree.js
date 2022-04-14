@@ -13,6 +13,11 @@ export class MerkleTree {
     this.elements.sort(Buffer.compare);
     // Deduplicate elements
     this.elements = MerkleTree.bufDedup(this.elements);
+    // Pad to power of 2
+    let paddedLen = Math.pow(Math.ceil(Math.log2(this.elements.length)), 2);
+    for (let i = this.elements.length; i < paddedLen; i++) {
+      this.elements.push(Buffer.alloc(32));
+    }
 
     this.bufferElementPositionIndex = this.elements.reduce((memo, el, index) => {
       memo[bufferToHex(el)] = index;
@@ -54,13 +59,6 @@ export class MerkleTree {
 
 
   static combinedHash(first, second) {
-    if (!first) {
-      return second;
-    }
-    if (!second) {
-      return first;
-    }
-
     return keccak256(MerkleTree.sortAndConcat(first, second));
   }
 
@@ -83,10 +81,15 @@ export class MerkleTree {
     }
 
     return this.layers.reduce((proof, layer) => {
-      const pairElement = MerkleTree.getPairElement(idx, layer);
+      if (layer.length > 1){
+        const pairElement = MerkleTree.getPairElement(idx, layer);
 
-      if (pairElement) {
-        proof.push(pairElement);
+        // Dangling element is paired with null
+        if (pairElement) {
+          proof.push(pairElement);
+        } else {
+          proof.push(Buffer.alloc(32));
+        }
       }
 
       idx = Math.floor(idx / 2);
@@ -238,6 +241,7 @@ export function parseRewardsMap(rewards) {
       amountRPL: amountRPL.toString(),
       amountETH: amountETH.toString(),
       proof: tree.getProof(address, network, amountRPL, amountETH),
+      leaf: RewardClaimTree.toNode(address, network, amountRPL, amountETH).toString('hex')
     };
     return memo;
   }, {});

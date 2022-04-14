@@ -26,7 +26,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
 
     // Merkle tree mappings
     mapping(uint256 => bytes32) public merkleRoots;
-    mapping(address => mapping(uint256 => uint256)) private claimedBitMap;
+    mapping(address => mapping(uint256 => uint256)) public claimedBitMap;
 
     // Allow receiving ETH
     receive() payable external {}

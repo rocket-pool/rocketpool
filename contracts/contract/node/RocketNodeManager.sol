@@ -122,8 +122,15 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
         // Initialise fee distributor for this node
         _initialiseFeeDistributor(msg.sender);
+        // Set node registration time (uses old storage key name for backwards compatibility)
+        setUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.time", "rocketClaimNode", msg.sender)), block.timestamp);
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
+    }
+
+    // Get's the timestamp of when a node was registered
+    function getNodeRegistrationTime(address _nodeAddress) onlyRegisteredNode(_nodeAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.time", "rocketClaimNode", _nodeAddress)));
     }
 
     // Set a node's timezone location

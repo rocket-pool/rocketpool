@@ -224,8 +224,8 @@ module.exports = async (deployer, network) => {
 
           // Upgrade rewards
           case 'rocketUpgradeOneDotOne':
-            await deployer.deploy(contracts[contract],
-              rocketStorage.address,
+            const upgrader = await deployer.deploy(contracts[contract], rocketStorage.address);
+            const arguments = [
               [
                 contracts.rocketMinipoolManagerNew.address,
                 contracts.rocketNodeManagerNew.address,
@@ -254,7 +254,8 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketSmoothingPool.abi),
                 compressABI(contracts.rocketMinipoolFactory.abi)
               ]
-          );
+            ]
+            await upgrader.set(...arguments)
           break;
 
           // All other contracts - pass storage address

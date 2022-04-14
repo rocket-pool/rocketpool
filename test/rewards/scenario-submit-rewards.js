@@ -50,6 +50,7 @@ export async function submitRewards(index, rewards, txOptions) {
       {t: 'string', v: 'rewards.snapshot.submitted.node'},
       {t: 'address', v: txOptions.from},
       {t: 'uint256', v: index},
+      {t: 'uint256', v: 0},
       {t: 'uint256', v: totalRPL},
       {t: 'uint256', v: totalETH},
       {t: 'bytes32', v: root},
@@ -58,6 +59,7 @@ export async function submitRewards(index, rewards, txOptions) {
     let submissionCountKey = web3.utils.soliditySha3(
       {t: 'string', v: 'rewards.snapshot.submitted.count'},
       {t: 'uint256', v: index},
+      {t: 'uint256', v: 0},
       {t: 'uint256', v: totalRPL},
       {t: 'uint256', v: totalETH},
       {t: 'bytes32', v: root},
@@ -82,7 +84,7 @@ export async function submitRewards(index, rewards, txOptions) {
     ]);
 
     // Submit prices
-    await rocketRewardsPool.submitRewardSnapshot(index, perNetworkRPL, perNetworkETH, root, cid, txOptions);
+    await rocketRewardsPool.submitRewardSnapshot(index, 0, perNetworkRPL, perNetworkETH, root, cid, txOptions);
 
     // Get updated submission details & prices
     let [submission2, rewardIndex2] = await Promise.all([
