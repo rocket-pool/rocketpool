@@ -423,12 +423,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Only accepts calls if the minipool has timed out
     function dissolve() override external onlyInitialised {
         // Check current status
-        require(status == MinipoolStatus.Initialised || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialised or in prelaunch");
+        require(status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while in prelaunch");
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Check if minipool has timed out
         require(
-            (status == MinipoolStatus.Prelaunch && block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout()),
+            block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout(),
             "The minipool can only be dissolved once it has timed out"
         );
         // Perform the dissolution
