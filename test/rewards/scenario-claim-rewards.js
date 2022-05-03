@@ -9,7 +9,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 
 
 // Submit network prices
-export async function claimRewards(indices, rewards, txOptions) {
+export async function claimRewards(nodeAddress, indices, rewards, txOptions) {
 
     // Load contracts
     const [
@@ -27,7 +27,7 @@ export async function claimRewards(indices, rewards, txOptions) {
     ]);
 
     // Get node withdrawal address
-    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(txOptions.from);
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
     // Get balances
     function getBalances() {
@@ -46,7 +46,7 @@ export async function claimRewards(indices, rewards, txOptions) {
     ]);
 
     // Construct claim arguments
-    let claimer = txOptions.from;
+    let claimer = nodeAddress;
     let amountsRPL = [];
     let amountsETH = [];
     let proofs = [];
@@ -70,7 +70,7 @@ export async function claimRewards(indices, rewards, txOptions) {
         totalAmountETH = totalAmountETH.add(web3.utils.toBN(proof.amountETH));
     }
 
-    const tx = await rocketMerkleDistributorMainnet.claim(indices, amountsRPL, amountsETH, proofs, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.claim(nodeAddress, indices, amountsRPL, amountsETH, proofs, txOptions);
     let gasUsed = web3.utils.toBN('0');
 
     if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {

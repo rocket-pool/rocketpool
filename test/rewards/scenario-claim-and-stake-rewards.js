@@ -9,7 +9,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 
 
 // Submit network prices
-export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOptions) {
+export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeAmount, txOptions) {
 
     // Load contracts
     const [
@@ -29,14 +29,14 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
     ]);
 
     // Get node withdrawal address
-    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(txOptions.from);
+    let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
     // Get balances
     function getBalances() {
         return Promise.all([
             rocketRewardsPool.getClaimIntervalTimeStart(),
             rocketTokenRPL.balanceOf.call(nodeWithdrawalAddress),
-            rocketNodeStaking.getNodeRPLStake(txOptions.from),
+            rocketNodeStaking.getNodeRPLStake(nodeAddress),
             web3.eth.getBalance(nodeWithdrawalAddress)
         ]).then(
           ([claimIntervalTimeStart, nodeRpl, rplStake, nodeEth]) =>
@@ -49,7 +49,7 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
     ]);
 
     // Construct claim arguments
-    let claimer = txOptions.from;
+    let claimer = nodeAddress;
     let claimerIndices = [];
     let amountsRPL = [];
     let amountsETH = [];
@@ -74,7 +74,7 @@ export async function claimAndStakeRewards(indices, rewards, stakeAmount, txOpti
         totalAmountRPL = totalAmountRPL.add(web3.utils.toBN(proof.amountRPL));
     }
 
-    const tx = await rocketMerkleDistributorMainnet.claimAndStake(indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
+    const tx = await rocketMerkleDistributorMainnet.claimAndStake(nodeAddress, indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
     let gasUsed = web3.utils.toBN('0');
 
     if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {

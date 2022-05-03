@@ -312,16 +312,16 @@ export default function() {
             await submitRewards(0, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimRewards([0], [rewards], {
+            await claimRewards(registeredNode1, [0], [rewards], {
                 from: registeredNode1,
             });
-            await claimRewards([0], [rewards], {
+            await claimRewards(registeredNode2, [0], [rewards], {
                 from: registeredNode2,
             });
-            await claimRewards([0], [rewards], {
+            await claimRewards(registeredNodeTrusted1, [0], [rewards], {
                 from: registeredNodeTrusted1,
             });
-            await claimRewards([0], [rewards], {
+            await claimRewards(userOne, [0], [rewards], {
                 from: userOne,
             });
 
@@ -330,11 +330,44 @@ export default function() {
             await submitRewards(1, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimRewards([1], [rewards], {
+            await claimRewards(registeredNode1, [1], [rewards], {
                 from: registeredNode1,
             });
-            await claimRewards([1], [rewards], {
+            await claimRewards(registeredNode2, [1], [rewards], {
                 from: registeredNode2,
+            });
+        });
+
+
+        it(printTitle('node', 'can claim from withdrawal address'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('20', 'ether')});
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    amountRPL: web3.utils.toWei('1', 'ether'),
+                    amountETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimRewards(registeredNode1, [0], [rewards], {
+                from: node1WithdrawalAddress,
             });
         });
 
@@ -372,7 +405,7 @@ export default function() {
             let rocketMerkleDistributorMainnet = await RocketMerkleDistributorMainnet.deployed();
 
             // Attempt to claim reward for registeredNode1 with registeredNode2
-            await shouldRevert(rocketMerkleDistributorMainnet.claim([0], amountsRPL, amountsETH, proofs, {from: registeredNode2}), 'Was able to claim with invalid proof', 'Invalid proof');
+            await shouldRevert(rocketMerkleDistributorMainnet.claim(registeredNode2, [0], amountsRPL, amountsETH, proofs, {from: registeredNode2}), 'Was able to claim with invalid proof', 'Invalid proof');
         });
 
 
@@ -405,19 +438,19 @@ export default function() {
             await submitRewards(2, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimRewards([0, 1], [rewards, rewards], {
+            await claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
                 from: registeredNode1,
             });
-            await shouldRevert(claimRewards([0], [rewards], {
+            await shouldRevert(claimRewards(registeredNode1, [0], [rewards], {
                 from: registeredNode1,
             }), 'Was able to claim again', 'Already claimed');
-            await shouldRevert(claimRewards([1], [rewards], {
+            await shouldRevert(claimRewards(registeredNode1, [1], [rewards], {
                 from: registeredNode1,
             }), 'Was able to claim again', 'Already claimed');
-            await shouldRevert(claimRewards([0, 1], [rewards, rewards], {
+            await shouldRevert(claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
                 from: registeredNode1,
             }), 'Was able to claim again', 'Already claimed');
-            await shouldRevert(claimRewards([0, 2], [rewards, rewards], {
+            await shouldRevert(claimRewards(registeredNode1, [0, 2], [rewards, rewards], {
                 from: registeredNode1,
             }), 'Was able to claim again', 'Already claimed');
         });
@@ -458,13 +491,13 @@ export default function() {
             await submitRewards(2, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimRewards([0], [rewards], {
+            await claimRewards(registeredNode1, [0], [rewards], {
                 from: registeredNode1,
             });
-            await claimRewards([1, 2], [rewards, rewards], {
+            await claimRewards(registeredNode1, [1, 2], [rewards, rewards], {
                 from: registeredNode1,
             });
-            await claimRewards([0, 1, 2], [rewards, rewards, rewards], {
+            await claimRewards(registeredNode2, [0, 1, 2], [rewards, rewards, rewards], {
                 from: registeredNode2,
             });
         });
@@ -499,10 +532,10 @@ export default function() {
             await submitRewards(0, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimAndStakeRewards([0], [rewards], web3.utils.toWei('1', 'ether'), {
+            await claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('1', 'ether'), {
                 from: registeredNode1,
             });
-            await claimAndStakeRewards([0], [rewards], web3.utils.toWei('2', 'ether'), {
+            await claimAndStakeRewards(registeredNode2, [0], [rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode2,
             });
 
@@ -511,10 +544,10 @@ export default function() {
             await submitRewards(1, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimAndStakeRewards([1], [rewards], web3.utils.toWei('0.5', 'ether'), {
+            await claimAndStakeRewards(registeredNode1, [1], [rewards], web3.utils.toWei('0.5', 'ether'), {
                 from: registeredNode1,
             });
-            await claimAndStakeRewards([1], [rewards], web3.utils.toWei('1', 'ether'), {
+            await claimAndStakeRewards(registeredNode2, [1], [rewards], web3.utils.toWei('1', 'ether'), {
                 from: registeredNode2,
             });
         });
@@ -543,7 +576,7 @@ export default function() {
             await submitRewards(0, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await shouldRevert(claimAndStakeRewards([0], [rewards], web3.utils.toWei('2', 'ether'), {
+            await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode1,
             }), 'Was able to stake amount greater than reward', 'Invalid stake amount');
         });
@@ -574,7 +607,7 @@ export default function() {
             await submitRewards(1, rewards, {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await claimAndStakeRewards([0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {
+            await claimAndStakeRewards(registeredNode1, [0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode1,
             });
         });

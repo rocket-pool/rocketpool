@@ -19,7 +19,7 @@ interface RocketNodeManagerInterface {
     function getNodePendingWithdrawalAddress(address _nodeAddress) external view returns (address);
     function getNodeTimezoneLocation(address _nodeAddress) external view returns (string memory);
     function registerNode(string calldata _timezoneLocation) external;
-    function getNodeRegistrationTime(address _nodeAddress) external view returns (uint256) {
+    function getNodeRegistrationTime(address _nodeAddress) external view returns (uint256);
     function setTimezoneLocation(string calldata _timezoneLocation) external;
     function setRewardNetwork(address _nodeAddress, uint256 network) external;
     function getRewardNetwork(address _nodeAddress) external view returns (uint256);
