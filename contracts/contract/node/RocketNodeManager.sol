@@ -241,6 +241,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     function setSmoothingPoolRegistrationState(bool _state) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
+        // Ensure registration is enabled
+        RocketDAOProtocolSettingsNodeInterface daoSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        require(daoSettingsNode.getSmoothingPoolRegistrationEnabled(), "Smoothing pool registrations are not active");
         // Precompute keys
         bytes32 changeKey = keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender));
         bytes32 stateKey = keccak256(abi.encodePacked("node.smoothing.pool.state", msg.sender));

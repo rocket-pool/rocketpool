@@ -39,6 +39,9 @@ export default function() {
             // Upgrade
             await upgradeOneDotOne(owner);
 
+            // Enable smoothing pool registrations
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', true, {from: owner});
+
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
@@ -231,6 +234,12 @@ export default function() {
         //
         // Smoothing pool
         //
+
+
+        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disbaled'), async () => {
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', false, {from: owner});
+            await shouldRevert(setSmoothingPoolRegistrationState(true, { from: registeredNode1 }), 'Was able to register while registrations were disabled', 'Smoothing pool registrations are not active');
+        });
 
 
         it(printTitle('node operator', 'can set their smoothing pool registration state'), async () => {

@@ -74,7 +74,7 @@ const contracts = {
   rocketDAOProtocolSettingsInflation:       artifacts.require('RocketDAOProtocolSettingsInflation.sol'),
   rocketDAOProtocolSettingsRewards:         artifacts.require('RocketDAOProtocolSettingsRewards.sol'),
   rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
-  rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
+  rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNodeOld.sol'),
   rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetworkOld.sol'),
   rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
@@ -95,6 +95,7 @@ const contracts = {
   rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
+  rocketDAOProtocolSettingsNodeNew:         artifacts.require('RocketDAOProtocolSettingsNode.sol'),
   rocketUpgradeOneDotOne:                   artifacts.require('RocketUpgradeOneDotOne.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -239,6 +240,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketDAONodeTrustedSettingsRewards.address,
                 contracts.rocketSmoothingPool.address,
                 contracts.rocketMinipoolFactory.address,
+                contracts.rocketDAOProtocolSettingsNodeNew.address,
               ],
               [
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
@@ -252,7 +254,8 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketMerkleDistributorMainnet.abi),
                 compressABI(contracts.rocketDAONodeTrustedSettingsRewards.abi),
                 compressABI(contracts.rocketSmoothingPool.abi),
-                compressABI(contracts.rocketMinipoolFactory.abi)
+                compressABI(contracts.rocketMinipoolFactory.abi),
+                compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -294,6 +297,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeDistributorFactory':
           case 'rocketNodeDistributorDelegate':
           case 'rocketMinipoolFactory':
+          case 'rocketDAOProtocolSettingsNodeNew':
             break;
 
           default:

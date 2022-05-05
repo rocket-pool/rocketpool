@@ -31,6 +31,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     address public rocketDAONodeTrustedSettingsRewards;
     address public rocketSmoothingPool;
     address public rocketMinipoolFactory;
+    address public newRocketDAOProtocolSettingsNode;
 
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeManagerAbi;
@@ -44,6 +45,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     string public rocketDAONodeTrustedSettingsRewardsAbi;
     string public rocketSmoothingPoolAbi;
     string public rocketMinipoolFactoryAbi;
+    string public newRocketDAOProtocolSettingsNodeAbi;
 
     // Construct
     constructor(
@@ -53,7 +55,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         version = 1;
     }
 
-    function set(address[12] memory _addresses, string[12] memory _abis) external {
+    function set(address[13] memory _addresses, string[13] memory _abis) external {
         require(!setup, "Already setup");
         setup = true;
 
@@ -70,6 +72,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         rocketDAONodeTrustedSettingsRewards = _addresses[9];
         rocketSmoothingPool = _addresses[10];
         rocketMinipoolFactory = _addresses[11];
+        newRocketDAOProtocolSettingsNode = _addresses[12];
 
         // Set ABIs
         newRocketMinipoolManagerAbi = _abis[0];
@@ -84,6 +87,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         rocketDAONodeTrustedSettingsRewardsAbi = _abis[9];
         rocketSmoothingPoolAbi = _abis[10];
         rocketMinipoolFactoryAbi = _abis[11];
+        newRocketDAOProtocolSettingsNodeAbi = _abis[12];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -91,8 +95,8 @@ contract RocketUpgradeOneDotOne is RocketBase {
         require(!executed, "Already executed");
 
         // Delete contract no longer in use
-//        _deleteContract("rocketClaimNode");
-//        _deleteContract("rocketClaimTrustedNode");
+        _deleteContract("rocketClaimNode");
+        _deleteContract("rocketClaimTrustedNode");
 
         // Upgrade contracts
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
@@ -101,22 +105,23 @@ contract RocketUpgradeOneDotOne is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsNetwork", newRocketDAOProtocolSettingsNetwork, newRocketDAOProtocolSettingsNetworkAbi);
         _upgradeContract("rocketRewardsPool", newRocketRewardsPool, newRocketRewardsPoolAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
+        _upgradeContract("rocketDAOProtocolSettingsNode", newRocketDAOProtocolSettingsNode, newRocketDAOProtocolSettingsNodeAbi);
 
         // Add new contracts
-        _upgradeContract("rocketNodeDistributorFactory", rocketNodeDistributorFactory, rocketNodeDistributorFactoryAbi);
-        _upgradeContract("rocketNodeDistributorDelegate", rocketNodeDistributorDelegate, rocketNodeDistributorDelegateAbi);
-        _upgradeContract("rocketMerkleDistributorMainnet", rocketMerkleDistributorMainnet, rocketMerkleDistributorMainnetAbi);
-        _upgradeContract("rocketDAONodeTrustedSettingsRewards", rocketDAONodeTrustedSettingsRewards, rocketDAONodeTrustedSettingsRewardsAbi);
-        _upgradeContract("rocketSmoothingPool", rocketSmoothingPool, rocketSmoothingPoolAbi);
-        _upgradeContract("rocketMinipoolFactory", rocketMinipoolFactory, rocketMinipoolFactoryAbi);
+        _addContract("rocketNodeDistributorFactory", rocketNodeDistributorFactory, rocketNodeDistributorFactoryAbi);
+        _addContract("rocketNodeDistributorDelegate", rocketNodeDistributorDelegate, rocketNodeDistributorDelegateAbi);
+        _addContract("rocketMerkleDistributorMainnet", rocketMerkleDistributorMainnet, rocketMerkleDistributorMainnetAbi);
+        _addContract("rocketDAONodeTrustedSettingsRewards", rocketDAONodeTrustedSettingsRewards, rocketDAONodeTrustedSettingsRewardsAbi);
+        _addContract("rocketSmoothingPool", rocketSmoothingPool, rocketSmoothingPoolAbi);
+        _addContract("rocketMinipoolFactory", rocketMinipoolFactory, rocketMinipoolFactoryAbi);
 
         // Migrate settings
-//        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
-//        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);
-//        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);
-//        RocketDAONodeTrustedSettingsRewardsInterface rewardsSettings = RocketDAONodeTrustedSettingsRewardsInterface(rocketDAONodeTrustedSettingsRewards);
-//        rewardsSettings.initialise();
-//        setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), rocketMerkleDistributorMainnet);
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);
+        RocketDAONodeTrustedSettingsRewardsInterface rewardsSettings = RocketDAONodeTrustedSettingsRewardsInterface(rocketDAONodeTrustedSettingsRewards);
+        rewardsSettings.initialise();
+        setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), rocketMerkleDistributorMainnet);
 
         // Complete
         executed = true;
