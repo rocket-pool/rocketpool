@@ -28,4 +28,7 @@ interface RocketNodeManagerInterface {
     function increaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) external;
     function decreaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) external;
     function getAverageNodeFee(address _nodeAddress) external view returns (uint256);
+    function setSmoothingPoolRegistrationState(bool _state) external;
+    function getSmoothingPoolRegistrationState(address _nodeAddress) external returns (bool);
+    function getSmoothingPoolRegistrationChanged(address _nodeAddress) external returns (uint256);
 }

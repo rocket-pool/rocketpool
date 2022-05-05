@@ -15,6 +15,7 @@ import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 
 
 // Node registration and management 
@@ -27,6 +28,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     event NodeRegistered(address indexed node, uint256 time);
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
     event NodeRewardNetworkChanged(address indexed node, uint256 network);
+    event NodeSmoothingPoolStateChanged(address indexed node, bool state);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -236,5 +238,31 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     function getRewardNetwork(address _nodeAddress) override external view onlyLatestContract("rocketNodeManager", address(this)) returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.reward.network", _nodeAddress)));
+    }
+
+    function setSmoothingPoolRegistrationState(bool _state) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
+        // Precompute keys
+        bytes32 changeKey = keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender));
+        bytes32 stateKey = keccak256(abi.encodePacked("node.smoothing.pool.state"));
+        // Get from the DAO settings
+        RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
+        uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
+        // Ensure node operator has waiting required time
+        uint256 lastChange = getUint(changeKey);
+        require(block.timestamp >= lastChange.add(rewardInterval), "Not enough time has passed since changing state");
+        // Ensure state is actually changing
+        require(getBool(stateKey) != _state, "Invalid state change");
+        // Update registration state and emit event
+        setUint(changeKey, block.timestamp);
+        setBool(stateKey, _state);
+        emit NodeSmoothingPoolStateChanged(msg.sender, _state);
+    }
+
+    function getSmoothingPoolRegistrationState(address _nodeAddress) override external view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("node.smoothing.pool.state")));
+    }
+
+    function getSmoothingPoolRegistrationChanged(address _nodeAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender)));
     }
 }

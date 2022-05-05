@@ -25,7 +25,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     // Events
     event RewardSnapshotSubmitted(address indexed from, uint256 indexed index, uint256 block, uint256[] rewardsPerNetworkRPL, uint256[] rewardsPerNetworkETH, bytes32 merkleRoot, string merkleTreeCID, uint256 time);
-    event RewardSnapshot(uint256 indexed index, uint256 block, uint256[] rewardsPerNetworkRPL, uint256[] rewardsPerNetworkETH, bytes32 merkleRoot, string merkleTreeCID, uint256 time);
+    event RewardSnapshot(uint256 indexed index, uint256 block, uint256[] rewardsPerNetworkRPL, uint256[] rewardsPerNetworkETH, bytes32 merkleRoot, string merkleTreeCID, uint256 intervalStartTime, uint256 intervalEndTime);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -171,7 +171,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         rplContract.inflationMintTokens();
         // Increment the reward index and update the claim interval timestamp
         incrementRewardIndex();
-        setUint(keccak256("rewards.pool.claim.interval.time.start"), getClaimIntervalTimeStart().add(getClaimIntervalTime()));
+        { // Scope to prevent stack too deep
+            uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
+            uint256 claimIntervalTimeEnd = claimIntervalTimeStart.add(getClaimIntervalTime());
+            // Emit balances updated event
+            emit RewardSnapshot(_index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, claimIntervalTimeStart, claimIntervalTimeEnd);
+            setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeEnd);
+        }
         // Send out the treasury rewards
         { // Scope to prevent stack too deep
             uint256 daoClaimContractPerc = getClaimingContractPerc("rocketClaimDAO");
@@ -210,7 +216,5 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             }
             relay.relayRewards(_index, _merkleRoot, rewardsRPL, rewardsETH);
         }
-        // Emit balances updated event
-        emit RewardSnapshot(_index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, block.timestamp);
     }
 }
