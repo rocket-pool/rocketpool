@@ -243,7 +243,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function setSmoothingPoolRegistrationState(bool _state) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
         // Precompute keys
         bytes32 changeKey = keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender));
-        bytes32 stateKey = keccak256(abi.encodePacked("node.smoothing.pool.state"));
+        bytes32 stateKey = keccak256(abi.encodePacked("node.smoothing.pool.state", msg.sender));
         // Get from the DAO settings
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
@@ -259,10 +259,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     function getSmoothingPoolRegistrationState(address _nodeAddress) override external view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("node.smoothing.pool.state")));
+        return getBool(keccak256(abi.encodePacked("node.smoothing.pool.state", _nodeAddress)));
     }
 
     function getSmoothingPoolRegistrationChanged(address _nodeAddress) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender)));
+        return getUint(keccak256(abi.encodePacked("node.smoothing.pool.changed.time", _nodeAddress)));
     }
 }
