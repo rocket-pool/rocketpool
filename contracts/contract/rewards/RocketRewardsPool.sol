@@ -104,16 +104,19 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     // Submit a reward snapshot
     // Only accepts calls from trusted (oracle) nodes
-    function submitRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID) override external onlyLatestContract("rocketRewardsPool", address(this)) onlyTrustedNode(msg.sender) {
+    function submitRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) override external onlyLatestContract("rocketRewardsPool", address(this)) onlyTrustedNode(msg.sender) {
         // Validate inputs
         require(_index == getRewardIndex(), "Can only submit snapshot for next period");
         require(_rewardsPerNetworkRPL.length == _rewardsPerNetworkETH.length, "Invalid size rewards array");
+        require(_intervalsPassed > 0, "Invalid number of intervals passed");
         // Calculate RPL reward total and validate
-        uint256 totalRewardsRPL = 0;
-        for (uint256 i = 0; i < _rewardsPerNetworkRPL.length; i++){
-            totalRewardsRPL = totalRewardsRPL.add(_rewardsPerNetworkRPL[i]);
+        { // Scope to prevent stake too deep
+            uint256 totalRewardsRPL = 0;
+            for (uint256 i = 0; i < _rewardsPerNetworkRPL.length; i++){
+                totalRewardsRPL = totalRewardsRPL.add(_rewardsPerNetworkRPL[i]);
+            }
+            require(totalRewardsRPL <= getPendingRPLRewards(), "Invalid RPL rewards");
         }
-        require(totalRewardsRPL <= getPendingRPLRewards(), "Invalid RPL rewards");
         // Calculate ETH reward total and validate
         { // Scope to prevent stake too deep
             uint256 totalRewardsETH = 0;
@@ -125,13 +128,15 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Store and increment vote
         uint256 submissionCount;
         { // Scope to prevent stake too deep
-            bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.node", msg.sender, _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID));
-            bytes32 submissionCountKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.count", _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID));
             // Check & update node submission status
+            bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.node", msg.sender, _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, _intervalsPassed));
             require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
             setBool(nodeSubmissionKey, true);
             setBool(keccak256(abi.encodePacked("rewards.snapshot.submitted.node", msg.sender, _index)), true);
+        }
+        { // Scope to prevent stake too deep
             // Increment submission count
+            bytes32 submissionCountKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.count", _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, _intervalsPassed));
             submissionCount = getUint(submissionCountKey).add(1);
             setUint(submissionCountKey, submissionCount);
         }
@@ -141,29 +146,24 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
-            _executeRewardSnapshot(_index, _block, totalRewardsRPL, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID);
+            _executeRewardSnapshot(_index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, _intervalsPassed);
         }
     }
 
     // Executes updateBalances if consensus threshold is reached
-    function executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
-        // Calculate total
-        uint256 totalRewardsRPL = 0;
-        for (uint256 i = 0; i < _rewardsPerNetworkRPL.length; i++){
-            totalRewardsRPL = totalRewardsRPL.add(_rewardsPerNetworkRPL[i]);
-        }
+    function executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
         // Get submission count
-        bytes32 submissionCountKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.count", msg.sender, _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID));
+        bytes32 submissionCountKey = keccak256(abi.encodePacked("rewards.snapshot.submitted.count", msg.sender, _index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, _intervalsPassed));
         uint256 submissionCount = getUint(submissionCountKey);
         // Confirm consensus and execute
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
-        _executeRewardSnapshot(_index, _block, totalRewardsRPL, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID);
+        _executeRewardSnapshot(_index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, _intervalsPassed);
     }
 
     // Update network balances
-    function _executeRewardSnapshot(uint256 _index, uint256 _block, uint256 _totalRewardsRPL, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID) private {
+    function _executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) private {
         // Get contract
         RocketTokenRPLInterface rplContract = RocketTokenRPLInterface(getContractAddress("rocketTokenRPL"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
@@ -173,7 +173,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         incrementRewardIndex();
         { // Scope to prevent stack too deep
             uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
-            uint256 claimIntervalTimeEnd = claimIntervalTimeStart.add(getClaimIntervalTime());
+            uint256 claimIntervalTimeEnd = claimIntervalTimeStart.add(getClaimIntervalTime().mul(_intervalsPassed));
             // Emit balances updated event
             emit RewardSnapshot(_index, _block, _rewardsPerNetworkRPL, _rewardsPerNetworkETH, _merkleRoot, _merkleTreeCID, claimIntervalTimeStart, claimIntervalTimeEnd);
             setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeEnd);
@@ -182,10 +182,12 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         { // Scope to prevent stack too deep
             uint256 daoClaimContractPerc = getClaimingContractPerc("rocketClaimDAO");
             if (daoClaimContractPerc > 0) {
-                // Get the DAO claim contract address
-                address daoClaimContractAddress = getContractAddress("rocketClaimDAO");
                 // Transfers the DAO's tokens to it's claiming contract from the rewards pool
-                rocketVault.transferToken("rocketClaimDAO", rplContract, daoClaimContractPerc.mul(_totalRewardsRPL).div(calcBase));
+                uint256 totalRewardsRPL = 0;
+                for (uint256 i = 0; i < _rewardsPerNetworkRPL.length; i++){
+                    totalRewardsRPL = totalRewardsRPL.add(_rewardsPerNetworkRPL[i]);
+                }
+                rocketVault.transferToken("rocketClaimDAO", rplContract, daoClaimContractPerc.mul(totalRewardsRPL).div(calcBase));
             }
         }
         // Send out the node and trusted node rewards and merkle roots

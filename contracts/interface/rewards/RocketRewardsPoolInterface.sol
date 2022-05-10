@@ -12,6 +12,6 @@ interface RocketRewardsPoolInterface {
     function getClaimIntervalTime() external view returns(uint256);
     function getClaimIntervalsPassed() external view returns(uint256);
     function getClaimingContractPerc(string memory _claimingContract) external view returns(uint256);
-    function submitRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID) external;
-    function executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID) external;
+    function submitRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) external;
+    function executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) external;
 }

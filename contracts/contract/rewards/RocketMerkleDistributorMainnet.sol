@@ -24,10 +24,6 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     // Constants
     uint256 constant network = 0;
 
-    // Merkle tree mappings
-    mapping(uint256 => bytes32) public merkleRoots;
-    mapping(address => mapping(uint256 => uint256)) public claimedBitMap;
-
     // Allow receiving ETH
     receive() payable external {}
 
@@ -39,8 +35,9 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
 
     // Called by RocketRewardsPool to include a snapshot into this distributor
     function relayRewards(uint256 _index, bytes32 _root, uint256 _rewardsRPL, uint256 _rewardsETH) external override onlyLatestContract("rocketMerkleDistributorMainnet", address(this)) onlyLatestContract("rocketRewardsPool", msg.sender) {
-        require(merkleRoots[_index] == bytes32(0), "Index already in use");
-        merkleRoots[_index] = _root;
+        bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _index));
+        require(getBytes32(key) == bytes32(0));
+        setBytes32(key, _root);
     }
 
     function claim(address _nodeAddress, uint256[] calldata _index, uint256[] calldata _amountRPL, uint256[] calldata _amountETH, bytes32[][] calldata _merkleProof) external override {
@@ -115,7 +112,8 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
         require(_amountRPL > 0 || _amountETH > 0, "Invalid amount");
         // Verify the merkle proof
         bytes32 node = keccak256(abi.encodePacked(_nodeAddress, network, _amountRPL, _amountETH));
-        bytes32 merkleRoot = merkleRoots[_index];
+        bytes32 key = keccak256(abi.encodePacked('rewards.merkle.root', _index));
+        bytes32 merkleRoot = getBytes32(key);
         require(MerkleProof.verify(_merkleProof, merkleRoot, node), "Invalid proof");
         // Mark it claimed and mint
         _setClaimed(_index, _nodeAddress);
@@ -124,7 +122,7 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     function isClaimed(uint256 _index, address _claimer) public override view returns (bool) {
         uint256 indexWordIndex = _index / 256;
         uint256 indexBitIndex = _index % 256;
-        uint256 claimedWord = claimedBitMap[_claimer][indexWordIndex];
+        uint256 claimedWord = getUint(keccak256(abi.encodePacked('rewards.interval.claimed', _claimer, indexWordIndex)));
         uint256 mask = (1 << indexBitIndex);
         return claimedWord & mask == mask;
     }
@@ -132,6 +130,9 @@ contract RocketMerkleDistributorMainnet is RocketBase, RocketRewardsRelayInterfa
     function _setClaimed(uint256 _index, address _claimer) internal {
         uint256 indexWordIndex = _index / 256;
         uint256 indexBitIndex = _index % 256;
-        claimedBitMap[_claimer][indexWordIndex] = claimedBitMap[_claimer][indexWordIndex] | (1 << indexBitIndex);
+        bytes32 key = keccak256(abi.encodePacked('rewards.interval.claimed', _claimer, indexWordIndex));
+        uint256 bitmap = getUint(key);
+        bitmap = bitmap | (1 << indexBitIndex);
+        setUint(key, bitmap);
     }
 }

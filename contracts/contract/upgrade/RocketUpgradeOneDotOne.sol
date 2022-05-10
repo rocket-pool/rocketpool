@@ -121,6 +121,8 @@ contract RocketUpgradeOneDotOne is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);
         RocketDAONodeTrustedSettingsRewardsInterface rewardsSettings = RocketDAONodeTrustedSettingsRewardsInterface(rocketDAONodeTrustedSettingsRewards);
         rewardsSettings.initialise();
+
+        // Set relay address
         setAddress(keccak256(abi.encodePacked("rewards.relay.address", uint256(0))), rocketMerkleDistributorMainnet);
 
         // Complete
