@@ -1,6 +1,8 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
+import "../../types/RewardSubmission.sol";
+
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketRewardsPoolInterface {
@@ -12,6 +14,8 @@ interface RocketRewardsPoolInterface {
     function getClaimIntervalTime() external view returns(uint256);
     function getClaimIntervalsPassed() external view returns(uint256);
     function getClaimingContractPerc(string memory _claimingContract) external view returns(uint256);
-    function submitRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) external;
-    function executeRewardSnapshot(uint256 _index, uint256 _block, uint256[] memory _rewardsPerNetworkRPL, uint256[] memory _rewardsPerNetworkETH, bytes32 _merkleRoot, string calldata _merkleTreeCID, uint256 _intervalsPassed) external;
+    function getTrustedNodeSubmitted(address _trustedNodeAddress, uint256 _rewardIndex) external view returns (bool);
+    function getSubmissionCount(RewardSubmission calldata _submission) external view returns (uint256);
+    function submitRewardSnapshot(RewardSubmission calldata _submission) external;
+    function executeRewardSnapshot(RewardSubmission calldata _submission) external;
 }

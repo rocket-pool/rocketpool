@@ -256,60 +256,34 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether')
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amountRPL: web3.utils.toWei('2', 'ether'),
-                    amountETH: web3.utils.toWei('1', 'ether')
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('1', 'ether')
                 },
                 {
                     address: registeredNodeTrusted1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('2', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether')
-                },
-                {
-                    address: registeredNodeTrusted2,
-                    network: 0,
-                    amountRPL: web3.utils.toWei('1.5', 'ether'),
-                    amountETH: web3.utils.toWei('2.5', 'ether')
-                },
-                {
-                    address: registeredNodeTrusted3,
-                    network: 0,
-                    amountRPL: web3.utils.toWei('0', 'ether'),
-                    amountETH: web3.utils.toWei('2', 'ether')
-                },
-                {
-                    address: owner,
-                    network: 0,
-                    amountRPL: web3.utils.toWei('1.333', 'ether'),
-                    amountETH: web3.utils.toWei('0.3', 'ether')
+                    trustedNodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
                 {
                     address: userOne,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1.333', 'ether'),
-                    amountETH: web3.utils.toWei('0.3', 'ether')
-                },
-                {
-                    address: node1WithdrawalAddress,
-                    network: 0,
-                    amountRPL: web3.utils.toWei('0.1', 'ether'),
-                    amountETH: web3.utils.toWei('0.3', 'ether')
-                },
-                {
-                    address: daoInvoiceRecipient,
-                    network: 0,
-                    amountRPL: web3.utils.toWei('0.1', 'ether'),
-                    amountETH: web3.utils.toWei('0.3', 'ether')
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1.333', 'ether'),
+                    nodeETH: web3.utils.toWei('0.3', 'ether')
                 },
             ]
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -326,8 +300,8 @@ export default function() {
             });
 
             // Do a second claim interval
-            await submitRewards(1, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [1], [rewards], {
@@ -358,12 +332,13 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether')
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
             ]
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -387,14 +362,15 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
             ]
 
             // Create 3 snapshots
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
 
             let treeData = parseRewardsMap(rewards);
             let proof = treeData.proof.claims[web3.utils.toChecksumAddress(registeredNode1)];
@@ -424,18 +400,19 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
             ]
 
             // Create 3 snapshots
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted2});
-            await submitRewards(2, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(2, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
@@ -471,24 +448,26 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amountRPL: web3.utils.toWei('2', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 }
             ]
 
             // Submit 2 snapshots
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted2});
-            await submitRewards(2, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(2, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -518,18 +497,20 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
                 {
                     address: registeredNode2,
                     network: 0,
-                    amountRPL: web3.utils.toWei('2', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 }
             ]
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('1', 'ether'), {
@@ -540,8 +521,8 @@ export default function() {
             });
 
             // Do a second claim interval
-            await submitRewards(1, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [1], [rewards], web3.utils.toWei('0.5', 'ether'), {
@@ -568,12 +549,13 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 },
             ]
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('2', 'ether'), {
@@ -597,14 +579,15 @@ export default function() {
                 {
                     address: registeredNode1,
                     network: 0,
-                    amountRPL: web3.utils.toWei('1', 'ether'),
-                    amountETH: web3.utils.toWei('0', 'ether'),
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
                 }
             ]
-            await submitRewards(0, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {

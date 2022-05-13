@@ -182,6 +182,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         _initialiseFeeDistributor(msg.sender);
     }
 
+    // Deploys the fee distributor contract for a given node
     function _initialiseFeeDistributor(address _nodeAddress) internal {
         // Load contracts
         RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
@@ -189,18 +190,21 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         rocketNodeDistributorFactory.createProxy(_nodeAddress);
     }
 
+    // Increases the running sum of the total node fees for a node
     function increaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
         // Increase node fee numerator
         addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
         _distribute(_nodeAddress);
     }
 
+    // Decreases the running sum of the total node fees for a node
     function decreaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
         // Decrease node fee numerator
         subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
         _distribute(_nodeAddress);
     }
 
+    // Calculates a nodes average node fee
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
@@ -213,6 +217,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return numerator.div(denominator);
     }
 
+    // Distributes a node's accumulated fees (if any)
     function _distribute(address _nodeAddress) internal {
         // Get contracts
         RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
@@ -223,6 +228,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             distributor.distribute();
         }
     }
+
+    // Designates which network a node would like their rewards relayed to
     function setRewardNetwork(address _nodeAddress, uint256 _network) override external onlyLatestContract("rocketNodeManager", address(this)) {
         // Confirm the transaction is from the node's current withdrawal address
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
@@ -236,15 +243,17 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         emit NodeRewardNetworkChanged(_nodeAddress, _network);
     }
 
+    // Returns which network a node has designated as their desired reward network
     function getRewardNetwork(address _nodeAddress) override external view onlyLatestContract("rocketNodeManager", address(this)) returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.reward.network", _nodeAddress)));
     }
 
+    // Allows a node to register or deregister from the smoothing pool
     function setSmoothingPoolRegistrationState(bool _state) override external onlyLatestContract("rocketNodeManager", address(this)) onlyRegisteredNode(msg.sender) {
         // Ensure registration is enabled
         RocketDAOProtocolSettingsNodeInterface daoSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         require(daoSettingsNode.getSmoothingPoolRegistrationEnabled(), "Smoothing pool registrations are not active");
-        // Precompute keys
+        // Precompute storage keys
         bytes32 changeKey = keccak256(abi.encodePacked("node.smoothing.pool.changed.time", msg.sender));
         bytes32 stateKey = keccak256(abi.encodePacked("node.smoothing.pool.state", msg.sender));
         // Get from the DAO settings
@@ -255,16 +264,19 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         require(block.timestamp >= lastChange.add(rewardInterval), "Not enough time has passed since changing state");
         // Ensure state is actually changing
         require(getBool(stateKey) != _state, "Invalid state change");
-        // Update registration state and emit event
+        // Update registration state
         setUint(changeKey, block.timestamp);
         setBool(stateKey, _state);
+        // Emit state change event
         emit NodeSmoothingPoolStateChanged(msg.sender, _state);
     }
 
+    // Returns whether a node is registered or not from the smoothing pool
     function getSmoothingPoolRegistrationState(address _nodeAddress) override external view returns (bool) {
         return getBool(keccak256(abi.encodePacked("node.smoothing.pool.state", _nodeAddress)));
     }
 
+    // Returns the timestamp of when the node last changed their smoothing pool registration state
     function getSmoothingPoolRegistrationChanged(address _nodeAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.smoothing.pool.changed.time", _nodeAddress)));
     }

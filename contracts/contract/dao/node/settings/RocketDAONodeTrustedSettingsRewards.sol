@@ -10,6 +10,7 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRew
 
 
 // The Trusted Node DAO Rewards settings
+
 contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, RocketDAONodeTrustedSettingsRewardsInterface {
 
     using SafeMath for uint;
@@ -22,7 +23,7 @@ contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, Ro
 
     // Initialise
     function initialise() public override onlyLatestContract("rocketUpgradeOneDotOne", msg.sender) {
-        // Initialize settings on deployment
+        // Initialise settings on deployment
         require(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
         // Enable main net rewards
         setBool(keccak256(abi.encodePacked(settingNameSpace, "rewards.network.enabled", uint256(0))), true);

@@ -3,7 +3,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 
 
 // Submit network prices
-export async function submitRewards(index, rewards, txOptions) {
+export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
 
     // Load contracts
     const [
@@ -24,55 +24,52 @@ export async function submitRewards(index, rewards, txOptions) {
 
     const totalRPL = treeData.proof.totalRewardsRPL;
     const totalETH = treeData.proof.totalRewardsETH;
-    const perNetworkRPL = [];
-    const perNetworkETH = [];
+    const trustedNodeRPL = [];
+    const nodeRPL = [];
+    const nodeETH = [];
 
-    let maxNetwork = Object.keys(treeData.proof.rewardsPerNetworkRPL).reduce((a,b) => Math.max(Number(a), Number(b)), 0)
+    let maxNetwork = rewards.reduce((a,b) => Math.max(a, b.network), 0);
 
     for(let i = 0; i <= maxNetwork; i++) {
-        if (i in treeData.proof.rewardsPerNetworkRPL){
-            perNetworkRPL.push(treeData.proof.rewardsPerNetworkRPL[i]);
-        } else {
-            perNetworkRPL.push('0');
-        }
-        if (i in treeData.proof.rewardsPerNetworkETH){
-            perNetworkETH.push(treeData.proof.rewardsPerNetworkETH[i]);
-        } else {
-            perNetworkETH.push('0');
-        }
+        trustedNodeRPL[i] = web3.utils.toBN('0')
+        nodeRPL[i] = web3.utils.toBN('0')
+        nodeETH[i] = web3.utils.toBN('0')
+    }
+
+    for(let i = 0; i < rewards.length; i++) {
+        trustedNodeRPL[rewards[i].network] = trustedNodeRPL[rewards[i].network].add(web3.utils.toBN(rewards[i].trustedNodeRPL))
+        nodeRPL[rewards[i].network] = nodeRPL[rewards[i].network].add(web3.utils.toBN(rewards[i].nodeRPL))
+        nodeETH[rewards[i].network] = nodeETH[rewards[i].network].add(web3.utils.toBN(rewards[i].nodeETH))
+    }
+
+    // web3 doesn't like an array of BigNumbers, have to convert to dec string
+    for(let i = 0; i <= maxNetwork; i++) {
+        trustedNodeRPL[i] = trustedNodeRPL[i].toString()
+        nodeRPL[i] = nodeRPL[i].toString()
+        nodeETH[i] = nodeETH[i].toString()
     }
 
     const root = treeData.proof.merkleRoot;
     const cid = '0';
 
-    // Get submission keys
-    let nodeSubmissionKey = web3.utils.soliditySha3(
-      {t: 'string', v: 'rewards.snapshot.submitted.node'},
-      {t: 'address', v: txOptions.from},
-      {t: 'uint256', v: index},
-      {t: 'uint256', v: 0},
-      {t: 'uint256', v: totalRPL},
-      {t: 'uint256', v: totalETH},
-      {t: 'bytes32', v: root},
-      {t: 'string', v: cid},
-      {t: 'uint256', v: 1},
-    );
-    let submissionCountKey = web3.utils.soliditySha3(
-      {t: 'string', v: 'rewards.snapshot.submitted.count'},
-      {t: 'uint256', v: index},
-      {t: 'uint256', v: 0},
-      {t: 'uint256', v: totalRPL},
-      {t: 'uint256', v: totalETH},
-      {t: 'bytes32', v: root},
-      {t: 'string', v: cid},
-      {t: 'uint256', v: 1},
-    );
+    const submission = {
+        rewardIndex: index,
+        executionBlock: 0,
+        consensusBlock: 0,
+        merkleRoot: root,
+        merkleTreeCID: cid,
+        intervalsPassed: 1,
+        treasuryRPL: treasuryRPL,
+        trustedNodeRPL: trustedNodeRPL,
+        nodeRPL: nodeRPL,
+        nodeETH: nodeETH
+    }
 
     // Get submission details
     function getSubmissionDetails() {
         return Promise.all([
-            rocketStorage.getBool.call(nodeSubmissionKey),
-            rocketStorage.getUint.call(submissionCountKey),
+            rocketRewardsPool.getTrustedNodeSubmitted(txOptions.from, index),
+            rocketRewardsPool.getSubmissionCount(submission),
         ]).then(
             ([nodeSubmitted, count]) =>
             ({nodeSubmitted, count})
@@ -85,8 +82,9 @@ export async function submitRewards(index, rewards, txOptions) {
         rocketRewardsPool.getRewardIndex()
     ]);
 
+
     // Submit prices
-    await rocketRewardsPool.submitRewardSnapshot(index, 0, perNetworkRPL, perNetworkETH, root, cid, 1, txOptions);
+    await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
 
     // Get updated submission details & prices
     let [submission2, rewardIndex2] = await Promise.all([

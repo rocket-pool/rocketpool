@@ -184,6 +184,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
     }
 
+    // Deletes a network contract
     function _deleteContract(string memory _name) internal {
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
         deleteString(keccak256(abi.encodePacked("contract.name", contractAddress)));

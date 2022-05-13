@@ -188,29 +188,29 @@ export class RewardClaimTree {
 export function parseRewardsMap(rewards) {
 
   // Transform input into a mapping of address => { address, network, amountRPL, amountETH }
-  const dataByAddress = rewards.reduce((memo, { address, network, amountRPL, amountETH }) => {
+  const dataByAddress = rewards.reduce((memo, { address, network, trustedNodeRPL, nodeRPL, nodeETH }) => {
     if (!web3.utils.isAddress(address)) {
       throw new Error(`Found invalid address: ${address}`);
     }
 
     memo[address] = {
       address: web3.utils.toChecksumAddress(address),
-      amountRPL: web3.utils.toBN(amountRPL),
-      amountETH: web3.utils.toBN(amountETH),
+      amountRPL: web3.utils.toBN(nodeRPL).add(web3.utils.toBN(trustedNodeRPL)),
+      amountETH: web3.utils.toBN(nodeETH),
       network: web3.utils.toBN(network)
     };
     return memo;
   }, {});
 
-  const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, amountRPL, amountETH}) => {
+  const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, trustedNodeRPL, nodeRPL, nodeETH}) => {
     if(!(network in perNetwork)){
       perNetwork[network] = {
         RPL: web3.utils.toBN(0),
         ETH: web3.utils.toBN(0),
       };
     }
-    perNetwork[network].RPL = perNetwork[network].RPL.add(web3.utils.toBN(amountRPL));
-    perNetwork[network].ETH = perNetwork[network].ETH.add(web3.utils.toBN(amountETH));
+    perNetwork[network].RPL = perNetwork[network].RPL.add(web3.utils.toBN(nodeRPL).add(web3.utils.toBN(trustedNodeRPL)));
+    perNetwork[network].ETH = perNetwork[network].ETH.add(web3.utils.toBN(nodeETH));
     return perNetwork;
   }, {})
 
