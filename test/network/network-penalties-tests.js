@@ -79,19 +79,19 @@ export default function() {
         it(printTitle('trusted nodes', 'can submit penalties'), async () => {
 
             // Set parameters
-            let block = 1;
             let minipoolAddress = minipool.address;
 
-            // Submit different balances
-            await submitPenalty(minipoolAddress, block, {
-                from: trustedNode1,
-            });
-            await submitPenalty(minipoolAddress, block, {
-                from: trustedNode2,
-            });
-            await submitPenalty(minipoolAddress, block, {
-                from: trustedNode3,
-            });
+            for (let block = 1; block < 5; block++) {
+                await submitPenalty(minipoolAddress, block, {
+                    from: trustedNode1,
+                });
+                await submitPenalty(minipoolAddress, block, {
+                    from: trustedNode2,
+                });
+                await submitPenalty(minipoolAddress, block, {
+                    from: trustedNode3,
+                });
+            }
 
         });
 

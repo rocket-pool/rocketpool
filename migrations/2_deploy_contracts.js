@@ -241,6 +241,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketSmoothingPool.address,
                 contracts.rocketMinipoolFactory.address,
                 contracts.rocketDAOProtocolSettingsNodeNew.address,
+                contracts.rocketNetworkPenalties.address,
               ],
               [
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
@@ -256,6 +257,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketSmoothingPool.abi),
                 compressABI(contracts.rocketMinipoolFactory.abi),
                 compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
+                compressABI(contracts.rocketNetworkPenalties.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -298,6 +300,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeDistributorDelegate':
           case 'rocketMinipoolFactory':
           case 'rocketDAOProtocolSettingsNodeNew':
+          case 'rocketNetworkPenalties':
             break;
 
           default:

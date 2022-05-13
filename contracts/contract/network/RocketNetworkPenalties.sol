@@ -78,10 +78,15 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         bytes32 key = keccak256(abi.encodePacked("network.penalties.penalty", _minipoolAddress));
         // Get the current penalty
         uint256 newPenaltyCount = getUint(key).add(1);
-        // Calculate the penalty rate
-        uint256 penalty = newPenaltyCount.mul(rocketDAOProtocolSettingsNetwork.getPerPenaltyRate());
         // Update the node's penalty count
         setUint(key, newPenaltyCount);
+        // First two faults are not penalised
+        if (newPenaltyCount < 3) {
+            return;
+        }
+        newPenaltyCount = newPenaltyCount.sub(2);
+        // Calculate the penalty rate
+        uint256 penalty = newPenaltyCount.mul(rocketDAOProtocolSettingsNetwork.getPerPenaltyRate());
         // Set the penalty
         RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
         rocketMinipoolPenalty.setPenaltyRate(_minipoolAddress, penalty);

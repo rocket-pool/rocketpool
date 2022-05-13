@@ -20,7 +20,6 @@ contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, Ro
         version = 1;
     }
 
-
     // Initialise
     function initialise() public override onlyLatestContract("rocketUpgradeOneDotOne", msg.sender) {
         // Initialize settings on deployment

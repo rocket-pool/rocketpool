@@ -95,7 +95,7 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
         assert.strictEqual(penalty2.penaltyCount.toString(), penalty1.penaltyCount.add(web3.utils.toBN(1)).toString(), 'Penalty count not updated')
 
         // Unless we hit max penalty, expect to see an increase in the penalty rate
-        if (penalty1.penaltyRate.lt(maxPenaltyRate)){
+        if (penalty1.penaltyRate.lt(maxPenaltyRate) && penalty2.penaltyCount.gte(web3.utils.toBN('3'))){
             assert.isTrue(penalty2.penaltyRate.gt(penalty1.penaltyRate), 'Penalty rate did not increase')
         }
     } else if(!expectedUpdatedPenalty) {

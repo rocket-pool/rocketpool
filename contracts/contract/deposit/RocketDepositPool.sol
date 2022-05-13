@@ -78,7 +78,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         require(rocketVault.balanceOf("rocketDepositPool").add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
-        // Calculate node fee
+        // Calculate deposit fee
         uint256 depositFee = msg.value.mul(rocketDAOProtocolSettingsDeposit.getDepositFee()).div(calcBase);
         uint256 depositNetFee = msg.value.sub(depositFee);
         // Mint rETH to user account

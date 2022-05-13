@@ -32,6 +32,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     address public rocketSmoothingPool;
     address public rocketMinipoolFactory;
     address public newRocketDAOProtocolSettingsNode;
+    address public rocketNetworkPenalties;
 
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeManagerAbi;
@@ -46,6 +47,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     string public rocketSmoothingPoolAbi;
     string public rocketMinipoolFactoryAbi;
     string public newRocketDAOProtocolSettingsNodeAbi;
+    string public rocketNetworkPenaltiesAbi;
 
     // Construct
     constructor(
@@ -55,7 +57,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         version = 1;
     }
 
-    function set(address[13] memory _addresses, string[13] memory _abis) external {
+    function set(address[14] memory _addresses, string[14] memory _abis) external {
         require(!setup, "Already setup");
         setup = true;
 
@@ -73,6 +75,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         rocketSmoothingPool = _addresses[10];
         rocketMinipoolFactory = _addresses[11];
         newRocketDAOProtocolSettingsNode = _addresses[12];
+        rocketNetworkPenalties = _addresses[13];
 
         // Set ABIs
         newRocketMinipoolManagerAbi = _abis[0];
@@ -88,6 +91,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         rocketSmoothingPoolAbi = _abis[10];
         rocketMinipoolFactoryAbi = _abis[11];
         newRocketDAOProtocolSettingsNodeAbi = _abis[12];
+        rocketNetworkPenaltiesAbi = _abis[13];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -114,11 +118,17 @@ contract RocketUpgradeOneDotOne is RocketBase {
         _addContract("rocketDAONodeTrustedSettingsRewards", rocketDAONodeTrustedSettingsRewards, rocketDAONodeTrustedSettingsRewardsAbi);
         _addContract("rocketSmoothingPool", rocketSmoothingPool, rocketSmoothingPoolAbi);
         _addContract("rocketMinipoolFactory", rocketMinipoolFactory, rocketMinipoolFactoryAbi);
+        _addContract("rocketNetworkPenalties", rocketNetworkPenalties, rocketNetworkPenaltiesAbi);
 
         // Migrate settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);       // Consensus for penalties requires 51% vote
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);         // 10% per penalty
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.fee")), 0.0005 ether);                   // 0.05% deposit fee
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.reth.deposit.delay")), 0);               // Remove the rETH deposit delay entirely
+
+        // Initialise reward settings
         RocketDAONodeTrustedSettingsRewardsInterface rewardsSettings = RocketDAONodeTrustedSettingsRewardsInterface(rocketDAONodeTrustedSettingsRewards);
         rewardsSettings.initialise();
 
