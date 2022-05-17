@@ -18,7 +18,7 @@ contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, Ro
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "rewards") {
         // Set version
-        version = 1;
+        version = 2;
     }
 
     // Initialise
