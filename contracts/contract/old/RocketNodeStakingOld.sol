@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/old/RocketNodeStakingInterface.sol";
+import "../../interface/old/RocketNodeStakingInterfaceOld.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";

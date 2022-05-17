@@ -10,8 +10,8 @@ import {
     RocketMinipoolManager,
     RocketMinipoolDelegate,
     RocketNodeManagerNew,
-    RocketMinipoolFactory, RocketNodeStakingOld
-} from '../_utils/artifacts'
+    RocketMinipoolFactory, RocketNodeStakingOld, RocketDAONodeTrustedActionsOld,
+} from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
 import { mintDummyRPL } from '../token/scenario-rpl-mint-fixed';
@@ -19,6 +19,7 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get a node's RPL stake
@@ -88,7 +89,7 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
     let rplAllowanceDAO = async function(_account, _amount) {
         // Load contracts
         const rocketTokenRPL = await RocketTokenRPL.deployed();
-        const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+        const rocketDAONodeTrustedActions = (await upgradeExecuted()) ? (await RocketDAONodeTrustedActions.deployed()) : (await RocketDAONodeTrustedActionsOld.deployed());
         // Convert
         _amount = web3.utils.toWei(_amount.toString(), 'ether');
         // Approve now

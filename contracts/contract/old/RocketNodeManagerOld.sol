@@ -6,7 +6,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
-import "../../interface/old/RocketNodeManagerInterface.sol";
+import "../../interface/old/RocketNodeManagerInterfaceOld.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";

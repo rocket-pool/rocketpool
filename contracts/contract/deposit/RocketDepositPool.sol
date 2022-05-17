@@ -46,7 +46,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Current deposit pool balance

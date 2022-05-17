@@ -8,7 +8,7 @@ import "../RocketBase.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
-import "../../interface/old/RocketRewardsPoolInterface.sol";
+import "../../interface/old/RocketRewardsPoolInterfaceOld.sol";
 
 // RPL Rewards claiming for regular nodes
 

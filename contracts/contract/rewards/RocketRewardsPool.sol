@@ -25,8 +25,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     using SafeMath for uint256;
 
     // Events
-    event RewardSnapshotSubmitted(address indexed from, RewardSubmission submission, uint256 time);
-    event RewardSnapshot(RewardSubmission submission, uint256 intervalStartTime, uint256 intervalEndTime, uint256 time);
+    event RewardSnapshotSubmitted(address indexed from, uint256 indexed rewardIndex, RewardSubmission submission, uint256 time);
+    event RewardSnapshot(uint256 indexed rewardIndex, RewardSubmission submission, uint256 intervalStartTime, uint256 intervalEndTime, uint256 time);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -155,7 +155,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             setUint(submissionCountKey, submissionCount);
         }
         // Emit snapshot submitted event
-        emit RewardSnapshotSubmitted(msg.sender, _submission, block.timestamp);
+        emit RewardSnapshotSubmitted(msg.sender, _submission.rewardIndex, _submission, block.timestamp);
         // If consensus is reached, execute the snapshot
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
@@ -188,7 +188,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         uint256 claimIntervalTimeStart = getClaimIntervalTimeStart();
         uint256 claimIntervalTimeEnd = claimIntervalTimeStart.add(getClaimIntervalTime().mul(_submission.intervalsPassed));
         // Emit reward snapshot event
-        emit RewardSnapshot(_submission, claimIntervalTimeStart, claimIntervalTimeEnd, block.timestamp);
+        emit RewardSnapshot(_submission.rewardIndex, _submission, claimIntervalTimeStart, claimIntervalTimeEnd, block.timestamp);
         setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeEnd);
         // Send out the treasury rewards
         if (_submission.treasuryRPL > 0) {

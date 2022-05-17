@@ -38,7 +38,7 @@ const contracts = {
   // Auction
   rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
   // Deposit
-  rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
+  rocketDepositPool:                        artifacts.require('RocketDepositPoolOld.sol'),
   // Minipool
   rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
   rocketMinipoolManager:                    artifacts.require('RocketMinipoolManagerOld.sol'),
@@ -63,7 +63,7 @@ const contracts = {
   rocketDAOProposal:                        artifacts.require('RocketDAOProposal.sol'),
   rocketDAONodeTrusted:                     artifacts.require('RocketDAONodeTrusted.sol'),
   rocketDAONodeTrustedProposals:            artifacts.require('RocketDAONodeTrustedProposals.sol'),
-  rocketDAONodeTrustedActions:              artifacts.require('RocketDAONodeTrustedActions.sol'),
+  rocketDAONodeTrustedActions:              artifacts.require('RocketDAONodeTrustedActionsOld.sol'),
   rocketDAONodeTrustedUpgrade:              artifacts.require('RocketDAONodeTrustedUpgrade.sol'),
   rocketDAONodeTrustedSettingsMembers:      artifacts.require('RocketDAONodeTrustedSettingsMembers.sol'),
   rocketDAONodeTrustedSettingsProposals:    artifacts.require('RocketDAONodeTrustedSettingsProposals.sol'),
@@ -76,7 +76,7 @@ const contracts = {
   rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
   rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNodeOld.sol'),
   rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetworkOld.sol'),
-  rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
+  rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDepositOld.sol'),
   rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
   // Tokens
   rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
@@ -96,6 +96,9 @@ const contracts = {
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   rocketDAOProtocolSettingsNodeNew:         artifacts.require('RocketDAOProtocolSettingsNode.sol'),
+  rocketDepositPoolNew:                     artifacts.require('RocketDepositPool.sol'),
+  rocketDAONodeTrustedActionsNew:           artifacts.require('RocketDAONodeTrustedActions.sol'),
+  rocketDAOProtocolSettingsDepositNew:      artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketUpgradeOneDotOne:                   artifacts.require('RocketUpgradeOneDotOne.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -242,6 +245,9 @@ module.exports = async (deployer, network) => {
                 contracts.rocketMinipoolFactory.address,
                 contracts.rocketDAOProtocolSettingsNodeNew.address,
                 contracts.rocketNetworkPenalties.address,
+                contracts.rocketDepositPoolNew.address,
+                contracts.rocketDAONodeTrustedActionsNew.address,
+                contracts.rocketDAOProtocolSettingsDepositNew.address,
               ],
               [
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
@@ -258,6 +264,9 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketMinipoolFactory.abi),
                 compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
                 compressABI(contracts.rocketNetworkPenalties.abi),
+                compressABI(contracts.rocketDepositPoolNew.abi),
+                compressABI(contracts.rocketDAONodeTrustedActionsNew.abi),
+                compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -301,6 +310,9 @@ module.exports = async (deployer, network) => {
           case 'rocketMinipoolFactory':
           case 'rocketDAOProtocolSettingsNodeNew':
           case 'rocketNetworkPenalties':
+          case 'rocketDepositPoolNew':
+          case 'rocketDAONodeTrustedActionsNew':
+          case 'rocketDAOProtocolSettingsDepositNew':
             break;
 
           default:

@@ -4,6 +4,7 @@ export const RocketClaimNodeOld = artifacts.require('RocketClaimNodeOld.sol');
 export const RocketClaimTrustedNode = artifacts.require('RocketClaimTrustedNodeOld.sol');
 export const RocketDAONodeTrusted = artifacts.require('RocketDAONodeTrusted.sol');
 export const RocketDAONodeTrustedActions = artifacts.require('RocketDAONodeTrustedActions.sol');
+export const RocketDAONodeTrustedActionsOld = artifacts.require('RocketDAONodeTrustedActionsOld.sol');
 export const RocketDAONodeTrustedProposals = artifacts.require('RocketDAONodeTrustedProposals.sol');
 export const RocketDAONodeTrustedSettingsMembers = artifacts.require('RocketDAONodeTrustedSettingsMembers.sol');
 export const RocketDAONodeTrustedSettingsProposals = artifacts.require('RocketDAONodeTrustedSettingsProposals.sol');

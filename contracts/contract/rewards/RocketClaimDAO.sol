@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "../RocketBase.sol";
 import "../../interface/RocketVaultInterface.sol";
-import "../../interface/old/RocketRewardsPoolInterface.sol";
+import "../../interface/old/RocketRewardsPoolInterfaceOld.sol";
 import "../../interface/rewards/claims/RocketClaimDAOInterface.sol";
 
 
