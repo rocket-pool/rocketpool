@@ -36,6 +36,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     address public newRocketDepositPool;
     address public newRocketDAONodeTrustedActions;
     address public newRocketDAOProtocolSettingsDeposit;
+    address public newRocketClaimDAO;
 
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeManagerAbi;
@@ -54,6 +55,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     string public newRocketDepositPoolAbi;
     string public newRocketDAONodeTrustedActionsAbi;
     string public newRocketDAOProtocolSettingsDepositAbi;
+    string public newRocketClaimDAOAbi;
 
     // Construct
     constructor(
@@ -63,7 +65,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         version = 1;
     }
 
-    function set(address[17] memory _addresses, string[17] memory _abis) external {
+    function set(address[18] memory _addresses, string[18] memory _abis) external {
         require(!setup, "Already setup");
         setup = true;
 
@@ -85,6 +87,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         newRocketDepositPool = _addresses[14];
         newRocketDAONodeTrustedActions = _addresses[15];
         newRocketDAOProtocolSettingsDeposit = _addresses[16];
+        newRocketClaimDAO = _addresses[17];
 
         // Set ABIs
         newRocketMinipoolManagerAbi = _abis[0];
@@ -104,6 +107,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         newRocketDepositPoolAbi = _abis[14];
         newRocketDAONodeTrustedActionsAbi = _abis[15];
         newRocketDAOProtocolSettingsDepositAbi = _abis[16];
+        newRocketClaimDAOAbi = _abis[17];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -125,6 +129,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         _upgradeContract("rocketDepositPool", newRocketDepositPool, newRocketDepositPoolAbi);
         _upgradeContract("rocketDAONodeTrustedActions", newRocketDAONodeTrustedActions, newRocketDAONodeTrustedActionsAbi);
         _upgradeContract("rocketDAOProtocolSettingsDeposit", newRocketDAOProtocolSettingsDeposit, newRocketDAOProtocolSettingsDepositAbi);
+        _upgradeContract("rocketClaimDAO", newRocketClaimDAO, newRocketClaimDAOAbi);
 
         // Add new contracts
         _addContract("rocketNodeDistributorFactory", rocketNodeDistributorFactory, rocketNodeDistributorFactoryAbi);

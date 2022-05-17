@@ -52,7 +52,7 @@ const contracts = {
   rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
   // Rewards
   rocketRewardsPool:                        artifacts.require('RocketRewardsPoolOld.sol'),
-  rocketClaimDAO:                           artifacts.require('RocketClaimDAO.sol'),
+  rocketClaimDAO:                           artifacts.require('RocketClaimDAOOld.sol'),
   rocketClaimNode:                          artifacts.require('RocketClaimNodeOld.sol'),
   rocketClaimTrustedNode:                   artifacts.require('RocketClaimTrustedNodeOld.sol'),
   // Node
@@ -99,6 +99,7 @@ const contracts = {
   rocketDepositPoolNew:                     artifacts.require('RocketDepositPool.sol'),
   rocketDAONodeTrustedActionsNew:           artifacts.require('RocketDAONodeTrustedActions.sol'),
   rocketDAOProtocolSettingsDepositNew:      artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
+  rocketClaimDAONew:                        artifacts.require('RocketClaimDAO.sol'),
   rocketUpgradeOneDotOne:                   artifacts.require('RocketUpgradeOneDotOne.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -248,6 +249,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketDepositPoolNew.address,
                 contracts.rocketDAONodeTrustedActionsNew.address,
                 contracts.rocketDAOProtocolSettingsDepositNew.address,
+                contracts.rocketClaimDAONew.address,
               ],
               [
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
@@ -267,6 +269,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketDepositPoolNew.abi),
                 compressABI(contracts.rocketDAONodeTrustedActionsNew.abi),
                 compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
+                compressABI(contracts.rocketClaimDAONew.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -313,6 +316,7 @@ module.exports = async (deployer, network) => {
           case 'rocketDepositPoolNew':
           case 'rocketDAONodeTrustedActionsNew':
           case 'rocketDAOProtocolSettingsDepositNew':
+          case 'rocketClaimDAONew':
             break;
 
           default:
