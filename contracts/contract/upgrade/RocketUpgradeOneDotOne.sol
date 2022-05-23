@@ -65,9 +65,12 @@ contract RocketUpgradeOneDotOne is RocketBase {
         version = 1;
     }
 
-    function set(address[18] memory _addresses, string[18] memory _abis) external {
+    function getRocketStorageAddress() external view returns (address) {
+        return address(rocketStorage);
+    }
+
+    function setA(address[9] memory _addresses, string[9] memory _abis) external {
         require(!setup, "Already setup");
-        setup = true;
 
         // Set contract addresses
         newRocketMinipoolManager = _addresses[0];
@@ -79,15 +82,6 @@ contract RocketUpgradeOneDotOne is RocketBase {
         newRocketRewardsPool = _addresses[6];
         newRocketNodeStaking = _addresses[7];
         rocketMerkleDistributorMainnet = _addresses[8];
-        rocketDAONodeTrustedSettingsRewards = _addresses[9];
-        rocketSmoothingPool = _addresses[10];
-        rocketMinipoolFactory = _addresses[11];
-        newRocketDAOProtocolSettingsNode = _addresses[12];
-        rocketNetworkPenalties = _addresses[13];
-        newRocketDepositPool = _addresses[14];
-        newRocketDAONodeTrustedActions = _addresses[15];
-        newRocketDAOProtocolSettingsDeposit = _addresses[16];
-        newRocketClaimDAO = _addresses[17];
 
         // Set ABIs
         newRocketMinipoolManagerAbi = _abis[0];
@@ -99,16 +93,35 @@ contract RocketUpgradeOneDotOne is RocketBase {
         newRocketRewardsPoolAbi = _abis[6];
         newRocketNodeStakingAbi = _abis[7];
         rocketMerkleDistributorMainnetAbi = _abis[8];
-        rocketDAONodeTrustedSettingsRewardsAbi = _abis[9];
-        rocketSmoothingPoolAbi = _abis[10];
-        rocketMinipoolFactoryAbi = _abis[11];
-        newRocketDAOProtocolSettingsNodeAbi = _abis[12];
-        rocketNetworkPenaltiesAbi = _abis[13];
-        newRocketDepositPoolAbi = _abis[14];
-        newRocketDAONodeTrustedActionsAbi = _abis[15];
-        newRocketDAOProtocolSettingsDepositAbi = _abis[16];
-        newRocketClaimDAOAbi = _abis[17];
     }
+
+    function setB(address[9] memory _addresses, string[9] memory _abis) external {
+        require(!setup, "Already setup");
+        setup = true;
+
+        // Set contract addresses
+        rocketDAONodeTrustedSettingsRewards = _addresses[0];
+        rocketSmoothingPool = _addresses[1];
+        rocketMinipoolFactory = _addresses[2];
+        newRocketDAOProtocolSettingsNode = _addresses[3];
+        rocketNetworkPenalties = _addresses[4];
+        newRocketDepositPool = _addresses[5];
+        newRocketDAONodeTrustedActions = _addresses[6];
+        newRocketDAOProtocolSettingsDeposit = _addresses[7];
+        newRocketClaimDAO = _addresses[8];
+
+        // Set ABIs
+        rocketDAONodeTrustedSettingsRewardsAbi = _abis[0];
+        rocketSmoothingPoolAbi = _abis[1];
+        rocketMinipoolFactoryAbi = _abis[2];
+        newRocketDAOProtocolSettingsNodeAbi = _abis[3];
+        rocketNetworkPenaltiesAbi = _abis[4];
+        newRocketDepositPoolAbi = _abis[5];
+        newRocketDAONodeTrustedActionsAbi = _abis[6];
+        newRocketDAOProtocolSettingsDepositAbi = _abis[7];
+        newRocketClaimDAOAbi = _abis[8];
+    }
+
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {

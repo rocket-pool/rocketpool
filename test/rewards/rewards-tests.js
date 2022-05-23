@@ -34,7 +34,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 
 
 export default function() {
-    contract('RocketRewardsPool', async (accounts) => {
+    contract.only('RocketRewardsPool', async (accounts) => {
 
         // One day in seconds
         const ONE_DAY = 24 * 60 * 60;

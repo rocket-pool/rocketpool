@@ -230,7 +230,7 @@ module.exports = async (deployer, network) => {
           // Upgrade rewards
           case 'rocketUpgradeOneDotOne':
             const upgrader = await deployer.deploy(contracts[contract], rocketStorage.address);
-            const arguments = [
+            const argumentsA = [
               [
                 contracts.rocketMinipoolManagerNew.address,
                 contracts.rocketNodeManagerNew.address,
@@ -241,15 +241,6 @@ module.exports = async (deployer, network) => {
                 contracts.rocketRewardsPoolNew.address,
                 contracts.rocketNodeStakingNew.address,
                 contracts.rocketMerkleDistributorMainnet.address,
-                contracts.rocketDAONodeTrustedSettingsRewards.address,
-                contracts.rocketSmoothingPool.address,
-                contracts.rocketMinipoolFactory.address,
-                contracts.rocketDAOProtocolSettingsNodeNew.address,
-                contracts.rocketNetworkPenalties.address,
-                contracts.rocketDepositPoolNew.address,
-                contracts.rocketDAONodeTrustedActionsNew.address,
-                contracts.rocketDAOProtocolSettingsDepositNew.address,
-                contracts.rocketClaimDAONew.address,
               ],
               [
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
@@ -261,6 +252,21 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketRewardsPoolNew.abi),
                 compressABI(contracts.rocketNodeStakingNew.abi),
                 compressABI(contracts.rocketMerkleDistributorMainnet.abi),
+              ]
+            ]
+            const argumentsB = [
+              [
+                contracts.rocketDAONodeTrustedSettingsRewards.address,
+                contracts.rocketSmoothingPool.address,
+                contracts.rocketMinipoolFactory.address,
+                contracts.rocketDAOProtocolSettingsNodeNew.address,
+                contracts.rocketNetworkPenalties.address,
+                contracts.rocketDepositPoolNew.address,
+                contracts.rocketDAONodeTrustedActionsNew.address,
+                contracts.rocketDAOProtocolSettingsDepositNew.address,
+                contracts.rocketClaimDAONew.address,
+              ],
+              [
                 compressABI(contracts.rocketDAONodeTrustedSettingsRewards.abi),
                 compressABI(contracts.rocketSmoothingPool.abi),
                 compressABI(contracts.rocketMinipoolFactory.abi),
@@ -272,7 +278,8 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketClaimDAONew.abi),
               ]
             ]
-            await upgrader.set(...arguments)
+            await upgrader.setA(...argumentsA)
+            await upgrader.setB(...argumentsB)
           break;
 
           // All other contracts - pass storage address
@@ -410,6 +417,7 @@ module.exports = async (deployer, network) => {
 
   // Perform distributor upgrade if we are not running in test environment
   if (network !== 'development') {
+    console.log('Executing upgrade to v1.1')
     const RocketUpgradeOneDotOne = artifacts.require('RocketUpgradeOneDotOne')
     const rocketUpgradeOneDotOne = await RocketUpgradeOneDotOne.deployed();
     await rocketUpgradeOneDotOne.execute({ from: accounts[0] });
