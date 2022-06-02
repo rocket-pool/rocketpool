@@ -30,22 +30,8 @@ contract RocketNodeDistributorFactory is RocketBase, RocketNodeDistributorFactor
         return address(uint160(uint(hash)));
     }
 
-    function createProxy(address _nodeAddress) override external {
-        bytes memory contractCode = getProxyBytecode();
-        bytes memory initCode = abi.encodePacked(contractCode, abi.encode(_nodeAddress, rocketStorage));
-
-        address contractAddress;
-
-        assembly {
-            // Create the proxy
-            contractAddress := create2(
-                0,
-                add(initCode, 0x20),
-                mload(initCode),
-                0
-            )
-        }
-
-        emit ProxyCreated(contractAddress);
+    function createProxy(address _nodeAddress) override external onlyLatestContract("rocketNodeManager", msg.sender) {
+        RocketNodeDistributor dist = new RocketNodeDistributor{salt: ''}(_nodeAddress, rocketStorage);
+        emit ProxyCreated(address(dist));
     }
 }
