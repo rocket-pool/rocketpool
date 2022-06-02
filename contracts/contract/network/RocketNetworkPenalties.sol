@@ -65,7 +65,7 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         uint256 submissionCount = getUint(submissionCountKey);
         // Check submission count & update network balances
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
-        require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold(), "Consensus has not been reached");
+        require(calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodePenaltyThreshold(), "Consensus has not been reached");
         setBool(executedKey, true);
         incrementMinipoolPenaltyCount(_minipoolAddress);
     }
