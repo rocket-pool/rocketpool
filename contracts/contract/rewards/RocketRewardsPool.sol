@@ -166,6 +166,8 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
 
     // Executes reward snapshot if consensus threshold is reached
     function executeRewardSnapshot(RewardSubmission calldata _submission) override external onlyLatestContract("rocketNetworkBalances", address(this)) {
+        // Validate reward index of submission
+        require(_submission.rewardIndex == getRewardIndex(), "Can only execute snapshot for next period");
         // Get submission count
         bytes32 submissionCountKey = keccak256(abi.encode("rewards.snapshot.submitted.count", _submission));
         uint256 submissionCount = getUint(submissionCountKey);
