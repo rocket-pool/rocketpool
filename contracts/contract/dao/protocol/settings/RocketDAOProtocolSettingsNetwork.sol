@@ -12,6 +12,23 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         // Set version
         version = 2;
+        // Initialize settings on deployment
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Apply settings
+            setSettingUint("network.consensus.threshold", 0.51 ether);      // 51%
+            setSettingBool("network.submit.balances.enabled", true);
+            setSettingUint("network.submit.balances.frequency", 5760);      // ~24 hours
+            setSettingBool("network.submit.prices.enabled", true);
+            setSettingUint("network.submit.prices.frequency", 5760);        // ~24 hours
+            setSettingUint("network.node.fee.minimum", 0.15 ether);         // 15%
+            setSettingUint("network.node.fee.target", 0.15 ether);          // 15%
+            setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
+            setSettingUint("network.node.fee.demand.range", 160 ether);
+            setSettingUint("network.reth.collateral.target", 0.1 ether);
+            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
+            // Settings initialised
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        }
     }
 
     // Update a setting, overrides inherited setting method with extra checks for this contract
