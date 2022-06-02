@@ -57,12 +57,16 @@ contract RocketUpgradeOneDotOne is RocketBase {
     string public newRocketDAOProtocolSettingsDepositAbi;
     string public newRocketClaimDAOAbi;
 
+    // Save deployer to limit access to set funcionts
+    address immutable deployer;
+
     // Construct
     constructor(
         RocketStorageInterface _rocketStorageAddress
     ) RocketBase(_rocketStorageAddress) {
         // Version
         version = 1;
+        deployer = msg.sender;
     }
 
     function getRocketStorageAddress() external view returns (address) {
@@ -70,6 +74,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     }
 
     function setA(address[9] memory _addresses, string[9] memory _abis) external {
+        require(msg.sender == deployer, "Only deployer can set");
         require(!setup, "Already setup");
 
         // Set contract addresses
@@ -96,6 +101,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     }
 
     function setB(address[9] memory _addresses, string[9] memory _abis) external {
+        require(msg.sender == deployer, "Only deployer can set");
         require(!setup, "Already setup");
         setup = true;
 
