@@ -190,20 +190,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         rocketNodeDistributorFactory.createProxy(_nodeAddress);
     }
 
-    // Increases the running sum of the total node fees for a node
-    function increaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
-        // Increase node fee numerator
-        addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
-        _distribute(_nodeAddress);
-    }
-
-    // Decreases the running sum of the total node fees for a node
-    function decreaseAverageNodeFeeNumerator(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeManager", address(this)) onlyLatestNetworkContract() {
-        // Decrease node fee numerator
-        subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), _amount);
-        _distribute(_nodeAddress);
-    }
-
     // Calculates a nodes average node fee
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
@@ -215,18 +201,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             return 0;
         }
         return numerator.div(denominator);
-    }
-
-    // Distributes a node's accumulated fees (if any)
-    function _distribute(address _nodeAddress) internal {
-        // Get contracts
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
-        address distributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
-        // If there are funds to distribute than call distribute
-        if (distributorAddress.balance > 0) {
-            RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(distributorAddress);
-            distributor.distribute();
-        }
     }
 
     // Designates which network a node would like their rewards relayed to

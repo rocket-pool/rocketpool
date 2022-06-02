@@ -19,6 +19,8 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolI
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import "../../interface/node/RocketNodeDistributorInterface.sol";
 
 // Minipool creation, removal and management
 
@@ -202,8 +204,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Increments _nodeAddress' number of minipools in staking status
     function incrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Get contracts
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        // Try to distribute current fees at previous average commission rate
+        _tryDistribute(_nodeAddress);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -215,14 +218,15 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
         // Update node fee average
-        rocketNodeManager.increaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
+        addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
     function decrementNodeStakingMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Get contracts
-        RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        // Try to distribute current fees at previous average commission rate
+        _tryDistribute(_nodeAddress);
         // Update the node specific count
         bytes32 nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         uint256 nodeValue = getUint(nodeKey);
@@ -234,7 +238,23 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update total effective stake
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
         // Update node fee average
-        rocketNodeManager.decreaseAverageNodeFeeNumerator(_nodeAddress, minipool.getNodeFee());
+        subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
+    }
+
+    // Calls distribute on the given node's distributor if it has a balance and has been initialised
+    function _tryDistribute(address _nodeAddress) internal {
+        // Get contracts
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        address distributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        // If there are funds to distribute than call distribute
+        if (distributorAddress.balance > 0) {
+            // Get contracts
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            // Ensure distributor has been initialised
+            require(rocketNodeManager.getFeeDistributorInitialised(_nodeAddress), "Distributor not initialised");
+            RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(distributorAddress);
+            distributor.distribute();
+        }
     }
 
     // Increments _nodeAddress' number of minipools that have been finalised
