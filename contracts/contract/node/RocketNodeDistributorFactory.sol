@@ -31,7 +31,7 @@ contract RocketNodeDistributorFactory is RocketBase, RocketNodeDistributorFactor
     }
 
     function createProxy(address _nodeAddress) override external onlyLatestContract("rocketNodeManager", msg.sender) {
-        RocketNodeDistributor dist = new RocketNodeDistributor{salt: ''}(_nodeAddress, rocketStorage);
+        RocketNodeDistributor dist = new RocketNodeDistributor{salt: ''}(_nodeAddress, address(rocketStorage));
         emit ProxyCreated(address(dist));
     }
 }
