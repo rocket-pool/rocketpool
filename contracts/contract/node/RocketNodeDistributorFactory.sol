@@ -30,7 +30,9 @@ contract RocketNodeDistributorFactory is RocketBase, RocketNodeDistributorFactor
         return address(uint160(uint(hash)));
     }
 
+    // Uses CREATE2 to deploy a RocketNodeDistributor at predetermined address
     function createProxy(address _nodeAddress) override external onlyLatestContract("rocketNodeManager", msg.sender) {
+        // Salt is not required as the initCode is already unique per node address (node address is constructor argument)
         RocketNodeDistributor dist = new RocketNodeDistributor{salt: ''}(_nodeAddress, address(rocketStorage));
         emit ProxyCreated(address(dist));
     }

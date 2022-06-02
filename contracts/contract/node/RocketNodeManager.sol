@@ -147,7 +147,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     }
 
     // Returns true if node has initialised their fee distributor contract
-    function getFeeDistributorInitialised(address _nodeAddress) override public returns (bool) {
+    function getFeeDistributorInitialised(address _nodeAddress) override public view returns (bool) {
         // Load contracts
         RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
         // Get distributor address
@@ -170,6 +170,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
         if (count > 0){
             uint256 numerator;
+            // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
             for (uint256 i = 0; i < count; i++) {
                 RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getMinipoolAt(i));
                 if (minipool.getStatus() == MinipoolStatus.Staking){
@@ -195,11 +196,11 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Calculate average
-        uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)));
         uint256 denominator = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress);
         if (denominator == 0) {
             return 0;
         }
+        uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)));
         return numerator.div(denominator);
     }
 
@@ -233,7 +234,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Get from the DAO settings
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
-        // Ensure node operator has waiting required time
+        // Ensure node operator has waited the required time
         uint256 lastChange = getUint(changeKey);
         require(block.timestamp >= lastChange.add(rewardInterval), "Not enough time has passed since changing state");
         // Ensure state is actually changing

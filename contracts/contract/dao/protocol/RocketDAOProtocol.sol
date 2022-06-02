@@ -71,7 +71,6 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
     // Bootstrap mode -Spend DAO treasury
     function bootstrapSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
-        // Ok good to go, lets update the rewards claiming contract amount 
         RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSpendTreasury(_invoiceID, _recipientAddress, _amount);
     }
 

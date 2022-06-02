@@ -80,10 +80,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(rocketVault.balanceOf("rocketDepositPool").add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
         // Calculate deposit fee
         uint256 depositFee = msg.value.mul(rocketDAOProtocolSettingsDeposit.getDepositFee()).div(calcBase);
-        uint256 depositNetFee = msg.value.sub(depositFee);
+        uint256 depositNet = msg.value.sub(depositFee);
         // Mint rETH to user account
         RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
-        rocketTokenRETH.mint(depositNetFee, msg.sender);
+        rocketTokenRETH.mint(depositNet, msg.sender);
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Process deposit

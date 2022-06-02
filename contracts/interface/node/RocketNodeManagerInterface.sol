@@ -23,7 +23,7 @@ interface RocketNodeManagerInterface {
     function setTimezoneLocation(string calldata _timezoneLocation) external;
     function setRewardNetwork(address _nodeAddress, uint256 network) external;
     function getRewardNetwork(address _nodeAddress) external view returns (uint256);
-    function getFeeDistributorInitialised(address _nodeAddress) external returns (bool);
+    function getFeeDistributorInitialised(address _nodeAddress) external view returns (bool);
     function initialiseFeeDistributor() external;
     function getAverageNodeFee(address _nodeAddress) external view returns (uint256);
     function setSmoothingPoolRegistrationState(bool _state) external;

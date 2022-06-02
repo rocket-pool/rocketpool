@@ -163,6 +163,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.threshold")), 0.51 ether);       // Consensus for penalties requires 51% vote
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.penalty.per.rate")), 0.1 ether);         // 10% per penalty
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "network.submit.rewards.enabled")), true);        // Enable reward submission
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.fee")), 0.0005 ether);                   // 0.05% deposit fee
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.reth.deposit.delay")), 0);               // Remove the rETH deposit delay entirely

@@ -116,6 +116,10 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     // Submit a reward snapshot
     // Only accepts calls from trusted (oracle) nodes
     function submitRewardSnapshot(RewardSubmission calldata _submission) override external onlyLatestContract("rocketRewardsPool", address(this)) onlyTrustedNode(msg.sender) {
+        // Get contracts
+        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
+        // Check submission is currently enabled
+        require(rocketDAOProtocolSettingsNetwork.getSubmitRewardsEnabled(), "Submitting rewards is currently disabled");
         // Validate inputs
         require(_submission.rewardIndex == getRewardIndex(), "Can only submit snapshot for next period");
         require(_submission.intervalsPassed > 0, "Invalid number of intervals passed");
@@ -132,7 +136,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             require(totalRewardsRPL <= getPendingRPLRewards(), "Invalid RPL rewards");
         }
         // Calculate ETH reward total and validate
-        { // Scope to prevent stake too deep
+        { // Scope to prevent stack too deep
             uint256 totalRewardsETH = 0;
             for (uint256 i = 0; i < _submission.nodeETH.length; i++){
                 totalRewardsETH = totalRewardsETH.add(_submission.nodeETH[i]);
@@ -141,14 +145,14 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         }
         // Store and increment vote
         uint256 submissionCount;
-        { // Scope to prevent stake too deep
+        { // Scope to prevent stack too deep
             // Check & update node submission status
-            bytes32 nodeSubmissionKey = keccak256(abi.encode("rewards.snapshot.submitted.node", msg.sender, _submission));
+            bytes32 nodeSubmissionKey = keccak256(abi.encode("rewards.snapshot.submitted.node.key", msg.sender, _submission));
             require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
             setBool(nodeSubmissionKey, true);
             setBool(keccak256(abi.encode("rewards.snapshot.submitted.node", msg.sender, _submission.rewardIndex)), true);
         }
-        { // Scope to prevent stake too deep
+        { // Scope to prevent stack too deep
             // Increment submission count
             bytes32 submissionCountKey = keccak256(abi.encode("rewards.snapshot.submitted.count", _submission));
             submissionCount = getUint(submissionCountKey).add(1);
@@ -157,7 +161,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         // Emit snapshot submitted event
         emit RewardSnapshotSubmitted(msg.sender, _submission.rewardIndex, _submission, block.timestamp);
         // If consensus is reached, execute the snapshot
-        RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
         RocketDAONodeTrustedInterface rocketDAONodeTrusted = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         if (calcBase.mul(submissionCount).div(rocketDAONodeTrusted.getMemberCount()) >= rocketDAOProtocolSettingsNetwork.getNodeConsensusThreshold()) {
             _executeRewardSnapshot(_submission);

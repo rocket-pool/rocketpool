@@ -38,7 +38,6 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         require(!getBool(nodeSubmissionKey), "Duplicate submission from node");
         require(!getBool(executedKey), "Penalty already applied for this block");
         setBool(nodeSubmissionKey, true);
-        setBool(keccak256(abi.encodePacked("network.penalties.submitted.node", msg.sender, _minipoolAddress, _block)), true);
         // Increment submission count
         uint256 submissionCount = getUint(submissionCountKey).add(1);
         setUint(submissionCountKey, submissionCount);

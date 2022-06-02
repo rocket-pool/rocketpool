@@ -16,4 +16,5 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getNodeFeeDemandRange() external view returns (uint256);
     function getTargetRethCollateralRate() external view returns (uint256);
     function getRethDepositDelay() external view returns (uint256);
+    function getSubmitRewardsEnabled() external view returns (bool);
 }

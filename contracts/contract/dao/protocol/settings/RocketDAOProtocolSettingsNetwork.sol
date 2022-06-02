@@ -107,4 +107,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     function getRethDepositDelay() override external view returns (uint256) {
         return getSettingUint("network.reth.deposit.delay");
     }
+
+    // Submit reward snapshots currently enabled (trusted nodes only)
+    function getSubmitRewardsEnabled() override external view returns (bool) {
+        return getSettingBool("network.submit.rewards.enabled");
+    }
 }
