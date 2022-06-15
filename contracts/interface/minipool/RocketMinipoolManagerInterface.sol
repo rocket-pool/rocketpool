@@ -1,8 +1,10 @@
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "../../types/MinipoolDeposit.sol";
+import "../../types/MinipoolDetails.sol";
 import "./RocketMinipoolInterface.sol";
 
 interface RocketMinipoolManagerInterface {
@@ -31,4 +33,5 @@ interface RocketMinipoolManagerInterface {
     function decrementNodeStakingMinipoolCount(address _nodeAddress) external;
     function incrementNodeFinalisedMinipoolCount(address _nodeAddress) external;
     function setMinipoolPubkey(bytes calldata _pubkey) external;
+    function getMinipoolDetails(address _minipoolAddress) external view returns (MinipoolDetails memory);
 }

@@ -5,4 +5,5 @@ pragma solidity 0.7.6;
 interface RocketNetworkPenaltiesInterface {
     function submitPenalty(address _minipoolAddress, uint256 _block) external;
     function executeUpdatePenalty(address _minipoolAddress, uint256 _block) external;
+    function getPenaltyCount(address _minipoolAddress) external view returns (uint256);
 }

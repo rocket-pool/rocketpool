@@ -1,12 +1,15 @@
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+import "./RocketMinipool.sol";
 import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
 import "../../types/MinipoolDeposit.sol";
+import "../../types/MinipoolDetails.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -21,6 +24,8 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInter
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
 import "../../interface/node/RocketNodeDistributorInterface.sol";
+import "../../interface/network/RocketNetworkPenaltiesInterface.sol";
+import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 
 // Minipool creation, removal and management
 
@@ -64,7 +69,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Get the number of minipools in each status.
     // Returns the counts for Initialised, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
-    function getMinipoolCountPerStatus(uint256 offset, uint256 limit) override external view 
+    function getMinipoolCountPerStatus(uint256 _offset, uint256 _limit) override external view
     returns (uint256 initialisedCount, uint256 prelaunchCount, uint256 stakingCount, uint256 withdrawableCount, uint256 dissolvedCount) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -72,9 +77,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         bytes32 minipoolKey = keccak256(abi.encodePacked("minipools.index"));
         // Iterate over the requested minipool range
         uint256 totalMinipools = getMinipoolCount();
-        uint256 max = offset.add(limit);
-        if (max > totalMinipools || limit == 0) { max = totalMinipools; }
-        for (uint256 i = offset; i < max; i++) {
+        uint256 max = _offset.add(_limit);
+        if (max > totalMinipools || _limit == 0) { max = totalMinipools; }
+        for (uint256 i = _offset; i < max; i++) {
             // Get the minipool at index i
             RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and update the appropriate counter
@@ -177,12 +182,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get a minipool address by validator pubkey
-    function getMinipoolByPubkey(bytes memory _pubkey) override external view returns (address) {
+    function getMinipoolByPubkey(bytes memory _pubkey) override public view returns (address) {
         return getAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)));
     }
 
     // Check whether a minipool exists
-    function getMinipoolExists(address _minipoolAddress) override external view returns (bool) {
+    function getMinipoolExists(address _minipoolAddress) override public view returns (bool) {
         return getBool(keccak256(abi.encodePacked("minipool.exists", _minipoolAddress)));
     }
 
@@ -389,5 +394,38 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     function deployContract(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) private returns (address) {
         RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
         return rocketMinipoolFactory.deployContract(_nodeAddress, _depositType, _salt);
+    }
+
+    // Retrieves all on-chain information about a given minipool in a single convenience view function
+    function getMinipoolDetails(address _minipoolAddress) override external view returns (MinipoolDetails memory) {
+        // Get contracts
+        RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
+        RocketMinipool minipool = RocketMinipool(payable(_minipoolAddress));
+        RocketNetworkPenaltiesInterface rocketNetworkPenalties = RocketNetworkPenaltiesInterface(getContractAddress("rocketNetworkPenalties"));
+        RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
+        // Minipool details
+        MinipoolDetails memory details;
+        details.exists = getMinipoolExists(_minipoolAddress);
+        details.pubkey = getMinipoolPubkey(_minipoolAddress);
+        details.status = minipoolInterface.getStatus();
+        details.statusBlock = minipoolInterface.getStatusBlock();
+        details.statusTime = minipoolInterface.getStatusTime();
+        details.finalised = minipoolInterface.getFinalised();
+        details.depositType = minipoolInterface.getDepositType();
+        details.nodeFee = minipoolInterface.getNodeFee();
+        details.nodeDepositBalance = minipoolInterface.getNodeDepositBalance();
+        details.nodeDepositAssigned = minipoolInterface.getNodeDepositAssigned();
+        details.userDepositBalance = minipoolInterface.getUserDepositBalance();
+        details.userDepositAssigned = minipoolInterface.getUserDepositAssigned();
+        details.userDepositAssignedTime = minipoolInterface.getUserDepositAssignedTime();
+        // Delegate details
+        details.useLatestDelegate = minipool.getUseLatestDelegate();
+        details.delegate = minipool.getDelegate();
+        details.previousDelegate = minipool.getPreviousDelegate();
+        details.effectiveDelegate = minipool.getEffectiveDelegate();
+        // Penalty details
+        details.penaltyCount = rocketNetworkPenalties.getPenaltyCount(_minipoolAddress);
+        details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
+        return details;
     }
 }

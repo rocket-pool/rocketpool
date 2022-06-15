@@ -3,6 +3,8 @@ pragma abicoder v2;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "../../types/NodeDetails.sol";
+
 interface RocketNodeManagerInterface {
 
     // Structs
@@ -29,4 +31,7 @@ interface RocketNodeManagerInterface {
     function setSmoothingPoolRegistrationState(bool _state) external;
     function getSmoothingPoolRegistrationState(address _nodeAddress) external returns (bool);
     function getSmoothingPoolRegistrationChanged(address _nodeAddress) external returns (uint256);
+    function getSmoothingPoolRegisteredNodeCount(uint256 _offset, uint256 _limit) external view returns (uint256);
+    function getNodeDetails(address _nodeAddress) external view returns (NodeDetails memory);
+    function getNodeAddresses(uint256 _offset, uint256 _limit) external view returns (address[] memory);
 }

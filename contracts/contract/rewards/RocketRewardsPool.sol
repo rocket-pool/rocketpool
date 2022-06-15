@@ -103,6 +103,21 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         return daoSettingsRewards.getRewardsClaimerPerc(_claimingContract);
     }
 
+    /**
+    * Get an array of percentages that the given contracts can claim in this interval
+    * @return uint256[] Array of percentages in the order of the supplied contract names
+    */
+    function getClaimingContractsPerc(string[] memory _claimingContracts) override external view returns (uint256[] memory) {
+        // Load contract
+        RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
+        // Get the % amount allocated to this claim contract
+        uint256[] memory percentages = new uint256[](_claimingContracts.length);
+        for (uint256 i = 0; i < _claimingContracts.length; i++){
+            percentages[i] = daoSettingsRewards.getRewardsClaimerPerc(_claimingContracts[i]);
+        }
+        return percentages;
+    }
+
     // Returns whether a trusted node has submitted for a given reward index
     function getTrustedNodeSubmitted(address _trustedNodeAddress, uint256 _rewardIndex) override external view returns (bool) {
         return getBool(keccak256(abi.encode("rewards.snapshot.submitted.node", _trustedNodeAddress, _rewardIndex)));

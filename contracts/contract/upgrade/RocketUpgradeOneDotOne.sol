@@ -182,7 +182,6 @@ contract RocketUpgradeOneDotOne is RocketBase {
     // Add a new network contract
     function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
-        bytes32 nameHash = keccak256(abi.encodePacked(_name));
         require(bytes(_name).length > 0, "Invalid contract name");
         // Cannot add contract if it already exists (use upgradeContract instead)
         require(getAddress(keccak256(abi.encodePacked("contract.address", _name))) == address(0x0), "Contract name is already in use");
@@ -203,8 +202,6 @@ contract RocketUpgradeOneDotOne is RocketBase {
 
     // Upgrade a network contract
     function _upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
-        // Check contract being upgraded
-        bytes32 nameHash = keccak256(abi.encodePacked(_name));
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
         require(oldContractAddress != address(0x0), "Contract does not exist");

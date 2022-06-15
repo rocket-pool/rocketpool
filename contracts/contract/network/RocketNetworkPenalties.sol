@@ -69,6 +69,11 @@ contract RocketNetworkPenalties is RocketBase, RocketNetworkPenaltiesInterface {
         incrementMinipoolPenaltyCount(_minipoolAddress);
     }
 
+    // Returns the number of penalties for a given minipool
+    function getPenaltyCount(address _minipoolAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("network.penalties.penalty", _minipoolAddress)));
+    }
+
     // Increments the number of penalties against given minipool and updates penalty rate appropriately
     function incrementMinipoolPenaltyCount(address _minipoolAddress) private {
         // Get contracts
