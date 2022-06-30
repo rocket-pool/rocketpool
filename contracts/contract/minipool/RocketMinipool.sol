@@ -114,7 +114,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
     // Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
         address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
-        require(contractAddress != address(0x0), string(abi.encodePacked("Contract not found")));
+        require(contractAddress != address(0x0), "Contract not found");
         return contractAddress;
     }
 
@@ -128,7 +128,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
     }
 
     // Returns true if contract exists at _contractAddress (if called during that contract's construction it will return a false negative)
-    function contractExists(address _contractAddress) private view returns (bool) {
+    function contractExists(address _contractAddress) private returns (bool) {
         uint32 codeSize;
         assembly {
             codeSize := extcodesize(_contractAddress)
