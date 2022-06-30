@@ -25,7 +25,7 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
     bytes32 immutable rocketTokenRETHKey;
 
     constructor() {
-        // Precompute storage key and immutable contract address
+        // Precompute storage keys
         rocketNodeManagerKey = keccak256(abi.encodePacked("contract.address", "rocketNodeManager"));
         rocketTokenRETHKey = keccak256(abi.encodePacked("contract.address", "rocketTokenRETH"));
         // These values must be set by proxy contract as this contract should only be delegatecalled

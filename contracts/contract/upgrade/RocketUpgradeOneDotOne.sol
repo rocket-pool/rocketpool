@@ -57,7 +57,7 @@ contract RocketUpgradeOneDotOne is RocketBase {
     string public newRocketDAOProtocolSettingsDepositAbi;
     string public newRocketClaimDAOAbi;
 
-    // Save deployer to limit access to set funcionts
+    // Save deployer to limit access to set functions
     address immutable deployer;
 
     // Construct
