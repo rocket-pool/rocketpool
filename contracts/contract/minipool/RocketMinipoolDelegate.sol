@@ -147,7 +147,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Only accepts calls from the RocketDepositPool contract
     function userDeposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
         // Check current status & user deposit status
-        require(status >= MinipoolStatus.Initialised && status <= MinipoolStatus.RequestedWithdrawable, "The user deposit can only be assigned while initialised, in prelaunch, staking, or requestedWithdrawable");
+        require(status == MinipoolStatus.Initialised || status == MinipoolStatus.Prelaunch || status == MinipoolStatus.Staking || status == MinipoolStatus.RequestedWithdrawable,
+            "The user deposit can only be assigned while initialised, in prelaunch, staking, or requestedWithdrawable");
         require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
         // Progress initialised minipool to prelaunch
         if (status == MinipoolStatus.Initialised) { setStatus(MinipoolStatus.Prelaunch); }
