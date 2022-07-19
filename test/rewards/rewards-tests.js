@@ -27,10 +27,12 @@ import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotOne } from '../_utils/upgrade'
-import { submitRewards } from './scenario-submit-rewards';
+import { executeRewards, submitRewards } from './scenario-submit-rewards';
 import { claimRewards } from './scenario-claim-rewards';
 import { claimAndStakeRewards } from './scenario-claim-and-stake-rewards';
 import { parseRewardsMap } from '../_utils/merkle-tree';
+import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted';
+import { getDAOProposalStartTime } from '../dao/scenario-dao-proposal';
 
 
 export default function() {
@@ -48,9 +50,10 @@ export default function() {
             registeredNode2,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
-            registeredNodeTrusted3,
+            unregisteredNodeTrusted1,
+            unregisteredNodeTrusted2,
             node1WithdrawalAddress,
-            daoInvoiceRecipient
+            random
         ] = accounts;
 
 
@@ -87,6 +90,28 @@ export default function() {
             await setRewardsClaimIntervalTime(claimIntervalTime, { from: owner });
         }
 
+        async function kickTrustedNode(nodeAddress, voters) {
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+              {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
+              [nodeAddress, '0']
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose(`Kick ${nodeAddress}`, proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
+            // Now lets vote
+            for (const voter of voters) {
+                await daoNodeTrustedVote(proposalID, true, { from: voter });
+            }
+            // Proposal has passed, lets execute it now
+            await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
+        }
+
 
         // Setup
         before(async () => {
@@ -104,7 +129,8 @@ export default function() {
             await registerNode({from: registeredNode2});
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
-            await registerNode({from: registeredNodeTrusted3});
+            await registerNode({from: unregisteredNodeTrusted1});
+            await registerNode({from: unregisteredNodeTrusted2});
 
             // Set node 1 withdrawal address
             await setNodeWithdrawalAddress(registeredNode1, node1WithdrawalAddress, {from: registeredNode1});
@@ -233,7 +259,7 @@ export default function() {
                         
         /*** Regular Nodes *************************/
 
-        
+
         it(printTitle('node', 'can claim RPL and ETH'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
@@ -593,6 +619,45 @@ export default function() {
             await claimAndStakeRewards(registeredNode1, [0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode1,
             });
+        });
+
+
+        /*** Random *************************/
+
+
+        it(printTitle('random', 'can execute reward period if consensus is reached'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Add another 2 trusted nodes so consensus becomes 3 votes
+            await setNodeTrusted(unregisteredNodeTrusted1, 'saas_3', 'node@home.com', owner);
+            await setNodeTrusted(unregisteredNodeTrusted2, 'saas_4', 'node@home.com', owner);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+
+            // Kick a trusted node so consensus becomes 2 votes again
+            await kickTrustedNode(unregisteredNodeTrusted1, [registeredNodeTrusted1, registeredNodeTrusted2, unregisteredNodeTrusted1]);
+
+            // Now we should be able to execute the reward period
+            await executeRewards(0, rewards, '0', {from: random});
         });
     });
 }
