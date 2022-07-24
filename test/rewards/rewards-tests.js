@@ -13,8 +13,8 @@ import {
     getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
 import {
-    RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet, RocketSmoothingPool,
+  RocketDAONodeTrustedSettingsMinipool,
+  RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet, RocketSmoothingPool, RocketStorage,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
@@ -177,7 +177,7 @@ export default function() {
 
         /*** Setting Claimers *************************/
 
-                 
+
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in seconds
             await shouldRevert(setRewardsClaimIntervalTime(100, {
@@ -193,7 +193,7 @@ export default function() {
             });
         });
 
-                
+
         it(printTitle('userOne', 'fails to set contract claimer percentage for rewards'), async () => {
             // Set the amount this contract can claim
             await shouldRevert(setDAONetworkBootstrapRewardsClaimer('myHackerContract', web3.utils.toWei('0.1', 'ether'), {
@@ -217,7 +217,7 @@ export default function() {
             });
         });
 
-        
+
         it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
@@ -231,7 +231,7 @@ export default function() {
             }, totalClaimersPerc);
         });
 
-      
+
 
         it(printTitle('guardian', 'set contract claimers total percentage to 100%'), async () => {
             // Get the total current claims amounts
@@ -249,14 +249,14 @@ export default function() {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Get the total % needed to make 100%
-            let claimAmount = ((1 - totalClaimersPerc) + 0.001).toFixed(4); 
+            let claimAmount = ((1 - totalClaimersPerc) + 0.001).toFixed(4);
             // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
             await shouldRevert(setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei(claimAmount.toString(), 'ether'), {
                 from: owner,
             }), "Total claimers percentrage over 100%");
         });
-       
-                        
+
+
         /*** Regular Nodes *************************/
 
 
@@ -658,6 +658,68 @@ export default function() {
 
             // Now we should be able to execute the reward period
             await executeRewards(0, rewards, '0', {from: random});
+        });
+
+
+        /*** Misc *************************/
+
+
+        it(printTitle('misc', 'claim bitmap is correct'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+
+            // Submit 10 reward intervals
+            for (let i = 0; i < 10; i++) {
+                await submitRewards(i, rewards, '0', {from: registeredNodeTrusted1});
+                await submitRewards(i, rewards, '0', {from: registeredNodeTrusted2});
+            }
+
+            // Some arbitrary intervals to claim
+            let claimIntervals = [ 0, 4, 6, 9 ];
+
+            await claimRewards(registeredNode1, claimIntervals, Array(claimIntervals.length).fill(rewards), {
+              from: registeredNode1,
+            });
+
+            // Retrieve the bitmap of claims
+            const rocketStorage = await RocketStorage.deployed();
+            const key = web3.utils.soliditySha3(
+                {type: 'string', value: 'rewards.interval.claimed'},
+                {type: 'address', value: registeredNode1},
+                {type: 'uint256', value: 0}
+            )
+            const bitmap = (await rocketStorage.getUint.call(key)).toNumber();
+
+            // Construct the expected bitmap and compare
+            let expected = 0;
+            for (let i = 0; i < claimIntervals.length; i++) {
+                expected |= 1 << claimIntervals[i];
+            }
+            assert.strictEqual(bitmap, expected, 'Incorrect claimed bitmap');
+
+            // Confirm second claim fails for each interval
+            for (let i = 0; i < claimIntervals.length; i++) {
+                await shouldRevert(claimRewards(registeredNode1, [claimIntervals[i]], [rewards], {
+                    from: registeredNode1,
+                }), 'Was able to claim again', 'Already claimed');
+            }
         });
     });
 }
