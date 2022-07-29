@@ -308,8 +308,8 @@ export default function() {
                     nodeETH: web3.utils.toWei('0.3', 'ether')
                 },
             ]
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', web3.utils.toWei('2', 'ether'), {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', web3.utils.toWei('2', 'ether'), {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -326,8 +326,8 @@ export default function() {
             });
 
             // Do a second claim interval
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [1], [rewards], {
@@ -361,10 +361,10 @@ export default function() {
                     trustedNodeRPL: web3.utils.toWei('0', 'ether'),
                     nodeRPL: web3.utils.toWei('1', 'ether'),
                     nodeETH: web3.utils.toWei('0', 'ether')
-                },
+                }
             ]
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -395,8 +395,8 @@ export default function() {
             ]
 
             // Create 3 snapshots
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             let treeData = parseRewardsMap(rewards);
             let proof = treeData.proof.claims[web3.utils.toChecksumAddress(registeredNode1)];
@@ -433,12 +433,12 @@ export default function() {
             ]
 
             // Create 3 snapshots
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
-            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
@@ -488,12 +488,12 @@ export default function() {
             ]
 
             // Submit 2 snapshots
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
-            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(2, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimRewards(registeredNode1, [0], [rewards], {
@@ -535,8 +535,8 @@ export default function() {
                     nodeETH: web3.utils.toWei('0', 'ether')
                 }
             ]
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('1', 'ether'), {
@@ -547,8 +547,8 @@ export default function() {
             });
 
             // Do a second claim interval
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [1], [rewards], web3.utils.toWei('0.5', 'ether'), {
@@ -580,8 +580,8 @@ export default function() {
                     nodeETH: web3.utils.toWei('0', 'ether')
                 },
             ]
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('2', 'ether'), {
@@ -610,10 +610,10 @@ export default function() {
                     nodeETH: web3.utils.toWei('0', 'ether')
                 }
             ]
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(1, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
             await claimAndStakeRewards(registeredNode1, [0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {
@@ -650,14 +650,14 @@ export default function() {
                 },
             ]
 
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted1});
-            await submitRewards(0, rewards, '0', {from: registeredNodeTrusted2});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Kick a trusted node so consensus becomes 2 votes again
             await kickTrustedNode(unregisteredNodeTrusted1, [registeredNodeTrusted1, registeredNodeTrusted2, unregisteredNodeTrusted1]);
 
             // Now we should be able to execute the reward period
-            await executeRewards(0, rewards, '0', {from: random});
+            await executeRewards(0, rewards, '0', '0', {from: random});
         });
 
 
@@ -687,8 +687,8 @@ export default function() {
 
             // Submit 10 reward intervals
             for (let i = 0; i < 10; i++) {
-                await submitRewards(i, rewards, '0', {from: registeredNodeTrusted1});
-                await submitRewards(i, rewards, '0', {from: registeredNodeTrusted2});
+                await submitRewards(i, rewards, '0', '0', {from: registeredNodeTrusted1});
+                await submitRewards(i, rewards, '0', '0', {from: registeredNodeTrusted2});
             }
 
             // Some arbitrary intervals to claim

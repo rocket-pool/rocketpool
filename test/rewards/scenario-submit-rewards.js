@@ -1,19 +1,30 @@
-import { RocketDAONodeTrusted, RocketNetworkPrices, RocketRewardsPool, RocketStorage } from '../_utils/artifacts';
+import {
+    RocketClaimDAO,
+    RocketDAONodeTrusted,
+    RocketNetworkPrices,
+    RocketRewardsPool,
+    RocketStorage,
+    RocketTokenRETH, RocketTokenRPL,
+} from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 
 
 // Submit rewards
-export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
+export async function submitRewards(index, rewards, treasuryRPL, userETH, txOptions) {
 
     // Load contracts
     const [
         rocketDAONodeTrusted,
         rocketRewardsPool,
-        rocketStorage,
+        rocketTokenRETH,
+        rocketTokenRPL,
+        rocketClaimDAO
     ] = await Promise.all([
         RocketDAONodeTrusted.deployed(),
         RocketRewardsPool.deployed(),
-        RocketStorage.deployed(),
+        RocketTokenRETH.deployed(),
+        RocketTokenRPL.deployed(),
+        RocketClaimDAO.deployed()
     ]);
 
     // Get parameters
@@ -22,11 +33,11 @@ export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
     // Construct the merkle tree
     let treeData = parseRewardsMap(rewards);
 
-    const totalRPL = treeData.proof.totalRewardsRPL;
-    const totalETH = treeData.proof.totalRewardsETH;
     const trustedNodeRPL = [];
     const nodeRPL = [];
     const nodeETH = [];
+    treasuryRPL = web3.utils.toBN(treasuryRPL);
+    userETH = web3.utils.toBN(userETH);
 
     let maxNetwork = rewards.reduce((a,b) => Math.max(a, b.network), 0);
 
@@ -54,15 +65,16 @@ export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
 
     const submission = {
         rewardIndex: index,
-        executionBlock: 0,
-        consensusBlock: 0,
+        executionBlock: '0',
+        consensusBlock: '0',
         merkleRoot: root,
         merkleTreeCID: cid,
-        intervalsPassed: 1,
-        treasuryRPL: treasuryRPL,
+        intervalsPassed: '1',
+        treasuryRPL: treasuryRPL.toString(),
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
-        nodeETH: nodeETH
+        nodeETH: nodeETH,
+        userETH: userETH.toString()
     }
 
     // Get submission details
@@ -77,9 +89,11 @@ export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
     }
 
     // Get initial submission details
-    let [submission1, rewardIndex1] = await Promise.all([
+    let [submission1, rewardIndex1, treasuryRpl1, rethBalance1] = await Promise.all([
         getSubmissionDetails(),
-        rocketRewardsPool.getRewardIndex()
+        rocketRewardsPool.getRewardIndex(),
+        rocketTokenRPL.balanceOf(rocketClaimDAO.address),
+        web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
 
@@ -87,30 +101,43 @@ export async function submitRewards(index, rewards, treasuryRPL, txOptions) {
     await rocketRewardsPool.submitRewardSnapshot(submission, txOptions);
 
     // Get updated submission details & prices
-    let [submission2, rewardIndex2] = await Promise.all([
+    let [submission2, rewardIndex2, treasuryRpl2, rethBalance2] = await Promise.all([
         getSubmissionDetails(),
-        rocketRewardsPool.getRewardIndex()
+        rocketRewardsPool.getRewardIndex(),
+        rocketTokenRPL.balanceOf(rocketClaimDAO.address),
+        web3.eth.getBalance(rocketTokenRETH.address)
     ]);
 
     // Check if prices should be updated
-    let expectUpdatedPrices = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
+    let expectedExecute = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
     assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
 
-    // Check prices
-    if (expectUpdatedPrices) {
+    // Calculate changes in user ETH and treasury RPL
+    rethBalance1 = web3.utils.toBN(rethBalance1);
+    rethBalance2 = web3.utils.toBN(rethBalance2);
+    let userETHChange = rethBalance2.sub(rethBalance1);
+    treasuryRpl1 = web3.utils.toBN(treasuryRpl1);
+    treasuryRpl2 = web3.utils.toBN(treasuryRpl2);
+    let treasuryRPLChange = treasuryRpl2.sub(treasuryRpl1);
+
+    // Check reward index and user balances
+    if (expectedExecute) {
         assert(rewardIndex2.eq(rewardIndex1.add(web3.utils.toBN(1))), 'Incorrect updated network prices block');
+        assert(userETHChange.eq(userETH), 'User ETH balance not correct');
+        assert(treasuryRPLChange.eq(treasuryRPL), 'Treasury RPL balance not correct');
     } else {
         assert(rewardIndex2.eq(rewardIndex1), 'Incorrect updated network prices block');
+        assert(rethBalance1.eq(rethBalance2), 'User ETH balance changed');
+        assert(treasuryRpl1.eq(treasuryRpl2), 'Treasury RPL balance changed');
     }
-
 }
 
 // Execute a reward period that already has consensus
-export async function executeRewards(index, rewards, treasuryRPL, txOptions) {
+export async function executeRewards(index, rewards, treasuryRPL, userETH, txOptions) {
 
     // Load contracts
     const [
@@ -125,6 +152,8 @@ export async function executeRewards(index, rewards, treasuryRPL, txOptions) {
     const trustedNodeRPL = [];
     const nodeRPL = [];
     const nodeETH = [];
+    treasuryRPL = web3.utils.toBN(treasuryRPL);
+    userETH = web3.utils.toBN(userETH);
 
     let maxNetwork = rewards.reduce((a,b) => Math.max(a, b.network), 0);
 
@@ -157,10 +186,11 @@ export async function executeRewards(index, rewards, treasuryRPL, txOptions) {
         merkleRoot: root,
         merkleTreeCID: cid,
         intervalsPassed: 1,
-        treasuryRPL: treasuryRPL,
+        treasuryRPL: treasuryRPL.toString(),
         trustedNodeRPL: trustedNodeRPL,
         nodeRPL: nodeRPL,
-        nodeETH: nodeETH
+        nodeETH: nodeETH,
+        userETH: userETH.toString()
     }
 
     // Submit prices

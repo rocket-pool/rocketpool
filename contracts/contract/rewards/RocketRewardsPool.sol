@@ -214,6 +214,13 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         if (_submission.treasuryRPL > 0) {
             rocketVault.transferToken("rocketClaimDAO", rplContract, _submission.treasuryRPL);
         }
+        // Get the smoothing pool instance
+        RocketSmoothingPoolInterface rocketSmoothingPool = RocketSmoothingPoolInterface(getContractAddress("rocketSmoothingPool"));
+        // Send deposit pool user's ETH
+        if (_submission.userETH > 0) {
+            address rocketTokenRETHAddress = getContractAddress("rocketTokenRETH");
+            rocketSmoothingPool.withdrawEther(rocketTokenRETHAddress, _submission.userETH);
+        }
         // Loop over each network and distribute rewards
         for (uint i = 0; i < _submission.nodeRPL.length; i++) {
             // Quick out if no rewards for this network
@@ -239,7 +246,6 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
             }
             if (rewardsETH > 0) {
                 // ETH rewards are withdrawn from the smoothing pool
-                RocketSmoothingPoolInterface rocketSmoothingPool = RocketSmoothingPoolInterface(getContractAddress("rocketSmoothingPool"));
                 rocketSmoothingPool.withdrawEther(address(relay), rewardsETH);
             }
             // Call into relay contract to handle distribution of rewards
