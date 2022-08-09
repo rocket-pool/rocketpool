@@ -41,7 +41,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         require(rocketDAOProtocolSettingsMinipool.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
+        MinipoolStatus status = minipool.getStatus()
+        require(status == MinipoolStatus.Staking || status == MinipoolStatus.RequestedWithdrawable, "Minipool can only be set as withdrawable while staking or requested withdrawable");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress));
@@ -71,7 +72,8 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         require(rocketDAOProtocolSettingsMinipool.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
+        MinipoolStatus status = minipool.getStatus()
+        require(status == MinipoolStatus.Staking || status == MinipoolStatus.RequestedWithdrawable, "Minipool can only be set as withdrawable while staking or requested withdrawable");
         // Get submission keys
         bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress));
         // Get submission count
