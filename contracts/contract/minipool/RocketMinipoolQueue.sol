@@ -47,6 +47,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     // Get the length of a queue
     // Returns 0 for invalid queues
     function getLength(MinipoolDeposit _depositType) override external view returns (uint256) {
+        if (_depositType == MinipoolDeposit.Efficient) { return getLength(queueKeyEfficient); }
         if (_depositType == MinipoolDeposit.Full) { return getLength(queueKeyFull); }
         if (_depositType == MinipoolDeposit.Half) { return getLength(queueKeyHalf); }
         if (_depositType == MinipoolDeposit.Empty) { return getLength(queueKeyEmpty); }
@@ -64,12 +65,15 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
             getLength(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
         ).add(
             getLength(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
+        ).add(
+            getLength(queueKeyEfficient).mul(rocketDAOProtocolSettingsMinipool.getEfficientDepositUserAmount())
         );
     }
 
     // Add a minipool to the end of the appropriate queue
     // Only accepts calls from the RocketMinipoolManager contract
     function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
+        if (_depositType == MinipoolDeposit.Efficient) { return enqueueMinipool(queueKeyEfficient, _minipool); }
         if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool(queueKeyHalf, _minipool); }
         if (_depositType == MinipoolDeposit.Full) { return enqueueMinipool(queueKeyFull, _minipool); }
         if (_depositType == MinipoolDeposit.Empty) { return enqueueMinipool(queueKeyEmpty, _minipool); }
@@ -83,15 +87,10 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         emit MinipoolEnqueued(_minipool, _key, block.timestamp);
     }
 
-    // Remove the first available minipool from the highest priority queue and return its address
     // Only accepts calls from the RocketDepositPool contract
-    function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
-        if (getLength(queueKeyHalf) > 0) { return dequeueMinipool(queueKeyHalf); }
-        if (getLength(queueKeyFull) > 0) { return dequeueMinipool(queueKeyFull); }
-        if (getLength(queueKeyEmpty) > 0) { return dequeueMinipool(queueKeyEmpty); }
-        require(false, "No minipools are available");
     }
     function dequeueMinipoolByDeposit(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
+        if (_depositType == MinipoolDeposit.Efficient) { return dequeueMinipool(queueKeyEfficient); }
         if (_depositType == MinipoolDeposit.Half) { return dequeueMinipool(queueKeyHalf); }
         if (_depositType == MinipoolDeposit.Full) { return dequeueMinipool(queueKeyFull); }
         if (_depositType == MinipoolDeposit.Empty) { return dequeueMinipool(queueKeyEmpty); }
@@ -113,6 +112,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     //   queue. This is acceptable because removing minipools should be rare.
     function removeMinipool(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Remove minipool from queue
+        if (_depositType == MinipoolDeposit.Efficient) { return removeMinipool(queueKeyEfficient, msg.sender); }
         if (_depositType == MinipoolDeposit.Half) { return removeMinipool(queueKeyHalf, msg.sender); }
         if (_depositType == MinipoolDeposit.Full) { return removeMinipool(queueKeyFull, msg.sender); }
         if (_depositType == MinipoolDeposit.Empty) { return removeMinipool(queueKeyEmpty, msg.sender); }

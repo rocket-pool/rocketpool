@@ -213,6 +213,24 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             assignmentIndex++;
         }
 
+        // Prepare efficient deposit assignments - will always need 31 ETH
+        count = rocketMinipoolQueue.getLength(MinipoolDeposit.Efficient);
+        minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(MinipoolDeposit.Efficient);
+        for (i; i < i + count; ++i) { // NOTE - this is a weird line - we continue the indexing from the full deposit loop
+            if (depositValueForAssignments < minipoolCapacity) {
+                if (socializedAssignments == 0) { break; }
+                else {socializedAssignments--;}
+            }
+            if (balance.sub(totalEther) < minipoolCapacity) { break; }
+            // Dequeue the minipool
+            address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(MinipoolDeposit.Efficient);
+            // Update running total
+            totalEther = totalEther.add(minipoolCapacity);
+            // Add assignment
+            assignments[i].etherAssigned = minipoolCapacity;
+            assignments[i].minipoolAddress = minipoolAddress;
+        }
+
         if (totalEther > 0) {
             // Withdraw ETH from vault
             _rocketVault.withdrawEther(totalEther);

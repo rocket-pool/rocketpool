@@ -70,11 +70,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function getDepositType(uint256 _amount) public override view returns (MinipoolDeposit) {
         // Get contract
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Get deposit type by node deposit amount
-        if (_amount == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount()) { return MinipoolDeposit.Full; }
-        else if (_amount == rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount()) { return MinipoolDeposit.Half; }
-        // Invalid deposit amount
-        return MinipoolDeposit.None;
+        // Ensure valid deposit amount
+        if (_amount == rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount()) {
+            // invalid deposit amount
+            return MinipoolDeposit.None;
+        }
+        // All deposits going forward have the same type and use the same queue
+        return MinipoolDeposit.Efficient;
     }
 
     function checkNodeFee(uint256 _minimumNodeFee) private view {

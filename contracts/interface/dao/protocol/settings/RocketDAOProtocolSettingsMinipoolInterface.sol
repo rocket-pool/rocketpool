@@ -6,7 +6,6 @@ import "../../../../types/MinipoolDeposit.sol";
 
 interface RocketDAOProtocolSettingsMinipoolInterface {
     function getLaunchBalance() external view returns (uint256);
-    function getDepositNodeAmount(MinipoolDeposit _depositType) external view returns (uint256);
     function getFullDepositNodeAmount() external view returns (uint256);
     function getHalfDepositNodeAmount() external view returns (uint256);
     function getEmptyDepositNodeAmount() external view returns (uint256);

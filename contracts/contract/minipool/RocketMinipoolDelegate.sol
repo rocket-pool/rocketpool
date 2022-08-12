@@ -158,15 +158,19 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
         // Progress initialised minipool to prelaunch
         if (status == MinipoolStatus.Initialised) { setStatus(MinipoolStatus.Prelaunch); }
-        // Update user deposit details
-        userDepositBalance = msg.value;
-        userDepositAssignedTime = block.timestamp;
-        // Refinance full minipool
+
         if (depositType == MinipoolDeposit.Full) {
-            // Update node balances
+            // Refinance full minipool
             nodeDepositBalance = nodeDepositBalance.sub(msg.value);
             nodeRefundBalance = nodeRefundBalance.add(msg.value);
         }
+
+
+        nodeDepositAssigned = true; // indicate that the node deposit was returned for Efficient queue
+        // Update user deposit details
+        userDepositBalance = msg.value;
+        userDepositAssignedTime = block.timestamp;
+
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, block.timestamp);
     }
