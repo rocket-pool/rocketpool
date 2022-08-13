@@ -83,11 +83,10 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             // case where capacityNeeded fits in the deposit pool without looking at the queue
             if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
                 RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-                require(capacity <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
+                require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
                     "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
             } else {
-                require(capacity <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(),
-                    "The deposit pool size after depositing exceeds the maximum size");
+                revert("The deposit pool size after depositing exceeds the maximum size");
             }
         }
         // Calculate deposit fee
@@ -164,21 +163,23 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Setup initial variable values
         uint256 balance = _rocketVault.balanceOf("rocketDepositPool");
         uint256 totalEther = 0;
-        // Calculate minipool assignments
 
-        uint256 count = 0;
+        // Calculate minipool assignments
+        uint256 i;
+        uint256 assignmentIndex = 0;
         uint256 minipoolCapacity = 0;
         uint256 depositValueForAssignments = msg.value;
-        uint256 socializedAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
+        uint256 socializedAssignmentsLeft = _rocketDAOProtocolSettingsDeposit.getMaximumDepositSocializedAssignments();
+        uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         MinipoolAssignment[] memory assignments = new MinipoolAssignment[](maxAssignments);
 
         // Prepare half deposit assignments
-        count = rocketMinipoolQueue.getLength(MinipoolDeposit.Half);
         minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(MinipoolDeposit.Half);
-        for (uint256 i=0; i < count; ++i) { // (see note in full deposit loop)
+        for (i=0; i < rocketMinipoolQueue.getLength(MinipoolDeposit.Half); ++i) {
+            if (assignmentIndex == maxAssignments) { break; }
             if (depositValueForAssignments < minipoolCapacity) {
-                if (socializedAssignments == 0) { break; }
-                else {socializedAssignments--;}
+                if (socializedAssignmentsLeft == 0) { break; }
+                else {socializedAssignmentsLeft--;}
             } else {
                 depositValueForAssignments.sub(minipoolCapacity);
             }
@@ -187,27 +188,29 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(MinipoolDeposit.Half);
             // Update running total
             totalEther = totalEther.add(minipoolCapacity);
-            // Add assignment
-            assignments[i].etherAssigned = minipoolCapacity;
-            assignments[i].minipoolAddress = minipoolAddress;
+            // Add assignment, increment index
+            assignments[assignmentIndex].etherAssigned = minipoolCapacity;
+            assignments[assignmentIndex].minipoolAddress = minipoolAddress;
+            assignmentIndex++;
         }
 
         // Prepare full deposit assignments
-        count = rocketMinipoolQueue.getLength(MinipoolDeposit.Full);
         minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(MinipoolDeposit.Full);
-        for (i; i < i + count; ++i) { // NOTE - this is a weird line - we continue the indexing from the half deposit loop
+        for (i=0; i < rocketMinipoolQueue.getLength(MinipoolDeposit.Full); ++i) {
+            if (assignmentIndex == maxAssignments) { break; }
             if (depositValueForAssignments < minipoolCapacity) {
-                if (socializedAssignments == 0) { break; }
-                else {socializedAssignments--;}
+                if (socializedAssignmentsLeft == 0) { break; }
+                else {socializedAssignmentsLeft--;}
             }
             if (balance.sub(totalEther) < minipoolCapacity) { break; }
             // Dequeue the minipool
             address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(MinipoolDeposit.Full);
             // Update running total
             totalEther = totalEther.add(minipoolCapacity);
-            // Add assignment
-            assignments[i].etherAssigned = minipoolCapacity;
-            assignments[i].minipoolAddress = minipoolAddress;
+            // Add assignment, increment index
+            assignments[assignmentIndex].etherAssigned = minipoolCapacity;
+            assignments[assignmentIndex].minipoolAddress = minipoolAddress;
+            assignmentIndex++;
         }
 
         if (totalEther > 0) {
