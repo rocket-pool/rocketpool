@@ -20,7 +20,8 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
             setSettingBool("deposit.assign.enabled", true);
             setSettingUint("deposit.minimum", 0.01 ether);
             setSettingUint("deposit.pool.maximum", 160 ether);
-            setSettingUint("deposit.assign.maximum", 2);
+            setSettingUint("deposit.assign.maximum", 90);
+            setSettingUint("deposit.assign.socializedmaximum", 2);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -51,4 +52,8 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("deposit.assign.maximum");
     }
 
+    // The maximum number of socialized (ie, not related to deposit size) assignments to perform
+    function getMaximumDepositSocializedAssignments() override external view returns (uint256) {
+        return getSettingUint("deposit.assign.socializedmaximum");
+    }
 }
