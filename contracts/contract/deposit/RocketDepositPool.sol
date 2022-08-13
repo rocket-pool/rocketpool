@@ -76,7 +76,19 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        require(rocketVault.balanceOf("rocketDepositPool").add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
+        uint256 capacityNeeded = rocketVault.balanceOf("rocketDepositPool").add(msg.value);
+        if (capacityNeeded > rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize()) {
+            // Doing a conditional require() instead of a single one optimizes for the common
+            // case where capacityNeeded fits in the deposit pool without looking at the queue
+            if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
+                RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+                require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
+                    "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
+            } else {
+                revert("The deposit pool size after depositing exceeds the maximum size");
+            }
+        }
+
         // Record last deposit to time delay ability to withdraw
         setUint(keccak256(abi.encodePacked("user.deposit.block", msg.sender)), block.number);
         // Mint rETH to user account
@@ -138,6 +150,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     // Assigns deposits to available minipools, returns false if assignment is currently disabled
+    //   Can assign deposits up to the value of the deposit plus getMaximumDepositAssignments()
     function _assignDeposits(RocketVaultInterface rocketVault, RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit) private returns (bool) {
         // Check if assigning deposits is enabled
         if (!rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
@@ -149,29 +162,56 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Setup initial variable values
         uint256 balance = rocketVault.balanceOf("rocketDepositPool");
         uint256 totalEther = 0;
+
         // Calculate minipool assignments
+        uint256 i;
+        uint256 assignmentIndex = 0;
+        uint256 minipoolCapacity = 0;
+        uint256 depositValueForAssignments = msg.value;
+        uint256 socializedAssignmentsLeft = rocketDAOProtocolSettingsDeposit.getMaximumDepositSocializedAssignments();
         uint256 maxAssignments = rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         MinipoolAssignment[] memory assignments = new MinipoolAssignment[](maxAssignments);
-        MinipoolDeposit depositType = MinipoolDeposit.None;
-        uint256 count = 0;
-        uint256 minipoolCapacity = 0;
-        for (uint256 i = 0; i < maxAssignments; ++i) {
-            // Optimised for multiple of the same deposit type
-            if (count == 0) {
-                (depositType, count) = rocketMinipoolQueue.getNextDeposit();
-                if (depositType == MinipoolDeposit.None) { break; }
-                minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(depositType);
+
+        // Prepare half deposit assignments
+        minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(MinipoolDeposit.Half);
+        for (i=0; i < rocketMinipoolQueue.getLength(MinipoolDeposit.Half); ++i) {
+            if (assignmentIndex == maxAssignments) { break; }
+            if (depositValueForAssignments < minipoolCapacity) {
+                if (socializedAssignmentsLeft == 0) { break; }
+                else {socializedAssignmentsLeft--;}
+            } else {
+                depositValueForAssignments.sub(minipoolCapacity);
             }
-            count--;
-            if (minipoolCapacity == 0 || balance.sub(totalEther) < minipoolCapacity) { break; }
+            if (balance.sub(totalEther) < minipoolCapacity) { break; }
             // Dequeue the minipool
-            address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(depositType);
+            address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(MinipoolDeposit.Half);
             // Update running total
             totalEther = totalEther.add(minipoolCapacity);
-            // Add assignment
-            assignments[i].etherAssigned = minipoolCapacity;
-            assignments[i].minipoolAddress = minipoolAddress;
+            // Add assignment, increment index
+            assignments[assignmentIndex].etherAssigned = minipoolCapacity;
+            assignments[assignmentIndex].minipoolAddress = minipoolAddress;
+            assignmentIndex++;
         }
+
+        // Prepare full deposit assignments
+        minipoolCapacity = rocketDAOProtocolSettingsMinipool.getDepositUserAmount(MinipoolDeposit.Full);
+        for (i=0; i < rocketMinipoolQueue.getLength(MinipoolDeposit.Full); ++i) {
+            if (assignmentIndex == maxAssignments) { break; }
+            if (depositValueForAssignments < minipoolCapacity) {
+                if (socializedAssignmentsLeft == 0) { break; }
+                else {socializedAssignmentsLeft--;}
+            }
+            if (balance.sub(totalEther) < minipoolCapacity) { break; }
+            // Dequeue the minipool
+            address minipoolAddress = rocketMinipoolQueue.dequeueMinipoolByDeposit(MinipoolDeposit.Full);
+            // Update running total
+            totalEther = totalEther.add(minipoolCapacity);
+            // Add assignment, increment index
+            assignments[assignmentIndex].etherAssigned = minipoolCapacity;
+            assignments[assignmentIndex].minipoolAddress = minipoolAddress;
+            assignmentIndex++;
+        }
+
         if (totalEther > 0) {
             // Withdraw ETH from vault
             rocketVault.withdrawEther(totalEther);

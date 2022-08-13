@@ -57,18 +57,6 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         return addressQueueStorage.getLength(_key);
     }
 
-    // Get the total combined capacity of the queues
-    function getTotalCapacity() override external view returns (uint256) {
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        return (
-            getLength(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
-        ).add(
-            getLength(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
-        ).add(
-            getLength(queueKeyEmpty).mul(rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount())
-        );
-    }
-
     // Get the total effective capacity of the queues (used in node demand calculation)
     function getEffectiveCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
@@ -77,28 +65,6 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         ).add(
             getLength(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
         );
-    }
-
-    // Get the capacity of the next available minipool
-    // Returns 0 if no minipools are available
-    function getNextCapacity() override external view returns (uint256) {
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        if (getLength(queueKeyHalf) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
-        if (getLength(queueKeyFull) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
-        if (getLength(queueKeyEmpty) > 0) { return rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount(); }
-        return 0;
-    }
-
-    // Get the deposit type of the next available minipool and the number of deposits in that queue
-    // Returns None if no minipools are available
-    function getNextDeposit() override external view returns (MinipoolDeposit, uint256) {
-        uint256 length = getLength(queueKeyHalf);
-        if (length > 0) { return (MinipoolDeposit.Half, length); }
-        length = getLength(queueKeyFull);
-        if (length > 0) { return (MinipoolDeposit.Full, length); }
-        length = getLength(queueKeyEmpty);
-        if (length > 0) { return (MinipoolDeposit.Empty, length); }
-        return (MinipoolDeposit.None, 0);
     }
 
     // Add a minipool to the end of the appropriate queue
@@ -143,6 +109,8 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Remove a minipool from a queue
     // Only accepts calls from registered minipools
+    // Note: this removal is made computationally efficient by swapping with the last item in the
+    //   queue. This is acceptable because removing minipools should be rare.
     function removeMinipool(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Remove minipool from queue
         if (_depositType == MinipoolDeposit.Half) { return removeMinipool(queueKeyHalf, msg.sender); }
