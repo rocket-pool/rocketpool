@@ -420,15 +420,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Dissolve the minipool, returning user deposited ETH to the deposit pool
-    // Only accepts calls from the minipool owner (node), or from any address if timed out
+    // Only accepts calls when in Prelaunch for too long without calling stake()
+    // In other words, this prevents User ETH from getting stuck when an NO fails to move forward
     function dissolve() override external onlyInitialised {
         // Check current status
-        require(status == MinipoolStatus.Initialised || status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while initialised or in prelaunch");
+        require(status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while in prelaunch");
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check if being dissolved by minipool owner or minipool is timed out
         require(
-            (status == MinipoolStatus.Prelaunch && block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout()),
+            (block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout()),
             "The minipool can only be dissolved once it has timed out"
         );
         // Perform the dissolution
