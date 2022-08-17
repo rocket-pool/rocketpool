@@ -19,16 +19,13 @@ contract RocketDAONodeTrustedSettingsRewards is RocketDAONodeTrustedSettings, Ro
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAONodeTrustedSettings(_rocketStorageAddress, "rewards") {
         // Set version
         version = 2;
-    }
-
-    // Initialise
-    function initialise() public override onlyLatestContract("rocketUpgradeOneDotOne", msg.sender) {
-        // Initialise settings on deployment
-        require(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed"))), "Already initialised");
-        // Enable main net rewards
-        setBool(keccak256(abi.encodePacked(settingNameSpace, "rewards.network.enabled", uint256(0))), true);
-        // Settings initialised
-        setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        // Initialize settings on deployment
+        if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
+            // Init settings
+            setSettingBool("rewards.network.enabled", true);
+            // Settings initialised
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
+        }
     }
 
     // Update a setting, overrides inherited setting method with extra checks for this contract

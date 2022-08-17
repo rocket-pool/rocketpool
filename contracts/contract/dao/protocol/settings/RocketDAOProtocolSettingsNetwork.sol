@@ -25,7 +25,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
             setSettingUint("network.node.fee.demand.range", 160 ether);
             setSettingUint("network.reth.collateral.target", 0.1 ether);
-            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
+            setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
+            setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
+            setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }

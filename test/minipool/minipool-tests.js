@@ -34,7 +34,6 @@ import {
   setDAONodeTrustedBootstrapSetting,
   setDaoNodeTrustedBootstrapUpgrade
 } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -65,9 +64,6 @@ export default function() {
         let newDelegateAddress = '0x0000000000000000000000000000000000000001'
 
         before(async () => {
-            // Upgrade
-            await upgradeOneDotOne(owner);
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});

@@ -12,7 +12,6 @@ import { proposalStates, getDAOProposalState, getDAOProposalStartTime, getDAOPro
 
 // Contracts
 import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts';
-import { upgradeOneDotOne } from '../_utils/upgrade';
 
 
 export default function() {
@@ -71,9 +70,6 @@ export default function() {
         let rocketDAONodeTrustedUpgradeNew;
 
         before(async () => {
-            // Upgrade
-            await upgradeOneDotOne(guardian);
-
             // Load contracts
             // Get RocketStorage
             const rocketStorage = await RocketStorage.deployed();

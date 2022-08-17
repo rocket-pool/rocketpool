@@ -5,13 +5,11 @@ import {
     RocketDAOProtocolSettingsMinipool,
     RocketMinipoolStatus,
     RocketNetworkPrices,
-    RocketNetworkWithdrawal,
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
-    RocketStorage, RocketMinipoolManagerNew, RocketNodeDepositNew, RocketMinipoolManagerOld, RocketNodeDepositOld
+    RocketStorage
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
-import { getTxContractEvents } from '../_utils/contract';
 
 
 // Get the number of minipools a node has
@@ -64,18 +62,16 @@ export async function getMinipoolMinimumRPLStake() {
 let minipoolSalt = 1
 
 // Create a minipool
-export async function createMinipool(txOptions, salt = null, preUpdate = false) {
+export async function createMinipool(txOptions, salt = null) {
 
     // Load contracts
     const [
-        rocketMinipoolManager,
         rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
-        preUpdate ? RocketMinipoolManagerOld.deployed() : RocketMinipoolManager.deployed(),
-        preUpdate ? RocketMinipoolManagerOld.deployed() : RocketMinipoolFactory.deployed(),
-        preUpdate ? RocketNodeDepositOld.deployed() : RocketNodeDeposit.deployed(),
+        RocketMinipoolFactory.deployed(),
+        RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 

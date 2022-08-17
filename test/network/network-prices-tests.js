@@ -14,7 +14,6 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { mintRPL } from '../_helpers/tokens'
-import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkPrices', async (accounts) => {
@@ -39,9 +38,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            // Upgrade
-            await upgradeOneDotOne(owner);
-
             // Register node
             await registerNode({from: node});
 

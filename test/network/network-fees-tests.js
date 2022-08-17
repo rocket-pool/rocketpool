@@ -2,7 +2,6 @@ import { printTitle } from '../_utils/formatting';
 import { getNodeFeeByDemand } from '../_helpers/network';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
-import { upgradeOneDotOne } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkFees', async (accounts) => {
@@ -24,9 +23,6 @@ export default function() {
         let maxNodeFee = web3.utils.toWei('1.00', 'ether');
         let demandRange = web3.utils.toWei('1', 'ether');
         before(async () => {
-            // Upgrade distributor
-            await upgradeOneDotOne(owner);
-
             // Set network settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', minNodeFee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', targetNodeFee, {from: owner});

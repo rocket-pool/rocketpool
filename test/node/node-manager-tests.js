@@ -6,7 +6,6 @@ import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
-import { upgradeOneDotOne } from '../_utils/upgrade';
 import { setSmoothingPoolRegistrationState } from './scenario-register-smoothing-pool';
 import { increaseTime } from '../_utils/evm';
 
@@ -36,9 +35,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            // Upgrade
-            await upgradeOneDotOne(owner);
-
             // Enable smoothing pool registrations
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', true, {from: owner});
 
