@@ -34,7 +34,6 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
-
             // Load contracts
             rocketNodeStaking = await RocketNodeStaking.deployed();
 

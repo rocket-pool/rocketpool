@@ -45,7 +45,6 @@ export default function() {
         let submitPricesFrequency = 500;
         let depositDeplay = 100;
         before(async () => {
-
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 
@@ -95,38 +94,6 @@ export default function() {
             // Get & check updated rETH exchange rate
             let exchangeRate2 = await getRethExchangeRate();
             assert(!exchangeRate1.eq(exchangeRate2), 'rETH exchange rate has not changed');
-
-        });
-
-
-        it(printTitle('rETH holder', 'cannot burn rETH before enough time has passed'), async () => {
-
-            // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
-            await userDeposit({from: staker2, value: depositAmount});
-
-            // Check deposit pool excess balance
-            let excessBalance = await getDepositExcessBalance();
-            assert(web3.utils.toBN(excessBalance).eq(depositAmount), 'Incorrect deposit pool excess balance');
-
-            // Burn rETH
-            await shouldRevert(burnReth(rethBalance, {
-                from: staker1,
-            }), 'Burn should have failed before enough time has passed');
-
-        });
-
-
-        it(printTitle('rETH holder', 'cannot transfer rETH before enough time has passed'), async () => {
-
-            // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
-            await userDeposit({from: staker2, value: depositAmount});
-
-            // Transfer rETH
-            await shouldRevert(transferReth(random, rethBalance, {
-                from: staker1,
-            }), 'Transfer should have failed before enough time has passed');
 
         });
 

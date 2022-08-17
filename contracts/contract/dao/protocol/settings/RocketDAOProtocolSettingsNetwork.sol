@@ -8,11 +8,10 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNet
 // Network auction settings
 
 contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDAOProtocolSettingsNetworkInterface {
-
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "network") {
         // Set version
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -26,7 +25,9 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
             setSettingUint("network.node.fee.maximum", 0.15 ether);         // 15%
             setSettingUint("network.node.fee.demand.range", 160 ether);
             setSettingUint("network.reth.collateral.target", 0.1 ether);
-            setSettingUint("network.reth.deposit.delay", 5760);            // ~24 hours
+            setSettingUint("network.penalty.threshold", 0.51 ether);       // Consensus for penalties requires 51% vote
+            setSettingUint("network.penalty.per.rate", 0.1 ether);         // 10% per penalty
+            setSettingBool("network.submit.rewards.enabled", true);        // Enable reward submission
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -49,7 +50,17 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("network.consensus.threshold");
     }
 
-    // Submit balances currently enabled (trusted nodes only)
+    // The threshold of trusted nodes that must reach consensus on a penalty
+    function getNodePenaltyThreshold() override external view returns (uint256) {
+        return getSettingUint("network.penalty.threshold");
+    }
+
+    // The amount to penalise a minipool for each feeDistributor infraction
+    function getPerPenaltyRate() override external view returns (uint256) {
+        return getSettingUint("network.penalty.per.rate");
+    }
+
+// Submit balances currently enabled (trusted nodes only)
     function getSubmitBalancesEnabled() override external view returns (bool) {
         return getSettingBool("network.submit.balances.enabled");
     }
@@ -97,5 +108,10 @@ contract RocketDAOProtocolSettingsNetwork is RocketDAOProtocolSettings, RocketDA
     // rETH withdraw delay in blocks
     function getRethDepositDelay() override external view returns (uint256) {
         return getSettingUint("network.reth.deposit.delay");
+    }
+
+    // Submit reward snapshots currently enabled (trusted nodes only)
+    function getSubmitRewardsEnabled() override external view returns (bool) {
+        return getSettingBool("network.submit.rewards.enabled");
     }
 }

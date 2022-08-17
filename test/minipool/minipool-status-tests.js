@@ -43,7 +43,6 @@ export default function() {
         let stakingMinipool2;
         let stakingMinipool3;
         before(async () => {
-
             // Register node
             await registerNode({from: node});
 

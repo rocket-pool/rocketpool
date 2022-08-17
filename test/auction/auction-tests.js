@@ -40,7 +40,6 @@ export default function() {
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let minipool;
         before(async () => {
-
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 

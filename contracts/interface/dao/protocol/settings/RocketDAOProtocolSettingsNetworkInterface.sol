@@ -4,6 +4,8 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDAOProtocolSettingsNetworkInterface {
     function getNodeConsensusThreshold() external view returns (uint256);
+    function getNodePenaltyThreshold() external view returns (uint256);
+    function getPerPenaltyRate() external view returns (uint256);
     function getSubmitBalancesEnabled() external view returns (bool);
     function getSubmitBalancesFrequency() external view returns (uint256);
     function getSubmitPricesEnabled() external view returns (bool);
@@ -14,4 +16,5 @@ interface RocketDAOProtocolSettingsNetworkInterface {
     function getNodeFeeDemandRange() external view returns (uint256);
     function getTargetRethCollateralRate() external view returns (uint256);
     function getRethDepositDelay() external view returns (uint256);
+    function getSubmitRewardsEnabled() external view returns (bool);
 }

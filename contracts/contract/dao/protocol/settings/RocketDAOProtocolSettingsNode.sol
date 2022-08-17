@@ -12,11 +12,12 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
         // Set version
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("node.registration.enabled", false);
+            setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
             setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value
             setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of user ETH value
@@ -28,6 +29,11 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     // Node registrations currently enabled
     function getRegistrationEnabled() override external view returns (bool) {
         return getSettingBool("node.registration.enabled");
+    }
+
+    // Node smoothing pool registrations currently enabled
+    function getSmoothingPoolRegistrationEnabled() override external view returns (bool) {
+        return getSettingBool("node.smoothing.pool.registration.enabled");
     }
 
     // Node deposits currently enabled

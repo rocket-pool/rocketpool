@@ -46,7 +46,6 @@ export default function() {
         let penaltyTestContract;
 
         before(async () => {
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});

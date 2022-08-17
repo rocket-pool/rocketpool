@@ -1,4 +1,4 @@
-import { RocketDepositPool, RocketTokenRETH, RocketVault } from '../_utils/artifacts';
+import { RocketDAOProtocolSettingsDeposit, RocketDepositPool, RocketTokenRETH, RocketVault } from '../_utils/artifacts';
 
 
 // Make a deposit into the deposit pool
@@ -6,10 +6,12 @@ export async function deposit(txOptions) {
 
     // Load contracts
     const [
+        rocketDAOProtocolSettingsDeposit,
         rocketDepositPool,
         rocketTokenRETH,
         rocketVault,
     ] = await Promise.all([
+        RocketDAOProtocolSettingsDeposit.deployed(),
         RocketDepositPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketVault.deployed(),
@@ -17,6 +19,7 @@ export async function deposit(txOptions) {
 
     // Get parameters
     let rethExchangeRate = await rocketTokenRETH.getExchangeRate.call();
+    let depositFeePerc = await rocketDAOProtocolSettingsDeposit.getDepositFee();
 
     // Get balances
     function getBalances() {
@@ -42,7 +45,8 @@ export async function deposit(txOptions) {
     // Calculate values
     let txValue = web3.utils.toBN(txOptions.value);
     let calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
-    let expectedRethMinted = txValue.mul(calcBase).div(rethExchangeRate);
+    let depositFee = txValue.mul(depositFeePerc).div(calcBase);
+    let expectedRethMinted = await rocketTokenRETH.getRethValue(txValue.sub(depositFee));
 
     // Check balances
     assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(txValue)), 'Incorrect updated deposit pool ETH balance');

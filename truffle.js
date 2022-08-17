@@ -51,6 +51,12 @@ module.exports = {
       network_id: '*', // Match any network id
       gas: 12450000,
     },
+    localhost: {
+      host: '127.0.0.1',
+      port: 8545,
+      network_id: '*', // Match any network id
+      gas: 12450000,
+    },
     // Solidity coverage test
     coverage: {
       host: '127.0.0.1',

@@ -22,7 +22,6 @@ export default function() {
 
         // Setup - This is a WIP DAO, onlyGuardians will be able to change settings before the DAO is officially rolled out
         before(async () => {
-
         });
 
 

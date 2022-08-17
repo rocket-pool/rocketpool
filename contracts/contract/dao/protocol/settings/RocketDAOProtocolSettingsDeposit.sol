@@ -12,7 +12,7 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         // Set version
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -21,6 +21,7 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
             setSettingUint("deposit.minimum", 0.01 ether);
             setSettingUint("deposit.pool.maximum", 160 ether);
             setSettingUint("deposit.assign.maximum", 2);
+            setSettingUint("deposit.fee", 0.0005 ether);    // Set to approx. 1 day of rewards at 18.25% APR
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -51,4 +52,8 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         return getSettingUint("deposit.assign.maximum");
     }
 
+    // Get the fee paid on deposits
+    function getDepositFee() override external view returns (uint256) {
+        return getSettingUint("deposit.fee");
+    }
 }

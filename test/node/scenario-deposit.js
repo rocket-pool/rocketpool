@@ -1,19 +1,28 @@
-import { RocketMinipoolDelegate, RocketMinipoolManager, RocketNodeDeposit, RocketStorage } from '../_utils/artifacts';
+import {
+    RocketMinipoolDelegate, RocketMinipoolFactory,
+    RocketMinipoolManager,
+    RocketMinipoolManagerOld,
+    RocketNodeDeposit,
+    RocketStorage,
+} from '../_utils/artifacts';
 import { getTxContractEvents } from '../_utils/contract';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 
 let minipoolSalt = 0;
 
 // Make a node deposit
-export async function deposit(minimumNodeFee, txOptions) {
+export async function deposit(minimumNodeFee, txOptions, preUpdate = false) {
 
     // Load contracts
     const [
         rocketMinipoolManager,
+        rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
+        rocket
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
+        preUpdate ? RocketMinipoolManagerOld.deployed() : RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
@@ -73,7 +82,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     // Construct deterministic minipool address
     const raw = web3.utils.soliditySha3(
       {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolManager.address},
+      {type: 'address', value: rocketMinipoolFactory.address},
       {type: 'bytes32', value: nodeSalt},
       {type: 'bytes32', value: bytecodeHash}
     )

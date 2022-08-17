@@ -2,15 +2,19 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { registerNode } from '../_helpers/node';
 import { RocketDAOProtocolSettingsNode, RocketNodeManager } from '../_utils/artifacts'
-import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 import { register } from './scenario-register';
 import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
+import { setSmoothingPoolRegistrationState } from './scenario-register-smoothing-pool';
+import { increaseTime } from '../_utils/evm';
 
 
 export default function() {
     contract('RocketNodeManager', async (accounts) => {
 
+        // One day in seconds
+        const ONE_DAY = 24 * 60 * 60;
 
         // Accounts
         const [
@@ -26,14 +30,20 @@ export default function() {
             random3,
         ] = accounts;
 
+        const claimIntervalTime = ONE_DAY * 28;
+
 
         // Setup
         before(async () => {
+            // Enable smoothing pool registrations
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', true, {from: owner});
 
             // Register nodes
             await registerNode({from: registeredNode1});
             await registerNode({from: registeredNode2});
 
+            // Set the claim interval blocks
+            await setRewardsClaimIntervalTime(claimIntervalTime, { from: owner });
         });
 
 
@@ -214,6 +224,40 @@ export default function() {
                 from: random,
             }), 'Random address set a timezone location');
 
+        });
+
+
+        //
+        // Smoothing pool
+        //
+
+
+        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disbaled'), async () => {
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', false, {from: owner});
+            await shouldRevert(setSmoothingPoolRegistrationState(true, { from: registeredNode1 }), 'Was able to register while registrations were disabled', 'Smoothing pool registrations are not active');
+        });
+
+
+        it(printTitle('node operator', 'can set their smoothing pool registration state'), async () => {
+            await setSmoothingPoolRegistrationState(true, { from: registeredNode1 });
+        });
+
+
+        it(printTitle('node operator', 'can not set their smoothing pool registration state to the same value'), async () => {
+            await shouldRevert(setSmoothingPoolRegistrationState(false, { from: registeredNode1 }), 'Was able to change smoothing pool registration state', 'Invalid state change');
+        });
+
+
+        it(printTitle('node operator', 'can not set their smoothing pool registration state before a reward interval has passed'), async () => {
+            await setSmoothingPoolRegistrationState(true, { from: registeredNode1 });
+            await shouldRevert(setSmoothingPoolRegistrationState(false, { from: registeredNode1 }), 'Was able to change smoothing pool registration state', 'Not enough time has passed since changing state');
+        });
+
+
+        it(printTitle('node operator', 'can set their smoothing pool registration state after a reward interval has passed'), async () => {
+            await setSmoothingPoolRegistrationState(true, { from: registeredNode1 });
+            await increaseTime(web3, claimIntervalTime + 1);
+            await setSmoothingPoolRegistrationState(false, { from: registeredNode1 });
         });
 
 

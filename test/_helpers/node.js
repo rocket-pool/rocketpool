@@ -5,7 +5,11 @@ import {
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
-    RocketStorage, RocketDAONodeTrusted, RocketMinipoolManager, RocketMinipoolDelegate
+    RocketStorage,
+    RocketDAONodeTrusted,
+    RocketMinipoolManager,
+    RocketMinipoolDelegate,
+    RocketMinipoolFactory
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -83,7 +87,7 @@ export async function setNodeTrusted(_account, _id, _url, owner) {
     let rplAllowanceDAO = async function(_account, _amount) {
         // Load contracts
         const rocketTokenRPL = await RocketTokenRPL.deployed();
-        const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+        const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed()
         // Convert
         _amount = web3.utils.toWei(_amount.toString(), 'ether');
         // Approve now
@@ -150,10 +154,12 @@ export async function nodeDeposit(txOptions) {
     // Load contracts
     const [
         rocketMinipoolManager,
+          rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
+        RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
@@ -184,7 +190,7 @@ export async function nodeDeposit(txOptions) {
     // Construct deterministic minipool address
     const raw = web3.utils.soliditySha3(
       {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolManager.address},
+      {type: 'address', value: rocketMinipoolFactory.address},
       {type: 'bytes32', value: nodeSalt},
       {type: 'bytes32', value: bytecodeHash}
     )

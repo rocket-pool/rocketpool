@@ -7,30 +7,31 @@ import {
     setNodeTrusted,
     setNodeWithdrawalAddress,
     nodeStakeRPL,
-    nodeDeposit,
     getNodeRPLStake,
     getNodeEffectiveRPLStake,
     getNodeMinimumRPLStake,
-    getTotalEffectiveRPLStake, getCalculatedTotalEffectiveRPLStake
+    getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
 import {
-    RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsMinipool,
-    RocketDAOProtocolSettingsNode
+  RocketDAONodeTrustedSettingsMinipool,
+  RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet, RocketSmoothingPool, RocketStorage,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { setDAONetworkBootstrapRewardsClaimer, spendRewardsClaimTreasury, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
-import { rewardsClaimNode } from './scenario-rewards-claim-node';
-import { rewardsClaimTrustedNode } from './scenario-rewards-claim-trusted-node';
-import { rewardsClaimDAO, getRewardsDAOTreasuryBalance } from './scenario-rewards-claim-dao';
 
 // Contracts
 import { RocketRewardsPool } from '../_utils/artifacts';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
 import { userDeposit } from '../_helpers/deposit'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { executeRewards, submitRewards } from './scenario-submit-rewards';
+import { claimRewards } from './scenario-claim-rewards';
+import { claimAndStakeRewards } from './scenario-claim-and-stake-rewards';
+import { parseRewardsMap } from '../_utils/merkle-tree';
+import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted';
+import { getDAOProposalStartTime } from '../dao/scenario-dao-proposal';
 
 
 export default function() {
@@ -48,9 +49,10 @@ export default function() {
             registeredNode2,
             registeredNodeTrusted1,
             registeredNodeTrusted2,
-            registeredNodeTrusted3,
+            unregisteredNodeTrusted1,
+            unregisteredNodeTrusted2,
             node1WithdrawalAddress,
-            daoInvoiceRecipient
+            random
         ] = accounts;
 
 
@@ -87,6 +89,28 @@ export default function() {
             await setRewardsClaimIntervalTime(claimIntervalTime, { from: owner });
         }
 
+        async function kickTrustedNode(nodeAddress, voters) {
+            // Encode the calldata for the proposal
+            let proposalCalldata = web3.eth.abi.encodeFunctionCall(
+              {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
+              [nodeAddress, '0']
+            );
+            // Add the proposal
+            let proposalID = await daoNodeTrustedPropose(`Kick ${nodeAddress}`, proposalCalldata, {
+                from: registeredNodeTrusted1
+            });
+            // Current time
+            let timeCurrent = await getCurrentTime(web3);
+            // Now increase time until the proposal is 'active' and can be voted on
+            await increaseTime(web3, (await getDAOProposalStartTime(proposalID)-timeCurrent)+2);
+            // Now lets vote
+            for (const voter of voters) {
+                await daoNodeTrustedVote(proposalID, true, { from: voter });
+            }
+            // Proposal has passed, lets execute it now
+            await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
+        }
+
 
         // Setup
         before(async () => {
@@ -101,7 +125,8 @@ export default function() {
             await registerNode({from: registeredNode2});
             await registerNode({from: registeredNodeTrusted1});
             await registerNode({from: registeredNodeTrusted2});
-            await registerNode({from: registeredNodeTrusted3});
+            await registerNode({from: unregisteredNodeTrusted1});
+            await registerNode({from: unregisteredNodeTrusted2});
 
             // Set node 1 withdrawal address
             await setNodeWithdrawalAddress(registeredNode1, node1WithdrawalAddress, {from: registeredNode1});
@@ -148,7 +173,7 @@ export default function() {
 
         /*** Setting Claimers *************************/
 
-                 
+
         it(printTitle('userOne', 'fails to set interval blocks for rewards claim period'), async () => {
             // Set the rewards claims interval in seconds
             await shouldRevert(setRewardsClaimIntervalTime(100, {
@@ -164,7 +189,7 @@ export default function() {
             });
         });
 
-                
+
         it(printTitle('userOne', 'fails to set contract claimer percentage for rewards'), async () => {
             // Set the amount this contract can claim
             await shouldRevert(setDAONetworkBootstrapRewardsClaimer('myHackerContract', web3.utils.toWei('0.1', 'ether'), {
@@ -188,7 +213,7 @@ export default function() {
             });
         });
 
-        
+
         it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
@@ -202,7 +227,7 @@ export default function() {
             }, totalClaimersPerc);
         });
 
-      
+
 
         it(printTitle('guardian', 'set contract claimers total percentage to 100%'), async () => {
             // Get the total current claims amounts
@@ -220,28 +245,18 @@ export default function() {
             // Get the total current claims amounts
             let totalClaimersPerc = parseFloat(web3.utils.fromWei(await rewardsClaimersPercTotalGet()));
             // Get the total % needed to make 100%
-            let claimAmount = ((1 - totalClaimersPerc) + 0.001).toFixed(4); 
+            let claimAmount = ((1 - totalClaimersPerc) + 0.001).toFixed(4);
             // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
             await shouldRevert(setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei(claimAmount.toString(), 'ether'), {
                 from: owner,
             }), "Total claimers percentrage over 100%");
         });
-       
-                        
-        it(printTitle('userOne', 'fails to call claim method on rewards pool contract as they are not a registered claimer contract'), async () => {
-            // Init rewards pool
-            const rocketRewardsPool = await RocketRewardsPool.deployed();
-            // Try to call the claim method
-            await shouldRevert(rocketRewardsPool.claim(userOne, userOne, web3.utils.toWei('0.1'),  {
-                from: userOne
-            }), "Non claimer network contract called claim method");
-        });
 
 
         /*** Regular Nodes *************************/
 
-        
-        it(printTitle('node', 'can claim RPL'), async () => {
+
+        it(printTitle('node', 'can claim RPL and ETH'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('rocketClaimNode', 0.5);
@@ -251,39 +266,297 @@ export default function() {
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
 
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('20', 'ether')});
+
+            const rocketRewardsPool = await RocketRewardsPool.deployed();
+            const pendingRewards = await rocketRewardsPool.getPendingETHRewards.call();
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+                {
+                    address: registeredNode2,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('1', 'ether')
+                },
+                {
+                    address: registeredNodeTrusted1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+                {
+                    address: userOne,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1.333', 'ether'),
+                    nodeETH: web3.utils.toWei('0.3', 'ether')
+                },
+            ]
+            await submitRewards(0, rewards, '0', web3.utils.toWei('2', 'ether'), {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', web3.utils.toWei('2', 'ether'), {from: registeredNodeTrusted2});
+
             // Claim RPL
-            await rewardsClaimNode({
+            await claimRewards(registeredNode1, [0], [rewards], {
                 from: registeredNode1,
             });
-            await rewardsClaimNode({
+            await claimRewards(registeredNode2, [0], [rewards], {
+                from: registeredNode2,
+            });
+            await claimRewards(registeredNodeTrusted1, [0], [rewards], {
+                from: registeredNodeTrusted1,
+            });
+            await claimRewards(userOne, [0], [rewards], {
+                from: userOne,
+            });
+
+            // Do a second claim interval
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimRewards(registeredNode1, [1], [rewards], {
+                from: registeredNode1,
+            });
+            await claimRewards(registeredNode2, [1], [rewards], {
+                from: registeredNode2,
+            });
+        });
+
+
+        it(printTitle('node', 'can claim from withdrawal address'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Send ETH to rewards pool
+            const rocketSmoothingPool = await RocketSmoothingPool.deployed();
+            await web3.eth.sendTransaction({ from: owner, to: rocketSmoothingPool.address, value: web3.utils.toWei('20', 'ether')});
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                }
+            ]
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimRewards(registeredNode1, [0], [rewards], {
+                from: node1WithdrawalAddress,
+            });
+        });
+
+
+        it(printTitle('node', 'can not claim with invalid proof'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+
+            // Create 3 snapshots
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            let treeData = parseRewardsMap(rewards);
+            let proof = treeData.proof.claims[web3.utils.toChecksumAddress(registeredNode1)];
+            let amountsRPL = [proof.amountRPL];
+            let amountsETH = [proof.amountETH];
+            let proofs = [proof.proof];
+
+            let rocketMerkleDistributorMainnet = await RocketMerkleDistributorMainnet.deployed();
+
+            // Attempt to claim reward for registeredNode1 with registeredNode2
+            await shouldRevert(rocketMerkleDistributorMainnet.claim(registeredNode2, [0], amountsRPL, amountsETH, proofs, {from: registeredNode2}), 'Was able to claim with invalid proof', 'Invalid proof');
+        });
+
+
+        it(printTitle('node', 'can not claim same interval twice'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+
+            // Create 3 snapshots
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
+                from: registeredNode1,
+            });
+            await shouldRevert(claimRewards(registeredNode1, [0], [rewards], {
+                from: registeredNode1,
+            }), 'Was able to claim again', 'Already claimed');
+            await shouldRevert(claimRewards(registeredNode1, [1], [rewards], {
+                from: registeredNode1,
+            }), 'Was able to claim again', 'Already claimed');
+            await shouldRevert(claimRewards(registeredNode1, [0, 1], [rewards, rewards], {
+                from: registeredNode1,
+            }), 'Was able to claim again', 'Already claimed');
+            await shouldRevert(claimRewards(registeredNode1, [0, 2], [rewards, rewards], {
+                from: registeredNode1,
+            }), 'Was able to claim again', 'Already claimed');
+        });
+
+
+        it(printTitle('node', 'can claim mulitiple periods in a single tx'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+                {
+                    address: registeredNode2,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                }
+            ]
+
+            // Submit 2 snapshots
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(2, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimRewards(registeredNode1, [0], [rewards], {
+                from: registeredNode1,
+            });
+            await claimRewards(registeredNode1, [1, 2], [rewards, rewards], {
+                from: registeredNode1,
+            });
+            await claimRewards(registeredNode2, [0, 1, 2], [rewards, rewards, rewards], {
+                from: registeredNode2,
+            });
+        });
+
+
+        it(printTitle('node', 'can claim RPL and stake'), async () => {
+            // Initialize RPL inflation & claims contract
+            let rplInflationStartTime = await rplInflationSetup();
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
+            let currentTime = await getCurrentTime(web3);
+            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
+            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+                {
+                    address: registeredNode2,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('2', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                }
+            ]
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Claim RPL
+            await claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('1', 'ether'), {
+                from: registeredNode1,
+            });
+            await claimAndStakeRewards(registeredNode2, [0], [rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode2,
             });
 
-            // Move to next claim interval
-            await increaseTime(web3, claimIntervalTime);
+            // Do a second claim interval
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
 
-            // Claim RPL again
-            await rewardsClaimNode({
+            // Claim RPL
+            await claimAndStakeRewards(registeredNode1, [1], [rewards], web3.utils.toWei('0.5', 'ether'), {
                 from: registeredNode1,
             });
-            await rewardsClaimNode({
+            await claimAndStakeRewards(registeredNode2, [1], [rewards], web3.utils.toWei('1', 'ether'), {
                 from: registeredNode2,
             });
         });
 
 
-        it(printTitle('node', 'cannot claim RPL before inflation has begun'), async () => {
-            // Initialize claims contract
-            await rewardsContractSetup('rocketClaimNode', 0.5);
-
-            // Attempt to claim RPL
-            await shouldRevert(rewardsClaimNode({
-                from: registeredNode1,
-            }), 'Node claimed RPL before RPL inflation began');
-        });
-
-
-        it(printTitle('node', 'cannot claim RPL while the node claim contract is disabled'), async () => {
+        it(printTitle('node', 'can not stake amount greater than claim'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('rocketClaimNode', 0.5);
@@ -293,39 +566,27 @@ export default function() {
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
 
-            // Disable RocketClaimNode claims contract
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', web3.utils.toWei('0', 'ether'), {from: owner});
-
-            // Attempt to claim RPL
-            await shouldRevert(rewardsClaimNode({
-                from: registeredNode1,
-            }), 'Node claimed RPL while node claim contract was disabled');
-        });
-
-
-        it(printTitle('node', 'cannot claim RPL twice in the same interval'), async () => {
-            // Initialize RPL inflation & claims contract
-            let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', 0.5);
-
-            // Move to inflation start plus one claim interval
-            let currentTime = await getCurrentTime(web3);
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
 
             // Claim RPL
-            await rewardsClaimNode({
+            await shouldRevert(claimAndStakeRewards(registeredNode1, [0], [rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode1,
-            });
-
-            // Attempt to claim RPL again
-            await shouldRevert(rewardsClaimNode({
-                from: registeredNode1,
-            }), 'Node claimed RPL twice in the same interval');
+            }), 'Was able to stake amount greater than reward', 'Invalid stake amount');
         });
 
 
-        it(printTitle('node', 'cannot claim RPL while their node is undercollateralised'), async () => {
+        it(printTitle('node', 'can claim RPL and stake multiple snapshots'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
             await rewardsContractSetup('rocketClaimNode', 0.5);
@@ -335,278 +596,126 @@ export default function() {
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
 
-            // Decrease RPL price to undercollateralize node
-            const block = await web3.eth.getBlockNumber();
-            const calculatedTotalEffectiveStake = await getCalculatedTotalEffectiveRPLStake(web3.utils.toWei('0.01', 'ether'));
-            await submitPrices(block, web3.utils.toWei('0.01', 'ether'), calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
-            await submitPrices(block, web3.utils.toWei('0.01', 'ether'), calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                }
+            ]
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(1, rewards, '0', '0', {from: registeredNodeTrusted2});
 
-            // Get & check node's current and minimum RPL stakes
-            let [currentRplStake, minimumRplStake] = await Promise.all([getNodeRPLStake(registeredNode1), getNodeMinimumRPLStake(registeredNode1)]);
-            assert(currentRplStake.lt(minimumRplStake), 'Node\'s current RPL stake should be below their minimum RPL stake');
-
-            // Attempt to claim RPL
-            await shouldRevert(rewardsClaimNode({
+            // Claim RPL
+            await claimAndStakeRewards(registeredNode1, [0, 1], [rewards, rewards], web3.utils.toWei('2', 'ether'), {
                 from: registeredNode1,
-            }), 'Node claimed RPL while under collateralised');
-        });
-        
-
-        /*** Trusted Node *************************/
-
-
-        it(printTitle('trustedNode1', 'fails to call claim before RPL inflation has begun'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.5);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Now make sure we can't claim yet
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            }), "Made claim before RPL inflation started", "This trusted node is not able to claim yet and must wait until a full claim interval passes");           
+            });
         });
 
 
-        it(printTitle('trustedNode1', 'makes a claim, then fails to make another in the same claim interval'), async () => {
-            // Setup RPL inflation
+        /*** Random *************************/
+
+
+        it(printTitle('random', 'can execute reward period if consensus is reached'), async () => {
+            // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
-            // Current time
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead one claim interval
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now
-            await rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            });   
-            // Should fail
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            }), "Made claim again before next interval", "Claimer is not entitled to tokens, they have already claimed in this interval or they are claiming more rewards than available to this claiming contract");               
+
+            // Add another 2 trusted nodes so consensus becomes 3 votes
+            await setNodeTrusted(unregisteredNodeTrusted1, 'saas_3', 'node@home.com', owner);
+            await setNodeTrusted(unregisteredNodeTrusted2, 'saas_4', 'node@home.com', owner);
+
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
+
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted1});
+            await submitRewards(0, rewards, '0', '0', {from: registeredNodeTrusted2});
+
+            // Kick a trusted node so consensus becomes 2 votes again
+            await kickTrustedNode(unregisteredNodeTrusted1, [registeredNodeTrusted1, registeredNodeTrusted2, unregisteredNodeTrusted1]);
+
+            // Now we should be able to execute the reward period
+            await executeRewards(0, rewards, '0', '0', {from: random});
         });
 
 
-        it(printTitle('trustedNode3', 'fails to claim rewards as they have not waited one claim interval'), async () => {
-            // Setup RPL inflation
+        /*** Misc *************************/
+
+
+        it(printTitle('misc', 'claim bitmap is correct'), async () => {
+            // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.15);
-            // Current time
+            await rewardsContractSetup('rocketClaimNode', 0.5);
+
+            // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
             assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead one claim interval
             await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make node 4 trusted now
-            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
-            // Make a claim now
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted3, {
-                from: registeredNodeTrusted3,
-            }), "Made claim before next interval", "This trusted node is not able to claim yet and must wait until a full claim interval passes");                    
-        });
-             
 
-        it(printTitle('trustedNode1', 'fails to make a claim when trusted node contract claim perc is set to 0'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0);
-            // Current block
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead one claim interval
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now
-            await shouldRevert(rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            }), "Made claim again before next interval", "This trusted node is not able to claim yet and must wait until a full claim interval passes");                 
-        });
+            // Submit rewards snapshot
+            const rewards = [
+                {
+                    address: registeredNode1,
+                    network: 0,
+                    trustedNodeRPL: web3.utils.toWei('0', 'ether'),
+                    nodeRPL: web3.utils.toWei('1', 'ether'),
+                    nodeETH: web3.utils.toWei('0', 'ether')
+                },
+            ]
 
-    
-        it(printTitle('trustedNode1+4', 'trusted node 1 makes a claim after RPL inflation has begun and newly registered trusted node 4 claim in next interval'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.0123);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead one claim interval
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now
-            await rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            });   
-            // Make node 3 trusted now
-            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
-            // Move to next claim interval
-            await increaseTime(web3, claimIntervalTime);
-            // Attempt claim in the next interval
-            await rewardsClaimTrustedNode(registeredNodeTrusted3, {
-                from: registeredNodeTrusted3,
-            });           
-        });
-        
-        
-        it(printTitle('trustedNode1+2+3', 'trusted node 1 makes a claim after RPL inflation has begun, claim rate is changed, then trusted node 2 makes a claim and newly registered trusted node 3 claim in next interval'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Set the contracts perc it can claim 1 =100%
-            let claimPercOrig = 0.1;
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', claimPercOrig);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead one claim interval
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now
-            await rewardsClaimTrustedNode(registeredNodeTrusted1, {
-                from: registeredNodeTrusted1,
-            });   
-            // Change inflation rate now, should only kick in on the next interval
-            let claimPercChange = 0.2;
-            // Update it
-            await rewardsContractSetup('rocketClaimTrustedNode', claimPercChange);
-            // Make a claim now and pass it the expected contract claim percentage
-            await rewardsClaimTrustedNode(registeredNodeTrusted2, {
-                from: registeredNodeTrusted2,
-            });  
-            // Make node 3 trusted now
-            await setNodeTrusted(registeredNodeTrusted3, 'saas_3', 'node@home.com', owner);
-            // Move ahead 2 claim intervals
-            await increaseTime(web3, claimIntervalTime);
-            // Attempt claim in the next interval with new inflation rate
-            await rewardsClaimTrustedNode(registeredNodeTrusted3, {
-                from: registeredNodeTrusted3,
-            });           
-        });
-        
+            // Submit 10 reward intervals
+            for (let i = 0; i < 10; i++) {
+                await submitRewards(i, rewards, '0', '0', {from: registeredNodeTrusted1});
+                await submitRewards(i, rewards, '0', '0', {from: registeredNodeTrusted2});
+            }
 
-        /*** DAO ***************************/
-      
+            // Some arbitrary intervals to claim
+            let claimIntervals = [ 0, 4, 6, 9 ];
 
-        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract, then protocol DAO spends some'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime * 3);
-            // Make a claim now from a trusted node and verify the DAO collected it's perc
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted1,
-            });    
-            // Make a claim now from another trusted node
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted2,
-            }); 
-            // Get the balance of the DAO treasury and spend it
-            let daoTreasuryBalance = await getRewardsDAOTreasuryBalance();
-            // Now spend some via the protocol DAO in bootstrap mode
-            await spendRewardsClaimTreasury('invoice123', daoInvoiceRecipient, daoTreasuryBalance, {
-                from: owner
-            })
-        });
+            await claimRewards(registeredNode1, claimIntervals, Array(claimIntervals.length).fill(rewards), {
+              from: registeredNode1,
+            });
 
+            // Retrieve the bitmap of claims
+            const rocketStorage = await RocketStorage.deployed();
+            const key = web3.utils.soliditySha3(
+                {type: 'string', value: 'rewards.interval.claimed'},
+                {type: 'address', value: registeredNode1},
+                {type: 'uint256', value: 0}
+            )
+            const bitmap = (await rocketStorage.getUint.call(key)).toNumber();
 
-        it(printTitle('daoClaim', 'trusted node makes a claim and the DAO receives its automatic share of rewards correctly on its claim contract, then fails to spend more than it has'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime * 3);
-            // Make a claim now from another trusted node
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted2,
-            }); 
-            // Get the balance of the DAO treasury and spend it
-            let daoTreasuryBalance = await getRewardsDAOTreasuryBalance();
-            // Now spend some via the protocol DAO in bootstrap mode
-            await shouldRevert(spendRewardsClaimTreasury('invoice123', daoInvoiceRecipient, daoTreasuryBalance+"1", {
-                from: owner,
-            }), "Protocol DAO spent more RPL than it had in its treasury", "You cannot send 0 RPL or more than the DAO has in its account");   
-        });
-        
+            // Construct the expected bitmap and compare
+            let expected = 0;
+            for (let i = 0; i < claimIntervals.length; i++) {
+                expected |= 1 << claimIntervals[i];
+            }
+            assert.strictEqual(bitmap, expected, 'Incorrect claimed bitmap');
 
-        it(printTitle('daoClaim', 'trusted node make a claim and the DAO claim rate is set to 0, trusted node makes another 2 claims'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now from a trusted node and verify the DAO collected it's perc
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted1,
-            });    
-            // Forward to next interval, set claim amount to 0, should kick in the interval after next
-            await rewardsContractSetup('rocketClaimDAO', 0);
-            // Make a claim now from another trusted node
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted2,
-            }); 
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.2);
-            // Next interval
-            await increaseTime(web3, claimIntervalTime);
-            // Make another claim, dao shouldn't receive anything
-            await rewardsClaimDAO ({
-                from: registeredNodeTrusted2,
-            }); 
-        });
-        
-        
-        it(printTitle('daoClaim', 'trusted nodes make multiples claims, rewards sent to dao claims contract, DAO rewards address is set and next claims send its balance to its rewards address'), async () => {
-            // Setup RPL inflation
-            let rplInflationStartTime = await rplInflationSetup();
-            // Init this claiming contract on the rewards pool
-            await rewardsContractSetup('rocketClaimTrustedNode', 0.1);
-            // Current time
-            let currentTime = await getCurrentTime(web3);
-            // Can this trusted node claim before there is any inflation available?
-            assert.isBelow(currentTime, rplInflationStartTime, 'Current block should be below RPL inflation start time');
-            // Move to start of RPL inflation and ahead a few claim intervals to simulate some being missed
-            await increaseTime(web3, rplInflationStartTime - currentTime + claimIntervalTime);
-            // Make a claim now from a trusted node and verify the DAO collected it's perc
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted1,
-            });   
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted2,
-            }); 
-            // Next interval
-            await increaseTime(web3, claimIntervalTime);
-            // Node claim again
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted1,
-            }); 
-            // Node claim again
-            await rewardsClaimDAO({
-                from: registeredNodeTrusted2,
-            }); 
+            // Confirm second claim fails for each interval
+            for (let i = 0; i < claimIntervals.length; i++) {
+                await shouldRevert(claimRewards(registeredNode1, [claimIntervals[i]], [rewards], {
+                    from: registeredNode1,
+                }), 'Was able to claim again', 'Already claimed');
+            }
         });
     });
 }

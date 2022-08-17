@@ -49,11 +49,10 @@ const contracts = {
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
   rocketNetworkPrices:                      artifacts.require('RocketNetworkPrices.sol'),
+  rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
   // Rewards
   rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
   rocketClaimDAO:                           artifacts.require('RocketClaimDAO.sol'),
-  rocketClaimNode:                          artifacts.require('RocketClaimNode.sol'),
-  rocketClaimTrustedNode:                   artifacts.require('RocketClaimTrustedNode.sol'),
   // Node
   rocketNodeDeposit:                        artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeManager:                        artifacts.require('RocketNodeManager.sol'),
@@ -81,6 +80,13 @@ const contracts = {
   rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
   rocketTokenRPL:                           artifacts.require('RocketTokenRPL.sol'),
+  // v1.1
+  rocketMerkleDistributorMainnet:           artifacts.require('RocketMerkleDistributorMainnet.sol'),
+  rocketDAONodeTrustedSettingsRewards:      artifacts.require('RocketDAONodeTrustedSettingsRewards.sol'),
+  rocketSmoothingPool:                      artifacts.require('RocketSmoothingPool.sol'),
+  rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
+  rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
+  rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
   addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
@@ -201,8 +207,9 @@ module.exports = async (deployer, network) => {
             await deployer.deploy(contracts[contract], rocketStorage.address, contracts.rocketTokenRPLFixedSupply.address);
           break;
 
-          // Minipool delegate contract - no constructor args
+          // Contracts with no constructor args
           case 'rocketMinipoolDelegate':
+          case 'rocketNodeDistributorDelegate':
             await deployer.deploy(contracts[contract]);
           break;
 
@@ -228,29 +235,33 @@ module.exports = async (deployer, network) => {
     // Now process the rest
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
-        // Log it
-        console.log('\x1b[31m%s\x1b[0m:', '   Set Storage '+contract+' Address');
-        console.log('     '+contracts[contract].address);
-        // Register the contract address as part of the network
-        await rocketStorageInstance.setBool(
-          $web3.utils.soliditySha3('contract.exists', contracts[contract].address),
-          true
-        );
-        // Register the contract's name by address
-        await rocketStorageInstance.setString(
-          $web3.utils.soliditySha3('contract.name', contracts[contract].address),
-          contract
-        );
-        // Register the contract's address by name
-        await rocketStorageInstance.setAddress(
-          $web3.utils.soliditySha3('contract.address', contract),
-          contracts[contract].address
-        );
-        // Compress and store the ABI by name
-        await rocketStorageInstance.setString(
-          $web3.utils.soliditySha3('contract.abi', contract),
-          compressABI(contracts[contract].abi)
-        );
+        switch (contract) {
+          default:
+          // Log it
+            console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ' + contract + ' Address');
+            console.log('     ' + contracts[contract].address);
+            // Register the contract address as part of the network
+            await rocketStorageInstance.setBool(
+              $web3.utils.soliditySha3('contract.exists', contracts[contract].address),
+              true
+            );
+            // Register the contract's name by address
+            await rocketStorageInstance.setString(
+              $web3.utils.soliditySha3('contract.name', contracts[contract].address),
+              contract
+            );
+            // Register the contract's address by name
+            await rocketStorageInstance.setAddress(
+              $web3.utils.soliditySha3('contract.address', contract),
+              contracts[contract].address
+            );
+            // Compress and store the ABI by name
+            await rocketStorageInstance.setString(
+              $web3.utils.soliditySha3('contract.abi', contract),
+              compressABI(contracts[contract].abi)
+            );
+            break;
+        }
       }
     }
   };
@@ -314,4 +325,3 @@ module.exports = async (deployer, network) => {
     await deployer.deploy(revertOnTransfer);
   }
 };
-

@@ -2,10 +2,10 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "../../RocketBase.sol";
-import "../../../interface/RocketVaultInterface.sol";
-import "../../../interface/rewards/RocketRewardsPoolInterface.sol";
-import "../../../interface/rewards/claims/RocketClaimDAOInterface.sol";
+import "../RocketBase.sol";
+import "../../interface/RocketVaultInterface.sol";
+import "../../interface/rewards/RocketRewardsPoolInterface.sol";
+import "../../interface/rewards/claims/RocketClaimDAOInterface.sol";
 
 
 // RPL Rewards claiming by the DAO
@@ -17,18 +17,10 @@ contract RocketClaimDAO is RocketBase, RocketClaimDAOInterface {
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 1;
+        version = 2;
     }
 
-    // Determine if this contract is enabled or not for claims
-    function getEnabled() override external view returns (bool) {
-        // Init the rewards pool contract
-        RocketRewardsPoolInterface rewardsPool = RocketRewardsPoolInterface(getContractAddress("rocketRewardsPool"));
-        return rewardsPool.getClaimingContractEnabled("rocketClaimDAO");
-    }
-
-
-    // Spend the network DAOs RPL rewards 
+    // Spend the network DAOs RPL rewards
     function spend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyLatestContract("rocketDAOProtocolProposals", msg.sender) {
         // Load contracts
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));

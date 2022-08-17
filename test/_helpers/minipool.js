@@ -1,16 +1,15 @@
 import {
     RocketMinipoolDelegate,
     RocketMinipoolManager,
+    RocketMinipoolFactory,
     RocketDAOProtocolSettingsMinipool,
     RocketMinipoolStatus,
     RocketNetworkPrices,
-    RocketNetworkWithdrawal,
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
     RocketStorage
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
-import { getTxContractEvents } from '../_utils/contract';
 
 
 // Get the number of minipools a node has
@@ -67,11 +66,11 @@ export async function createMinipool(txOptions, salt = null) {
 
     // Load contracts
     const [
-        rocketMinipoolManager,
+        rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
-        RocketMinipoolManager.deployed(),
+        RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
@@ -105,7 +104,7 @@ export async function createMinipool(txOptions, salt = null) {
     // Construct deterministic minipool address
     const raw = web3.utils.soliditySha3(
       {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolManager.address},
+      {type: 'address', value: rocketMinipoolFactory.address},
       {type: 'bytes32', value: nodeSalt},
       {type: 'bytes32', value: bytecodeHash}
     )
@@ -124,18 +123,8 @@ export async function createMinipool(txOptions, salt = null) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    let txReceipt = await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
-
-    // Get minipool created events
-    let minipoolCreatedEvents = getTxContractEvents(txReceipt, rocketMinipoolManager.address, 'MinipoolCreated', [
-        {type: 'address', name: 'minipool', indexed: true},
-        {type: 'address', name: 'node', indexed: true},
-        {type: 'uint256', name: 'created'},
-    ]);
-
-    // Return minipool instance
-    if (!minipoolCreatedEvents.length) return;
-    return RocketMinipoolDelegate.at(minipoolCreatedEvents[0].minipool);
+    await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
 
 

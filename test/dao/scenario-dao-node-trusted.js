@@ -1,4 +1,13 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedProposals, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettings, RocketDAOProposal, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrusted,
+    RocketDAONodeTrustedProposals,
+    RocketDAONodeTrustedActions,
+    RocketDAONodeTrustedSettings,
+    RocketDAOProposal,
+    RocketTokenRPL,
+    RocketVault,
+    RocketDAONodeTrustedActionsOld,
+} from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
 
 
@@ -157,7 +166,7 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
 
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
-    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
+    const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed()
     const rocketVault = await RocketVault.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
 

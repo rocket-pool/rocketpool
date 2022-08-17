@@ -29,7 +29,6 @@ export default function() {
         let halfDepositNodeAmount;
         let emptyDepositNodeAmount;
         before(async () => {
-
             // Register node
             await registerNode({from: node});
 

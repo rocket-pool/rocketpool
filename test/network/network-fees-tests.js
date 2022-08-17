@@ -23,7 +23,6 @@ export default function() {
         let maxNodeFee = web3.utils.toWei('1.00', 'ether');
         let demandRange = web3.utils.toWei('1', 'ether');
         before(async () => {
-
             // Set network settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', minNodeFee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', targetNodeFee, {from: owner});

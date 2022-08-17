@@ -38,7 +38,6 @@ export default function() {
 
         // Setup
         before(async () => {
-
             // Register node
             await registerNode({from: node});
 

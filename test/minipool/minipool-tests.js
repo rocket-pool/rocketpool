@@ -64,7 +64,6 @@ export default function() {
         let newDelegateAddress = '0x0000000000000000000000000000000000000001'
 
         before(async () => {
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
