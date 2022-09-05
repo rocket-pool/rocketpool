@@ -4,13 +4,13 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
-import "../../../../types/MinipoolDeposit.sol";
+import "../../../../dao/protocol/settings/RocketDAOProtocolSettings.sol";
+import "../../../../../interface/old/RocketDAOProtocolSettingsMinipoolInterfaceOld.sol";
+import "../../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
+import "../../../../../types/MinipoolDeposit.sol";
 
 // Network minipool settings
-contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
+contract RocketDAOProtocolSettingsMinipoolOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterfaceOld {
 
     // Libs
     using SafeMath for uint;
@@ -18,7 +18,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
-        version = 2;
+        version = 1;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -48,15 +48,11 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return 32 ether;
     }
 
-    // Value required to pre-launch a minipool
-    function getPreLaunchValue() override public pure returns (uint256) {
-        return 1 ether;
-    }
-
     // Required node deposit amounts
     function getDepositNodeAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
+        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
         return 0;
     }
     function getFullDepositNodeAmount() override public pure returns (uint256) {
@@ -65,11 +61,15 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     function getHalfDepositNodeAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
+    function getEmptyDepositNodeAmount() override public pure returns (uint256) {
+        return 0 ether;
+    }
 
     // Required user deposit amounts
     function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
+        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
         return 0;
     }
     function getFullDepositUserAmount() override public pure returns (uint256) {
@@ -78,8 +78,8 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     function getHalfDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getVariableDepositAmount() override public pure returns (uint256) {
-        return getLaunchBalance().sub(getPreLaunchValue());
+    function getEmptyDepositUserAmount() override public pure returns (uint256) {
+        return getLaunchBalance();
     }
 
     // Submit minipool withdrawable events currently enabled (trusted nodes only)
@@ -94,7 +94,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
 
     // Maximum number of minipools allowed at one time
     function getMaximumCount() override external view returns (uint256) {
-      return getSettingUint("minipool.maximum.count");
+        return getSettingUint("minipool.maximum.count");
     }
 
 }

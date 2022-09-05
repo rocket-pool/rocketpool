@@ -20,8 +20,18 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     bool public setup;
 
     // Upgrade contracts
+    address public newRocketNodeDeposit;
+    address public newRocketMinipoolDelegate;
+    address public newRocketDAOProtocolSettingsMinipool;
+    address public newRocketMinipoolQueue;
+    address public newRocketDepositPool;
 
     // Upgrade ABIs
+    string public newRocketNodeDepositAbi;
+    string public newRocketMinipoolDelegateAbi;
+    string public newRocketDAOProtocolSettingsMinipoolAbi;
+    string public newRocketMinipoolQueueAbi;
+    string public newRocketDepositPoolAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -44,8 +54,18 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!setup, "Already setup");
 
         // Set contract addresses
+        newRocketNodeDeposit = _addresses[0];
+        newRocketMinipoolDelegate = _addresses[1];
+        newRocketDAOProtocolSettingsMinipool = _addresses[2];
+        newRocketMinipoolQueue = _addresses[3];
+        newRocketDepositPool = _addresses[4];
 
         // Set ABIs
+        newRocketNodeDepositAbi = _abis[0];
+        newRocketMinipoolDelegateAbi = _abis[1];
+        newRocketDAOProtocolSettingsMinipoolAbi = _abis[2];
+        newRocketMinipoolQueueAbi = _abis[3];
+        newRocketDepositPoolAbi = _abis[4];
     }
 
 
@@ -54,6 +74,11 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!executed, "Already executed");
 
         // Upgrade contracts
+        _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
+        _upgradeContract("rocketMinipoolDelegate", newRocketMinipoolDelegate, newRocketMinipoolDelegateAbi);
+        _upgradeContract("rocketDAOProtocolSettingsMinipool", newRocketDAOProtocolSettingsMinipool, newRocketDAOProtocolSettingsMinipoolAbi);
+        _upgradeContract("rocketMinipoolQueue", newRocketMinipoolQueue, newRocketMinipoolQueueAbi);
+        _upgradeContract("rocketDepositPool", newRocketDepositPool, newRocketDepositPoolAbi);
 
         // Add new contracts
 

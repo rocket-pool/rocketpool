@@ -4,6 +4,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 import "../../types/MinipoolDeposit.sol";
 
-interface RocketNodeDepositInterface {
+interface RocketNodeDepositInterfaceOld {
     function deposit(uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) external payable;
+    function getDepositType(uint256 _amount) external view returns (MinipoolDeposit);
 }

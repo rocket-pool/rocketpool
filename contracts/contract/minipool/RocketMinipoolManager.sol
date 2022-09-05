@@ -13,7 +13,6 @@ import "../../types/MinipoolDetails.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
@@ -40,7 +39,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 3;
     }
 
     // Get the number of minipools in the network
@@ -301,8 +300,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         }
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
-        // Add minipool to queue
-        RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
         return RocketMinipoolInterface(contractAddress);
     }

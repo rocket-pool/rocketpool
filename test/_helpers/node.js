@@ -169,7 +169,7 @@ export async function nodeDeposit(txOptions) {
     const contractBytecode = RocketMinipool.bytecode;
 
     // Get deposit type from tx amount
-    const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+    const depositType = '4' // MinipoolDeposit.Variable;
 
     // Construct creation code for minipool deploy
     const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
@@ -202,7 +202,7 @@ export async function nodeDeposit(txOptions) {
     let depositData = {
         pubkey: getValidatorPubkey(),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(16000000000), // gwei
+        amount: BigInt(1000000000), // 1 ETH in gwei
         signature: getValidatorSignature(),
     };
 

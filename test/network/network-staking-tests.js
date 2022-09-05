@@ -57,7 +57,6 @@ export default function() {
             registeredNodeTrusted3,
             node1WithdrawalAddress,
             trustedNode,
-            daoInvoiceRecipient
         ] = accounts;
 
 
@@ -203,9 +202,10 @@ export default function() {
             // Stake RPL against nodes and create minipools to set effective stakes
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode1});
             await nodeStakeRPL(web3.utils.toWei('32', 'ether'), {from: registeredNode2});
+            await userDeposit({from: owner, value: web3.utils.toWei('48', 'ether')})
             await nodeDeposit({from: registeredNode1, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: registeredNode2, value: web3.utils.toWei('16', 'ether')});
-            let minipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('32', 'ether')}, 3);
+            let minipool = await createMinipool({from: registeredNode2, value: web3.utils.toWei('16', 'ether')}, 3);
             await testEffectiveStakeValues()
 
             // Increase the price of RPL and create some more minipools

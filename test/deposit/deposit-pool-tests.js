@@ -12,6 +12,7 @@ import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit }
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assignDepositsV2 } from './scenario-assign-deposits-v2';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -127,7 +128,7 @@ export default function() {
         it(printTitle('random address', 'can assign deposits'), async () => {
 
             // Assign deposits with no assignable deposits
-            await assignDeposits({
+            await assignDepositsV2({
                 from: staker,
             });
 
@@ -146,7 +147,7 @@ export default function() {
             // Make user & node deposits
             await userDeposit({from: staker, value: web3.utils.toWei('100', 'ether')});
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
-            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('32', 'ether')});
+            await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
             await nodeDeposit({from: trustedNode, value: web3.utils.toWei('16', 'ether')});
 
             // Re-enable deposit assignment & set limit
@@ -154,7 +155,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.maximum', 3, {from: owner});
 
             // Assign deposits with assignable deposits
-            await assignDeposits({
+            await assignDepositsV2({
                 from: staker,
             });
 
@@ -167,7 +168,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', false, {from: owner});
 
             // Attempt to assign deposits
-            await shouldRevert(assignDeposits({
+            await shouldRevert(assignDepositsV2({
                 from: staker,
             }), 'Assigned deposits while deposit assignment is disabled');
 

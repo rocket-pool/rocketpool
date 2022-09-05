@@ -38,7 +38,7 @@ abstract contract RocketMinipoolStorageLayout {
     address internal nodeAddress;
     uint256 internal nodeFee;
     uint256 internal nodeDepositBalance;
-    bool internal nodeDepositAssigned;
+    bool internal nodeDepositAssigned;          // NO LONGER IN USE
     uint256 internal nodeRefundBalance;
     uint256 internal nodeSlashBalance;
 
@@ -66,4 +66,7 @@ abstract contract RocketMinipoolStorageLayout {
     // Trusted member scrub votes
     mapping(address => bool) memberScrubVotes;
     uint256 totalScrubVotes;
+
+    // Variable minipool
+    uint256 internal preLaunchValue;
 }

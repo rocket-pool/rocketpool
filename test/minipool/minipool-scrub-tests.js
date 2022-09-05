@@ -69,7 +69,7 @@ export default function() {
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
 
-            // Make user deposit to refund first prelaunch minipool
+            // Make user deposit to fund a prelaunch minipool
             let refundAmount = web3.utils.toWei('16', 'ether');
             await userDeposit({from: random, value: refundAmount});
 
@@ -80,7 +80,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipool
-            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt);
+            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}, minipoolSalt);
         });
 
 
@@ -139,7 +139,7 @@ export default function() {
           await close(prelaunchMinipool, { from: node, });
 
           // Try to create the pool again
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt), 'Was able to recreate minipool at same address', 'Minipool already exists or was previously destroyed');
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}, minipoolSalt), 'Was able to recreate minipool at same address', 'Minipool already exists or was previously destroyed');
         });
 
 
