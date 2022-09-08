@@ -16,6 +16,7 @@ import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validato
 import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -34,6 +35,8 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Load contracts
             rocketNodeStaking = await RocketNodeStaking.deployed();
 

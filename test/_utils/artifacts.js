@@ -45,3 +45,4 @@ export const RocketVault = artifacts.require('RocketVault.sol');
 export const RevertOnTransfer = artifacts.require('RevertOnTransfer.sol');
 export const PenaltyTest = artifacts.require('PenaltyTest.sol');
 export const RocketMinipoolFactory = artifacts.require('RocketMinipoolFactory.sol');
+export const RocketUpgradeOneDotTwo = artifacts.require('RocketUpgradeOneDotTwo.sol');

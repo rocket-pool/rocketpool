@@ -11,7 +11,7 @@ import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '.
 let minipoolSalt = 0;
 
 // Make a node deposit
-export async function deposit(minimumNodeFee, txOptions, preUpdate = false) {
+export async function deposit(minimumNodeFee, txOptions) {
 
     // Load contracts
     const [
@@ -22,7 +22,7 @@ export async function deposit(minimumNodeFee, txOptions, preUpdate = false) {
         rocket
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
-        preUpdate ? RocketMinipoolManagerOld.deployed() : RocketMinipoolFactory.deployed(),
+        RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);

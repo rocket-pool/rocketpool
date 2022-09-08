@@ -20,6 +20,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketTokenRETH', async (accounts) => {
@@ -44,7 +45,10 @@ export default function() {
         let rethBalance;
         let submitPricesFrequency = 500;
         let depositDeplay = 100;
+
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 

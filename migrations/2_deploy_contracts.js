@@ -87,6 +87,8 @@ const contracts = {
   rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
+  // v1.2
+  rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
   addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),
@@ -213,6 +215,20 @@ module.exports = async (deployer, network) => {
             await deployer.deploy(contracts[contract]);
           break;
 
+          // Upgrade rewards
+          case 'rocketUpgradeOneDotTwo':
+            const upgrader = await deployer.deploy(contracts[contract], rocketStorage.address);
+            const arguments = [
+              [
+                // contracts.rocketContract.address,
+              ],
+              [
+                // compressABI(contracts.rocketContract.abi),
+              ]
+            ]
+            await upgrader.set(...arguments)
+            break;
+
           // All other contracts - pass storage address
           default:
             await deployer.deploy(contracts[contract], rocketStorage.address);
@@ -236,6 +252,8 @@ module.exports = async (deployer, network) => {
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
+          // Ignore contracts that will be upgraded late
+
           default:
           // Log it
             console.log('\x1b[31m%s\x1b[0m:', '   Set Storage ' + contract + ' Address');
@@ -323,5 +341,13 @@ module.exports = async (deployer, network) => {
   // Deploy development help contracts
   if (network !== 'live' && network !== 'goerli') {
     await deployer.deploy(revertOnTransfer);
+  }
+
+  // Perform upgrade if we are not running in test environment
+  if (network !== 'development') {
+    console.log('Executing upgrade to v1.2')
+    const RocketUpgradeOneDotTwo = artifacts.require('RocketUpgradeOneDotTwo')
+    const rocketUpgradeOneDotTwo = await RocketUpgradeOneDotTwo.deployed();
+    await rocketUpgradeOneDotTwo.execute({ from: accounts[0] });
   }
 };
