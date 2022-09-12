@@ -20,8 +20,10 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     bool public setup;
 
     // Upgrade contracts
+    address public newRocketDepositPool;
 
     // Upgrade ABIs
+    string public newRocketDepositPoolAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -44,8 +46,10 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!setup, "Already setup");
 
         // Set contract addresses
+        newRocketDepositPool = _addresses[0];
 
         // Set ABIs
+        newRocketDepositPoolAbi = _abis[0];
     }
 
 
@@ -54,6 +58,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!executed, "Already executed");
 
         // Upgrade contracts
+        _upgradeContract("rocketDepositPool", newRocketDepositPool, newRocketDepositPoolAbi);
 
         // Add new contracts
 

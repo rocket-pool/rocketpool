@@ -4,22 +4,22 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../RocketBase.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/RocketVaultWithdrawerInterface.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
-import "../../types/MinipoolDeposit.sol";
+import "../../RocketBase.sol";
+import "../../../interface/RocketVaultInterface.sol";
+import "../../../interface/RocketVaultWithdrawerInterface.sol";
+import "../../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import "../../../interface/token/RocketTokenRETHInterface.sol";
+import "../../../types/MinipoolDeposit.sol";
 
 // The main entry point for deposits into the RP network
 // Accepts user deposits and mints rETH; handles assignment of deposited ETH to minipools
 
-contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
+contract RocketDepositPoolOld is RocketBase, RocketDepositPoolInterface, RocketVaultWithdrawerInterface {
 
     // Libs
     using SafeMath for uint;
@@ -46,7 +46,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 2;
     }
 
     // Current deposit pool balance
@@ -77,19 +77,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
-        uint256 capacityNeeded = rocketVault.balanceOf("rocketDepositPool").add(msg.value);
-        if (capacityNeeded > rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize()) {
-            // Doing a conditional require() instead of a single one optimizes for the common
-            // case where capacityNeeded fits in the deposit pool without looking at the queue
-            if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
-                RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-                require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
-                    "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
-            } else {
-                revert("The deposit pool size after depositing exceeds the maximum size");
-            }
-        }
-
+        require(rocketVault.balanceOf("rocketDepositPool").add(msg.value) <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize(), "The deposit pool size after depositing exceeds the maximum size");
         // Calculate deposit fee
         uint256 depositFee = msg.value.mul(rocketDAOProtocolSettingsDeposit.getDepositFee()).div(calcBase);
         uint256 depositNet = msg.value.sub(depositFee);

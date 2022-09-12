@@ -38,7 +38,7 @@ const contracts = {
   // Auction
   rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
   // Deposit
-  rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
+  rocketDepositPool:                        artifacts.require('RocketDepositPoolOld.sol'),
   // Minipool
   rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
   rocketMinipoolManager:                    artifacts.require('RocketMinipoolManager.sol'),
@@ -88,6 +88,7 @@ const contracts = {
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   // v1.2
+  rocketDepositPoolNew:                     artifacts.require('RocketDepositPool.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -221,9 +222,11 @@ module.exports = async (deployer, network) => {
             const arguments = [
               [
                 // contracts.rocketContract.address,
+                contracts.rocketDepositPoolNew.address,
               ],
               [
                 // compressABI(contracts.rocketContract.abi),
+                compressABI(contracts.rocketDepositPoolNew.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -253,6 +256,8 @@ module.exports = async (deployer, network) => {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
           // Ignore contracts that will be upgraded late
+          case 'rocketDepositPoolNew':
+            break;
 
           default:
           // Log it
