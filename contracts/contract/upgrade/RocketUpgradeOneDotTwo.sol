@@ -20,8 +20,12 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     bool public setup;
 
     // Upgrade contracts
+    address public newRocketMinipoolManager;
+    address public newRocketNodeStaking;
 
     // Upgrade ABIs
+    string public newRocketMinipoolManagerAbi;
+    string public newRocketNodeStakingAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -44,8 +48,12 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!setup, "Already setup");
 
         // Set contract addresses
+        newRocketMinipoolManager = _addresses[0];
+        newRocketNodeStaking = _addresses[1];
 
         // Set ABIs
+        newRocketMinipoolManagerAbi = _abis[0];
+        newRocketNodeStakingAbi = _abis[1];
     }
 
 
@@ -54,10 +62,16 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!executed, "Already executed");
 
         // Upgrade contracts
+        _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
+        _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
 
         // Add new contracts
 
         // Migrate settings
+
+        // Delete deprecated storage items
+        deleteUint(keccak256("network.rpl.stake"));
+        deleteUint(keccak256("network.rpl.stake.updated.block"));
 
         // Complete
         executed = true;

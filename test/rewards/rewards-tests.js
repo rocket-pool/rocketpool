@@ -7,10 +7,7 @@ import {
     setNodeTrusted,
     setNodeWithdrawalAddress,
     nodeStakeRPL,
-    getNodeRPLStake,
     getNodeEffectiveRPLStake,
-    getNodeMinimumRPLStake,
-    getCalculatedTotalEffectiveRPLStake
 } from '../_helpers/node'
 import {
   RocketDAONodeTrustedSettingsMinipool,

@@ -52,13 +52,12 @@ export async function stakeRpl(amount, txOptions) {
     function getStakingDetails(nodeAddress) {
         return Promise.all([
             rocketNodeStaking.getTotalRPLStake.call(),
-            rocketNodeStaking.getTotalEffectiveRPLStake.call(),
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
             rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress),
             rocketNodeStaking.getNodeMinipoolLimit.call(nodeAddress),
         ]).then(
-            ([totalStake, totalEffectiveStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit]) =>
-            ({totalStake, totalEffectiveStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit})
+            ([totalStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit]) =>
+            ({totalStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit})
         );
     }
 

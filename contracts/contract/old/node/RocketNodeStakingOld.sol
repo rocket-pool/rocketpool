@@ -5,19 +5,19 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../RocketBase.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/RocketVaultInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
+import "../../RocketBase.sol";
+import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../../interface/old/RocketNetworkPricesInterfaceOld.sol";
+import "../../../interface/old/RocketNodeStakingInterfaceOld.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../interface/RocketVaultInterface.sol";
+import "../../../interface/util/AddressSetStorageInterface.sol";
 
 // Handles node deposits and minipool creation
 
-contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
+contract RocketNodeStakingOld is RocketBase, RocketNodeStakingInterfaceOld {
 
     // Libs
     using SafeMath for uint;
@@ -29,7 +29,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 2;
     }
 
     // Get/set the total RPL stake amount
@@ -62,12 +62,49 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         setUint(keccak256(abi.encodePacked("rpl.staked.node.time", _nodeAddress)), _time);
     }
 
+    // Get the total effective RPL stake amount
+    function getTotalEffectiveRPLStake() override external view returns (uint256) {
+        // Load contracts
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
+        return rocketNetworkPrices.getEffectiveRPLStake();
+    }
+
+    // Calculate total effective RPL stake, this features a potentially unbounded loop so can not be called on-chain
+    // Instead, it is intended to be called by oracle nodes to be submitted alongside price updates
+    function calculateTotalEffectiveRPLStake(uint256 offset, uint256 limit, uint256 rplPrice) override external view returns (uint256) {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Calculate current max RPL stake per minipool
+        uint256 maxRplStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
+        // Loop all nodes and calculate their effective rate to sum
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        bytes32 key = keccak256("nodes.index");
+        uint256 totalNodes = addressSetStorage.getCount(key);
+        uint256 max = offset.add(limit);
+        if (max > totalNodes || limit == 0) { max = totalNodes; }
+        uint256 total = 0;
+        for (uint i = offset; i < max; i++){
+            // Get the node's address from the set
+            address nodeAddress = addressSetStorage.getItem(key, i);
+            // Get node's current RPL stake
+            uint256 rplStake = getNodeRPLStake(nodeAddress);
+            uint256 maxRplStake = maxRplStakePerMinipool.mul(rocketMinipoolManager.getNodeStakingMinipoolCount(nodeAddress)).div(rplPrice);
+            // Calculate node's maximum RPL stake
+            if (rplStake < maxRplStake) { total = total.add(rplStake); }
+            else { total = total.add(maxRplStake); }
+        }
+        return total;
+    }
+
     // Get a node's effective RPL stake amount
     function getNodeEffectiveRPLStake(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Get node's current RPL stake
         uint256 rplStake = getNodeRPLStake(_nodeAddress);
@@ -86,7 +123,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Calculate minimum RPL stake
         return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
@@ -100,7 +137,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Calculate maximum RPL stake
         return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
@@ -113,7 +150,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function getNodeMinipoolLimit(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Calculate & return minipool limit
         return getNodeRPLStake(_nodeAddress)
@@ -151,6 +188,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(_nodeAddress, _amount);
+        updateTotalEffectiveRPLStake(_nodeAddress, rplStake, rplStake.add(_amount));
         setNodeRPLStakedTime(_nodeAddress, block.timestamp);
         // Emit RPL staked event
         emit RPLStaked(_nodeAddress, _amount, block.timestamp);
@@ -172,17 +210,54 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);
+        updateTotalEffectiveRPLStake(msg.sender, rplStake, rplStake.sub(_amount));
         // Transfer RPL tokens to node address
         rocketVault.withdrawToken(rocketStorage.getNodeWithdrawalAddress(msg.sender), IERC20(getContractAddress("rocketTokenRPL")), _amount);
         // Emit RPL withdrawn event
         emit RPLWithdrawn(msg.sender, _amount, block.timestamp);
     }
 
+    // Updates the stored total effective rate based on a node's changing staking balance
+    function updateTotalEffectiveRPLStake(address _nodeAddress, uint256 _oldStake, uint256 _newStake) private {
+        // Load contracts
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Require price consensus
+        require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
+        // Get the node's maximum possible stake
+        uint256 maxRplStake = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake())
+            .mul(rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress))
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Easy out if total stake isn't changing
+        if (_oldStake >= maxRplStake && _newStake >= maxRplStake) {
+            return;
+        }
+        // Check if we have to decrease total
+        if (_oldStake > _newStake) {
+            uint256 decrease = _oldStake.sub(_newStake);
+            uint256 delta = maxRplStake.sub(_newStake);
+            if (decrease < delta) { delta = decrease; }
+            rocketNetworkPrices.decreaseEffectiveRPLStake(delta);
+            return;
+        }
+        // Check if we have to increase total
+        if (_newStake > _oldStake) {
+            uint256 increase = _newStake.sub(_oldStake);
+            uint256 delta = maxRplStake.sub(_oldStake);
+            if (delta > increase) { delta = increase; }
+            rocketNetworkPrices.increaseEffectiveRPLStake(delta);
+        }
+        // _oldStake == _newStake (do nothing but shouldn't happen)
+    }
+
     // Slash a node's RPL by an ETH amount
     // Only accepts calls from registered minipools
     function slashRPL(address _nodeAddress, uint256 _ethSlashAmount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredMinipool(msg.sender) {
         // Load contracts
-        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
         // Calculate RPL amount to slash
         uint256 rplSlashAmount = calcBase.mul(_ethSlashAmount).div(rocketNetworkPrices.getRPLPrice());
@@ -194,6 +269,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
+        updateTotalEffectiveRPLStake(_nodeAddress, rplStake, rplStake.sub(rplSlashAmount));
         // Emit RPL slashed event
         emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, block.timestamp);
     }
