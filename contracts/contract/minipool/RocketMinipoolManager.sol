@@ -49,7 +49,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools in the network in the Staking state
-    function getStakingMinipoolCount() override external view returns (uint256) {
+    function getStakingMinipoolCount() override public view returns (uint256) {
         return getUint(keccak256(bytes("minipools.staking.count")));
     }
 
@@ -223,6 +223,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
         // Update node fee average
         addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
+        // Update ETH matched
+        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
+        if (ethMatched == 0) {
+            ethMatched = getStakingMinipoolCount().mul(16 ether);
+        }
+        ethMatched = ethMatched.add(minipool.getUserDepositBalance());
+        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
@@ -243,6 +250,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
         // Update node fee average
         subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
+        // Update ETH matched
+        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
+        if (ethMatched == 0) {
+            ethMatched = getStakingMinipoolCount().mul(16 ether);
+        }
+        ethMatched = ethMatched.add(minipool.getUserDepositBalance());
+        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
     // Calls distribute on the given node's distributor if it has a balance and has been initialised

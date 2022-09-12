@@ -5,6 +5,9 @@ pragma solidity >0.5.0 <0.9.0;
 interface RocketNodeStakingInterface {
     function getTotalRPLStake() external view returns (uint256);
     function getNodeRPLStake(address _nodeAddress) external view returns (uint256);
+    function getNodeETHMatched(address _nodeAddress) external view returns (uint256);
+    function getNodeETHProvided(address _nodeAddress) external view returns (uint256);
+    function getNodeETHCollateralisationRatio(address _nodeAddress) external view returns (uint256);
     function getNodeRPLStakedTime(address _nodeAddress) external view returns (uint256);
     function getTotalEffectiveRPLStake() external view returns (uint256);
     function calculateTotalEffectiveRPLStake(uint256 offset, uint256 limit, uint256 rplPrice) external view returns (uint256);

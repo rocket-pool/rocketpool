@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -22,6 +23,7 @@ import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/token/RocketTokenRETHInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
+import "../../interface/node/RocketNodeDepositInterface.sol";
 
 // An individual minipool in the Rocket Pool network
 
@@ -64,7 +66,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getNodeTopUpValue() override external view returns (uint256) { return nodeDepositBalance.sub(preLaunchValue); }
 
     // User deposit detail getters
-    function getUserDepositBalance() override external view returns (uint256) { return userDepositBalance; }
+    function getUserDepositBalance() override public view returns (uint256) {
+        if (nodeFeeAtMigration == 0){
+            return userDepositBalanceLegacy;
+        } else {
+            return userDepositBalance;
+        }
+    }
     function getUserDepositAssigned() override external view returns (bool) { return userDepositAssignedTime != 0; }
     function getUserDepositAssignedTime() override external view returns (uint256) { return userDepositAssignedTime; }
     function getTotalScrubVotes() override external view returns (uint256) { return totalScrubVotes; }
@@ -357,12 +365,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(block.number > withdrawalBlock + distributionCooldown, "Distribution of this minipool's balance is on cooldown");
         // Deposit amounts
         uint256 nodeAmount = 0;
+        uint256 userCapital = getUserDepositBalance();
         // Check if node operator was slashed
-        if (_balance < userDepositBalance) {
+        if (_balance < userCapital) {
             // Only slash on first call to distribute
             if (withdrawalBlock == 0) {
                 // Record shortfall for slashing
-                nodeSlashBalance = userDepositBalance.sub(_balance);
+                nodeSlashBalance = userCapital.sub(_balance);
             }
         } else {
             // Calculate node's share of the balance
@@ -386,32 +395,48 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Given a validator balance, this function returns what portion of it belongs to the node taking into consideration
     // the minipool's commission rate and any penalties it may have attracted
     function calculateNodeShare(uint256 _balance) override public view returns (uint256) {
-        // Get fee and balances from minipool contract
-        uint256 stakingDepositTotal = 32 ether;
-        uint256 userAmount = userDepositBalance;
-        // Check if node operator was slashed
-        if (userAmount > _balance) {
-            // None of balance belongs to the node
-            return 0;
+        uint256 launchAmount = 32 ether;
+
+        uint256 preMigrationRewardsNode;
+        uint256 postMigrationRewardsNode;
+        uint256 totalSlashing;
+
+        uint256 userCapital;
+        uint256 migrationBalance;
+
+        // Use old state if not migrated
+        if (nodeFeeAtMigration > 0) {
+            userCapital = userDepositBalance;
+            migrationBalance = balanceAtMigration;
+        } else {
+            userCapital = userDepositBalanceLegacy;
+            migrationBalance = launchAmount;
         }
-        // Check if there are rewards to pay out
-        if (_balance > stakingDepositTotal) {
-            // Calculate rewards earned
-            uint256 totalRewards = _balance.sub(stakingDepositTotal);
-            // Calculate node share of rewards for the user
-            uint256 halfRewards = totalRewards.div(2);
-            uint256 nodeCommissionFee = halfRewards.mul(nodeFee).div(1 ether);
-            // Check for un-bonded minipool
-            if (depositType == MinipoolDeposit.Empty) {
-                // Add the total rewards minus the commission to the user's total
-                userAmount = userAmount.add(totalRewards.sub(nodeCommissionFee));
+
+        if (_balance > userCapital) {
+            if (migrationBalance > launchAmount) {
+                uint256 preMigrationRewards = migrationBalance.sub(launchAmount);
+                //preMigrationSlashing = 0;
+                preMigrationRewardsNode = preMigrationRewards.div(2);
+                preMigrationRewardsNode = preMigrationRewardsNode.add(preMigrationRewardsNode.mul(nodeFeeAtMigration).div(calcBase));
             } else {
-                // Add half the rewards minus the commission fee to the user's total
-                userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
+                totalSlashing = launchAmount.sub(migrationBalance);
+                //preMigrationRewardsNode = 0
+            }
+
+            if (_balance > migrationBalance) {
+                uint256 postMigrationRewards = _balance.sub(migrationBalance);
+                //postMigrationSlashing = 0
+                postMigrationRewardsNode = postMigrationRewards.mul(nodeDepositBalance).div(userCapital.add(nodeDepositBalance));
+                postMigrationRewardsNode = postMigrationRewards.sub(postMigrationRewardsNode).add(postMigrationRewardsNode.mul(nodeFee).div(calcBase));
+            } else {
+                totalSlashing = totalSlashing.add(migrationBalance.sub(_balance));
+                //postMigrationRewardsNode = 0;
             }
         }
-        // Calculate node amount as what's left over after user amount
-        uint256 nodeAmount = _balance.sub(userAmount);
+
+        uint256 nodeAmount = nodeDepositBalance.sub(totalSlashing).add(preMigrationRewardsNode).add(postMigrationRewardsNode);
+
         // Check if node has an ETH penalty
         uint256 penaltyRate = RocketMinipoolPenaltyInterface(rocketMinipoolPenalty).getPenaltyRate(address(this));
         if (penaltyRate > 0) {
@@ -557,11 +582,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Progress to dissolved
         setStatus(MinipoolStatus.Dissolved);
         // Transfer user balance to deposit pool
-        if (userDepositBalance > 0) {
+        uint256 userCapital = getUserDepositBalance();
+        if (userCapital > 0) {
             // Store value in local
-            uint256 recycleAmount = userDepositBalance;
+            uint256 recycleAmount = userCapital;
             // Clear storage
             userDepositBalance = 0;
+            userDepositBalanceLegacy = 0;
             userDepositAssignedTime = 0;
             // Transfer
             rocketDepositPool.recycleDissolvedDeposit{value : recycleAmount}();
@@ -570,5 +597,36 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             rocketMinipoolQueue.removeMinipool(depositType);
         }
+    }
+
+    // Migrates this minipools from a legacy one to a "Variable" type
+    function migrate(uint256 _balance, bytes32[] calldata _proof) external onlyMinipoolOwner(msg.sender) {
+        // Must be a Half or Full type minipool
+        require(status == MinipoolStatus.Staking, "Minipool must be staking");
+        require(depositType == MinipoolDeposit.Half || depositType == MinipoolDeposit.Full, "Cannot convert non-legacy minipool");
+        require(_verifyProof(_balance, _proof), "Invalid merkle proof");
+        // Store balance and commission rate at migration
+        balanceAtMigration = _balance;
+        nodeFeeAtMigration = nodeFee;
+        // Set to Variable
+        depositType = MinipoolDeposit.Variable;
+        // Update user/node balances
+        userDepositBalance = userDepositBalanceLegacy.add(8 ether);
+        nodeDepositBalance = nodeDepositBalance.sub(8 ether);
+        // Reset node fee to current network rate
+        RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
+        nodeFee = rocketNetworkFees.getNodeFee();
+        // Increase node operator's credit
+        RocketNodeDepositInterface rocketNodeDepositInterface = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        rocketNodeDepositInterface.increaseDepositCreditBalance(nodeAddress, 8 ether);
+        // Break state to prevent rollback exploit
+        userDepositBalanceLegacy = 2**256-1;
+    }
+
+    // Verifies that the given balance for this minipool exists in the minipool balances merkle tree
+    function _verifyProof(uint256 _balance, bytes32[] calldata _merkleProof) internal view returns (bool) {
+        bytes32 node = keccak256(abi.encodePacked(address(this), _balance));
+        bytes32 merkleRoot = rocketStorage.getBytes32(keccak256(abi.encodePacked('migration.balances.merkle.root')));
+        return MerkleProof.verify(_merkleProof, merkleRoot, node);
     }
 }
