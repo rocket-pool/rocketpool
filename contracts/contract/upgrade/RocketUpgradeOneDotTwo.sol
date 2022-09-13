@@ -25,6 +25,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketDAOProtocolSettingsMinipool;
     address public newRocketMinipoolQueue;
     address public newRocketDepositPool;
+    address public newRocketDAOProtocolSettingsDeposit;
 
     // Upgrade ABIs
     string public newRocketNodeDepositAbi;
@@ -32,6 +33,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketDAOProtocolSettingsMinipoolAbi;
     string public newRocketMinipoolQueueAbi;
     string public newRocketDepositPoolAbi;
+    string public newRocketDAOProtocolSettingsDepositAbi;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -59,6 +61,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsMinipool = _addresses[2];
         newRocketMinipoolQueue = _addresses[3];
         newRocketDepositPool = _addresses[4];
+        newRocketDAOProtocolSettingsDeposit = _addresses[5];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -66,6 +69,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsMinipoolAbi = _abis[2];
         newRocketMinipoolQueueAbi = _abis[3];
         newRocketDepositPoolAbi = _abis[4];
+        newRocketDAOProtocolSettingsDepositAbi = _abis[5];
     }
 
 
@@ -79,10 +83,14 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsMinipool", newRocketDAOProtocolSettingsMinipool, newRocketDAOProtocolSettingsMinipoolAbi);
         _upgradeContract("rocketMinipoolQueue", newRocketMinipoolQueue, newRocketMinipoolQueueAbi);
         _upgradeContract("rocketDepositPool", newRocketDepositPool, newRocketDepositPoolAbi);
+        _upgradeContract("rocketDAOProtocolSettingsDeposit", newRocketDAOProtocolSettingsDeposit, newRocketDAOProtocolSettingsDepositAbi);
 
         // Add new contracts
 
         // Migrate settings
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.maximum")), 90);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 2);
 
         // Complete
         executed = true;

@@ -172,15 +172,19 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     function _assignDepositsNew(RocketMinipoolQueueInterface _rocketMinipoolQueue, RocketVaultInterface _rocketVault, RocketDAOProtocolSettingsDepositInterface _rocketDAOProtocolSettingsDeposit) private returns (bool) {
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Query number of variable deposits in the queue
+        // Calculate the number of minipools to assign
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
-        uint256 balance = _rocketVault.balanceOf("rocketDepositPool");
         uint256 variableDepositAmount = rocketDAOProtocolSettingsMinipool.getVariableDepositAmount();
-        uint256 maxByBalance = balance.div(variableDepositAmount);
-        if (maxAssignments > maxByBalance) {
-            maxAssignments = maxByBalance;
+        uint256 scalingCount = msg.value.div(variableDepositAmount);
+        uint256 totalEthCount = _rocketVault.balanceOf("rocketDepositPool").div(variableDepositAmount);
+        uint256 assignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments().add(scalingCount);
+        if (assignments > totalEthCount) {
+            assignments = totalEthCount;
         }
-        address[] memory minipools = _rocketMinipoolQueue.dequeueMinipools(maxAssignments);
+        if (assignments > maxAssignments) {
+            assignments = maxAssignments;
+        }
+        address[] memory minipools = _rocketMinipoolQueue.dequeueMinipools(assignments);
         if (minipools.length > 0){
             // Withdraw ETH from vault
             uint256 totalEther = minipools.length.mul(variableDepositAmount);

@@ -30,12 +30,14 @@ export async function assignDepositsV2(txOptions) {
     let [
         depositPoolBalance,
         maxDepositAssignments,
+        maxSocialisedAssignments,
         minipoolQueueLength,
         fullMinipoolQueueLength, halfMinipoolQueueLength, emptyMinipoolQueueLength,
         fullDepositUserAmount, halfDepositUserAmount, emptyDepositUserAmount,
     ] = await Promise.all([
-        rocketDepositPool.getBalance.call(),
+        rocketVault.balanceOf.call("rocketDepositPool"),
         rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments.call(),
+        rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments.call(),
         rocketMinipoolQueue.getLength.call(),
         rocketMinipoolQueue.getLengthLegacy.call(1), rocketMinipoolQueue.getLengthLegacy.call(2), rocketMinipoolQueue.getLengthLegacy.call(3),
         rocketDAOProtocolSettingsMinipool.getDepositUserAmount(1), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(2), rocketDAOProtocolSettingsMinipool.getDepositUserAmount(3),
@@ -63,7 +65,9 @@ export async function assignDepositsV2(txOptions) {
 
     // No legacy deposits
     if (expectedDepositAssignments === 0) {
-        expectedDepositAssignments = Math.min(maxDepositAssignments, minipoolQueueLength);
+        let scalingCount = maxSocialisedAssignments.toNumber();
+        let totalEthCount = depositPoolBalance.div(web3.utils.toBN(web3.utils.toWei('31', 'ether'))).toNumber();
+        expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments, minipoolQueueLength);
         expectedEthAssigned = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
         expectedEthVaultUsed = web3.utils.toBN(web3.utils.toWei('31', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
     } else {
