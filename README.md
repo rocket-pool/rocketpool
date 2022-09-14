@@ -28,17 +28,17 @@ This will start Ganache (if not already started) with the current block gas limi
 
 # Rocket Pool White Paper
 
-You can read the current Rocket Pool white paper here: [http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf](http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf).
+You can read the current Rocket Pool white paper here: [https://docs.rocketpool.net/whitepaper](https://docs.rocketpool.net/whitepaper).
 
 # Contact and Additional Information
 
-Check out [our website](http://www.rocketpool.net) for more information on Rocket Pool.
+Check out [our website](https://www.rocketpool.net) for more information on Rocket Pool.
 
 Contact form: https://www.rocketpool.net/#contact
 
 Twitter: https://twitter.com/Rocket_Pool
 
-Join our Discord chat channel! https://discordapp.com/invite/9mwXaDY
+Join our Discord chat channel! https://discord.gg/rocketpool
 
 ---
 
