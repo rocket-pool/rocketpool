@@ -63,6 +63,19 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         _deposit(msg.value, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
     }
 
+    // Returns true if the given amount is a valid deposit amount
+    function isValidDepositAmount(uint256 _amount) override public pure returns (bool) {
+        return _amount == 16 ether || _amount == 8 ether;
+    }
+
+    // Returns an array of valid deposit amounts
+    function getDepositAmounts() override external pure returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 16 ether;
+        amounts[1] = 8 ether;
+        return amounts;
+    }
+
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
     function _deposit(uint256 _value, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
@@ -70,8 +83,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         checkDepositsEnabled();
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
-        // TODO: Decide where to store what deposit amounts are valid
-        require(_value == 16 ether || _value == 8 ether, "Invalid deposit amount");
+        require(isValidDepositAmount(_value), "Invalid deposit amount");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);

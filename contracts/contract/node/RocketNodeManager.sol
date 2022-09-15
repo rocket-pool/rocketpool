@@ -19,6 +19,7 @@ import "../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/node/RocketNodeDepositInterface.sol";
 
 
 // Node registration and management 
@@ -198,13 +199,35 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        // Calculate average
-        uint256 denominator = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress);
-        if (denominator == 0) {
-            return 0;
+        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        // Get valid deposit amounts
+        uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
+        // Setup memory for calculations
+        uint256[] memory depositWeights = new uint256[](depositSizes.length);
+        uint256[] memory depositCounts = new uint256[](depositSizes.length);
+        uint256 depositWeightTotal;
+        uint256 totalCount;
+        // Retrieve the number of staking minipools per deposit size
+        for(uint256 i = 0; i < depositSizes.length; i++) {
+            depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
+            totalCount = totalCount.add(depositCounts[i]);
         }
-        uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)));
-        return numerator.div(denominator);
+        // Calculate the weights of each deposit size
+        for(uint256 i = 0; i < depositSizes.length; i++) {
+            depositWeights[i] = uint256(32 ether).sub(depositSizes[i]).mul(depositCounts[i]);
+            depositWeightTotal = depositWeightTotal.add(depositWeights[i]);
+        }
+        for(uint256 i = 0; i < depositSizes.length; i++) {
+            depositWeights[i] = depositWeights[i].mul(calcBase).div(depositWeightTotal);
+        }
+        // Calculate the weighted average
+        uint256 weightedAverage;
+        for(uint256 i = 0; i < depositSizes.length; i++) {
+            uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i])));
+            uint256 average = numerator.div(depositCounts[i]);
+            weightedAverage = weightedAverage.add(average.mul(depositWeights[i]));
+        }
+        return weightedAverage.div(calcBase);
     }
 
     // Designates which network a node would like their rewards relayed to

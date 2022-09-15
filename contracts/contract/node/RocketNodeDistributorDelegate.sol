@@ -8,6 +8,7 @@ import "./RocketNodeDistributorStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeDistributorInterface.sol";
+import "../../interface/node/RocketNodeStakingInterface.sol";
 
 contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, RocketNodeDistributorInterface {
     // Import libraries
