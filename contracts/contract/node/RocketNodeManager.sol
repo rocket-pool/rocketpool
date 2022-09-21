@@ -175,7 +175,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             uint256 numerator;
             // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
             for (uint256 i = 0; i < count; i++) {
-                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getMinipoolAt(i));
+                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
                 if (minipool.getStatus() == MinipoolStatus.Staking){
                     numerator = numerator.add(minipool.getNodeFee());
                 }
