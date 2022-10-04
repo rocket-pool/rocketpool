@@ -41,7 +41,7 @@ const contracts = {
   rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
   // Minipool
   rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
-  rocketMinipoolManager:                    artifacts.require('RocketMinipoolManager.sol'),
+  rocketMinipoolManager:                    artifacts.require('RocketMinipoolManagerOld.sol'),
   rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueue.sol'),
   rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
   rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
@@ -56,7 +56,7 @@ const contracts = {
   // Node
   rocketNodeDeposit:                        artifacts.require('RocketNodeDeposit.sol'),
   rocketNodeManager:                        artifacts.require('RocketNodeManager.sol'),
-  rocketNodeStaking:                        artifacts.require('RocketNodeStaking.sol'),
+  rocketNodeStaking:                        artifacts.require('RocketNodeStakingOld.sol'),
   // DAOs
   rocketDAOProposal:                        artifacts.require('RocketDAOProposal.sol'),
   rocketDAONodeTrusted:                     artifacts.require('RocketDAONodeTrusted.sol'),
@@ -88,6 +88,8 @@ const contracts = {
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   // v1.2
+  rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
+  rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -221,9 +223,13 @@ module.exports = async (deployer, network) => {
             const arguments = [
               [
                 // contracts.rocketContract.address,
+                contracts.rocketMinipoolManagerNew.address,
+                contracts.rocketNodeStakingNew.address,
               ],
               [
                 // compressABI(contracts.rocketContract.abi),
+                compressABI(contracts.rocketMinipoolManagerNew.abi),
+                compressABI(contracts.rocketNodeStaking.abi),
               ]
             ]
             await upgrader.set(...arguments)
@@ -253,6 +259,9 @@ module.exports = async (deployer, network) => {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
           // Ignore contracts that will be upgraded late
+          case 'rocketMinipoolManagerNew':
+          case 'rocketNodeStakingNew':
+            break;
 
           default:
           // Log it

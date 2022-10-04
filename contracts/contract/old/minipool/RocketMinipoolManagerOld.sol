@@ -5,31 +5,31 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./RocketMinipool.sol";
-import "../RocketBase.sol";
-import "../../types/MinipoolStatus.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../../types/MinipoolDetails.sol";
-import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
-import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
-import "../../interface/node/RocketNodeDistributorInterface.sol";
-import "../../interface/network/RocketNetworkPenaltiesInterface.sol";
-import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
+import "../../minipool/RocketMinipool.sol";
+import "../../RocketBase.sol";
+import "../../../types/MinipoolStatus.sol";
+import "../../../types/MinipoolDeposit.sol";
+import "../../../types/MinipoolDetails.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
+import "../../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../../interface/node/RocketNodeStakingInterface.sol";
+import "../../../interface/util/AddressSetStorageInterface.sol";
+import "../../../interface/node/RocketNodeManagerInterface.sol";
+import "../../../interface/old/RocketNetworkPricesInterfaceOld.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "../../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import "../../../interface/node/RocketNodeDistributorInterface.sol";
+import "../../../interface/network/RocketNetworkPenaltiesInterface.sol";
+import "../../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 
 // Minipool creation, removal and management
 
-contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
+contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterface {
 
     // Libs
     using SafeMath for uint;
@@ -220,6 +220,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.add(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.add(1));
         // Update node fee average
         addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
     }
@@ -238,6 +240,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         bytes32 totalKey = keccak256(abi.encodePacked("minipools.staking.count"));
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.sub(1));
+        // Update total effective stake
+        updateTotalEffectiveRPLStake(_nodeAddress, nodeValue, nodeValue.sub(1));
         // Update node fee average
         subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)), minipool.getNodeFee());
     }
@@ -324,6 +328,51 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
         // Emit minipool destroyed event
         emit MinipoolDestroyed(msg.sender, nodeAddress, block.timestamp);
+    }
+
+    // Updates the stored total effective rate based on a node's changing minipool count
+    function updateTotalEffectiveRPLStake(address _nodeAddress, uint256 _oldCount, uint256 _newCount) private {
+        // Load contracts
+        RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        // Require price consensus
+        require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
+        // Get node's RPL stake
+        uint256 rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
+        // Get the node's maximum possible stake
+        uint256 maxRplStakePerMinipool = rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount()
+            .mul(rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake());
+        uint256 oldMaxRplStake = maxRplStakePerMinipool
+            .mul(_oldCount)
+            .div(rocketNetworkPrices.getRPLPrice());
+        uint256 newMaxRplStake = maxRplStakePerMinipool
+            .mul(_newCount)
+            .div(rocketNetworkPrices.getRPLPrice());
+        // Check if we have to decrease total
+        if (_oldCount > _newCount) {
+            if (rplStake <= newMaxRplStake) {
+                return;
+            }
+            uint256 decrease = oldMaxRplStake.sub(newMaxRplStake);
+            uint256 delta = rplStake.sub(newMaxRplStake);
+            if (delta > decrease) { delta = decrease; }
+            rocketNetworkPrices.decreaseEffectiveRPLStake(delta);
+            return;
+        }
+        // Check if we have to increase total
+        if (_newCount > _oldCount) {
+            if (rplStake <= oldMaxRplStake) {
+                return;
+            }
+            uint256 increase = newMaxRplStake.sub(oldMaxRplStake);
+            uint256 delta = rplStake.sub(oldMaxRplStake);
+            if (delta > increase) { delta = increase; }
+            rocketNetworkPrices.increaseEffectiveRPLStake(delta);
+            return;
+        }
+        // _oldCount == _newCount (do nothing but shouldn't happen)
     }
 
     // Set a minipool's validator pubkey

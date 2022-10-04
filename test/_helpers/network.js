@@ -33,9 +33,9 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
 
 
 // Submit network token prices
-export async function submitPrices(block, rplPrice, effectiveRplStake, txOptions) {
+export async function submitPrices(block, rplPrice, txOptions) {
     const rocketNetworkPrices = await RocketNetworkPrices.deployed();
-    await rocketNetworkPrices.submitPrices(block, rplPrice, effectiveRplStake, txOptions);
+    await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
 }
 
 

@@ -123,8 +123,7 @@ export default function() {
 
             // Set RPL price
             let block = await web3.eth.getBlockNumber();
-            let effectiveRPLStake = await rocketNodeStaking.calculateTotalEffectiveRPLStake(0, 0, web3.utils.toWei('1', 'ether'));
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), effectiveRPLStake, {from: trustedNode});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: trustedNode});
 
             // Create lot
             await submitMinipoolWithdrawable(minipool.address, {from: trustedNode});
