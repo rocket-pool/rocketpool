@@ -17,6 +17,7 @@ import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { shouldRevert } from '../_utils/testing';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { userDeposit } from '../_helpers/deposit';
 
 export default function() {
     contract('RocketNodeDistributor', async (accounts) => {
@@ -88,7 +89,8 @@ export default function() {
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
             // Create and stake a minipool
-            let stakingMinipool = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')})
+            let stakingMinipool = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool, {from: node2});
             // Distribute
@@ -102,8 +104,9 @@ export default function() {
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
             // Create and stake a minipool
-            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
-            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: web3.utils.toWei('32', 'ether')})
+            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
+            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool1, {from: node2});
             await stakeMinipool(stakingMinipool2, {from: node2});
@@ -117,9 +120,11 @@ export default function() {
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+
             // Create and stake a minipool
-            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
-            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: web3.utils.toWei('32', 'ether')})
+            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
+            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool1, {from: node2});
             await stakeMinipool(stakingMinipool2, {from: node2});

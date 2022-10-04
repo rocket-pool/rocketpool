@@ -21,7 +21,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     // Constants
     bytes32 private constant queueKeyFull = keccak256("minipools.available.full");
     bytes32 private constant queueKeyHalf = keccak256("minipools.available.half");
-    bytes32 private constant queueKeyEmpty = keccak256("minipools.available.empty");
+    bytes32 private constant queueKeyVariable = keccak256("minipools.available.variable");
 
     // Events
     event MinipoolEnqueued(address indexed minipool, bytes32 indexed queueId, uint256 time);
@@ -30,42 +30,52 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Get the total combined length of the queues
     function getTotalLength() override external view returns (uint256) {
         return (
-            getLength(queueKeyFull)
+            getLengthLegacy(queueKeyFull)
         ).add(
-            getLength(queueKeyHalf)
+            getLengthLegacy(queueKeyHalf)
         ).add(
-            getLength(queueKeyEmpty)
+            getLength()
         );
+    }
+
+    // Returns true if there are any legacy minipools in the queue
+    function getContainsLegacy() override external view returns (bool) {
+        return getLengthLegacy(queueKeyFull).add(getLengthLegacy(queueKeyHalf)) > 0;
     }
 
     // Get the length of a queue
     // Returns 0 for invalid queues
-    function getLength(MinipoolDeposit _depositType) override external view returns (uint256) {
-        if (_depositType == MinipoolDeposit.Full) { return getLength(queueKeyFull); }
-        if (_depositType == MinipoolDeposit.Half) { return getLength(queueKeyHalf); }
-        if (_depositType == MinipoolDeposit.Empty) { return getLength(queueKeyEmpty); }
+    function getLengthLegacy(MinipoolDeposit _depositType) override external view returns (uint256) {
+        if (_depositType == MinipoolDeposit.Full) { return getLengthLegacy(queueKeyFull); }
+        if (_depositType == MinipoolDeposit.Half) { return getLengthLegacy(queueKeyHalf); }
         return 0;
     }
-    function getLength(bytes32 _key) private view returns (uint256) {
+    function getLengthLegacy(bytes32 _key) private view returns (uint256) {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         return addressQueueStorage.getLength(_key);
+    }
+
+    // Gets the length of the variable (global) queue
+    function getLength() override public view returns (uint256) {
+        AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
+        return addressQueueStorage.getLength(queueKeyVariable);
     }
 
     // Get the total combined capacity of the queues
     function getTotalCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
-            getLength(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
+            getLengthLegacy(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
         ).add(
-            getLength(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
+            getLengthLegacy(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
         ).add(
-            getLength(queueKeyEmpty).mul(rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount())
+            getVariableCapacity()
         );
     }
 
@@ -73,63 +83,70 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     function getEffectiveCapacity() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         return (
-            getLength(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
+            getLengthLegacy(queueKeyFull).mul(rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount())
         ).add(
-            getLength(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
+            getLengthLegacy(queueKeyHalf).mul(rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount())
+        ).add(
+            getVariableCapacity()
         );
+    }
+
+    function getVariableCapacity() internal view returns (uint256) {
+        return getUint("minipool.queue.variable.capacity");
     }
 
     // Get the capacity of the next available minipool
     // Returns 0 if no minipools are available
-    function getNextCapacity() override external view returns (uint256) {
+    function getNextCapacityLegacy() override external view returns (uint256) {
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        if (getLength(queueKeyHalf) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
-        if (getLength(queueKeyFull) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
-        if (getLength(queueKeyEmpty) > 0) { return rocketDAOProtocolSettingsMinipool.getEmptyDepositUserAmount(); }
+        if (getLengthLegacy(queueKeyHalf) > 0) { return rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(); }
+        if (getLengthLegacy(queueKeyFull) > 0) { return rocketDAOProtocolSettingsMinipool.getFullDepositUserAmount(); }
         return 0;
     }
 
     // Get the deposit type of the next available minipool and the number of deposits in that queue
     // Returns None if no minipools are available
-    function getNextDeposit() override external view returns (MinipoolDeposit, uint256) {
-        uint256 length = getLength(queueKeyHalf);
+    function getNextDepositLegacy() override external view returns (MinipoolDeposit, uint256) {
+        uint256 length = getLengthLegacy(queueKeyHalf);
         if (length > 0) { return (MinipoolDeposit.Half, length); }
-        length = getLength(queueKeyFull);
+        length = getLengthLegacy(queueKeyFull);
         if (length > 0) { return (MinipoolDeposit.Full, length); }
-        length = getLength(queueKeyEmpty);
-        if (length > 0) { return (MinipoolDeposit.Empty, length); }
         return (MinipoolDeposit.None, 0);
     }
 
     // Add a minipool to the end of the appropriate queue
     // Only accepts calls from the RocketMinipoolManager contract
-    function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
-        if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool(queueKeyHalf, _minipool); }
-        if (_depositType == MinipoolDeposit.Full) { return enqueueMinipool(queueKeyFull, _minipool); }
-        if (_depositType == MinipoolDeposit.Empty) { return enqueueMinipool(queueKeyEmpty, _minipool); }
-        require(false, "Invalid minipool deposit type");
-    }
-    function enqueueMinipool(bytes32 _key, address _minipool) private {
+    function enqueueMinipool(address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Enqueue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        addressQueueStorage.enqueueItem(_key, _minipool);
+        addressQueueStorage.enqueueItem(queueKeyVariable, _minipool);
+        // Increase capacity value
+        RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(_minipool);
+        addUint("minipool.queue.variable.capacity", rocketMinipool.getNodeDepositBalance());
         // Emit enqueued event
-        emit MinipoolEnqueued(_minipool, _key, block.timestamp);
+        emit MinipoolEnqueued(_minipool, queueKeyVariable, block.timestamp);
     }
 
-    // Remove the first available minipool from the highest priority queue and return its address
-    // Only accepts calls from the RocketDepositPool contract
-    function dequeueMinipool() override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
-        if (getLength(queueKeyHalf) > 0) { return dequeueMinipool(queueKeyHalf); }
-        if (getLength(queueKeyFull) > 0) { return dequeueMinipool(queueKeyFull); }
-        if (getLength(queueKeyEmpty) > 0) { return dequeueMinipool(queueKeyEmpty); }
-        require(false, "No minipools are available");
-    }
-    function dequeueMinipoolByDeposit(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
+    function dequeueMinipoolByDepositLegacy(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address minipoolAddress) {
         if (_depositType == MinipoolDeposit.Half) { return dequeueMinipool(queueKeyHalf); }
         if (_depositType == MinipoolDeposit.Full) { return dequeueMinipool(queueKeyFull); }
-        if (_depositType == MinipoolDeposit.Empty) { return dequeueMinipool(queueKeyEmpty); }
         require(false, "No minipools are available");
+    }
+    function dequeueMinipools(uint256 _maxToDequeue) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketDepositPool", msg.sender) returns (address[] memory minipoolAddress) {
+        uint256 queueLength = getLength();
+        uint256 count = _maxToDequeue;
+        if (count > queueLength) {
+            count = queueLength;
+        }
+        address[] memory minipoolAddresses = new address[](count);
+        uint256 capacity = 0;
+        for (uint256 i = 0; i < count; i++) {
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(dequeueMinipool(queueKeyVariable));
+            capacity = capacity.add(minipool.getNodeDepositBalance());
+            minipoolAddresses[i] = address(minipool);
+        }
+        subUint("minipool.queue.variable.capacity", capacity);
+        return minipoolAddresses;
     }
     function dequeueMinipool(bytes32 _key) private returns (address) {
         // Dequeue
@@ -147,7 +164,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         // Remove minipool from queue
         if (_depositType == MinipoolDeposit.Half) { return removeMinipool(queueKeyHalf, msg.sender); }
         if (_depositType == MinipoolDeposit.Full) { return removeMinipool(queueKeyFull, msg.sender); }
-        if (_depositType == MinipoolDeposit.Empty) { return removeMinipool(queueKeyEmpty, msg.sender); }
+        if (_depositType == MinipoolDeposit.Variable) { return removeMinipool(queueKeyVariable, msg.sender); }
         require(false, "Invalid minipool deposit type");
     }
     function removeMinipool(bytes32 _key, address _minipool) private {

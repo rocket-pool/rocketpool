@@ -38,11 +38,11 @@ const contracts = {
   // Auction
   rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
   // Deposit
-  rocketDepositPool:                        artifacts.require('RocketDepositPool.sol'),
+  rocketDepositPool:                        artifacts.require('RocketDepositPoolOld.sol'),
   // Minipool
-  rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegate.sol'),
+  rocketMinipoolDelegate:                   artifacts.require('RocketMinipoolDelegateOld.sol'),
   rocketMinipoolManager:                    artifacts.require('RocketMinipoolManagerOld.sol'),
-  rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueue.sol'),
+  rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueueOld.sol'),
   rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
   rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
   // Network
@@ -54,7 +54,7 @@ const contracts = {
   rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
   rocketClaimDAO:                           artifacts.require('RocketClaimDAO.sol'),
   // Node
-  rocketNodeDeposit:                        artifacts.require('RocketNodeDeposit.sol'),
+  rocketNodeDeposit:                        artifacts.require('RocketNodeDepositOld.sol'),
   rocketNodeManager:                        artifacts.require('RocketNodeManager.sol'),
   rocketNodeStaking:                        artifacts.require('RocketNodeStakingOld.sol'),
   // DAOs
@@ -74,8 +74,8 @@ const contracts = {
   rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
   rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
   rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
-  rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
-  rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
+  rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDepositOld.sol'),
+  rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipoolOld.sol'),
   // Tokens
   rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
   rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
@@ -88,6 +88,12 @@ const contracts = {
   rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   // v1.2
+  rocketNodeDepositNew:                     artifacts.require('RocketNodeDeposit.sol'),
+  rocketMinipoolDelegateNew:                artifacts.require('RocketMinipoolDelegate.sol'),
+  rocketDAOProtocolSettingsMinipoolNew:     artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
+  rocketMinipoolQueueNew:                   artifacts.require('RocketMinipoolQueue.sol'),
+  rocketDepositPoolNew:                     artifacts.require('RocketDepositPool.sol'),
+  rocketDAOProtocolSettingsDepositNew:      artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
   rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
@@ -102,7 +108,7 @@ const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:                           [artifacts.require('RocketMinipoolDelegate.sol'), artifacts.require('RocketMinipool.sol')],
+  rocketMinipool:                           [artifacts.require('RocketMinipoolDelegateOld.sol'), artifacts.require('RocketMinipool.sol')],
 };
 
 
@@ -222,12 +228,24 @@ module.exports = async (deployer, network) => {
             const upgrader = await deployer.deploy(contracts[contract], rocketStorage.address);
             const arguments = [
               [
-                // contracts.rocketContract.address,
-                contracts.rocketMinipoolManagerNew.address,
-                contracts.rocketNodeStakingNew.address,
+                // compressABI(contracts.rocketContract.abi),
+                contracts.rocketNodeDepositNew.address,
+                contracts.rocketMinipoolDelegateNew.address,
+                contracts.rocketDAOProtocolSettingsMinipoolNew.address,
+                contracts.rocketMinipoolQueueNew.address,
+                contracts.rocketDepositPoolNew.address,
+                contracts.rocketDAOProtocolSettingsDepositNew.address,
+                  contracts.rocketMinipoolManagerNew.address,
+                  contracts.rocketNodeStakingNew.address,
               ],
               [
                 // compressABI(contracts.rocketContract.abi),
+                compressABI(contracts.rocketNodeDepositNew.abi),
+                compressABI(contracts.rocketMinipoolDelegateNew.abi),
+                compressABI(contracts.rocketDAOProtocolSettingsMinipoolNew.abi),
+                compressABI(contracts.rocketMinipoolQueueNew.abi),
+                compressABI(contracts.rocketDepositPoolNew.abi),
+                compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
                 compressABI(contracts.rocketNodeStaking.abi),
               ]
@@ -259,9 +277,15 @@ module.exports = async (deployer, network) => {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
           // Ignore contracts that will be upgraded late
+          case 'rocketNodeDepositNew':
+          case 'rocketMinipoolDelegateNew':
+          case 'rocketDAOProtocolSettingsMinipoolNew':
+          case 'rocketMinipoolQueueNew':
+          case 'rocketDepositPoolNew':
+          case 'rocketDAOProtocolSettingsDepositNew':
           case 'rocketMinipoolManagerNew':
           case 'rocketNodeStakingNew':
-            break;
+          break;
 
           default:
           // Log it

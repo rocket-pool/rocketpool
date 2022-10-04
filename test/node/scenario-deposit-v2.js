@@ -11,7 +11,7 @@ import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '.
 let minipoolSalt = 0;
 
 // Make a node deposit
-export async function deposit(minimumNodeFee, txOptions) {
+export async function depositV2(minimumNodeFee, txOptions) {
 
     // Load contracts
     const [
@@ -23,7 +23,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketMinipoolFactory.deployed(),
-        RocketNodeDepositOld.deployed(),
+        RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -61,7 +61,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     const contractBytecode = RocketMinipool.bytecode;
 
     // Get deposit type from tx amount
-    const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+    const depositType = '4';
 
     // Construct creation code for minipool deploy
     const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
@@ -94,7 +94,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     let depositData = {
         pubkey: getValidatorPubkey(),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(16000000000), // 16 ETH in gwei
+        amount: BigInt(1000000000), // 1 ETH in gwei
         signature: getValidatorSignature(),
     };
 
@@ -125,7 +125,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
     assert.equal(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
     assert(minipoolDetails.nodeDepositBalance.eq(txOptions.value), 'Incorrect created minipool node deposit balance');
-    assert.isTrue(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
+    assert.isFalse(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
 
 }
 

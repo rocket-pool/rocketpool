@@ -71,7 +71,8 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a minipool
-            minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, 0);
+            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')})
+            minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}, 0);
         });
 
 

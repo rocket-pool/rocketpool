@@ -6,7 +6,7 @@ import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 import "../RocketStorageInterface.sol";
 
-interface RocketMinipoolInterface {
+interface RocketMinipoolInterfaceOld {
     function initialise(address _nodeAddress, MinipoolDeposit _depositType) external;
     function getStatus() external view returns (MinipoolStatus);
     function getFinalised() external view returns (bool);
@@ -19,16 +19,13 @@ interface RocketMinipoolInterface {
     function getNodeDepositBalance() external view returns (uint256);
     function getNodeRefundBalance() external view returns (uint256);
     function getNodeDepositAssigned() external view returns (bool);
-    function getPreLaunchValue() external view returns (uint256);
-    function getNodeTopUpValue() external view returns (uint256);
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
     function getUserDepositAssignedTime() external view returns (uint256);
     function getTotalScrubVotes() external view returns (uint256);
     function calculateNodeShare(uint256 _balance) external view returns (uint256);
     function calculateUserShare(uint256 _balance) external view returns (uint256);
-    function preDeposit(uint256 _bondingValue, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
-    function deposit() external payable;
+    function nodeDeposit(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function userDeposit() external payable;
     function distributeBalance() external;
     function distributeBalanceAndFinalise() external;

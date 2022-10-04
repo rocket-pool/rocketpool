@@ -8,6 +8,7 @@ import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { getMinipoolSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { deposit } from './scenario-deposit';
+import { deposit as depositPool } from '../deposit/scenario-deposit';
 import { userDeposit } from '../_helpers/deposit'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 
@@ -31,8 +32,6 @@ export default function() {
         let emptyDepositNodeAmount;
 
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node
             await registerNode({from: node});
 
@@ -41,9 +40,9 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Get settings
-            fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount');
-            halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount');
-            emptyDepositNodeAmount = await getMinipoolSetting('EmptyDepositNodeAmount');
+            fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount', true);
+            halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount', true);
+            emptyDepositNodeAmount = await getMinipoolSetting('EmptyDepositNodeAmount', true);
 
         });
 
@@ -165,26 +164,6 @@ export default function() {
             }), 'Made a deposit with insufficient RPL staked');
 
         });
-
-
-        // Unbonded minipools temporarily disabled
-
-        // it(printTitle('trusted node operator', 'can make a deposit to create an empty minipool'), async () => {
-        //     // Deposit enough unassigned ETH to increase the fee above 80% of max
-        //     await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
-        //
-        //     // Stake RPL to cover minipool
-        //     let rplStake = await getMinipoolMinimumRPLStake();
-        //     await mintRPL(owner, trustedNode, rplStake);
-        //     await nodeStakeRPL(rplStake, {from: trustedNode});
-        //
-        //     // Deposit
-        //     await deposit(noMinimumNodeFee, {
-        //         from: trustedNode,
-        //         value: emptyDepositNodeAmount,
-        //     });
-        //
-        // });
 
 
         it(printTitle('regular node operator', 'cannot make a deposit to create an empty minipool'), async () => {

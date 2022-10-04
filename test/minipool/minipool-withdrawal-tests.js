@@ -42,7 +42,7 @@ export default function() {
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
-        let minipool, unbondedMinipool, fullDepositMinipool;
+        let minipool;
         let maxPenaltyRate = web3.utils.toWei('0.5', 'ether');
         let penaltyTestContract;
 
@@ -100,16 +100,12 @@ export default function() {
 
             // Create minipools
             minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            // unbondedMinipool = await createMinipool({from: trustedNode});
-            fullDepositMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);
 
             // Stake minipools
             await stakeMinipool(minipool, {from: node});
-            // await stakeMinipool(unbondedMinipool, {from: trustedNode});
-            await stakeMinipool(fullDepositMinipool, {from: node});
         });
 
 
@@ -261,44 +257,6 @@ export default function() {
             // Process withdraw
             const withdrawalBalance = web3.utils.toWei('15', 'ether');
             await shouldRevert(withdrawValidatorBalance(minipool, withdrawalBalance, nodeWithdrawalAddress, true), 'Processed withdrawal and finalise pool while status was not withdrawable', 'Minipool must be withdrawable');
-        });
-
-
-        // Unbonded pools (temporarily disabled)
-
-
-        // it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
-        //     // Mark minipool withdrawable
-        //     await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
-        //     // Process withdraw
-        //     await withdrawAndCheck(unbondedMinipool, '36', trustedNode, true, '35', '1');
-        // });
-        //
-        //
-        // it(printTitle('trusted node', 'can process withdrawal on unbonded minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
-        //     // Mark minipool withdrawable
-        //     await submitMinipoolWithdrawable(unbondedMinipool.address, {from: trustedNode});
-        //     // Process withdraw
-        //     await withdrawAndCheck(unbondedMinipool, '30', trustedNode, true, '30', '0');
-        // });
-
-
-        // Full deposit minipools
-
-
-        it(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is greater than 32 ETH and marked as withdrawable'), async () => {
-            // Mark minipool withdrawable
-            await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
-            // Process withdraw
-            await withdrawAndCheck(fullDepositMinipool, '36', node, true, '1', '35');
-        });
-
-
-        it(printTitle('trusted node', 'can process withdrawal on full deposit minipool when balance is less than 32 ETH and marked as withdrawable'), async () => {
-            // Mark minipool withdrawable
-            await submitMinipoolWithdrawable(fullDepositMinipool.address, {from: trustedNode});
-            // Process withdraw
-            await withdrawAndCheck(fullDepositMinipool, '30', node, true, '0', '30');
         });
 
 

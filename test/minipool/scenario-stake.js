@@ -24,7 +24,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     let depositData = {
         pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(16000000000), // gwei
+        amount: BigInt(31000000000), // 31 ETH in gwei
         signature: getValidatorSignature(),
     };
     let depositDataRoot = getDepositDataRoot(depositData);

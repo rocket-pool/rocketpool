@@ -2,17 +2,17 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "./RocketDAOProtocolSettings.sol";
-import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
- 
+import "../../../../dao/protocol/settings/RocketDAOProtocolSettings.sol";
+import "../../../../../interface/old/RocketDAOProtocolSettingsDepositInterfaceOld.sol";
+
 // Network deposit settings
 
-contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterface {
+contract RocketDAOProtocolSettingsDepositOld is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterfaceOld {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         // Set version
-        version = 3;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
@@ -20,8 +20,7 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
             setSettingBool("deposit.assign.enabled", true);
             setSettingUint("deposit.minimum", 0.01 ether);
             setSettingUint("deposit.pool.maximum", 160 ether);
-            setSettingUint("deposit.assign.maximum", 90);
-            setSettingUint("deposit.assign.socialised.maximum", 2);
+            setSettingUint("deposit.assign.maximum", 2);
             setSettingUint("deposit.fee", 0.0005 ether);    // Set to approx. 1 day of rewards at 18.25% APR
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
@@ -51,11 +50,6 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
     // The maximum number of deposit assignments to perform at once
     function getMaximumDepositAssignments() override external view returns (uint256) {
         return getSettingUint("deposit.assign.maximum");
-    }
-
-    // The maximum number of socialised (ie, not related to deposit size) assignments to perform
-    function getMaximumDepositSocialisedAssignments() override external view returns (uint256) {
-        return getSettingUint("deposit.assign.socialised.maximum");
     }
 
     // Get the fee paid on deposits

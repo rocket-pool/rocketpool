@@ -20,10 +20,22 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     bool public setup;
 
     // Upgrade contracts
+    address public newRocketNodeDeposit;
+    address public newRocketMinipoolDelegate;
+    address public newRocketDAOProtocolSettingsMinipool;
+    address public newRocketMinipoolQueue;
+    address public newRocketDepositPool;
+    address public newRocketDAOProtocolSettingsDeposit;
     address public newRocketMinipoolManager;
     address public newRocketNodeStaking;
 
     // Upgrade ABIs
+    string public newRocketNodeDepositAbi;
+    string public newRocketMinipoolDelegateAbi;
+    string public newRocketDAOProtocolSettingsMinipoolAbi;
+    string public newRocketMinipoolQueueAbi;
+    string public newRocketDepositPoolAbi;
+    string public newRocketDAOProtocolSettingsDepositAbi;
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeStakingAbi;
 
@@ -48,12 +60,24 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!setup, "Already setup");
 
         // Set contract addresses
-        newRocketMinipoolManager = _addresses[0];
-        newRocketNodeStaking = _addresses[1];
+        newRocketNodeDeposit = _addresses[0];
+        newRocketMinipoolDelegate = _addresses[1];
+        newRocketDAOProtocolSettingsMinipool = _addresses[2];
+        newRocketMinipoolQueue = _addresses[3];
+        newRocketDepositPool = _addresses[4];
+        newRocketDAOProtocolSettingsDeposit = _addresses[5];
+        newRocketMinipoolManager = _addresses[6];
+        newRocketNodeStaking = _addresses[7];
 
         // Set ABIs
-        newRocketMinipoolManagerAbi = _abis[0];
-        newRocketNodeStakingAbi = _abis[1];
+        newRocketNodeDepositAbi = _abis[0];
+        newRocketMinipoolDelegateAbi = _abis[1];
+        newRocketDAOProtocolSettingsMinipoolAbi = _abis[2];
+        newRocketMinipoolQueueAbi = _abis[3];
+        newRocketDepositPoolAbi = _abis[4];
+        newRocketDAOProtocolSettingsDepositAbi = _abis[5];
+        newRocketMinipoolManagerAbi = _abis[6];
+        newRocketNodeStakingAbi = _abis[7];
     }
 
 
@@ -62,12 +86,21 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         require(!executed, "Already executed");
 
         // Upgrade contracts
+        _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
+        _upgradeContract("rocketMinipoolDelegate", newRocketMinipoolDelegate, newRocketMinipoolDelegateAbi);
+        _upgradeContract("rocketDAOProtocolSettingsMinipool", newRocketDAOProtocolSettingsMinipool, newRocketDAOProtocolSettingsMinipoolAbi);
+        _upgradeContract("rocketMinipoolQueue", newRocketMinipoolQueue, newRocketMinipoolQueueAbi);
+        _upgradeContract("rocketDepositPool", newRocketDepositPool, newRocketDepositPoolAbi);
+        _upgradeContract("rocketDAOProtocolSettingsDeposit", newRocketDAOProtocolSettingsDeposit, newRocketDAOProtocolSettingsDepositAbi);
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
 
         // Add new contracts
 
         // Migrate settings
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.maximum")), 90);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "deposit.assign.socialised.maximum")), 2);
 
         // Delete deprecated storage items
         deleteUint(keccak256("network.rpl.stake"));

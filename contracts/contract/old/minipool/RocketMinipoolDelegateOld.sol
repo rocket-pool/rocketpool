@@ -4,32 +4,33 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./RocketMinipoolStorageLayout.sol";
-import "../../interface/casper/DepositInterface.sol";
-import "../../interface/deposit/RocketDepositPoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
-import "../../interface/network/RocketNetworkFeesInterface.sol";
-import "../../interface/token/RocketTokenRETHInterface.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../../types/MinipoolStatus.sol";
+import "../../minipool/RocketMinipoolStorageLayout.sol";
+import "../../../interface/casper/DepositInterface.sol";
+import "../../../interface/deposit/RocketDepositPoolInterface.sol";
+import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../../interface/minipool/RocketMinipoolQueueInterface.sol";
+import "../../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
+import "../../../interface/network/RocketNetworkPricesInterface.sol";
+import "../../../interface/node/RocketNodeManagerInterface.sol";
+import "../../../interface/node/RocketNodeStakingInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
+import "../../../interface/network/RocketNetworkFeesInterface.sol";
+import "../../../interface/token/RocketTokenRETHInterface.sol";
+import "../../../types/MinipoolDeposit.sol";
+import "../../../types/MinipoolStatus.sol";
+import "../../../interface/old/RocketMinipoolInterfaceOld.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
+contract RocketMinipoolDelegateOld is RocketMinipoolStorageLayout, RocketMinipoolInterfaceOld {
 
     // Constants
-    uint8 public constant version = 3;                            // Used to identify which delegate contract each minipool is using
+    uint8 public constant version = 2;                            // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;
+    uint256 constant prelaunchAmount = 16 ether;                  // The amount of ETH initially deposited when minipool is created
     uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
 
     // Libs
@@ -59,9 +60,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getNodeFee() override external view returns (uint256) { return nodeFee; }
     function getNodeDepositBalance() override external view returns (uint256) { return nodeDepositBalance; }
     function getNodeRefundBalance() override external view returns (uint256) { return nodeRefundBalance; }
-    function getNodeDepositAssigned() override external view returns (bool) { return userDepositAssignedTime != 0; }
-    function getPreLaunchValue() override external view returns (uint256) { return preLaunchValue; }
-    function getNodeTopUpValue() override external view returns (uint256) { return nodeDepositBalance.sub(preLaunchValue); }
+    function getNodeDepositAssigned() override external view returns (bool) { return nodeDepositAssigned; }
 
     // User deposit detail getters
     function getUserDepositBalance() override external view returns (uint256) { return userDepositBalance; }
@@ -127,38 +126,25 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         storageState = StorageState.Initialised;
     }
 
-    // Performs the initial prestake on the beacon chain with the prestake value
+    // Assign the node deposit to the minipool
     // Only accepts calls from the RocketNodeDeposit contract
-    function preDeposit(uint256 _bondingValue, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) onlyInitialised {
+    function nodeDeposit(bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external payable onlyLatestContract("rocketNodeDeposit", msg.sender) onlyInitialised {
         // Check current status & node deposit status
-        require(status == MinipoolStatus.Initialised, "The pre deposit can only be made while initialised");
+        require(status == MinipoolStatus.Initialised, "The node deposit can only be assigned while initialised");
+        require(!nodeDepositAssigned, "The node deposit has already been assigned");
+        // Progress full minipool to prelaunch
+        if (depositType == MinipoolDeposit.Full) { setStatus(MinipoolStatus.Prelaunch); }
         // Update node deposit details
-        nodeDepositBalance = _bondingValue;
-        preLaunchValue = msg.value;
+        nodeDepositBalance = msg.value;
+        nodeDepositAssigned = true;
         // Emit ether deposited event
-        emit EtherDeposited(msg.sender, preLaunchValue, block.timestamp);
+        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
         // Perform the pre-stake to lock in withdrawal credentials on beacon chain
         preStake(_validatorPubkey, _validatorSignature, _depositDataRoot);
     }
 
-    // Performs the second deposit which provides the minipool with the remaining launch balance
-    // Only accepts calls from the RocketNodeDeposit contract
-    function deposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
-        // Check current status & node deposit status
-        require(status == MinipoolStatus.Initialised, "The node deposit can only be assigned while initialised");
-        require(userDepositAssignedTime == 0, "The user deposit has already been assigned");
-        // Set the minipool status to prelaunch (ready for node to call `stake()`)
-        setStatus(MinipoolStatus.Prelaunch);
-        // Update deposit details
-        userDepositBalance = address(this).balance.add(preLaunchValue).sub(nodeDepositBalance);
-        userDepositAssignedTime = block.timestamp;
-        // Emit ether deposited event
-        emit EtherDeposited(msg.sender, msg.value, block.timestamp);
-    }
-
     // Assign user deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
-    // NOTE: No longer used (only retained for legacy minipools still in queue)
     function userDeposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
         // Check current status & user deposit status
         require(status >= MinipoolStatus.Initialised && status <= MinipoolStatus.Staking, "The user deposit can only be assigned while initialised, in prelaunch, or staking");
@@ -234,7 +220,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Get launch amount
-        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance().sub(preLaunchValue);
+        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance().sub(prelaunchAmount);
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
         // Retrieve validator pubkey from storage
@@ -250,6 +236,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Load contracts
         DepositInterface casperDeposit = DepositInterface(getContractAddress("casperDeposit"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        // Check minipool balance
+        require(address(this).balance >= prelaunchAmount, "Insufficient balance to pre-stake");
         // Check validator pubkey is not in use
         require(rocketMinipoolManager.getMinipoolByPubkey(_validatorPubkey) == address(0x0), "Validator pubkey is in use");
         // Set minipool pubkey
@@ -257,9 +245,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Get withdrawal credentials
         bytes memory withdrawalCredentials = rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this));
         // Send staking deposit to casper
-        casperDeposit.deposit{value : address(this).balance}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : prelaunchAmount}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
         // Emit event
-        emit MinipoolPrestaked(_validatorPubkey, _validatorSignature, _depositDataRoot, preLaunchValue, withdrawalCredentials, block.timestamp);
+        emit MinipoolPrestaked(_validatorPubkey, _validatorSignature, _depositDataRoot, prelaunchAmount, withdrawalCredentials, block.timestamp);
     }
 
     // Mark the minipool as withdrawable

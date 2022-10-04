@@ -90,7 +90,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a dissolved minipool
-            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, launchTimeout + 1);
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
