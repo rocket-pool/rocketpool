@@ -85,10 +85,9 @@ const contracts = {
   rocketDAONodeTrustedSettingsRewards:      artifacts.require('RocketDAONodeTrustedSettingsRewards.sol'),
   rocketSmoothingPool:                      artifacts.require('RocketSmoothingPool.sol'),
   rocketNodeDistributorFactory:             artifacts.require('RocketNodeDistributorFactory.sol'),
-  rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegate.sol'),
+  rocketNodeDistributorDelegate:            artifacts.require('RocketNodeDistributorDelegateOld.sol'),
   rocketMinipoolFactory:                    artifacts.require('RocketMinipoolFactory.sol'),
   // v1.2
-<<<<<<< HEAD
   rocketNodeDepositNew:                     artifacts.require('RocketNodeDeposit.sol'),
   rocketMinipoolDelegateNew:                artifacts.require('RocketMinipoolDelegate.sol'),
   rocketDAOProtocolSettingsMinipoolNew:     artifacts.require('RocketDAOProtocolSettingsMinipool.sol'),
@@ -97,9 +96,7 @@ const contracts = {
   rocketDAOProtocolSettingsDepositNew:      artifacts.require('RocketDAOProtocolSettingsDeposit.sol'),
   rocketMinipoolManagerNew:                 artifacts.require('RocketMinipoolManager.sol'),
   rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
-=======
-  rocketDepositPoolNew:                     artifacts.require('RocketDepositPool.sol'),
->>>>>>> include-queue-in-capacity
+  rocketNodeDistributorDelegateNew:         artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -232,7 +229,6 @@ module.exports = async (deployer, network) => {
             const upgrader = await deployer.deploy(contracts[contract], rocketStorage.address);
             const arguments = [
               [
-<<<<<<< HEAD
                 // compressABI(contracts.rocketContract.abi),
                 contracts.rocketNodeDepositNew.address,
                 contracts.rocketMinipoolDelegateNew.address,
@@ -240,8 +236,9 @@ module.exports = async (deployer, network) => {
                 contracts.rocketMinipoolQueueNew.address,
                 contracts.rocketDepositPoolNew.address,
                 contracts.rocketDAOProtocolSettingsDepositNew.address,
-                  contracts.rocketMinipoolManagerNew.address,
-                  contracts.rocketNodeStakingNew.address,
+                contracts.rocketMinipoolManagerNew.address,
+                contracts.rocketNodeStakingNew.address,
+                contracts.rocketNodeDistributorDelegateNew.address,
               ],
               [
                 // compressABI(contracts.rocketContract.abi),
@@ -252,16 +249,9 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketDepositPoolNew.abi),
                 compressABI(contracts.rocketDAOProtocolSettingsDepositNew.abi),
                 compressABI(contracts.rocketMinipoolManagerNew.abi),
-                compressABI(contracts.rocketNodeStaking.abi),
-=======
-                // contracts.rocketContract.address,
-                contracts.rocketDepositPoolNew.address,
+                compressABI(contracts.rocketNodeStakingNew.abi),
+                compressABI(contracts.rocketNodeDistributorDelegateNew.abi),
               ],
-              [
-                // compressABI(contracts.rocketContract.abi),
-                compressABI(contracts.rocketDepositPoolNew.abi),
->>>>>>> include-queue-in-capacity
-              ]
             ]
             await upgrader.set(...arguments)
             break;
@@ -290,7 +280,6 @@ module.exports = async (deployer, network) => {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
           // Ignore contracts that will be upgraded late
-<<<<<<< HEAD
           case 'rocketNodeDepositNew':
           case 'rocketMinipoolDelegateNew':
           case 'rocketDAOProtocolSettingsMinipoolNew':
@@ -299,11 +288,8 @@ module.exports = async (deployer, network) => {
           case 'rocketDAOProtocolSettingsDepositNew':
           case 'rocketMinipoolManagerNew':
           case 'rocketNodeStakingNew':
+          case 'rocketNodeDistributorDelegateNew':
           break;
-=======
-          case 'rocketDepositPoolNew':
-            break;
->>>>>>> include-queue-in-capacity
 
           default:
           // Log it

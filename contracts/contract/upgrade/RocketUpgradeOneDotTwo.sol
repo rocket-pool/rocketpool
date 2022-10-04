@@ -28,6 +28,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketDAOProtocolSettingsDeposit;
     address public newRocketMinipoolManager;
     address public newRocketNodeStaking;
+    address public newRocketNodeDistributorDelegate;
 
     // Upgrade ABIs
     string public newRocketNodeDepositAbi;
@@ -38,6 +39,10 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketDAOProtocolSettingsDepositAbi;
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeStakingAbi;
+    string public newRocketNodeDistributorDelegateAbi;
+
+    // Merkle root for balances migration
+    bytes32 public migrationBalancesMerkleRoot;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -55,6 +60,13 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         return address(rocketStorage);
     }
 
+    function setMigrationBalancesRoot(bytes32 _root) external {
+        require(msg.sender == deployer, "Only deployer can set");
+        require(!setup, "Already setup");
+
+        migrationBalancesMerkleRoot = _root;
+    }
+
     function set(address[] memory _addresses, string[] memory _abis) external {
         require(msg.sender == deployer, "Only deployer can set");
         require(!setup, "Already setup");
@@ -68,6 +80,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsDeposit = _addresses[5];
         newRocketMinipoolManager = _addresses[6];
         newRocketNodeStaking = _addresses[7];
+        newRocketNodeDistributorDelegate = _addresses[5];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -78,8 +91,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsDepositAbi = _abis[5];
         newRocketMinipoolManagerAbi = _abis[6];
         newRocketNodeStakingAbi = _abis[7];
+        newRocketNodeDistributorDelegateAbi = _abis[5];
     }
-
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
@@ -94,6 +107,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketDAOProtocolSettingsDeposit", newRocketDAOProtocolSettingsDeposit, newRocketDAOProtocolSettingsDepositAbi);
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
+        _upgradeContract("rocketNodeDistributorDelegate", newRocketNodeDistributorDelegate, newRocketNodeDistributorDelegateAbi);
 
         // Add new contracts
 
@@ -105,6 +119,15 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         // Delete deprecated storage items
         deleteUint(keccak256("network.rpl.stake"));
         deleteUint(keccak256("network.rpl.stake.updated.block"));
+
+        // Update node fee to 14%
+        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.minimum")), 0.14 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.target")), 0.14 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.maximum")), 0.14 ether);
+
+        // Merkle root for minipool migration
+        setBytes32(keccak256(abi.encodePacked('migration.balances.merkle.root')), migrationBalancesMerkleRoot);
 
         // Complete
         executed = true;

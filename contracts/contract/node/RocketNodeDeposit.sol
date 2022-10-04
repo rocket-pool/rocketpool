@@ -36,15 +36,54 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         version = 3;
     }
 
+    // Returns a node operator's credit balance in wei
+    function getNodeDepositCredit(address _nodeOperator) public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)));
+    }
+
+    function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyRegisteredMinipool(msg.sender) onlyLatestContract("rocketNodeDeposit", address(this)) {
+        addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)), _amount);
+    }
+
+    // Performs a node deposit using some or all of the node operators credit balance
+    function depositWithCredit(uint256 _creditUsed, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        // Check node operator has sufficient credit
+        require(_creditUsed <= getNodeDepositCredit(msg.sender), "Not enough credit");
+        // Calculate total deposit amount
+        uint256 totalValue = msg.value.add(_creditUsed);
+        // Deduct value from credit balance
+        subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _creditUsed);
+        // Perform the deposit
+        _deposit(totalValue, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
+    }
+
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
     function deposit(uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        _deposit(msg.value, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
+    }
+
+    // Returns true if the given amount is a valid deposit amount
+    function isValidDepositAmount(uint256 _amount) override public pure returns (bool) {
+        return _amount == 16 ether || _amount == 8 ether;
+    }
+
+    // Returns an array of valid deposit amounts
+    function getDepositAmounts() override external pure returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 16 ether;
+        amounts[1] = 8 ether;
+        return amounts;
+    }
+
+    // Accept a node deposit and create a new minipool under the node
+    // Only accepts calls from registered nodes
+    function _deposit(uint256 _value, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
         // Check pre-conditions
         checkDepositsEnabled();
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
-        // TODO: Decide where to store what deposit amounts are valid
-        require(msg.value == 16 ether, "Invalid deposit amount");
+        require(isValidDepositAmount(_value), "Invalid deposit amount");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);

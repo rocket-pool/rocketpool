@@ -19,6 +19,7 @@ interface RocketMinipoolManagerInterface {
     function getNodeActiveMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeFinalisedMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeStakingMinipoolCount(address _nodeAddress) external view returns (uint256);
+    function getNodeStakingMinipoolCountBySize(address _nodeAddress, uint256 _depositSize) external view returns (uint256);
     function getNodeMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);
     function getNodeValidatingMinipoolCount(address _nodeAddress) external view returns (uint256);
     function getNodeValidatingMinipoolAt(address _nodeAddress, uint256 _index) external view returns (address);

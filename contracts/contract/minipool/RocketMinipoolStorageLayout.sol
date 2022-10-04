@@ -43,7 +43,7 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal nodeSlashBalance;
 
     // User deposit details
-    uint256 internal userDepositBalance;
+    uint256 internal userDepositBalanceLegacy;
     uint256 internal userDepositAssignedTime;
 
     // Upgrade options
@@ -58,15 +58,18 @@ abstract contract RocketMinipoolStorageLayout {
     address internal rocketMinipoolPenalty;
 
     // Used to prevent direct access to delegate and prevent calling initialise more than once
-    StorageState storageState = StorageState.Undefined;
+    StorageState internal storageState = StorageState.Undefined;
 
     // Whether node operator has finalised the pool
     bool internal finalised;
 
     // Trusted member scrub votes
-    mapping(address => bool) memberScrubVotes;
-    uint256 totalScrubVotes;
+    mapping(address => bool) internal memberScrubVotes;
+    uint256 internal totalScrubVotes;
 
     // Variable minipool
     uint256 internal preLaunchValue;
+    uint256 internal balanceAtMigration;
+    uint256 internal nodeFeeAtMigration;
+    uint256 internal userDepositBalance;
 }
