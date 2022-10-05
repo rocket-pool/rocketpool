@@ -221,6 +221,7 @@ module.exports = async (deployer, network) => {
           // Contracts with no constructor args
           case 'rocketMinipoolDelegate':
           case 'rocketNodeDistributorDelegate':
+          case 'rocketNodeDistributorDelegateNew':
             await deployer.deploy(contracts[contract]);
           break;
 
@@ -279,7 +280,7 @@ module.exports = async (deployer, network) => {
     for (let contract in contracts) {
       if(contracts.hasOwnProperty(contract)) {
         switch (contract) {
-          // Ignore contracts that will be upgraded late
+          // Ignore contracts that will be upgraded later
           case 'rocketNodeDepositNew':
           case 'rocketMinipoolDelegateNew':
           case 'rocketDAOProtocolSettingsMinipoolNew':

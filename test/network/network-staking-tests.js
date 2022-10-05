@@ -126,8 +126,8 @@ export default function() {
             // Set max per-minipool stake to 100% and RPL price to 1 ether
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei(maxStakePerMinipool, 'ether'), {from: owner});
             let block = await web3.eth.getBlockNumber();
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted1});
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted2});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
 
             // Mint a tonne of RPL for testing
             await mintRPL(owner, registeredNode1, web3.utils.toWei('10000', 'ether'));
@@ -169,10 +169,9 @@ export default function() {
             const rocketDaoProtocolSettingsNetwork = await RocketDAOProtocolSettingsNetwork.deployed();
             const updateFrequency = await rocketDaoProtocolSettingsNetwork.getSubmitPricesFrequency();
             const nextUpdateBlock = web3.utils.toBN(blockNumber).div(updateFrequency).add(web3.utils.toBN('1')).mul(updateFrequency);
-            let calculatedTotalEffectiveStake = await getCalculatedTotalEffectiveRPLStake(price);
             await mineBlocks(web3, nextUpdateBlock.sub(web3.utils.toBN(blockNumber)).toNumber());
-            await submitPrices(nextUpdateBlock, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
-            await submitPrices(nextUpdateBlock, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
+            await submitPrices(nextUpdateBlock, price, {from: registeredNodeTrusted1});
+            await submitPrices(nextUpdateBlock, price, {from: registeredNodeTrusted2});
         }
 
 
@@ -283,9 +282,8 @@ export default function() {
             // Set price
             let blockNumber = await web3.eth.getBlockNumber();
             let price = web3.utils.toWei('1', 'ether');
-            let calculatedTotalEffectiveStake = await getCalculatedTotalEffectiveRPLStake(price);
-            await submitPrices(blockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
-            await submitPrices(blockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2});
+            await submitPrices(blockNumber, price, {from: registeredNodeTrusted1});
+            await submitPrices(blockNumber, price, {from: registeredNodeTrusted2});
             // Stake and setup a minipool so that effective rpl stake is updated
             await mineBlocks(web3, 1);
             let oldBlockNumber = await web3.eth.getBlockNumber();
@@ -296,8 +294,8 @@ export default function() {
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: registeredNode1});
             // Should not be able to submit a price change at oldBlockNumber as effective stake changed after it
-            await submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted1});
-            await shouldRevert(submitPrices(oldBlockNumber, price, calculatedTotalEffectiveStake, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');
+            await submitPrices(oldBlockNumber, price, {from: registeredNodeTrusted1});
+            await shouldRevert(submitPrices(oldBlockNumber, price, {from: registeredNodeTrusted2}), 'Was able to update prices at block older than when effective stake was updated last', 'Cannot update effective RPL stake based on block lower than when it was last updated on chain');
         });
 
 

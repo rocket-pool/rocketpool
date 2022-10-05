@@ -12,12 +12,12 @@ import "../../../types/MinipoolDeposit.sol";
 import "../../../types/MinipoolDetails.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../../interface/node/RocketNodeStakingInterface.sol";
+import "../../../interface/old/RocketMinipoolManagerInterfaceOld.sol";
+import "../../../interface/old/RocketNodeStakingInterfaceOld.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
 import "../../../interface/node/RocketNodeManagerInterface.sol";
 import "../../../interface/old/RocketNetworkPricesInterfaceOld.sol";
+import "../../../interface/old/RocketMinipoolQueueInterfaceOld.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
@@ -29,7 +29,7 @@ import "../../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 
 // Minipool creation, removal and management
 
-contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterface {
+contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterfaceOld {
 
     // Libs
     using SafeMath for uint;
@@ -274,7 +274,7 @@ contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterface 
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
         // Load contracts
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        RocketNodeStakingInterfaceOld rocketNodeStaking = RocketNodeStakingInterfaceOld(getContractAddress("rocketNodeStaking"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node minipool limit based on RPL stake
         require(
@@ -302,7 +302,7 @@ contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterface 
         // Emit minipool created event
         emit MinipoolCreated(contractAddress, _nodeAddress, block.timestamp);
         // Add minipool to queue
-        RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_depositType, contractAddress);
+        RocketMinipoolQueueInterfaceOld(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_depositType, contractAddress);
         // Return created minipool address
         return RocketMinipoolInterface(contractAddress);
     }
@@ -336,7 +336,7 @@ contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterface 
         RocketNetworkPricesInterfaceOld rocketNetworkPrices = RocketNetworkPricesInterfaceOld(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        RocketNodeStakingInterfaceOld rocketNodeStaking = RocketNodeStakingInterfaceOld(getContractAddress("rocketNodeStaking"));
         // Require price consensus
         require(rocketNetworkPrices.inConsensus(), "Network is not in consensus");
         // Get node's RPL stake

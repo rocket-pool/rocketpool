@@ -1,7 +1,7 @@
 import {
     RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsMinipool,
-    RocketNodeStaking
+    RocketDAOProtocolSettingsMinipool, RocketMinipoolManager,
+    RocketNodeStaking,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';

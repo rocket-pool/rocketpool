@@ -127,6 +127,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         depositType = _depositType;
         nodeAddress = _nodeAddress;
         nodeFee = rocketNetworkFees.getNodeFee();
+        nodeFeeAtMigration = nodeFee;
         // Set the rETH address
         rocketTokenRETH = getContractAddress("rocketTokenRETH");
         // Set local copy of penalty contract
@@ -245,6 +246,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance().sub(preLaunchValue);
         // Check minipool balance
         require(address(this).balance >= launchAmount, "Insufficient balance to begin staking");
+        balanceAtMigration = address(this).balance.add(preLaunchValue);
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
         // Send staking deposit to casper
@@ -395,6 +397,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Given a validator balance, this function returns what portion of it belongs to the node taking into consideration
     // the minipool's commission rate and any penalties it may have attracted
     function calculateNodeShare(uint256 _balance) override public view returns (uint256) {
+        // TODO: This 32 ETH probably shouldn't be a literal
         uint256 launchAmount = 32 ether;
 
         uint256 preMigrationRewardsNode;
@@ -402,6 +405,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 totalSlashing;
 
         uint256 userCapital;
+        uint256 nodeCapital = nodeDepositBalance;
         uint256 migrationBalance;
 
         // Use old state if not migrated
@@ -427,15 +431,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             if (_balance > migrationBalance) {
                 uint256 postMigrationRewards = _balance.sub(migrationBalance);
                 //postMigrationSlashing = 0
-                postMigrationRewardsNode = postMigrationRewards.mul(nodeDepositBalance).div(userCapital.add(nodeDepositBalance));
-                postMigrationRewardsNode = postMigrationRewards.sub(postMigrationRewardsNode).add(postMigrationRewardsNode.mul(nodeFee).div(calcBase));
+                postMigrationRewardsNode = postMigrationRewards.mul(nodeCapital).div(userCapital.add(nodeCapital));
+                postMigrationRewardsNode = postMigrationRewardsNode.add(postMigrationRewards.sub(postMigrationRewardsNode).mul(nodeFee).div(calcBase));
             } else {
                 totalSlashing = totalSlashing.add(migrationBalance.sub(_balance));
                 //postMigrationRewardsNode = 0;
             }
         }
 
-        uint256 nodeAmount = nodeDepositBalance.sub(totalSlashing).add(preMigrationRewardsNode).add(postMigrationRewardsNode);
+        uint256 nodeAmount = nodeCapital.sub(totalSlashing).add(preMigrationRewardsNode).add(postMigrationRewardsNode);
 
         // Check if node has an ETH penalty
         uint256 penaltyRate = RocketMinipoolPenaltyInterface(rocketMinipoolPenalty).getPenaltyRate(address(this));

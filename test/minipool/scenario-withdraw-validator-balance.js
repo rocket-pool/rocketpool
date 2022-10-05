@@ -127,6 +127,13 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // console.log('Minipool Amount:', web3.utils.fromWei(balances1.minipoolEth), web3.utils.fromWei(balances2.minipoolEth), web3.utils.fromWei(balances2.minipoolEth.sub(balances1.minipoolEth)));
     // console.log('Node Withdrawal Address Amount:', web3.utils.fromWei(balances1.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)));
     // console.log('rETH Contract Amount:', web3.utils.fromWei(balances1.rethContractEth), web3.utils.fromWei(balances2.rethContractEth), web3.utils.fromWei(balances2.rethContractEth.sub(balances1.rethContractEth)));
+    //
+    // console.log('Node balance change: ', web3.utils.fromWei(nodeBalanceChange));
+    // console.log('User balance change: ', web3.utils.fromWei(rethBalanceChange));
+    // console.log('Deposit pool change: ', web3.utils.fromWei(depositPoolChange));
+    //
+    // const calculatedNodeShare = await minipool.calculateNodeShare(balances1.minipoolEth);
+    // console.log('Calculated node share: ' + web3.utils.fromWei(calculatedNodeShare));
 
     // Get penalty rate for this minipool
     const rocketMinipoolPenalty = await RocketMinipoolPenalty.deployed();
@@ -138,13 +145,22 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         let depositType = await minipool.getDepositType();
         let userAmount = minipoolBalances1.userDepositBalance;
         let rewards = withdrawalBalance.sub(depositBalance);
-        let halfRewards = rewards.divn(2);
-        let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
         if (depositType.toString() === '3'){
             // Unbonded
+            let halfRewards = rewards.divn(2);
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
             userAmount = userAmount.add(rewards.sub(nodeCommissionFee));
-        } else {
+        } else if (depositType.toString() === '2' || depositType.toString() === '1'){
+            // Half or full
+            let halfRewards = rewards.divn(2);
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
             userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
+        } else if (depositType.toString() === '4') {
+            // Variable
+            const nodeCapital = minipoolBalances1.nodeDepositBalance;
+            let nodeRewards = rewards.mul(nodeCapital).div(userAmount.add(nodeCapital));
+            nodeRewards = nodeRewards.add(rewards.sub(nodeRewards).mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1'))));
+            userAmount = userAmount.add(rewards.sub(nodeRewards));
         }
         let nodeAmount = withdrawalBalance.sub(userAmount);
 

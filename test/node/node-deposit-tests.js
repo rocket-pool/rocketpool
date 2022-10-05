@@ -5,16 +5,12 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
-import { getMinipoolSetting } from '../_helpers/settings';
 import { mintRPL } from '../_helpers/tokens';
 import { deposit } from './scenario-deposit';
-import { deposit as depositPool } from '../deposit/scenario-deposit';
-import { userDeposit } from '../_helpers/deposit'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
-
 
         // Accounts
         const [
@@ -24,14 +20,15 @@ export default function() {
             random,
         ] = accounts;
 
-
         // Setup
         let noMinimumNodeFee = web3.utils.toWei('0', 'ether');
-        let fullDepositNodeAmount;
+        let lebDepositNodeAmount;
         let halfDepositNodeAmount;
-        let emptyDepositNodeAmount;
 
         before(async () => {
+            // Upgrade
+            await upgradeOneDotTwo(owner)
+
             // Register node
             await registerNode({from: node});
 
@@ -40,10 +37,8 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Get settings
-            fullDepositNodeAmount = await getMinipoolSetting('FullDepositNodeAmount', true);
-            halfDepositNodeAmount = await getMinipoolSetting('HalfDepositNodeAmount', true);
-            emptyDepositNodeAmount = await getMinipoolSetting('EmptyDepositNodeAmount', true);
-
+            lebDepositNodeAmount = web3.utils.toWei('8', 'ether')
+            halfDepositNodeAmount = web3.utils.toWei('16', 'ether')
         });
 
 
@@ -51,14 +46,14 @@ export default function() {
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(2));
+            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Deposit
             await deposit(noMinimumNodeFee, {
                 from: node,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             });
 
             // Deposit
@@ -83,7 +78,7 @@ export default function() {
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {
                 from: node,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
 
             // Attempt deposit
@@ -109,7 +104,7 @@ export default function() {
             // Attempt deposit
             await shouldRevert(deposit(minimumNodeFee, {
                 from: node,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
 
             // Attempt deposit
@@ -130,9 +125,8 @@ export default function() {
 
             // Get deposit amount
             let depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
-            assert(!depositAmount.eq(fullDepositNodeAmount), 'Deposit amount is not invalid');
+            assert(!depositAmount.eq(lebDepositNodeAmount), 'Deposit amount is not invalid');
             assert(!depositAmount.eq(halfDepositNodeAmount), 'Deposit amount is not invalid');
-            assert(!depositAmount.eq(emptyDepositNodeAmount), 'Deposit amount is not invalid');
 
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {
@@ -148,7 +142,7 @@ export default function() {
             // Attempt deposit with no RPL staked
             await shouldRevert(deposit(noMinimumNodeFee, {
                 from: node,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             }), 'Made a deposit with insufficient RPL staked');
 
             // Stake insufficient RPL amount
@@ -160,24 +154,8 @@ export default function() {
             // Attempt deposit with insufficient RPL staked
             await shouldRevert(deposit(noMinimumNodeFee, {
                 from: node,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             }), 'Made a deposit with insufficient RPL staked');
-
-        });
-
-
-        it(printTitle('regular node operator', 'cannot make a deposit to create an empty minipool'), async () => {
-
-            // Stake RPL to cover minipool
-            let rplStake = await getMinipoolMinimumRPLStake();
-            await mintRPL(owner, node, rplStake);
-            await nodeStakeRPL(rplStake, {from: node});
-
-            // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
-                from: node,
-                value: emptyDepositNodeAmount,
-            }), 'Regular node created an empty minipool');
 
         });
 
@@ -187,7 +165,7 @@ export default function() {
             // Attempt deposit
             await shouldRevert(deposit(noMinimumNodeFee, {
                 from: random,
-                value: fullDepositNodeAmount,
+                value: lebDepositNodeAmount,
             }), 'Random address made a deposit');
 
             // Attempt deposit

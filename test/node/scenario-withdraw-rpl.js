@@ -54,10 +54,11 @@ export async function withdrawRpl(amount, txOptions) {
             rocketNodeStaking.getTotalRPLStake.call(),
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
             rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress),
-            rocketNodeStaking.getNodeMinipoolLimit.call(nodeAddress),
+            rocketNodeStaking.getNodeETHMatched.call(nodeAddress),
+            rocketNodeStaking.getNodeETHMatchedLimit.call(nodeAddress),
         ]).then(
-            ([totalStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit]) =>
-            ({totalStake, nodeStake, nodeEffectiveStake, nodeMinipoolLimit})
+            ([totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit]) =>
+            ({totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit})
         );
     }
 
@@ -89,9 +90,9 @@ export async function withdrawRpl(amount, txOptions) {
     ]);
 
     // Calculate expected effective stakes & node minipool limit
-    const maxNodeEffectiveStake = depositUserAmount.mul(maxPerMinipoolStake).mul(minipoolCounts.node).div(rplPrice);
+    const maxNodeEffectiveStake = details2.nodeEthMatched.mul(maxPerMinipoolStake).div(rplPrice);
     const expectedNodeEffectiveStake = (details2.nodeStake.lt(maxNodeEffectiveStake)? details2.nodeStake : maxNodeEffectiveStake);
-    const expectedNodeMinipoolLimit = details2.nodeStake.mul(rplPrice).div(depositUserAmount.mul(minPerMinipoolStake));
+    const expectedNodeEthMatchedLimit = details2.nodeStake.mul(rplPrice).div(minPerMinipoolStake);
 
     // Check token balances
     assert(balances2.nodeRpl.eq(balances1.nodeRpl.add(web3.utils.toBN(amount))), 'Incorrect updated node RPL balance');
@@ -102,7 +103,7 @@ export async function withdrawRpl(amount, txOptions) {
     assert(details2.totalStake.eq(details1.totalStake.sub(web3.utils.toBN(amount))), 'Incorrect updated total RPL stake');
     assert(details2.nodeStake.eq(details1.nodeStake.sub(web3.utils.toBN(amount))), 'Incorrect updated node RPL stake');
     assert(details2.nodeEffectiveStake.eq(expectedNodeEffectiveStake), 'Incorrect updated effective node RPL stake');
-    assert(details2.nodeMinipoolLimit.eq(expectedNodeMinipoolLimit), 'Incorrect updated node minipool limit');
+    assert(details2.nodeEthMatchedLimit.eq(expectedNodeEthMatchedLimit), 'Incorrect updated node minipool limit');
 
 }
 

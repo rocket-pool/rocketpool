@@ -116,6 +116,15 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         addUint("deposit.pool.node.balance", msg.value);
     }
 
+    // Withdraws ETH from the deposit pool to rocketNodeDeposit contract to be used for a new minipool
+    function nodeCreditWithdrawal(uint256 _amount) override external onlyThisLatestContract onlyLatestContract("rocketNodeDeposit", msg.sender) {
+        // Deposit ETH into the vault
+        RocketVaultInterface rocketVault = RocketVaultInterface(getContractAddress("rocketVault"));
+        rocketVault.withdrawEther(_amount);
+        (bool success, ) = address(msg.sender).call{value: _amount}("");
+        require(success, "Failed to send ETH");
+    }
+
     // Recycle a deposit from a dissolved minipool
     // Only accepts calls from registered minipools
     function recycleDissolvedDeposit() override external payable onlyThisLatestContract onlyRegisteredMinipool(msg.sender) {

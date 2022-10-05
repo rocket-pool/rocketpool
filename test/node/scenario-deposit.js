@@ -19,11 +19,10 @@ export async function deposit(minimumNodeFee, txOptions) {
         rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
-        rocket
     ] = await Promise.all([
         RocketMinipoolManager.deployed(),
         RocketMinipoolFactory.deployed(),
-        RocketNodeDepositOld.deployed(),
+        RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -60,8 +59,8 @@ export async function deposit(minimumNodeFee, txOptions) {
     const RocketMinipool = artifacts.require('RocketMinipool');
     const contractBytecode = RocketMinipool.bytecode;
 
-    // Get deposit type from tx amount
-    const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+    // Variable deposit type is the only possible choice now
+    const depositType = '4';
 
     // Construct creation code for minipool deploy
     const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
@@ -94,14 +93,14 @@ export async function deposit(minimumNodeFee, txOptions) {
     let depositData = {
         pubkey: getValidatorPubkey(),
         withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(16000000000), // 16 ETH in gwei
+        amount: BigInt(1000000000), // 1 ETH in gwei
         signature: getValidatorSignature(),
     };
 
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    await rocketNodeDeposit.deposit(minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    await rocketNodeDeposit.deposit(txOptions.value, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
 
     // Get updated minipool indexes & created minipool details
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
@@ -124,8 +123,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     // Check minipool details
     assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
     assert.equal(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
-    assert(minipoolDetails.nodeDepositBalance.eq(txOptions.value), 'Incorrect created minipool node deposit balance');
-    assert.isTrue(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
+    assert(minipoolDetails.nodeDepositBalance.eq(web3.utils.toBN(txOptions.value)), 'Incorrect created minipool node deposit balance');
 
 }
 

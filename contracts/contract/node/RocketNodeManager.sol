@@ -208,24 +208,30 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 depositWeightTotal;
         uint256 totalCount;
         // Retrieve the number of staking minipools per deposit size
-        for(uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; i++) {
             depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
             totalCount = totalCount.add(depositCounts[i]);
         }
+        if (totalCount == 0) {
+            return 0;
+        }
         // Calculate the weights of each deposit size
-        for(uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; i++) {
+            // TODO: This 32 ETH probably shouldn't be a literal (do we need to also store user ETH in case 32 ETH deposit amount ever changes?)
             depositWeights[i] = uint256(32 ether).sub(depositSizes[i]).mul(depositCounts[i]);
             depositWeightTotal = depositWeightTotal.add(depositWeights[i]);
         }
-        for(uint256 i = 0; i < depositSizes.length; i++) {
+        for (uint256 i = 0; i < depositSizes.length; i++) {
             depositWeights[i] = depositWeights[i].mul(calcBase).div(depositWeightTotal);
         }
         // Calculate the weighted average
         uint256 weightedAverage;
-        for(uint256 i = 0; i < depositSizes.length; i++) {
-            uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i])));
-            uint256 average = numerator.div(depositCounts[i]);
-            weightedAverage = weightedAverage.add(average.mul(depositWeights[i]));
+        for (uint256 i = 0; i < depositSizes.length; i++) {
+            if (depositCounts[i] > 0) {
+                uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i])));
+                uint256 average = numerator.div(depositCounts[i]);
+                weightedAverage = weightedAverage.add(average.mul(depositWeights[i]));
+            }
         }
         return weightedAverage.div(calcBase);
     }
@@ -324,7 +330,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         nodeDetails.effectiveRPLStake = rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress);
         nodeDetails.minimumRPLStake = rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress);
         nodeDetails.maximumRPLStake = rocketNodeStaking.getNodeMaximumRPLStake(_nodeAddress);
-        nodeDetails.minipoolLimit = rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress);
+        nodeDetails.ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress);
+        nodeDetails.ethMatchedLimit = rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress);
         // Distributor details
         nodeDetails.feeDistributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
         // Minipool details

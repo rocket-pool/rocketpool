@@ -159,24 +159,26 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     }
 
     // Get the number of minipools owned by a node that are in staking status
-    function getNodeStakingMinipoolCount(address _nodeAddress) override external view returns (uint256) {
+    function getNodeStakingMinipoolCount(address _nodeAddress) override public view returns (uint256) {
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Get valid deposit amounts
         uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
         uint256 total;
         for (uint256 i = 0; i < depositSizes.length; i++){
-            total = getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
+            total = total.add(getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]));
         }
         return total;
     }
 
     // Get the number of minipools owned by a node that are in staking status
     function getNodeStakingMinipoolCountBySize(address _nodeAddress, uint256 _depositSize) override public view returns (uint256) {
-        if(_depositSize == 16 ether) {
-            return getUint(keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress)));
+        bytes32 nodeKey;
+        if (_depositSize == 16 ether){
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
         } else {
-            return getUint(keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress, _depositSize)));
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress, _depositSize));
         }
+        return getUint(nodeKey);
     }
 
     // Get a node minipool address by index
@@ -244,13 +246,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.add(1));
         // Update node fee average
         addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize)), minipool.getNodeFee());
-        // Update ETH matched
-        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
-        if (ethMatched == 0) {
-            ethMatched = getStakingMinipoolCount().mul(16 ether);
-        }
-        ethMatched = ethMatched.add(minipool.getUserDepositBalance());
-        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
     // Decrements _nodeAddress' number of minipools in staking status
@@ -275,13 +270,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setUint(totalKey, totalValue.sub(1));
         // Update node fee average
         subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize)), minipool.getNodeFee());
-        // Update ETH matched
-        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
-        if (ethMatched == 0) {
-            ethMatched = getStakingMinipoolCount().mul(16 ether);
-        }
-        ethMatched = ethMatched.add(minipool.getUserDepositBalance());
-        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
     // Calls distribute on the given node's distributor if it has a balance and has been initialised
@@ -306,19 +294,23 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)), 1);
         // Update the total count
         addUint(keccak256(bytes("minipools.finalised.count")), 1);
+        // Update ETH matched
+        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
+        if (ethMatched == 0) {
+            ethMatched = getNodeStakingMinipoolCount(_nodeAddress).mul(16 ether);
+        } else {
+            RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+            ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
+        }
+        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
     // Create a minipool
     // Only accepts calls from the RocketNodeDeposit contract
     function createMinipool(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
         // Load contracts
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Check node minipool limit based on RPL stake
-        require(
-            getNodeActiveMinipoolCount(_nodeAddress) < rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress),
-            "Minipool count after deposit exceeds limit based on node RPL stake"
-        );
         { // Local scope to prevent stack too deep error
           RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
           // Check global minipool limit
@@ -351,6 +343,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Initialize minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
         address nodeAddress = minipool.getNodeAddress();
+        // Update ETH matched
+        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress)));
+        if (ethMatched == 0) {
+            ethMatched = getNodeStakingMinipoolCount(nodeAddress).mul(16 ether);
+        }
+        ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
+        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress)), ethMatched);
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
         // Record minipool as destroyed to prevent recreation at same address

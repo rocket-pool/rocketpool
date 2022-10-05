@@ -18,6 +18,7 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { shouldRevert } from '../_utils/testing';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { userDeposit } from '../_helpers/deposit';
+import { submitPrices } from '../_helpers/network';
 
 export default function() {
     contract('RocketNodeDistributor', async (accounts) => {
@@ -85,24 +86,30 @@ export default function() {
 
 
         it(printTitle('node operator', 'can distribute rewards with 1 minipool'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
             await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')})
             let stakingMinipool = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool, {from: node2});
             // Distribute
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
 
 
         it(printTitle('node operator', 'can distribute rewards with multiple minipools'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
             await userDeposit({from: random, value: web3.utils.toWei('32', 'ether')})
             let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
@@ -111,16 +118,18 @@ export default function() {
             await stakeMinipool(stakingMinipool1, {from: node2});
             await stakeMinipool(stakingMinipool2, {from: node2});
 
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
 
 
         it(printTitle('node operator', 'can distribute rewards after staking and withdrawing'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
-
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
             await userDeposit({from: random, value: web3.utils.toWei('32', 'ether')})
             let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('16', 'ether')});
@@ -130,9 +139,9 @@ export default function() {
             await stakeMinipool(stakingMinipool2, {from: node2});
 
             // Mark minipool as withdrawable to remove it from the average fee calculation
-            await submitMinipoolWithdrawable(stakingMinipool1.address, {from: trustedNode});
+            // await submitMinipoolWithdrawable(stakingMinipool1.address, {from: trustedNode});
 
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
     });

@@ -17,6 +17,7 @@ import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool
 import { submitPenalty } from './scenario-submit-penalties';
 import { mintRPL } from '../_helpers/tokens';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { userDeposit } from '../_helpers/deposit';
 
 export default function() {
     contract('RocketNetworkPenalties', async (accounts) => {

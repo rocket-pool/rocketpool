@@ -15,7 +15,8 @@ struct NodeDetails {
     uint256 effectiveRPLStake;
     uint256 minimumRPLStake;
     uint256 maximumRPLStake;
-    uint256 minipoolLimit;
+    uint256 ethMatched;
+    uint256 ethMatchedLimit;
     uint256 minipoolCount;
     uint256 balanceETH;
     uint256 balanceRETH;

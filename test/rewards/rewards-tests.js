@@ -10,8 +10,12 @@ import {
     getNodeEffectiveRPLStake,
 } from '../_helpers/node'
 import {
-  RocketDAONodeTrustedSettingsMinipool,
-  RocketDAOProtocolSettingsNode, RocketMerkleDistributorMainnet, RocketSmoothingPool, RocketStorage,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsNode,
+    RocketMerkleDistributorMainnet,
+    RocketNodeStaking,
+    RocketSmoothingPool,
+    RocketStorage,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
@@ -138,8 +142,8 @@ export default function() {
             // Set max per-minipool stake to 100% and RPL price to 1 ether
             const block = await web3.eth.getBlockNumber();
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.per.minipool.stake.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted1});
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), '0', {from: registeredNodeTrusted2});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted1});
+            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: registeredNodeTrusted2});
 
             // Mint and stake RPL
             await mintRPL(owner, registeredNode1, web3.utils.toWei('32', 'ether'));
@@ -163,7 +167,7 @@ export default function() {
             await stakeMinipool(minipool2, {from: registeredNode2});
             await stakeMinipool(minipool3, {from: registeredNode2});
 
-          // Check node effective stakes
+            // Check node effective stakes
             let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
             let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
             assert(node1EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Incorrect node 1 effective stake');

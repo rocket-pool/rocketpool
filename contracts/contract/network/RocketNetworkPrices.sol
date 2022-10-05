@@ -24,6 +24,11 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 2;
+
+        // On initial deploy, preset RPL price to 0.01
+        if (getRPLPrice() == 0) {
+            setRPLPrice(0.01 ether);
+        }
     }
 
     // The block number which prices are current for
@@ -35,7 +40,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     }
 
     // The current RP network RPL price in ETH
-    function getRPLPrice() override external view returns (uint256) {
+    function getRPLPrice() override public view returns (uint256) {
         return getUint(keccak256("network.prices.rpl"));
     }
     function setRPLPrice(uint256 _value) private {

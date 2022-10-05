@@ -80,7 +80,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsDeposit = _addresses[5];
         newRocketMinipoolManager = _addresses[6];
         newRocketNodeStaking = _addresses[7];
-        newRocketNodeDistributorDelegate = _addresses[5];
+        newRocketNodeDistributorDelegate = _addresses[8];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -91,7 +91,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAOProtocolSettingsDepositAbi = _abis[5];
         newRocketMinipoolManagerAbi = _abis[6];
         newRocketNodeStakingAbi = _abis[7];
-        newRocketNodeDistributorDelegateAbi = _abis[5];
+        newRocketNodeDistributorDelegateAbi = _abis[8];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -121,7 +121,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         deleteUint(keccak256("network.rpl.stake.updated.block"));
 
         // Update node fee to 14%
-        bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "network"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.minimum")), 0.14 ether);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.target")), 0.14 ether);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.maximum")), 0.14 ether);
