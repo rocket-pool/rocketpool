@@ -85,7 +85,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         }
     }
 
-    // Returns the ratio between ETH matched and ETH provided by a node operator
+    // Returns the ratio between total initial ETH of a validator and ETH provided by a node operator
     function getNodeETHCollateralisationRatio(address _nodeAddress) override public view returns (uint256) {
         uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
         if (ethMatched == 0) {
