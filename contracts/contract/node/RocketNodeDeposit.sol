@@ -112,12 +112,9 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         assignDeposits();
     }
 
-    event Debug(uint256 nodeETHMatched, uint256 amount, uint256 limit);
-
     function increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        emit Debug(rocketNodeStaking.getNodeETHMatched(_nodeAddress), _amount, rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress));
         require(
             rocketNodeStaking.getNodeETHMatched(_nodeAddress).add(_amount) <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
             "ETH matched after deposit exceeds limit based on node RPL stake"
