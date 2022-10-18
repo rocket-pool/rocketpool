@@ -63,7 +63,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         } else {
             // Fallback for backwards compatibility before ETH matched was recorded (all minipools matched 16 ETH from protocol)
             RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-            return rocketMinipoolManager.getStakingMinipoolCount().mul(16 ether);
+            return rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress).mul(16 ether);
         }
     }
 
@@ -71,7 +71,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     function getNodeETHProvided(address _nodeAddress) override public view returns (uint256) {
         // Get contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        uint256 stakingMinipoolCount = rocketMinipoolManager.getStakingMinipoolCount();
+        uint256 stakingMinipoolCount = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress);
         // Retrieve stored ETH matched value
         uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
         if (ethMatched > 0) {
@@ -85,7 +85,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         }
     }
 
-    // Returns the ratio between ETH matched and ETH provided by a node operator
+    // Returns the ratio between total initial ETH of a validator and ETH provided by a node operator
     function getNodeETHCollateralisationRatio(address _nodeAddress) override public view returns (uint256) {
         uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
         if (ethMatched == 0) {
@@ -94,7 +94,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         } else {
             RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
             // TODO: This 32 ETH probably shouldn't be a literal (do we need to also store user ETH in case 32 ETH deposit amount ever changes?)
-            uint256 totalEthStaked = rocketMinipoolManager.getStakingMinipoolCount().mul(32 ether);
+            uint256 totalEthStaked = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress).mul(32 ether);
             return totalEthStaked.div(totalEthStaked.sub(ethMatched));
         }
     }

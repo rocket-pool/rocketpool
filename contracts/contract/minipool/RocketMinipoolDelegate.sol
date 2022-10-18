@@ -151,7 +151,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Performs the second deposit which provides the minipool with the remaining launch balance
-    // Only accepts calls from the RocketNodeDeposit contract
+    // Only accepts calls from the RocketDepositPool contract
     function deposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
         // Check current status & node deposit status
         require(status == MinipoolStatus.Initialised, "The node deposit can only be assigned while initialised");
