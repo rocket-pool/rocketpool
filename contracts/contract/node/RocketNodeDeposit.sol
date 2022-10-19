@@ -152,7 +152,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check minipool doesn't exist or previously exist
         require(!rocketMinipoolManager.getMinipoolExists(_expectedMinipoolAddress) && !rocketMinipoolManager.getMinipoolDestroyed(_expectedMinipoolAddress), "Minipool already exists or was previously destroyed");
         // Create minipool
-        RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, MinipoolDeposit.Variable, _salt);
+        RocketMinipoolInterface minipool = rocketMinipoolManager.createMinipool(msg.sender, _salt);
         // Ensure minipool address matches expected
         require(address(minipool) == _expectedMinipoolAddress, "Unexpected minipool address");
         // Return

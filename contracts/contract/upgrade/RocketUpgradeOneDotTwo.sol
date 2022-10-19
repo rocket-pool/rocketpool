@@ -29,6 +29,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketMinipoolManager;
     address public newRocketNodeStaking;
     address public newRocketNodeDistributorDelegate;
+    address public newRocketMinipoolFactory;
 
     // Upgrade ABIs
     string public newRocketNodeDepositAbi;
@@ -40,6 +41,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketMinipoolManagerAbi;
     string public newRocketNodeStakingAbi;
     string public newRocketNodeDistributorDelegateAbi;
+    string public newRocketMinipoolFactoryAbi;
 
     // Merkle root for balances migration
     bytes32 public migrationBalancesMerkleRoot;
@@ -81,6 +83,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketMinipoolManager = _addresses[6];
         newRocketNodeStaking = _addresses[7];
         newRocketNodeDistributorDelegate = _addresses[8];
+        newRocketMinipoolFactory = _addresses[9];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -92,6 +95,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketMinipoolManagerAbi = _abis[6];
         newRocketNodeStakingAbi = _abis[7];
         newRocketNodeDistributorDelegateAbi = _abis[8];
+        newRocketMinipoolFactoryAbi = _abis[9];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -108,6 +112,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketMinipoolManager", newRocketMinipoolManager, newRocketMinipoolManagerAbi);
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
         _upgradeContract("rocketNodeDistributorDelegate", newRocketNodeDistributorDelegate, newRocketNodeDistributorDelegateAbi);
+        _upgradeContract("rocketMinipoolFactory", newRocketMinipoolFactory, newRocketMinipoolFactoryAbi);
 
         // Add new contracts
 

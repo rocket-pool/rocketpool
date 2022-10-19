@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../RocketBase.sol";
 import "../../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../../interface/minipool/RocketMinipoolInterface.sol";
-import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../../interface/old/RocketMinipoolManagerInterfaceOld.sol";
 import "../../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
@@ -39,7 +39,7 @@ contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
     // Only accepts calls from registered nodes
     function deposit(uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         // Load contracts
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        RocketMinipoolManagerInterfaceOld rocketMinipoolManager = RocketMinipoolManagerInterfaceOld(getContractAddress("rocketMinipoolManager"));
         // Check deposits are enabled
         checkDepositsEnabled();
         // Check minipool doesn't exist or previously exist

@@ -30,7 +30,7 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // Returns the bytecode for RocketMinipool
@@ -39,10 +39,10 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
     }
 
     // Performs a CREATE2 deployment of a minipool contract with given salt
-    function deployContract(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
+    function deployContract(address _nodeAddress, uint256 _salt) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
         // Construct deployment bytecode
         bytes memory creationCode = getMinipoolBytecode();
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage, _nodeAddress, _depositType));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage, _nodeAddress));
         // Construct final salt
         uint256 salt = uint256(keccak256(abi.encodePacked(_nodeAddress, _salt)));
         // CREATE2 deployment

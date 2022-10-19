@@ -21,7 +21,7 @@ import "../../../interface/old/RocketMinipoolQueueInterfaceOld.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../../interface/minipool/RocketMinipoolFactoryInterface.sol";
+import "../../../interface/old/RocketMinipoolFactoryInterfaceOld.sol";
 import "../../../interface/node/RocketNodeDistributorFactoryInterface.sol";
 import "../../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../../interface/network/RocketNetworkPenaltiesInterface.sol";
@@ -392,7 +392,7 @@ contract RocketMinipoolManagerOld is RocketBase, RocketMinipoolManagerInterfaceO
 
     // Performs a CREATE2 deployment of a minipool contract with given salt
     function deployContract(address _nodeAddress, MinipoolDeposit _depositType, uint256 _salt) private returns (address) {
-        RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        RocketMinipoolFactoryInterfaceOld rocketMinipoolFactory = RocketMinipoolFactoryInterfaceOld(getContractAddress("rocketMinipoolFactory"));
         return rocketMinipoolFactory.deployContract(_nodeAddress, _depositType, _salt);
     }
 
