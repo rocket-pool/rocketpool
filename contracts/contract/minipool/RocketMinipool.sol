@@ -26,11 +26,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         _;
     }
 
-    // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress, address _nodeAddress, MinipoolDeposit _depositType) {
-        // Initialise RocketStorage
-        require(address(_rocketStorageAddress) != address(0x0), "Invalid storage address");
-        rocketStorage = RocketStorageInterface(_rocketStorageAddress);
+    function initialise(address _nodeAddress, MinipoolDeposit _depositType) external {
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set the current delegate

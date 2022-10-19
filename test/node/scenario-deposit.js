@@ -56,7 +56,7 @@ export async function deposit(minimumNodeFee, txOptions) {
     // Deposit
 
     // Get artifact and bytecode
-    const RocketMinipool = artifacts.require('RocketMinipool');
+    const RocketMinipool = artifacts.require('RocketMinipoolProxy');
     const contractBytecode = RocketMinipool.bytecode;
 
     // Variable deposit type is the only possible choice now

@@ -4,7 +4,8 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./RocketMinipool.sol";
+//import "./RocketMinipool.sol";
+import "./RocketMinipoolProxy.sol";
 import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
 import "../../types/MinipoolDeposit.sol";
@@ -35,7 +36,7 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
 
     // Returns the bytecode for RocketMinipool
     function getMinipoolBytecode() override public pure returns (bytes memory) {
-        return type(RocketMinipool).creationCode;
+        return type(RocketMinipoolProxy).creationCode;
     }
 
     // Performs a CREATE2 deployment of a minipool contract with given salt
@@ -60,6 +61,8 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
         }
         // Ensure deployment was successful
         require(codeSize > 0, "Contract creation failed");
+        // Initialise the minipool storage
+        RocketMinipoolInterface(contractAddress).initialise(_nodeAddress, _depositType);
         // Return address
         return contractAddress;
     }

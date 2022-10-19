@@ -45,6 +45,7 @@ const contracts = {
   rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueueOld.sol'),
   rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
   rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
+  rocketMinipool:                           artifacts.require('RocketMinipool.sol'),
   // Network
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
@@ -223,6 +224,7 @@ module.exports = async (deployer, network) => {
           case 'rocketMinipoolDelegate':
           case 'rocketNodeDistributorDelegate':
           case 'rocketNodeDistributorDelegateNew':
+          case 'rocketMinipool':
             await deployer.deploy(contracts[contract]);
           break;
 
