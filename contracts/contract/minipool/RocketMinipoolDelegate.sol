@@ -234,13 +234,16 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// @param _validatorSignature A signature over the deposit message object
     /// @param _depositDataRoot The hash tree root of the deposit data object
     function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) override external onlyMinipoolOwner(msg.sender) onlyInitialised {
-        // Get scrub period
-        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+        // Get contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
-        // Check current status
-        require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
-        require(block.timestamp > statusTime + scrubPeriod, "Not enough time has passed to stake");
+        {
+            // Get scrub period
+            RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+            uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
+            // Check current status
+            require(status == MinipoolStatus.Prelaunch, "The minipool can only begin staking while in prelaunch");
+            require(block.timestamp > statusTime + scrubPeriod, "Not enough time has passed to stake");
+        }
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
         // Load contracts
@@ -248,13 +251,14 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Get launch amount
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
+        uint256 depositAmount = launchAmount.sub(preLaunchValue);
         // Check minipool balance
-        require(address(this).balance.add(preLaunchValue) >= launchAmount, "Insufficient balance to begin staking");
+        require(address(this).balance >= depositAmount, "Insufficient balance to begin staking");
         balanceAtMigration = launchAmount;
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
         // Send staking deposit to casper
-        casperDeposit.deposit{value : launchAmount}(validatorPubkey, rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)), _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : depositAmount}(validatorPubkey, rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this)), _validatorSignature, _depositDataRoot);
         // Increment node's number of staking minipools
         rocketMinipoolManager.incrementNodeStakingMinipoolCount(nodeAddress);
     }

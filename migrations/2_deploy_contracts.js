@@ -45,7 +45,6 @@ const contracts = {
   rocketMinipoolQueue:                      artifacts.require('RocketMinipoolQueueOld.sol'),
   rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
   rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
-  rocketMinipool:                           artifacts.require('RocketMinipool.sol'),
   // Network
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
@@ -99,6 +98,7 @@ const contracts = {
   rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
   rocketNodeDistributorDelegateNew:         artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactoryNew:                 artifacts.require('RocketMinipoolFactory.sol'),
+  rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -111,7 +111,7 @@ const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
 // Instance contract ABIs
 const abis = {
   // Minipool
-  rocketMinipool:                           [artifacts.require('RocketMinipoolDelegateOld.sol'), artifacts.require('RocketMinipool.sol')],
+  rocketMinipool:                           [artifacts.require('RocketMinipoolDelegateOld.sol'), artifacts.require('RocketMinipoolOld.sol')],
 };
 
 
@@ -224,7 +224,7 @@ module.exports = async (deployer, network) => {
           case 'rocketMinipoolDelegate':
           case 'rocketNodeDistributorDelegate':
           case 'rocketNodeDistributorDelegateNew':
-          case 'rocketMinipool':
+          case 'rocketMinipoolBase':
             await deployer.deploy(contracts[contract]);
           break;
 
@@ -244,6 +244,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketNodeStakingNew.address,
                 contracts.rocketNodeDistributorDelegateNew.address,
                 contracts.rocketMinipoolFactoryNew.address,
+                contracts.rocketMinipoolBase.address,
               ],
               [
                 // compressABI(contracts.rocketContract.abi),
@@ -257,6 +258,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketNodeStakingNew.abi),
                 compressABI(contracts.rocketNodeDistributorDelegateNew.abi),
                 compressABI(contracts.rocketMinipoolFactoryNew.abi),
+                compressABI(contracts.rocketMinipoolBase.abi),
               ],
             ]
             await upgrader.set(...arguments)
@@ -296,6 +298,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeStakingNew':
           case 'rocketNodeDistributorDelegateNew':
           case 'rocketMinipoolFactoryNew':
+          case 'rocketMinipoolBase':
           break;
 
           default:

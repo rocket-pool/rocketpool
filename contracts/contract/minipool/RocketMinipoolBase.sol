@@ -1,24 +1,20 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
-// An individual minipool in the Rocket Pool network
-
-contract RocketMinipool is RocketMinipoolStorageLayout {
+/// @notice Contains the initialisation and delegate upgrade logic for minipools
+contract RocketMinipoolBase is RocketMinipoolStorageLayout {
 
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
     event DelegateUpgraded(address oldDelegate, address newDelegate, uint256 time);
     event DelegateRolledBack(address oldDelegate, address newDelegate, uint256 time);
 
-    // Modifiers
-
-    // Only allow access from the owning node address
+    /// @dev Only allow access from the owning node address
     modifier onlyMinipoolOwner() {
         // Only the node operator can upgrade
         address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
@@ -26,7 +22,8 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         _;
     }
 
-    function initialise(address _nodeAddress, MinipoolDeposit _depositType) external {
+    /// @notice Sets up starting delegate contract and then delegates initialisation to it
+    function initialise(address _nodeAddress) external {
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set the current delegate
@@ -35,17 +32,17 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         // Check for contract existence
         require(contractExists(delegateAddress), "Delegate contract does not exist");
         // Call initialise on delegate
-        (bool success, bytes memory data) = delegateAddress.delegatecall(abi.encodeWithSignature('initialise(address,uint8)', _nodeAddress, uint8(_depositType)));
+        (bool success, bytes memory data) = delegateAddress.delegatecall(abi.encodeWithSignature('initialise(address)', _nodeAddress));
         if (!success) { revert(getRevertMessage(data)); }
     }
 
-    // Receive an ETH deposit
+    /// @notice Receive an ETH deposit
     receive() external payable {
         // Emit ether received event
         emit EtherReceived(msg.sender, msg.value, block.timestamp);
     }
 
-    // Upgrade this minipool to the latest network delegate contract
+    /// @notice Upgrade this minipool to the latest network delegate contract
     function delegateUpgrade() external onlyMinipoolOwner {
         // Set previous address
         rocketMinipoolDelegatePrev = rocketMinipoolDelegate;
@@ -57,7 +54,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         emit DelegateUpgraded(rocketMinipoolDelegatePrev, rocketMinipoolDelegate, block.timestamp);
     }
 
-    // Rollback to previous delegate contract
+    /// @notice Rollback to previous delegate contract
     function delegateRollback() external onlyMinipoolOwner {
         // Make sure they have upgraded before
         require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
@@ -70,32 +67,33 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         emit DelegateRolledBack(originalDelegate, rocketMinipoolDelegate, block.timestamp);
     }
 
-    // If set to true, will automatically use the latest delegate contract
+    /// @notice Sets the flag to automatically use the latest delegate contract or not
+    /// @param _setting If true, will always use the latest delegate contract
     function setUseLatestDelegate(bool _setting) external onlyMinipoolOwner {
         useLatestDelegate = _setting;
     }
 
-    // Getter for useLatestDelegate setting
+    /// @notice Returns true if this minipool always uses the latest delegate contract
     function getUseLatestDelegate() external view returns (bool) {
         return useLatestDelegate;
     }
 
-    // Returns the address of the minipool's stored delegate
+    /// @notice Returns the address of the minipool's stored delegate
     function getDelegate() external view returns (address) {
         return rocketMinipoolDelegate;
     }
 
-    // Returns the address of the minipool's previous delegate (or address(0) if not set)
+    /// @notice Returns the address of the minipool's previous delegate (or address(0) if not set)
     function getPreviousDelegate() external view returns (address) {
         return rocketMinipoolDelegatePrev;
     }
 
-    // Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
+    /// @notice Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
     function getEffectiveDelegate() external view returns (address) {
         return useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
     }
 
-    // Delegate all other calls to minipool delegate contract
+    /// @notice Delegates all calls to minipool delegate contract (or latest if flag is set)
     fallback(bytes calldata _input) external payable returns (bytes memory) {
         // If useLatestDelegate is set, use the latest delegate contract
         address delegateContract = useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
@@ -107,14 +105,14 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         return data;
     }
 
-    // Get the address of a Rocket Pool network contract
+    /// @dev Get the address of a Rocket Pool network contract
     function getContractAddress(string memory _contractName) private view returns (address) {
         address contractAddress = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", _contractName)));
         require(contractAddress != address(0x0), "Contract not found");
         return contractAddress;
     }
 
-    // Get a revert message from delegatecall return data
+    /// @dev Get a revert message from delegatecall return data
     function getRevertMessage(bytes memory _returnData) private pure returns (string memory) {
         if (_returnData.length < 68) { return "Transaction reverted silently"; }
         assembly {
@@ -123,7 +121,7 @@ contract RocketMinipool is RocketMinipoolStorageLayout {
         return abi.decode(_returnData, (string));
     }
 
-    // Returns true if contract exists at _contractAddress (if called during that contract's construction it will return a false negative)
+    /// @dev Returns true if contract exists at _contractAddress (if called during that contract's construction it will return a false negative)
     function contractExists(address _contractAddress) private returns (bool) {
         uint32 codeSize;
         assembly {

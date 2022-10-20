@@ -1,23 +1,23 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "../RocketBase.sol";
 import "./RocketMinipoolStorageLayout.sol";
 
+/// @notice All calls to this contract are delegated to the rocketMinipool contract that existed at time of deployment
 contract RocketMinipoolProxy is RocketMinipoolStorageLayout {
-    address immutable rocketMinipool;
+    address immutable rocketMinipoolBase;
 
     constructor(address _rocketStorage) {
         rocketStorage = RocketStorageInterface(_rocketStorage);
 
         // Burn in the critical minipool logic
-        rocketMinipool = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketMinipool")));
+        rocketMinipoolBase = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketMinipoolBase")));
     }
 
-    // Delegates all transactions to the target supplied during creation
+    /// @notice Delegates all calls to locally stored version of rocketMinipoolBase
     fallback() external payable {
-        address _target = rocketMinipool;
+        address _target = rocketMinipoolBase;
         assembly {
             calldatacopy(0x0, 0x0, calldatasize())
             let result := delegatecall(gas(), _target, 0x0, calldatasize(), 0x0, 0)

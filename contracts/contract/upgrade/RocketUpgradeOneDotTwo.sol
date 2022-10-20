@@ -30,6 +30,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketNodeStaking;
     address public newRocketNodeDistributorDelegate;
     address public newRocketMinipoolFactory;
+    address public rocketMinipoolBase;
 
     // Upgrade ABIs
     string public newRocketNodeDepositAbi;
@@ -42,6 +43,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketNodeStakingAbi;
     string public newRocketNodeDistributorDelegateAbi;
     string public newRocketMinipoolFactoryAbi;
+    string public rocketMinipoolBaseAbi;
 
     // Merkle root for balances migration
     bytes32 public migrationBalancesMerkleRoot;
@@ -84,6 +86,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeStaking = _addresses[7];
         newRocketNodeDistributorDelegate = _addresses[8];
         newRocketMinipoolFactory = _addresses[9];
+        rocketMinipoolBase = _addresses[10];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -96,6 +99,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeStakingAbi = _abis[7];
         newRocketNodeDistributorDelegateAbi = _abis[8];
         newRocketMinipoolFactoryAbi = _abis[9];
+        rocketMinipoolBaseAbi = _abis[10];
     }
 
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
@@ -115,6 +119,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketMinipoolFactory", newRocketMinipoolFactory, newRocketMinipoolFactoryAbi);
 
         // Add new contracts
+        _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
 
         // Migrate settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));

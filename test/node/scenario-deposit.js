@@ -56,14 +56,11 @@ export async function deposit(minimumNodeFee, txOptions) {
     // Deposit
 
     // Get artifact and bytecode
-    const RocketMinipool = artifacts.require('RocketMinipoolProxy');
+    const RocketMinipool = artifacts.require('RocketMinipoolOld');
     const contractBytecode = RocketMinipool.bytecode;
 
-    // Variable deposit type is the only possible choice now
-    const depositType = '4';
-
     // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
+    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
     const deployCode = contractBytecode + constructorArgs.substr(2);
     const salt = minipoolSalt++;
 

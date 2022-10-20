@@ -67,7 +67,7 @@ export async function assignDepositsV2(txOptions) {
     if (expectedDepositAssignments === 0) {
         let scalingCount = maxSocialisedAssignments.toNumber();
         let totalEthCount = depositPoolBalance.div(web3.utils.toBN(web3.utils.toWei('31', 'ether'))).toNumber();
-        expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments, minipoolQueueLength);
+        expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments.toNumber(), minipoolQueueLength.toNumber());
         expectedEthAssigned = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
         expectedEthVaultUsed = web3.utils.toBN(web3.utils.toWei('31', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
     } else {

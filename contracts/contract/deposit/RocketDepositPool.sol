@@ -211,18 +211,21 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             uint256 totalEther = minipools.length.mul(variableDepositAmount);
             _rocketVault.withdrawEther(totalEther);
             // Loop over minipools and deposit the amount required to reach launch balance
-            uint256 nodeBalanceReduction = 0;
             for (uint256 i = 0; i < minipools.length; i++) {
                 RocketMinipoolInterface minipool = RocketMinipoolInterface(minipools[i]);
-                // Calculate the reduction in node balance from this minipool
-                nodeBalanceReduction = nodeBalanceReduction.add(minipool.getNodeTopUpValue());
                 // Assign deposit to minipool
                 minipool.deposit{value: variableDepositAmount}();
                 // Emit deposit assigned event
                 emit DepositAssigned(minipools[i], variableDepositAmount, block.timestamp);
             }
             // Decrease node balance
-            subUint("deposit.pool.node.balance", nodeBalanceReduction);
+            uint256 nodeBalance = getUint("deposit.pool.node.balance");
+            if (totalEther > nodeBalance) {
+                nodeBalance = 0;
+            } else {
+                nodeBalance = nodeBalance.sub(totalEther);
+            }
+            setUint("deposit.pool.node.balance", nodeBalance);
         }
         return true;
     }

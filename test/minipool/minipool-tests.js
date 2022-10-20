@@ -1,18 +1,15 @@
 import {
-  RocketDAOProtocolSettingsMinipool,
-  RocketDAOProtocolSettingsNetwork,
-  RocketMinipoolManager,
-  RevertOnTransfer,
-  RocketVault,
-  RocketTokenRPL,
-  RocketMinipoolQueue,
-  RocketMinipool,
-  RocketDAONodeTrustedSettingsMinipool
+    RocketDAOProtocolSettingsMinipool,
+    RocketDAOProtocolSettingsNetwork,
+    RocketMinipoolManager,
+    RevertOnTransfer,
+    RocketVault,
+    RocketTokenRPL,
+    RocketDAONodeTrustedSettingsMinipool, RocketMinipoolBase,
 } from '../_utils/artifacts';
-import { increaseTime, mineBlocks } from '../_utils/evm';
+import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { getValidatorPubkey } from '../_utils/beacon';
 import { userDeposit } from '../_helpers/deposit';
 import {
   getMinipoolMinimumRPLStake,
@@ -90,19 +87,17 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a dissolved minipool
+            await userDeposit({ from: random, value: web3.utils.toWei('16', 'ether'), });
             dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             await increaseTime(web3, launchTimeout + 1);
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
-            // Make user deposit to refund first prelaunch minipool
-            let refundAmount = web3.utils.toWei('16', 'ether');
-            await userDeposit({from: random, value: refundAmount});
-
             // Create minipools
-            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-            withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({ from: random, value: web3.utils.toWei('46', 'ether'), });
+            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
 
             // Wait required scrub period
@@ -126,27 +121,6 @@ export default function() {
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
             assert(withdrawableStatus.eq(web3.utils.toBN(3)), 'Incorrect withdrawable minipool status');
             assert(dissolvedStatus.eq(web3.utils.toBN(4)), 'Incorrect dissolved minipool status');
-
-            // Check minipool refund balances
-            let prelaunchRefundBalance = await prelaunchMinipool.getNodeRefundBalance.call();
-            let prelaunch2RefundBalance = await prelaunchMinipool2.getNodeRefundBalance.call();
-            assert(prelaunchRefundBalance.eq(web3.utils.toBN(refundAmount)), 'Incorrect prelaunch minipool refund balance');
-            assert(prelaunch2RefundBalance.eq(web3.utils.toBN(0)), 'Incorrect prelaunch minipool refund balance');
-
-            // Check minipool queues
-            const rocketMinipoolQueue = await RocketMinipoolQueue.deployed()
-            const [totalLength, fullLength, halfLength, emptyLength] = await Promise.all([
-              rocketMinipoolQueue.getTotalLength(),   // Total
-              rocketMinipoolQueue.getLength(1),       // Full
-              rocketMinipoolQueue.getLength(2),       // Half
-              rocketMinipoolQueue.getLength(3),       // Empty
-            ])
-
-            // Total should match sum
-            assert(totalLength.eq(fullLength.add(halfLength).add(emptyLength)));
-            assert(fullLength.toNumber() === 2, 'Incorrect number of minipools in full queue')
-            assert(halfLength.toNumber() === 1, 'Incorrect number of minipools in half queue')
-            assert(emptyLength.toNumber() === 0, 'Incorrect number of minipools in empty queue')
         });
 
 
@@ -157,7 +131,7 @@ export default function() {
           });
 
           // Check effective delegate is still the original
-          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
           const effectiveDelegate = await minipool.getEffectiveDelegate.call()
           assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
         }
@@ -212,11 +186,11 @@ export default function() {
           // Set max to the current number
           await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', minipoolCount, {from: owner});
           // Creating minipool should fail now
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
           // Destroy a pool
           await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
           // Creating minipool should no longer fail
-          await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
+          await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
 
         });
 
@@ -226,7 +200,7 @@ export default function() {
           // Upgrade network delegate contract to random address
           await upgradeNetworkDelegateContract();
           // Creating minipool should fail now
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Contract creation failed');
+          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
 
         });
 
@@ -234,55 +208,14 @@ export default function() {
         it(printTitle('node operator', 'cannot delegatecall to a delgate address that is a non-contract'), async () => {
 
           // Creating minipool should fail now
-          let newMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')});
-          const newMinipoolBase = await RocketMinipool.at(newMinipool.address);
+          let newMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+          const newMinipoolBase = await RocketMinipoolBase.at(newMinipool.address);
           // Upgrade network delegate contract to random address
           await upgradeNetworkDelegateContract();
           // Call upgrade delegate
           await newMinipoolBase.setUseLatestDelegate(true, {from: node})
           // Staking should fail now
           await shouldRevert(stakeMinipool(newMinipool, {from: node}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
-
-        });
-
-
-        //
-        // Refund
-        //
-
-
-        it(printTitle('node operator', 'can refund a refinanced node deposit balance'), async () => {
-
-            // Refund from minipool with refund balance
-            await refund(prelaunchMinipool, {
-                from: node,
-            });
-
-        });
-
-
-        it(printTitle('node operator', 'cannot refund with no refinanced node deposit balance'), async () => {
-
-            // Refund
-            await refund(prelaunchMinipool, {from: node});
-
-            // Attempt refund from minipools with no refund balance
-            await shouldRevert(refund(prelaunchMinipool, {
-                from: node,
-            }), 'Refunded from a minipool which was already refunded from');
-            await shouldRevert(refund(prelaunchMinipool2, {
-                from: node,
-            }), 'Refunded from a minipool with no refund balance');
-
-        });
-
-
-        it(printTitle('random address', 'cannot refund a refinanced node deposit balance'), async () => {
-
-            // Attempt refund from minipool with refund balance
-            await shouldRevert(refund(prelaunchMinipool, {
-                from: random,
-            }), 'Random address refunded from a minipool');
 
         });
 
@@ -653,56 +586,14 @@ export default function() {
 
 
         //
-        // Unbonded minipools (temporarily removed)
-        //
-
-
-        // it(printTitle('trusted node', 'cannot create an unbonded minipool if node fee is < 80% of maximum'), async () => {
-        //     // Sanity check that current node fee is less than 80% of maximum
-        //     let nodeFee = await getNodeFee();
-        //     let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
-        //     assert(nodeFee.lt(maximumNodeFee.muln(0.8)), 'Node fee is greater than 80% of maximum fee');
-        //
-        //     // Stake RPL to cover minipool
-        //     let minipoolRplStake = await getMinipoolMinimumRPLStake();
-        //     await mintRPL(owner, trustedNode, minipoolRplStake);
-        //     await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
-        //
-        //     // Creating an unbonded minipool should revert
-        //     await shouldRevert(createMinipool({from: trustedNode, value: '0'}),
-        //       'Trusted node was able to create unbonded minipool with fee < 80% of max',
-        //       'Current commission rate is not high enough to create unbonded minipools'
-        //     );
-        // });
-        //
-        //
-        // it(printTitle('trusted node', 'can create an unbonded minipool if node fee is > 80% of maximum'), async () => {
-        //     // Deposit enough unassigned ETH to increase the fee above 80% of max
-        //     await userDeposit({from: random, value: web3.utils.toWei('900', 'ether')});
-        //
-        //     // Sanity check that current node fee is greater than 80% of maximum
-        //     let nodeFee = await getNodeFee();
-        //     let maximumNodeFee = web3.utils.toBN(await getNetworkSetting('MaximumNodeFee'));
-        //     assert(nodeFee.gt(maximumNodeFee.muln(0.8)), 'Node fee is not greater than 80% of maximum fee');
-        //
-        //     // Stake RPL to cover minipool
-        //     let minipoolRplStake = await getMinipoolMinimumRPLStake();
-        //     await mintRPL(owner, trustedNode, minipoolRplStake);
-        //     await nodeStakeRPL(minipoolRplStake, {from: trustedNode});
-        //
-        //     // Creating the unbonded minipool
-        //     await createMinipool({from: trustedNode, value: '0'});
-        // });
-
-
-        //
         // Delegate upgrades
         //
+
 
         it(printTitle('node operator', 'can upgrade and rollback their delegate contract'), async () => {
           await upgradeNetworkDelegateContract();
           // Get contract
-          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
           // Store original delegate
           let originalDelegate = await minipool.getEffectiveDelegate.call();
           // Call upgrade delegate
@@ -723,7 +614,7 @@ export default function() {
         it(printTitle('node operator', 'can use latest delegate contract'), async () => {
           await upgradeNetworkDelegateContract();
           // Get contract
-          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
           // Store original delegate
           let originalDelegate = await minipool.getEffectiveDelegate.call()
           // Call upgrade delegate
@@ -749,7 +640,7 @@ export default function() {
         it(printTitle('random', 'cannot upgrade, rollback or set use latest delegate contract'), async () => {
           await upgradeNetworkDelegateContract();
           // Get contract
-          const minipool = await RocketMinipool.at(stakingMinipool.address);
+          const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
           // Call upgrade delegate from random
           await shouldRevert(minipool.delegateUpgrade({from: random}), "Random was able to upgrade delegate", "Only the node operator can access this method");
           // Call upgrade delegate from node

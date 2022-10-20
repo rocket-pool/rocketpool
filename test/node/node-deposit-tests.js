@@ -6,7 +6,7 @@ import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
-import { deposit } from './scenario-deposit';
+import { depositV2 } from './scenario-deposit-v2';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
@@ -51,13 +51,13 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Deposit
-            await deposit(noMinimumNodeFee, {
+            await depositV2(noMinimumNodeFee, {
                 from: node,
                 value: lebDepositNodeAmount,
             });
 
             // Deposit
-            await deposit(noMinimumNodeFee, {
+            await depositV2(noMinimumNodeFee, {
                 from: node,
                 value: halfDepositNodeAmount,
             });
@@ -76,13 +76,13 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.deposit.enabled', false, {from: owner});
 
             // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: node,
                 value: lebDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
 
             // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
@@ -102,13 +102,13 @@ export default function() {
             let minimumNodeFee = nodeFee.add(web3.utils.toBN(web3.utils.toWei('0.01', 'ether')));
 
             // Attempt deposit
-            await shouldRevert(deposit(minimumNodeFee, {
+            await shouldRevert(depositV2(minimumNodeFee, {
                 from: node,
                 value: lebDepositNodeAmount,
             }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
 
             // Attempt deposit
-            await shouldRevert(deposit(minimumNodeFee, {
+            await shouldRevert(depositV2(minimumNodeFee, {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
@@ -129,7 +129,7 @@ export default function() {
             assert(!depositAmount.eq(halfDepositNodeAmount), 'Deposit amount is not invalid');
 
             // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: node,
                 value: depositAmount,
             }), 'Made a deposit with an invalid deposit amount');
@@ -140,7 +140,7 @@ export default function() {
         it(printTitle('node operator', 'cannot make a deposit with insufficient RPL staked'), async () => {
 
             // Attempt deposit with no RPL staked
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: node,
                 value: lebDepositNodeAmount,
             }), 'Made a deposit with insufficient RPL staked');
@@ -152,7 +152,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Attempt deposit with insufficient RPL staked
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: node,
                 value: lebDepositNodeAmount,
             }), 'Made a deposit with insufficient RPL staked');
@@ -163,13 +163,13 @@ export default function() {
         it(printTitle('random address', 'cannot make a deposit'), async () => {
 
             // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: random,
                 value: lebDepositNodeAmount,
             }), 'Random address made a deposit');
 
             // Attempt deposit
-            await shouldRevert(deposit(noMinimumNodeFee, {
+            await shouldRevert(depositV2(noMinimumNodeFee, {
                 from: random,
                 value: halfDepositNodeAmount,
             }), 'Random address made a deposit');

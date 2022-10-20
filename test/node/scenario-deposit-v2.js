@@ -57,14 +57,11 @@ export async function depositV2(minimumNodeFee, txOptions) {
     // Deposit
 
     // Get artifact and bytecode
-    const RocketMinipool = artifacts.require('RocketMinipool');
-    const contractBytecode = RocketMinipool.bytecode;
-
-    // Get deposit type from tx amount
-    const depositType = '4';
+    const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
+    const contractBytecode = RocketMinipoolProxy.bytecode;
 
     // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
+    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
     const deployCode = contractBytecode + constructorArgs.substr(2);
     const salt = minipoolSalt++;
 
@@ -124,7 +121,7 @@ export async function depositV2(minimumNodeFee, txOptions) {
     // Check minipool details
     assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
     assert.equal(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
-    assert(minipoolDetails.nodeDepositBalance.eq(txOptions.value), 'Incorrect created minipool node deposit balance');
+    assert(minipoolDetails.nodeDepositBalance.eq(web3.utils.toBN(txOptions.value)), 'Incorrect created minipool node deposit balance');
     assert.isFalse(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
 
 }

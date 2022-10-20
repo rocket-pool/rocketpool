@@ -62,7 +62,7 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
         // Ensure deployment was successful
         require(codeSize > 0, "Contract creation failed");
         // Initialise the minipool storage
-        RocketMinipoolInterface(contractAddress).initialise(_nodeAddress, _depositType);
+        RocketMinipoolInterface(contractAddress).initialise(_nodeAddress);
         // Return address
         return contractAddress;
     }

@@ -153,6 +153,7 @@ export default function() {
             // Re-enable deposit assignment & set limit
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.maximum', 3, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.socialised.maximum', 3, {from: owner});
 
             // Assign deposits with assignable deposits
             await assignDepositsV2({

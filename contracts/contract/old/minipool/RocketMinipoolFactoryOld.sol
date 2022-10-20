@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../../minipool/RocketMinipool.sol";
+import "./RocketMinipoolOld.sol";
 import "../../RocketBase.sol";
 import "../../../types/MinipoolStatus.sol";
 import "../../../types/MinipoolDeposit.sol";
@@ -34,7 +34,7 @@ contract RocketMinipoolFactoryOld is RocketBase, RocketMinipoolFactoryInterfaceO
 
     // Returns the bytecode for RocketMinipool
     function getMinipoolBytecode() override public pure returns (bytes memory) {
-        return type(RocketMinipool).creationCode;
+        return type(RocketMinipoolOld).creationCode;
     }
 
     // Performs a CREATE2 deployment of a minipool contract with given salt

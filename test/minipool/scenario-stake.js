@@ -59,7 +59,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     const staking = web3.utils.toBN(2);
     assert(!details1.status.eq(staking), 'Incorrect initial minipool status');
     assert(details2.status.eq(staking), 'Incorrect updated minipool status');
-    assert(details2.balance.eq(details1.balance.sub(web3.utils.toBN(web3.utils.toWei('16', 'ether')))), 'Incorrect updated minipool ETH balance');
+    assert(details2.balance.eq(details1.balance.sub(web3.utils.toBN(web3.utils.toWei('31', 'ether')))), 'Incorrect updated minipool ETH balance');
 
     // Check minipool by validator pubkey
     assert.equal(validatorMinipool2, minipool.address, 'Incorrect updated minipool by validator pubkey');
