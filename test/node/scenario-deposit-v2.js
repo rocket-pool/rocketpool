@@ -11,7 +11,7 @@ import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '.
 let minipoolSalt = 0;
 
 // Make a node deposit
-export async function depositV2(minimumNodeFee, txOptions) {
+export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
 
     // Load contracts
     const [
@@ -98,7 +98,7 @@ export async function depositV2(minimumNodeFee, txOptions) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    await rocketNodeDeposit.deposit(txOptions.value, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    await rocketNodeDeposit.deposit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
 
     // Get updated minipool indexes & created minipool details
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);
@@ -121,8 +121,9 @@ export async function depositV2(minimumNodeFee, txOptions) {
     // Check minipool details
     assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
     assert.equal(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
-    assert(minipoolDetails.nodeDepositBalance.eq(web3.utils.toBN(txOptions.value)), 'Incorrect created minipool node deposit balance');
-    assert.isFalse(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
+    assert(minipoolDetails.nodeDepositBalance.eq(web3.utils.toBN(bondAmount)), 'Incorrect created minipool node deposit balance');
+    // assert.isFalse(minipoolDetails.nodeDepositAssigned, 'Incorrect created minipool node deposit assigned status');
 
+    return minipoolAddress
 }
 

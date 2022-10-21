@@ -41,7 +41,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     receive() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     // Returns a node operator's credit balance in wei
-    function getNodeDepositCredit(address _nodeOperator) public view returns (uint256) {
+    function getNodeDepositCredit(address _nodeOperator) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)));
     }
 
@@ -51,18 +51,18 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
-    function deposit(uint256 _depositAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+    function deposit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         uint256 credit = getNodeDepositCredit(msg.sender);
 
-        if (credit < _depositAmount) {
-            uint256 shortFall = _depositAmount.sub(credit);
+        if (credit < _bondAmount) {
+            uint256 shortFall = _bondAmount.sub(credit);
             require(msg.value == shortFall, "Invalid value");
             setUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), 0);
         } else {
-            subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _depositAmount);
+            subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _bondAmount);
         }
 
-        _deposit(_depositAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
+        _deposit(_bondAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
     }
 
     // Returns true if the given amount is a valid deposit amount
@@ -80,13 +80,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     // Accept a node deposit and create a new minipool under the node
     // Only accepts calls from registered nodes
-    function _deposit(uint256 _value, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
+    function _deposit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Check pre-conditions
         checkDepositsEnabled();
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
-        require(isValidDepositAmount(_value), "Invalid deposit amount");
+        require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
@@ -98,7 +98,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             rocketDepositPool.nodeCreditWithdrawal(shortFall);
         }
         // Perform the pre-deposit
-        minipool.preDeposit{value: preLaunchValue}(_value, _validatorPubkey, _validatorSignature, _depositDataRoot);
+        minipool.preDeposit{value: preLaunchValue}(_bondAmount, _validatorPubkey, _validatorSignature, _depositDataRoot);
         if (address(this).balance > 0) {
             // Deposit the left over value into the deposit pool
             rocketDepositPool.nodeDeposit{value: msg.value.sub(preLaunchValue)}();
@@ -107,7 +107,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         enqueueMinipool(address(minipool));
         // Increase ETH matched (used to calculate RPL collateral requirements)
         // TODO: This 32 ETH probably shouldn't be a literal
-        increaseEthMatched(msg.sender, uint256(32 ether).sub(_value));
+        increaseEthMatched(msg.sender, uint256(32 ether).sub(_bondAmount));
         // Assign deposits if enabled
         assignDeposits();
     }

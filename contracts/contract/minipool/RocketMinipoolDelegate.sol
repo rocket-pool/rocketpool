@@ -39,6 +39,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Events
     event StatusUpdated(uint8 indexed status, uint256 time);
     event ScrubVoted(address indexed member, uint256 time);
+    event BegingBondReduction(uint256 time);
+    event CancelReductionVoted(address indexed member, uint256 time);
+    event ReductionCancelled(uint256 time);
     event MinipoolScrubbed(uint256 time);
     event MinipoolPrestaked(bytes validatorPubkey, bytes validatorSignature, bytes32 depositDataRoot, uint256 amount, bytes withdrawalCredentials, uint256 time);
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
@@ -66,10 +69,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) {
-        if (nodeFeeAtMigration == 0){
-            return userDepositBalanceLegacy;
-        } else {
+        if (depositType == MinipoolDeposit.Variable) {
             return userDepositBalance;
+        } else {
+            return userDepositBalanceLegacy;
         }
     }
     function getUserDepositAssigned() override external view returns (bool) { return userDepositAssignedTime != 0; }
@@ -129,7 +132,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         depositType = MinipoolDeposit.Variable;
         nodeAddress = _nodeAddress;
         nodeFee = rocketNetworkFees.getNodeFee();
-        nodeFeeAtMigration = nodeFee;
         // Set the rETH address
         rocketTokenRETH = getContractAddress("rocketTokenRETH");
         // Set local copy of penalty contract
@@ -254,7 +256,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 depositAmount = launchAmount.sub(preLaunchValue);
         // Check minipool balance
         require(address(this).balance >= depositAmount, "Insufficient balance to begin staking");
-        balanceAtMigration = launchAmount;
         // Retrieve validator pubkey from storage
         bytes memory validatorPubkey = rocketMinipoolManager.getMinipoolPubkey(address(this));
         // Send staking deposit to casper
@@ -411,60 +412,32 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// consideration the minipool's commission rate and any penalties it may have attracted
     /// @param _balance The balance to calculate the node share of
     function calculateNodeShare(uint256 _balance) override public view returns (uint256) {
-        // TODO: This 32 ETH probably shouldn't be a literal
-        uint256 launchAmount = 32 ether;
-
-        uint256 preMigrationRewardsNode;
-        uint256 postMigrationRewardsNode;
-        uint256 totalSlashing;
-
-        uint256 userCapital;
+        uint256 userCapital = getUserDepositBalance();
         uint256 nodeCapital = nodeDepositBalance;
-        uint256 migrationBalance;
-
-        // Use old state if not migrated
-        if (nodeFeeAtMigration > 0) {
-            userCapital = userDepositBalance;
-            migrationBalance = balanceAtMigration;
-        } else {
-            userCapital = userDepositBalanceLegacy;
-            migrationBalance = launchAmount;
+        uint256 nodeShare = 0;
+        // Calculate the total capital (node + user)
+        uint256 capital = userCapital.add(nodeCapital);
+        if (_balance > capital) {
+            // Total rewards to share
+            uint256 rewards = _balance.sub(capital);
+            // Calculate node and user portion based on proportions of capital provided
+            uint256 nodePortion = rewards.mul(nodeCapital).div(userCapital.add(nodeCapital));
+            uint256 userPortion = rewards.sub(nodePortion);
+            // Calculate final node amount as combination of node capital, node share and commission on user share
+            nodeShare = nodeCapital.add(nodePortion.add(userPortion.mul(nodeFee).div(calcBase)));
+        } else if (_balance > userCapital) {
+            nodeShare = _balance.sub(userCapital);
         }
-
-        if (_balance > userCapital) {
-            if (migrationBalance > launchAmount) {
-                uint256 preMigrationRewards = migrationBalance.sub(launchAmount);
-                //preMigrationSlashing = 0;
-                preMigrationRewardsNode = preMigrationRewards.div(2);
-                preMigrationRewardsNode = preMigrationRewardsNode.add(preMigrationRewardsNode.mul(nodeFeeAtMigration).div(calcBase));
-            } else {
-                totalSlashing = launchAmount.sub(migrationBalance);
-                //preMigrationRewardsNode = 0
-            }
-
-            if (_balance > migrationBalance) {
-                uint256 postMigrationRewards = _balance.sub(migrationBalance);
-                //postMigrationSlashing = 0
-                postMigrationRewardsNode = postMigrationRewards.mul(nodeCapital).div(userCapital.add(nodeCapital));
-                postMigrationRewardsNode = postMigrationRewardsNode.add(postMigrationRewards.sub(postMigrationRewardsNode).mul(nodeFee).div(calcBase));
-            } else {
-                totalSlashing = totalSlashing.add(migrationBalance.sub(_balance));
-                //postMigrationRewardsNode = 0;
-            }
-        }
-
-        uint256 nodeAmount = nodeCapital.sub(totalSlashing).add(preMigrationRewardsNode).add(postMigrationRewardsNode);
-
         // Check if node has an ETH penalty
         uint256 penaltyRate = RocketMinipoolPenaltyInterface(rocketMinipoolPenalty).getPenaltyRate(address(this));
         if (penaltyRate > 0) {
-            uint256 penaltyAmount = nodeAmount.mul(penaltyRate).div(calcBase);
-            if (penaltyAmount > nodeAmount) {
-                penaltyAmount = nodeAmount;
+            uint256 penaltyAmount = nodeShare.mul(penaltyRate).div(calcBase);
+            if (penaltyAmount > nodeShare) {
+                penaltyAmount = nodeShare;
             }
-            nodeAmount = nodeAmount.sub(penaltyAmount);
+            nodeShare = nodeShare.sub(penaltyAmount);
         }
-        return nodeAmount;
+        return nodeShare;
     }
 
     /// @notice Given a validator balance, this function returns what portion of it belongs to rETH users taking into
@@ -559,36 +532,66 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
     }
 
+    /// @notice Flags this minipool as wanting to reduce collateral, owner can then call `reduceBondAmount` once waiting
+    ///         period has elapsed
+    function beginReduceBondAmount() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
+        require(!reductionCancelled, "This minipool is allowed to reduce bond");
+        reduceBondTime = block.timestamp;
+    }
+
+    /// @notice Returns whether owner can reduce bond amount given the waiting period constraint
+    function canReduceBondAmount() override public view returns (bool) {
+        // TODO: Should this period be configurable or is hardcoded to between 7 and 9 days suitable?
+        return block.timestamp >= reduceBondTime.add(7 days) && block.timestamp < reduceBondTime.add(9 days);
+    }
+
+    /// @notice Can be called by trusted nodes to cancel a reduction in bond if the validator has too low of a balance
+    function voteCancelReduction() override external onlyInitialised {
+        require(!memberCancelVotes[msg.sender], "Member has already voted to cancel");
+        memberCancelVotes[msg.sender] = true;
+        // Emit event
+        emit CancelReductionVoted(msg.sender, block.timestamp);
+        // Check if required quorum has voted
+        RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
+        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+        // TODO: Use the scrub quorum or create a separate setting?
+        uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(calcBase);
+        if (totalCancelVotes.add(1) > quorum) {
+            // Emit event
+            emit ReductionCancelled(block.timestamp);
+            reductionCancelled = true;
+            reduceBondTime = 0;
+        } else {
+            // Increment total
+            totalCancelVotes = totalCancelVotes.add(1);
+        }
+    }
+
     /// @notice Reduces the ETH bonding amount and credits the owner the difference
-    /// @param _amount The amount to reduce the bond by (e.g. 8 ether)
-    /// @param _balance The balance of this minipool on the beaconchain at the checkpoint slot
-    /// @param _proof A merkle proof proving the value of _balance in the balance merkle tree
-    function reduceBondAmount(uint256 _amount, uint256 _balance, bytes32[] calldata _proof) external onlyMinipoolOwner(msg.sender) onlyInitialised {
-        require(_amount != 0, "Invalid amount");
+    /// @param _amount The amount to reduce the bond to (e.g. 8 ether)
+    function reduceBondAmount(uint256 _amount) external onlyMinipoolOwner(msg.sender) onlyInitialised {
+        require(canReduceBondAmount(), "Wait period not satisfied");
+        require(!reductionCancelled, "This minipool is allowed to reduce bond");
+        require(_amount < nodeDepositBalance, "Bond must be lower than current amount");
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
-        // Must be a Half or Full type minipool
-        require(depositType == MinipoolDeposit.Half || depositType == MinipoolDeposit.Full, "Cannot convert non-legacy minipool");
-        require(verifyProof(_balance, _proof), "Invalid merkle proof");
         // Get contracts
         RocketNodeDepositInterface rocketNodeDepositInterface = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Check the new bond amount is valid
-        uint256 newBondAmount = nodeDepositBalance.sub(_amount);
-        require(rocketNodeDepositInterface.isValidDepositAmount(newBondAmount), "Invalid bond amount");
-        // Store balance and commission rate at migration
-        balanceAtMigration = _balance;
-        nodeFeeAtMigration = nodeFee;
-        // Set deposit type to Variable
-        depositType = MinipoolDeposit.Variable;
+        require(rocketNodeDepositInterface.isValidDepositAmount(_amount), "Invalid bond amount");
         // Update user/node balances
-        userDepositBalance = userDepositBalanceLegacy.add(_amount);
-        nodeDepositBalance = newBondAmount;
+        uint256 delta = nodeDepositBalance.sub(_amount);
+        userDepositBalance = getUserDepositBalance().add(delta);
+        nodeDepositBalance = _amount;
         // Reset node fee to current network rate
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         nodeFee = rocketNetworkFees.getNodeFee();
-        // Increase node operator's credit
-        rocketNodeDepositInterface.increaseDepositCreditBalance(nodeAddress, _amount);
+        // Increase node operator's deposit credit
+        rocketNodeDepositInterface.increaseDepositCreditBalance(nodeAddress, delta);
         // Break state to prevent rollback exploit
-        userDepositBalanceLegacy = 2**256-1;
+        if (depositType != MinipoolDeposit.Variable) {
+            userDepositBalanceLegacy = 2**256-1;
+            depositType = MinipoolDeposit.Variable;
+        }
     }
 
     /// @dev Set the minipool's current status
@@ -649,14 +652,5 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             rocketMinipoolQueue.removeMinipool(depositType);
         }
-    }
-
-    /// @dev Verifies that the given balance for this minipool exists in the minipool balances merkle tree
-    /// @param _balance The balance of this minipool on the beaconchain at the checkpoint slot
-    /// @param _merkleProof A merkle proof proving the value of _balance in the balance merkle tree
-    function verifyProof(uint256 _balance, bytes32[] calldata _merkleProof) internal view returns (bool) {
-        bytes32 node = keccak256(abi.encodePacked(address(this), _balance));
-        bytes32 merkleRoot = rocketStorage.getBytes32(keccak256(abi.encodePacked('migration.balances.merkle.root')));
-        return MerkleProof.verify(_merkleProof, merkleRoot, node);
     }
 }

@@ -32,6 +32,7 @@ import {
   setDaoNodeTrustedBootstrapUpgrade
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { reduceBond } from './scenario-reduce-bond';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -649,6 +650,64 @@ export default function() {
           await shouldRevert(minipool.delegateRollback({from: random}), "Random was able to rollback delegate", "Only the node operator can access this method") ;
           // Call set use latest from random
           await shouldRevert(minipool.setUseLatestDelegate(true, {from: random}), "Random was able to set use latest delegate", "Only the node operator can access this method") ;
+        });
+
+
+        //
+        // Reducing bond amount
+        //
+
+
+        it(printTitle('node operator', 'can reduce bond amount to a valid deposit amount'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await stakingMinipool.beginReduceBondAmount({from: node});
+            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node});
+        });
+
+
+        it(printTitle('node operator', 'cannot reduce bond without waiting'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await stakingMinipool.beginReduceBondAmount({from: node});
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+        });
+
+
+        it(printTitle('node operator', 'cannot reduce bond without beginning the process first'), async () => {
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without beginning the process', 'Wait period not satisfied');
+        });
+
+
+        it(printTitle('node operator', 'cannot reduce bond amount to an invalid deposit amount'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await stakingMinipool.beginReduceBondAmount({from: node});
+            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            // Reduction from 16 ETH to 9 ETH should fail
+            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('9', 'ether'), {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
+        });
+
+
+        it(printTitle('node operator', 'cannot increase bond amount'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await stakingMinipool.beginReduceBondAmount({from: node});
+            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            // Reduction from 16 ETH to 9 ETH should fail
+            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('18', 'ether'), {from: node}), 'Was able to increase bond', 'Bond must be lower than current amount');
+        });
+
+
+        it(printTitle('node operator', 'cannot reduce bond amount while in invalid state'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await prelaunchMinipool.beginReduceBondAmount({from: node});
+            await initialisedMinipool.beginReduceBondAmount({from: node});
+            await withdrawableMinipool.beginReduceBondAmount({from: node});
+            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await shouldRevert(reduceBond(prelaunchMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on a prelaunch minipool', 'Minipool must be staking');
+            await shouldRevert(reduceBond(initialisedMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
+            await shouldRevert(reduceBond(withdrawableMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on a withdrawable minipool', 'Minipool must be staking');
         });
     });
 }
