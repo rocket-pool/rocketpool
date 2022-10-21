@@ -13,6 +13,12 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkIn
 
 contract RocketUpgradeOneDotTwo is RocketBase {
 
+    struct ClaimInterval {
+        uint256 interval;
+        uint256 block;
+    }
+
+
     // Whether the upgrade has been performed or not
     bool public executed;
 
@@ -50,6 +56,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
 
     // Save deployer to limit access to set functions
     address immutable deployer;
+
+    // Claim intervals
+    ClaimInterval[] intervals;
 
     // Construct
     constructor(
@@ -102,6 +111,21 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         rocketMinipoolBaseAbi = _abis[10];
     }
 
+    function setInterval(uint256 _interval, uint256 _block) external {
+        require(msg.sender == deployer, "Only deployer can set");
+        require(!setup, "Already setup");
+
+        intervals.push(ClaimInterval({
+            interval: _interval,
+            block: _block
+        }));
+    }
+
+    function lock() external {
+        require(msg.sender == deployer, "Only deployer can set");
+        setup = true;
+    }
+
     // Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
         require(!executed, "Already executed");
@@ -138,6 +162,16 @@ contract RocketUpgradeOneDotTwo is RocketBase {
 
         // Merkle root for minipool migration
         setBytes32(keccak256(abi.encodePacked('migration.balances.merkle.root')), migrationBalancesMerkleRoot);
+
+        // Claim intervals
+        for (uint256 i = 0; i < intervals.length; i++) {
+            ClaimInterval memory interval = intervals[i];
+            setUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", interval.interval)), interval.block);
+        }
+
+        // Delete previous upgrade contract and this one
+        _deleteContract("rocketUpgradeOneDotOne");
+        _deleteContract("rocketUpgradeOneDotTwo");
 
         // Complete
         executed = true;
