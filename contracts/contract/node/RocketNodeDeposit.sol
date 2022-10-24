@@ -92,18 +92,21 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
         // Get the pre-launch value
         uint256 preLaunchValue = getPreLaunchValue();
-        // Retrieve ETH from deposit pool if required
-        if (msg.value < preLaunchValue) {
-            uint256 shortFall = preLaunchValue.sub(msg.value);
-            rocketDepositPool.nodeCreditWithdrawal(shortFall);
+        {
+            // Retrieve ETH from deposit pool if required
+            uint256 shortFall = 0;
+            if (msg.value < preLaunchValue) {
+                shortFall = preLaunchValue.sub(msg.value);
+                rocketDepositPool.nodeCreditWithdrawal(shortFall);
+            }
+            // Perform the pre-deposit
+            uint256 remaining = msg.value.add(shortFall).sub(preLaunchValue);
+            if (remaining > 0) {
+                // Deposit the left over value into the deposit pool
+                rocketDepositPool.nodeDeposit{value: remaining}();
+            }
         }
-        // Perform the pre-deposit
         minipool.preDeposit{value: preLaunchValue}(_bondAmount, _validatorPubkey, _validatorSignature, _depositDataRoot);
-        uint256 remaining = msg.value.add(shortFall).sub(preLaunchValue);
-        if (remaining > 0) {
-            // Deposit the left over value into the deposit pool
-            rocketDepositPool.nodeDeposit{value: remaining}();
-        }
         // Enqueue the minipool
         enqueueMinipool(address(minipool));
         // Increase ETH matched (used to calculate RPL collateral requirements)
