@@ -78,10 +78,11 @@ export async function assignDepositsV2(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
+            rocketDepositPool.getNodeBalance.call(),
             web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
         ]).then(
-            ([depositPoolEth, vaultEth]) =>
-            ({depositPoolEth, vaultEth})
+            ([depositPoolEth, depositPoolNodeEth, vaultEth]) =>
+            ({depositPoolEth, depositPoolNodeEth, vaultEth})
         );
     }
 
@@ -112,7 +113,9 @@ export async function assignDepositsV2(txOptions) {
     ]);
 
     // Check balances
-    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.sub(expectedEthAssigned)), 'Incorrect updated deposit pool ETH balance');
+    const depositPoolBefore = balances1.depositPoolEth.sub(balances1.depositPoolNodeEth);
+    const depositPoolAfter = balances2.depositPoolEth.sub(balances2.depositPoolNodeEth);
+    assert(depositPoolAfter.eq(depositPoolBefore.sub(expectedEthAssigned)), 'Incorrect updated deposit pool ETH balance');
     assert(balances2.vaultEth.eq(balances1.vaultEth.sub(expectedEthVaultUsed)), 'Incorrect updated vault ETH balance');
 
     // Check minipool queues

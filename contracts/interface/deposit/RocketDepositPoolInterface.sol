@@ -4,6 +4,8 @@ pragma solidity >0.5.0 <0.9.0;
 
 interface RocketDepositPoolInterface {
     function getBalance() external view returns (uint256);
+    function getNodeBalance() external view returns (uint256);
+    function getUserBalance() external view returns (int256);
     function getExcessBalance() external view returns (uint256);
     function deposit() external payable;
     function nodeDeposit() external payable;

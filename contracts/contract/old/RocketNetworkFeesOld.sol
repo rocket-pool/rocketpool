@@ -13,7 +13,7 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkIn
 
 // Network node demand and commission rate
 
-contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
+contract RocketNetworkFeesOld is RocketBase, RocketNetworkFeesInterface {
 
     // Libs
     using SafeMath for uint;
@@ -21,7 +21,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 1;
     }
 
     // Get the current RP network node demand in ETH
@@ -31,7 +31,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         // Calculate & return
-        int256 depositPoolBalance = rocketDepositPool.getUserBalance();
+        int256 depositPoolBalance = rocketDepositPool.getBalance().toInt256();
         int256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity().toInt256();
         int256 demand = depositPoolBalance - minipoolCapacity;
         require(demand <= depositPoolBalance);

@@ -24,18 +24,18 @@ export async function deposit(txOptions, preUpdate = false) {
     ]);
 
     // Get parameters
-    let rethExchangeRate = await rocketTokenRETH.getExchangeRate.call();
     let depositFeePerc = await rocketDAOProtocolSettingsDeposit.getDepositFee();
 
     // Get balances
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
+            rocketDepositPool.getNodeBalance.call(),
             web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
             rocketTokenRETH.balanceOf.call(txOptions.from),
         ]).then(
-            ([depositPoolEth, vaultEth, userReth]) =>
-            ({depositPoolEth, vaultEth, userReth})
+            ([depositPoolEth, depositPoolNodeEth, vaultEth, userReth]) =>
+            ({depositPoolEth, depositPoolNodeEth, vaultEth, userReth})
         );
     }
 

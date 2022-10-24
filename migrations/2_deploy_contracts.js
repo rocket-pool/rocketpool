@@ -35,6 +35,10 @@ const rocketStorage =                       artifacts.require('RocketStorage.sol
 const contracts = {
   // Vault
   rocketVault:                              artifacts.require('RocketVault.sol'),
+  // Tokens
+  rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
+  rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
+  rocketTokenRPL:                           artifacts.require('RocketTokenRPL.sol'),
   // Auction
   rocketAuctionManager:                     artifacts.require('RocketAuctionManager.sol'),
   // Deposit
@@ -47,7 +51,7 @@ const contracts = {
   rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
   // Network
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
-  rocketNetworkFees:                        artifacts.require('RocketNetworkFees.sol'),
+  rocketNetworkFees:                        artifacts.require('RocketNetworkFeesOld.sol'),
   rocketNetworkPrices:                      artifacts.require('RocketNetworkPrices.sol'),
   rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
   // Rewards
@@ -76,10 +80,6 @@ const contracts = {
   rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
   rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDepositOld.sol'),
   rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipoolOld.sol'),
-  // Tokens
-  rocketTokenRPLFixedSupply:                artifacts.require('RocketTokenDummyRPL.sol'),
-  rocketTokenRETH:                          artifacts.require('RocketTokenRETH.sol'),
-  rocketTokenRPL:                           artifacts.require('RocketTokenRPL.sol'),
   // v1.1
   rocketMerkleDistributorMainnet:           artifacts.require('RocketMerkleDistributorMainnet.sol'),
   rocketDAONodeTrustedSettingsRewards:      artifacts.require('RocketDAONodeTrustedSettingsRewards.sol'),
@@ -98,6 +98,7 @@ const contracts = {
   rocketNodeStakingNew:                     artifacts.require('RocketNodeStaking.sol'),
   rocketNodeDistributorDelegateNew:         artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactoryNew:                 artifacts.require('RocketMinipoolFactory.sol'),
+  rocketNetworkFeesNew:                     artifacts.require('RocketNetworkFees.sol'),
   rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
@@ -244,6 +245,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketNodeStakingNew.address,
                 contracts.rocketNodeDistributorDelegateNew.address,
                 contracts.rocketMinipoolFactoryNew.address,
+                contracts.rocketNetworkFeesNew.address,
                 contracts.rocketMinipoolBase.address,
               ],
               [
@@ -258,6 +260,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketNodeStakingNew.abi),
                 compressABI(contracts.rocketNodeDistributorDelegateNew.abi),
                 compressABI(contracts.rocketMinipoolFactoryNew.abi),
+                compressABI(contracts.rocketNetworkFeesNew.abi),
                 compressABI(contracts.rocketMinipoolBase.abi),
               ],
             ]
@@ -267,6 +270,13 @@ module.exports = async (deployer, network) => {
           // All other contracts - pass storage address
           default:
             await deployer.deploy(contracts[contract], rocketStorage.address);
+            // Slight hack to allow gas optimisation using immutable addresses for non-upgradable contracts
+            if (contract === 'rocketVault' || contract === 'rocketTokenRETH') {
+              await rocketStorageInstance.setAddress(
+                  $web3.utils.soliditySha3('contract.address', contract),
+                  contracts[contract].address
+              );
+            }
           break;
 
         }
@@ -298,6 +308,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeStakingNew':
           case 'rocketNodeDistributorDelegateNew':
           case 'rocketMinipoolFactoryNew':
+          case 'rocketNetworkFeesNew':
           case 'rocketMinipoolBase':
           break;
 
@@ -315,11 +326,13 @@ module.exports = async (deployer, network) => {
               $web3.utils.soliditySha3('contract.name', contracts[contract].address),
               contract
             );
-            // Register the contract's address by name
-            await rocketStorageInstance.setAddress(
-              $web3.utils.soliditySha3('contract.address', contract),
-              contracts[contract].address
-            );
+            // Register the contract's address by name (rocketVault and rocketTokenRETH addresses already stored)
+            if (!(contract === 'rocketVault' || contract === 'rocketTokenRETH')) {
+              await rocketStorageInstance.setAddress(
+                  $web3.utils.soliditySha3('contract.address', contract),
+                  contracts[contract].address
+              );
+            }
             // Compress and store the ABI by name
             await rocketStorageInstance.setString(
               $web3.utils.soliditySha3('contract.abi', contract),
@@ -378,7 +391,7 @@ module.exports = async (deployer, network) => {
 
   // Disable direct access to storage now
   await rocketStorageInstance.setDeployedStatus();
-  if(await rocketStorageInstance.getDeployedStatus() != true) throw 'Storage Access Not Locked Down!!';
+  if(await rocketStorageInstance.getDeployedStatus() !== true) throw 'Storage Access Not Locked Down!!';
 
   // Log it
   console.log('\n');

@@ -1,14 +1,16 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake } from '../_helpers/minipool';
+import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { submitBalances } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeDeposit, nodeStakeRPL } from '../_helpers/node';
 import { getRethExchangeRate, getRethTotalSupply, mintRPL } from '../_helpers/tokens';
 import { getDepositSetting } from '../_helpers/settings';
-import { assignDeposits } from './scenario-assign-deposits';
 import { deposit } from './scenario-deposit';
-import { RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolSettingsDeposit } from '../_utils/artifacts'
+import {
+    RocketDAONodeTrustedSettingsMembers,
+    RocketDAOProtocolSettingsDeposit,
+} from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
@@ -119,6 +121,33 @@ export default function() {
 
         });
 
+
+        it(printTitle('staker', 'can make a deposit which exceeds the maximum deposit pool if minipool queue is larger'), async () => {
+
+            // Set max deposit pool size to 1 ETH
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', web3.utils.toWei('1', 'ether'), {from: owner});
+            // Disable socialised assignments so the deposit pool balance check succeeds
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.socialised.maximum', 0, {from: owner});
+
+            // Attempt deposit greater than maximum (fails)
+            await shouldRevert(deposit({
+                from: staker,
+                value: web3.utils.toWei('16', 'ether'),
+            }), 'Made a deposit which exceeds the maximum deposit pool size');
+
+            // Create a minipool to add to the queue
+            let minipoolRplStake = await getMinipoolMinimumRPLStake();
+            await mintRPL(owner, node, minipoolRplStake);
+            await nodeStakeRPL(minipoolRplStake, {from: node});
+            await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+
+            // Attempt deposit
+            await deposit({
+                from: staker,
+                value: web3.utils.toWei('16', 'ether'),
+            });
+
+        });
 
         //
         // Assign deposits

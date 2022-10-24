@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 pragma solidity 0.7.6;
 pragma abicoder v2;
-
-// SPDX-License-Identifier: GPL-3.0-only
 
 import "../RocketBase.sol";
 
@@ -11,6 +11,7 @@ import "../node/RocketNodeDistributorFactory.sol";
 import "../node/RocketNodeDistributorDelegate.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
+/// @notice Transient contract to upgrade Rocket Pool with the Atlas set of contract upgrades
 contract RocketUpgradeOneDotTwo is RocketBase {
 
     struct ClaimInterval {
@@ -18,12 +19,11 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         uint256 block;
     }
 
-
     // Whether the upgrade has been performed or not
     bool public executed;
 
-    // Whether the setup method has been called
-    bool public setup;
+    // Whether the contract is locked to further changes
+    bool public locked;
 
     // Upgrade contracts
     address public newRocketNodeDeposit;
@@ -36,6 +36,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketNodeStaking;
     address public newRocketNodeDistributorDelegate;
     address public newRocketMinipoolFactory;
+    address public newRocketNetworkFees;
     address public rocketMinipoolBase;
 
     // Upgrade ABIs
@@ -49,10 +50,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketNodeStakingAbi;
     string public newRocketNodeDistributorDelegateAbi;
     string public newRocketMinipoolFactoryAbi;
+    string public newRocketNetworkFeesAbi;
     string public rocketMinipoolBaseAbi;
-
-    // Merkle root for balances migration
-    bytes32 public migrationBalancesMerkleRoot;
 
     // Save deployer to limit access to set functions
     address immutable deployer;
@@ -69,20 +68,14 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         deployer = msg.sender;
     }
 
+    /// @notice Returns the address of the RocketStorage contract
     function getRocketStorageAddress() external view returns (address) {
         return address(rocketStorage);
     }
 
-    function setMigrationBalancesRoot(bytes32 _root) external {
-        require(msg.sender == deployer, "Only deployer can set");
-        require(!setup, "Already setup");
-
-        migrationBalancesMerkleRoot = _root;
-    }
-
     function set(address[] memory _addresses, string[] memory _abis) external {
-        require(msg.sender == deployer, "Only deployer can set");
-        require(!setup, "Already setup");
+        require(msg.sender == deployer, "Only deployer");
+        require(!locked, "Contract locked");
 
         // Set contract addresses
         newRocketNodeDeposit = _addresses[0];
@@ -95,7 +88,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeStaking = _addresses[7];
         newRocketNodeDistributorDelegate = _addresses[8];
         newRocketMinipoolFactory = _addresses[9];
-        rocketMinipoolBase = _addresses[10];
+        newRocketNetworkFees = _addresses[10];
+        rocketMinipoolBase = _addresses[11];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -108,12 +102,13 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeStakingAbi = _abis[7];
         newRocketNodeDistributorDelegateAbi = _abis[8];
         newRocketMinipoolFactoryAbi = _abis[9];
-        rocketMinipoolBaseAbi = _abis[10];
+        newRocketNetworkFeesAbi = _abis[10];
+        rocketMinipoolBaseAbi = _abis[11];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
-        require(msg.sender == deployer, "Only deployer can set");
-        require(!setup, "Already setup");
+        require(msg.sender == deployer, "Only deployer");
+        require(!locked, "Contract locked");
 
         intervals.push(ClaimInterval({
             interval: _interval,
@@ -121,12 +116,13 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         }));
     }
 
+    /// @notice Prevents further changes from being applied
     function lock() external {
-        require(msg.sender == deployer, "Only deployer can set");
-        setup = true;
+        require(msg.sender == deployer, "Only deployer");
+        locked = true;
     }
 
-    // Once this contract has been voted in by oDAO, guardian can perform the upgrade
+    /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
         require(!executed, "Already executed");
 
@@ -141,6 +137,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketNodeStaking", newRocketNodeStaking, newRocketNodeStakingAbi);
         _upgradeContract("rocketNodeDistributorDelegate", newRocketNodeDistributorDelegate, newRocketNodeDistributorDelegateAbi);
         _upgradeContract("rocketMinipoolFactory", newRocketMinipoolFactory, newRocketMinipoolFactoryAbi);
+        _upgradeContract("rocketNetworkFees", newRocketNetworkFees, newRocketNetworkFeesAbi);
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
@@ -160,24 +157,17 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.target")), 0.14 ether);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.maximum")), 0.14 ether);
 
-        // Merkle root for minipool migration
-        setBytes32(keccak256(abi.encodePacked('migration.balances.merkle.root')), migrationBalancesMerkleRoot);
-
         // Claim intervals
         for (uint256 i = 0; i < intervals.length; i++) {
             ClaimInterval memory interval = intervals[i];
             setUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", interval.interval)), interval.block);
         }
 
-        // Delete previous upgrade contract and this one
-        _deleteContract("rocketUpgradeOneDotOne");
-        _deleteContract("rocketUpgradeOneDotTwo");
-
         // Complete
         executed = true;
     }
 
-    // Add a new network contract
+    /// @dev Add a new network contract
     function _addContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Check contract name
         require(bytes(_name).length > 0, "Invalid contract name");
@@ -198,7 +188,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
     }
 
-    // Upgrade a network contract
+    /// @dev Upgrade a network contract
     function _upgradeContract(string memory _name, address _contractAddress, string memory _contractAbi) internal {
         // Get old contract address & check contract exists
         address oldContractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
@@ -219,7 +209,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         deleteBool(keccak256(abi.encodePacked("contract.exists", oldContractAddress)));
     }
 
-    // Deletes a network contract
+    /// @dev Deletes a network contract
     function _deleteContract(string memory _name) internal {
         address contractAddress = getAddress(keccak256(abi.encodePacked("contract.address", _name)));
         deleteString(keccak256(abi.encodePacked("contract.name", contractAddress)));
