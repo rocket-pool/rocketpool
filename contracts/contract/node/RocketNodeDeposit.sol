@@ -99,9 +99,10 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         }
         // Perform the pre-deposit
         minipool.preDeposit{value: preLaunchValue}(_bondAmount, _validatorPubkey, _validatorSignature, _depositDataRoot);
-        if (address(this).balance > 0) {
+        uint256 remaining = msg.value.add(shortFall).sub(preLaunchValue);
+        if (remaining > 0) {
             // Deposit the left over value into the deposit pool
-            rocketDepositPool.nodeDeposit{value: msg.value.sub(preLaunchValue)}();
+            rocketDepositPool.nodeDeposit{value: remaining}();
         }
         // Enqueue the minipool
         enqueueMinipool(address(minipool));
