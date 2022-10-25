@@ -104,7 +104,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @notice Returns an array of all minipools in the prelaunch state
     /// @param _offset The offset into the minipool set to start iterating
     /// @param _limit The maximum number of minipools to iterate over
-    function getPrelaunchMinipools(uint256 offset, uint256 limit) override external view
+    function getPrelaunchMinipools(uint256 _offset, uint256 _limit) override external view
     returns (address[] memory) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -112,12 +112,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         bytes32 minipoolKey = keccak256(abi.encodePacked("minipools.index"));
         // Iterate over the requested minipool range
         uint256 totalMinipools = getMinipoolCount();
-        uint256 max = offset.add(limit);
-        if (max > totalMinipools || limit == 0) { max = totalMinipools; }
+        uint256 max = _offset.add(_limit);
+        if (max > totalMinipools || _limit == 0) { max = totalMinipools; }
         // Create array big enough for every minipool
-        address[] memory minipools = new address[](max.sub(offset));
+        address[] memory minipools = new address[](max.sub(_offset));
         uint256 total = 0;
-        for (uint256 i = offset; i < max; i++) {
+        for (uint256 i = _offset; i < max; i++) {
             // Get the minipool at index i
             RocketMinipoolInterface minipool = RocketMinipoolInterface(addressSetStorage.getItem(minipoolKey, i));
             // Get the minipool's status, and to array if it's in prelaunch

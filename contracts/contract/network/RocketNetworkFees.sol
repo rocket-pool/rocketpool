@@ -20,7 +20,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     using SafeCast for uint;
 
     // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) u
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 2;
     }
 
