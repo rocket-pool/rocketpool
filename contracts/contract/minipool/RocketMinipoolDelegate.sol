@@ -168,7 +168,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Set the minipool status to prelaunch (ready for node to call `stake()`)
         setStatus(MinipoolStatus.Prelaunch);
         // Update deposit details
-        userDepositBalance = address(this).balance.add(preLaunchValue).sub(nodeDepositBalance);
+        userDepositBalance = msg.value.add(preLaunchValue).sub(nodeDepositBalance);
         userDepositAssignedTime = block.timestamp;
         // Emit ether deposited event
         emit EtherDeposited(msg.sender, msg.value, block.timestamp);
