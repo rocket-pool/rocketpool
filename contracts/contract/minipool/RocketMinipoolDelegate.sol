@@ -221,10 +221,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         _finalise();
     }
 
-    /// @notice Returns true when `stake()` can be called by node operator taking into consideration the scrub period
+    /// @notice Returns true when `stake()` or `promote()` can be called by node operator taking into consideration the scrub period
     function canStake() override external view onlyInitialised returns (bool) {
         // Check status
-        if (vacant || status != MinipoolStatus.Prelaunch) {
+        if (status != MinipoolStatus.Prelaunch) {
             return false;
         }
         // Get contracts
