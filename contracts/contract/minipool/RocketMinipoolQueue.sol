@@ -93,7 +93,8 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     /// @dev Get the ETH capacity of the variable queue
     function getVariableCapacity() internal view returns (uint256) {
-        return getUint("minipool.queue.variable.capacity");
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        return getLength().mul(rocketDAOProtocolSettingsMinipool.getVariableDepositAmount());
     }
 
     /// @notice Get the capacity of the next available minipool. Returns 0 if no minipools are available
@@ -120,9 +121,6 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         // Enqueue
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         addressQueueStorage.enqueueItem(queueKeyVariable, _minipool);
-        // Increase capacity value
-        RocketMinipoolInterface rocketMinipool = RocketMinipoolInterface(_minipool);
-        addUint("minipool.queue.variable.capacity", rocketMinipool.getNodeDepositBalance());
         // Emit enqueued event
         emit MinipoolEnqueued(_minipool, queueKeyVariable, block.timestamp);
     }
@@ -144,13 +142,10 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
             count = queueLength;
         }
         address[] memory minipoolAddresses = new address[](count);
-        uint256 capacity = 0;
         for (uint256 i = 0; i < count; i++) {
             RocketMinipoolInterface minipool = RocketMinipoolInterface(dequeueMinipool(queueKeyVariable));
-            capacity = capacity.add(minipool.getNodeDepositBalance());
             minipoolAddresses[i] = address(minipool);
         }
-        subUint("minipool.queue.variable.capacity", capacity);
         return minipoolAddresses;
     }
 

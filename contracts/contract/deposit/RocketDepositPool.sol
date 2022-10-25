@@ -78,13 +78,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Get minipool queue capacity
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         uint256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity();
-        // If node supplied collateral exceeds the current balance then there's no excess
-        uint256 nodeBalance = getNodeBalance();
         uint256 balance = getBalance();
-        if (nodeBalance > balance) {
-            return 0;
-        }
-        balance = balance.sub(nodeBalance);
         // Calculate and return
         if (minipoolCapacity >= balance) { return 0; }
         else { return balance.sub(minipoolCapacity); }

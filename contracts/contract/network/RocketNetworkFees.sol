@@ -20,7 +20,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
     using SafeCast for uint;
 
     // Construct
-    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
+    constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) u
         version = 2;
     }
 
@@ -31,7 +31,7 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
         // Calculate & return
-        int256 depositPoolBalance = rocketDepositPool.getUserBalance();
+        int256 depositPoolBalance = rocketDepositPool.getBalance().toInt256();
         int256 minipoolCapacity = rocketMinipoolQueue.getEffectiveCapacity().toInt256();
         int256 demand = depositPoolBalance - minipoolCapacity;
         require(demand <= depositPoolBalance);
