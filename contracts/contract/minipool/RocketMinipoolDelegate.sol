@@ -285,7 +285,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// @dev Promotes this minipool to a complete minipool
     function promote() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         // Check status
-        require(status == MinipoolStatus.Prelaunch && vacant, "Invalid status to promote");
+        require(status == MinipoolStatus.Prelaunch, "The minipool can only promote while in prelaunch");
+        require(vacant, "Cannot promote a non-vacant minipool");
         // Clear vacant flag
         vacant = false;
         // Check scrub period
