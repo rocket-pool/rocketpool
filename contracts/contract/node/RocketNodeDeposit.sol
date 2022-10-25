@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0-only
-
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -31,12 +30,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 3;
     }
 
-    /// @notice Accept incoming ETH from the deposit pool
+    /// @dev Accept incoming ETH from the deposit pool
     receive() external payable onlyLatestContract("rocketDepositPool", msg.sender) {}
 
     /// @notice Returns a node operator's credit balance in wei

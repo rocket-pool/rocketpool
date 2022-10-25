@@ -1,10 +1,8 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-//import "./RocketMinipool.sol";
 import "./RocketMinipoolProxy.sol";
 import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
@@ -22,24 +20,24 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInter
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 
-// Minipool creation, removal and management
-
+/// @notice Performs CREATE2 deployment of minipool contracts
 contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
 
     // Libs
     using SafeMath for uint;
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 2;
     }
 
-    // Returns the bytecode for RocketMinipool
+    /// @notice Returns the bytecode for RocketMinipool
     function getMinipoolBytecode() override public pure returns (bytes memory) {
         return type(RocketMinipoolProxy).creationCode;
     }
 
-    // Performs a CREATE2 deployment of a minipool contract with given salt
+    /// @notice Performs a CREATE2 deployment of a minipool contract with given salt
+    /// @param _nodeAddress Owning node operator's address
+    /// @param _salt A salt used in determining minipool address
     function deployContract(address _nodeAddress, uint256 _salt) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
         // Construct deployment bytecode
         bytes memory creationCode = getMinipoolBytecode();
