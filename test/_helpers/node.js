@@ -2,6 +2,7 @@ import {
     RocketNodeDeposit,
     RocketNodeManager,
     RocketNodeStaking,
+    RocketNodeStakingOld,
     RocketTokenRPL,
     RocketDAONodeTrustedActions,
     RocketDAONodeTrustedSettingsMembers,
@@ -18,6 +19,7 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get a node's RPL stake
@@ -112,8 +114,10 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
 
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
+    const preUpdate = !(await upgradeExecuted());
+
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);

@@ -7,9 +7,11 @@ import {
     RocketNetworkPrices,
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
-    RocketStorage
+    RocketStorage, RocketNodeDepositOld, RocketMinipoolFactoryOld, RocketMinipoolManagerOld,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
+import { upgradeExecuted } from '../_utils/upgrade';
+import { withdraw } from '../minipool/scenario-withdraw';
 
 
 // Get the number of minipools a node has
@@ -63,6 +65,7 @@ let minipoolSalt = 1
 
 // Create a minipool
 export async function createMinipool(txOptions, salt = null) {
+    const preUpdate = !(await upgradeExecuted());
 
     // Load contracts
     const [
@@ -70,20 +73,33 @@ export async function createMinipool(txOptions, salt = null) {
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
-        RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
+        preUpdate ? RocketMinipoolFactoryOld.deployed() : RocketMinipoolFactory.deployed(),
+        preUpdate ? RocketNodeDepositOld.deployed() : RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
     ]);
 
-    // Get artifact and bytecode
-    const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
-    const contractBytecode = RocketMinipoolProxy.bytecode;
+    // Get minipool contract bytecode
+    let contractBytecode;
+
+    if (preUpdate) {
+        const RocketMinipool = artifacts.require('RocketMinipoolOld');
+        contractBytecode = RocketMinipool.bytecode;
+    } else {
+        const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
+        contractBytecode = RocketMinipoolProxy.bytecode;
+    }
 
     // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+    let constructorArgs
+    if (preUpdate) {
+        const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+        constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
+    } else {
+        constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+    }
     const deployCode = contractBytecode + constructorArgs.substr(2);
 
-    if(salt === null){
+    if (salt === null){
         salt = minipoolSalt++;
     }
 
@@ -109,18 +125,33 @@ export async function createMinipool(txOptions, salt = null) {
     const minipoolAddress = raw.substr(raw.length - 40);
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
 
-    // Get validator deposit data
-    let depositData = {
-        pubkey: getValidatorPubkey(),
-        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(1000000000), // gwei
-        signature: getValidatorSignature(),
-    };
-
-    let depositDataRoot = getDepositDataRoot(depositData);
-
     // Make node deposit
-    await rocketNodeDeposit.deposit(txOptions.value, web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    if (preUpdate){
+        // Get validator deposit data
+        let depositData = {
+            pubkey: getValidatorPubkey(),
+            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+            amount: BigInt(16000000000), // gwei
+            signature: getValidatorSignature(),
+        };
+
+        let depositDataRoot = getDepositDataRoot(depositData);
+
+        await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    } else {
+        // Get validator deposit data
+        let depositData = {
+            pubkey: getValidatorPubkey(),
+            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+            amount: BigInt(1000000000), // gwei
+            signature: getValidatorSignature(),
+        };
+
+        let depositDataRoot = getDepositDataRoot(depositData);
+
+        await rocketNodeDeposit.deposit(txOptions.value, web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    }
+
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
 
@@ -134,8 +165,10 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 // Progress a minipool to staking
 export async function stakeMinipool(minipool, txOptions) {
 
+    const preUpdate = !(await upgradeExecuted());
+
     // Get contracts
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed()
+    const rocketMinipoolManager = preUpdate ? await RocketMinipoolManagerOld.deployed() : await RocketMinipoolManager.deployed()
 
     // Get minipool validator pubkey
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);
@@ -144,12 +177,23 @@ export async function stakeMinipool(minipool, txOptions) {
     let withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(minipool.address);
 
     // Get validator deposit data
-    let depositData = {
-        pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
-        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-        amount: BigInt(31000000000), // gwei
-        signature: getValidatorSignature(),
-    };
+    let depositData;
+
+    if (preUpdate) {
+        depositData = {
+            pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
+            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+            amount: BigInt(16000000000), // gwei
+            signature: getValidatorSignature(),
+        };
+    } else {
+        depositData = {
+            pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
+            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+            amount: BigInt(31000000000), // gwei
+            signature: getValidatorSignature(),
+        };
+    }
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Stake

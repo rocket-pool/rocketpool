@@ -52,7 +52,7 @@ const contracts = {
   // Network
   rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
   rocketNetworkFees:                        artifacts.require('RocketNetworkFeesOld.sol'),
-  rocketNetworkPrices:                      artifacts.require('RocketNetworkPrices.sol'),
+  rocketNetworkPrices:                      artifacts.require('RocketNetworkPricesOld.sol'),
   rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
   // Rewards
   rocketRewardsPool:                        artifacts.require('RocketRewardsPool.sol'),
@@ -99,6 +99,7 @@ const contracts = {
   rocketNodeDistributorDelegateNew:         artifacts.require('RocketNodeDistributorDelegate.sol'),
   rocketMinipoolFactoryNew:                 artifacts.require('RocketMinipoolFactory.sol'),
   rocketNetworkFeesNew:                     artifacts.require('RocketNetworkFees.sol'),
+  rocketNetworkPricesNew:                   artifacts.require('RocketNetworkPrices.sol'),
   rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
@@ -246,6 +247,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketNodeDistributorDelegateNew.address,
                 contracts.rocketMinipoolFactoryNew.address,
                 contracts.rocketNetworkFeesNew.address,
+                contracts.rocketNetworkPricesNew.address,
                 contracts.rocketMinipoolBase.address,
               ],
               [
@@ -261,6 +263,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketNodeDistributorDelegateNew.abi),
                 compressABI(contracts.rocketMinipoolFactoryNew.abi),
                 compressABI(contracts.rocketNetworkFeesNew.abi),
+                compressABI(contracts.rocketNetworkPricesNew.abi),
                 compressABI(contracts.rocketMinipoolBase.abi),
               ],
             ]
@@ -309,6 +312,7 @@ module.exports = async (deployer, network) => {
           case 'rocketNodeDistributorDelegateNew':
           case 'rocketMinipoolFactoryNew':
           case 'rocketNetworkFeesNew':
+          case 'rocketNetworkPricesNew':
           case 'rocketMinipoolBase':
           break;
 

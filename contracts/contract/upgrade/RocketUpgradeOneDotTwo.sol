@@ -36,6 +36,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketNodeDistributorDelegate;
     address public newRocketMinipoolFactory;
     address public newRocketNetworkFees;
+    address public newRocketNetworkPrices;
     address public rocketMinipoolBase;
 
     // Upgrade ABIs
@@ -50,6 +51,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketNodeDistributorDelegateAbi;
     string public newRocketMinipoolFactoryAbi;
     string public newRocketNetworkFeesAbi;
+    string public newRocketNetworkPricesAbi;
     string public rocketMinipoolBaseAbi;
 
     // Save deployer to limit access to set functions
@@ -88,7 +90,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeDistributorDelegate = _addresses[8];
         newRocketMinipoolFactory = _addresses[9];
         newRocketNetworkFees = _addresses[10];
-        rocketMinipoolBase = _addresses[11];
+        newRocketNetworkPrices = _addresses[11];
+        rocketMinipoolBase = _addresses[12];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -102,7 +105,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNodeDistributorDelegateAbi = _abis[8];
         newRocketMinipoolFactoryAbi = _abis[9];
         newRocketNetworkFeesAbi = _abis[10];
-        rocketMinipoolBaseAbi = _abis[11];
+        newRocketNetworkPricesAbi = _abis[11];
+        rocketMinipoolBaseAbi = _abis[12];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -137,6 +141,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketNodeDistributorDelegate", newRocketNodeDistributorDelegate, newRocketNodeDistributorDelegateAbi);
         _upgradeContract("rocketMinipoolFactory", newRocketMinipoolFactory, newRocketMinipoolFactoryAbi);
         _upgradeContract("rocketNetworkFees", newRocketNetworkFees, newRocketNetworkFeesAbi);
+        _upgradeContract("rocketNetworkPrices", newRocketNetworkPrices, newRocketNetworkPricesAbi);
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
