@@ -4,6 +4,7 @@ import {
     RocketMinipoolQueue,
     RocketDAOProtocolSettingsMinipool,
     RocketVault,
+    RocketMinipoolDelegate,
     RocketDepositPoolOld,
 } from '../_utils/artifacts';
 
@@ -52,9 +53,10 @@ export async function assignDepositsV2(txOptions) {
     // Get expected deposit assignment parameters
     let expectedDepositAssignments = 0;
     let expectedEthAssigned = web3.utils.toBN(0);
-    let expectedEthVaultUsed = web3.utils.toBN(0);
+    let expectedNodeBalanceUsed = web3.utils.toBN(0);
     let depositBalanceRemaining = depositPoolBalance;
     let depositAssignmentsRemaining = maxDepositAssignments;
+
     while (minipoolCapacities.length > 0 && depositBalanceRemaining.gte(minipoolCapacities[0]) && depositAssignmentsRemaining > 0) {
         let capacity = minipoolCapacities.shift();
         ++expectedDepositAssignments;
@@ -68,10 +70,13 @@ export async function assignDepositsV2(txOptions) {
         let scalingCount = maxSocialisedAssignments.toNumber();
         let totalEthCount = depositPoolBalance.div(web3.utils.toBN(web3.utils.toWei('31', 'ether'))).toNumber();
         expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments.toNumber(), minipoolQueueLength.toNumber());
-        expectedEthAssigned = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
-        expectedEthVaultUsed = web3.utils.toBN(web3.utils.toWei('31', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
-    } else {
-        expectedEthVaultUsed = expectedEthAssigned
+        expectedEthAssigned = web3.utils.toBN(web3.utils.toWei('31', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
+
+        let indices = [...Array(expectedDepositAssignments).keys()];
+        let addressesInQueue = await Promise.all(indices.map(i => rocketMinipoolQueue.getMinipoolAt(i)));
+        let minipoolsInQueue = await Promise.all(addressesInQueue.map(a => RocketMinipoolDelegate.at(a)));
+        let topUpValues = await Promise.all(minipoolsInQueue.map(m => m.getNodeTopUpValue()))
+        expectedNodeBalanceUsed = topUpValues.reduce((p, c) => p.add(c), expectedNodeBalanceUsed);
     }
 
     // Get balances
@@ -113,10 +118,9 @@ export async function assignDepositsV2(txOptions) {
     ]);
 
     // Check balances
-    const depositPoolBefore = balances1.depositPoolEth.sub(balances1.depositPoolNodeEth);
-    const depositPoolAfter = balances2.depositPoolEth.sub(balances2.depositPoolNodeEth);
-    assert(depositPoolAfter.eq(depositPoolBefore.sub(expectedEthAssigned)), 'Incorrect updated deposit pool ETH balance');
-    assert(balances2.vaultEth.eq(balances1.vaultEth.sub(expectedEthVaultUsed)), 'Incorrect updated vault ETH balance');
+    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.sub(expectedEthAssigned)), 'Incorrect updated deposit pool ETH balance');
+    assert(balances2.depositPoolNodeEth.eq(balances1.depositPoolNodeEth.sub(expectedNodeBalanceUsed)), 'Incorrect updated deposit pool node ETH balance');
+    assert(balances2.vaultEth.eq(balances1.vaultEth.sub(expectedEthAssigned)), 'Incorrect updated vault ETH balance');
 
     // Check minipool queues
     assert(queue2.totalLength.eq(queue1.totalLength.sub(web3.utils.toBN(expectedDepositAssignments))), 'Incorrect updated minipool queue length');

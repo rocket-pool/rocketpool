@@ -17,4 +17,5 @@ interface RocketMinipoolQueueInterface {
     function dequeueMinipoolByDepositLegacy(MinipoolDeposit _depositType) external returns (address minipoolAddress);
     function dequeueMinipools(uint256 _maxToDequeue) external returns (address[] memory minipoolAddress);
     function removeMinipool(MinipoolDeposit _depositType) external;
+    function getMinipoolAt(uint256 _index) external view returns(address);
 }

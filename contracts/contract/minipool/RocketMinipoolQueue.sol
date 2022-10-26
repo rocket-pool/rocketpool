@@ -181,4 +181,10 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         emit MinipoolRemoved(_minipool, _key, block.timestamp);
     }
 
+    /// @notice Returns the minipool address of the minipool in the global queue at a given index
+    /// @param _index The index into the queue to retrieve
+    function getMinipoolAt(uint256 _index) override external view returns(address) {
+        AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
+        return addressQueueStorage.getItem(queueKeyVariable, _index);
+    }
 }
