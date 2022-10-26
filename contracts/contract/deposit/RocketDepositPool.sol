@@ -93,21 +93,26 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         require(rocketDAOProtocolSettingsDeposit.getDepositEnabled(), "Deposits into Rocket Pool are currently disabled");
         require(msg.value >= rocketDAOProtocolSettingsDeposit.getMinimumDeposit(), "The deposited amount is less than the minimum deposit size");
-        // Check if deposit exceeds limit based on current deposit size and minipool queue capacity
-        uint256 nodeBalance = getNodeBalance();
+        /**
+            Check if deposit exceeds limit based on current deposit size and minipool queue capacity.
+
+            The deposit pool can, at most, accept a deposit that, after assignments, matches ETH to every minipool in
+            the queue and leaves the deposit pool with maximumDepositPoolSize ETH.
+
+            capacityNeeded = depositPoolBalance + msg.value
+            maxCapacity = maximumDepositPoolSize + queueEffectiveCapacity
+            assert(capacityNeeded <= maxCapacity)
+        */
         uint256 capacityNeeded = rocketVault.balanceOf("rocketDepositPool").add(msg.value);
-        if (nodeBalance <= capacityNeeded) {
-            capacityNeeded = capacityNeeded.sub(nodeBalance);
-            if (capacityNeeded > rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize()) {
-                // Doing a conditional require() instead of a single one optimises for the common
-                // case where capacityNeeded fits in the deposit pool without looking at the queue
-                if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
-                    RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-                    require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
-                        "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
-                } else {
-                    revert("The deposit pool size after depositing exceeds the maximum size");
-                }
+        if (capacityNeeded > rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize()) {
+            // Doing a conditional require() instead of a single one optimises for the common
+            // case where capacityNeeded fits in the deposit pool without looking at the queue
+            if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
+                RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+                require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
+                    "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
+            } else {
+                revert("The deposit pool size after depositing exceeds the maximum size");
             }
         }
         // Calculate deposit fee
