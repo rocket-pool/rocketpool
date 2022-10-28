@@ -465,11 +465,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         if (_balance > capital) {
             // Total rewards to share
             uint256 rewards = _balance.sub(capital);
-            // Calculate node and user portion based on proportions of capital provided
-            uint256 nodePortion = rewards.mul(nodeCapital).div(userCapital.add(nodeCapital));
-            uint256 userPortion = rewards.sub(nodePortion);
-            // Calculate final node amount as combination of node capital, node share and commission on user share
-            nodeShare = nodeCapital.add(nodePortion.add(userPortion.mul(nodeFee).div(calcBase)));
+            nodeShare = calculateNodeRewards(nodeCapital, userCapital, rewards);
         } else if (_balance > userCapital) {
             nodeShare = _balance.sub(userCapital);
         }
@@ -483,6 +479,18 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             nodeShare = nodeShare.sub(penaltyAmount);
         }
         return nodeShare;
+    }
+
+    /// @dev Calculates what portion of rewards should be paid to the node operator given a capital ratio
+    /// @param _nodeCapital The node supplied portion of the capital
+    /// @param _userCapital The user supplied portion of the capital
+    /// @param _rewards The amount of rewards to split
+    function calculateNodeRewards(uint256 _nodeCapital, uint256 _userCapital, uint256 _rewards) internal view returns (uint256) {
+        // Calculate node and user portion based on proportions of capital provided
+        uint256 nodePortion = _rewards.mul(_nodeCapital).div(_userCapital.add(_nodeCapital));
+        uint256 userPortion = _rewards.sub(nodePortion);
+        // Calculate final node amount as combination of node capital, node share and commission on user share
+        return nodePortion.add(userPortion.mul(nodeFee).div(calcBase));
     }
 
     /// @notice Given a validator balance, this function returns what portion of it belongs to rETH users taking into
@@ -622,6 +630,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketNodeDepositInterface rocketNodeDepositInterface = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Check the new bond amount is valid
         require(rocketNodeDepositInterface.isValidDepositAmount(_amount), "Invalid bond amount");
+        // Distribute any skimmed rewards
+        distributeSkimmedRewards();
         // Update user/node balances
         uint256 delta = nodeDepositBalance.sub(_amount);
         userDepositBalance = getUserDepositBalance().add(delta);
@@ -636,6 +646,16 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             userDepositBalanceLegacy = 2**256-1;
             depositType = MinipoolDeposit.Variable;
         }
+    }
+
+    /// @dev Distributes the current contract balance based on capital ratio and node fee
+    function distributeSkimmedRewards() internal {
+        uint256 rewards = address(this).balance;
+        uint256 nodeShare = calculateNodeRewards(nodeDepositBalance, getUserDepositBalance(), rewards);
+        // Pay node operator via refund mechanism
+        nodeRefundBalance = nodeRefundBalance.add(nodeShare);
+        // Deposit user share into rETH contract
+        payable(rocketTokenRETH).transfer(address(this).balance.sub(nodeShare));
     }
 
     /// @dev Set the minipool's current status
