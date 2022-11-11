@@ -7,7 +7,6 @@ import {
     setNodeTrusted,
     setNodeWithdrawalAddress,
     nodeStakeRPL,
-    nodeWithdrawRPL,
     nodeDeposit,
     getNodeRPLStake,
     getNodeEffectiveRPLStake,

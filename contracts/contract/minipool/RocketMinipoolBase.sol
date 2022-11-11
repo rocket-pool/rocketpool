@@ -24,6 +24,8 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
 
     /// @notice Sets up starting delegate contract and then delegates initialisation to it
     function initialise(address _nodeAddress) external {
+        // Check input
+        require(_nodeAddress != address(0), "Invalid node address");
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set the current delegate

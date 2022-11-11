@@ -10,7 +10,8 @@
     "migrate": "truffle migrate",
     "test": "scripts/test.sh test/rocket-pool-tests.js",
     "test-cov": "./node_modules/.bin/solidity-coverage",
-    "format": "prettier --write '**/*.js'"
+    "format": "prettier --write '**/*.js'",
+    "slither": "scripts/slither.sh"
   },
   "devDependencies": {
     "@babel/runtime": "^7.9.2",

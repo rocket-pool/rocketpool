@@ -20,6 +20,7 @@ import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInt
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 
 
 // Node registration and management 
@@ -173,7 +174,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Calculate and set current average fee numerator
         uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
         if (count > 0){
-            uint256 numerator;
+            uint256 numerator = 0;
             // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
             for (uint256 i = 0; i < count; i++) {
                 RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
@@ -200,6 +201,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Get valid deposit amounts
         uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
         // Setup memory for calculations
@@ -207,6 +209,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256[] memory depositCounts = new uint256[](depositSizes.length);
         uint256 depositWeightTotal;
         uint256 totalCount;
+        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         // Retrieve the number of staking minipools per deposit size
         for (uint256 i = 0; i < depositSizes.length; i++) {
             depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
@@ -217,20 +220,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         }
         // Calculate the weights of each deposit size
         for (uint256 i = 0; i < depositSizes.length; i++) {
-            // TODO: This 32 ETH probably shouldn't be a literal (do we need to also store user ETH in case 32 ETH deposit amount ever changes?)
-            depositWeights[i] = uint256(32 ether).sub(depositSizes[i]).mul(depositCounts[i]);
+            depositWeights[i] = launchAmount.sub(depositSizes[i]).mul(depositCounts[i]);
             depositWeightTotal = depositWeightTotal.add(depositWeights[i]);
         }
         for (uint256 i = 0; i < depositSizes.length; i++) {
             depositWeights[i] = depositWeights[i].mul(calcBase).div(depositWeightTotal);
         }
         // Calculate the weighted average
-        uint256 weightedAverage;
+        uint256 weightedAverage = 0;
         for (uint256 i = 0; i < depositSizes.length; i++) {
             if (depositCounts[i] > 0) {
                 uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i])));
-                uint256 average = numerator.div(depositCounts[i]);
-                weightedAverage = weightedAverage.add(average.mul(depositWeights[i]));
+                weightedAverage = weightedAverage.add(numerator.mul(depositWeights[i]).div(depositCounts[i]));
             }
         }
         return weightedAverage.div(calcBase);
@@ -308,8 +309,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return count;
     }
 
-    // Convenience function to return all on-chain details about a given node
-    function getNodeDetails(address _nodeAddress) override external view returns (NodeDetails memory nodeDetails) {
+    /// @notice Convenience function to return all on-chain details about a given node
+    function getNodeDetails(address _nodeAddress) override public view returns (NodeDetails memory nodeDetails) {
         // Get contracts
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
@@ -334,6 +335,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         nodeDetails.ethMatchedLimit = rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress);
         // Distributor details
         nodeDetails.feeDistributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        uint256 distributorBalance = nodeDetails.feeDistributorAddress.balance;
+        RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(nodeDetails.feeDistributorAddress);
+        nodeDetails.distributorBalanceNodeETH = distributor.getNodeShare();
+        nodeDetails.distributorBalanceUserETH = distributorBalance.sub(nodeDetails.distributorBalanceNodeETH);
         // Minipool details
         nodeDetails.minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
         // Balance details
@@ -343,7 +348,9 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         nodeDetails.balanceOldRPL = rocketTokenRPLFixedSupply.balanceOf(_nodeAddress);
     }
 
-    // Returns a slice of the node operator address set
+    /// @notice Returns a slice of the node operator address set
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
     function getNodeAddresses(uint256 _offset, uint256 _limit) override external view returns (address[] memory) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -365,5 +372,31 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             mstore(nodes, total)
         }
         return nodes;
+    }
+
+    /// @notice Returns a slice of node operator details
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
+    function getAllNodeDetails(uint256 _offset, uint256 _limit) override external view returns (NodeDetails[] memory) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Precompute node key
+        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
+        // Iterate over the requested minipool range
+        uint256 totalNodes = getNodeCount();
+        uint256 max = _offset.add(_limit);
+        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        // Create array big enough for every minipool
+        NodeDetails[] memory nodeDetails = new NodeDetails[](max.sub(_offset));
+        uint256 total = 0;
+        for (uint256 i = _offset; i < max; i++) {
+            nodeDetails[total] = getNodeDetails(addressSetStorage.getItem(nodeKey, i));
+            total++;
+        }
+        // Dirty hack to cut unused elements off end of return value
+        assembly {
+            mstore(nodeDetails, total)
+        }
+        return nodeDetails;
     }
 }

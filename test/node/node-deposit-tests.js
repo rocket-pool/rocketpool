@@ -1,6 +1,7 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
+    RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNode,
     RocketMinipoolDelegate,
@@ -15,6 +16,7 @@ import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from '../minipool/scenario-reduce-bond';
 import { userDeposit } from '../_helpers/deposit';
 import { increaseTime } from '../_utils/evm';
+import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
@@ -29,6 +31,8 @@ export default function() {
 
         // Setup
         let launchTimeout =  (60 * 60 * 72); // 72 hours
+        let bondReductionWindowStart = (2 * 24 * 60 * 60)
+        let bondReductionWindowLength = (2 * 24 * 60 * 60)
         let noMinimumNodeFee = web3.utils.toWei('0', 'ether');
         let lebDepositNodeAmount;
         let halfDepositNodeAmount;
@@ -39,6 +43,8 @@ export default function() {
 
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -210,7 +216,7 @@ export default function() {
 
             // Signal wanting to reduce and wait 7 days
             await minipool.beginReduceBondAmount({from: node});
-            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await increaseTime(web3, bondReductionWindowStart + 1);
 
             // Reduce the bond to 8 ether to receive a deposit credit
             await reduceBond(minipool, web3.utils.toWei('8', 'ether'), {from: node});

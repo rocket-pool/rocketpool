@@ -11,3 +11,6 @@ enum SettingType {
   BYTES32,
   INT256
 }
+
+/// @dev Required so truffle exports an artifact
+contract DummySettingType {}

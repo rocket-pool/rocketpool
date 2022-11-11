@@ -196,3 +196,11 @@ export async function nodeDeposit(txOptions) {
     // Make node deposit
     await rocketNodeDeposit.deposit(txOptions.value, web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
 }
+
+
+// Get a node's deposit credit balance
+export async function getNodeDepositCredit(nodeAddress) {
+    const rocketNodeDeposit = await RocketNodeDeposit.deployed();
+    let credit = await rocketNodeDeposit.getNodeDepositCredit(nodeAddress);
+    return credit;
+}

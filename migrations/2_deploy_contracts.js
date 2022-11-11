@@ -69,7 +69,7 @@ const contracts = {
   rocketDAONodeTrustedUpgrade:              artifacts.require('RocketDAONodeTrustedUpgrade.sol'),
   rocketDAONodeTrustedSettingsMembers:      artifacts.require('RocketDAONodeTrustedSettingsMembers.sol'),
   rocketDAONodeTrustedSettingsProposals:    artifacts.require('RocketDAONodeTrustedSettingsProposals.sol'),
-  rocketDAONodeTrustedSettingsMinipool:     artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
+  rocketDAONodeTrustedSettingsMinipool:     artifacts.require('RocketDAONodeTrustedSettingsMinipoolOld.sol'),
   rocketDAOProtocol:                        artifacts.require('RocketDAOProtocol.sol'),
   rocketDAOProtocolProposals:               artifacts.require('RocketDAOProtocolProposals.sol'),
   rocketDAOProtocolActions:                 artifacts.require('RocketDAOProtocolActions.sol'),
@@ -101,6 +101,7 @@ const contracts = {
   rocketNetworkFeesNew:                     artifacts.require('RocketNetworkFees.sol'),
   rocketNetworkPricesNew:                   artifacts.require('RocketNetworkPrices.sol'),
   rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
+  rocketDAONodeTrustedSettingsMinipoolNew:  artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
   rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
   // Utils
   addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -248,6 +249,7 @@ module.exports = async (deployer, network) => {
                 contracts.rocketMinipoolFactoryNew.address,
                 contracts.rocketNetworkFeesNew.address,
                 contracts.rocketNetworkPricesNew.address,
+                contracts.rocketDAONodeTrustedSettingsMinipoolNew.address,
                 contracts.rocketMinipoolBase.address,
               ],
               [
@@ -264,6 +266,7 @@ module.exports = async (deployer, network) => {
                 compressABI(contracts.rocketMinipoolFactoryNew.abi),
                 compressABI(contracts.rocketNetworkFeesNew.abi),
                 compressABI(contracts.rocketNetworkPricesNew.abi),
+                compressABI(contracts.rocketDAONodeTrustedSettingsMinipoolNew.abi),
                 compressABI(contracts.rocketMinipoolBase.abi),
               ],
             ]
@@ -313,6 +316,7 @@ module.exports = async (deployer, network) => {
           case 'rocketMinipoolFactoryNew':
           case 'rocketNetworkFeesNew':
           case 'rocketNetworkPricesNew':
+          case 'rocketDAONodeTrustedSettingsMinipoolNew':
           case 'rocketMinipoolBase':
           break;
 

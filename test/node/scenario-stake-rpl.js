@@ -56,22 +56,10 @@ export async function stakeRpl(amount, txOptions) {
             rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress),
             rocketNodeStaking.getNodeETHMatched.call(nodeAddress),
             rocketNodeStaking.getNodeETHMatchedLimit.call(nodeAddress),
+            rocketNodeStaking.getNodeETHProvided.call(nodeAddress),
         ]).then(
-            ([totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit]) =>
-            ({totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit})
-        );
-    }
-
-    // Get minipool counts
-    function getMinipoolCounts(nodeAddress) {
-        return Promise.all([
-            rocketMinipoolManager.getMinipoolCount.call(),
-            rocketMinipoolManager.getNodeMinipoolCount.call(nodeAddress),
-            rocketMinipoolManager.getStakingMinipoolCount.call(),
-            rocketMinipoolManager.getNodeStakingMinipoolCount.call(nodeAddress),
-        ]).then(
-            ([total, node, totalStaking, nodeEthMatched, nodeStaking]) =>
-            ({total, node, totalStaking, nodeEthMatched, nodeStaking})
+            ([totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit, nodeEthProvided]) =>
+            ({totalStake, nodeStake, nodeEffectiveStake, nodeEthMatched, nodeEthMatchedLimit, nodeEthProvided})
         );
     }
 
@@ -85,14 +73,13 @@ export async function stakeRpl(amount, txOptions) {
     await rocketNodeStaking.stakeRPL(amount, txOptions);
 
     // Get updated token balances, staking details & minipool counts
-    let [balances2, details2, minipoolCounts] = await Promise.all([
+    let [balances2, details2] = await Promise.all([
         getTokenBalances(txOptions.from),
         getStakingDetails(txOptions.from),
-        getMinipoolCounts(txOptions.from),
     ]);
 
     // Calculate expected effective stakes & node minipool limit
-    const maxNodeEffectiveStake = details2.nodeEthMatched.mul(maxPerMinipoolStake).div(rplPrice);
+    const maxNodeEffectiveStake = details2.nodeEthProvided.mul(maxPerMinipoolStake).div(rplPrice);
     const expectedNodeEffectiveStake = (details2.nodeStake.lt(maxNodeEffectiveStake) ? details2.nodeStake : maxNodeEffectiveStake);
     const expectedNodeEthMatchedLimit = details2.nodeStake.mul(rplPrice).div(minPerMinipoolStake);
 

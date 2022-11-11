@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, getCurrentTime, increaseTime } from '../_utils/evm'
+import { getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';

@@ -1,10 +1,9 @@
 import {
-  RocketDAONodeTrusted, RocketDAONodeTrustedSettingsMinipool,
+  RocketDAONodeTrustedSettingsMinipool,
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
-  RocketMinipool
 } from '../_utils/artifacts';
-import { increaseTime, mineBlocks } from '../_utils/evm';
+import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
@@ -23,7 +22,6 @@ import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
-
 
         // Accounts
         const [

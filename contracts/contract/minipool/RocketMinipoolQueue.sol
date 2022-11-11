@@ -187,4 +187,5 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
         return addressQueueStorage.getItem(queueKeyVariable, _index);
     }
+
 }

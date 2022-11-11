@@ -1,19 +1,17 @@
-import { mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
+import { getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { nodeDeposit, nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node'
+import { registerNode, setNodeTrusted } from '../_helpers/node'
 import { executeUpdatePrices, submitPrices } from './scenario-submit-prices'
 import {
     RocketDAONodeTrustedSettingsProposals,
     RocketDAOProtocolSettingsNetwork,
-    RocketDAOProtocolSettingsNode,
     RocketNetworkPrices
 } from '../_utils/artifacts'
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
-import { mintRPL } from '../_helpers/tokens'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {

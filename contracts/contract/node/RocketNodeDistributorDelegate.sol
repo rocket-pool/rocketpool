@@ -1,6 +1,5 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -10,6 +9,7 @@ import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 
+/// @dev Contains the logic for RocketNodeDistributors
 contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, RocketNodeDistributorInterface {
     // Import libraries
     using SafeMath for uint256;
@@ -36,27 +36,40 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
         nodeAddress = address(0);
     }
 
-    function distribute() override external {
+    /// @notice Returns the portion of the contract's balance that belongs to the node operator
+    function getNodeShare() override public view returns (uint256) {
         // Get contracts
         RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(rocketStorage.getAddress(rocketNodeManagerKey));
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(rocketStorage.getAddress(rocketNodeStakingKey));
-        address rocketTokenRETH = rocketStorage.getAddress(rocketTokenRETHKey);
         // Get withdrawal address and the node's average node fee
-        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         uint256 averageNodeFee = rocketNodeManager.getAverageNodeFee(nodeAddress);
         // Get node ETH collateral ratio
         uint256 collateralRatio = rocketNodeStaking.getNodeETHCollateralisationRatio(nodeAddress);
         // Calculate reward split
-        uint256 nodeBalance = address(this).balance.div(collateralRatio);
+        uint256 nodeBalance = address(this).balance.mul(calcBase).div(collateralRatio);
         uint256 userBalance = address(this).balance.sub(nodeBalance);
-        uint256 nodeShare = nodeBalance.add(userBalance.mul(averageNodeFee).div(calcBase));
-        uint256 userShare = address(this).balance.sub(nodeShare);
-        // Transfer user share
-        payable(rocketTokenRETH).transfer(userShare);
+        return nodeBalance.add(userBalance.mul(averageNodeFee).div(calcBase));
+    }
+
+    /// @notice Returns the portion of the contract's balance that belongs to the users
+    function getUserShare() override external view returns (uint256) {
+        return address(this).balance.sub(getNodeShare());
+    }
+
+    /// @notice Distributes the balance of this contract to its owners
+    function distribute() override external {
+        // Calculate node share
+        uint256 nodeShare = getNodeShare();
         // Transfer node share
-        (bool success,) = withdrawalAddress.call{value : address(this).balance}("");
+        address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        (bool success,) = withdrawalAddress.call{value : nodeShare}("");
         require(success);
+        // Transfer user share
+        uint256 userShare = address(this).balance;
+        address rocketTokenRETH = rocketStorage.getAddress(rocketTokenRETHKey);
+        payable(rocketTokenRETH).transfer(userShare);
         // Emit event
         emit FeesDistributed(nodeAddress, userShare, nodeShare, block.timestamp);
     }
+
 }

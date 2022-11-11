@@ -22,8 +22,13 @@ struct NodeDetails {
     uint256 balanceRETH;
     uint256 balanceRPL;
     uint256 balanceOldRPL;
+    uint256 distributorBalanceUserETH;
+    uint256 distributorBalanceNodeETH;
     address withdrawalAddress;
     address pendingWithdrawalAddress;
     bool smoothingPoolRegistrationState;
     uint256 smoothingPoolRegistrationChanged;
 }
+
+/// @dev Required so truffle exports an artifact
+contract DummyNodeDetails {}

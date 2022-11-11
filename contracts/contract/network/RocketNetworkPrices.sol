@@ -1,6 +1,5 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -9,8 +8,7 @@ import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/network/RocketNetworkPricesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
-// Network token price data
-
+/// @notice Oracle contract for network token price data
 contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
 
     // Libs
@@ -20,7 +18,6 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
     event PricesSubmitted(address indexed from, uint256 block, uint256 rplPrice, uint256 time);
     event PricesUpdated(uint256 block, uint256 rplPrice, uint256 time);
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Set contract version
         version = 2;
@@ -31,24 +28,30 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         }
     }
 
-    // The block number which prices are current for
+    /// @notice Returns the block number which prices are current for
     function getPricesBlock() override public view returns (uint256) {
         return getUint(keccak256("network.prices.updated.block"));
     }
+
+    /// @dev Sets the block number which prices are current for
     function setPricesBlock(uint256 _value) private {
         setUint(keccak256("network.prices.updated.block"), _value);
     }
 
-    // The current RP network RPL price in ETH
+    /// @notice Returns the current network RPL price in ETH
     function getRPLPrice() override public view returns (uint256) {
         return getUint(keccak256("network.prices.rpl"));
     }
+
+    /// @dev Sets the current network RPL price in ETH
     function setRPLPrice(uint256 _value) private {
         setUint(keccak256("network.prices.rpl"), _value);
     }
 
-    // Submit network price data for a block
-    // Only accepts calls from trusted (oracle) nodes
+    /// @notice Submit network price data for a block
+    ///         Only accepts calls from trusted (oracle) nodes
+    /// @param _block The block this price submission is for
+    /// @param _rplPrice The price of RPL at the given block
     function submitPrices(uint256 _block, uint256 _rplPrice) override external onlyLatestContract("rocketNetworkPrices", address(this)) onlyTrustedNode(msg.sender) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
@@ -76,7 +79,9 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         }
     }
 
-    // Executes updatePrices if consensus threshold is reached
+    /// @notice Executes updatePrices if consensus threshold is reached
+    /// @param _block The block to execute price update for
+    /// @param _rplPrice The price of RPL at the given block
     function executeUpdatePrices(uint256 _block, uint256 _rplPrice) override external onlyLatestContract("rocketNetworkPrices", address(this)) {
         // Check settings
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));
@@ -95,7 +100,9 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         updatePrices(_block, _rplPrice);
     }
 
-    // Update network price data
+    /// @dev Update network price data
+    /// @param _block The block to update price for
+    /// @param _rplPrice The price of RPL at the given block
     function updatePrices(uint256 _block, uint256 _rplPrice) private {
         // Update price
         setRPLPrice(_rplPrice);
@@ -104,7 +111,7 @@ contract RocketNetworkPrices is RocketBase, RocketNetworkPricesInterface {
         emit PricesUpdated(_block, _rplPrice, block.timestamp);
     }
 
-    // Returns the latest block number that oracles should be reporting prices for
+    /// @notice Returns the latest block number that oracles should be reporting prices for
     function getLatestReportableBlock() override external view returns (uint256) {
         // Load contracts
         RocketDAOProtocolSettingsNetworkInterface rocketDAOProtocolSettingsNetwork = RocketDAOProtocolSettingsNetworkInterface(getContractAddress("rocketDAOProtocolSettingsNetwork"));

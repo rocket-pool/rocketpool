@@ -93,6 +93,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
+        // Increase ETH matched (used to calculate RPL collateral requirements)
+        uint256 launchAmount;
+        {
+            RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+            launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
+        }
+        increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
         // Get the pre-launch value
@@ -114,9 +121,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         minipool.preDeposit{value: preLaunchValue}(_bondAmount, _validatorPubkey, _validatorSignature, _depositDataRoot);
         // Enqueue the minipool
         enqueueMinipool(address(minipool));
-        // Increase ETH matched (used to calculate RPL collateral requirements)
-        // TODO: This 32 ETH probably shouldn't be a literal
-        increaseEthMatched(msg.sender, uint256(32 ether).sub(_bondAmount));
         // Assign deposits if enabled
         assignDeposits();
     }
@@ -133,11 +137,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
+        // Increase ETH matched (used to calculate RPL collateral requirements)
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
+        increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
         _createVacantMinipool(_salt, _validatorPubkey, _bondAmount, _expectedMinipoolAddress);
-        // Increase ETH matched (used to calculate RPL collateral requirements)
-        // TODO: This 32 ETH probably shouldn't be a literal
-        increaseEthMatched(msg.sender, uint256(32 ether).sub(_bondAmount));
     }
 
     /// @dev Increases the amount of ETH that has been matched against a node operators bond. Reverts if it exceeds the
@@ -154,7 +159,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         if (ethMatched == 0) {
             RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
             // Migration from legacy minipools which all had 16 ETH matched
-            ethMatched = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress).mul(16 ether);
+            ethMatched = rocketMinipoolManager.getNodeActiveMinipoolCount(_nodeAddress).mul(16 ether);
         }
         ethMatched = ethMatched.add(_amount);
         setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);

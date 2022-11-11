@@ -1,6 +1,5 @@
 import {
     RocketDAONodeTrustedSettingsMinipool,
-    RocketDAOProtocolSettingsMinipool, RocketMinipoolManager,
     RocketNodeStaking,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
@@ -9,14 +8,13 @@ import { registerNode, nodeStakeRPL, nodeDeposit, setNodeTrusted } from '../_hel
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
 import { withdrawRpl } from './scenario-withdraw-rpl';
-import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 import { createMinipool, stakeMinipool } from '../_helpers/minipool'
-import { submitWithdrawable } from '../minipool/scenario-submit-withdrawable'
-import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
+import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance';
 import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -194,11 +192,6 @@ export default function() {
                 from: node,
             }), 'Withdrew RPL leaving the node undercollateralised');
 
-            // Mark pool as withdrawable
-            await submitWithdrawable(minipool.address, {
-                from: trustedNode,
-            });
-
             // Still cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
@@ -232,16 +225,19 @@ export default function() {
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: node});
 
-            // Mark pool as withdrawable
-            await submitWithdrawable(minipool.address, {
+            // Send ETH to the minipool to simulate receving from SWC
+            await web3.eth.sendTransaction({
                 from: trustedNode,
+                to: minipool.address,
+                value: web3.utils.toWei('32', 'ether')
             });
 
+            // Begin user distribution process
+            await beginUserDistribute(minipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * (60 * 24 * 14) + 1);
-
-            // Withdraw and finalise
-            await withdrawValidatorBalance(minipool, web3.utils.toWei('32', 'ether'), random, false);
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Withdraw without finalising
+            await withdrawValidatorBalance(minipool, '0', random);
 
             // Cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {

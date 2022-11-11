@@ -13,14 +13,13 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsNode,
     RocketMerkleDistributorMainnet,
-    RocketNodeStaking,
     RocketSmoothingPool,
     RocketStorage,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
-import { setDAONetworkBootstrapRewardsClaimer, spendRewardsClaimTreasury, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
 
 // Contracts
 import { RocketRewardsPool } from '../_utils/artifacts';

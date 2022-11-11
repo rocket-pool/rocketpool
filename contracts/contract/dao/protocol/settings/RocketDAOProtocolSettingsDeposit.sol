@@ -1,15 +1,12 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
  
-// Network deposit settings
-
+/// @notice Network deposit settings
 contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDAOProtocolSettingsDepositInterface {
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "deposit") {
         // Set version
         version = 3;
@@ -28,38 +25,39 @@ contract RocketDAOProtocolSettingsDeposit is RocketDAOProtocolSettings, RocketDA
         }
     }
 
-    // Deposits currently enabled
+    /// @notice Returns true if deposits are currently enabled
     function getDepositEnabled() override external view returns (bool) {
         return getSettingBool("deposit.enabled");
     }
 
-    // Deposit assignments currently enabled
+    /// @notice Returns true if deposit assignments are currently enabled
     function getAssignDepositsEnabled() override external view returns (bool) {
         return getSettingBool("deposit.assign.enabled");
     }
 
-    // Minimum deposit size
+    /// @notice Returns the minimum deposit size
     function getMinimumDeposit() override external view returns (uint256) {
         return getSettingUint("deposit.minimum");
     }
 
-    // The maximum size of the deposit pool
+    /// @notice Returns the maximum size of the deposit pool
     function getMaximumDepositPoolSize() override external view returns (uint256) {
         return getSettingUint("deposit.pool.maximum");
     }
 
-    // The maximum number of deposit assignments to perform at once
+    /// @notice Returns the maximum number of deposit assignments to perform at once
     function getMaximumDepositAssignments() override external view returns (uint256) {
         return getSettingUint("deposit.assign.maximum");
     }
 
-    // The maximum number of socialised (ie, not related to deposit size) assignments to perform
+    /// @notice Returns the maximum number of socialised (ie, not related to deposit size) assignments to perform
     function getMaximumDepositSocialisedAssignments() override external view returns (uint256) {
         return getSettingUint("deposit.assign.socialised.maximum");
     }
 
-    // Get the fee paid on deposits
+    /// @notice Returns the current fee paid on user deposits
     function getDepositFee() override external view returns (uint256) {
         return getSettingUint("deposit.fee");
     }
+
 }

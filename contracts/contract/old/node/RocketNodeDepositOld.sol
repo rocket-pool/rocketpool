@@ -10,7 +10,7 @@ import "../../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../../interface/old/RocketMinipoolManagerInterfaceOld.sol";
 import "../../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsDepositInterface.sol";
-import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../../interface/old/RocketDAOProtocolSettingsMinipoolInterfaceOld.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
@@ -70,7 +70,7 @@ contract RocketNodeDepositOld is RocketBase, RocketNodeDepositInterfaceOld {
     // Returns the minipool deposit enum value correseponding to the supplied deposit amount
     function getDepositType(uint256 _amount) public override view returns (MinipoolDeposit) {
         // Get contract
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        RocketDAOProtocolSettingsMinipoolInterfaceOld rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterfaceOld(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Get deposit type by node deposit amount
         if (_amount == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount()) { return MinipoolDeposit.Full; }
         else if (_amount == rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount()) { return MinipoolDeposit.Half; }

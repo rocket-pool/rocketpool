@@ -5,7 +5,6 @@ import {
     RocketDAOProtocolSettingsMinipool,
     RocketVault,
     RocketMinipoolDelegate,
-    RocketDepositPoolOld,
 } from '../_utils/artifacts';
 
 

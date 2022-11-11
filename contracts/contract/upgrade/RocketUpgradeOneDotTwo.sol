@@ -37,6 +37,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketMinipoolFactory;
     address public newRocketNetworkFees;
     address public newRocketNetworkPrices;
+    address public newRocketDAONodeTrustedSettingsMinipool;
     address public rocketMinipoolBase;
 
     // Upgrade ABIs
@@ -52,6 +53,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketMinipoolFactoryAbi;
     string public newRocketNetworkFeesAbi;
     string public newRocketNetworkPricesAbi;
+    string public newRocketDAONodeTrustedSettingsMinipoolAbi;
     string public rocketMinipoolBaseAbi;
 
     // Save deployer to limit access to set functions
@@ -91,7 +93,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketMinipoolFactory = _addresses[9];
         newRocketNetworkFees = _addresses[10];
         newRocketNetworkPrices = _addresses[11];
-        rocketMinipoolBase = _addresses[12];
+        newRocketDAONodeTrustedSettingsMinipool = _addresses[12];
+        rocketMinipoolBase = _addresses[13];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -106,7 +109,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketMinipoolFactoryAbi = _abis[9];
         newRocketNetworkFeesAbi = _abis[10];
         newRocketNetworkPricesAbi = _abis[11];
-        rocketMinipoolBaseAbi = _abis[12];
+        newRocketDAONodeTrustedSettingsMinipoolAbi = _abis[12];
+        rocketMinipoolBaseAbi = _abis[13];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -142,6 +146,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketMinipoolFactory", newRocketMinipoolFactory, newRocketMinipoolFactoryAbi);
         _upgradeContract("rocketNetworkFees", newRocketNetworkFees, newRocketNetworkFeesAbi);
         _upgradeContract("rocketNetworkPrices", newRocketNetworkPrices, newRocketNetworkPricesAbi);
+        _upgradeContract("rocketDAONodeTrustedSettingsMinipool", newRocketDAONodeTrustedSettingsMinipool, newRocketDAONodeTrustedSettingsMinipoolAbi);
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
@@ -160,6 +165,15 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.minimum")), 0.14 ether);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.target")), 0.14 ether);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "network.node.fee.maximum")), 0.14 ether);
+
+        // Set new settings
+        settingNameSpace = keccak256(abi.encodePacked("dao.trustednodes.setting.", "minipool"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.window.start")), 2 days);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.window.length")), 2 days);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.cancel.bond.reduction.quorum")), 0.51 ether);
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "minipool"));
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.start")), 14 days);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.length")), 2 days);
 
         // Claim intervals
         for (uint256 i = 0; i < intervals.length; i++) {
@@ -221,4 +235,5 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         deleteAddress(keccak256(abi.encodePacked("contract.address", _name)));
         deleteString(keccak256(abi.encodePacked("contract.abi", _name)));
     }
+
 }

@@ -46,9 +46,5 @@ export async function close(minipool, txOptions) {
     let expectedNodeBalance = nodeBalance1.add(minipoolBalances.nodeDeposit).add(minipoolBalances.nodeRefund);
     if (nodeWithdrawalAddress == nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
     assert(nodeBalance2.eq(expectedNodeBalance), 'Incorrect updated node nETH balance');
-
-    // Check minipool contract code
-    assert.equal(minipoolCode, '0x', 'Minipool contract was not destroyed');
-
 }
 

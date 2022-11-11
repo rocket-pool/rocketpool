@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../RocketBase.sol";
-import "../../interface/minipool/RocketMinipoolInterface.sol";
+import "../../interface/old/RocketMinipoolInterfaceOld.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolStatusInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
@@ -40,7 +40,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Check settings
         require(rocketDAOProtocolSettingsMinipool.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        RocketMinipoolInterfaceOld minipool = RocketMinipoolInterfaceOld(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.node", msg.sender, _minipoolAddress));
@@ -70,7 +70,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
         // Check settings
         require(rocketDAOProtocolSettingsMinipool.getSubmitWithdrawableEnabled(), "Submitting withdrawable status is currently disabled");
         // Check minipool status
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        RocketMinipoolInterfaceOld minipool = RocketMinipoolInterfaceOld(_minipoolAddress);
         require(minipool.getStatus() == MinipoolStatus.Staking, "Minipool can only be set as withdrawable while staking");
         // Get submission keys
         bytes32 submissionCountKey = keccak256(abi.encodePacked("minipool.withdrawable.submitted.count", _minipoolAddress));
@@ -85,7 +85,7 @@ contract RocketMinipoolStatus is RocketBase, RocketMinipoolStatusInterface {
     // Mark a minipool as withdrawable, record its final balance, and mint node operator rewards
     function setMinipoolWithdrawable(address _minipoolAddress) private {
         // Initialize minipool
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
+        RocketMinipoolInterfaceOld minipool = RocketMinipoolInterfaceOld(_minipoolAddress);
         // Mark minipool as withdrawable
         minipool.setWithdrawable();
         // Emit set withdrawable event

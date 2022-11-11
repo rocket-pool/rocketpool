@@ -3,7 +3,6 @@ import {
     RocketMinipoolManager,
     RocketMinipoolFactory,
     RocketDAOProtocolSettingsMinipool,
-    RocketMinipoolStatus,
     RocketNetworkPrices,
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
@@ -11,7 +10,6 @@ import {
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { upgradeExecuted } from '../_utils/upgrade';
-import { withdraw } from '../minipool/scenario-withdraw';
 
 
 // Get the number of minipools a node has
@@ -156,6 +154,57 @@ export async function createMinipool(txOptions, salt = null) {
 }
 
 
+// Create a vacant minipool
+export async function createVancantMinipool(bondAmount, txOptions, salt = null) {
+    // Load contracts
+    const [
+        rocketMinipoolFactory,
+        rocketNodeDeposit,
+        rocketStorage,
+    ] = await Promise.all([
+        RocketMinipoolFactory.deployed(),
+        RocketNodeDeposit.deployed(),
+        RocketStorage.deployed()
+    ]);
+
+    // Get minipool contract bytecode
+    const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
+    const contractBytecode = RocketMinipoolProxy.bytecode;
+
+    // Construct creation code for minipool deploy
+    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+    const deployCode = contractBytecode + constructorArgs.substr(2);
+
+    if (salt === null){
+        salt = minipoolSalt++;
+    }
+
+    // Calculate keccak(nodeAddress, salt)
+    const nodeSalt = web3.utils.soliditySha3(
+        {type: 'address', value: txOptions.from},
+        {type: 'uint256', value: salt}
+    )
+
+    // Calculate hash of deploy code
+    const bytecodeHash = web3.utils.soliditySha3(
+        {type: 'bytes', value: deployCode}
+    )
+
+    // Construct deterministic minipool address
+    const raw = web3.utils.soliditySha3(
+        {type: 'bytes1', value: '0xff'},
+        {type: 'address', value: rocketMinipoolFactory.address},
+        {type: 'bytes32', value: nodeSalt},
+        {type: 'bytes32', value: bytecodeHash}
+    )
+
+    // Create and return vacant minipool
+    const minipoolAddress = raw.substr(raw.length - 40);
+    await rocketNodeDeposit.createVacantMinipool(bondAmount, web3.utils.toWei('0', 'ether'), getValidatorPubkey(), salt, '0x' + minipoolAddress, txOptions);
+    return RocketMinipoolDelegate.at('0x' + minipoolAddress);
+}
+
+
 // Refund node ETH from a minipool
 export async function refundMinipoolNodeETH(minipool, txOptions) {
     await minipool.refund(txOptions);
@@ -202,10 +251,9 @@ export async function stakeMinipool(minipool, txOptions) {
 }
 
 
-// Submit a minipool withdrawable event
-export async function submitMinipoolWithdrawable(minipoolAddress, txOptions) {
-    const rocketMinipoolStatus = await RocketMinipoolStatus.deployed();
-    await rocketMinipoolStatus.submitMinipoolWithdrawable(minipoolAddress, txOptions);
+// Promote a minipool to staking
+export async function promoteMinipool(minipool, txOptions) {
+    await minipool.promote(txOptions);
 }
 
 

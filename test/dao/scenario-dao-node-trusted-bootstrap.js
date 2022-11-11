@@ -1,4 +1,4 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedUpgrade, RocketStorage, RocketVault, RocketTokenRPL } from '../_utils/artifacts';
+import { RocketDAONodeTrusted, RocketStorage, RocketVault, RocketTokenRPL } from '../_utils/artifacts';
 import { compressABI, decompressABI } from '../_utils/contract';
 
 

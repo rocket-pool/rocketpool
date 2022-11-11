@@ -12,12 +12,11 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
 import {
-  getMinipoolMinimumRPLStake,
-  createMinipool,
-  stakeMinipool,
-  submitMinipoolWithdrawable,
-  dissolveMinipool,
-  getNodeActiveMinipoolCount
+    getMinipoolMinimumRPLStake,
+    createMinipool,
+    stakeMinipool,
+    dissolveMinipool,
+    getNodeActiveMinipoolCount, promoteMinipool,
 } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
@@ -25,7 +24,7 @@ import { close } from './scenario-close';
 import { dissolve } from './scenario-dissolve';
 import { refund } from './scenario-refund';
 import { stake } from './scenario-stake';
-import { withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
+import { beginUserDistribute, withdrawValidatorBalance } from './scenario-withdraw-validator-balance';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import {
   setDAONodeTrustedBootstrapSetting,
@@ -53,11 +52,12 @@ export default function() {
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
+        let bondReductionWindowStart = (2 * 24 * 60 * 60)
+        let bondReductionWindowLength = (2 * 24 * 60 * 60)
         let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
         let stakingMinipool;
-        let withdrawableMinipool;
         let dissolvedMinipool;
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let newDelegateAddress = '0x0000000000000000000000000000000000000001'
@@ -77,6 +77,8 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
@@ -98,7 +100,6 @@ export default function() {
             prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            withdrawableMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
             initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
 
             // Wait required scrub period
@@ -106,21 +107,17 @@ export default function() {
 
             // Progress minipools into desired statuses
             await stakeMinipool(stakingMinipool, {from: node});
-            await stakeMinipool(withdrawableMinipool, {from: node});
-            await submitMinipoolWithdrawable(withdrawableMinipool.address, {from: trustedNode});
 
             // Check minipool statuses
             let initialisedStatus = await initialisedMinipool.getStatus.call();
             let prelaunchStatus = await prelaunchMinipool.getStatus.call();
             let prelaunch2Status = await prelaunchMinipool2.getStatus.call();
             let stakingStatus = await stakingMinipool.getStatus.call();
-            let withdrawableStatus = await withdrawableMinipool.getStatus.call();
             let dissolvedStatus = await dissolvedMinipool.getStatus.call();
             assert(initialisedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialised minipool status');
             assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
             assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(withdrawableStatus.eq(web3.utils.toBN(3)), 'Incorrect withdrawable minipool status');
             assert(dissolvedStatus.eq(web3.utils.toBN(4)), 'Incorrect dissolved minipool status');
         });
 
@@ -189,7 +186,7 @@ export default function() {
           // Creating minipool should fail now
           await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
           // Destroy a pool
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
+          await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
           // Creating minipool should no longer fail
           await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
 
@@ -226,55 +223,61 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can finalise a withdrawn minipool'), async () => {
-
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Withdraw without finalising
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
-          // Get number of active minipools before
-          const count1 = await getNodeActiveMinipoolCount(node);
-          // Finalise
-          await withdrawableMinipool.finalise({ from: nodeWithdrawalAddress });
-          // Get number of active minipools after
-          const count2 = await getNodeActiveMinipoolCount(node);
-          // Make sure active minipool count reduced by one
-          assert(count1.sub(count2).eq(web3.utils.toBN(1)), "Active minipools did not decrement by 1");
-
+        it(printTitle('node operator', 'can finalise a user withdrawn minipool'), async () => {
+            // Send enough ETH to allow distribution
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: withdrawalBalance
+            });
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Withdraw without finalising
+            await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random);
+            // Get number of active minipools before
+            const count1 = await getNodeActiveMinipoolCount(node);
+            // Finalise
+            await stakingMinipool.finalise({ from: nodeWithdrawalAddress });
+            // Get number of active minipools after
+            const count2 = await getNodeActiveMinipoolCount(node);
+            // Make sure active minipool count reduced by one
+            assert(count1.sub(count2).eq(web3.utils.toBN(1)), "Active minipools did not decrement by 1");
         });
 
 
         it(printTitle('node operator', 'cannot finalise a withdrawn minipool twice'), async () => {
-
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Withdraw without finalising
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
-          // Finalise
-          await withdrawableMinipool.finalise({ from: nodeWithdrawalAddress });
-          // Second time should fail
-          await shouldRevert(withdrawableMinipool.finalise({ from: nodeWithdrawalAddress }), "Was able to finalise pool twice", "Minipool has already been finalised");
-
+            // Send enough ETH to allow distribution
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: withdrawalBalance
+            });
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Withdraw without finalising
+            await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random);
+            // Finalise
+            await stakingMinipool.finalise({ from: nodeWithdrawalAddress });
+            // Second time should fail
+            await shouldRevert(stakingMinipool.finalise({ from: nodeWithdrawalAddress }), "Was able to finalise pool twice", "Minipool has already been finalised");
         });
 
 
-      it(printTitle('node operator', 'cannot finalise a non-withdrawn minipool'), async () => {
-
-          // Finalise
-          await shouldRevert(withdrawableMinipool.finalise({ from: nodeWithdrawalAddress }), 'Minipool was finalised before withdrawn', 'Minipool balance must have been distributed at least once');
-
+        it(printTitle('node operator', 'cannot finalise a non-withdrawn minipool'), async () => {
+            // Finalise
+            await shouldRevert(stakingMinipool.finalise({ from: nodeWithdrawalAddress }), 'Minipool was finalised before withdrawn', 'Can only manually finalise after user distribution');
         });
 
 
         it(printTitle('random address', 'cannot finalise a withdrawn minipool'), async () => {
-
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Withdraw without finalising
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+          await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, nodeWithdrawalAddress);
           // Finalise
-          await shouldRevert(withdrawableMinipool.finalise({ from: random }), 'Minipool was finalised by random', 'Invalid minipool owner');
-
+          await shouldRevert(stakingMinipool.finalise({ from: random }), 'Minipool was finalised by random', 'Invalid minipool owner');
         });
 
 
@@ -284,22 +287,27 @@ export default function() {
 
 
         it(printTitle('random address', 'can slash node operator if withdrawal balance is less than 16 ETH'), async () => {
-
-          // Stake the prelaunch minipool (it has 16 ETH user funds)
-          await stakeMinipool(prelaunchMinipool, {from: node});
-          // Mark it as withdrawable
-          await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
-          // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-          await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, false);
-          // Call slash method
-          await prelaunchMinipool.slash({ from: random });
-
-          // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
-          const rocketVault = await RocketVault.deployed();
-          const rocketTokenRPL = await RocketTokenRPL.deployed();
-          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
-          assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
-
+            // Stake the prelaunch minipool (it has 16 ETH user funds)
+            await stakeMinipool(prelaunchMinipool, {from: node});
+            // Send enough ETH to allow distribution
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: prelaunchMinipool.address,
+                value: web3.utils.toWei('8', 'ether')
+            });
+            // Begin user distribution process
+            await beginUserDistribute(prelaunchMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(prelaunchMinipool, '0', random);
+            // Call slash method
+            await prelaunchMinipool.slash({ from: random });
+            // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
+            const rocketVault = await RocketVault.deployed();
+            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+            assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
         });
 
 
@@ -307,8 +315,6 @@ export default function() {
 
           // Stake the prelaunch minipool (it has 16 ETH user funds)
           await stakeMinipool(prelaunchMinipool, {from: node});
-          // Mark it as withdrawable
-          await submitMinipoolWithdrawable(prelaunchMinipool.address, {from: trustedNode});
           // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
           await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, true);
 
@@ -449,25 +455,31 @@ export default function() {
           // Wait 14 days
           await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
           // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Invalid minipool owner");
+          await shouldRevert(withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Only owner can distribute right now");
 
         });
 
 
         it(printTitle('random', 'random address can trigger a payout of withdrawal balance if balance is greater than 16 ETH'), async () => {
-
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Attempt to send validator balance
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
-
+            // Send enough ETH to allow distribution
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: web3.utils.toWei('32', 'ether')
+            });
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(stakingMinipool, '0', random);
         });
 
 
         it(printTitle('random', 'random address cannot trigger a payout of withdrawal balance if balance is less than 16 ETH'), async () => {
 
           // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(withdrawableMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Non-owner must wait 14 days after withdrawal to distribute balance');
+          await shouldRevert(withdrawValidatorBalance(stakingMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Only owner can distribute right now');
 
         });
 
@@ -475,7 +487,7 @@ export default function() {
         it(printTitle('node operator withdrawal address', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
 
           // Send validator balance and withdraw
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
+          await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
 
         });
 
@@ -483,7 +495,7 @@ export default function() {
         it(printTitle('node operator account', 'can also withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
 
           // Send validator balance and withdraw
-          await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, node, true);
+          await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, node, true);
 
         });
 
@@ -495,8 +507,18 @@ export default function() {
             await setNodeWithdrawalAddress(node, revertOnTransfer.address, {from: nodeWithdrawalAddress});
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-            // Send validator balance and withdraw and should not revert
-            await withdrawValidatorBalance(withdrawableMinipool, withdrawalBalance, random, false);
+            // Send enough ETH to allow distribution
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: withdrawalBalance
+            });
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(stakingMinipool, '0', random);
 
         });
 
@@ -505,14 +527,16 @@ export default function() {
 
             await web3.eth.sendTransaction({
                 from: random,
-                to: withdrawableMinipool.address,
+                to: stakingMinipool.address,
                 value: withdrawalBalance,
             });
 
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-            // Process validator balance
-            await withdrawValidatorBalance(withdrawableMinipool, '0', random, false);
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(stakingMinipool, '0', random);
 
         });
 
@@ -525,22 +549,22 @@ export default function() {
 
             await web3.eth.sendTransaction({
                 from: random,
-                to: withdrawableMinipool.address,
+                to: stakingMinipool.address,
                 value: amount1,
             });
 
             await web3.eth.sendTransaction({
                 from: owner,
-                to: withdrawableMinipool.address,
+                to: stakingMinipool.address,
                 value: amount2,
             });
 
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Process payout
-          await withdrawValidatorBalance(withdrawableMinipool, '0', random, false);
-
-
+            // Begin user distribution process
+            await beginUserDistribute(stakingMinipool, {from: random});
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(stakingMinipool, '0', random);
         });
 
 
@@ -659,9 +683,9 @@ export default function() {
 
 
         it(printTitle('node operator', 'can reduce bond amount to a valid deposit amount'), async () => {
-            // Signal wanting to reduce and wait 7 days
+            // Signal wanting to reduce
             await stakingMinipool.beginReduceBondAmount({from: node});
-            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
             await reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node});
         });
@@ -670,6 +694,15 @@ export default function() {
         it(printTitle('node operator', 'cannot reduce bond without waiting'), async () => {
             // Signal wanting to reduce and wait 7 days
             await stakingMinipool.beginReduceBondAmount({from: node});
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+        });
+
+
+        it(printTitle('node operator', 'cannot reduce bond if wait period exceeds the limit'), async () => {
+            // Signal wanting to reduce and wait 7 days
+            await stakingMinipool.beginReduceBondAmount({from: node});
+            await increaseTime(web3, bondReductionWindowStart + bondReductionWindowLength + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
             await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
         });
@@ -684,7 +717,7 @@ export default function() {
         it(printTitle('node operator', 'cannot reduce bond amount to an invalid deposit amount'), async () => {
             // Signal wanting to reduce and wait 7 days
             await stakingMinipool.beginReduceBondAmount({from: node});
-            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 9 ETH should fail
             await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('9', 'ether'), {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
         });
@@ -693,7 +726,7 @@ export default function() {
         it(printTitle('node operator', 'cannot increase bond amount'), async () => {
             // Signal wanting to reduce and wait 7 days
             await stakingMinipool.beginReduceBondAmount({from: node});
-            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 9 ETH should fail
             await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('18', 'ether'), {from: node}), 'Was able to increase bond', 'Bond must be lower than current amount');
         });
@@ -703,11 +736,23 @@ export default function() {
             // Signal wanting to reduce and wait 7 days
             await prelaunchMinipool.beginReduceBondAmount({from: node});
             await initialisedMinipool.beginReduceBondAmount({from: node});
-            await withdrawableMinipool.beginReduceBondAmount({from: node});
-            await increaseTime(web3, (7 * 24 * 60 * 60) + 1);
+            await increaseTime(web3, bondReductionWindowStart + 1);
             await shouldRevert(reduceBond(prelaunchMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on a prelaunch minipool', 'Minipool must be staking');
             await shouldRevert(reduceBond(initialisedMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
-            await shouldRevert(reduceBond(withdrawableMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on a withdrawable minipool', 'Minipool must be staking');
+        });
+
+
+        //
+        // Misc checks
+        //
+
+
+        it(printTitle('node operator', 'cannot promote a non-vacant minipool'), async () => {
+            // Try to promote (and fail)
+            await shouldRevert(promoteMinipool(prelaunchMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'Cannot promote a non-vacant minipool');
+            await shouldRevert(promoteMinipool(stakingMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'The minipool can only promote while in prelaunch');
+            await shouldRevert(promoteMinipool(initialisedMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'The minipool can only promote while in prelaunch');
+            await shouldRevert(promoteMinipool(dissolvedMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'The minipool can only promote while in prelaunch');
         });
     });
 }

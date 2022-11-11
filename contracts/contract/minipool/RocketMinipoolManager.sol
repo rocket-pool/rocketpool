@@ -321,7 +321,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update ETH matched
         uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
         if (ethMatched == 0) {
-            ethMatched = getNodeStakingMinipoolCount(_nodeAddress).mul(16 ether);
+            ethMatched = getNodeActiveMinipoolCount(_nodeAddress).mul(16 ether);
         } else {
             RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
             ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
@@ -368,7 +368,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Prepare the minipool
         minipool.prepareVacancy(_bondAmount);
         // Set the minipool's validator pubkey
-        _setMinipoolPubkey(_validatorPubkey);
+        _setMinipoolPubkey(address(minipool), _validatorPubkey);
         // Add minipool to the vacant set
         addressSetStorage.addItem(keccak256(abi.encodePacked("minipools.vacant.index")), address(minipool));
         // Return
@@ -405,7 +405,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update ETH matched
         uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress)));
         if (ethMatched == 0) {
-            ethMatched = getNodeStakingMinipoolCount(nodeAddress).mul(16 ether);
+            ethMatched = getNodeActiveMinipoolCount(nodeAddress).mul(16 ether);
         }
         ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
         setUint(keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress)), ethMatched);
@@ -427,22 +427,22 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @dev Set a minipool's validator pubkey. Only accepts calls from registered minipools
     /// @param _pubkey The pubkey to set for the calling minipool
     function setMinipoolPubkey(bytes calldata _pubkey) override public onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
-        _setMinipoolPubkey(_pubkey);
+        _setMinipoolPubkey(msg.sender, _pubkey);
     }
 
     /// @dev Internal logic to set a minipool's pubkey
     /// @param _pubkey The pubkey to set for the calling minipool
-    function _setMinipoolPubkey(bytes calldata _pubkey) private {
+    function _setMinipoolPubkey(address _minipool, bytes calldata _pubkey) private {
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Initialize minipool & get properties
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         address nodeAddress = minipool.getNodeAddress();
         // Set minipool validator pubkey & validator minipool address
-        setBytes(keccak256(abi.encodePacked("minipool.pubkey", msg.sender)), _pubkey);
-        setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), msg.sender);
+        setBytes(keccak256(abi.encodePacked("minipool.pubkey", _minipool)), _pubkey);
+        setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), _minipool);
         // Add minipool to node validating minipools index
-        addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), msg.sender);
+        addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), _minipool);
     }
 
     /// @dev Performs a CREATE2 deployment of a minipool contract with given salt
@@ -486,4 +486,5 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
         return details;
     }
+
 }

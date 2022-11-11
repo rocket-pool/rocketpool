@@ -1,5 +1,4 @@
 import {
-    RocketDepositPool,
     RocketDAOProtocolSettingsDeposit,
     RocketMinipoolQueue,
     RocketDAOProtocolSettingsMinipool,

@@ -2,13 +2,12 @@ import { printTitle } from '../_utils/formatting';
 import {
     RocketNodeManager,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketNodeDistributorFactory, RocketNodeManagerNew, RocketNodeManagerOld
+    RocketNodeDistributorFactory
 } from '../_utils/artifacts';
 import {
     createMinipool,
     getMinipoolMinimumRPLStake,
     stakeMinipool,
-    submitMinipoolWithdrawable
 } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
@@ -18,7 +17,6 @@ import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trus
 import { shouldRevert } from '../_utils/testing';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { userDeposit } from '../_helpers/deposit';
-import { submitPrices } from '../_helpers/network';
 
 export default function() {
     contract('RocketNodeDistributor', async (accounts) => {

@@ -29,10 +29,11 @@ export async function voteScrub(minipool, txOptions) {
             minipool.getTotalScrubVotes.call(),
             rocketNodeStaking.getNodeRPLStake.call(nodeAddress),
             rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address),
-            rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()
+            rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled(),
+            minipool.getVacant.call()
         ]).then(
-            ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled]) =>
-            ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled})
+            ([status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant]) =>
+            ({status, userDepositBalance, votes, nodeRPLStake, auctionBalance, penaltyEnabled, vacant})
         );
     }
 
@@ -56,7 +57,7 @@ export async function voteScrub(minipool, txOptions) {
         assert(details2.status.eq(dissolved), 'Incorrect updated minipool status');
         assert(details2.userDepositBalance.eq(web3.utils.toBN(0)), 'Incorrect updated minipool user deposit balance');
         // Check slashing if penalties are enabled
-        if (details1.penaltyEnabled) {
+        if (details1.penaltyEnabled && !details1.vacant) {
             // Calculate amount slashed
             const slashAmount = details1.nodeRPLStake.sub(details2.nodeRPLStake);
             // Get current RPL price

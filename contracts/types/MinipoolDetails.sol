@@ -29,3 +29,6 @@ struct MinipoolDetails {
     uint256 penaltyCount;
     uint256 penaltyRate;
 }
+
+/// @dev Required so truffle exports an artifact
+contract DummyMinipoolDetails {}

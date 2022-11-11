@@ -11,3 +11,6 @@ enum MinipoolDeposit {
     Empty,      // The minipool requires 0 ETH from the node operator to be matched with 32 ETH from user deposits (trusted nodes only)
     Variable    // Indicates this minipool is of the new generation that supports a variable deposit amount
 }
+
+/// @dev Required so truffle exports an artifact
+contract DummyMinipoolDeposit {}
