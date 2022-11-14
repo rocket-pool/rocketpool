@@ -20,6 +20,7 @@ import "../../types/MinipoolDeposit.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../../interface/token/RocketTokenRETHInterface.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
@@ -56,18 +57,45 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _salt Salt used to deterministically construct the minipool's address
     /// @param _expectedMinipoolAddress The expected deterministic minipool address. Will revert if it doesn't match
     function deposit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        // Use credit balance
+        require(_useCredit(_bondAmount) == 0, "Invalid value");
+        // Process the deposit
+        _deposit(_bondAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
+    }
+
+    function _useCredit(uint256 _bondAmount) private returns (uint256 _surplus) {
         // Query node's deposit credit
         uint256 credit = getNodeDepositCredit(msg.sender);
         // Credit balance accounting
         if (credit < _bondAmount) {
             uint256 shortFall = _bondAmount.sub(credit);
-            require(msg.value == shortFall, "Invalid value");
+            require(msg.value >= shortFall, "Invalid value");
             setUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), 0);
+            return msg.value.sub(shortFall);
         } else {
             subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _bondAmount);
+            return msg.value;
         }
-        // Process the deposit
+    }
+
+    function depositAndMint(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) override external payable onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+        // Use credit balance
+        uint256 surplus = _useCredit(_bondAmount);
+        // Deposit the minipool
         _deposit(_bondAmount, _minimumNodeFee, _validatorPubkey, _validatorSignature, _depositDataRoot, _salt, _expectedMinipoolAddress);
+        // Mint rETH for the caller
+        _mint(surplus);
+    }
+
+    function _mint(uint256 _mintEthAmount) private {
+        // Save current rETH balance (for calculating how much rETH is minted)
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
+        uint256 rETHBefore = rocketTokenRETH.balanceOf(address(this));
+        // Deposit ETH to mint rETH
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.deposit{value: _mintEthAmount}();
+        // Transfer minted rETH back to the caller
+        rocketTokenRETH.transfer(msg.sender, rocketTokenRETH.balanceOf(address(this)) - rETHBefore);
     }
 
     /// @notice Returns true if the given amount is a valid deposit amount
