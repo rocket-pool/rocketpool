@@ -88,14 +88,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     }
 
     function _mint(uint256 _mintEthAmount) private {
-        // Save current rETH balance (for calculating how much rETH is minted)
-        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
-        uint256 rETHBefore = rocketTokenRETH.balanceOf(address(this));
         // Deposit ETH to mint rETH
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-        rocketDepositPool.deposit{value: _mintEthAmount}();
+        RocketDepositPoolInterface(getContractAddress("rocketDepositPool")).deposit{value: _mintEthAmount}();
         // Transfer minted rETH back to the caller
-        rocketTokenRETH.transfer(msg.sender, rocketTokenRETH.balanceOf(address(this)) - rETHBefore);
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
+        rocketTokenRETH.transfer(msg.sender, rocketTokenRETH.balanceOf(address(this)));
     }
 
     /// @notice Returns true if the given amount is a valid deposit amount
