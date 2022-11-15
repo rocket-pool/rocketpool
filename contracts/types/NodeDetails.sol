@@ -29,6 +29,3 @@ struct NodeDetails {
     bool smoothingPoolRegistrationState;
     uint256 smoothingPoolRegistrationChanged;
 }
-
-/// @dev Required so truffle exports an artifact
-contract DummyNodeDetails {}

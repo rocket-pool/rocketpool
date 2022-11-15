@@ -15,6 +15,3 @@ struct RewardSubmission {
     uint256[] nodeETH;
     uint256 userETH;
 }
-
-/// @dev Required so truffle exports an artifact
-contract DummyRewardSubmission {}

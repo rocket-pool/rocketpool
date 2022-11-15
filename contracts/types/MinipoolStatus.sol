@@ -11,6 +11,3 @@ enum MinipoolStatus {
     Withdrawable,   // NO LONGER USED
     Dissolved       // The minipool has been dissolved and its user deposited ETH has been returned to the deposit pool
 }
-
-/// @dev Required so truffle exports an artifact
-contract DummyMinipoolStatus {}
