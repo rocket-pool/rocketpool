@@ -253,10 +253,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update the node specific count
         uint256 depositSize = minipool.getNodeDepositBalance();
         bytes32 nodeKey;
+        bytes32 numeratorKey;
         if (depositSize == 16 ether){
             nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress));
         } else {
             nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress, depositSize));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize));
         }
         uint256 nodeValue = getUint(nodeKey);
         setUint(nodeKey, nodeValue.add(1));
@@ -265,7 +268,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.add(1));
         // Update node fee average
-        addUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize)), minipool.getNodeFee());
+        addUint(numeratorKey, minipool.getNodeFee());
     }
 
     /// @dev Decrements a node operator's number of minipools in staking status and calculates updated average node fee.
@@ -279,10 +282,13 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Update the node specific count
         uint256 depositSize = minipool.getNodeDepositBalance();
         bytes32 nodeKey;
+        bytes32 numeratorKey;
         if (depositSize == 16 ether){
             nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress));
         } else {
             nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", _nodeAddress, depositSize));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize));
         }
         uint256 nodeValue = getUint(nodeKey);
         setUint(nodeKey, nodeValue.sub(1));
@@ -291,7 +297,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         uint256 totalValue = getUint(totalKey);
         setUint(totalKey, totalValue.sub(1));
         // Update node fee average
-        subUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSize)), minipool.getNodeFee());
+        subUint(numeratorKey, minipool.getNodeFee());
     }
 
     /// @dev Calls distribute on the given node's distributor if it has a balance and has been initialised

@@ -235,7 +235,7 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disbaled'), async () => {
+        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disabled'), async () => {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', false, {from: owner});
             await shouldRevert(setSmoothingPoolRegistrationState(true, { from: registeredNode1 }), 'Was able to register while registrations were disabled', 'Smoothing pool registrations are not active');
         });

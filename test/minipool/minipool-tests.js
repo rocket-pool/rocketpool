@@ -18,7 +18,13 @@ import {
     dissolveMinipool,
     getNodeActiveMinipoolCount, promoteMinipool,
 } from '../_helpers/minipool';
-import { registerNode, setNodeTrusted, setNodeWithdrawalAddress, nodeStakeRPL } from '../_helpers/node';
+import {
+    registerNode,
+    setNodeTrusted,
+    setNodeWithdrawalAddress,
+    nodeStakeRPL,
+    getNodeAverageFee,
+} from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { close } from './scenario-close';
 import { dissolve } from './scenario-dissolve';
@@ -41,6 +47,7 @@ export default function() {
         const [
             owner,
             node,
+            emptyNode,
             nodeWithdrawalAddress,
             trustedNode,
             dummySwc,
@@ -62,12 +69,18 @@ export default function() {
         let withdrawalBalance = web3.utils.toWei('36', 'ether');
         let newDelegateAddress = '0x0000000000000000000000000000000000000001'
 
+        const lebDepositNodeAmount = web3.utils.toWei('8', 'ether')
+        const halfDepositNodeAmount = web3.utils.toWei('16', 'ether')
+
         before(async () => {
             await upgradeOneDotTwo(owner);
 
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
+
+            // Register empty node
+            await registerNode({from: emptyNode});
 
             // Register trusted node
             await registerNode({from: trustedNode});
@@ -754,5 +767,81 @@ export default function() {
             await shouldRevert(promoteMinipool(initialisedMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'The minipool can only promote while in prelaunch');
             await shouldRevert(promoteMinipool(dissolvedMinipool, {from: node}), 'Was able to promote non-vacant minipool', 'The minipool can only promote while in prelaunch');
         });
+
+
+        const average_fee_tests = [
+            [
+                {
+                    fee: '0.10',
+                    amount: lebDepositNodeAmount,
+                    expectedFee: '0.10'
+                },
+                {
+                    fee: '0.10',
+                    amount: lebDepositNodeAmount,
+                    expectedFee: '0.10'
+                },
+                {
+                    fee: '0.10',
+                    amount: halfDepositNodeAmount,
+                    expectedFee: '0.10'
+                },
+            ],
+            [
+                {
+                    fee: '0.10',
+                    amount: halfDepositNodeAmount,
+                    expectedFee: '0.10'
+                },
+                {
+                    fee: '0.20',
+                    amount: lebDepositNodeAmount,
+                    expectedFee: '0.16'
+                },
+                {
+                    fee: '0.20',
+                    amount: lebDepositNodeAmount,
+                    expectedFee: '0.175'
+                },
+            ],
+        ]
+
+        for (let i = 0; i < average_fee_tests.length; i++) {
+            let test = average_fee_tests[i];
+
+            it(printTitle('node operator', 'has correct average node fee #' + (i+1)), async () => {
+
+                async function setNetworkNodeFee(fee) {
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', fee, {from: owner});
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
+                    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
+                }
+
+                // Stake RPL to cover minipools
+                let minipoolRplStake = await getMinipoolMinimumRPLStake();
+                let rplStake = minipoolRplStake.mul(web3.utils.toBN(10));
+                await mintRPL(owner, emptyNode, rplStake);
+                await nodeStakeRPL(rplStake, {from: emptyNode});
+
+                for (const step of test) {
+                    // Set fee to 10%
+                    await setNetworkNodeFee(web3.utils.toWei(step.fee, 'ether'));
+
+                    // Deposit
+                    let minipool = await createMinipool({from: emptyNode, value: step.amount});
+                    await userDeposit({ from: random, value: web3.utils.toWei('32', 'ether'), });
+
+                    // Wait required scrub period
+                    await increaseTime(web3, scrubPeriod + 1);
+
+                    // Progress minipools into desired statuses
+                    await stakeMinipool(minipool, {from: emptyNode});
+
+                    // Get average
+                    let average = await getNodeAverageFee(emptyNode);
+                    assert(average.eq(web3.utils.toBN(web3.utils.toWei(step.expectedFee, 'ether'))), "Invalid average fee");
+                }
+            });
+        }
     });
 }

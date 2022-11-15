@@ -230,7 +230,13 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 weightedAverage = 0;
         for (uint256 i = 0; i < depositSizes.length; i++) {
             if (depositCounts[i] > 0) {
-                uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i])));
+                bytes32 numeratorKey;
+                if (depositSizes[i] == 16 ether) {
+                    numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress));
+                } else {
+                    numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i]));
+                }
+                uint256 numerator = getUint(numeratorKey);
                 weightedAverage = weightedAverage.add(numerator.mul(depositWeights[i]).div(depositCounts[i]));
             }
         }

@@ -204,3 +204,10 @@ export async function getNodeDepositCredit(nodeAddress) {
     let credit = await rocketNodeDeposit.getNodeDepositCredit(nodeAddress);
     return credit;
 }
+
+// Get a node's effective RPL stake
+export async function getNodeAverageFee(nodeAddress) {
+    const rocketNodeManager = await RocketNodeManager.deployed();
+    let averageFee = await rocketNodeManager.getAverageNodeFee.call(nodeAddress);
+    return averageFee;
+}
