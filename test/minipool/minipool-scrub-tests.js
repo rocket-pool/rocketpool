@@ -100,11 +100,11 @@ export default function() {
         });
 
 
-        it(printTitle('node', 'cannot close a scrubbed minipool before funds are returned'), async () => {
+        it(printTitle('node', 'can close a scrubbed minipool before funds are returned'), async () => {
           await voteScrub(prelaunchMinipool, {from: trustedNode1});
           await voteScrub(prelaunchMinipool, {from: trustedNode2});
 
-          await shouldRevert(close(prelaunchMinipool, { from: node, }), 'Closed minipool before fund were returned', 'Node ETH balance was not successfully transferred to node operator');
+          await close(prelaunchMinipool, { from: node, });
         });
 
 
@@ -120,6 +120,16 @@ export default function() {
           });
 
           await close(prelaunchMinipool, { from: node, });
+        });
+
+
+        it(printTitle('node', 'cannot close a scrubbed minipool twice'), async () => {
+            await voteScrub(prelaunchMinipool, {from: trustedNode1});
+            await voteScrub(prelaunchMinipool, {from: trustedNode2});
+
+            await close(prelaunchMinipool, { from: node, });
+
+            await shouldRevert(close(prelaunchMinipool, { from: node, }), 'Was able to close twice', 'Minipool already closed');
         });
 
 

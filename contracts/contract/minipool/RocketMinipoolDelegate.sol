@@ -329,6 +329,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         If balance is lower than 8 ETH, can be called by anyone and is considered a partial withdrawal and funds are
     ///         split as rewards.
     function distributeBalance() override external onlyInitialised {
+        // If dissolved, distribute everything to the owner
+        if (status == MinipoolStatus.Dissolved) {
+            distributeToOwner();
+            return;
+        }
         // Can only be called while in staking status
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract
@@ -352,6 +357,19 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         }
         // Reset distribute waiting period
         userDistributeTime = 0;
+    }
+
+    /// @dev Distribute the entire balance to the minipool owner
+    function distributeToOwner() internal {
+        // Get balance
+        uint256 balance = address(this).balance;
+        // Get node withdrawal address
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        // Transfer balance
+        (bool success,) = nodeWithdrawalAddress.call{value : balance}("");
+        require(success, "Node ETH balance was not successfully transferred to node operator");
+        // Emit ether withdrawn event
+        emit EtherWithdrawn(nodeWithdrawalAddress, balance, block.timestamp);
     }
 
     /// @notice Allows a user (other than the owner of this minipool) to signal they want to call distribute.
@@ -507,22 +525,11 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function close() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         // Check current status
         require(status == MinipoolStatus.Dissolved, "The minipool can only be closed while dissolved");
-        // Transfer node balance to node operator
-        uint256 nodeBalance = nodeDepositBalance.add(nodeRefundBalance);
-        if (nodeBalance > 0) {
-            // Update node balances
-            nodeDepositBalance = 0;
-            nodeRefundBalance = 0;
-            // Get node withdrawal address
-            address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
-            // Transfer balance
-            (bool success,) = nodeWithdrawalAddress.call{value : nodeBalance}("");
-            require(success, "Node ETH balance was not successfully transferred to node operator");
-            // Emit ether withdrawn event
-            emit EtherWithdrawn(nodeWithdrawalAddress, nodeBalance, block.timestamp);
-        }
+        // Distribute funds to owner
+        distributeToOwner();
         // Destroy minipool
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        require(rocketMinipoolManager.getMinipoolExists(address(this)), "Minipool already closed");
         rocketMinipoolManager.destroyMinipool();
     }
 
@@ -543,8 +550,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Check if required quorum has voted
         uint256 quorum = rocketDAONode.getMemberCount().mul(rocketDAONodeTrustedSettingsMinipool.getScrubQuorum()).div(calcBase);
         if (totalScrubVotes.add(1) > quorum) {
-            // Dissolve this minipool, recycling ETH back to deposit pool
-            _dissolve();
             // Slash RPL equal to minimum stake amount (if enabled)
             if (!vacant && rocketDAONodeTrustedSettingsMinipool.getScrubPenaltyEnabled()){
                 RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
@@ -560,6 +565,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
                         .div(calcBase)
                 );
             }
+            // Dissolve this minipool, recycling ETH back to deposit pool
+            _dissolve();
             // Emit event
             emit MinipoolScrubbed(block.timestamp);
         } else {
@@ -696,16 +703,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             // Transfer user balance to deposit pool
             uint256 userCapital = getUserDepositBalance();
-            // Store value in local
-            uint256 recycleAmount = userCapital;
-            // Clear storage
-            userDepositBalance = 0;
-            userDepositBalanceLegacy = 0;
-            userDepositAssignedTime = 0;
-            // Transfer
-            rocketDepositPool.recycleDissolvedDeposit{value : recycleAmount}();
+            rocketDepositPool.recycleDissolvedDeposit{value : userCapital}();
             // Emit ether withdrawn event
-            emit EtherWithdrawn(address(rocketDepositPool), recycleAmount, block.timestamp);
+            emit EtherWithdrawn(address(rocketDepositPool), userCapital, block.timestamp);
         }
+        // Clear storage
+        userDepositBalance = 0;
+        userDepositBalanceLegacy = 0;
+        userDepositAssignedTime = 0;
+        nodeDepositBalance = 0;
+        nodeRefundBalance = 0;
     }
 }

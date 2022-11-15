@@ -3,7 +3,6 @@ import { RocketNodeManager } from '../_utils/artifacts';
 
 // Close a minipool
 export async function close(minipool, txOptions) {
-
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();
 
@@ -11,21 +10,10 @@ export async function close(minipool, txOptions) {
     let nodeAddress = await minipool.getNodeAddress.call();
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
-    // Get minipool balances
-    function getMinipoolBalances() {
-        return Promise.all([
-            minipool.getNodeDepositBalance.call(),
-            minipool.getNodeRefundBalance.call(),
-        ]).then(
-            ([nodeDeposit, nodeRefund]) =>
-            ({nodeDeposit, nodeRefund})
-        );
-    }
-
     // Get initial node balance & minipool balances
-    let [nodeBalance1, minipoolBalances] = await Promise.all([
+    let [nodeBalance1, minipoolBalance] = await Promise.all([
         web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
-        getMinipoolBalances(),
+        web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
     ]);
 
     // Set gas price
@@ -43,8 +31,8 @@ export async function close(minipool, txOptions) {
     ]);
 
     // Check balances
-    let expectedNodeBalance = nodeBalance1.add(minipoolBalances.nodeDeposit).add(minipoolBalances.nodeRefund);
-    if (nodeWithdrawalAddress == nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
+    let expectedNodeBalance = nodeBalance1.add(minipoolBalance);
+    if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
     assert(nodeBalance2.eq(expectedNodeBalance), 'Incorrect updated node nETH balance');
 }
 

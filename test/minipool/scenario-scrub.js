@@ -6,6 +6,7 @@ import {
     RocketTokenRPL,
     RocketVault
 } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 export async function voteScrub(minipool, txOptions) {
@@ -53,9 +54,10 @@ export async function voteScrub(minipool, txOptions) {
 
     // Check state
     const dissolved = web3.utils.toBN(4);
+
     if (details1.votes.add(web3.utils.toBN(1)).gt(quorum)){
-        assert(details2.status.eq(dissolved), 'Incorrect updated minipool status');
-        assert(details2.userDepositBalance.eq(web3.utils.toBN(0)), 'Incorrect updated minipool user deposit balance');
+        assertBN.equal(details2.status, dissolved, 'Incorrect updated minipool status');
+        assertBN.equal(details2.userDepositBalance, '0', 'Incorrect updated minipool user deposit balance');
         // Check slashing if penalties are enabled
         if (details1.penaltyEnabled && !details1.vacant) {
             // Calculate amount slashed
@@ -68,14 +70,13 @@ export async function voteScrub(minipool, txOptions) {
             const minimumStake = await rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
             const expectedSlash = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(minimumStake).div(web3.utils.toBN(web3.utils.toWei('1', 'ether')));
             // Perform checks
-            assert(slashAmountEth.eq(expectedSlash), 'Amount of RPL slashed is incorrect');
-            assert(details2.auctionBalance.sub(details1.auctionBalance).eq(slashAmount), 'RPL was not sent to auction manager');
+            assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
+            assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');
         }
     } else {
-        assert(details2.votes.sub(details1.votes).eq(web3.utils.toBN(1)), 'Vote count not incremented');
-        assert(!details2.status.eq(dissolved), 'Incorrect updated minipool status');
-        assert(details2.nodeRPLStake.eq(details1.nodeRPLStake), 'RPL was slashed');
+        assertBN.equal(details2.votes.sub(details1.votes), 1, 'Vote count not incremented');
+        assertBN.notEqual(details2.status, dissolved, 'Incorrect updated minipool status');
+        assertBN.equal(details2.nodeRPLStake, details1.nodeRPLStake, 'RPL was slashed');
     }
-
 }
 

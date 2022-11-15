@@ -11,8 +11,8 @@ const OUTPUT = process.env.OUTPUT || './build/packed/'
 const PREAMBLE = process.env.PREAMBLE || './scripts/preamble.sol' // Prefixed to all project source code
 const LICENSE = process.env.LICENCE || 5 // 5=GPLv3 https://etherscan.io/contract-license-types
 const NETWORK = process.env.NETWORK || 'mainnet' // Can be goerli or mainnet
-const API_KEY = process.env.API_KEY || 'MZREXRSB4FVCPM1545KKQAGTKYBUKICMQD' // Etherscan API key
-const PROVIDER = process.env.PROVIDER || 'https://mainnet.infura.io/v3/5ba829eb468844a9af09f83651d472b0' // Web3 provider
+const API_KEY = process.env.API_KEY // Etherscan API key
+const PROVIDER = process.env.PROVIDER // Web3 provider
 
 const web3 = new Web3(PROVIDER)
 
