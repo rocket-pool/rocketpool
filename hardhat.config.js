@@ -7,7 +7,7 @@ require('babel-register')({
     presets: [
         ['env', {
             'targets': {
-                'node': '8.0',
+                'node': '16',
             },
         }],
     ],
