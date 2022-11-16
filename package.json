@@ -11,6 +11,9 @@
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },
   "devDependencies": {
+    "@babel/polyfill": "^7.12.1",
+    "@babel/preset-env": "^7.20.2",
+    "@babel/register": "^7.18.9",
     "@babel/runtime": "^7.20.1",
     "@chainsafe/lodestar-types": "^0.5.0",
     "@chainsafe/ssz": "^0.6.1",
@@ -18,9 +21,6 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^3.3.0",
     "axios": "^0.21.1",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0",
     "dotenv": "^16.0.3",
     "ethereumjs-util": "^6.2.0",
     "glob": "^7.1.7",

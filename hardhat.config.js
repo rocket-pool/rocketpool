@@ -3,18 +3,18 @@ require('@nomiclabs/hardhat-truffle5');
 require('dotenv').config();
 
 // Importing babel to be able to use ES6 imports
-require('babel-register')({
+require('@babel/register')({
     presets: [
-        ['env', {
+        ['@babel/preset-env', {
             'targets': {
                 'node': '16',
             },
         }],
     ],
-    only: /test|scripts/,
+    only: [ /test|scripts/ ],
     retainLines: true,
 });
-require('babel-polyfill');
+require('@babel/polyfill');
 
 // Config from environment
 const mnemonicPhrase = process.env.MNEMONIC || 'test test test test test test test test test test test junk';
