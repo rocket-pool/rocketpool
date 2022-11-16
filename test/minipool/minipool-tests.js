@@ -747,11 +747,9 @@ export default function() {
 
         it(printTitle('node operator', 'cannot reduce bond amount while in invalid state'), async () => {
             // Signal wanting to reduce and wait 7 days
-            await prelaunchMinipool.beginReduceBondAmount({from: node});
-            await initialisedMinipool.beginReduceBondAmount({from: node});
+            await shouldRevert(prelaunchMinipool.beginReduceBondAmount({from: node}), 'Was able to begin reducing bond on a prelaunch minipool', 'Minipool must be staking');
+            await shouldRevert(initialisedMinipool.beginReduceBondAmount({from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
             await increaseTime(web3, bondReductionWindowStart + 1);
-            await shouldRevert(reduceBond(prelaunchMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on a prelaunch minipool', 'Minipool must be staking');
-            await shouldRevert(reduceBond(initialisedMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
         });
 
 

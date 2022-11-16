@@ -354,9 +354,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             // Just a partial withdraw
             distributeSkimmedRewards();
+            // Reset distribute waiting period
+            userDistributeTime = 0;
         }
-        // Reset distribute waiting period
-        userDistributeTime = 0;
     }
 
     /// @dev Distribute the entire balance to the minipool owner
@@ -375,6 +375,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// @notice Allows a user (other than the owner of this minipool) to signal they want to call distribute.
     ///         After waiting the required period, anyone may then call `distributeBalance()`.
     function beginUserDistribute() override external {
+        require(status == MinipoolStatus.Staking, "Minipool must be staking");
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         require (totalBalance >= 8 ether, "Balance too low");
         userDistributeTime = block.timestamp;
@@ -579,6 +580,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         period has elapsed
     function beginReduceBondAmount() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         require(!reductionCancelled, "This minipool is allowed to reduce bond");
+        require(status == MinipoolStatus.Staking, "Minipool must be staking");
         reduceBondTime = block.timestamp;
         emit BeginBondReduction(block.timestamp);
     }
