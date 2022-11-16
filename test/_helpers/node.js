@@ -10,7 +10,7 @@ import {
     RocketDAONodeTrusted,
     RocketMinipoolManager,
     RocketMinipoolDelegate,
-    RocketMinipoolFactory
+    RocketMinipoolFactory, RocketNodeManagerOld,
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -48,7 +48,8 @@ export async function getNodeMinimumRPLStake(nodeAddress) {
 
 // Register a node
 export async function registerNode(txOptions) {
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const preUpdate = !(await upgradeExecuted());
+    const rocketNodeManager = preUpdate ? await RocketNodeManagerOld.deployed() : await RocketNodeManager.deployed();
     await rocketNodeManager.registerNode('Australia/Brisbane', txOptions);
 }
 

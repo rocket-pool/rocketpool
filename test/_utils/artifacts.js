@@ -32,6 +32,7 @@ export const RocketNetworkFees = artifacts.require('RocketNetworkFees.sol');
 export const RocketNetworkPrices = artifacts.require('RocketNetworkPrices.sol');
 export const RocketNodeDepositOld = artifacts.require('RocketNodeDepositOld.sol');
 export const RocketNodeManager = artifacts.require('RocketNodeManager.sol');
+export const RocketNodeManagerOld = artifacts.require('RocketNodeManagerOld.sol');
 export const RocketNodeStaking = artifacts.require('RocketNodeStaking.sol');
 export const RocketNodeStakingOld = artifacts.require('RocketNodeStakingOld.sol');
 export const RocketNodeDistributorFactory = artifacts.require('RocketNodeDistributorFactory.sol');

@@ -6,25 +6,23 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../RocketBase.sol";
-import "../../types/MinipoolStatus.sol";
-import "../../types/NodeDetails.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol"; 
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/node/RocketNodeDistributorInterface.sol";
-import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/node/RocketNodeDepositInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../RocketBase.sol";
+import "../../../types/MinipoolStatus.sol";
+import "../../../types/NodeDetails.sol";
+import "../../../interface/old/RocketNodeManagerInterfaceOld.sol";
+import "../../../interface/rewards/claims/RocketClaimNodeInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
+import "../../../interface/util/AddressSetStorageInterface.sol";
+import "../../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../../interface/node/RocketNodeDistributorInterface.sol";
+import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsRewardsInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import "../../../interface/old/RocketNodeStakingInterfaceOld.sol";
 
 
-// Node registration and management 
-contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
+// Node registration and management
+contract RocketNodeManagerOld is RocketBase, RocketNodeManagerInterfaceOld {
 
     // Libraries
     using SafeMath for uint256;
@@ -37,7 +35,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 2;
     }
 
     // Get the number of nodes in the network
@@ -174,10 +172,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Calculate and set current average fee numerator
         uint256 count = rocketMinipoolManager.getNodeMinipoolCount(msg.sender);
         if (count > 0){
-            uint256 numerator = 0;
+            uint256 numerator;
             // Note: this loop is safe as long as all current node operators at the time of upgrade have few enough minipools
             for (uint256 i = 0; i < count; i++) {
-                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
+                RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getMinipoolAt(i));
                 if (minipool.getStatus() == MinipoolStatus.Staking){
                     numerator = numerator.add(minipool.getNodeFee());
                 }
@@ -200,47 +198,13 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     function getAverageNodeFee(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Get valid deposit amounts
-        uint256[] memory depositSizes = rocketNodeDeposit.getDepositAmounts();
-        // Setup memory for calculations
-        uint256[] memory depositWeights = new uint256[](depositSizes.length);
-        uint256[] memory depositCounts = new uint256[](depositSizes.length);
-        uint256 depositWeightTotal;
-        uint256 totalCount;
-        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        // Retrieve the number of staking minipools per deposit size
-        for (uint256 i = 0; i < depositSizes.length; i++) {
-            depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
-            totalCount = totalCount.add(depositCounts[i]);
-        }
-        if (totalCount == 0) {
+        // Calculate average
+        uint256 denominator = rocketMinipoolManager.getNodeStakingMinipoolCount(_nodeAddress);
+        if (denominator == 0) {
             return 0;
         }
-        // Calculate the weights of each deposit size
-        for (uint256 i = 0; i < depositSizes.length; i++) {
-            depositWeights[i] = launchAmount.sub(depositSizes[i]).mul(depositCounts[i]);
-            depositWeightTotal = depositWeightTotal.add(depositWeights[i]);
-        }
-        for (uint256 i = 0; i < depositSizes.length; i++) {
-            depositWeights[i] = depositWeights[i].mul(calcBase).div(depositWeightTotal);
-        }
-        // Calculate the weighted average
-        uint256 weightedAverage = 0;
-        for (uint256 i = 0; i < depositSizes.length; i++) {
-            if (depositCounts[i] > 0) {
-                bytes32 numeratorKey;
-                if (depositSizes[i] == 16 ether) {
-                    numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress));
-                } else {
-                    numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i]));
-                }
-                uint256 numerator = getUint(numeratorKey);
-                weightedAverage = weightedAverage.add(numerator.mul(depositWeights[i]).div(depositCounts[i]));
-            }
-        }
-        return weightedAverage.div(calcBase);
+        uint256 numerator = getUint(keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress)));
+        return numerator.div(denominator);
     }
 
     // Designates which network a node would like their rewards relayed to
@@ -315,24 +279,41 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return count;
     }
 
-    /// @notice Convenience function to return all on-chain details about a given node
-    /// @param _nodeAddress Address of the node to query details for
-    function getNodeDetails(address _nodeAddress) override public view returns (NodeDetails memory nodeDetails) {
+    // Convenience function to return all on-chain details about a given node
+    function getNodeDetails(address _nodeAddress) override external view returns (NodeDetailsOld memory nodeDetails) {
         // Get contracts
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        RocketNodeStakingInterfaceOld rocketNodeStaking = RocketNodeStakingInterfaceOld(getContractAddress("rocketNodeStaking"));
         RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         IERC20 rocketTokenRETH = IERC20(getContractAddress("rocketTokenRETH"));
         IERC20 rocketTokenRPL = IERC20(getContractAddress("rocketTokenRPL"));
         IERC20 rocketTokenRPLFixedSupply = IERC20(getContractAddress("rocketTokenRPLFixedSupply"));
-        // Call internal method
-        return _getNodeDetails(_nodeAddress, rocketNodeStaking, rocketNodeDeposit, rocketNodeDistributorFactory, rocketMinipoolManager, rocketTokenRETH, rocketTokenRPL, rocketTokenRPLFixedSupply);
+        // Node details
+        nodeDetails.withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+        nodeDetails.pendingWithdrawalAddress = rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
+        nodeDetails.exists = getNodeExists(_nodeAddress);
+        nodeDetails.registrationTime = getNodeRegistrationTime(_nodeAddress);
+        nodeDetails.timezoneLocation = getNodeTimezoneLocation(_nodeAddress);
+        nodeDetails.feeDistributorInitialised = getFeeDistributorInitialised(_nodeAddress);
+        nodeDetails.rewardNetwork = getRewardNetwork(_nodeAddress);
+        // Staking details
+        nodeDetails.rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
+        nodeDetails.effectiveRPLStake = rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress);
+        nodeDetails.minimumRPLStake = rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress);
+        nodeDetails.maximumRPLStake = rocketNodeStaking.getNodeMaximumRPLStake(_nodeAddress);
+        nodeDetails.minipoolLimit = rocketNodeStaking.getNodeMinipoolLimit(_nodeAddress);
+        // Distributor details
+        nodeDetails.feeDistributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        // Minipool details
+        nodeDetails.minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
+        // Balance details
+        nodeDetails.balanceETH = _nodeAddress.balance;
+        nodeDetails.balanceRETH = rocketTokenRETH.balanceOf(_nodeAddress);
+        nodeDetails.balanceRPL = rocketTokenRPL.balanceOf(_nodeAddress);
+        nodeDetails.balanceOldRPL = rocketTokenRPLFixedSupply.balanceOf(_nodeAddress);
     }
 
-    /// @notice Returns a slice of the node operator address set
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
+    // Returns a slice of the node operator address set
     function getNodeAddresses(uint256 _offset, uint256 _limit) override external view returns (address[] memory) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
@@ -355,85 +336,4 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         }
         return nodes;
     }
-
-    /// @notice Returns a slice of node operator details
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getAllNodeDetails(uint256 _offset, uint256 _limit) override external view returns (NodeDetails[] memory) {
-        // Get contracts
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        IERC20 rocketTokenRETH = IERC20(getContractAddress("rocketTokenRETH"));
-        IERC20 rocketTokenRPL = IERC20(getContractAddress("rocketTokenRPL"));
-        IERC20 rocketTokenRPLFixedSupply = IERC20(getContractAddress("rocketTokenRPLFixedSupply"));
-        // Precompute node key
-        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
-        // Iterate over the requested minipool range
-        uint256 max = _offset.add(_limit);
-        {
-            uint256 totalNodes = getNodeCount();
-            if (max > totalNodes || _limit == 0) { max = totalNodes; }
-        }
-        // Create array big enough for every minipool
-        NodeDetails[] memory nodeDetails = new NodeDetails[](max.sub(_offset));
-        uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
-            nodeDetails[total] = _getNodeDetails(addressSetStorage.getItem(nodeKey, i),
-                rocketNodeStaking, rocketNodeDeposit, rocketNodeDistributorFactory,
-                rocketMinipoolManager, rocketTokenRETH, rocketTokenRPL, rocketTokenRPLFixedSupply);
-            total++;
-        }
-        // Dirty hack to cut unused elements off end of return value
-        assembly {
-            mstore(nodeDetails, total)
-        }
-        return nodeDetails;
-    }
-
-    /// @dev Internal method to get all details about a node
-    function _getNodeDetails(address _nodeAddress,
-        RocketNodeStakingInterface rocketNodeStaking,
-        RocketNodeDepositInterface rocketNodeDeposit,
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory,
-        RocketMinipoolManagerInterface rocketMinipoolManager,
-        IERC20 rocketTokenRETH,
-        IERC20 rocketTokenRPL,
-        IERC20 rocketTokenRPLFixedSupply
-    ) internal view returns (NodeDetails memory nodeDetails) {
-        // Node details
-        nodeDetails.withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
-        nodeDetails.pendingWithdrawalAddress = rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
-        nodeDetails.exists = getNodeExists(_nodeAddress);
-        nodeDetails.registrationTime = getNodeRegistrationTime(_nodeAddress);
-        nodeDetails.timezoneLocation = getNodeTimezoneLocation(_nodeAddress);
-        nodeDetails.feeDistributorInitialised = getFeeDistributorInitialised(_nodeAddress);
-        nodeDetails.rewardNetwork = getRewardNetwork(_nodeAddress);
-        // Staking details
-        nodeDetails.rplStake = rocketNodeStaking.getNodeRPLStake(_nodeAddress);
-        nodeDetails.effectiveRPLStake = rocketNodeStaking.getNodeEffectiveRPLStake(_nodeAddress);
-        nodeDetails.minimumRPLStake = rocketNodeStaking.getNodeMinimumRPLStake(_nodeAddress);
-        nodeDetails.maximumRPLStake = rocketNodeStaking.getNodeMaximumRPLStake(_nodeAddress);
-        nodeDetails.ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress);
-        nodeDetails.ethMatchedLimit = rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress);
-        // Distributor details
-        nodeDetails.feeDistributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
-        uint256 distributorBalance = nodeDetails.feeDistributorAddress.balance;
-        RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(nodeDetails.feeDistributorAddress);
-        nodeDetails.distributorBalanceNodeETH = distributor.getNodeShare();
-        nodeDetails.distributorBalanceUserETH = distributorBalance.sub(nodeDetails.distributorBalanceNodeETH);
-        // Minipool details
-        nodeDetails.minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
-        // Balance details
-        nodeDetails.balanceETH = _nodeAddress.balance;
-        nodeDetails.balanceRETH = rocketTokenRETH.balanceOf(_nodeAddress);
-        nodeDetails.balanceRPL = rocketTokenRPL.balanceOf(_nodeAddress);
-        nodeDetails.balanceOldRPL = rocketTokenRPLFixedSupply.balanceOf(_nodeAddress);
-        nodeDetails.depositCreditBalance = rocketNodeDeposit.getNodeDepositCredit(_nodeAddress);
-        // Return
-        return nodeDetails;
-    }
-
 }
