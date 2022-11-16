@@ -21,6 +21,7 @@ import {
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { submitPrices } from '../_helpers/network';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -132,8 +133,8 @@ export default function() {
             }
 
             // Check results
-            assert(expectedUserBN.eq(result.rethBalanceChange), "User balance was incorrect");
-            assert(expectedNodeBN.eq(result.nodeBalanceChange), "Node balance was incorrect");
+            assertBN.equal(expectedUserBN, result.rethBalanceChange, "User balance was incorrect");
+            assertBN.equal(expectedNodeBN, result.nodeBalanceChange, "Node balance was incorrect");
         }
 
 
@@ -144,7 +145,7 @@ export default function() {
             await minipool.slash({from: from})
             const rplStake2 = await rocketNodeStaking.getNodeRPLStake(node)
             const slashedAmount = rplStake1.sub(rplStake2)
-            assert(expectedSlash.eq(slashedAmount), 'Slashed amount was incorrect')
+            assertBN.equal(expectedSlash, slashedAmount, 'Slashed amount was incorrect')
         }
 
 

@@ -1,9 +1,9 @@
 import { RocketNodeManager } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Refund refinanced node balance from a minipool
 export async function refund(minipool, txOptions) {
-
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();
 
@@ -38,13 +38,10 @@ export async function refund(minipool, txOptions) {
     let balances2 = await getBalances();
 
     // Check balances
-    const zero = web3.utils.toBN(0);
     let expectedNodeBalance = balances1.nodeEth.add(balances1.nodeRefund);
-    if (nodeWithdrawalAddress == nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
-    assert(balances1.nodeRefund.gt(zero), 'Incorrect initial node refund balance');
-    assert(balances2.nodeRefund.eq(zero), 'Incorrect updated node refund balance');
-    assert(balances2.minipoolEth.eq(balances1.minipoolEth.sub(balances1.nodeRefund)), 'Incorrect updated minipool ETH balance');
-    assert(balances2.nodeEth.eq(expectedNodeBalance), 'Incorrect updated node ETH balance');
-
+    if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
+    assertBN.isAbove(balances1.nodeRefund, 0, 'Incorrect initial node refund balance');
+    assertBN.eq(balances2.nodeRefund, 0, 'Incorrect updated node refund balance');
+    assertBN.equal(balances2.minipoolEth, balances1.minipoolEth.sub(balances1.nodeRefund), 'Incorrect updated minipool ETH balance');
+    assertBN.equal(balances2.nodeEth, expectedNodeBalance, 'Incorrect updated node ETH balance');
 }
-

@@ -19,9 +19,7 @@ require('@babel/polyfill');
 // Config from environment
 const mnemonicPhrase = process.env.MNEMONIC || 'test test test test test test test test test test test junk';
 const mnemonicPassword = process.env.MNEMONIC_PASSWORD;
-const providerHost = process.env.PROVIDER_HOST || 'localhost';
-const providerPort = process.env.PROVIDER_PORT || 8545;
-const providerProtocol = process.env.PROVIDER_PROTOCOL || 'http';
+const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -42,7 +40,7 @@ module.exports = {
             network_id: '*',
         },
         testnet: {
-            url: `${providerProtocol}://${providerHost}:${providerPort}`,
+            url: `${providerUrl}`,
             accounts: {
                 mnemonic: mnemonicPhrase,
                 path: 'm/44\'/60\'/0\'/0',

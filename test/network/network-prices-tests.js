@@ -96,7 +96,6 @@ export default function() {
 
 
         it(printTitle('trusted nodes', 'can submit network prices'), async () => {
-
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = web3.utils.toWei('0.02', 'ether');
@@ -122,12 +121,10 @@ export default function() {
             await submitPrices(block, rplPrice, {
                 from: trustedNode2,
             });
-
         });
 
 
         it(printTitle('trusted nodes', 'cannot submit network prices while price submissions are disabled'), async () => {
-
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = web3.utils.toWei('0.02', 'ether');
@@ -139,12 +136,10 @@ export default function() {
             await shouldRevert(submitPrices(block, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted prices while price submissions were disabled');
-
         });
 
 
         it(printTitle('trusted nodes', 'cannot submit network prices for a future block'), async () => {
-
             // Get current block
             let blockCurrent = await web3.eth.getBlockNumber();
 
@@ -156,12 +151,10 @@ export default function() {
             await shouldRevert(submitPrices(block, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted prices for a future block');
-
         });
 
 
         it(printTitle('trusted nodes', 'cannot submit network prices for the current recorded block or lower'), async () => {
-
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = web3.utils.toWei('0.02', 'ether');
@@ -183,12 +176,10 @@ export default function() {
             await shouldRevert(submitPrices(block - 1, rplPrice, {
                 from: trustedNode3,
             }), 'Submitted prices for a lower block');
-
         });
 
 
         it(printTitle('trusted nodes', 'cannot submit the same network prices twice'), async () => {
-
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = web3.utils.toWei('0.02', 'ether');
@@ -202,12 +193,10 @@ export default function() {
             await shouldRevert(submitPrices(block, rplPrice, {
                 from: trustedNode1,
             }), 'Submitted the same network prices twice');
-
         });
 
 
         it(printTitle('regular nodes', 'cannot submit network prices'), async () => {
-
             // Set parameters
             let block = await web3.eth.getBlockNumber();
             let rplPrice = web3.utils.toWei('0.02', 'ether');
@@ -216,7 +205,6 @@ export default function() {
             await shouldRevert(submitPrices(block, rplPrice, {
                 from: node,
             }), 'Regular node submitted network prices');
-
         });
 
 

@@ -8,7 +8,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
     getMinipoolMinimumRPLStake,
-    createVancantMinipool, promoteMinipool,
+    createVancantMinipool, promoteMinipool, minipoolStates,
 } from '../_helpers/minipool';
 import {
     registerNode,
@@ -24,6 +24,7 @@ import {
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { voteScrub } from './scenario-scrub';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -80,9 +81,8 @@ export default function() {
 
             let prelaunch16Status = await prelaunchMinipool16.getStatus.call();
             let prelaunch8Status = await prelaunchMinipool8.getStatus.call();
-            assert(prelaunch16Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
-            assert(prelaunch8Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
-
+            assertBN.equal(prelaunch16Status, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
+            assertBN.equal(prelaunch8Status, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
         });
 
 
@@ -98,10 +98,10 @@ export default function() {
             await promoteMinipool(prelaunchMinipool16, {from: node});
             // Verify new status
             let stakingStatus = await prelaunchMinipool16.getStatus.call();
-            assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             // Verify deposit credit balance increased by 16 ETH
             let creditBalance = await getNodeDepositCredit(node);
-            assert(creditBalance.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))));
+            assertBN.equal(creditBalance, web3.utils.toWei('16', 'ether'));
         });
 
 
@@ -112,10 +112,10 @@ export default function() {
             await promoteMinipool(prelaunchMinipool8, {from: node});
             // Verify new status
             let stakingStatus = await prelaunchMinipool8.getStatus.call();
-            assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             // Verify deposit credit balance increased by 24 ETH
             let creditBalance = await getNodeDepositCredit(node);
-            assert(creditBalance.eq(web3.utils.toBN(web3.utils.toWei('24', 'ether'))));
+            assertBN.equal(creditBalance, web3.utils.toWei('24', 'ether'));
         });
 
 

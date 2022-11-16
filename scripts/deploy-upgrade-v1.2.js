@@ -139,6 +139,12 @@ export async function upgrade() {
     // Run it
     await deployContracts();
 
+    // Lock it
+    console.log('\n');
+    console.log('\x1b[34m%s\x1b[0m', '  Locking upgrade contract');
+    const upgradeContract = (await contracts.rocketUpgradeOneDotTwo.deployed());
+    await upgradeContract.lock();
+
     // Store deployed block
     console.log('\n');
     console.log('\x1b[32m%s\x1b[0m', '  Deployment complete :)');

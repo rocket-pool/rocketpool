@@ -1,6 +1,8 @@
-import { getCurrentTime, increaseTime, mineBlocks } from '../_utils/evm'
-import { RocketTokenRPL, RocketVault, RocketRewardsPool } from '../_utils/artifacts';
+import { getCurrentTime, increaseTime } from '../_utils/evm'
+import { RocketTokenRPL, RocketVault } from '../_utils/artifacts';
 import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
+import { assertBN } from '../_helpers/bn';
+
 
 // Set inflation config
 export async function rplSetInflationConfig(config, txOptions) {
@@ -9,13 +11,6 @@ export async function rplSetInflationConfig(config, txOptions) {
     // Set the daily inflation rate
     await setRPLInflationIntervalRate(config.yearlyInflationTarget, txOptions);
 }
-
-// Get the current inflation period in blocks
-export async function rplInflationIntervalBlocksGet(txOptions) {
-    // Load contracts
-    const rocketTokenRPL = await RocketTokenRPL.deployed();
-    return await rocketTokenRPL.getInflationIntervalBlocks.call();
-};
 
 
 // Claim the inflation after a set amount of blocks have passed
@@ -126,13 +121,13 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // console.log(Number(tokenAmountToMatch).toString(), totalSupplyEnd.toString(), totalSupplyStart.toString());
 
     // Verify the minted amount is correct based on inflation rate etc
-    assert(expectedTokensMinted.eq(totalSupplyEnd.sub(totalSupplyStart)), 'Incorrect amount of minted tokens expected');
+    assertBN.equal(expectedTokensMinted, totalSupplyEnd.sub(totalSupplyStart), 'Incorrect amount of minted tokens expected');
     // Verify the minted tokens are now stored in Rocket Vault on behalf of Rocket Rewards Pool
-    assert(inflationData2.rocketVaultInternalBalanceRPL.eq(inflationData2.rocketVaultBalanceRPL), 'Incorrect amount of tokens stored in Rocket Vault for Rocket Rewards Pool');
+    assertBN.equal(inflationData2.rocketVaultInternalBalanceRPL, inflationData2.rocketVaultBalanceRPL, 'Incorrect amount of tokens stored in Rocket Vault for Rocket Rewards Pool');
     // Are we verifying an exact amount of tokens given as a required parameter on this pass?
     if (tokenAmountToMatch) {
         tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
-        assert(tokenAmountToMatch.eq(web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18))), 'Given token amount does not match total supply made');
+        assertBN.equal(tokenAmountToMatch, web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18)), 'Given token amount does not match total supply made');
     }
 
     return (totalSupplyEnd.sub(totalSupplyStart));

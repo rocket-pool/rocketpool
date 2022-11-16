@@ -1,12 +1,11 @@
 import {
     RocketClaimDAO,
     RocketDAONodeTrusted,
-    RocketNetworkPrices,
     RocketRewardsPool,
-    RocketStorage,
     RocketTokenRETH, RocketTokenRPL,
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit rewards
@@ -114,7 +113,7 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-    assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
+    assertBN.equal(submission2.count, submission1.count.add(web3.utils.toBN(1)), 'Incorrect updated submission count');
 
     // Calculate changes in user ETH and treasury RPL
     rethBalance1 = web3.utils.toBN(rethBalance1);
@@ -126,15 +125,16 @@ export async function submitRewards(index, rewards, treasuryRPL, userETH, txOpti
 
     // Check reward index and user balances
     if (expectedExecute) {
-        assert(rewardIndex2.eq(rewardIndex1.add(web3.utils.toBN(1))), 'Incorrect updated network prices block');
-        assert(userETHChange.eq(userETH), 'User ETH balance not correct');
-        assert(treasuryRPLChange.eq(treasuryRPL), 'Treasury RPL balance not correct');
+        assertBN.equal(rewardIndex2, rewardIndex1.add(web3.utils.toBN(1)), 'Incorrect updated network prices block');
+        assertBN.equal(userETHChange, userETH, 'User ETH balance not correct');
+        assertBN.equal(treasuryRPLChange, treasuryRPL, 'Treasury RPL balance not correct');
     } else {
-        assert(rewardIndex2.eq(rewardIndex1), 'Incorrect updated network prices block');
-        assert(rethBalance1.eq(rethBalance2), 'User ETH balance changed');
-        assert(treasuryRpl1.eq(treasuryRpl2), 'Treasury RPL balance changed');
+        assertBN.equal(rewardIndex2, rewardIndex1, 'Incorrect updated network prices block');
+        assertBN.equal(rethBalance1, rethBalance2, 'User ETH balance changed');
+        assertBN.equal(treasuryRpl1, treasuryRpl2, 'Treasury RPL balance changed');
     }
 }
+
 
 // Execute a reward period that already has consensus
 export async function executeRewards(index, rewards, treasuryRPL, userETH, txOptions) {
@@ -199,6 +199,5 @@ export async function executeRewards(index, rewards, treasuryRPL, userETH, txOpt
     let rewardIndex2 = await rocketRewardsPool.getRewardIndex();
 
     // Check index incremented
-    assert(rewardIndex2.eq(rewardIndex1.add(web3.utils.toBN(1))), 'Incorrect updated network prices block');
+    assertBN.equal(rewardIndex2, rewardIndex1.add(web3.utils.toBN(1)), 'Incorrect updated network prices block');
 }
-

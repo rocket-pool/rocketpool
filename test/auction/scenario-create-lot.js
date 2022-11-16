@@ -1,4 +1,5 @@
 import { RocketAuctionManager, RocketDAOProtocolSettingsAuction, RocketNetworkPrices } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Create a new lot for auction
@@ -81,21 +82,20 @@ export async function createLot(txOptions) {
     const expectedLotRplAmount = (details1.remainingRplBalance.lt(lotMaxRplAmount) ? details1.remainingRplBalance : lotMaxRplAmount);
 
     // Check contract details
-    assert(details2.totalRplBalance.eq(details1.totalRplBalance), 'Total RPL balance updated and should not have');
-    assert(details2.remainingRplBalance.eq(expectedRemainingRplBalance), 'Incorrect updated remaining RPL balance');
-    assert(details2.totalRplBalance.eq(details2.allottedRplBalance.add(details2.remainingRplBalance)), 'Incorrect updated RPL balances');
-    assert(details2.lotCount.eq(details1.lotCount.add(web3.utils.toBN(1))), 'Incorrect updated lot count');
+    assertBN.equal(details2.totalRplBalance, details1.totalRplBalance, 'Total RPL balance updated and should not have');
+    assertBN.equal(details2.remainingRplBalance, expectedRemainingRplBalance, 'Incorrect updated remaining RPL balance');
+    assertBN.equal(details2.totalRplBalance, details2.allottedRplBalance.add(details2.remainingRplBalance), 'Incorrect updated RPL balances');
+    assertBN.equal(details2.lotCount, details1.lotCount.add(web3.utils.toBN(1)), 'Incorrect updated lot count');
 
     // Check lot details
     assert.isTrue(lot.exists, 'Incorrect lot exists status');
-    assert(lot.endBlock.eq(lot.startBlock.add(lotDuration)), 'Incorrect lot start/end blocks');
-    assert(lot.startPrice.eq(rplPrice.mul(startPriceRatio).div(calcBase)), 'Incorrect lot starting price');
-    assert(lot.reservePrice.eq(rplPrice.mul(reservePriceRatio).div(calcBase)), 'Incorrect lot reserve price');
-    assert(lot.totalRpl.eq(expectedLotRplAmount), 'Incorrect lot total RPL amount');
-    assert(lot.currentPrice.eq(lot.startPrice), 'Incorrect lot current price');
-    assert(lot.claimedRpl.eq(web3.utils.toBN(0)), 'Incorrect lot claimed RPL amount');
-    assert(lot.remainingRpl.eq(lot.totalRpl), 'Incorrect lot remaining RPL amount');
+    assertBN.equal(lot.endBlock, lot.startBlock.add(lotDuration), 'Incorrect lot start/end blocks');
+    assertBN.equal(lot.startPrice, rplPrice.mul(startPriceRatio).div(calcBase), 'Incorrect lot starting price');
+    assertBN.equal(lot.reservePrice, rplPrice.mul(reservePriceRatio).div(calcBase), 'Incorrect lot reserve price');
+    assertBN.equal(lot.totalRpl, expectedLotRplAmount, 'Incorrect lot total RPL amount');
+    assertBN.equal(lot.currentPrice, lot.startPrice, 'Incorrect lot current price');
+    assertBN.equal(lot.claimedRpl, 0, 'Incorrect lot claimed RPL amount');
+    assertBN.equal(lot.remainingRpl, lot.totalRpl, 'Incorrect lot remaining RPL amount');
     assert.isFalse(lot.isCleared, 'Incorrect lot cleared status');
-
 }
 

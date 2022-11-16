@@ -11,6 +11,14 @@ import {
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { upgradeExecuted } from '../_utils/upgrade';
 
+// Possible states that a proposal may be in
+export const minipoolStates = {
+    Initialised     : 0,
+    Prelaunch       : 1,
+    Staking         : 2,
+    Withdrawable    : 3,
+    Dissolved       : 4
+};
 
 // Get the number of minipools a node has
 export async function getNodeMinipoolCount(nodeAddress) {

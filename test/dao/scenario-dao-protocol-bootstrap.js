@@ -1,6 +1,6 @@
 import Web3 from 'web3';
 import { RocketDAOProtocol, RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsInflation, RocketTokenRPL, RocketVault } from '../_utils/artifacts';
-
+import { assertBN } from '../_helpers/bn';
 
 
 // Change a trusted node DAO setting while bootstrap mode is enabled
@@ -75,11 +75,11 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
     let dataSet2 = await getTxData();
     //console.log(dataSet2.rewardsClaimerPerc.toString(), dataSet2.rewardsClaimersPercTotal.toString());
     // Verify
-    assert(dataSet2.rewardsClaimerPerc.eq(web3.utils.toBN(_perc)), 'Claim percentage not updated correctly');
+    assertBN.equal(dataSet2.rewardsClaimerPerc, web3.utils.toBN(_perc), 'Claim percentage not updated correctly');
 
     // Verify an expected total Perc if given
     if(expectedTotalPerc) {
-        assert(dataSet2.rewardsClaimersPercTotal.eq(web3.utils.toBN(web3.utils.toWei(expectedTotalPerc.toString()))), 'Total claim percentage not matching given target');
+        assertBN.equal(dataSet2.rewardsClaimersPercTotal, web3.utils.toBN(web3.utils.toWei(expectedTotalPerc.toString())), 'Total claim percentage not matching given target');
     }
 };
 
@@ -126,7 +126,7 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
     // console.log(web3.utils.fromWei(ds2.daoClaimTreasuryBalance), web3.utils.fromWei(ds2.recipientBalance), web3.utils.fromWei(_amount));
 
     // Verify the amount sent is correct
-    assert(ds2.recipientBalance.eq(ds1.recipientBalance.add(_amount)), "Amount spent by treasury does not match recipients received amount");
+    assertBN.equal(ds2.recipientBalance, ds1.recipientBalance.add(_amount), "Amount spent by treasury does not match recipients received amount");
 
 }
 
@@ -175,7 +175,7 @@ export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
     let ds2 = await getTxData();
 
     // Check ID has been recorded
-    assert(ds2.bootstrapmodeDisabled == true, 'Bootstrap mode was not disabled');
+    assert(ds2.bootstrapmodeDisabled === true, 'Bootstrap mode was not disabled');
 
 }
 
@@ -247,7 +247,7 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
     const value = _values[i];
     switch (types[i]) {
       case 0:
-        assert(data[i].eq(web3.utils.toBN(value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
+        assertBN.equal(data[i], value, 'DAO protocol uint256 setting not updated in bootstrap mode');
         break;
       case 1:
         assert(data[i] === value, 'DAO protocol boolean setting not updated in bootstrap mode');

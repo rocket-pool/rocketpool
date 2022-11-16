@@ -1,6 +1,6 @@
 import { mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
 import { userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, minipoolStates } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import {
@@ -11,6 +11,7 @@ import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
@@ -81,9 +82,9 @@ export default function() {
             let stakingStatus1 = await stakingMinipool1.getStatus.call();
             let stakingStatus2 = await stakingMinipool2.getStatus.call();
             let stakingStatus3 = await stakingMinipool3.getStatus.call();
-            assert(stakingStatus1.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(stakingStatus2.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(stakingStatus3.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus1, minipoolStates.Staking, 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus2, minipoolStates.Staking, 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus3, minipoolStates.Staking, 'Incorrect staking minipool status');
 
             // Set a small proposal cooldown
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });

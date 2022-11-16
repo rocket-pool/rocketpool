@@ -5,6 +5,7 @@ import {
     RocketStorage
 } from '../_utils/artifacts';
 import { shouldRevert } from '../_utils/testing';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit network balances
@@ -86,7 +87,7 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
 
     if (!submission1.executed) {
         assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-        assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
+        assertBN.equal(submission2.count, submission1.count.add(web3.utils.toBN(1)), 'Incorrect updated submission count');
     }
 
     // Check penalty
@@ -102,4 +103,3 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
         assert.isFalse(submission2.executed, 'Penalty executed');
     }
 }
-

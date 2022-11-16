@@ -71,7 +71,6 @@ export default function() {
 
 
         it(printTitle('trusted nodes', 'can submit penalties'), async () => {
-
             // Set parameters
             let minipoolAddress = minipool.address;
 
@@ -86,12 +85,10 @@ export default function() {
                     from: trustedNode3,
                 });
             }
-
         });
 
 
         it(printTitle('node operator', 'cannot submit penalties'), async () => {
-
             // Set parameters
             let block = 1;
             let minipoolAddress = minipool.address;
@@ -100,7 +97,6 @@ export default function() {
             await shouldRevert(submitPenalty(minipoolAddress, block, {
                 from: node,
             }), 'Was able to submit penalty', 'Invalid trusted node');
-
         });
 
     });

@@ -3,7 +3,6 @@ import { RocketNodeManager } from '../_utils/artifacts';
 
 // Set a node's timezone location
 export async function setTimezoneLocation(timezoneLocation, txOptions) {
-
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();
 
@@ -14,7 +13,5 @@ export async function setTimezoneLocation(timezoneLocation, txOptions) {
     let nodeTimezoneLocation = await rocketNodeManager.getNodeTimezoneLocation.call(txOptions.from);
 
     // Check
-    assert.equal(nodeTimezoneLocation, timezoneLocation, 'Incorrect updated timezone location');
-
+    assert.strictEqual(nodeTimezoneLocation, timezoneLocation, 'Incorrect updated timezone location');
 }
-

@@ -1,9 +1,9 @@
 import { RocketTokenRETH } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Transfer rETH between accounts
 export async function transferReth(to, amount, txOptions) {
-
     // Load contracts
     const rocketTokenRETH = await RocketTokenRETH.deployed();
 
@@ -28,8 +28,6 @@ export async function transferReth(to, amount, txOptions) {
     let balances2 = await getBalances();
 
     // Check balances
-    assert(balances2.userFromTokenBalance.eq(balances1.userFromTokenBalance.sub(amount)), 'Incorrect updated user token balance');
-    assert(balances2.userToTokenBalance.eq(balances1.userToTokenBalance.add(amount)), 'Incorrect updated user token balance');
-
+    assertBN.equal(balances2.userFromTokenBalance, balances1.userFromTokenBalance.sub(amount), 'Incorrect updated user token balance');
+    assertBN.equal(balances2.userToTokenBalance, balances1.userToTokenBalance.add(amount), 'Incorrect updated user token balance');
 }
-

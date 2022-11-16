@@ -4,6 +4,7 @@ import {
     RocketNodeManager,
     RocketTokenRETH
 } from '../_utils/artifacts'
+import { assertBN } from '../_helpers/bn';
 
 export async function withdrawValidatorBalance(minipool, withdrawalBalance, from) {
     // Convert to BN
@@ -160,14 +161,14 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         // console.log('User amount: ', web3.utils.fromWei(userAmount));
 
         // Check balances
-        assert(rethBalanceChange.add(depositPoolChange).eq(userAmount), "rETH balance was not correct");
-        assert(nodeBalanceChange.eq(nodeAmount), "Node balance was not correct");
+        assertBN.equal(rethBalanceChange.add(depositPoolChange), userAmount, "rETH balance was not correct");
+        assertBN.equal(nodeBalanceChange, nodeAmount, "Node balance was not correct");
 
         // If not sent from node operator then refund balance should be correct
         if (!(from === nodeWithdrawalAddress || from === nodeAddress)) {
             let refundBalance = await minipool.getNodeRefundBalance.call();
             // console.log('Node refund balance after withdrawal:', web3.utils.fromWei(refundBalance));
-            assert(refundBalance.eq(minipoolBalances1.nodeRefundBalance.add(nodeAmount)), "Node balance was not correct");
+            assertBN.equal(refundBalance, minipoolBalances1.nodeRefundBalance.add(nodeAmount), "Node balance was not correct");
         }
     }
 

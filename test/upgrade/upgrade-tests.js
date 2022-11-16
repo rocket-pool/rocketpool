@@ -2,7 +2,7 @@ import { nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { createMinipool, stakeMinipool } from '../_helpers/minipool';
+import { createMinipool, minipoolStates, stakeMinipool } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import {
@@ -13,6 +13,7 @@ import {
 import { increaseTime } from '../_utils/evm';
 import { burnReth } from '../token/scenario-reth-burn';
 import { shouldRevert } from '../_utils/testing';
+import { assertBN } from '../_helpers/bn';
 
 
 export default function() {
@@ -78,19 +79,19 @@ export default function() {
 
             // Check minipool statuses
             let stakingStatus = await stakingMinipool.getStatus.call();
-            assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             stakingStatus = await queuedFullMinipool.getStatus.call();
-            assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             let initialisedStatus = await queuedHalfMinipool1.getStatus.call();
-            assert(initialisedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialised minipool status');
+            assertBN.equal(initialisedStatus, minipoolStates.Initialised, 'Incorrect staking minipool status');
             initialisedStatus = await queuedHalfMinipool2.getStatus.call();
-            assert(initialisedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialised minipool status');
+            assertBN.equal(initialisedStatus, minipoolStates.Initialised, 'Incorrect staking minipool status');
 
             // Check deposit pool balances
             const depositPoolBalance = await rocketDepositPool.getBalance();
             const depositPoolNodeBalance = await rocketDepositPool.getNodeBalance();
-            assert(depositPoolBalance.eq(web3.utils.toBN('0')), 'Incorrect deposit pool balance');
-            assert(depositPoolNodeBalance.eq(web3.utils.toBN('0')), 'Incorrect deposit pool node balance');
+            assertBN.isZero(depositPoolBalance, 'Incorrect deposit pool balance');
+            assertBN.isZero(depositPoolNodeBalance, 'Incorrect deposit pool node balance');
 
             // Perform upgrade
             await upgradeOneDotTwo(owner);
@@ -107,7 +108,7 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('16', 'ether') });
                     // Expected: 16 ETH is assigned to a legacy half minipool, which becomes prelaunch
                     let status = await queuedHalfMinipool1.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(1)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
                 }
 
                 {
@@ -115,9 +116,9 @@ export default function() {
                     variableMinipool1 = await createMinipool({ from: node, value: web3.utils.toWei('8', 'ether') });
                     // Expected: 1 ETH is deposited on beacon chain, minipool is in queue (initialised), 7 ETH is added to the deposit pool
                     let status = await variableMinipool1.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(0)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Initialised, 'Incorrect minipool status');
                     const depositPoolBalance = await rocketDepositPool.getBalance();
-                    assert(depositPoolBalance.eq(web3.utils.toBN(web3.utils.toWei('7', 'ether'))), 'Incorrect deposit pool balance');
+                    assertBN.equal(depositPoolBalance, web3.utils.toWei('7', 'ether'), 'Incorrect deposit pool balance');
                 }
 
                 {
@@ -127,11 +128,11 @@ export default function() {
                     const depositPoolBalanceAfter = await rocketDepositPool.getBalance();
                     // Expected: 1 ETH is deposited on beacon chain, minipool is in queue (initialised), 15 ETH is added to deposit pool, a half legacy minipool should be assigned 16 ETH and moves to prelaunch
                     let status = await variableMinipool2.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(0)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Initialised, 'Incorrect minipool status');
                     // 15 ETH added to deposit pool and 16 ETH assigned to legacy half pool is 1 ETH less
-                    assert(depositPoolBalanceAfter.eq(depositPoolBalanceBefore.sub(web3.utils.toBN(web3.utils.toWei('1', 'ether')))), 'Incorrect change in deposit pool balance');
+                    assertBN.equal(depositPoolBalanceAfter, depositPoolBalanceBefore.sub(web3.utils.toBN(web3.utils.toWei('1', 'ether'))), 'Incorrect change in deposit pool balance');
                     status = await queuedHalfMinipool2.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(1)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
                 }
 
                 {
@@ -139,7 +140,7 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('10', 'ether') });
                     // Expected: Legacy full minipool should have a 16 ETH refund
                     const refund = await queuedFullMinipool.getNodeRefundBalance();
-                    assert(refund.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Invalid refund balance');
+                    assertBN.equal(refund, web3.utils.toWei('16', 'ether'), 'Invalid refund balance');
                 }
 
                 {
@@ -147,7 +148,7 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('31', 'ether') });
                     // Expected: 8 ETH minipool assigned 31 ETH deposit and moved to prelaunch
                     let status = await variableMinipool1.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(1)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
                 }
 
                 {
@@ -155,9 +156,9 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('20', 'ether') });
                     // Expected: 20 ETH in deposit pool, no assignments
                     let status = await variableMinipool2.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(0)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Initialised, 'Incorrect minipool status');
                     const depositPoolBalance = await rocketDepositPool.getBalance();
-                    assert(depositPoolBalance.eq(web3.utils.toBN(web3.utils.toWei('20', 'ether'))), 'Incorrect deposit pool balance');
+                    assertBN.equal(depositPoolBalance, web3.utils.toWei('20', 'ether'), 'Incorrect deposit pool balance');
                 }
 
                 {
@@ -165,7 +166,7 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('11', 'ether') });
                     // Expected: 16 ETH minipool assigned 31 ETH deposit and moved to prelaunch
                     let status = await variableMinipool2.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(1)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
                 }
 
                 {
@@ -173,7 +174,7 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('2', 'ether') });
                     // Expected: 2 ETH is in the deposit pool
                     const depositPoolBalance = await rocketDepositPool.getBalance();
-                    assert(depositPoolBalance.eq(web3.utils.toBN(web3.utils.toWei('2', 'ether'))), 'Incorrect deposit pool balance');
+                    assertBN.equal(depositPoolBalance, web3.utils.toWei('2', 'ether'), 'Incorrect deposit pool balance');
                 }
 
                 {
@@ -187,9 +188,9 @@ export default function() {
                     variableMinipool3 = await createMinipool({ from: node, value: web3.utils.toWei('8', 'ether') });
                     // Expected: 8 ETH minipool should be in the queue as initialised, deposit pool should contain 8 ETH
                     let status = await variableMinipool3.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(0)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Initialised, 'Incorrect minipool status');
                     const depositPoolBalance = await rocketDepositPool.getBalance();
-                    assert(depositPoolBalance.eq(web3.utils.toBN(web3.utils.toWei('8', 'ether'))), 'Incorrect deposit pool balance');
+                    assertBN.equal(depositPoolBalance, web3.utils.toWei('8', 'ether'), 'Incorrect deposit pool balance');
                 }
 
                 {
@@ -203,9 +204,9 @@ export default function() {
                     await userDeposit({ from: random, value: web3.utils.toWei('24', 'ether') });
                     // Expected: 8 ETH minipool assigned 31 ETH, 1 ETH remaining in the deposit pool
                     let status = await variableMinipool3.getStatus.call();
-                    assert(status.eq(web3.utils.toBN(1)), 'Incorrect minipool status');
+                    assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
                     const depositPoolBalance = await rocketDepositPool.getBalance();
-                    assert(depositPoolBalance.eq(web3.utils.toBN(web3.utils.toWei('1', 'ether'))), 'Incorrect deposit pool balance');
+                    assertBN.equal(depositPoolBalance, web3.utils.toWei('1', 'ether'), 'Incorrect deposit pool balance');
                 }
 
                 {

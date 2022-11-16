@@ -20,6 +20,7 @@ import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketAuctionManager', async (accounts) => {
@@ -152,9 +153,8 @@ export default function() {
             for (let vi = 0; vi < values.length; ++vi) {
                 let v = values[vi];
                 let price = await getLotPriceAtBlock(0, v.block);
-                assert(price.eq(v.expectedPrice), 'Lot price does not match expected price at block');
+                assertBN.equal(price, v.expectedPrice, 'Lot price does not match expected price at block');
             }
-
         });
 
       
@@ -458,6 +458,5 @@ export default function() {
 
         });
         
-
     });
 }

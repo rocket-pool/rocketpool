@@ -33,6 +33,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted';
 import { getDAOProposalStartTime } from '../dao/scenario-dao-proposal';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 
 export default function() {
@@ -76,7 +77,7 @@ export default function() {
             await setRPLInflationIntervalRate(yearlyInflationTarget, { from: owner });
 
             // claimIntervalTime must be greater than rewardIntervalTime for tests to properly function
-            assert(claimIntervalTime > ONE_DAY, 'Tests will not function correctly unless claimIntervalTime is greater than inflation period (1 day)')
+            assert.isAbove(claimIntervalTime, ONE_DAY, 'Tests will not function correctly unless claimIntervalTime is greater than inflation period (1 day)')
 
             // Return the starting time for inflation when it will be available
             return timeStart + ONE_DAY;
@@ -169,8 +170,8 @@ export default function() {
             // Check node effective stakes
             let node1EffectiveStake = await getNodeEffectiveRPLStake(registeredNode1);
             let node2EffectiveStake = await getNodeEffectiveRPLStake(registeredNode2);
-            assert(node1EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('16', 'ether'))), 'Incorrect node 1 effective stake');
-            assert(node2EffectiveStake.eq(web3.utils.toBN(web3.utils.toWei('32', 'ether'))), 'Incorrect node 2 effective stake');
+            assertBN.equal(node1EffectiveStake, web3.utils.toWei('16', 'ether'), 'Incorrect node 1 effective stake');
+            assertBN.equal(node2EffectiveStake, web3.utils.toWei('32', 'ether'), 'Incorrect node 2 effective stake');
         });
 
 

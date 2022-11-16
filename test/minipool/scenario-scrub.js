@@ -10,7 +10,6 @@ import { assertBN } from '../_helpers/bn';
 
 
 export async function voteScrub(minipool, txOptions) {
-
     // Get minipool owner
     const nodeAddress = await minipool.getNodeAddress.call();
 
@@ -79,4 +78,3 @@ export async function voteScrub(minipool, txOptions) {
         assertBN.equal(details2.nodeRPLStake, details1.nodeRPLStake, 'RPL was slashed');
     }
 }
-

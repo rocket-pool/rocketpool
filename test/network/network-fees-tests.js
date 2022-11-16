@@ -3,6 +3,7 @@ import { getNodeFeeByDemand } from '../_helpers/network';
 import { RocketDAOProtocolSettingsNetwork } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketNetworkFees', async (accounts) => {
@@ -11,10 +12,6 @@ export default function() {
         // Accounts
         const [
             owner,
-            node,
-            trustedNode1,
-            trustedNode2,
-            trustedNode3,
         ] = accounts;
 
 
@@ -32,12 +29,10 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', targetNodeFee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', maxNodeFee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.demand.range', demandRange, {from: owner});
-
         });
 
 
         it(printTitle('network node fee', 'has correct value based on node demand'), async () => {
-
             // Set expected fees for node demand values
             let values = [
                 {demand: web3.utils.toWei('-1.25', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0', 'ether'))},
@@ -57,11 +52,8 @@ export default function() {
             for (let vi = 0; vi < values.length; ++vi) {
                 let v = values[vi];
                 let nodeFee = await getNodeFeeByDemand(v.demand);
-                assert(nodeFee.eq(v.expectedFee), 'Node fee does not match expected fee for node demand value');
+                assertBN.equal(nodeFee, v.expectedFee, 'Node fee does not match expected fee for node demand value');
             }
-
         });
-
-
     });
 }

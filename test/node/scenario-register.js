@@ -1,4 +1,5 @@
 import { RocketNodeManager } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Register a node
@@ -32,10 +33,8 @@ export async function register(timezoneLocation, txOptions) {
     ]);
 
     // Check details
-    assert(nodeCount2.eq(nodeCount1.add(web3.utils.toBN(1))), 'Incorrect updated node count');
-    assert.equal(lastNodeAddress, txOptions.from, 'Incorrect updated node index');
+    assertBN.equal(nodeCount2, nodeCount1.add(web3.utils.toBN(1)), 'Incorrect updated node count');
+    assert.strictEqual(lastNodeAddress, txOptions.from, 'Incorrect updated node index');
     assert.isTrue(details.exists, 'Incorrect node exists flag');
-    assert.equal(details.timezoneLocation, timezoneLocation, 'Incorrect node timezone location');
-
+    assert.strictEqual(details.timezoneLocation, timezoneLocation, 'Incorrect node timezone location');
 }
-

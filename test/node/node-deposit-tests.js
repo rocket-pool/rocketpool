@@ -17,6 +17,7 @@ import { reduceBond } from '../minipool/scenario-reduce-bond';
 import { userDeposit } from '../_helpers/deposit';
 import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketNodeDeposit', async (accounts) => {
@@ -60,7 +61,6 @@ export default function() {
 
 
         it(printTitle('node operator', 'can make a deposit to create a minipool'), async () => {
-
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
             let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
@@ -78,12 +78,10 @@ export default function() {
                 from: node,
                 value: halfDepositNodeAmount,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot make a deposit while deposits are disabled'), async () => {
-
             // Stake RPL to cover minipool
             let rplStake = await getMinipoolMinimumRPLStake();
             await mintRPL(owner, node, rplStake);
@@ -103,12 +101,10 @@ export default function() {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit while deposits were disabled');
-
         });
 
 
         it(printTitle('node operator', 'cannot make a deposit with a minimum node fee exceeding the current network node fee'), async () => {
-
             // Stake RPL to cover minipool
             let rplStake = await getMinipoolMinimumRPLStake();
             await mintRPL(owner, node, rplStake);
@@ -129,12 +125,10 @@ export default function() {
                 from: node,
                 value: halfDepositNodeAmount,
             }), 'Made a deposit with a minimum node fee exceeding the current network node fee');
-
         });
 
 
         it(printTitle('node operator', 'cannot make a deposit with an invalid amount'), async () => {
-
             // Stake RPL to cover minipool
             let rplStake = await getMinipoolMinimumRPLStake();
             await mintRPL(owner, node, rplStake);
@@ -142,20 +136,18 @@ export default function() {
 
             // Get deposit amount
             let depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
-            assert(!depositAmount.eq(lebDepositNodeAmount), 'Deposit amount is not invalid');
-            assert(!depositAmount.eq(halfDepositNodeAmount), 'Deposit amount is not invalid');
+            assertBN.notEqual(depositAmount, lebDepositNodeAmount, 'Deposit amount is not invalid');
+            assertBN.notEqual(depositAmount, halfDepositNodeAmount, 'Deposit amount is not invalid');
 
             // Attempt deposit
             await shouldRevert(depositV2(noMinimumNodeFee, depositAmount, {
                 from: node,
                 value: depositAmount,
             }), 'Made a deposit with an invalid deposit amount');
-
         });
 
 
         it(printTitle('node operator', 'cannot make a deposit with insufficient RPL staked'), async () => {
-
             // Attempt deposit with no RPL staked
             await shouldRevert(depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
                 from: node,
@@ -173,12 +165,10 @@ export default function() {
                 from: node,
                 value: lebDepositNodeAmount,
             }), 'Made a deposit with insufficient RPL staked');
-
         });
 
 
         it(printTitle('random address', 'cannot make a deposit'), async () => {
-
             // Attempt deposit
             await shouldRevert(depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
                 from: random,
@@ -190,12 +180,10 @@ export default function() {
                 from: random,
                 value: halfDepositNodeAmount,
             }), 'Random address made a deposit');
-
         });
 
 
         it(printTitle('node operator', 'can make a deposit to create a minipool using deposit credit'), async () => {
-
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
             let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
@@ -227,7 +215,6 @@ export default function() {
                 value: web3.utils.toBN('0')
             });
         });
-
 
     });
 }

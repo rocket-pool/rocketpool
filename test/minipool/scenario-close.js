@@ -1,4 +1,5 @@
 import { RocketNodeManager } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Close a minipool
@@ -33,6 +34,6 @@ export async function close(minipool, txOptions) {
     // Check balances
     let expectedNodeBalance = nodeBalance1.add(minipoolBalance);
     if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
-    assert(nodeBalance2.eq(expectedNodeBalance), 'Incorrect updated node nETH balance');
+    assertBN.equal(nodeBalance2, expectedNodeBalance, 'Incorrect updated node nETH balance');
 }
 

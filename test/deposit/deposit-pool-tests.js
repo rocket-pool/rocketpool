@@ -15,6 +15,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assignDepositsV2 } from './scenario-assign-deposits-v2';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketDepositPool', async (accounts) => {
@@ -67,7 +68,7 @@ export default function() {
 
             // Get & check updated rETH exchange rate
             let exchangeRate2 = await getRethExchangeRate();
-            assert(!exchangeRate1.eq(exchangeRate2), 'rETH exchange rate has not changed');
+            assertBN.notEqual(exchangeRate1, exchangeRate2, 'rETH exchange rate has not changed');
 
             // Deposit again with updated rETH exchange rate
             await deposit({
@@ -97,7 +98,7 @@ export default function() {
             // Get & check deposit amount
             let minimumDeposit = await getDepositSetting('MinimumDeposit');
             let depositAmount = minimumDeposit.div(web3.utils.toBN(2));
-            assert(depositAmount.lt(minimumDeposit), 'Deposit amount is not less than the minimum deposit');
+            assertBN.isBelow(depositAmount, minimumDeposit, 'Deposit amount is not less than the minimum deposit');
 
             // Attempt deposit
             await shouldRevert(deposit({

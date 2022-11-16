@@ -16,7 +16,7 @@ import {
     createMinipool,
     stakeMinipool,
     dissolveMinipool,
-    getNodeActiveMinipoolCount, promoteMinipool,
+    getNodeActiveMinipoolCount, promoteMinipool, minipoolStates,
 } from '../_helpers/minipool';
 import {
     registerNode,
@@ -38,6 +38,7 @@ import {
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from './scenario-reduce-bond';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -127,11 +128,11 @@ export default function() {
             let prelaunch2Status = await prelaunchMinipool2.getStatus.call();
             let stakingStatus = await stakingMinipool.getStatus.call();
             let dissolvedStatus = await dissolvedMinipool.getStatus.call();
-            assert(initialisedStatus.eq(web3.utils.toBN(0)), 'Incorrect initialised minipool status');
-            assert(prelaunchStatus.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
-            assert(prelaunch2Status.eq(web3.utils.toBN(1)), 'Incorrect prelaunch minipool status');
-            assert(stakingStatus.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(dissolvedStatus.eq(web3.utils.toBN(4)), 'Incorrect dissolved minipool status');
+            assertBN.equal(initialisedStatus, minipoolStates.Initialised, 'Incorrect initialised minipool status');
+            assertBN.equal(prelaunchStatus, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
+            assertBN.equal(prelaunch2Status, minipoolStates.Prelaunch, 'Incorrect prelaunch minipool status');
+            assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
+            assertBN.equal(dissolvedStatus, minipoolStates.Dissolved, 'Incorrect dissolved minipool status');
         });
 
 
@@ -144,7 +145,7 @@ export default function() {
           // Check effective delegate is still the original
           const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
           const effectiveDelegate = await minipool.getEffectiveDelegate.call()
-          assert(effectiveDelegate !== newDelegateAddress, "Effective delegate was updated")
+          assert.notEqual(effectiveDelegate, newDelegateAddress, "Effective delegate was updated")
         }
 
 
@@ -185,7 +186,6 @@ export default function() {
             // Check withdrawal credentials
             let expectedWithdrawalCredentials = ('0x' + withdrawalPrefix + padding + initialisedMinipool.address.substr(2));
             assert.equal(withdrawalCredentials.toLowerCase(), expectedWithdrawalCredentials.toLowerCase(), 'Invalid minipool withdrawal credentials');
-
         });
 
 
@@ -256,7 +256,7 @@ export default function() {
             // Get number of active minipools after
             const count2 = await getNodeActiveMinipoolCount(node);
             // Make sure active minipool count reduced by one
-            assert(count1.sub(count2).eq(web3.utils.toBN(1)), "Active minipools did not decrement by 1");
+            assertBN.equal(count1.sub(count2), 1, "Active minipools did not decrement by 1");
         });
 
 
@@ -320,23 +320,21 @@ export default function() {
             const rocketVault = await RocketVault.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
-            assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
+            assertBN.equal(balance, web3.utils.toWei('800', 'ether'));
         });
 
 
         it(printTitle('node operator', 'is slashed if withdraw is processed when balance is less than 16 ETH'), async () => {
+            // Stake the prelaunch minipool (it has 16 ETH user funds)
+            await stakeMinipool(prelaunchMinipool, {from: node});
+            // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
+            await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, true);
 
-          // Stake the prelaunch minipool (it has 16 ETH user funds)
-          await stakeMinipool(prelaunchMinipool, {from: node});
-          // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-          await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, true);
-
-          // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
-          const rocketVault = await RocketVault.deployed();
-          const rocketTokenRPL = await RocketTokenRPL.deployed();
-          const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
-          assert(balance.eq(web3.utils.toBN(web3.utils.toWei('800', 'ether'))));
-
+            // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
+            const rocketVault = await RocketVault.deployed();
+            const rocketTokenRPL = await RocketTokenRPL.deployed();
+            const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
+            assertBN.equal(balance, web3.utils.toWei('800', 'ether'));
         });
 
 
@@ -346,17 +344,14 @@ export default function() {
 
 
         it(printTitle('node operator', 'cannot dissolve their own staking minipools'), async () => {
-
             // Attempt to dissolve staking minipool
             await shouldRevert(dissolve(stakingMinipool, {
                 from: node,
             }), 'Dissolved a staking minipool');
-
         });
 
 
         it(printTitle('random address', 'can dissolve a timed out minipool at prelaunch'), async () => {
-
             // Time prelaunch minipool out
             await increaseTime(web3, launchTimeout);
 
@@ -364,12 +359,10 @@ export default function() {
             await dissolve(prelaunchMinipool, {
                 from: random,
             });
-
         });
 
 
         it(printTitle('random address', 'cannot dissolve a minipool which is not at prelaunch'), async () => {
-
             // Time prelaunch minipool out
             await increaseTime(web3, launchTimeout);
 
@@ -377,17 +370,14 @@ export default function() {
             await shouldRevert(dissolve(initialisedMinipool, {
                 from: random,
             }), 'Random address dissolved a minipool which was not at prelaunch');
-
         });
 
 
         it(printTitle('random address', 'cannot dissolve a minipool which has not timed out'), async () => {
-
             // Attempt to dissolve prelaunch minipool
             await shouldRevert(dissolve(prelaunchMinipool, {
                 from: random,
             }), 'Random address dissolved a minipool which has not timed out');
-
         });
 
 
@@ -397,27 +387,22 @@ export default function() {
 
 
         it(printTitle('node operator', 'can stake a minipool at prelaunch'), async () => {
-
             // Stake prelaunch minipool
             await stake(prelaunchMinipool, null, {
                 from: node,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot stake a minipool which is not at prelaunch'), async () => {
-
             // Attempt to stake initialised minipool
             await shouldRevert(stake(initialisedMinipool, null, {
                 from: node,
             }), 'Staked a minipool which was not at prelaunch');
-
         });
 
 
         it(printTitle('node operator', 'cannot stake a minipool with a reused validator pubkey'), async () => {
-
           // Load contracts
           const rocketMinipoolManager = await RocketMinipoolManager.deployed();
 
@@ -431,12 +416,10 @@ export default function() {
           await shouldRevert(stake(prelaunchMinipool2, null, {
               from: node,
           }, validatorPubkey), 'Staked a minipool with a reused validator pubkey');
-
         });
 
 
         it(printTitle('node operator', 'cannot stake a minipool with incorrect withdrawal credentials'), async () => {
-
             // Get withdrawal credentials
             let invalidWithdrawalCredentials = '0x1111111111111111111111111111111111111111111111111111111111111111';
 
@@ -444,17 +427,14 @@ export default function() {
             await shouldRevert(stake(prelaunchMinipool, invalidWithdrawalCredentials, {
                 from: node,
             }), 'Staked a minipool with incorrect withdrawal credentials');
-
         });
 
 
         it(printTitle('random address', 'cannot stake a minipool'), async () => {
-
             // Attempt to stake prelaunch minipool
             await shouldRevert(stake(prelaunchMinipool, null, {
                 from: random,
             }), 'Random address staked a minipool');
-
         });
 
 
@@ -464,12 +444,10 @@ export default function() {
 
 
         it(printTitle('random', 'random address cannot withdraw and destroy a node operators minipool balance'), async () => {
-
-          // Wait 14 days
-          await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
-          // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Only owner can distribute right now");
-
+            // Wait 14 days
+            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Attempt to send validator balance
+            await shouldRevert(withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random, true), 'Random address withdrew validator balance from a node operators minipool', "Only owner can distribute right now");
         });
 
 
@@ -490,31 +468,24 @@ export default function() {
 
 
         it(printTitle('random', 'random address cannot trigger a payout of withdrawal balance if balance is less than 16 ETH'), async () => {
-
           // Attempt to send validator balance
           await shouldRevert(withdrawValidatorBalance(stakingMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Only owner can distribute right now');
-
         });
 
 
         it(printTitle('node operator withdrawal address', 'can withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
-
           // Send validator balance and withdraw
           await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
-
         });
 
 
         it(printTitle('node operator account', 'can also withdraw their ETH once it is received, then distribute ETH to the rETH contract / deposit pool and destroy the minipool'), async () => {
-
           // Send validator balance and withdraw
           await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, node, true);
-
         });
 
 
         it(printTitle('malicious node operator', 'can not prevent a payout by using a reverting contract as withdraw address'), async () => {
-
             // Set the node's withdraw address to a reverting contract
             const revertOnTransfer = await RevertOnTransfer.deployed();
             await setNodeWithdrawalAddress(node, revertOnTransfer.address, {from: nodeWithdrawalAddress});
@@ -532,12 +503,10 @@ export default function() {
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0', random);
-
         });
 
 
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool in one transaction'), async () => {
-
             await web3.eth.sendTransaction({
                 from: random,
                 to: stakingMinipool.address,
@@ -550,12 +519,10 @@ export default function() {
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0', random);
-
         });
 
 
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
-
             // Get tx amount (half of withdrawal balance)
             let amount1 = web3.utils.toBN(withdrawalBalance).div(web3.utils.toBN(2));
             let amount2 = web3.utils.toBN(withdrawalBalance).sub(amount1);
@@ -587,7 +554,6 @@ export default function() {
 
 
         it(printTitle('node operator', 'can close a dissolved minipool'), async () => {
-
             // Send 16 ETH to minipool
             await web3.eth.sendTransaction({
               from: random,
@@ -599,27 +565,22 @@ export default function() {
             await close(dissolvedMinipool, {
                 from: node,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot close a minipool which is not dissolved'), async () => {
-
             // Attempt to close staking minipool
             await shouldRevert(close(stakingMinipool, {
                 from: node,
             }), 'Closed a minipool which was not dissolved', 'The minipool can only be closed while dissolved');
-
         });
 
 
         it(printTitle('random address', 'cannot close a dissolved minipool'), async () => {
-
             // Attempt to close dissolved minipool
             await shouldRevert(close(dissolvedMinipool, {
                 from: random,
             }), 'Random address closed a minipool', 'Invalid minipool owner');
-
         });
 
 
@@ -629,23 +590,23 @@ export default function() {
 
 
         it(printTitle('node operator', 'can upgrade and rollback their delegate contract'), async () => {
-          await upgradeNetworkDelegateContract();
-          // Get contract
-          const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
-          // Store original delegate
-          let originalDelegate = await minipool.getEffectiveDelegate.call();
-          // Call upgrade delegate
-          await minipool.delegateUpgrade({from: node});
-          // Check delegate settings
-          let effectiveDelegate = await minipool.getEffectiveDelegate.call();
-          let previousDelegate = await minipool.getPreviousDelegate.call();
-          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated");
-          assert(previousDelegate === originalDelegate, "Previous delegate was not updated");
-          // Call upgrade rollback
-          await minipool.delegateRollback({from: node});
-          // Check effective delegate
-          effectiveDelegate = await minipool.getEffectiveDelegate.call();
-          assert(effectiveDelegate === originalDelegate, "Effective delegate was not rolled back");
+            await upgradeNetworkDelegateContract();
+            // Get contract
+            const minipool = await RocketMinipoolBase.at(stakingMinipool.address);
+            // Store original delegate
+            let originalDelegate = await minipool.getEffectiveDelegate.call();
+            // Call upgrade delegate
+            await minipool.delegateUpgrade({from: node});
+            // Check delegate settings
+            let effectiveDelegate = await minipool.getEffectiveDelegate.call();
+            let previousDelegate = await minipool.getPreviousDelegate.call();
+            assert.strictEqual(effectiveDelegate, newDelegateAddress, "Effective delegate was not updated");
+            assert.strictEqual(previousDelegate, originalDelegate, "Previous delegate was not updated");
+            // Call upgrade rollback
+            await minipool.delegateRollback({from: node});
+            // Check effective delegate
+            effectiveDelegate = await minipool.getEffectiveDelegate.call();
+            assert.strictEqual(effectiveDelegate, originalDelegate, "Effective delegate was not rolled back");
         });
 
 
@@ -658,12 +619,12 @@ export default function() {
           // Call upgrade delegate
           await minipool.setUseLatestDelegate(true, {from: node})
           let useLatest = await minipool.getUseLatestDelegate.call()
-          assert(useLatest, "Use latest flag was not set")
+          assert.isTrue(useLatest, "Use latest flag was not set")
           // Check delegate settings
           let effectiveDelegate = await minipool.getEffectiveDelegate.call()
           let currentDelegate = await minipool.getDelegate.call()
-          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated")
-          assert(currentDelegate === originalDelegate, "Current delegate was updated")
+          assert.strictEqual(effectiveDelegate, newDelegateAddress, "Effective delegate was not updated")
+          assert.strictEqual(currentDelegate, originalDelegate, "Current delegate was updated")
           // Upgrade the delegate contract again
           newDelegateAddress = '0x0000000000000000000000000000000000000002'
           await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], newDelegateAddress, {
@@ -671,7 +632,7 @@ export default function() {
           });
           // Check effective delegate
           effectiveDelegate = await minipool.getEffectiveDelegate.call();
-          assert(effectiveDelegate === newDelegateAddress, "Effective delegate was not updated");
+          assert.strictEqual(effectiveDelegate, newDelegateAddress, "Effective delegate was not updated");
         });
 
 
@@ -837,7 +798,7 @@ export default function() {
 
                     // Get average
                     let average = await getNodeAverageFee(emptyNode);
-                    assert(average.eq(web3.utils.toBN(web3.utils.toWei(step.expectedFee, 'ether'))), "Invalid average fee");
+                    assertBN.equal(average, web3.utils.toWei(step.expectedFee, 'ether'), "Invalid average fee");
                 }
             });
         }

@@ -57,7 +57,6 @@ export default function() {
 
 
         it(printTitle('node operator', 'can stake RPL'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('5000', 'ether');
 
@@ -75,12 +74,10 @@ export default function() {
             await stakeRpl(rplAmount, {
                 from: node,
             });
-
         });
 
 
         it(printTitle('random address', 'cannot stake RPL'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -89,12 +86,10 @@ export default function() {
             await shouldRevert(stakeRpl(rplAmount, {
                 from: random,
             }), 'Random address staked RPL');
-
         });
 
 
         it(printTitle('node operator', 'can withdraw staked RPL'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -108,12 +103,10 @@ export default function() {
             await withdrawRpl(rplAmount, {
                 from: node,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot withdraw staked RPL during the cooldown period'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -124,12 +117,10 @@ export default function() {
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
             }), 'Withdrew staked RPL during the cooldown period');
-
         });
 
 
         it(printTitle('node operator', 'cannot withdraw more RPL than they have staked'), async () => {
-
             // Set parameters
             const stakeAmount = web3.utils.toWei('10000', 'ether');
             const withdrawAmount = web3.utils.toWei('20000', 'ether');
@@ -144,12 +135,10 @@ export default function() {
             await shouldRevert(withdrawRpl(withdrawAmount, {
                 from: node,
             }), 'Withdrew more RPL than was staked');
-
         });
 
 
         it(printTitle('node operator', 'cannot withdraw RPL leaving the node undercollateralised'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -166,12 +155,10 @@ export default function() {
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: node,
             }), 'Withdrew RPL leaving the node undercollateralised');
-
         });
 
 
         it(printTitle('node operator', 'can withdraw RPL after finalising their minipool'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -204,12 +191,10 @@ export default function() {
             await withdrawRpl(rplAmount, {
                 from: node,
             })
-
         });
 
 
         it(printTitle('node operator', 'cannot withdraw RPL if random distributes balance on their minipool until they finalise'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -251,12 +236,10 @@ export default function() {
             await withdrawRpl(rplAmount, {
                 from: node,
             })
-
         });
 
 
         it(printTitle('random address', 'cannot withdraw staked RPL'), async () => {
-
             // Set parameters
             const rplAmount = web3.utils.toWei('10000', 'ether');
 
@@ -270,9 +253,7 @@ export default function() {
             await shouldRevert(withdrawRpl(rplAmount, {
                 from: random,
             }), 'Random address withdrew staked RPL');
-
         });
-
 
     });
 }

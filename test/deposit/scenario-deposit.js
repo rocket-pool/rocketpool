@@ -5,11 +5,11 @@ import {
     RocketTokenRETH,
     RocketVault,
 } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Make a deposit into the deposit pool
 export async function deposit(txOptions, preUpdate = false) {
-
     // Load contracts
     const [
         rocketDAOProtocolSettingsDeposit,
@@ -55,9 +55,7 @@ export async function deposit(txOptions, preUpdate = false) {
     let expectedRethMinted = await rocketTokenRETH.getRethValue(txValue.sub(depositFee));
 
     // Check balances
-    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(txValue)), 'Incorrect updated deposit pool ETH balance');
-    assert(balances2.vaultEth.eq(balances1.vaultEth.add(txValue)), 'Incorrect updated vault ETH balance');
-    assert(balances2.userReth.eq(balances1.userReth.add(expectedRethMinted)), 'Incorrect updated user rETH balance');
-
+    assertBN.equal(balances2.depositPoolEth, balances1.depositPoolEth.add(txValue), 'Incorrect updated deposit pool ETH balance');
+    assertBN.equal(balances2.vaultEth, balances1.vaultEth.add(txValue), 'Incorrect updated vault ETH balance');
+    assertBN.equal(balances2.userReth, balances1.userReth.add(expectedRethMinted), 'Incorrect updated user rETH balance');
 }
-

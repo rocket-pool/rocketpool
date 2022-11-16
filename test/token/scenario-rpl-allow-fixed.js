@@ -1,9 +1,9 @@
 import { RocketTokenDummyRPL } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Allow RPL from the fixed contract to be spent
 export async function allowDummyRPL(to, amount, txOptions) {
-
     // Load contracts
     const rocketTokenDummyRPL = await RocketTokenDummyRPL.deployed();
 
@@ -20,13 +20,8 @@ export async function allowDummyRPL(to, amount, txOptions) {
     // Get initial balances
     let balances1 = await getBalances();
 
-    // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
-    txOptions.gasPrice = gasPrice;
-
     // Mint tokens
-    let txReceipt = await rocketTokenDummyRPL.approve(to, amount, txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    await rocketTokenDummyRPL.approve(to, amount, txOptions);
 
     // Get updated balances
     let balances2 = await getBalances();
@@ -35,7 +30,5 @@ export async function allowDummyRPL(to, amount, txOptions) {
     let allowanceAmount = web3.utils.toBN(amount);
 
     // Check balances
-    assert(balances2.tokenAllowance.eq(balances1.tokenAllowance.add(allowanceAmount)), 'Incorrect allowance for token');
-
+    assertBN.equal(balances2.tokenAllowance, balances1.tokenAllowance.add(allowanceAmount), 'Incorrect allowance for token');
 }
-

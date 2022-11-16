@@ -1,9 +1,9 @@
 import { RocketDAONodeTrusted, RocketNetworkPrices, RocketStorage } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit network prices
 export async function submitPrices(block, rplPrice, txOptions) {
-
     // Load contracts
     const [
         rocketDAONodeTrusted,
@@ -62,23 +62,21 @@ export async function submitPrices(block, rplPrice, txOptions) {
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-    assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
+    assertBN.equal(submission2.count, submission1.count.add(web3.utils.toBN(1)), 'Incorrect updated submission count');
 
     // Check prices
     if (expectUpdatedPrices) {
-        assert(prices.block.eq(web3.utils.toBN(block)), 'Incorrect updated network prices block');
-        assert(prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrect updated network RPL price');
+        assertBN.equal(prices.block, block, 'Incorrect updated network prices block');
+        assertBN.equal(prices.rplPrice, rplPrice, 'Incorrect updated network RPL price');
     } else {
-        assert(!prices.block.eq(web3.utils.toBN(block)), 'Incorrectly updated network prices block');
-        assert(!prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrectly updated network RPL price');
+        assertBN.notEqual(prices.block, block, 'Incorrectly updated network prices block');
+        assertBN.notEqual(prices.rplPrice, rplPrice, 'Incorrectly updated network RPL price');
     }
-
 }
 
 
 // Execute price update
 export async function executeUpdatePrices(block, rplPrice, txOptions) {
-
     // Load contracts
     const rocketNetworkPrices = await RocketNetworkPrices.deployed();
 
@@ -100,8 +98,6 @@ export async function executeUpdatePrices(block, rplPrice, txOptions) {
     let prices = await getPrices();
 
     // Check the prices
-    assert(prices.block.eq(web3.utils.toBN(block)), 'Incorrect updated network prices block');
-    assert(prices.rplPrice.eq(web3.utils.toBN(rplPrice)), 'Incorrect updated network RPL price');
-
+    assertBN.equal(prices.block, block, 'Incorrect updated network prices block');
+    assertBN.equal(prices.rplPrice, rplPrice, 'Incorrect updated network RPL price');
 }
-

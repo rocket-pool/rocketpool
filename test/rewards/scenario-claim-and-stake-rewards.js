@@ -1,11 +1,11 @@
 import {
-    RocketDAONodeTrusted,
     RocketMerkleDistributorMainnet,
-    RocketNetworkPrices, RocketNodeManager, RocketNodeStaking,
+    RocketNodeManager, RocketNodeStaking,
     RocketRewardsPool,
     RocketStorage, RocketTokenRPL
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit network prices
@@ -87,7 +87,6 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
 
     let amountStaked = balances2.rplStake.sub(balances1.rplStake);
 
-    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmountRPL.sub(amountStaked)), 'Incorrect updated node RPL balance');
-    assert(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed).eq(totalAmountETH), 'Incorrect updated node ETH balance');
+    assertBN.equal(balances2.nodeRpl.sub(balances1.nodeRpl), totalAmountRPL.sub(amountStaked), 'Incorrect updated node RPL balance');
+    assertBN.equal(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed), totalAmountETH, 'Incorrect updated node ETH balance');
 }
-

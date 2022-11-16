@@ -1,4 +1,5 @@
 import { RocketNodeDeposit } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Reduce bonding amount of a minipool
@@ -26,8 +27,7 @@ export async function reduceBond(minipool, amount, txOptions = null) {
     const balances2 = await getMinipoolBalances();
 
     // Verify results
-    assert(balances1.nodeDepositBalance.sub(balances2.nodeDepositBalance).eq(amount))
-    assert(balances2.userDepositBalance.sub(balances1.userDepositBalance).eq(amount))
-    assert(balances2.nodeDepositCredit.sub(balances1.nodeDepositCredit).eq(amount))
+    assertBN.equal(balances1.nodeDepositBalance.sub(balances2.nodeDepositBalance), amount);
+    assertBN.equal(balances2.userDepositBalance.sub(balances1.userDepositBalance), amount);
+    assertBN.equal(balances2.nodeDepositCredit.sub(balances1.nodeDepositCredit), amount);
 }
-

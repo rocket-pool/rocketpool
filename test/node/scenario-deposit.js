@@ -1,12 +1,11 @@
 import {
     RocketMinipoolDelegate, RocketMinipoolFactory,
     RocketMinipoolManager,
-    RocketMinipoolManagerOld,
-    RocketNodeDeposit, RocketNodeDepositOld,
+    RocketNodeDeposit,
     RocketStorage,
 } from '../_utils/artifacts';
-import { getTxContractEvents } from '../_utils/contract';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
+import { assertBN } from '../_helpers/bn';
 
 let minipoolSalt = 0;
 
@@ -112,15 +111,13 @@ export async function deposit(minimumNodeFee, txOptions) {
     ]);
 
     // Check minipool indexes
-    assert(minipoolCounts2.network.eq(minipoolCounts1.network.add(web3.utils.toBN(1))), 'Incorrect updated network minipool count');
-    assert.equal(lastMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated network minipool index');
-    assert(minipoolCounts2.node.eq(minipoolCounts1.node.add(web3.utils.toBN(1))), 'Incorrect updated node minipool count');
-    assert.equal(lastNodeMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated node minipool index');
+    assertBN.equal(minipoolCounts2.network, minipoolCounts1.network.add(web3.utils.toBN(1)), 'Incorrect updated network minipool count');
+    assert.strictEqual(lastMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated network minipool index');
+    assertBN.equal(minipoolCounts2.node, minipoolCounts1.node.add(web3.utils.toBN(1)), 'Incorrect updated node minipool count');
+    assert.strictEqual(lastNodeMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated node minipool index');
 
     // Check minipool details
     assert.isTrue(minipoolDetails.exists, 'Incorrect created minipool exists status');
-    assert.equal(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
-    assert(minipoolDetails.nodeDepositBalance.eq(web3.utils.toBN(txOptions.value)), 'Incorrect created minipool node deposit balance');
-
+    assert.strictEqual(minipoolDetails.nodeAddress, txOptions.from, 'Incorrect created minipool node address');
+    assertBN.equal(minipoolDetails.nodeDepositBalance, web3.utils.toBN(txOptions.value), 'Incorrect created minipool node deposit balance');
 }
-
