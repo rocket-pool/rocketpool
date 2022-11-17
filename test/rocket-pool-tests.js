@@ -25,6 +25,7 @@ import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
 import upgradeTests from './upgrade/upgrade-tests';
+import { injectBNHelpers } from './_helpers/bn';
 
 // Header
 console.log('\n');
@@ -34,6 +35,9 @@ console.log('| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |');
 console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
+
+// BN helpers
+injectBNHelpers();
 
 // State snapshotting and gas usage tracking
 beforeEach(startSnapShot);

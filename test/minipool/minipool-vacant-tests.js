@@ -68,16 +68,16 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
+            let rplStake = minipoolRplStake.mul('7'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
-            prelaunchMinipool16 = await createVancantMinipool(web3.utils.toWei('16', 'ether'), {from: node});
-            prelaunchMinipool8 = await createVancantMinipool(web3.utils.toWei('8', 'ether'), {from: node});
+            prelaunchMinipool16 = await createVancantMinipool('16'.ether, {from: node});
+            prelaunchMinipool8 = await createVancantMinipool('8'.ether, {from: node});
 
             let prelaunch16Status = await prelaunchMinipool16.getStatus.call();
             let prelaunch8Status = await prelaunchMinipool8.getStatus.call();
@@ -101,7 +101,7 @@ export default function() {
             assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             // Verify deposit credit balance increased by 16 ETH
             let creditBalance = await getNodeDepositCredit(node);
-            assertBN.equal(creditBalance, web3.utils.toWei('16', 'ether'));
+            assertBN.equal(creditBalance, '16'.ether);
         });
 
 
@@ -115,7 +115,7 @@ export default function() {
             assertBN.equal(stakingStatus, minipoolStates.Staking, 'Incorrect staking minipool status');
             // Verify deposit credit balance increased by 24 ETH
             let creditBalance = await getNodeDepositCredit(node);
-            assertBN.equal(creditBalance, web3.utils.toWei('24', 'ether'));
+            assertBN.equal(creditBalance, '24'.ether);
         });
 
 

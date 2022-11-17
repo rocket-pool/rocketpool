@@ -33,6 +33,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     uint8 public constant version = 3;                            // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;                          // Fixed point arithmetic uses this for value for precision
     uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
+    uint256 constant legacyPrelaunchAmount = 16 ether;            // The amount of ETH initially deposited when minipool is created (for legacy minipools)
 
     // Libs
     using SafeMath for uint;
@@ -249,7 +250,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Get launch amount
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        uint256 depositAmount = launchAmount.sub(preLaunchValue);
+        uint256 depositAmount;
+        // Legacy minipools had a prestake equal to the bond amount
+        if (depositType == MinipoolDeposit.Variable) {
+            depositAmount = launchAmount.sub(preLaunchValue);
+        } else {
+            depositAmount = launchAmount.sub(legacyPrelaunchAmount);
+        }
         // Check minipool balance
         require(address(this).balance >= depositAmount, "Insufficient balance to begin staking");
         // Retrieve validator pubkey from storage
@@ -329,8 +336,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         If balance is lower than 8 ETH, can be called by anyone and is considered a partial withdrawal and funds are
     ///         split as rewards.
     function distributeBalance() override external onlyInitialised {
+        // Get node withdrawal address
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        bool ownerCalling = msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress;
         // If dissolved, distribute everything to the owner
         if (status == MinipoolStatus.Dissolved) {
+            require(ownerCalling, "Only owner can distribute dissolved minipool");
             distributeToOwner();
             return;
         }
@@ -340,9 +351,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         if (totalBalance >= 8 ether) {
             // Consider this a full withdrawal
-            address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
             _distributeBalance(totalBalance);
-            if (msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress) {
+            if (ownerCalling) {
                 // Finalise the minipool if the owner is calling
                 _finalise();
             } else {
@@ -356,6 +366,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             distributeSkimmedRewards();
             // Reset distribute waiting period
             userDistributeTime = 0;
+            // If node operator is calling, save a tx by calling refund immediately
+            if (ownerCalling && nodeRefundBalance > 0) {
+                _refund();
+            }
         }
     }
 
@@ -653,7 +667,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Pay node operator via refund mechanism
         nodeRefundBalance = nodeRefundBalance.add(nodeShare);
         // Deposit user share into rETH contract
-        payable(rocketTokenRETH).transfer(address(this).balance.sub(nodeShare));
+        payable(rocketTokenRETH).transfer(rewards.sub(nodeShare));
     }
 
     /// @dev Set the minipool's current status

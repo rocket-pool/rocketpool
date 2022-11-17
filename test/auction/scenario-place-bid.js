@@ -17,7 +17,7 @@ export async function placeBid(lotIndex, txOptions) {
     ]);
 
     // Calculation base value
-    const calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
+    const calcBase = '1'.ether;
 
     // Get lot details
     function getLotDetails(bidderAddress) {
@@ -38,8 +38,8 @@ export async function placeBid(lotIndex, txOptions) {
     // Get balances
     function getBalances(bidderAddress) {
         return Promise.all([
-            web3.eth.getBalance(bidderAddress).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(bidderAddress).then(value => value.BN),
+            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
             rocketVault.balanceOf.call('rocketDepositPool'),
         ]).then(
             ([bidderEth, vaultEth, depositPoolEth]) =>
@@ -60,12 +60,12 @@ export async function placeBid(lotIndex, txOptions) {
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Place bid
     let txReceipt = await rocketAuctionManager.placeBid(lotIndex, txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated lot details & balances
     let [lot2, balances2] = await Promise.all([
@@ -79,7 +79,7 @@ export async function placeBid(lotIndex, txOptions) {
 
     // Get expected values
     const maxBidAmount = lotRemainingRplAmount.mul(lotBlockPrice).div(calcBase);
-    const txValue = web3.utils.toBN(txOptions.value);
+    const txValue = txOptions.value;
     const bidAmount = (txValue.gt(maxBidAmount) ? maxBidAmount : txValue);
 
     // Check lot details

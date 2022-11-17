@@ -60,12 +60,12 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
     ]);
 
     // Check if balances should be updated
-    let expectUpdatedBalances = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
+    let expectUpdatedBalances = submission2.count.mul('2'.BN).gt(trustedNodeCount);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-    assertBN.equal(submission2.count, submission1.count.add(web3.utils.toBN(1)), 'Incorrect updated submission count');
+    assertBN.equal(submission2.count, submission1.count.add('1'.BN), 'Incorrect updated submission count');
 
     // Check balances
     if (expectUpdatedBalances) {

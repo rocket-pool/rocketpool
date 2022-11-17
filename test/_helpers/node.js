@@ -20,6 +20,7 @@ import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { getTxContractEvents } from '../_utils/contract';
 import { upgradeExecuted } from '../_utils/upgrade';
+import { assertBN } from './bn';
 
 
 // Get a node's RPL stake
@@ -122,10 +123,10 @@ export async function nodeStakeRPL(amount, txOptions) {
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
-    const before = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
+    const before = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
     await rocketNodeStaking.stakeRPL(amount, txOptions);
-    const after = await rocketNodeStaking.getNodeRPLStake(txOptions.from)
-    assert(after.sub(before).eq(web3.utils.toBN(amount)), 'Staking balance did not increase by amount staked')
+    const after = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+    assertBN.equal(after.sub(before), amount, 'Staking balance did not increase by amount staked');
 }
 
 
@@ -142,12 +143,10 @@ export async function nodeDeposit(txOptions) {
 
     // Load contracts
     const [
-        rocketMinipoolManager,
-          rocketMinipoolFactory,
+        rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketStorage,
     ] = await Promise.all([
-        RocketMinipoolManager.deployed(),
         RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
         RocketStorage.deployed()
@@ -195,7 +194,7 @@ export async function nodeDeposit(txOptions) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    await rocketNodeDeposit.deposit(txOptions.value, web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    await rocketNodeDeposit.deposit(txOptions.value, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
 }
 
 

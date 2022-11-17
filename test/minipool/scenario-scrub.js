@@ -7,6 +7,7 @@ import {
     RocketVault
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { minipoolStates } from '../_helpers/minipool';
 
 
 export async function voteScrub(minipool, txOptions) {
@@ -48,14 +49,12 @@ export async function voteScrub(minipool, txOptions) {
 
     // Get member count
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
-    const memberCount = web3.utils.toBN(await rocketDAONodeTrusted.getMemberCount());
-    const quorum = memberCount.div(web3.utils.toBN(2));
+    const memberCount = await rocketDAONodeTrusted.getMemberCount();
+    const quorum = memberCount.div('2'.BN);
 
     // Check state
-    const dissolved = web3.utils.toBN(4);
-
-    if (details1.votes.add(web3.utils.toBN(1)).gt(quorum)){
-        assertBN.equal(details2.status, dissolved, 'Incorrect updated minipool status');
+    if (details1.votes.add('1'.BN).gt(quorum)){
+        assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
         assertBN.equal(details2.userDepositBalance, '0', 'Incorrect updated minipool user deposit balance');
         // Check slashing if penalties are enabled
         if (details1.penaltyEnabled && !details1.vacant) {
@@ -64,17 +63,17 @@ export async function voteScrub(minipool, txOptions) {
             // Get current RPL price
             const rplPrice = await rocketNetworkPrices.getRPLPrice.call();
             // Calculate amount slashed in ETH
-            const slashAmountEth = slashAmount.mul(rplPrice).div(web3.utils.toBN(web3.utils.toWei('1', 'ether')));
+            const slashAmountEth = slashAmount.mul(rplPrice).div('1'.ether);
             // Calculate expected slash amount
             const minimumStake = await rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
-            const expectedSlash = web3.utils.toBN(web3.utils.toWei('16', 'ether')).mul(minimumStake).div(web3.utils.toBN(web3.utils.toWei('1', 'ether')));
+            const expectedSlash = '16'.ether.mul(minimumStake).div('1'.ether);
             // Perform checks
             assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
             assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');
         }
     } else {
         assertBN.equal(details2.votes.sub(details1.votes), 1, 'Vote count not incremented');
-        assertBN.notEqual(details2.status, dissolved, 'Incorrect updated minipool status');
+        assertBN.notEqual(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
         assertBN.equal(details2.nodeRPLStake, details1.nodeRPLStake, 'RPL was slashed');
     }
 }

@@ -16,10 +16,10 @@ export default function() {
 
 
         // Setup
-        let minNodeFee = web3.utils.toWei('0.00', 'ether');
-        let targetNodeFee = web3.utils.toWei('0.50', 'ether');
-        let maxNodeFee = web3.utils.toWei('1.00', 'ether');
-        let demandRange = web3.utils.toWei('1', 'ether');
+        let minNodeFee = '0.00'.ether;
+        let targetNodeFee = '0.50'.ether;
+        let maxNodeFee = '1.00'.ether;
+        let demandRange = '1'.ether;
 
         before(async () => {
             await upgradeOneDotTwo(owner);
@@ -35,17 +35,17 @@ export default function() {
         it(printTitle('network node fee', 'has correct value based on node demand'), async () => {
             // Set expected fees for node demand values
             let values = [
-                {demand: web3.utils.toWei('-1.25', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0', 'ether'))},
-                {demand: web3.utils.toWei('-1.00', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0', 'ether'))},
-                {demand: web3.utils.toWei('-0.75', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.2890625', 'ether'))},
-                {demand: web3.utils.toWei('-0.50', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.4375', 'ether'))},
-                {demand: web3.utils.toWei('-0.25', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.4921875', 'ether'))},
-                {demand: web3.utils.toWei( '0.00', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.5', 'ether'))},
-                {demand: web3.utils.toWei( '0.25', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.5078125', 'ether'))},
-                {demand: web3.utils.toWei( '0.50', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.5625', 'ether'))},
-                {demand: web3.utils.toWei( '0.75', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('0.7109375', 'ether'))},
-                {demand: web3.utils.toWei( '1.00', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('1', 'ether'))},
-                {demand: web3.utils.toWei( '1.25', 'ether'), expectedFee: web3.utils.toBN(web3.utils.toWei('1', 'ether'))},
+                {demand: '-1.25'.ether, expectedFee: '0'.ether},
+                {demand: '-1.00'.ether, expectedFee: '0'.ether},
+                {demand: '-0.75'.ether, expectedFee: '0.2890625'.ether},
+                {demand: '-0.50'.ether, expectedFee: '0.4375'.ether},
+                {demand: '-0.25'.ether, expectedFee: '0.4921875'.ether},
+                {demand:  '0.00'.ether, expectedFee: '0.5'.ether},
+                {demand:  '0.25'.ether, expectedFee: '0.5078125'.ether},
+                {demand:  '0.50'.ether, expectedFee: '0.5625'.ether},
+                {demand:  '0.75'.ether, expectedFee: '0.7109375'.ether},
+                {demand:  '1.00'.ether, expectedFee: '1'.ether},
+                {demand:  '1.25'.ether, expectedFee: '1'.ether},
             ];
 
             // Check fees

@@ -61,7 +61,7 @@ export async function daoNodeTrustedPropose(_proposalMessage, _payload, txOption
     let state = Number(await getDAOProposalState(ds2.proposalTotal));
 
     // Check proposals
-    assertBN.equal(ds2.proposalTotal, ds1.proposalTotal.add(web3.utils.toBN(1)), 'Incorrect proposal total count');
+    assertBN.equal(ds2.proposalTotal, ds1.proposalTotal.add('1'.BN), 'Incorrect proposal total count');
     assert.strictEqual(state, proposalStates.Pending, 'Incorrect proposal state, should be pending');
     
     // Return the proposal ID
@@ -177,7 +177,7 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
     let ds2 = await getTxData();
 
     // Check member count has increased
-    assertBN.equal(ds2.memberTotal, ds1.memberTotal.add(web3.utils.toBN(1)), 'Member count has not increased');
+    assertBN.equal(ds2.memberTotal, ds1.memberTotal.add('1'.BN), 'Member count has not increased');
     assertBN.equal(ds2.rplBalanceVault, ds1.rplBalanceVault.add(ds1.rplBalanceBond), 'RocketVault address does not contain the correct RPL bond amount');
 }
 
@@ -212,7 +212,7 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
     let ds2 = await getTxData();
 
     // Verify
-    assertBN.equal(ds2.memberTotal, ds1.memberTotal.sub(web3.utils.toBN(1)), 'Member count has not decreased');
+    assertBN.equal(ds2.memberTotal, ds1.memberTotal.sub('1'.BN), 'Member count has not decreased');
     assertBN.equal(ds2.rplBalanceVault, ds1.rplBalanceVault.sub(ds2.rplBalanceRefund), 'Member RPL refund address does not contain the correct RPL bond amount');
 }
 

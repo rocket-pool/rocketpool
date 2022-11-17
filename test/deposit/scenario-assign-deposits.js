@@ -46,7 +46,7 @@ export async function assignDeposits(txOptions) {
 
     // Get expected deposit assignment parameters
     let expectedDepositAssignments = 0;
-    let expectedEthAssigned = web3.utils.toBN(0);
+    let expectedEthAssigned = '0'.BN;
     let depositBalanceRemaining = depositPoolBalance;
     let depositAssignmentsRemaining = maxDepositAssignments;
     while (minipoolCapacities.length > 0 && depositBalanceRemaining.gte(minipoolCapacities[0]) && depositAssignmentsRemaining > 0) {
@@ -61,7 +61,7 @@ export async function assignDeposits(txOptions) {
     function getBalances() {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
-            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
         ]).then(
             ([depositPoolEth, vaultEth]) =>
             ({depositPoolEth, vaultEth})
@@ -99,6 +99,6 @@ export async function assignDeposits(txOptions) {
     assertBN.equal(balances2.vaultEth, balances1.vaultEth.sub(expectedEthAssigned), 'Incorrect updated vault ETH balance');
 
     // Check minipool queues
-    assertBN.equal(queue2.totalLength, queue1.totalLength.sub(web3.utils.toBN(expectedDepositAssignments)), 'Incorrect updated minipool queue length');
+    assertBN.equal(queue2.totalLength, queue1.totalLength.sub(expectedDepositAssignments.BN), 'Incorrect updated minipool queue length');
     assertBN.equal(queue2.totalCapacity, queue1.totalCapacity.sub(expectedEthAssigned), 'Incorrect updated minipool queue capacity');
 }

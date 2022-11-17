@@ -4,7 +4,7 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../../minipool/RocketMinipoolStorageLayout.sol";
+import "./RocketMinipoolStorageLayoutOld.sol";
 import "../../../interface/casper/DepositInterface.sol";
 import "../../../interface/deposit/RocketDepositPoolInterface.sol";
 import "../../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -25,7 +25,7 @@ import "../../../interface/old/RocketMinipoolInterfaceOld.sol";
 
 // An individual minipool in the Rocket Pool network
 
-contract RocketMinipoolDelegateOld is RocketMinipoolStorageLayout, RocketMinipoolInterfaceOld {
+contract RocketMinipoolDelegateOld is RocketMinipoolStorageLayoutOld, RocketMinipoolInterfaceOld {
 
     // Constants
     uint8 public constant version = 2;                            // Used to identify which delegate contract each minipool is using

@@ -41,7 +41,7 @@ export default function() {
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let minipool;
-        let maxPenaltyRate = web3.utils.toWei('0.5', 'ether');
+        let maxPenaltyRate = '0.5'.ether;
         let penaltyTestContract;
 
         before(async () => {
@@ -61,11 +61,11 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
 
             // Set RPL price
             let block = await web3.eth.getBlockNumber();
-            await submitPrices(block, web3.utils.toWei('1', 'ether'), {from: trustedNode});
+            await submitPrices(block, '1'.ether, {from: trustedNode});
 
             // Add penalty helper contract
             const rocketStorage = await RocketStorage.deployed();
@@ -79,25 +79,25 @@ export default function() {
             await rocketMinipoolPenalty.setMaxPenaltyRate(maxPenaltyRate, {from: owner})
 
             // Hard code fee to 50%
-            const fee = web3.utils.toWei('0.5', 'ether');
+            const fee = '0.5'.ether;
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', fee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', fee, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', fee, {from: owner});
 
             // Deposit some user funds to assign to pools
-            let userDepositAmount = web3.utils.toWei('16', 'ether');
+            let userDepositAmount = '16'.ether;
             await userDeposit({from: random, value: userDepositAmount});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            let rplStake = minipoolRplStake.mul('3'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
             await mintRPL(owner, trustedNode, rplStake);
             await nodeStakeRPL(rplStake, {from: trustedNode});
 
             // Create minipools
-            minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            minipool = await createMinipool({from: node, value: '16'.ether});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);
@@ -108,9 +108,9 @@ export default function() {
 
 
         async function withdrawAndCheck(minipool, withdrawalBalance, from, finalise, expectedUser, expectedNode, userDistribute = false) {
-            const withdrawalBalanceBN = web3.utils.toBN(web3.utils.toWei(withdrawalBalance, 'ether'));
-            const expectedUserBN = web3.utils.toBN(web3.utils.toWei(expectedUser, 'ether'));
-            const expectedNodeBN = web3.utils.toBN(web3.utils.toWei(expectedNode, 'ether'));
+            const withdrawalBalanceBN = withdrawalBalance.ether;
+            const expectedUserBN = expectedUser.ether;
+            const expectedNodeBN = expectedNode.ether;
 
             let result
 
@@ -126,7 +126,7 @@ export default function() {
                 // Wait 14 days
                 await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
                 // Process withdrawal
-                result = await withdrawValidatorBalance(minipool, web3.utils.toBN('0'), from, finalise);
+                result = await withdrawValidatorBalance(minipool, '0'.ether, from, finalise);
             } else {
                 // Process withdrawal
                 result = await withdrawValidatorBalance(minipool, withdrawalBalanceBN, from, finalise);

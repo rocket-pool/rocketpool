@@ -70,7 +70,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     currentTime = await getCurrentTime(web3);
 
      // How many tokens to be expected minted
-     let expectedTokensMinted = web3.utils.toBN(0);
+     let expectedTokensMinted = '0'.ether;
 
     // Are we expecting inflation? have any intervals passed?
     if(inflationData1.inflationIntervalsPassed > 0) {
@@ -127,7 +127,7 @@ export async function rplClaimInflation(config, txOptions, tokenAmountToMatch = 
     // Are we verifying an exact amount of tokens given as a required parameter on this pass?
     if (tokenAmountToMatch) {
         tokenAmountToMatch = web3.utils.toBN(tokenAmountToMatch);
-        assertBN.equal(tokenAmountToMatch, web3.utils.toBN(totalSupplyEnd).div(web3.utils.toBN(1e18)), 'Given token amount does not match total supply made');
+        assertBN.equal(tokenAmountToMatch, web3.utils.toBN(totalSupplyEnd).div('1'.ether), 'Given token amount does not match total supply made');
     }
 
     return (totalSupplyEnd.sub(totalSupplyStart));

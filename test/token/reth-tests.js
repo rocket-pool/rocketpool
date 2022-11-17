@@ -37,7 +37,7 @@ export default function() {
 
         // Setup
         let minipool;
-        let withdrawalBalance = web3.utils.toWei('36', 'ether');
+        let withdrawalBalance = '36'.ether;
         let rethBalance;
         let submitPricesFrequency = 500;
         let depositDeplay = 100;
@@ -49,7 +49,7 @@ export default function() {
             let exchangeRate1 = await getRethExchangeRate();
 
             // Make deposit
-            await userDeposit({from: staker1, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: staker1, value: '16'.ether});
 
             // Register node & set withdrawal address
             await registerNode({from: node});
@@ -60,7 +60,7 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Set settings
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('1', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '1'.ether, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
@@ -71,18 +71,18 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create withdrawable minipool
-            minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            minipool = await createMinipool({from: node, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: node});
 
             // Update network ETH total to alter rETH exchange rate
             let rethSupply = await getRethTotalSupply();
             let nodeFee = await minipool.getNodeFee.call()
-            let depositBalance = web3.utils.toBN(web3.utils.toWei('32'));
-            let userAmount = web3.utils.toBN(web3.utils.toWei('16'));
+            let depositBalance = '32'.ether;
+            let userAmount = '16'.ether;
             let rewards = web3.utils.toBN(withdrawalBalance).sub(depositBalance);
             let halfRewards = rewards.divn(2);
-            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div('1'.ether);
             let ethBalance = userAmount.add(halfRewards.sub(nodeCommissionFee));
             await submitBalances(1, ethBalance, 0, rethSupply, {from: trustedNode});
 
@@ -98,7 +98,7 @@ export default function() {
 
         it(printTitle('rETH holder', 'can transfer rETH after enough time has passed'), async () => {
             // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            const depositAmount = '20'.ether;
             await userDeposit({from: staker2, value: depositAmount});
 
             // Wait "network.reth.deposit.delay" blocks
@@ -113,7 +113,7 @@ export default function() {
 
         it(printTitle('rETH holder', 'can transfer rETH without waiting if received via transfer'), async () => {
             // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            const depositAmount = '20'.ether;
             await userDeposit({from: staker2, value: depositAmount});
 
             // Wait "network.reth.deposit.delay" blocks
@@ -147,7 +147,7 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Withdraw without finalising
-            await withdrawValidatorBalance(minipool, '0', random);
+            await withdrawValidatorBalance(minipool, '0'.ether, random);
 
             // Burn rETH
             await burnReth(rethBalance, {
@@ -158,7 +158,7 @@ export default function() {
 
         it(printTitle('rETH holder', 'can burn rETH for excess deposit pool ETH'), async () => {
             // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('20', 'ether'));
+            const depositAmount = '20'.ether;
             await userDeposit({from: staker2, value: depositAmount});
 
             // Check deposit pool excess balance
@@ -191,11 +191,11 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Withdraw without finalising
-            await withdrawValidatorBalance(minipool, '0', random);
+            await withdrawValidatorBalance(minipool, '0'.ether, random);
 
             // Get burn amounts
-            let burnZero = web3.utils.toWei('0', 'ether');
-            let burnExcess = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
+            let burnZero = '0'.ether;
+            let burnExcess = '100'.ether;
             assertBN.isAbove(burnExcess, rethBalance, 'Burn amount does not exceed rETH balance');
 
             // Attempt to burn 0 rETH
@@ -220,7 +220,7 @@ export default function() {
             }), 'Burned rETH with an insufficient contract ETH balance');
 
             // Make user deposit
-            const depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
+            const depositAmount = '10'.ether;
             await userDeposit({from: staker2, value: depositAmount});
 
             // Check deposit pool excess balance

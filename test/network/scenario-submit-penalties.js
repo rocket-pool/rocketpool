@@ -80,23 +80,23 @@ export async function submitPenalty(minipoolAddress, block, txOptions) {
     ]);
 
     // Check if balances should be updated
-    let expectedUpdatedPenalty = web3.utils.toBN(web3.utils.toWei('1', 'ether')).mul(submission2.count).div(trustedNodeCount).gte(penaltyThreshold);
+    let expectedUpdatedPenalty = '1'.ether.mul(submission2.count).div(trustedNodeCount).gte(penaltyThreshold);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
 
     if (!submission1.executed) {
         assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-        assertBN.equal(submission2.count, submission1.count.add(web3.utils.toBN(1)), 'Incorrect updated submission count');
+        assertBN.equal(submission2.count, submission1.count.add('1'.BN), 'Incorrect updated submission count');
     }
 
     // Check penalty
     if (!submission1.executed && expectedUpdatedPenalty) {
         assert.isTrue(submission2.executed, 'Penalty not executed');
-        assert.strictEqual(penalty2.penaltyCount.toString(), penalty1.penaltyCount.add(web3.utils.toBN(1)).toString(), 'Penalty count not updated')
+        assert.strictEqual(penalty2.penaltyCount.toString(), penalty1.penaltyCount.add('1'.BN).toString(), 'Penalty count not updated')
 
         // Unless we hit max penalty, expect to see an increase in the penalty rate
-        if (penalty1.penaltyRate.lt(maxPenaltyRate) && penalty2.penaltyCount.gte(web3.utils.toBN('3'))){
+        if (penalty1.penaltyRate.lt(maxPenaltyRate) && penalty2.penaltyCount.gte('3'.BN)){
             assert.isTrue(penalty2.penaltyRate.gt(penalty1.penaltyRate), 'Penalty rate did not increase')
         }
     } else if(!expectedUpdatedPenalty) {

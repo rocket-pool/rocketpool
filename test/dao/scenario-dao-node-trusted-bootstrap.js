@@ -219,6 +219,6 @@ export async function setDaoNodeTrustedMemberRequired(_id, _url, txOptions) {
     let ds2 = await getTxData();
 
     // Check member count has increased
-    assertBN.equal(ds2.memberTotal, ds1.memberTotal.add(web3.utils.toBN(1)), 'Member count has not increased');
+    assertBN.equal(ds2.memberTotal, ds1.memberTotal.add('1'.BN), 'Member count has not increased');
     assertBN.equal(ds2.rplBalanceVault, ds1.rplBalanceVault.add(ds1.rplBalanceBond), 'RocketVault address does not contain the correct RPL bond amount');
 }

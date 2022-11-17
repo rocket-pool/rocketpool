@@ -76,16 +76,16 @@ export async function createLot(txOptions) {
     ]);
 
     // Get expected values
-    const calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
+    const calcBase = '1'.ether;
     const lotMaxRplAmount = calcBase.mul(lotMaxEthValue).div(rplPrice);
-    const expectedRemainingRplBalance = (details1.remainingRplBalance.gt(lotMaxRplAmount) ? details1.remainingRplBalance.sub(lotMaxRplAmount) : web3.utils.toBN(0));
+    const expectedRemainingRplBalance = (details1.remainingRplBalance.gt(lotMaxRplAmount) ? details1.remainingRplBalance.sub(lotMaxRplAmount) : '0'.ether);
     const expectedLotRplAmount = (details1.remainingRplBalance.lt(lotMaxRplAmount) ? details1.remainingRplBalance : lotMaxRplAmount);
 
     // Check contract details
     assertBN.equal(details2.totalRplBalance, details1.totalRplBalance, 'Total RPL balance updated and should not have');
     assertBN.equal(details2.remainingRplBalance, expectedRemainingRplBalance, 'Incorrect updated remaining RPL balance');
     assertBN.equal(details2.totalRplBalance, details2.allottedRplBalance.add(details2.remainingRplBalance), 'Incorrect updated RPL balances');
-    assertBN.equal(details2.lotCount, details1.lotCount.add(web3.utils.toBN(1)), 'Incorrect updated lot count');
+    assertBN.equal(details2.lotCount, details1.lotCount.add('1'.BN), 'Incorrect updated lot count');
 
     // Check lot details
     assert.isTrue(lot.exists, 'Incorrect lot exists status');

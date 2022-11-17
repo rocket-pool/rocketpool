@@ -68,7 +68,7 @@ export async function claimBid(lotIndex, txOptions) {
     ]);
 
     // Get expected values
-    const calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
+    const calcBase = '1'.ether;
     const expectedRplAmount = calcBase.mul(lot1.addressBidAmount).div(lot1.currentPrice);
 
     // Check details

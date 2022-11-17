@@ -18,8 +18,29 @@ const _assertBN = {
         assert(web3.utils.toBN(actual).gte(web3.utils.toBN(n)), message);
     },
     isZero: function (actual, message) {
-        assert.strictEqual(web3.utils.toBN(actual).toString(), web3.utils.toBN('0').toString(), message);
+        assert.strictEqual(web3.utils.toBN(actual).toString(), '0'.BN.toString(), message);
     },
+}
+
+export function injectBNHelpers() {
+    String.prototype.__defineGetter__('ether', function () {
+        return web3.utils.toBN(web3.utils.toWei(this));
+    });
+    String.prototype.__defineGetter__('gwei', function () {
+        return web3.utils.toBN(web3.utils.toWei(this, 'gwei'));
+    });
+    String.prototype.__defineGetter__('BN', function () {
+        return web3.utils.toBN(this);
+    });
+    Number.prototype.__defineGetter__('BN', function () {
+        return web3.utils.toBN(this.toString());
+    });
+    Number.prototype.__defineGetter__('ether', function () {
+        return web3.utils.toBN(web3.utils.toWei(this.toString()));
+    });
+    Number.prototype.__defineGetter__('gwei', function () {
+        return web3.utils.toBN(web3.utils.toWei(this.toString(), 'gwei'));
+    });
 }
 
 export const assertBN = _assertBN;

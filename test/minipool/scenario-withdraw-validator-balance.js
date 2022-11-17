@@ -7,9 +7,6 @@ import {
 import { assertBN } from '../_helpers/bn';
 
 export async function withdrawValidatorBalance(minipool, withdrawalBalance, from) {
-    // Convert to BN
-    withdrawalBalance = web3.utils.toBN(withdrawalBalance);
-
     // Load contracts
     const [
         rocketDepositPool,
@@ -35,10 +32,10 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Get balances
     function getBalances() {
         return Promise.all([
-            web3.eth.getBalance(rocketTokenRETH.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketTokenRETH.address).then(value => value.BN),
             rocketDepositPool.getBalance.call(),
-            web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+            web3.eth.getBalance(minipool.address).then(value => value.BN),
         ]).then(
           ([rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth]) =>
             ({rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth})
@@ -58,7 +55,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Send validator balance to minipool
-    if (withdrawalBalance.gt('0')) {
+    if (withdrawalBalance.gt('0'.BN)) {
         await web3.eth.sendTransaction({
             from: from,
             to: minipool.address,
@@ -68,7 +65,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Get total withdrawal balance
-    withdrawalBalance = web3.utils.toBN(await web3.eth.getBalance(minipool.address));
+    withdrawalBalance = (await web3.eth.getBalance(minipool.address)).BN;
 
     // Get initial balances & withdrawal processed status
     let [balances1, minipoolBalances1] = await Promise.all([
@@ -77,7 +74,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
 
     // Payout the balances now
     let txReceipt = await minipool.distributeBalance({
@@ -122,7 +119,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     const penaltyRate = await rocketMinipoolPenalty.getPenaltyRate(minipool.address);
 
     // Calculate rewards
-    let depositBalance = web3.utils.toBN(web3.utils.toWei('32'));
+    let depositBalance = '32'.ether;
     if (withdrawalBalance.gte(depositBalance)) {
         let depositType = await minipool.getDepositType();
         let userAmount = minipoolBalances1.userDepositBalance;

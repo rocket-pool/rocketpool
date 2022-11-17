@@ -7,9 +7,6 @@ export async function burnReth(amount, txOptions) {
     // Load contracts
     const rocketTokenRETH = await RocketTokenRETH.deployed();
 
-    // Get parameters
-    let rethExchangeRate = await rocketTokenRETH.getExchangeRate.call();
-
     // Get balances
     function getBalances() {
         return Promise.all([
@@ -26,7 +23,7 @@ export async function burnReth(amount, txOptions) {
     let balances1 = await getBalances();
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee

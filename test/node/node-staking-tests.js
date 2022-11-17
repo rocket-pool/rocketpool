@@ -49,7 +49,7 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node1@home.com', owner);
 
             // Mint RPL to accounts
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
             await mintRPL(owner, node, rplAmount);
             await mintRPL(owner, random, rplAmount);
 
@@ -58,7 +58,7 @@ export default function() {
 
         it(printTitle('node operator', 'can stake RPL'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('5000', 'ether');
+            const rplAmount = '5000'.ether;
 
             // Approve transfer & stake RPL once
             await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
@@ -67,7 +67,7 @@ export default function() {
             });
 
             // Make node deposit / create minipool
-            await nodeDeposit({from: node, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: node, value: '16'.ether});
 
             // Approve transfer & stake RPL twice
             await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
@@ -79,7 +79,7 @@ export default function() {
 
         it(printTitle('random address', 'cannot stake RPL'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Approve transfer & attempt to stake RPL
             await approveRPL(rocketNodeStaking.address, rplAmount, {from: node});
@@ -91,7 +91,7 @@ export default function() {
 
         it(printTitle('node operator', 'can withdraw staked RPL'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});
@@ -108,7 +108,7 @@ export default function() {
 
         it(printTitle('node operator', 'cannot withdraw staked RPL during the cooldown period'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Stake RPL
             await nodeStakeRPL(rplAmount, {from: node});
@@ -122,8 +122,8 @@ export default function() {
 
         it(printTitle('node operator', 'cannot withdraw more RPL than they have staked'), async () => {
             // Set parameters
-            const stakeAmount = web3.utils.toWei('10000', 'ether');
-            const withdrawAmount = web3.utils.toWei('20000', 'ether');
+            const stakeAmount = '10000'.ether;
+            const withdrawAmount = '20000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});
@@ -140,7 +140,7 @@ export default function() {
 
         it(printTitle('node operator', 'cannot withdraw RPL leaving the node undercollateralised'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});
@@ -149,7 +149,7 @@ export default function() {
             await nodeStakeRPL(rplAmount, {from: node});
 
             // Make node deposit / create minipool
-            await nodeDeposit({from: node, value: web3.utils.toWei('16', 'ether')});
+            await nodeDeposit({from: node, value: '16'.ether});
 
             // Withdraw staked RPL
             await shouldRevert(withdrawRpl(rplAmount, {
@@ -160,7 +160,7 @@ export default function() {
 
         it(printTitle('node operator', 'can withdraw RPL after finalising their minipool'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});
@@ -169,8 +169,8 @@ export default function() {
             await nodeStakeRPL(rplAmount, {from: node});
 
             // Create a staking minipool
-            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')});
-            const minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: random, value: '16'.ether});
+            const minipool = await createMinipool({from: node, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: node});
 
@@ -185,7 +185,7 @@ export default function() {
             }), 'Withdrew RPL leaving the node undercollateralised');
 
             // Withdraw and finalise
-            await withdrawValidatorBalance(minipool, web3.utils.toWei('32', 'ether'), node, true);
+            await withdrawValidatorBalance(minipool, '32'.ether, node, true);
 
             // Should be able to withdraw now
             await withdrawRpl(rplAmount, {
@@ -196,7 +196,7 @@ export default function() {
 
         it(printTitle('node operator', 'cannot withdraw RPL if random distributes balance on their minipool until they finalise'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});
@@ -205,8 +205,8 @@ export default function() {
             await nodeStakeRPL(rplAmount, {from: node});
 
             // Create a staking minipool
-            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')});
-            const minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: random, value: '16'.ether});
+            const minipool = await createMinipool({from: node, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(minipool, {from: node});
 
@@ -214,7 +214,7 @@ export default function() {
             await web3.eth.sendTransaction({
                 from: trustedNode,
                 to: minipool.address,
-                value: web3.utils.toWei('32', 'ether')
+                value: '32'.ether
             });
 
             // Begin user distribution process
@@ -222,7 +222,7 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Withdraw without finalising
-            await withdrawValidatorBalance(minipool, '0', random);
+            await withdrawValidatorBalance(minipool, '0'.ether, random);
 
             // Cannot withdraw RPL yet
             await shouldRevert(withdrawRpl(rplAmount, {
@@ -241,7 +241,7 @@ export default function() {
 
         it(printTitle('random address', 'cannot withdraw staked RPL'), async () => {
             // Set parameters
-            const rplAmount = web3.utils.toWei('10000', 'ether');
+            const rplAmount = '10000'.ether;
 
             // Remove withdrawal cooldown period
             await setRewardsClaimIntervalTime(0, {from: owner});

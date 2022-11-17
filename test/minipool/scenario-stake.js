@@ -32,7 +32,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     function getMinipoolDetails() {
         return Promise.all([
             minipool.getStatus.call(),
-            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(minipool.address).then(value => value.BN),
         ]).then(
             ([status, balance]) =>
             ({status, balance})
@@ -57,7 +57,7 @@ export async function stake(minipool, withdrawalCredentials, txOptions, validato
     // Check minpool details
     assertBN.notEqual(details1.status, minipoolStates.Staking, 'Incorrect initial minipool status');
     assertBN.equal(details2.status, minipoolStates.Staking, 'Incorrect updated minipool status');
-    assertBN.equal(details2.balance, details1.balance.sub(web3.utils.toBN(web3.utils.toWei('31', 'ether'))), 'Incorrect updated minipool ETH balance');
+    assertBN.equal(details2.balance, details1.balance.sub('31'.ether), 'Incorrect updated minipool ETH balance');
 
     // Check minipool by validator pubkey
     assert.strictEqual(validatorMinipool2, minipool.address, 'Incorrect updated minipool by validator pubkey');

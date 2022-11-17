@@ -42,13 +42,16 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
     let ds2 = await getTxData();
 
     // Check it was updated
-    if(Web3.utils.isAddress(_value)) {
-        await assert(ds2.settingAddressValue == _value, 'DAO protocol address setting not updated in bootstrap mode');
-    }else{
-        if(typeof(_value) == 'number' || typeof(_value) == 'string') await assert(ds2.settingUintValue.eq(web3.utils.toBN(_value)), 'DAO protocol uint256 setting not updated in bootstrap mode');
-        if(typeof(_value) == 'boolean')  await assert(ds2.settingBoolValue == _value, 'DAO protocol boolean setting not updated in bootstrap mode');
+    if (Web3.utils.isAddress(_value)) {
+        assert.strictEqual(ds2.settingAddressValue, _value, 'DAO protocol address setting not updated in bootstrap mode');
+    } else {
+        if(typeof(_value) == 'number' || typeof(_value) == 'string') {
+            assertBN.equal(ds2.settingUintValue, _value, 'DAO protocol uint256 setting not updated in bootstrap mode');
+        }
+        if(typeof(_value) == 'boolean') {
+            assert.strictEqual(ds2.settingBoolValue, _value, 'DAO protocol boolean setting not updated in bootstrap mode');
+        }
     }
-
 }
 
 // Set a contract that can claim rewards
@@ -66,22 +69,17 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
             ({rewardsClaimerPerc, rewardsClaimersPercTotal})
         );
     }
-    // Capture data
-    let dataSet1 = await getTxData();
-    //console.log(dataSet1.rewardsClaimerPerc.toString(), dataSet1.rewardsClaimersPercTotal.toString());
     // Perform tx
     await rocketDAOProtocol.bootstrapSettingClaimer(_contractName, _perc, txOptions);
     // Capture data
     let dataSet2 = await getTxData();
-    //console.log(dataSet2.rewardsClaimerPerc.toString(), dataSet2.rewardsClaimersPercTotal.toString());
     // Verify
-    assertBN.equal(dataSet2.rewardsClaimerPerc, web3.utils.toBN(_perc), 'Claim percentage not updated correctly');
-
+    assertBN.equal(dataSet2.rewardsClaimerPerc, _perc, 'Claim percentage not updated correctly');
     // Verify an expected total Perc if given
-    if(expectedTotalPerc) {
-        assertBN.equal(dataSet2.rewardsClaimersPercTotal, web3.utils.toBN(web3.utils.toWei(expectedTotalPerc.toString())), 'Total claim percentage not matching given target');
+    if (expectedTotalPerc) {
+        assertBN.equal(dataSet2.rewardsClaimersPercTotal, expectedTotalPerc, 'Total claim percentage not matching given target');
     }
-};
+}
 
 
 /*** Rewards *******/
@@ -90,12 +88,11 @@ export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc,
 export async function setRewardsClaimIntervalTime(intervalTime, txOptions) {
     // Set it now
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', intervalTime, txOptions);
-};
+}
 
 
 // Spend the DAO treasury in bootstrap mode
 export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _amount, txOptions) {
-
     // Load contracts
     const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     const rocketTokenRPL = await RocketTokenRPL.deployed();
@@ -127,7 +124,6 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
 
     // Verify the amount sent is correct
     assertBN.equal(ds2.recipientBalance, ds1.recipientBalance.add(_amount), "Amount spent by treasury does not match recipients received amount");
-
 }
 
 
@@ -136,22 +132,21 @@ export async function spendRewardsClaimTreasury(_invoiceID, _recipientAddress, _
 // Set the current RPL inflation rate
 export async function setRPLInflationIntervalRate(yearlyInflationPerc, txOptions) {
     // Calculate the inflation rate per day
-    let dailyInflation = web3.utils.toBN((1 + yearlyInflationPerc) ** (1 / (365)) * 1e18);
+    let dailyInflation = (1 + yearlyInflationPerc) ** (1 / (365)).toFixed(18);
     // Set it now
-    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation, txOptions);
-};
+    await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.rate', dailyInflation.ether, txOptions);
+}
 
 
 // Set the current RPL inflation block interval
 export async function setRPLInflationStartTime(startTime, txOptions) {
     // Set it now
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', startTime, txOptions);
-};
+}
 
 
 // Disable bootstrap mode
 export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
-
     // Load contracts
     const rocketDAOProtocol = await RocketDAOProtocol.deployed();
 
@@ -175,13 +170,11 @@ export async function setDaoProtocolBootstrapModeDisabled(txOptions) {
     let ds2 = await getTxData();
 
     // Check ID has been recorded
-    assert(ds2.bootstrapmodeDisabled === true, 'Bootstrap mode was not disabled');
-
+    assert.strictEqual(ds2.bootstrapmodeDisabled, true, 'Bootstrap mode was not disabled');
 }
 
 // Change multiple trusted node DAO settings while bootstrap mode is enabled
 export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstances, _settingPaths, _values, txOptions) {
-
   // Helper function
   String.prototype.lowerCaseFirstLetter = function() {
     return this.charAt(0).toLowerCase() + this.slice(1);
@@ -240,8 +233,6 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
   // Capture data
   let data = await getTxData();
 
-  // console.log(data);
-
   // Check it was updated
   for (let i = 0; i < _values.length; i++) {
     const value = _values[i];
@@ -250,10 +241,10 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
         assertBN.equal(data[i], value, 'DAO protocol uint256 setting not updated in bootstrap mode');
         break;
       case 1:
-        assert(data[i] === value, 'DAO protocol boolean setting not updated in bootstrap mode');
+        assert.strictEqual(data[i], value, 'DAO protocol boolean setting not updated in bootstrap mode');
         break;
       case 2:
-        await assert(data[i] === value, 'DAO protocol address setting not updated in bootstrap mode');
+        assert.strictEqual(data[i], value, 'DAO protocol address setting not updated in bootstrap mode');
         break;
     }
   }

@@ -98,16 +98,16 @@ export default function() {
         it(printTitle('trusted nodes', 'can submit network prices'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Submit different prices
-            await submitPrices(block, web3.utils.toWei('0.03', 'ether'), {
+            await submitPrices(block, '0.03'.ether, {
                 from: trustedNode1,
             });
-            await submitPrices(block, web3.utils.toWei('0.04', 'ether'), {
+            await submitPrices(block, '0.04'.ether, {
                 from: trustedNode2,
             });
-            await submitPrices(block, web3.utils.toWei('0.05', 'ether'), {
+            await submitPrices(block, '0.05'.ether, {
                 from: trustedNode3,
             });
 
@@ -127,7 +127,7 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit network prices while price submissions are disabled'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Disable submissions
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.enabled', false, {from: owner});
@@ -145,7 +145,7 @@ export default function() {
 
             // Set parameters
             let block = blockCurrent + 1;
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Attempt to submit prices for future block
             await shouldRevert(submitPrices(block, rplPrice, {
@@ -157,7 +157,7 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit network prices for the current recorded block or lower'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Submit prices for block to trigger update
             await submitPrices(block, rplPrice, {
@@ -182,7 +182,7 @@ export default function() {
         it(printTitle('trusted nodes', 'cannot submit the same network prices twice'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Submit prices for block
             await submitPrices(block, rplPrice, {
@@ -199,7 +199,7 @@ export default function() {
         it(printTitle('regular nodes', 'cannot submit network prices'), async () => {
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
 
             // Attempt to submit prices
             await shouldRevert(submitPrices(block, rplPrice, {
@@ -213,7 +213,7 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus but enough for 3)
             await submitPrices(block, rplPrice, {
                 from: trustedNode1,
@@ -235,7 +235,7 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = await web3.eth.getBlockNumber();
-            let rplPrice = web3.utils.toWei('0.02', 'ether');
+            let rplPrice = '0.02'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus)
             await submitPrices(block, rplPrice, {
                 from: trustedNode1,

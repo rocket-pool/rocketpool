@@ -31,7 +31,7 @@ export async function deposit(txOptions, preUpdate = false) {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
             rocketDepositPool.getNodeBalance.call(),
-            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
             rocketTokenRETH.balanceOf.call(txOptions.from),
         ]).then(
             ([depositPoolEth, depositPoolNodeEth, vaultEth, userReth]) =>
@@ -49,8 +49,8 @@ export async function deposit(txOptions, preUpdate = false) {
     let balances2 = await getBalances();
 
     // Calculate values
-    let txValue = web3.utils.toBN(txOptions.value);
-    let calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
+    let txValue = txOptions.value;
+    let calcBase = '1'.ether;
     let depositFee = txValue.mul(depositFeePerc).div(calcBase);
     let expectedRethMinted = await rocketTokenRETH.getRethValue(txValue.sub(depositFee));
 

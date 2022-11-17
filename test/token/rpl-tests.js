@@ -28,7 +28,7 @@ export default function() {
 
 
         // Setup
-        let userOneRPLBalance = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
+        let userOneRPLBalance = '100'.ether;
 
 
         before(async () => {
@@ -57,13 +57,13 @@ export default function() {
             // Load contracts
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // The allowance
-            let allowance = userOneRPLBalance.div(web3.utils.toBN(2));
+            let allowance = userOneRPLBalance.div('2'.BN);
             // Give allowance for half to be spent
             await allowDummyRPL(rocketTokenRPL.address, allowance, {
                 from: userOne,
             });
             // Burn existing fixed supply RPL for new RPL
-            await burnFixedRPL(allowance.sub(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether'))), {
+            await burnFixedRPL(allowance.sub('0.000001'.ether), {
                 from: userOne,
             });
         });
@@ -73,7 +73,7 @@ export default function() {
              // Load contracts
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // The allowance
-            let allowance = userOneRPLBalance.sub(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether')));
+            let allowance = userOneRPLBalance.sub('0.000001'.ether);
             // Give allowance for all to be sent
             await allowDummyRPL(rocketTokenRPL.address, allowance, {
                 from: userOne,
@@ -95,7 +95,7 @@ export default function() {
                from: userOne,
            });
            // Burn existing fixed supply RPL for new RPL
-           await shouldRevert(burnFixedRPL(userOneRPLBalance.add(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether'))), {
+           await shouldRevert(burnFixedRPL(userOneRPLBalance.add('0.000001'.ether), {
                from: userOne,
            }), 'Burned more RPL than had owned and had given allowance for');
         });

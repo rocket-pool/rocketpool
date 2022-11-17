@@ -63,7 +63,7 @@ export async function distributeRewards(nodeAddress, txOptions) {
 
   // Calculate expected node and user amounts from average fee
   const halfAmount = distributorBalance.div(new web3.utils.BN(2));
-  const expectedNodeAmount = halfAmount.add(halfAmount.mul(averageFee).div(new web3.utils.BN(web3.utils.toWei('1', 'ether'))));
+  const expectedNodeAmount = halfAmount.add(halfAmount.mul(averageFee).div(new web3.utils.BN('1'.ether)));
   const expectedUserAmount = distributorBalance.sub(expectedNodeAmount);
 
   async function getBalances() {

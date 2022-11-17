@@ -2,6 +2,8 @@
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 
 import "../RocketBase.sol";
 import "../../interface/minipool/RocketMinipoolInterface.sol";
@@ -15,6 +17,7 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
 
     // Libs
     using SafeMath for uint;
+    using SignedSafeMath for int;
 
     // Constants
     bytes32 private constant queueKeyFull = keccak256("minipools.available.full");
@@ -185,7 +188,58 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     /// @param _index The index into the queue to retrieve
     function getMinipoolAt(uint256 _index) override external view returns(address) {
         AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
-        return addressQueueStorage.getItem(queueKeyVariable, _index);
+
+        // Check if index is in the half queue
+        uint256 halfLength = addressQueueStorage.getLength(queueKeyHalf);
+        if (_index < halfLength) {
+            return addressQueueStorage.getItem(queueKeyHalf, _index);
+        }
+        _index = _index.sub(halfLength);
+
+        // Check if index is in the full queue
+        uint256 fullLength = addressQueueStorage.getLength(queueKeyFull);
+        if (_index < fullLength) {
+            return addressQueueStorage.getItem(queueKeyFull, _index);
+        }
+        _index = _index.sub(fullLength);
+
+        // Check if index is in the full queue
+        uint256 variableLength = addressQueueStorage.getLength(queueKeyVariable);
+        if (_index < variableLength) {
+            return addressQueueStorage.getItem(queueKeyVariable, _index);
+        }
+
+        // Index is out of bounds
+        return address(0);
     }
 
+    /// @notice Returns the position a given minipool is in the queue
+    /// @param _minipool The minipool to query the position of
+    function getMinipoolPosition(address _minipool) override external view returns (int256) {
+        AddressQueueStorageInterface addressQueueStorage = AddressQueueStorageInterface(getContractAddress("addressQueueStorage"));
+        int256 position;
+
+        // Check in half queue
+        position = addressQueueStorage.getIndexOf(queueKeyHalf, _minipool);
+        if (position != -1) {
+            return position;
+        }
+        int256 offset = SafeCast.toInt256(addressQueueStorage.getLength(queueKeyHalf));
+
+        // Check in full queue
+        position = addressQueueStorage.getIndexOf(queueKeyFull, _minipool);
+        if (position != -1) {
+            return offset.add(position);
+        }
+        offset = offset.add(SafeCast.toInt256(addressQueueStorage.getLength(queueKeyFull)));
+
+        // Check in variable queue
+        position = addressQueueStorage.getIndexOf(queueKeyVariable, _minipool);
+        if (position != -1) {
+            return offset.add(position);
+        }
+
+        // Isn't in the queue
+        return -1;
+    }
 }

@@ -95,18 +95,18 @@ export default function() {
 
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Submit different balances
-            await submitBalances(block, totalBalance, stakingBalance, web3.utils.toWei('7', 'ether'), {
+            await submitBalances(block, totalBalance, stakingBalance, '7'.ether, {
                 from: trustedNode1,
             });
-            await submitBalances(block, totalBalance, stakingBalance, web3.utils.toWei('6', 'ether'), {
+            await submitBalances(block, totalBalance, stakingBalance, '6'.ether, {
                 from: trustedNode2,
             });
-            await submitBalances(block, totalBalance, stakingBalance, web3.utils.toWei('5', 'ether'), {
+            await submitBalances(block, totalBalance, stakingBalance, '5'.ether, {
                 from: trustedNode3,
             });
 
@@ -128,9 +128,9 @@ export default function() {
 
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Disable submissions
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.balances.enabled', false, {from: owner});
@@ -150,9 +150,9 @@ export default function() {
 
             // Set parameters
             let block = blockCurrent + 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Attempt to submit balances for future block
             await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
@@ -166,9 +166,9 @@ export default function() {
 
             // Set parameters
             let block = 2;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Submit balances for block to trigger update
             await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
@@ -195,9 +195,9 @@ export default function() {
 
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('9', 'ether');
-            let stakingBalance = web3.utils.toWei('10', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '9'.ether;
+            let stakingBalance = '10'.ether;
+            let rethSupply = '8'.ether;
 
             // Submit balances for block
             await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
@@ -211,9 +211,9 @@ export default function() {
 
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Submit balances for block
             await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
@@ -232,9 +232,9 @@ export default function() {
 
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
 
             // Attempt to submit balances
             await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
@@ -249,9 +249,9 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
             // Submit same parameters from 2 nodes (not enough for 4 member consensus but enough for 3)
             await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,
@@ -273,9 +273,9 @@ export default function() {
             await trustedNode4JoinDao();
             // Set parameters
             let block = 1;
-            let totalBalance = web3.utils.toWei('10', 'ether');
-            let stakingBalance = web3.utils.toWei('9', 'ether');
-            let rethSupply = web3.utils.toWei('8', 'ether');
+            let totalBalance = '10'.ether;
+            let stakingBalance = '9'.ether;
+            let rethSupply = '8'.ether;
             // Submit same price from 2 nodes (not enough for 4 member consensus)
             await submitBalances(block, totalBalance, stakingBalance, rethSupply, {
                 from: trustedNode1,

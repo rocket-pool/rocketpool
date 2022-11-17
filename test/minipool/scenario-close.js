@@ -13,21 +13,21 @@ export async function close(minipool, txOptions) {
 
     // Get initial node balance & minipool balances
     let [nodeBalance1, minipoolBalance] = await Promise.all([
-        web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
-        web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
+        web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+        web3.eth.getBalance(minipool.address).then(value => value.BN),
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Close & get tx fee
     let txReceipt = await minipool.close(txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated node balance & minipool contract code
     let [nodeBalance2, minipoolCode] = await Promise.all([
-        web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
+        web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
         web3.eth.getCode(minipool.address),
     ]);
 

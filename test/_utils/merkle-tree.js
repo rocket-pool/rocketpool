@@ -195,9 +195,9 @@ export function parseRewardsMap(rewards) {
 
     memo[address] = {
       address: web3.utils.toChecksumAddress(address),
-      amountRPL: web3.utils.toBN(nodeRPL).add(web3.utils.toBN(trustedNodeRPL)),
-      amountETH: web3.utils.toBN(nodeETH),
-      network: web3.utils.toBN(network)
+      amountRPL: nodeRPL.add(trustedNodeRPL),
+      amountETH: nodeETH,
+      network: network.BN,
     };
     return memo;
   }, {});
@@ -205,12 +205,12 @@ export function parseRewardsMap(rewards) {
   const rewardsPerNetworkBN = rewards.reduce((perNetwork, {network, trustedNodeRPL, nodeRPL, nodeETH}) => {
     if(!(network in perNetwork)){
       perNetwork[network] = {
-        RPL: web3.utils.toBN(0),
-        ETH: web3.utils.toBN(0),
+        RPL: '0'.BN,
+        ETH: '0'.BN,
       };
     }
-    perNetwork[network].RPL = perNetwork[network].RPL.add(web3.utils.toBN(nodeRPL).add(web3.utils.toBN(trustedNodeRPL)));
-    perNetwork[network].ETH = perNetwork[network].ETH.add(web3.utils.toBN(nodeETH));
+    perNetwork[network].RPL = perNetwork[network].RPL.add(nodeRPL.add(trustedNodeRPL));
+    perNetwork[network].ETH = perNetwork[network].ETH.add(nodeETH);
     return perNetwork;
   }, {})
 
@@ -248,12 +248,12 @@ export function parseRewardsMap(rewards) {
 
   const totalRewardsRPL = sortedAddresses.reduce(
     (memo, key) => memo.add(dataByAddress[key].amountRPL),
-    web3.utils.toBN(0)
+    '0'.BN
   );
 
   const totalRewardsETH = sortedAddresses.reduce(
     (memo, key) => memo.add(dataByAddress[key].amountETH),
-    web3.utils.toBN(0)
+    '0'.BN
   );
 
   return {

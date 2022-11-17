@@ -143,7 +143,7 @@ export async function createMinipool(txOptions, salt = null) {
 
         let depositDataRoot = getDepositDataRoot(depositData);
 
-        await rocketNodeDeposit.deposit(web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit('0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     } else {
         // Get validator deposit data
         let depositData = {
@@ -155,7 +155,7 @@ export async function createMinipool(txOptions, salt = null) {
 
         let depositDataRoot = getDepositDataRoot(depositData);
 
-        await rocketNodeDeposit.deposit(txOptions.value, web3.utils.toWei('0', 'ether'), depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit(txOptions.value, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
@@ -208,7 +208,7 @@ export async function createVancantMinipool(bondAmount, txOptions, salt = null) 
 
     // Create and return vacant minipool
     const minipoolAddress = raw.substr(raw.length - 40);
-    await rocketNodeDeposit.createVacantMinipool(bondAmount, web3.utils.toWei('0', 'ether'), getValidatorPubkey(), salt, '0x' + minipoolAddress, txOptions);
+    await rocketNodeDeposit.createVacantMinipool(bondAmount, '0'.ether, getValidatorPubkey(), salt, '0x' + minipoolAddress, txOptions);
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
 
@@ -233,10 +233,13 @@ export async function stakeMinipool(minipool, txOptions) {
     // Get minipool withdrawal credentials
     let withdrawalCredentials = await rocketMinipoolManager.getMinipoolWithdrawalCredentials.call(minipool.address);
 
+    // Check if legacy or new minipool
+    let legacy = !(await minipool.getDepositType()).eq('4'.BN);
+
     // Get validator deposit data
     let depositData;
 
-    if (preUpdate) {
+    if (legacy) {
         depositData = {
             pubkey: Buffer.from(validatorPubkey.substr(2), 'hex'),
             withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),

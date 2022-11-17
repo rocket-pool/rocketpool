@@ -485,7 +485,7 @@ export default function() {
             // How much bond has registeredNodeTrusted2 paid?
             let registeredNodeTrusted2BondAmount = await daoNode.getMemberRPLBondAmount.call(registeredNodeTrusted2);
             // How much to fine? 33%
-            let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div(web3.utils.toBN(3));
+            let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div('3'.BN);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
               {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},

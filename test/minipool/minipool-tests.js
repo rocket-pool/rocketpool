@@ -39,6 +39,7 @@ import {
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from './scenario-reduce-bond';
 import { assertBN } from '../_helpers/bn';
+import { skimRewards } from './scenario-skim-rewards';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -60,18 +61,18 @@ export default function() {
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
         let scrubPeriod = (60 * 60 * 24); // 24 hours
-        let bondReductionWindowStart = (2 * 24 * 60 * 60)
-        let bondReductionWindowLength = (2 * 24 * 60 * 60)
+        let bondReductionWindowStart = (2 * 24 * 60 * 60);
+        let bondReductionWindowLength = (2 * 24 * 60 * 60);
         let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
         let stakingMinipool;
         let dissolvedMinipool;
-        let withdrawalBalance = web3.utils.toWei('36', 'ether');
-        let newDelegateAddress = '0x0000000000000000000000000000000000000001'
+        let withdrawalBalance = '36'.ether;
+        let newDelegateAddress = '0x0000000000000000000000000000000000000001';
 
-        const lebDepositNodeAmount = web3.utils.toWei('8', 'ether')
-        const halfDepositNodeAmount = web3.utils.toWei('16', 'ether')
+        const lebDepositNodeAmount = '8'.ether;
+        const halfDepositNodeAmount = '16'.ether;
 
         before(async () => {
             await upgradeOneDotTwo(owner);
@@ -95,26 +96,26 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
+            let rplStake = minipoolRplStake.mul('7'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a dissolved minipool
-            await userDeposit({ from: random, value: web3.utils.toWei('16', 'ether'), });
-            dissolvedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({ from: random, value: '16'.ether, });
+            dissolvedMinipool = await createMinipool({from: node, value: '16'.ether});
             await increaseTime(web3, launchTimeout + 1);
             await dissolveMinipool(dissolvedMinipool, {from: node});
 
             // Create minipools
-            await userDeposit({ from: random, value: web3.utils.toWei('46', 'ether'), });
-            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            prelaunchMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            stakingMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            initialisedMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({ from: random, value: '46'.ether, });
+            prelaunchMinipool = await createMinipool({from: node, value: '16'.ether});
+            prelaunchMinipool2 = await createMinipool({from: node, value: '16'.ether});
+            stakingMinipool = await createMinipool({from: node, value: '16'.ether});
+            initialisedMinipool = await createMinipool({from: node, value: '16'.ether});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);
@@ -159,13 +160,13 @@ export default function() {
             // Attempt to send ETH to view method
             await shouldRevert(prelaunchMinipool.getStatus({
                 from: random,
-                value: web3.utils.toWei('1', 'ether'),
+                value: '1'.ether,
             }), 'Sent ETH to a non-payable minipool delegate view method');
 
             // Attempt to send ETH to mutator method
             await shouldRevert(refund(prelaunchMinipool, {
                 from: node,
-                value: web3.utils.toWei('1', 'ether'),
+                value: '1'.ether,
             }), 'Sent ETH to a non-payable minipool delegate mutator method');
 
         });
@@ -197,12 +198,11 @@ export default function() {
           // Set max to the current number
           await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.maximum.count', minipoolCount, {from: owner});
           // Creating minipool should fail now
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
+          await shouldRevert(createMinipool({from: node, value: '16'.ether}), 'Was able to create a minipool when capacity is reached', 'Global minipool limit reached');
           // Destroy a pool
           await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, nodeWithdrawalAddress, true);
           // Creating minipool should no longer fail
-          await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-
+          await createMinipool({from: node, value: '16'.ether});
         });
 
 
@@ -211,7 +211,7 @@ export default function() {
           // Upgrade network delegate contract to random address
           await upgradeNetworkDelegateContract();
           // Creating minipool should fail now
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
+          await shouldRevert(createMinipool({from: node, value: '16'.ether}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
 
         });
 
@@ -219,7 +219,7 @@ export default function() {
         it(printTitle('node operator', 'cannot delegatecall to a delgate address that is a non-contract'), async () => {
 
           // Creating minipool should fail now
-          let newMinipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+          let newMinipool = await createMinipool({from: node, value: '16'.ether});
           const newMinipoolBase = await RocketMinipoolBase.at(newMinipool.address);
           // Upgrade network delegate contract to random address
           await upgradeNetworkDelegateContract();
@@ -306,21 +306,21 @@ export default function() {
             await web3.eth.sendTransaction({
                 from: owner,
                 to: prelaunchMinipool.address,
-                value: web3.utils.toWei('8', 'ether')
+                value: '8'.ether
             });
             // Begin user distribution process
             await beginUserDistribute(prelaunchMinipool, {from: random});
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(prelaunchMinipool, '0', random);
+            await withdrawValidatorBalance(prelaunchMinipool, '0'.ether, random);
             // Call slash method
             await prelaunchMinipool.slash({ from: random });
             // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
             const rocketVault = await RocketVault.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
-            assertBN.equal(balance, web3.utils.toWei('800', 'ether'));
+            assertBN.equal(balance, '800'.ether);
         });
 
 
@@ -328,13 +328,13 @@ export default function() {
             // Stake the prelaunch minipool (it has 16 ETH user funds)
             await stakeMinipool(prelaunchMinipool, {from: node});
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(prelaunchMinipool, web3.utils.toWei('8', 'ether'), nodeWithdrawalAddress, true);
+            await withdrawValidatorBalance(prelaunchMinipool, '8'.ether, nodeWithdrawalAddress, true);
 
             // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
             const rocketVault = await RocketVault.deployed();
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             const balance = await rocketVault.balanceOfToken('rocketAuctionManager', rocketTokenRPL.address);
-            assertBN.equal(balance, web3.utils.toWei('800', 'ether'));
+            assertBN.equal(balance, '800'.ether);
         });
 
 
@@ -456,20 +456,20 @@ export default function() {
             await web3.eth.sendTransaction({
                 from: owner,
                 to: stakingMinipool.address,
-                value: web3.utils.toWei('32', 'ether')
+                value: '32'.ether
             });
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(stakingMinipool, '0', random);
+            await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
 
 
         it(printTitle('random', 'random address cannot trigger a payout of withdrawal balance if balance is less than 16 ETH'), async () => {
           // Attempt to send validator balance
-          await shouldRevert(withdrawValidatorBalance(stakingMinipool, web3.utils.toWei('15', 'ether'), random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Only owner can distribute right now');
+          await shouldRevert(withdrawValidatorBalance(stakingMinipool, '15'.ether, random, false), 'Random address was able to execute withdraw on sub 16 ETH minipool', 'Only owner can distribute right now');
         });
 
 
@@ -502,7 +502,7 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(stakingMinipool, '0', random);
+            await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
 
 
@@ -518,14 +518,14 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(stakingMinipool, '0', random);
+            await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
 
 
         it(printTitle('random address', 'can send validator balance to a withdrawable minipool across multiple transactions'), async () => {
             // Get tx amount (half of withdrawal balance)
-            let amount1 = web3.utils.toBN(withdrawalBalance).div(web3.utils.toBN(2));
-            let amount2 = web3.utils.toBN(withdrawalBalance).sub(amount1);
+            let amount1 = withdrawalBalance.div('2'.BN);
+            let amount2 = withdrawalBalance.sub(amount1);
 
             await web3.eth.sendTransaction({
                 from: random,
@@ -544,7 +544,76 @@ export default function() {
             // Wait 14 days
             await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
-            await withdrawValidatorBalance(stakingMinipool, '0', random);
+            await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
+        });
+
+
+        //
+        // Skim rewards
+        //
+
+
+        it(printTitle('node operator', 'can skim rewards less than 8 ETH'), async () => {
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '1'.ether,
+            });
+            // Skim rewards from node
+            await skimRewards(stakingMinipool, {from: node});
+        });
+
+
+        it(printTitle('random user', 'can skim rewards less than 8 ETH'), async () => {
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '1'.ether,
+            });
+            // Skim rewards from node
+            await skimRewards(stakingMinipool, {from: random});
+        });
+
+
+        it(printTitle('random user', 'can skim rewards less than 8 ETH twice'), async () => {
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '1'.ether,
+            });
+            // Skim rewards from random
+            await skimRewards(stakingMinipool, {from: random});
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '1'.ether,
+            });
+            // Skim rewards from random
+            await skimRewards(stakingMinipool, {from: random});
+        });
+
+
+        it(printTitle('random user + node operator', 'can skim rewards less than 8 ETH twice interchangeably'), async () => {
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '1.5'.ether,
+            });
+            // Skim rewards from random
+            await skimRewards(stakingMinipool, {from: random});
+            // Send 1 ETH to the minipool
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: stakingMinipool.address,
+                value: '2'.ether,
+            });
+            // Skim rewards from node
+            await skimRewards(stakingMinipool, {from: node});
         });
 
 
@@ -558,7 +627,7 @@ export default function() {
             await web3.eth.sendTransaction({
               from: random,
               to: dissolvedMinipool.address,
-              value: web3.utils.toWei('16', 'ether'),
+              value: '16'.ether,
             });
 
             // Close dissolved minipool
@@ -661,7 +730,7 @@ export default function() {
             await stakingMinipool.beginReduceBondAmount({from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
-            await reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node});
+            await reduceBond(stakingMinipool, '8'.ether, {from: node});
         });
 
 
@@ -669,7 +738,7 @@ export default function() {
             // Signal wanting to reduce and wait 7 days
             await stakingMinipool.beginReduceBondAmount({from: node});
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
         });
 
 
@@ -678,13 +747,13 @@ export default function() {
             await stakingMinipool.beginReduceBondAmount({from: node});
             await increaseTime(web3, bondReductionWindowStart + bondReductionWindowLength + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
         });
 
 
         it(printTitle('node operator', 'cannot reduce bond without beginning the process first'), async () => {
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('8', 'ether'), {from: node}), 'Was able to reduce bond without beginning the process', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without beginning the process', 'Wait period not satisfied');
         });
 
 
@@ -693,7 +762,7 @@ export default function() {
             await stakingMinipool.beginReduceBondAmount({from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 9 ETH should fail
-            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('9', 'ether'), {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
+            await shouldRevert(reduceBond(stakingMinipool, '9'.ether, {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
         });
 
 
@@ -702,7 +771,7 @@ export default function() {
             await stakingMinipool.beginReduceBondAmount({from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 9 ETH should fail
-            await shouldRevert(reduceBond(stakingMinipool, web3.utils.toWei('18', 'ether'), {from: node}), 'Was able to increase bond', 'Bond must be lower than current amount');
+            await shouldRevert(reduceBond(stakingMinipool, '18'.ether, {from: node}), 'Was able to increase bond', 'Bond must be lower than current amount');
         });
 
 
@@ -778,7 +847,7 @@ export default function() {
 
                 // Stake RPL to cover minipools
                 let minipoolRplStake = await getMinipoolMinimumRPLStake();
-                let rplStake = minipoolRplStake.mul(web3.utils.toBN(10));
+                let rplStake = minipoolRplStake.mul('10'.BN);
                 await mintRPL(owner, emptyNode, rplStake);
                 await nodeStakeRPL(rplStake, {from: emptyNode});
 
@@ -788,7 +857,7 @@ export default function() {
 
                     // Deposit
                     let minipool = await createMinipool({from: emptyNode, value: step.amount});
-                    await userDeposit({ from: random, value: web3.utils.toWei('32', 'ether'), });
+                    await userDeposit({ from: random, value: '32'.ether, });
 
                     // Wait required scrub period
                     await increaseTime(web3, scrubPeriod + 1);

@@ -56,19 +56,19 @@ export default function() {
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            let rplStake = minipoolRplStake.mul('3'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipools
-            stakingMinipool1 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            stakingMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            stakingMinipool3 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            stakingMinipool1 = await createMinipool({from: node, value: '16'.ether});
+            stakingMinipool2 = await createMinipool({from: node, value: '16'.ether});
+            stakingMinipool3 = await createMinipool({from: node, value: '16'.ether});
 
             // Make and assign deposits to minipools
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: staker, value: '16'.ether});
+            await userDeposit({from: staker, value: '16'.ether});
+            await userDeposit({from: staker, value: '16'.ether});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);

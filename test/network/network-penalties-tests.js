@@ -56,17 +56,17 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
             // Set max penalty rate
             let rocketMinipoolPenalty = await RocketMinipoolPenalty.deployed();
-            rocketMinipoolPenalty.setMaxPenaltyRate(web3.utils.toWei('1', 'ether'), {from: owner})
+            rocketMinipoolPenalty.setMaxPenaltyRate('1'.ether, {from: owner})
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(1));
+            let rplStake = minipoolRplStake.mul('1'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a minipool
-            await userDeposit({from: random, value: web3.utils.toWei('16', 'ether')})
-            minipool = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')}, 0);
+            await userDeposit({from: random, value: '16'.ether})
+            minipool = await createMinipool({from: node, value: '16'.ether}, 0);
         });
 
 

@@ -51,8 +51,8 @@ export async function assignDepositsV2(txOptions) {
 
     // Get expected deposit assignment parameters
     let expectedDepositAssignments = 0;
-    let expectedEthAssigned = web3.utils.toBN(0);
-    let expectedNodeBalanceUsed = web3.utils.toBN(0);
+    let expectedEthAssigned = '0'.ether;
+    let expectedNodeBalanceUsed = '0'.ether;
     let depositBalanceRemaining = depositPoolBalance;
     let depositAssignmentsRemaining = maxDepositAssignments;
 
@@ -67,9 +67,9 @@ export async function assignDepositsV2(txOptions) {
     // No legacy deposits
     if (expectedDepositAssignments === 0) {
         let scalingCount = maxSocialisedAssignments.toNumber();
-        let totalEthCount = depositPoolBalance.div(web3.utils.toBN(web3.utils.toWei('31', 'ether'))).toNumber();
+        let totalEthCount = depositPoolBalance.div('31'.ether).toNumber();
         expectedDepositAssignments = Math.min(scalingCount, totalEthCount, maxDepositAssignments.toNumber(), minipoolQueueLength.toNumber());
-        expectedEthAssigned = web3.utils.toBN(web3.utils.toWei('31', 'ether')).mul(web3.utils.toBN(expectedDepositAssignments));
+        expectedEthAssigned = '31'.ether.mul(expectedDepositAssignments.BN);
 
         let indices = [...Array(expectedDepositAssignments).keys()];
         let addressesInQueue = await Promise.all(indices.map(i => rocketMinipoolQueue.getMinipoolAt(i)));
@@ -83,7 +83,7 @@ export async function assignDepositsV2(txOptions) {
         return Promise.all([
             rocketDepositPool.getBalance.call(),
             rocketDepositPool.getNodeBalance.call(),
-            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
         ]).then(
             ([depositPoolEth, depositPoolNodeEth, vaultEth]) =>
             ({depositPoolEth, depositPoolNodeEth, vaultEth})
@@ -122,6 +122,6 @@ export async function assignDepositsV2(txOptions) {
     assertBN.equal(balances2.vaultEth, balances1.vaultEth.sub(expectedEthAssigned), 'Incorrect updated vault ETH balance');
 
     // Check minipool queues
-    assertBN.equal(queue2.totalLength, queue1.totalLength.sub(web3.utils.toBN(expectedDepositAssignments)), 'Incorrect updated minipool queue length');
+    assertBN.equal(queue2.totalLength, queue1.totalLength.sub(expectedDepositAssignments.BN), 'Incorrect updated minipool queue length');
     assertBN.equal(queue2.totalCapacity, queue1.totalCapacity.sub(expectedEthAssigned), 'Incorrect updated minipool queue capacity');
 }

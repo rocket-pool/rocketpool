@@ -15,8 +15,8 @@ export async function refund(minipool, txOptions) {
     function getBalances() {
         return Promise.all([
             minipool.getNodeRefundBalance.call(),
-            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(minipool.address).then(value => value.BN),
+            web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
         ]).then(
             ([nodeRefund, minipoolEth, nodeEth]) =>
             ({nodeRefund, minipoolEth, nodeEth})
@@ -27,12 +27,12 @@ export async function refund(minipool, txOptions) {
     let balances1 = await getBalances();
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Refund & get tx fee
     let txReceipt = await minipool.refund(txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated balances
     let balances2 = await getBalances();

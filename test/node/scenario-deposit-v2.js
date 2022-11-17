@@ -105,15 +105,15 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
         lastNodeMinipoolAddress,
         minipoolDetails,
     ] = await Promise.all([
-        rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub(web3.utils.toBN(1))),
-        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.node.sub(web3.utils.toBN(1))),
+        rocketMinipoolManager.getMinipoolAt.call(minipoolCounts2.network.sub('1'.BN)),
+        rocketMinipoolManager.getNodeMinipoolAt.call(txOptions.from, minipoolCounts2.node.sub('1'.BN)),
         getMinipoolDetails(minipoolAddress),
     ]);
 
     // Check minipool indexes
-    assertBN.equal(minipoolCounts2.network, minipoolCounts1.network.add(web3.utils.toBN(1)), 'Incorrect updated network minipool count');
+    assertBN.equal(minipoolCounts2.network, minipoolCounts1.network.add('1'.BN), 'Incorrect updated network minipool count');
     assert.strictEqual(lastMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated network minipool index');
-    assertBN.equal(minipoolCounts2.node, minipoolCounts1.node.add(web3.utils.toBN(1)), 'Incorrect updated node minipool count');
+    assertBN.equal(minipoolCounts2.node, minipoolCounts1.node.add('1'.BN), 'Incorrect updated node minipool count');
     assert.strictEqual(lastNodeMinipoolAddress.toLowerCase(), minipoolAddress.toLowerCase(), 'Incorrect updated node minipool index');
 
     // Check minipool details

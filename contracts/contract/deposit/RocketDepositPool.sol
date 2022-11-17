@@ -102,13 +102,14 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
             maxCapacity = maximumDepositPoolSize + queueEffectiveCapacity
             assert(capacityNeeded <= maxCapacity)
         */
-        uint256 capacityNeeded = rocketVault.balanceOf("rocketDepositPool").add(msg.value);
-        if (capacityNeeded > rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize()) {
+        uint256 capacityNeeded = getBalance().add(msg.value);
+        uint256 maxDepositPoolSize = rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize();
+        if (capacityNeeded > maxDepositPoolSize) {
             // Doing a conditional require() instead of a single one optimises for the common
             // case where capacityNeeded fits in the deposit pool without looking at the queue
             if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
                 RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
-                require(capacityNeeded <= rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize() + rocketMinipoolQueue.getEffectiveCapacity(),
+                require(capacityNeeded <= maxDepositPoolSize.add(rocketMinipoolQueue.getEffectiveCapacity()),
                     "The deposit pool size after depositing (and matching with minipools) exceeds the maximum size");
             } else {
                 revert("The deposit pool size after depositing exceeds the maximum size");
@@ -123,6 +124,27 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Process deposit
         processDeposit(rocketDAOProtocolSettingsDeposit);
+    }
+
+    /// @notice Returns the maximum amount that can be accepted into the deposit pool at this time in wei
+    function getMaximumDepositAmount() override external view returns (uint256) {
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        // If deposits are enabled max deposit is 0
+        if (!rocketDAOProtocolSettingsDeposit.getDepositEnabled()) {
+            return 0;
+        }
+        uint256 depositPoolBalance = getBalance();
+        uint256 maxCapacity = rocketDAOProtocolSettingsDeposit.getMaximumDepositPoolSize();
+        // When assignments are enabled, we can accept the max amount plus whatever space is available in the minipool queue
+        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
+            RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+            maxCapacity = maxCapacity.add(rocketMinipoolQueue.getEffectiveCapacity());
+        }
+        // Check we aren't already over
+        if (depositPoolBalance >= maxCapacity) {
+            return 0;
+        }
+        return maxCapacity.sub(depositPoolBalance);
     }
 
     /// @dev Accepts ETH deposit from the node deposit contract (does not mint rETH)
@@ -210,7 +232,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();
         uint256 variableDepositAmount = rocketDAOProtocolSettingsMinipool.getVariableDepositAmount();
         uint256 scalingCount = msg.value.div(variableDepositAmount);
-        uint256 totalEthCount = rocketVault.balanceOf("rocketDepositPool").div(variableDepositAmount);
+        uint256 totalEthCount = getBalance().div(variableDepositAmount);
         uint256 assignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositSocialisedAssignments().add(scalingCount);
         if (assignments > totalEthCount) {
             assignments = totalEthCount;
@@ -244,7 +266,7 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         // Setup initial variable values
-        uint256 balance = rocketVault.balanceOf("rocketDepositPool");
+        uint256 balance = getBalance();
         uint256 totalEther = 0;
         // Calculate minipool assignments
         uint256 maxAssignments = _rocketDAOProtocolSettingsDeposit.getMaximumDepositAssignments();

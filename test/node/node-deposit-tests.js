@@ -34,7 +34,7 @@ export default function() {
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let bondReductionWindowStart = (2 * 24 * 60 * 60)
         let bondReductionWindowLength = (2 * 24 * 60 * 60)
-        let noMinimumNodeFee = web3.utils.toWei('0', 'ether');
+        let noMinimumNodeFee = '0'.ether;
         let lebDepositNodeAmount;
         let halfDepositNodeAmount;
 
@@ -55,15 +55,15 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
 
             // Get settings
-            lebDepositNodeAmount = web3.utils.toWei('8', 'ether')
-            halfDepositNodeAmount = web3.utils.toWei('16', 'ether')
+            lebDepositNodeAmount = '8'.ether
+            halfDepositNodeAmount = '16'.ether
         });
 
 
         it(printTitle('node operator', 'can make a deposit to create a minipool'), async () => {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            let rplStake = minipoolRplStake.mul('3'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
@@ -112,7 +112,7 @@ export default function() {
 
             // Settings
             let nodeFee = await getNodeFee();
-            let minimumNodeFee = nodeFee.add(web3.utils.toBN(web3.utils.toWei('0.01', 'ether')));
+            let minimumNodeFee = nodeFee.add('0.01'.ether);
 
             // Attempt deposit
             await shouldRevert(depositV2(minimumNodeFee, lebDepositNodeAmount, {
@@ -135,7 +135,7 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Get deposit amount
-            let depositAmount = web3.utils.toBN(web3.utils.toWei('10', 'ether'));
+            let depositAmount = '10'.ether;
             assertBN.notEqual(depositAmount, lebDepositNodeAmount, 'Deposit amount is not invalid');
             assertBN.notEqual(depositAmount, halfDepositNodeAmount, 'Deposit amount is not invalid');
 
@@ -156,7 +156,7 @@ export default function() {
 
             // Stake insufficient RPL amount
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.div(web3.utils.toBN(2));
+            let rplStake = minipoolRplStake.div('2'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
@@ -186,12 +186,12 @@ export default function() {
         it(printTitle('node operator', 'can make a deposit to create a minipool using deposit credit'), async () => {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            let rplStake = minipoolRplStake.mul('3'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a 16 ETH minipool
-            await userDeposit({ from: random, value: web3.utils.toWei('24', 'ether'), });
+            await userDeposit({ from: random, value: '24'.ether, });
             const minipoolAddress = await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
                 from: node,
                 value: halfDepositNodeAmount,
@@ -207,12 +207,12 @@ export default function() {
             await increaseTime(web3, bondReductionWindowStart + 1);
 
             // Reduce the bond to 8 ether to receive a deposit credit
-            await reduceBond(minipool, web3.utils.toWei('8', 'ether'), {from: node});
+            await reduceBond(minipool, '8'.ether, {from: node});
 
             // Create an 8 ether minipool (using 8 ether from credit)
             await depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
                 from: node,
-                value: web3.utils.toBN('0')
+                value: '0'.BN
             });
         });
 

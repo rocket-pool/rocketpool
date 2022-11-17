@@ -54,8 +54,8 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     let amountsRPL = [];
     let amountsETH = [];
     let proofs = [];
-    let totalAmountRPL = web3.utils.toBN(0);
-    let totalAmountETH = web3.utils.toBN(0);
+    let totalAmountRPL = '0'.BN;
+    let totalAmountETH = '0'.BN;
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -75,7 +75,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     }
 
     const tx = await rocketMerkleDistributorMainnet.claimAndStake(nodeAddress, indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
-    let gasUsed = web3.utils.toBN('0');
+    let gasUsed = '0'.BN;
 
     if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {
         gasUsed = web3.utils.toBN(tx.receipt.gasUsed).mul(web3.utils.toBN(tx.receipt.effectiveGasPrice));

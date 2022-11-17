@@ -4,8 +4,6 @@ import { assertBN } from '../_helpers/bn';
 
 // Reduce bonding amount of a minipool
 export async function reduceBond(minipool, amount, txOptions = null) {
-    amount = web3.utils.toBN(amount);
-
     const rocketNodeDeposit = await RocketNodeDeposit.deployed();
     const node = await minipool.getNodeAddress();
 
