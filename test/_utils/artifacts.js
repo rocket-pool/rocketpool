@@ -56,3 +56,4 @@ export const RocketMinipoolDelegate = artifacts.require('RocketMinipoolDelegate.
 export const RocketDAOProtocolSettingsMinipool = artifacts.require('RocketDAOProtocolSettingsMinipool.sol');
 export const RocketMinipoolQueue = artifacts.require('RocketMinipoolQueue.sol');
 export const RocketDepositPool = artifacts.require('RocketDepositPool.sol');
+export const RocketMinipoolBondReducer = artifacts.require('RocketMinipoolBondReducer.sol');

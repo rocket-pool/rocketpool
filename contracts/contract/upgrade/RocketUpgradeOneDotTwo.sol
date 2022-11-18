@@ -40,6 +40,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketDAONodeTrustedSettingsMinipool;
     address public newRocketNodeManager;
     address public rocketMinipoolBase;
+    address public rocketMinipoolBondReducer;
 
     // Upgrade ABIs
     string public newRocketNodeDepositAbi;
@@ -57,6 +58,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketDAONodeTrustedSettingsMinipoolAbi;
     string public newRocketNodeManagerAbi;
     string public rocketMinipoolBaseAbi;
+    string public rocketMinipoolBondReducerAbi;
 
     string public newRocketMinipoolAbi;
 
@@ -100,6 +102,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAONodeTrustedSettingsMinipool = _addresses[12];
         newRocketNodeManager = _addresses[13];
         rocketMinipoolBase = _addresses[14];
+        rocketMinipoolBondReducer = _addresses[15];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -117,7 +120,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAONodeTrustedSettingsMinipoolAbi = _abis[12];
         newRocketNodeManagerAbi = _abis[13];
         rocketMinipoolBaseAbi = _abis[14];
-        newRocketMinipoolAbi = _abis[15];
+        rocketMinipoolBondReducerAbi = _abis[15];
+
+        newRocketMinipoolAbi = _abis[16];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -158,6 +163,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
+        _addContract("rocketMinipoolBondReducer", rocketMinipoolBondReducer, rocketMinipoolBondReducerAbi);
 
         // Upgrade ABIs
         _upgradeABI("rocketMinipool", newRocketMinipoolAbi);

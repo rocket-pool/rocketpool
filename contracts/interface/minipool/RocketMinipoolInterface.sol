@@ -44,7 +44,5 @@ interface RocketMinipoolInterface {
     function dissolve() external;
     function close() external;
     function voteScrub() external;
-    function beginReduceBondAmount() external;
-    function canReduceBondAmount() external view returns (bool);
-    function voteCancelReduction() external;
+    function reduceBondAmount(uint256 _amount) external;
 }

@@ -43,7 +43,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     }
 
     /// @dev Increases a node operators deposit credit balance
-    function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyRegisteredMinipool(msg.sender) onlyLatestContract("rocketNodeDeposit", address(this)) {
+    function increaseDepositCreditBalance(address _nodeOperator, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) {
+        // Accept calls from network contracts or registered minipools
+        require(getBool(keccak256(abi.encodePacked("minipool.exists", msg.sender))) ||
+            getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))),
+            "Invalid or outdated network contract");
+        // Increase credit balance
         addUint(keccak256(abi.encodePacked("node.deposit.credit.balance", _nodeOperator)), _amount);
     }
 
@@ -149,7 +154,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _nodeAddress The node operator's address to increase the ETH matched for
     /// @param _amount The amount to increase the ETH matched
     /// @dev Will revert if the new ETH matched amount exceeds the node operators limit
-    function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredMinipool(msg.sender) {
+    function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyLatestNetworkContract() {
         _increaseEthMatched(_nodeAddress, _amount);
     }
 

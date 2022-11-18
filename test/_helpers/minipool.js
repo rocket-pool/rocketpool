@@ -6,10 +6,16 @@ import {
     RocketNetworkPrices,
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
-    RocketStorage, RocketNodeDepositOld, RocketMinipoolFactoryOld, RocketMinipoolManagerOld,
+    RocketStorage,
+    RocketNodeDepositOld,
+    RocketMinipoolFactoryOld,
+    RocketMinipoolManagerOld,
+    RocketNodeStaking,
+    RocketNodeStakingOld,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { upgradeExecuted } from '../_utils/upgrade';
+import { assertBN } from './bn';
 
 // Possible states that a proposal may be in
 export const minipoolStates = {
@@ -74,17 +80,19 @@ export async function createMinipool(txOptions, salt = null) {
     return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
 }
 
-export async function createMinipoolWithBondAmount(bond, txOptions, salt = null) {
+export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     const preUpdate = !(await upgradeExecuted());
 
     // Load contracts
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
+        rocketNodeStaking,
         rocketStorage,
     ] = await Promise.all([
         preUpdate ? RocketMinipoolFactoryOld.deployed() : RocketMinipoolFactory.deployed(),
         preUpdate ? RocketNodeDepositOld.deployed() : RocketNodeDeposit.deployed(),
+        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -149,6 +157,8 @@ export async function createMinipoolWithBondAmount(bond, txOptions, salt = null)
 
         await rocketNodeDeposit.deposit('0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     } else {
+        const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+
         // Get validator deposit data
         let depositData = {
             pubkey: getValidatorPubkey(),
@@ -159,7 +169,12 @@ export async function createMinipoolWithBondAmount(bond, txOptions, salt = null)
 
         let depositDataRoot = getDepositDataRoot(depositData);
 
-        await rocketNodeDeposit.deposit(bond, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+
+        const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+
+        // Expect node's ETH matched to be increased by (32 - bondAmount)
+        assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
     }
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
@@ -172,10 +187,12 @@ export async function createVancantMinipool(bondAmount, txOptions, salt = null) 
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
+        rocketNodeStaking,
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
         RocketNodeDeposit.deployed(),
+        RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -212,7 +229,14 @@ export async function createVancantMinipool(bondAmount, txOptions, salt = null) 
 
     // Create and return vacant minipool
     const minipoolAddress = raw.substr(raw.length - 40);
+
+    const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
     await rocketNodeDeposit.createVacantMinipool(bondAmount, '0'.ether, getValidatorPubkey(), salt, '0x' + minipoolAddress, txOptions);
+    const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+
+    // Expect node's ETH matched to be increased by (32 - bondAmount)
+    assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
+
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
 

@@ -3,7 +3,7 @@ import { shouldRevert } from '../_utils/testing';
 import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketDAOProtocolSettingsMinipool,
-    RocketDAOProtocolSettingsNode,
+    RocketDAOProtocolSettingsNode, RocketMinipoolBondReducer,
     RocketMinipoolDelegate,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
@@ -203,7 +203,8 @@ export default function() {
             await stakeMinipool(minipool, {from: node});
 
             // Signal wanting to reduce and wait 7 days
-            await minipool.beginReduceBondAmount({from: node});
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, {from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
 
             // Reduce the bond to 8 ether to receive a deposit credit

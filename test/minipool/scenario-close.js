@@ -1,4 +1,4 @@
-import { RocketNodeManager } from '../_utils/artifacts';
+import { RocketNodeManager, RocketNodeStaking } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
 
 
@@ -6,15 +6,18 @@ import { assertBN } from '../_helpers/bn';
 export async function close(minipool, txOptions) {
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     // Get parameters
     let nodeAddress = await minipool.getNodeAddress.call();
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
     // Get initial node balance & minipool balances
-    let [nodeBalance1, minipoolBalance] = await Promise.all([
+    let [nodeBalance1, ethMatched1, minipoolBalance, userDepositBalance] = await Promise.all([
         web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+        rocketNodeStaking.getNodeETHMatched(txOptions.from),
         web3.eth.getBalance(minipool.address).then(value => value.BN),
+        minipool.getUserDepositBalance()
     ]);
 
     // Set gas price
@@ -26,8 +29,9 @@ export async function close(minipool, txOptions) {
     let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated node balance & minipool contract code
-    let [nodeBalance2, minipoolCode] = await Promise.all([
+    let [nodeBalance2, ethMatched2, minipoolCode] = await Promise.all([
         web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+        rocketNodeStaking.getNodeETHMatched(txOptions.from),
         web3.eth.getCode(minipool.address),
     ]);
 
@@ -35,5 +39,8 @@ export async function close(minipool, txOptions) {
     let expectedNodeBalance = nodeBalance1.add(minipoolBalance);
     if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
     assertBN.equal(nodeBalance2, expectedNodeBalance, 'Incorrect updated node nETH balance');
+
+    // Expect node's ETH matched to be decreased by userDepositBalance
+    assertBN.equal(ethMatched1.sub(ethMatched2), userDepositBalance, 'Incorrect ETH matched');
 }
 

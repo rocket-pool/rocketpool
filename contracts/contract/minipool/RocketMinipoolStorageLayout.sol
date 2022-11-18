@@ -71,12 +71,6 @@ abstract contract RocketMinipoolStorageLayout {
     uint256 internal preLaunchValue;
     uint256 internal userDepositBalance;
 
-    // Bond reduction state
-    uint256 internal reduceBondTime;
-    mapping(address => bool) internal memberCancelVotes;
-    uint256 internal totalCancelVotes;
-    bool internal reductionCancelled;
-
     // Vacant minipool
     bool internal vacant;
 

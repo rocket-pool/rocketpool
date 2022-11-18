@@ -25,6 +25,7 @@ import "../../interface/node/RocketNodeDistributorInterface.sol";
 import "../../interface/network/RocketNetworkPenaltiesInterface.sol";
 import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
+import "./RocketMinipoolDelegate.sol";
 
 /// @notice Minipool creation, removal and management
 contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
@@ -35,6 +36,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     // Events
     event MinipoolCreated(address indexed minipool, address indexed node, uint256 time);
     event MinipoolDestroyed(address indexed minipool, address indexed node, uint256 time);
+    event BeginBondReduction(address indexed minipool, uint256 time);
+    event CancelReductionVoted(address indexed minipool, address indexed member, uint256 time);
+    event ReductionCancelled(address indexed minipool, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 3;
@@ -413,7 +417,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         if (ethMatched == 0) {
             ethMatched = getNodeActiveMinipoolCount(nodeAddress).mul(16 ether);
         }
-        ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
+        // Handle legacy minipools
+        if (minipool.getDepositType() == MinipoolDeposit.Variable) {
+            ethMatched = ethMatched.sub(minipool.getUserDepositBalance());
+        } else {
+            ethMatched = ethMatched.sub(16 ether);
+        }
         setUint(keccak256(abi.encodePacked("eth.matched.node.amount", nodeAddress)), ethMatched);
         // Update minipool data
         setBool(keccak256(abi.encodePacked("minipool.exists", msg.sender)), false);
@@ -492,5 +501,4 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
         return details;
     }
-
 }

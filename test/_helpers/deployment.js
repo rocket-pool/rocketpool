@@ -101,6 +101,7 @@ const contracts = {
     rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
     rocketDAONodeTrustedSettingsMinipoolNew:  artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
     rocketNodeManagerNew:                     artifacts.require('RocketNodeManager.sol'),
+    rocketMinipoolBondReducer:                artifacts.require('RocketMinipoolBondReducer.sol'),
     rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -257,6 +258,7 @@ export async function deployRocketPool() {
                                 (await contracts.rocketDAONodeTrustedSettingsMinipoolNew.deployed()).address,
                                 (await contracts.rocketNodeManagerNew.deployed()).address,
                                 (await contracts.rocketMinipoolBase.deployed()).address,
+                                (await contracts.rocketMinipoolBondReducer.deployed()).address,
                             ],
                             [
                                 // compressABI(contracts.rocketContract.abi),
@@ -275,6 +277,7 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipoolNew.abi),
                                 compressABI(contracts.rocketNodeManagerNew.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
+                                compressABI(contracts.rocketMinipoolBondReducer.abi),
                                 compressABI(rocketMinipoolAbi),
                             ],
                         ]
@@ -328,6 +331,7 @@ export async function deployRocketPool() {
                     case 'rocketDAONodeTrustedSettingsMinipoolNew':
                     case 'rocketNodeManagerNew':
                     case 'rocketMinipoolBase':
+                    case 'rocketMinipoolBondReducer':
                         break;
 
                     default:
