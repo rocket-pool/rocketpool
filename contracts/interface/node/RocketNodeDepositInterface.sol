@@ -11,4 +11,5 @@ interface RocketNodeDepositInterface {
     function isValidDepositAmount(uint256 _amount) external pure returns (bool);
     function getDepositAmounts() external pure returns (uint256[] memory);
     function createVacantMinipool(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, uint256 _salt, address _expectedMinipoolAddress) external;
+    function increaseEthMatched(address _nodeAddress, uint256 _amount) external;
 }

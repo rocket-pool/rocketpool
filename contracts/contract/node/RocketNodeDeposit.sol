@@ -99,7 +99,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
             launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         }
-        increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
+        _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
         // Get the pre-launch value
@@ -140,14 +140,22 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Increase ETH matched (used to calculate RPL collateral requirements)
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
+        _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
         _createVacantMinipool(_salt, _validatorPubkey, _bondAmount, _expectedMinipoolAddress);
     }
 
+    /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
+    /// @param _nodeAddress The node operator's address to increase the ETH matched for
+    /// @param _amount The amount to increase the ETH matched
+    /// @dev Will revert if the new ETH matched amount exceeds the node operators limit
+    function increaseEthMatched(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredMinipool(msg.sender) {
+        _increaseEthMatched(_nodeAddress, _amount);
+    }
+
     /// @dev Increases the amount of ETH that has been matched against a node operators bond. Reverts if it exceeds the
     ///      collateralisation requirements of the network
-    function increaseEthMatched(address _nodeAddress, uint256 _amount) private {
+    function _increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
         require(

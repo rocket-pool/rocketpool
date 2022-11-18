@@ -58,6 +58,8 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketNodeManagerAbi;
     string public rocketMinipoolBaseAbi;
 
+    string public newRocketMinipoolAbi;
+
     // Save deployer to limit access to set functions
     address immutable deployer;
 
@@ -115,6 +117,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAONodeTrustedSettingsMinipoolAbi = _abis[12];
         newRocketNodeManagerAbi = _abis[13];
         rocketMinipoolBaseAbi = _abis[14];
+        newRocketMinipoolAbi = _abis[15];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -155,6 +158,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
+
+        // Upgrade ABIs
+        _upgradeABI("rocketMinipool", newRocketMinipoolAbi);
 
         // Migrate settings
         bytes32 settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "deposit"));
@@ -241,4 +247,15 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         deleteString(keccak256(abi.encodePacked("contract.abi", _name)));
     }
 
+    /// @dev Upgrade a network contract ABI
+    function _upgradeABI(string memory _name, string memory _contractAbi) internal {
+        // Check ABI exists
+        string memory existingAbi = getString(keccak256(abi.encodePacked("contract.abi", _name)));
+        require(bytes(existingAbi).length > 0, "ABI does not exist");
+        // Sanity checks
+        require(bytes(_contractAbi).length > 0, "Empty ABI is invalid");
+        require(keccak256(bytes(existingAbi)) != keccak256(bytes(_contractAbi)), "ABIs are identical");
+        // Set ABI
+        setString(keccak256(abi.encodePacked("contract.abi", _name)), _contractAbi);
+    }
 }

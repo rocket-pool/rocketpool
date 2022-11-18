@@ -55,7 +55,6 @@ export async function voteScrub(minipool, txOptions) {
     // Check state
     if (details1.votes.add('1'.BN).gt(quorum)){
         assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
-        assertBN.equal(details2.userDepositBalance, '0', 'Incorrect updated minipool user deposit balance');
         // Check slashing if penalties are enabled
         if (details1.penaltyEnabled && !details1.vacant) {
             // Calculate amount slashed

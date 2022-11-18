@@ -2,19 +2,28 @@ import { nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { createMinipool, minipoolStates, stakeMinipool } from '../_helpers/minipool';
+import { createMinipool, createMinipoolWithBondAmount, minipoolStates, stakeMinipool } from '../_helpers/minipool';
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import {
     RocketDAONodeTrustedSettingsMinipool,
+    RocketDAOProtocolSettingsDeposit,
     RocketDAOProtocolSettingsMinipool,
-    RocketDepositPool, RocketMinipoolBase, RocketMinipoolQueue, RocketMinipoolQueueOld, RocketTokenRETH,
+    RocketDAOProtocolSettingsNetwork,
+    RocketDepositPool,
+    RocketMinipoolBase,
+    RocketMinipoolQueue,
+    RocketMinipoolQueueOld,
+    RocketNetworkFees, RocketNodeDeposit, RocketNodeStaking,
+    RocketTokenRETH,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { burnReth } from '../token/scenario-reth-burn';
 import { shouldRevert } from '../_utils/testing';
 import { assertBN } from '../_helpers/bn';
 import { reduceBond } from '../minipool/scenario-reduce-bond';
+import { voteScrub } from '../minipool/scenario-scrub';
+import { close } from '../minipool/scenario-close';
 
 
 export default function() {
@@ -25,7 +34,8 @@ export default function() {
         const [
             owner,
             node,
-            trustedNode,
+            trustedNode1,
+            trustedNode2,
             random,
         ] = accounts;
 
@@ -44,17 +54,29 @@ export default function() {
         describe('Upgrade Checklist', async () => {
             // Contracts
             let rocketDepositPool;
+            let rocketTokenRETH;
+            let rocketMinipoolQueue;
+            let rocketNetworkFees;
+            let rocketNodeStaking;
+            let rocketNodeDeposit;
 
             // Setup
             before(async () => {
                 rocketDepositPool = await RocketDepositPool.deployed();
+                rocketTokenRETH = await RocketTokenRETH.deployed();
+                rocketMinipoolQueue = await RocketMinipoolQueue.deployed();
+                rocketNetworkFees = await RocketNetworkFees.deployed();
+                rocketNodeStaking = await RocketNodeStaking.deployed();
+                rocketNodeDeposit = await RocketNodeDeposit.deployed();
 
                 // Register node
                 await registerNode({from: node});
 
                 // Register trusted node
-                await registerNode({from: trustedNode});
-                await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
+                await registerNode({from: trustedNode1});
+                await setNodeTrusted(trustedNode1, 'saas_1', 'node@home.com', owner);
+                await registerNode({from: trustedNode2});
+                await setNodeTrusted(trustedNode2, 'saas_1', 'node@home.com', owner);
 
                 // Set settings
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
@@ -64,7 +86,7 @@ export default function() {
                 await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
 
                 // Stake RPL to cover minipools
-                let rplStake = '1360'.ether;
+                let rplStake = '2000'.ether;
                 await mintRPL(owner, node, rplStake);
                 await nodeStakeRPL(rplStake, {from: node});
 
@@ -103,10 +125,12 @@ export default function() {
             });
 
 
-            it('New Queue Tests (variable queue & queued ETH)',
+            it('Atlas Testing',
                 async () => {
 
-                    let variableMinipool1, variableMinipool2, variableMinipool3;
+                    let variableMinipool1, variableMinipool2, variableMinipool3, variableMinipool4, variableMinipool5;
+
+                    // New Queue Tests (variable queue & queued ETH)
 
                     {
                         // Test: Deposit 16 ETH into the deposit pool
@@ -182,10 +206,96 @@ export default function() {
                         assertBN.equal(depositPoolBalance, '2'.ether, 'Incorrect deposit pool balance');
                     }
 
+                    // Staking
+
+                    {
+                        // Test: Wait for legacy minipools to stake
+                        await increaseTime(web3, scrubPeriod);
+                        await stakeMinipool(queuedHalfMinipool1, {from: node});
+                        await stakeMinipool(queuedHalfMinipool2, {from: node});
+                    }
+
+                    {
+                        // Test: Wait for new 8 ETH minipool to stake
+                        await stakeMinipool(variableMinipool1, {from: node});
+                    }
+
+                    {
+                        // Test: Wait for new 16 ETH minipool to stake
+                        await stakeMinipool(variableMinipool2, {from: node});
+                    }
+
+                    // Dissolves
+
+                    {
+                        // Test: Deposit 8 ETH minipool, wait beyond timeout period, node calls close on dissolved pool
+                        await userDeposit({ from: random, value: '29'.ether });
+                        variableMinipool4 = await createMinipool({ from: node, value: '8'.ether });
+                        const rethBalance1 = await rocketDepositPool.getBalance();
+                        await voteScrub(variableMinipool4, {from: trustedNode1});
+                        await voteScrub(variableMinipool4, {from: trustedNode2});
+                        const depositBalance2 = await rocketDepositPool.getBalance();
+                        await close(variableMinipool4, {from: node});
+                        // Expect: 24 ETH transferred to deposit pool
+                        assertBN.equal(depositBalance2.sub(rethBalance1), '24'.ether, 'Invalid deposit balance');
+                    }
+
+                    {
+                        // Test: Deposit 8 ETH minipool, wait beyond timeout period, node calls close on dissolved pool
+                        variableMinipool5 = await createMinipool({ from: node, value: '16'.ether });
+                        const rethBalance1 = await rocketDepositPool.getBalance();
+                        await voteScrub(variableMinipool5, {from: trustedNode1});
+                        await voteScrub(variableMinipool5, {from: trustedNode2});
+                        const depositBalance2 = await rocketDepositPool.getBalance();
+                        await close(variableMinipool5, {from: node});
+                        // Expect: 16 ETH transferred to deposit pool
+                        assertBN.equal(depositBalance2.sub(rethBalance1), '16'.ether, 'Invalid deposit balance');
+                        // Empty queue
+                        await burnReth('31'.ether, {from: random});
+                    }
+
+                    // Dynamic Deposit Pool Limit Tests
+
+                    {
+                        // Test: Deposit 2x 8 ETH minipools
+                        variableMinipool4 = await createMinipool({ from: node, value: '8'.ether });
+                        variableMinipool5 = await createMinipool({ from: node, value: '8'.ether });
+                        // Expected: 2x 8 ETH minipools are in the queue and unassigned, deposit pool contains 14 ETH from node deposits
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '2', 'Invalid queue length')
+                        assertBN.equal(await rocketDepositPool.getBalance(), '14'.ether, 'Invalid deposit balance');
+                    }
+
+                    {
+                        // Test: Set deposit limit to 1 ETH
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', '1'.ether, {from: owner});
+                        // Expected: Deposit limit set to 1 ETH, dynamic limit should be 49 ETH (1+24*2)
+                        assertBN.equal(await rocketDepositPool.getMaximumDepositAmount(), '49'.ether, 'Invalid maximum deposit amount')
+                    }
+
+                    {
+                        // Test: Deposit 50 ETH into deposit pool
+                        // Expected: Deposit should fail
+                        await shouldRevert(userDeposit({ from: random, value: '50'.ether }), 'Was able to deposit more than maximum', 'The deposit pool size after depositing (and matching with minipools) exceeds the maximum size');
+                    }
+
+                    {
+                        // Test: Deposit 49 ETH into deposit pool
+                        // Expected: Deposit should succeed, 2x 8 ETH minipools should be assigned, deposit pool should have 1 ETH remaining
+                        await userDeposit({ from: random, value: '49'.ether });
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '0', 'Invalid queue length')
+                        assertBN.equal(await rocketDepositPool.getBalance(), '1'.ether, 'Invalid deposit balance');
+                        // Reset deposit limit
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', '360'.ether, {from: owner});
+                    }
+
+                    // rETH Burn
+                    await userDeposit({ from: random, value: '1'.ether });
+                    // Note: 1 ETH still remains in the deposit pool from above tests and we just added 1 more so we're at 2 ETH
+
                     {
                         // Test: Burn 1 rETH with no minipools in queue
+                        // Expected: rETH burn should succeed
                         await burnReth('1'.ether, {from: random});
-                        // Expected: rETH burn should success
                     }
 
                     {
@@ -194,8 +304,7 @@ export default function() {
                         // Expected: 8 ETH minipool should be in the queue as initialised, deposit pool should contain 8 ETH
                         let status = await variableMinipool3.getStatus.call();
                         assertBN.equal(status, minipoolStates.Initialised, 'Incorrect minipool status');
-                        const depositPoolBalance = await rocketDepositPool.getBalance();
-                        assertBN.equal(depositPoolBalance, '8'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketDepositPool.getBalance(), '8'.ether, 'Incorrect deposit pool balance');
                     }
 
                     {
@@ -210,8 +319,7 @@ export default function() {
                         // Expected: 8 ETH minipool assigned 31 ETH, 1 ETH remaining in the deposit pool
                         let status = await variableMinipool3.getStatus.call();
                         assertBN.equal(status, minipoolStates.Prelaunch, 'Incorrect minipool status');
-                        const depositPoolBalance = await rocketDepositPool.getBalance();
-                        assertBN.equal(depositPoolBalance, '1'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketDepositPool.getBalance(), '1'.ether, 'Incorrect deposit pool balance');
                     }
 
                     {
@@ -220,6 +328,121 @@ export default function() {
                         // Expected: rETH burn should success
                     }
 
+                    // Dynamic Commmission Rate (regression test)
+
+                    {
+                        // Test: set a dynamic commission rate
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', '0.05'.ether, {from: owner});
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', '0.10'.ether, {from: owner});
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', '0.20'.ether, {from: owner});
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.demand.range', '5'.ether, {from: owner});
+                    }
+
+                    {
+                        // Test: Set deposit limit to 5 ETH
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', '5'.ether, {from: owner});
+                        // Expected: Deposit limit should be 5 ETH
+                        assertBN.equal(await rocketDepositPool.getMaximumDepositAmount(), '5'.ether, 'Invalid maximum deposit amount')
+                    }
+
+                    {
+                        // Test: Deposit 5 ETH into deposit pool
+                        await userDeposit({ from: random, value: '5'.ether });
+                        // Expected: Deposit pool should contain 5 ETH and commission rate (RocketNetworkFees.getNodeFee()) should be at max (20%)
+                        assertBN.equal(await rocketDepositPool.getBalance(), '5'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketNetworkFees.getNodeFee(), '0.20'.ether, 'Incorrect network node fee');
+                    }
+
+                    {
+                        // Test: Deposit 8 ETH minipool
+                        variableMinipool3 = await createMinipool({ from: node, value: '8'.ether });
+                        // Expected: 8 ETH minipool should be in the queue, deposit pool balance should be 12 ETH, commission rate should be min (5%)
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '1', 'Invalid queue length')
+                        assertBN.equal(await rocketDepositPool.getBalance(), '12'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketNetworkFees.getNodeFee(), '0.05'.ether, 'Incorrect network node fee');
+                    }
+
+                    {
+                        // Test: Deposit 16 ETH into deposit pool
+                        await userDeposit({ from: random, value: '16'.ether });
+                        // Expected: Deposit pool should contain 28 ETH, commission rate should be 9%
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '1', 'Invalid queue length')
+                        assertBN.equal(await rocketDepositPool.getBalance(), '28'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketNetworkFees.getNodeFee(), '0.0892'.ether, 'Incorrect network node fee');
+                    }
+
+                    {
+                        // Test: Deposit 6 ETH into deposit pool
+                        await userDeposit({ from: random, value: '6'.ether });
+                        // Expected: 8 ETH minipool should be in prelaunch, deposit pool contains 3 ETH, commission rate should be 12%
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '0', 'Invalid queue length')
+                        assertBN.equal(await rocketDepositPool.getBalance(), '3'.ether, 'Incorrect deposit pool balance');
+                        assertBN.equal(await rocketNetworkFees.getNodeFee(), '0.1216'.ether, 'Incorrect network node fee');
+                    }
+
+                    {
+                        // Reset commission to 14%
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', '0.14'.ether, {from: owner});
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', '0.14'.ether, {from: owner});
+                        await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', '0.14'.ether, {from: owner});
+                        // Burn DP
+                        await burnReth('3'.ether, {from: random});
+                    }
+
+                    // Migrations
+
+                    {
+                        // Test: Using a 16 ETH minipool (premigration), execute beginReduceBondAmount, wait timeout period, execute reduceBondAmount
+                        // Expected: Should fail with not enough RPL stake
+                        const minipool = await RocketMinipoolBase.at(queuedHalfMinipool1.address);
+                        await minipool.delegateUpgrade({from: node});
+                        await queuedHalfMinipool1.beginReduceBondAmount({from: node});
+                        await increaseTime(web3, bondReductionWindowStart + 1);
+                        await shouldRevert(queuedHalfMinipool1.reduceBondAmount('8'.ether, {from: node}), 'Was able to reduce bond', 'ETH matched after deposit exceeds limit based on node RPL stake');
+                    }
+
+                    {
+                        // Test: Stake RPL then using a 16 ETH minipool (premigration), execute beginReduceBondAmount, wait timeout period, execute reduceBondAmount
+                        let rplStake = '80'.ether;
+                        await mintRPL(owner, node, rplStake);
+                        await nodeStakeRPL(rplStake, {from: node});
+                        await queuedHalfMinipool1.reduceBondAmount('8'.ether, {from: node});
+                        // Expected: Node fee should be new fee, deposit type should be variable, node should have a credit for 8 ETH
+                        assertBN.equal(await queuedHalfMinipool1.getNodeFee(), '0.14'.ether, 'Incorrect node fee');
+                        assertBN.equal(await queuedHalfMinipool1.getDepositType(), '4'.BN, 'Incorrect deposit type');
+                        assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node), '8'.ether, 'Incorrect deposit credit balance');
+                    }
+
+                    {
+                        // Test: Same node deposits new 8 ETH minipool, supplying 0 ETH
+                        // Expected: Should fail with not enough RPL stake
+                        await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to create new minipool', 'ETH matched after deposit exceeds limit based on node RPL stake');
+                    }
+
+                    {
+                        // Test: Stake RPL then same node deposits new 8 ETH minipool, supplying 0 ETH
+                        let rplStake = '240'.ether;
+                        await mintRPL(owner, node, rplStake);
+                        await nodeStakeRPL(rplStake, {from: node});
+                        // Expected: Should fail with empty DP
+                        await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to create new minipool', 'Insufficient contract ETH balance');
+                    }
+
+                    {
+                        // Test: Deposit ETH then stake RPL then same node deposits new 8 ETH minipool, supplying 0 ETH
+                        await userDeposit({ from: random, value: '1'.ether });
+                        await createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether });
+                        // Expected: Minipool deposit succeeded, credit should be 0, predeposit 1 ETH taken from deposit pool
+                        assertBN.equal(await rocketMinipoolQueue.getTotalLength(), '1', 'Invalid queue length')
+                        assertBN.equal(await rocketNodeDeposit.getNodeDepositCredit(node), '0'.ether, 'Incorrect deposit credit balance');
+                        assertBN.equal(await rocketDepositPool.getBalance(), '0'.ether, 'Incorrect deposit pool balance');
+                    }
+
+                    {
+                        // Test: Same node deposits new 8 ETH minipool, supplying 0 ETH
+                        // Expected: Fails, as no more credit
+                        await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to make new minipool with no credit', 'Invalid value');
+                    }
                 });
         });
 
@@ -230,8 +453,8 @@ export default function() {
                 await registerNode({ from: node });
 
                 // Register trusted node
-                await registerNode({ from: trustedNode });
-                await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
+                await registerNode({ from: trustedNode1 });
+                await setNodeTrusted(trustedNode1, 'saas_1', 'node@home.com', owner);
 
                 // Set settings
                 await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, { from: owner });
@@ -316,7 +539,7 @@ export default function() {
             });
 
 
-            it.only('Handles legacy and variable minipools in the queue simultaneously', async () => {
+            it('Handles legacy and variable minipools in the queue simultaneously', async () => {
                 // Get contracts
                 const rocketMinipoolQueue = await RocketMinipoolQueue.deployed();
                 const rocketMinipoolQueueOld = await RocketMinipoolQueueOld.deployed();

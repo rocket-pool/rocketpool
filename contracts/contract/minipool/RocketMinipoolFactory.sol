@@ -41,7 +41,7 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
     function deployContract(address _nodeAddress, uint256 _salt) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
         // Construct deployment bytecode
         bytes memory creationCode = getMinipoolBytecode();
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage, _nodeAddress));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage));
         // Construct final salt
         uint256 salt = uint256(keccak256(abi.encodePacked(_nodeAddress, _salt)));
         // CREATE2 deployment

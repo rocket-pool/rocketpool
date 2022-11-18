@@ -26,5 +26,4 @@ export async function dissolve(minipool, txOptions) {
     // Check minipool details
     assertBN.notEqual(details1.status, minipoolStates.Dissolved, 'Incorrect initial minipool status');
     assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
-    assertBN.equal(details2.userDepositBalance, 0, 'Incorrect updated minipool user deposit balance');
 }

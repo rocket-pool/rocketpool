@@ -38,6 +38,16 @@ const contracts = {
     rocketUpgradeOneDotTwo: artifacts.require('RocketUpgradeOneDotTwo.sol'),
 };
 
+// Construct ABI for rocketMinipool
+const rocketMinipoolAbi = []
+    .concat(artifacts.require('RocketMinipoolDelegate.sol').abi)
+    .concat(artifacts.require('RocketMinipoolBase.sol').abi)
+    .concat(artifacts.require('RocketMinipoolProxy.sol').abi)
+    .filter(i => i.type !== 'fallback' && i.type !== 'receive');
+
+rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'fallback'});
+rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'receive'});
+
 /*** Deployment **********************/
 
 // Upgrade Rocket Pool
@@ -117,6 +127,7 @@ export async function upgrade() {
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipool.abi),
                                 compressABI(contracts.rocketNodeManager.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
+                                rocketMinipoolAbi
                             ],
                         ];
                         await instance.set(...args);

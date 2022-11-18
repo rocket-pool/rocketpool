@@ -546,6 +546,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         require(rocketMinipoolManager.getMinipoolExists(address(this)), "Minipool already closed");
         rocketMinipoolManager.destroyMinipool();
+        // Clear state
+        userDepositBalance = 0;
+        userDepositBalanceLegacy = 0;
+        userDepositAssignedTime = 0;
     }
 
     /// @notice Can be called by trusted nodes to scrub this minipool if its withdrawal credentials are not set correctly
@@ -637,20 +641,23 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(_amount < previousBond, "Bond must be lower than current amount");
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
         // Get contracts
-        RocketNodeDepositInterface rocketNodeDepositInterface = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         // Check the new bond amount is valid
-        require(rocketNodeDepositInterface.isValidDepositAmount(_amount), "Invalid bond amount");
+        require(rocketNodeDeposit.isValidDepositAmount(_amount), "Invalid bond amount");
         // Distribute any skimmed rewards
         distributeSkimmedRewards();
-        // Update user/node balances
+        // Calculate bond difference
         uint256 delta = previousBond.sub(_amount);
+        // Increase ETH matched or revert if exceeds limit based on current RPL stake
+        rocketNodeDeposit.increaseEthMatched(nodeAddress, delta);
+        // Update user/node balances
         userDepositBalance = getUserDepositBalance().add(delta);
         nodeDepositBalance = _amount;
         // Reset node fee to current network rate
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         nodeFee = rocketNetworkFees.getNodeFee();
         // Increase node operator's deposit credit
-        rocketNodeDepositInterface.increaseDepositCreditBalance(nodeAddress, delta);
+        rocketNodeDeposit.increaseDepositCreditBalance(nodeAddress, delta);
         // Break state to prevent rollback exploit
         if (depositType != MinipoolDeposit.Variable) {
             userDepositBalanceLegacy = 2**256-1;
@@ -724,9 +731,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             emit EtherWithdrawn(address(rocketDepositPool), userCapital, block.timestamp);
         }
         // Clear storage
-        userDepositBalance = 0;
-        userDepositBalanceLegacy = 0;
-        userDepositAssignedTime = 0;
         nodeDepositBalance = 0;
         nodeRefundBalance = 0;
     }

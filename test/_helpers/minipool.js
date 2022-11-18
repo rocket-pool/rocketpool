@@ -71,6 +71,10 @@ let minipoolSalt = 1
 
 // Create a minipool
 export async function createMinipool(txOptions, salt = null) {
+    return createMinipoolWithBondAmount(txOptions.value, txOptions, salt);
+}
+
+export async function createMinipoolWithBondAmount(bond, txOptions, salt = null) {
     const preUpdate = !(await upgradeExecuted());
 
     // Load contracts
@@ -101,7 +105,7 @@ export async function createMinipool(txOptions, salt = null) {
         const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
         constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
     } else {
-        constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+        constructorArgs = web3.eth.abi.encodeParameters(['address'], [rocketStorage.address]);
     }
     const deployCode = contractBytecode + constructorArgs.substr(2);
 
@@ -155,7 +159,7 @@ export async function createMinipool(txOptions, salt = null) {
 
         let depositDataRoot = getDepositDataRoot(depositData);
 
-        await rocketNodeDeposit.deposit(txOptions.value, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        await rocketNodeDeposit.deposit(bond, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
@@ -180,7 +184,7 @@ export async function createVancantMinipool(bondAmount, txOptions, salt = null) 
     const contractBytecode = RocketMinipoolProxy.bytecode;
 
     // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+    const constructorArgs = web3.eth.abi.encodeParameters(['address'], [rocketStorage.address]);
     const deployCode = contractBytecode + constructorArgs.substr(2);
 
     if (salt === null){

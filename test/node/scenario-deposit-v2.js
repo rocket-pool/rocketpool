@@ -59,7 +59,7 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
     const contractBytecode = RocketMinipoolProxy.bytecode;
 
     // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
+    const constructorArgs = web3.eth.abi.encodeParameters(['address'], [rocketStorage.address]);
     const deployCode = contractBytecode + constructorArgs.substr(2);
     const salt = minipoolSalt++;
 
