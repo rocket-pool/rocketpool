@@ -677,7 +677,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             if (depositType == MinipoolDeposit.Full) {
                 // Handle legacy Full type minipool
-                rocketMinipoolQueue.removeMinipool(MinipoolDeposit.full);
+                rocketMinipoolQueue.removeMinipool(MinipoolDeposit.Full);
             } else {
                 // Transfer user balance to deposit pool
                 uint256 userCapital = getUserDepositBalance();
