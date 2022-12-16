@@ -370,13 +370,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @param _salt A salt used in determining the minipool's address
     /// @param _validatorPubkey A validator pubkey that the node operator intends to migrate the withdrawal credentials of
     /// @param _bondAmount The bond amount selected by the node operator
-    function createVacantMinipool(address _nodeAddress, uint256 _salt, bytes calldata _validatorPubkey, uint256 _bondAmount) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
+    /// @param _currentBalance The current balance of the validator on the beaconchain (will be checked by oDAO and scrubbed if not correct)
+    function createVacantMinipool(address _nodeAddress, uint256 _salt, bytes calldata _validatorPubkey, uint256 _bondAmount, uint256 _currentBalance) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyLatestContract("rocketNodeDeposit", msg.sender) returns (RocketMinipoolInterface) {
         // Get contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_nodeAddress, _salt);
         // Prepare the minipool
-        minipool.prepareVacancy(_bondAmount);
+        minipool.prepareVacancy(_bondAmount, _currentBalance);
         // Set the minipool's validator pubkey
         _setMinipoolPubkey(address(minipool), _validatorPubkey);
         // Add minipool to the vacant set

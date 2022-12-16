@@ -15,6 +15,7 @@ interface RocketDAOProtocolSettingsMinipoolInterface {
     function getLaunchTimeout() external view returns (uint256);
     function getMaximumCount() external view returns (uint256);
     function isWithinUserDistributeWindow(uint256 _time) external view returns (bool);
+    function hasUserDistributeWindowPassed(uint256 _time) external view returns (bool);
     function getUserDistributeWindowStart() external view returns (uint256);
     function getUserDistributeWindowLength() external view returns (uint256);
 }

@@ -39,30 +39,17 @@ contract RocketMinipoolFactory is RocketBase, RocketMinipoolFactoryInterface {
     /// @param _nodeAddress Owning node operator's address
     /// @param _salt A salt used in determining minipool address
     function deployContract(address _nodeAddress, uint256 _salt) override external onlyLatestContract("rocketMinipoolFactory", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) returns (address) {
-        // Construct deployment bytecode
-        bytes memory creationCode = getMinipoolBytecode();
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(rocketStorage));
+        // Ensure rocketMinipoolBase is setAddress
+        address rocketMinipoolBase = rocketStorage.getAddress(keccak256(abi.encodePacked("contract.address", "rocketMinipoolBase")));
+        require(rocketMinipoolBase != address(0));
         // Construct final salt
-        uint256 salt = uint256(keccak256(abi.encodePacked(_nodeAddress, _salt)));
-        // CREATE2 deployment
-        address contractAddress;
-        uint256 codeSize;
-        assembly {
-            contractAddress := create2(
-            0,
-            add(bytecode, 0x20),
-            mload(bytecode),
-            salt
-            )
-
-            codeSize := extcodesize(contractAddress)
-        }
-        // Ensure deployment was successful
-        require(codeSize > 0, "Contract creation failed");
+        bytes32 salt = keccak256(abi.encodePacked(_nodeAddress, _salt));
+        // Deploy the minipool
+        RocketMinipoolProxy minipoolProxy = new RocketMinipoolProxy{salt: salt}(address(rocketStorage));
         // Initialise the minipool storage
-        RocketMinipoolInterface(contractAddress).initialise(_nodeAddress);
+        RocketMinipoolInterface(address(minipoolProxy)).initialise(_nodeAddress);
         // Return address
-        return contractAddress;
+        return address(minipoolProxy);
     }
 
 }

@@ -43,6 +43,8 @@ export default function() {
         let minipool;
         let maxPenaltyRate = '0.5'.ether;
         let penaltyTestContract;
+        let userDistributeStartTime = (60 * 60 * 72);
+        let userDistributeLength = (60 * 60);
 
         before(async () => {
             await upgradeOneDotTwo(owner);
@@ -58,6 +60,8 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.length', userDistributeLength, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
@@ -124,7 +128,7 @@ export default function() {
                 // Begin user distribution process
                 await beginUserDistribute(minipool, {from});
                 // Wait 14 days
-                await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+                await increaseTime(web3, userDistributeStartTime + 1)
                 // Process withdrawal
                 result = await withdrawValidatorBalance(minipool, '0'.ether, from, finalise);
             } else {
@@ -169,7 +173,7 @@ export default function() {
 
         it(printTitle('random user', 'can process withdrawal when balance is greater than 16 ETH and less than 32 ETH'), async () => {
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeStartTime + 1)
             // Process withdraw
             await withdrawAndCheck(minipool, '28', random, false, '16', '12', true);
         });
@@ -184,6 +188,31 @@ export default function() {
         it(printTitle('random user', 'can process withdrawal when balance is greater than 16 ETH, less than 32 ETH and not marked as withdrawable'), async () => {
             // Process withdraw
             await withdrawAndCheck(minipool, '28', random, false, '16', '12', true);
+        });
+
+
+        it(printTitle('random user', 'can not begin user distribution without waiting for window to pass'), async () => {
+            // Send ETH to minipool
+            await web3.eth.sendTransaction({
+                from: random,
+                to: minipool.address,
+                value: '32'.ether
+            });
+            await beginUserDistribute(minipool, {from: random});
+            await shouldRevert(beginUserDistribute(minipool, {from: random}), 'Was able to begin user distribution again', 'User distribution already pending');
+        });
+
+
+        it(printTitle('random user', 'can begin user distribution after window has passed'), async () => {
+            // Send ETH to minipool
+            await web3.eth.sendTransaction({
+                from: random,
+                to: minipool.address,
+                value: '32'.ether
+            });
+            await beginUserDistribute(minipool, {from: random});
+            await increaseTime(web3, userDistributeLength + userDistributeStartTime + 1)
+            await beginUserDistribute(minipool, {from: random});
         });
 
 

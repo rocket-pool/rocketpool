@@ -99,6 +99,13 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         return (_time >= start && _time < (start.add(length)));
     }
 
+    /// @notice Returns true if the given time has passed the distribute window
+    function hasUserDistributeWindowPassed(uint256 _time) override external view returns (bool) {
+        uint256 start = getUserDistributeWindowStart();
+        uint256 length = getUserDistributeWindowLength();
+        return _time >= start.add(length);
+    }
+
     /// @notice Returns the start of the user distribute window
     function getUserDistributeWindowStart() override public view returns (uint256) {
         return getSettingUint("minipool.user.distribute.window.start");

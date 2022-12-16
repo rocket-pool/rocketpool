@@ -14,6 +14,19 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     event DelegateUpgraded(address oldDelegate, address newDelegate, uint256 time);
     event DelegateRolledBack(address oldDelegate, address newDelegate, uint256 time);
 
+    // Store a reference to the address of RocketMinipoolBase itself to prevent direct calls to this contract
+    address immutable self;
+
+    constructor () {
+        self = address(this);
+    }
+
+    /// @dev Prevent direct calls to this contract
+    modifier notSelf() {
+        require(address(this) != self);
+        _;
+    }
+
     /// @dev Only allow access from the owning node address
     modifier onlyMinipoolOwner() {
         // Only the node operator can upgrade
@@ -23,9 +36,10 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Sets up starting delegate contract and then delegates initialisation to it
-    function initialise(address _nodeAddress) external {
+    function initialise(address _nodeAddress) external notSelf {
         // Check input
         require(_nodeAddress != address(0), "Invalid node address");
+        require(storageState == StorageState.Undefined, "Already initialised");
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
         // Set the current delegate
@@ -39,13 +53,13 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Receive an ETH deposit
-    receive() external payable {
+    receive() external payable notSelf {
         // Emit ether received event
         emit EtherReceived(msg.sender, msg.value, block.timestamp);
     }
 
     /// @notice Upgrade this minipool to the latest network delegate contract
-    function delegateUpgrade() external onlyMinipoolOwner {
+    function delegateUpgrade() external onlyMinipoolOwner notSelf {
         // Set previous address
         rocketMinipoolDelegatePrev = rocketMinipoolDelegate;
         // Set new delegate
@@ -57,7 +71,7 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Rollback to previous delegate contract
-    function delegateRollback() external onlyMinipoolOwner {
+    function delegateRollback() external onlyMinipoolOwner notSelf {
         // Make sure they have upgraded before
         require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
         // Store original
@@ -71,7 +85,7 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
 
     /// @notice Sets the flag to automatically use the latest delegate contract or not
     /// @param _setting If true, will always use the latest delegate contract
-    function setUseLatestDelegate(bool _setting) external onlyMinipoolOwner {
+    function setUseLatestDelegate(bool _setting) external onlyMinipoolOwner notSelf {
         useLatestDelegate = _setting;
     }
 
@@ -96,7 +110,7 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Delegates all calls to minipool delegate contract (or latest if flag is set)
-    fallback(bytes calldata _input) external payable returns (bytes memory) {
+    fallback(bytes calldata _input) external payable notSelf returns (bytes memory) {
         // If useLatestDelegate is set, use the latest delegate contract
         address delegateContract = useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
         // Check for contract existence

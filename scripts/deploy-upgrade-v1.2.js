@@ -35,6 +35,7 @@ const contracts = {
     rocketMinipoolBase: artifacts.require('RocketMinipoolBase.sol'),
     rocketNodeManager: artifacts.require('RocketNodeManager.sol'),
     rocketDAONodeTrustedSettingsMinipool: artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
+    rocketDAOProtocolSettingsNode: artifacts.require('RocketDAOProtocolSettingsNode.sol'),
     rocketMinipoolBondReducer: artifacts.require('RocketMinipoolBondReducer.sol'),
     rocketUpgradeOneDotTwo: artifacts.require('RocketUpgradeOneDotTwo.sol'),
 };
@@ -109,6 +110,7 @@ export async function upgrade() {
                                 (await contracts.rocketNetworkPrices.deployed()).address,
                                 (await contracts.rocketDAONodeTrustedSettingsMinipool.deployed()).address,
                                 (await contracts.rocketNodeManager.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsNode.deployed()).address,
                                 (await contracts.rocketMinipoolBase.deployed()).address,
                                 (await contracts.rocketMinipoolBondReducer.deployed()).address,
                             ],
@@ -128,6 +130,7 @@ export async function upgrade() {
                                 compressABI(contracts.rocketNetworkPrices.abi),
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipool.abi),
                                 compressABI(contracts.rocketNodeManager.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsNode.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
                                 compressABI(contracts.rocketMinipoolBondReducer.abi),
                                 rocketMinipoolAbi

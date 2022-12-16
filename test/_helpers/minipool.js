@@ -182,7 +182,7 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
 
 
 // Create a vacant minipool
-export async function createVancantMinipool(bondAmount, txOptions, salt = null) {
+export async function createVacantMinipool(bondAmount, txOptions, salt = null, currentBalance = '32'.ether) {
     // Load contracts
     const [
         rocketMinipoolFactory,
@@ -231,7 +231,7 @@ export async function createVancantMinipool(bondAmount, txOptions, salt = null) 
     const minipoolAddress = raw.substr(raw.length - 40);
 
     const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
-    await rocketNodeDeposit.createVacantMinipool(bondAmount, '0'.ether, getValidatorPubkey(), salt, '0x' + minipoolAddress, txOptions);
+    await rocketNodeDeposit.createVacantMinipool(bondAmount, '0'.ether, getValidatorPubkey(), salt, '0x' + minipoolAddress, currentBalance, txOptions);
     const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
 
     // Expect node's ETH matched to be increased by (32 - bondAmount)

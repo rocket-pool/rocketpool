@@ -73,8 +73,9 @@ abstract contract RocketMinipoolStorageLayout {
 
     // Vacant minipool
     bool internal vacant;
+    uint256 internal preMigrationBalance;
 
     // User distribution
     bool internal userDistributed;
-    uint256 userDistributeTime;
+    uint256 internal userDistributeTime;
 }

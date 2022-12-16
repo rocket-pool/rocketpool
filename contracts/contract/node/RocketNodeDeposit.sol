@@ -69,6 +69,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             require(msg.value == shortFall, "Invalid value");
             setUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), 0);
         } else {
+            require(msg.value == 0, "Invalid value");
             subUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), _bondAmount);
         }
         // Process the deposit
@@ -90,7 +91,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     /// @dev Internal logic to process a deposit
     function _deposit(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot, uint256 _salt, address _expectedMinipoolAddress) private {
-        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
         // Check pre-conditions
         checkDepositsEnabled();
         checkDistributorInitialised();
@@ -98,36 +98,44 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
-        // Increase ETH matched (used to calculate RPL collateral requirements)
+        // Get launch constants
         uint256 launchAmount;
+        uint256 preLaunchValue;
         {
             RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
             launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
+            preLaunchValue = rocketDAOProtocolSettingsMinipool.getPreLaunchValue();
         }
+        // Increase ETH matched (used to calculate RPL collateral requirements)
         _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
-        // Get the pre-launch value
-        uint256 preLaunchValue = getPreLaunchValue();
-        {
-            // Retrieve ETH from deposit pool if required
-            uint256 shortFall = 0;
-            if (msg.value < preLaunchValue) {
-                shortFall = preLaunchValue.sub(msg.value);
-                rocketDepositPool.nodeCreditWithdrawal(shortFall);
-            }
-            // Perform the pre-deposit
-            uint256 remaining = msg.value.add(shortFall).sub(preLaunchValue);
-            if (remaining > 0) {
-                // Deposit the left over value into the deposit pool
-                rocketDepositPool.nodeDeposit{value: remaining}();
-            }
-        }
+        // Process node deposit
+        _processNodeDeposit(preLaunchValue, _bondAmount);
+        // Perform the pre deposit
         minipool.preDeposit{value: preLaunchValue}(_bondAmount, _validatorPubkey, _validatorSignature, _depositDataRoot);
         // Enqueue the minipool
         enqueueMinipool(address(minipool));
         // Assign deposits if enabled
         assignDeposits();
+    }
+
+    /// @dev Processes a node deposit with the deposit pool
+    /// @param _preLaunchValue The prelaunch value (result of call to `getPreLaunchValue()`
+    /// @param _bondAmount The bond amount for this deposit
+    function _processNodeDeposit(uint256 _preLaunchValue, uint256 _bondAmount) private {
+        // Get contracts
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        // Retrieve ETH from deposit pool if required
+        uint256 shortFall = 0;
+        if (msg.value < _preLaunchValue) {
+            shortFall = _preLaunchValue.sub(msg.value);
+            rocketDepositPool.nodeCreditWithdrawal(shortFall);
+        }
+        // Perform the pre-deposit
+        uint256 remaining = msg.value.add(shortFall).sub(_preLaunchValue);
+        // Deposit the left over value into the deposit pool
+        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount.sub(_preLaunchValue));
     }
 
     /// @notice Creates a "vacant" minipool which a node operator can use to migrate a validator with a BLS withdrawal credential
@@ -136,9 +144,10 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _validatorPubkey Pubkey of the validator the node operator wishes to migrate
     /// @param _salt Salt used to deterministically construct the minipool's address
     /// @param _expectedMinipoolAddress The expected deterministic minipool address. Will revert if it doesn't match
-    function createVacantMinipool(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, uint256 _salt, address _expectedMinipoolAddress) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
+    /// @param _currentBalance The current balance of the validator on the beaconchain (will be checked by oDAO and scrubbed if not correct)
+    function createVacantMinipool(uint256 _bondAmount, uint256 _minimumNodeFee, bytes calldata _validatorPubkey, uint256 _salt, address _expectedMinipoolAddress, uint256 _currentBalance) override external onlyLatestContract("rocketNodeDeposit", address(this)) onlyRegisteredNode(msg.sender) {
         // Check pre-conditions
-        checkDepositsEnabled();
+        checkVacantMinipoolsEnabled();
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
@@ -147,7 +156,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
         _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
-        _createVacantMinipool(_salt, _validatorPubkey, _bondAmount, _expectedMinipoolAddress);
+        _createVacantMinipool(_salt, _validatorPubkey, _bondAmount, _expectedMinipoolAddress, _currentBalance);
     }
 
     /// @notice Called by minipools during bond reduction to increase the amount of ETH the node operator has
@@ -185,9 +194,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     }
 
     /// @dev Returns the ETH amount used in a pre launch
-    function getPreLaunchValue() private view returns (uint256) {
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        return rocketDAOProtocolSettingsMinipool.getPreLaunchValue();
+    function getPreLaunchValue(RocketDAOProtocolSettingsMinipoolInterface _rocketDAOProtocolSettingsMinipool) private view returns (uint256) {
     }
 
     /// @dev Reverts if node operator has not initialised their fee distributor
@@ -218,13 +225,14 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     /// @param _validatorPubkey Pubkey of the validator owning this minipool
     /// @param _bondAmount ETH value the node operator is putting up as capital for this minipool
     /// @param _expectedMinipoolAddress The expected minipool address. Reverts if not correct
-    function _createVacantMinipool(uint256 _salt, bytes calldata _validatorPubkey, uint256 _bondAmount, address _expectedMinipoolAddress) private returns (RocketMinipoolInterface) {
+    /// @param _currentBalance The current balance of the validator on the beaconchain (will be checked by oDAO and scrubbed if not correct)
+    function _createVacantMinipool(uint256 _salt, bytes calldata _validatorPubkey, uint256 _bondAmount, address _expectedMinipoolAddress, uint256 _currentBalance) private returns (RocketMinipoolInterface) {
         // Load contracts
         RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         // Check minipool doesn't exist or previously exist
         require(!rocketMinipoolManager.getMinipoolExists(_expectedMinipoolAddress) && !rocketMinipoolManager.getMinipoolDestroyed(_expectedMinipoolAddress), "Minipool already exists or was previously destroyed");
         // Create minipool
-        RocketMinipoolInterface minipool = rocketMinipoolManager.createVacantMinipool(msg.sender, _salt, _validatorPubkey, _bondAmount);
+        RocketMinipoolInterface minipool = rocketMinipoolManager.createVacantMinipool(msg.sender, _salt, _validatorPubkey, _bondAmount, _currentBalance);
         // Ensure minipool address matches expected
         require(address(minipool) == _expectedMinipoolAddress, "Unexpected minipool address");
         // Return
@@ -247,6 +255,14 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getDepositEnabled(), "Node deposits are currently disabled");
+    }
+
+    /// @dev Reverts if vacant minipools are not enabled
+    function checkVacantMinipoolsEnabled() private view {
+        // Get contracts
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        // Check node settings
+        require(rocketDAOProtocolSettingsNode.getVacantMinipoolsEnabled(), "Vacant minipools are currently disabled");
     }
 
     /// @dev Executes an assignDeposits call on the deposit pool

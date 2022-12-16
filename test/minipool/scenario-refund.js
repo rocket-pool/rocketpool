@@ -40,8 +40,8 @@ export async function refund(minipool, txOptions) {
     // Check balances
     let expectedNodeBalance = balances1.nodeEth.add(balances1.nodeRefund);
     if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
-    assertBN.isAbove(balances1.nodeRefund, 0, 'Incorrect initial node refund balance');
-    assertBN.eq(balances2.nodeRefund, 0, 'Incorrect updated node refund balance');
+    assertBN.isAbove(balances1.nodeRefund, '0'.ether, 'Incorrect initial node refund balance');
+    assertBN.equal(balances2.nodeRefund, '0'.ether, 'Incorrect updated node refund balance');
     assertBN.equal(balances2.minipoolEth, balances1.minipoolEth.sub(balances1.nodeRefund), 'Incorrect updated minipool ETH balance');
     assertBN.equal(balances2.nodeEth, expectedNodeBalance, 'Incorrect updated node ETH balance');
 }

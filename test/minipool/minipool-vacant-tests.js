@@ -8,7 +8,7 @@ import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
     getMinipoolMinimumRPLStake,
-    createVancantMinipool, promoteMinipool, minipoolStates, closeMinipool,
+    createVacantMinipool, promoteMinipool, minipoolStates, closeMinipool,
 } from '../_helpers/minipool';
 import {
     registerNode,
@@ -25,6 +25,7 @@ import {
 import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { voteScrub } from './scenario-scrub';
 import { assertBN } from '../_helpers/bn';
+import { refund } from './scenario-refund';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -80,8 +81,8 @@ export default function() {
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
-            prelaunchMinipool16 = await createVancantMinipool('16'.ether, {from: node});
-            prelaunchMinipool8 = await createVancantMinipool('8'.ether, {from: node});
+            prelaunchMinipool16 = await createVacantMinipool('16'.ether, {from: node});
+            prelaunchMinipool8 = await createVacantMinipool('8'.ether, {from: node});
 
             let prelaunch16Status = await prelaunchMinipool16.getStatus.call();
             let prelaunch8Status = await prelaunchMinipool8.getStatus.call();
@@ -129,6 +130,27 @@ export default function() {
         it(printTitle('node operator', 'cannot promote a vacant minipool before scrub period has elapsed'), async () => {
             // Try to promote (and fail)
             await shouldRevert(promoteMinipool(prelaunchMinipool16, {from: node}), 'Was able to promote minipool during scrub period', 'Not enough time has passed to promote');
+        });
+
+
+        it(printTitle('node operator', 'can refund their pre-migration rewards'), async () => {
+            // Create a vacant minipool with current balance of 33
+            let minipool = await createVacantMinipool('8'.ether, {from: node}, null, '33'.ether);
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+            // Promote the minipool
+            await promoteMinipool(minipool, {from: node});
+            // Verify refund balance
+            const refundBalance = await minipool.getNodeRefundBalance();
+            assertBN.equal(refundBalance, '1'.ether, 'Invalid refund balance');
+            // Simulate skim
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: minipool.address,
+                value: '1'.ether
+            });
+            // Try to refund
+            await refund(minipool, { from: node });
         });
 
 

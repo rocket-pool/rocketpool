@@ -729,10 +729,10 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
-            await reduceBond(stakingMinipool, '8'.ether, {from: node});
+            await reduceBond(stakingMinipool, {from: node});
         });
 
 
@@ -740,9 +740,9 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce and wait 7 days
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
         });
 
 
@@ -752,7 +752,7 @@ export default function() {
             // Vote to cancel
             await rocketMinipoolBondReducer.voteCancelReduction(stakingMinipool.address, {from: trustedNode});
             // Signal wanting to reduce and wait 7 days
-            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node}), 'Was able to begin to reduce bond', 'This minipool is not allowed to reduce bond');
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node}), 'Was able to begin to reduce bond', 'This minipool is not allowed to reduce bond');
         });
 
 
@@ -760,12 +760,12 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce and wait 7 days
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Vote to cancel
             await rocketMinipoolBondReducer.voteCancelReduction(stakingMinipool.address, {from: trustedNode});
             // Wait and try to reduce
-            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond after it was cancelled', 'This minipool is not allowed to reduce bond');
+            await shouldRevert(reduceBond(stakingMinipool, {from: node}), 'Was able to reduce bond after it was cancelled', 'This minipool is not allowed to reduce bond');
         });
 
 
@@ -773,27 +773,24 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce and wait 7 days
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
             await increaseTime(web3, bondReductionWindowStart + bondReductionWindowLength + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, {from: node}), 'Was able to reduce bond without waiting', 'Wait period not satisfied');
         });
 
 
         it(printTitle('node operator', 'cannot reduce bond without beginning the process first'), async () => {
             // Reduction from 16 ETH to 8 ETH should be valid
-            await shouldRevert(reduceBond(stakingMinipool, '8'.ether, {from: node}), 'Was able to reduce bond without beginning the process', 'Wait period not satisfied');
+            await shouldRevert(reduceBond(stakingMinipool, {from: node}), 'Was able to reduce bond without beginning the process', 'Wait period not satisfied');
         });
 
 
         it(printTitle('node operator', 'cannot reduce bond amount to an invalid deposit amount'), async () => {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
-            // Signal wanting to reduce and wait 7 days
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
-            await increaseTime(web3, bondReductionWindowStart + 1);
-            // Reduction from 16 ETH to 9 ETH should fail
-            await shouldRevert(reduceBond(stakingMinipool, '9'.ether, {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
+            // Reduce to 9 ether bond should fail
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '9'.ether, {from: node}), 'Was able to reduce to invalid bond', 'Invalid bond amount');
         });
 
 
@@ -801,10 +798,7 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce and wait 7 days
-            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, {from: node});
-            await increaseTime(web3, bondReductionWindowStart + 1);
-            // Reduction from 16 ETH to 9 ETH should fail
-            await shouldRevert(reduceBond(stakingMinipool, '18'.ether, {from: node}), 'Was able to increase bond', 'Bond must be lower than current amount');
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '18'.ether, {from: node}), 'Was able to increase bond', 'Invalid bond amount');
         });
 
 
@@ -812,8 +806,8 @@ export default function() {
             // Get contracts
             const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
             // Signal wanting to reduce and wait 7 days
-            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(prelaunchMinipool.address, {from: node}), 'Was able to begin reducing bond on a prelaunch minipool', 'Minipool must be staking');
-            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(initialisedMinipool.address, {from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(prelaunchMinipool.address, '8'.ether, {from: node}), 'Was able to begin reducing bond on a prelaunch minipool', 'Minipool must be staking');
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(initialisedMinipool.address, '8'.ether, {from: node}), 'Was able to reduce bond on an initialised minipool', 'Minipool must be staking');
             await increaseTime(web3, bondReductionWindowStart + 1);
         });
 

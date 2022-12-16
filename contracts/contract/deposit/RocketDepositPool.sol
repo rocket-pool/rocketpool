@@ -148,11 +148,14 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
     }
 
     /// @dev Accepts ETH deposit from the node deposit contract (does not mint rETH)
-    function nodeDeposit() override external payable onlyThisLatestContract onlyLatestContract("rocketNodeDeposit", msg.sender) {
+    /// @param _totalAmount The total node deposit amount including any credit balance used
+    function nodeDeposit(uint256 _totalAmount) override external payable onlyThisLatestContract onlyLatestContract("rocketNodeDeposit", msg.sender) {
         // Deposit ETH into the vault
-        rocketVault.depositEther{value: msg.value}();
+        if (msg.value > 0) {
+            rocketVault.depositEther{value: msg.value}();
+        }
         // Increase recorded node balance
-        addUint("deposit.pool.node.balance", msg.value);
+        addUint("deposit.pool.node.balance", _totalAmount);
     }
 
     /// @dev Withdraws ETH from the deposit pool to RocketNodeDeposit contract to be used for a new minipool

@@ -2,7 +2,6 @@
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/casper/DepositInterface.sol";
@@ -33,7 +32,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     // Constants
     uint8 public constant version = 3;                            // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;                          // Fixed point arithmetic uses this for value for precision
-    uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
     uint256 constant legacyPrelaunchAmount = 16 ether;            // The amount of ETH initially deposited when minipool is created (for legacy minipools)
 
     // Libs
@@ -267,16 +265,23 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     /// @dev Sets the bond value and vacancy flag on this minipool
     /// @param _bondAmount The bond amount selected by the node operator
-    function prepareVacancy(uint256 _bondAmount) override external onlyLatestContract("rocketMinipoolManager", msg.sender) onlyInitialised {
-        // Get contracts
+    /// @param _currentBalance The current balance of the validator on the beaconchain (will be checked by oDAO and scrubbed if not correct)
+    function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) override external onlyLatestContract("rocketMinipoolManager", msg.sender) onlyInitialised {
+        // Check status
+        require(status == MinipoolStatus.Initialised, "Must be in initialised status");
+        // Check balance
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
+        require(_currentBalance >= launchAmount, "Balance is too low");
         // Store bond amount
         nodeDepositBalance = _bondAmount;
         // Calculate user amount from launch amount
-        uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        userDepositBalance = uint256(32 ether).sub(nodeDepositBalance);
+        userDepositBalance = launchAmount.sub(nodeDepositBalance);
         // Flag as vacant
         vacant = true;
+        preMigrationBalance = _currentBalance;
+        // Refund the node whatever rewards they have accrued prior to becoming a RP validator
+        nodeRefundBalance = _currentBalance.sub(launchAmount);
         // Set status to preLaunch
         setStatus(MinipoolStatus.Prelaunch);
     }
@@ -323,14 +328,14 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Get withdrawal credentials
         bytes memory withdrawalCredentials = rocketMinipoolManager.getMinipoolWithdrawalCredentials(address(this));
         // Send staking deposit to casper
-        casperDeposit.deposit{value : address(this).balance}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
+        casperDeposit.deposit{value : preLaunchValue}(_validatorPubkey, withdrawalCredentials, _validatorSignature, _depositDataRoot);
         // Emit event
         emit MinipoolPrestaked(_validatorPubkey, _validatorSignature, _depositDataRoot, preLaunchValue, withdrawalCredentials, block.timestamp);
     }
 
     /// @notice Distributes the contract's balance.
     ///         If balance is greater or equal to 8 ETH, the NO can call to distribute capital and finalise the minipool.
-    ///         If balance is greater or equal to 8 ETH, users who have called `beginUserDistribute` and waiting the required
+    ///         If balance is greater or equal to 8 ETH, users who have called `beginUserDistribute` and waited the required
     ///         amount of time can call to distribute capital.
     ///         If balance is lower than 8 ETH, can be called by anyone and is considered a partial withdrawal and funds are
     ///         split as rewards.
@@ -387,10 +392,15 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     /// @notice Allows a user (other than the owner of this minipool) to signal they want to call distribute.
     ///         After waiting the required period, anyone may then call `distributeBalance()`.
-    function beginUserDistribute() override external {
+    function beginUserDistribute() override external onlyInitialised {
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         require (totalBalance >= 8 ether, "Balance too low");
+        // Prevent calls resetting distribute time before window has passed
+        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        uint256 timeElapsed = block.timestamp.sub(userDistributeTime);
+        require(rocketDAOProtocolSettingsMinipool.hasUserDistributeWindowPassed(timeElapsed), "User distribution already pending");
+        // Store current time
         userDistributeTime = block.timestamp;
     }
 
@@ -440,8 +450,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// @dev Distributes balance to user and node operator
     /// @param _balance The amount to distribute
     function _distributeBalance(uint256 _balance) private {
-        // Rate limit this method to prevent front running
-        require(block.number > withdrawalBlock + distributionCooldown, "Distribution of this minipool's balance is on cooldown");
         // Deposit amounts
         uint256 nodeAmount = 0;
         uint256 userCapital = getUserDepositBalance();
@@ -520,7 +528,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     /// @notice Dissolve the minipool, returning user deposited ETH to the deposit pool.
-    /// Only accepts calls from the minipool owner (node), or from any address if timed out
     function dissolve() override external onlyInitialised {
         // Check current status
         require(status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while in prelaunch");
@@ -593,19 +600,17 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     /// @notice Reduces the ETH bond amount and credits the owner the difference
-    /// @param _amount The amount to reduce the bond to (e.g. 8 ether)
-    function reduceBondAmount(uint256 _amount) override external onlyMinipoolOwner(msg.sender) onlyInitialised {
-        uint256 previousBond = nodeDepositBalance;
-        require(_amount < previousBond, "Bond must be lower than current amount");
+    function reduceBondAmount() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
         // Distribute any skimmed rewards
         distributeSkimmedRewards();
         // Approve reduction and handle external state changes
         RocketMinipoolBondReducerInterface rocketBondReducer = RocketMinipoolBondReducerInterface(getContractAddress("rocketMinipoolBondReducer"));
-        rocketBondReducer.reduceBondAmount(previousBond, _amount);
+        uint256 previousBond = nodeDepositBalance;
+        uint256 newBondAmount = rocketBondReducer.reduceBondAmount();
         // Update user/node balances
-        userDepositBalance = getUserDepositBalance().add(previousBond.sub(_amount));
-        nodeDepositBalance = _amount;
+        userDepositBalance = getUserDepositBalance().add(previousBond.sub(newBondAmount));
+        nodeDepositBalance = newBondAmount;
         // Reset node fee to current network rate
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
         nodeFee = rocketNetworkFees.getNodeFee();
@@ -615,7 +620,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             depositType = MinipoolDeposit.Variable;
         }
         // Emit event
-        emit BondReduced(previousBond, _amount, block.timestamp);
+        emit BondReduced(previousBond, newBondAmount, block.timestamp);
     }
 
     /// @dev Distributes the current contract balance based on capital ratio and node fee

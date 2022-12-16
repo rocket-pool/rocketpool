@@ -9,7 +9,7 @@ interface RocketDepositPoolInterface {
     function getExcessBalance() external view returns (uint256);
     function deposit() external payable;
     function getMaximumDepositAmount() external view returns (uint256);
-    function nodeDeposit() external payable;
+    function nodeDeposit(uint256 _totalAmount) external payable;
     function nodeCreditWithdrawal(uint256 _amount) external;
     function recycleDissolvedDeposit() external payable;
     function recycleExcessCollateral() external payable;

@@ -39,6 +39,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketNetworkPrices;
     address public newRocketDAONodeTrustedSettingsMinipool;
     address public newRocketNodeManager;
+    address public newRocketDAOProtocolSettingsNode;
     address public rocketMinipoolBase;
     address public rocketMinipoolBondReducer;
 
@@ -57,6 +58,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketNetworkPricesAbi;
     string public newRocketDAONodeTrustedSettingsMinipoolAbi;
     string public newRocketNodeManagerAbi;
+    string public newRocketDAOProtocolSettingsNodeAbi;
     string public rocketMinipoolBaseAbi;
     string public rocketMinipoolBondReducerAbi;
 
@@ -101,8 +103,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNetworkPrices = _addresses[11];
         newRocketDAONodeTrustedSettingsMinipool = _addresses[12];
         newRocketNodeManager = _addresses[13];
-        rocketMinipoolBase = _addresses[14];
-        rocketMinipoolBondReducer = _addresses[15];
+        newRocketDAOProtocolSettingsNode = _addresses[14];
+        rocketMinipoolBase = _addresses[15];
+        rocketMinipoolBondReducer = _addresses[16];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -119,10 +122,11 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketNetworkPricesAbi = _abis[11];
         newRocketDAONodeTrustedSettingsMinipoolAbi = _abis[12];
         newRocketNodeManagerAbi = _abis[13];
-        rocketMinipoolBaseAbi = _abis[14];
-        rocketMinipoolBondReducerAbi = _abis[15];
+        newRocketDAOProtocolSettingsNodeAbi = _abis[14];
+        rocketMinipoolBaseAbi = _abis[15];
+        rocketMinipoolBondReducerAbi = _abis[16];
 
-        newRocketMinipoolAbi = _abis[16];
+        newRocketMinipoolAbi = _abis[17];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -144,6 +148,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     /// @notice Once this contract has been voted in by oDAO, guardian can perform the upgrade
     function execute() external onlyGuardian {
         require(!executed, "Already executed");
+        executed = true;
 
         // Upgrade contracts
         _upgradeContract("rocketNodeDeposit", newRocketNodeDeposit, newRocketNodeDepositAbi);
@@ -191,15 +196,14 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "minipool"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.start")), 14 days);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.length")), 2 days);
+        settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "node.vacant.minipools.enabled")), true);
 
         // Claim intervals
         for (uint256 i = 0; i < intervals.length; i++) {
             ClaimInterval memory interval = intervals[i];
             setUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", interval.interval)), interval.block);
         }
-
-        // Complete
-        executed = true;
     }
 
     /// @dev Add a new network contract

@@ -39,10 +39,10 @@ interface RocketMinipoolInterface {
     function finalise() external;
     function canStake() external view returns (bool);
     function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
-    function prepareVacancy(uint256 _bondAmount) external;
+    function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) external;
     function promote() external;
     function dissolve() external;
     function close() external;
     function voteScrub() external;
-    function reduceBondAmount(uint256 _amount) external;
+    function reduceBondAmount() external;
 }

@@ -101,6 +101,7 @@ const contracts = {
     rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
     rocketDAONodeTrustedSettingsMinipoolNew:  artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
     rocketNodeManagerNew:                     artifacts.require('RocketNodeManager.sol'),
+    rocketDAOProtocolSettingsNodeNew:         artifacts.require('RocketDAOProtocolSettingsNode.sol'),
     rocketMinipoolBondReducer:                artifacts.require('RocketMinipoolBondReducer.sol'),
     rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
     // Utils
@@ -257,6 +258,7 @@ export async function deployRocketPool() {
                                 (await contracts.rocketNetworkPricesNew.deployed()).address,
                                 (await contracts.rocketDAONodeTrustedSettingsMinipoolNew.deployed()).address,
                                 (await contracts.rocketNodeManagerNew.deployed()).address,
+                                (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
                                 (await contracts.rocketMinipoolBase.deployed()).address,
                                 (await contracts.rocketMinipoolBondReducer.deployed()).address,
                             ],
@@ -276,6 +278,7 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketNetworkPricesNew.abi),
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipoolNew.abi),
                                 compressABI(contracts.rocketNodeManagerNew.abi),
+                                compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
                                 compressABI(contracts.rocketMinipoolBondReducer.abi),
                                 compressABI(rocketMinipoolAbi),
@@ -330,6 +333,7 @@ export async function deployRocketPool() {
                     case 'rocketNetworkPricesNew':
                     case 'rocketDAONodeTrustedSettingsMinipoolNew':
                     case 'rocketNodeManagerNew':
+                    case 'rocketDAOProtocolSettingsNodeNew':
                     case 'rocketMinipoolBase':
                     case 'rocketMinipoolBondReducer':
                         break;
