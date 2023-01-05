@@ -28,7 +28,6 @@ import "../../interface/minipool/RocketMinipoolBondReducerInterface.sol";
 /// @dev Minipools exclusively DELEGATECALL into this contract it is never called directly
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
 
-
     // Constants
     uint8 public constant version = 3;                            // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;                          // Fixed point arithmetic uses this for value for precision
@@ -198,6 +197,10 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function refund() override external onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) onlyInitialised {
         // Check refund balance
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
+        // If this minipool was distributed by a user, force finalisation on the node operator
+        if (!finalised && userDistributed) {
+            _finalise();
+        }
         // Refund node
         _refund();
     }
@@ -269,6 +272,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) override external onlyLatestContract("rocketMinipoolManager", msg.sender) onlyInitialised {
         // Check status
         require(status == MinipoolStatus.Initialised, "Must be in initialised status");
+        // Sanity check that refund balance is zero
+        require(nodeRefundBalance == 0, "Refund balance not zero");
         // Check balance
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
@@ -368,13 +373,13 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         } else {
             // Just a partial withdraw
             distributeSkimmedRewards();
-            // Reset distribute waiting period
-            userDistributeTime = 0;
             // If node operator is calling, save a tx by calling refund immediately
             if (ownerCalling && nodeRefundBalance > 0) {
                 _refund();
             }
         }
+        // Reset distribute waiting period
+        userDistributeTime = 0;
     }
 
     /// @dev Distribute the entire balance to the minipool owner
@@ -533,7 +538,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(status == MinipoolStatus.Prelaunch, "The minipool can only be dissolved while in prelaunch");
         // Load contracts
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
-        // Check if being dissolved by minipool owner or minipool is timed out
+        // Check if minipool is timed out
         require(block.timestamp.sub(statusTime) >= rocketDAOProtocolSettingsMinipool.getLaunchTimeout(), "The minipool can only be dissolved once it has timed out");
         // Perform the dissolution
         _dissolve();
@@ -602,6 +607,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     /// @notice Reduces the ETH bond amount and credits the owner the difference
     function reduceBondAmount() override external onlyMinipoolOwner(msg.sender) onlyInitialised {
         require(status == MinipoolStatus.Staking, "Minipool must be staking");
+        // If balance is greater than 8 ether, it is assumed to be capital not skimmed rewards. So prevent reduction
+        uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
+        require(totalBalance < 8 ether, "Cannot reduce bond with balance of 8 ether or more");
         // Distribute any skimmed rewards
         distributeSkimmedRewards();
         // Approve reduction and handle external state changes
