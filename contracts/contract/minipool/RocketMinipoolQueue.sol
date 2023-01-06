@@ -102,6 +102,16 @@ contract RocketMinipoolQueue is RocketBase, RocketMinipoolQueueInterface {
     }
 
     // Add a minipool to the end of the appropriate queue
+    // Only accepts calls from registered minipools
+    function enqueueMinipool(MinipoolDeposit _depositType) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Remove minipool from queue
+        if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool(queueKeyHalf, msg.sender); }
+        if (_depositType == MinipoolDeposit.Full) { return enqueueMinipool(queueKeyFull, msg.sender); }
+        if (_depositType == MinipoolDeposit.Empty) { return enqueueMinipool(queueKeyEmpty, msg.sender); }
+        require(false, "Invalid minipool deposit type");
+    }
+
+    // Add a minipool to the end of the appropriate queue
     // Only accepts calls from the RocketMinipoolManager contract
     function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) override external onlyLatestContract("rocketMinipoolQueue", address(this)) onlyLatestContract("rocketMinipoolManager", msg.sender) {
         if (_depositType == MinipoolDeposit.Half) { return enqueueMinipool(queueKeyHalf, _minipool); }

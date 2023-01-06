@@ -12,6 +12,7 @@ interface RocketMinipoolQueueInterface {
     function getNextCapacity() external view returns (uint256);
     function getNextDeposit() external view returns (MinipoolDeposit, uint256);
     function enqueueMinipool(MinipoolDeposit _depositType, address _minipool) external;
+    function enqueueMinipool(MinipoolDeposit _depositType) external;
     function dequeueMinipool() external returns (address minipoolAddress);
     function dequeueMinipoolByDeposit(MinipoolDeposit _depositType) external returns (address minipoolAddress);
     function removeMinipool(MinipoolDeposit _depositType) external;

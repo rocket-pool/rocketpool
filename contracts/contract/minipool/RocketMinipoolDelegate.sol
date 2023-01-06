@@ -33,6 +33,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     uint256 constant prelaunchAmount = 16 ether;                  // The amount of ETH initially deposited when minipool is created
     uint256 constant distributionCooldown = 100;                  // Number of blocks that must pass between calls to distributeBalance
 
+    bytes32 private constant queueKeyFull = keccak256("minipools.available.full");
+    bytes32 private constant queueKeyHalf = keccak256("minipools.available.half");
+
     // Libs
     using SafeMath for uint;
 
@@ -143,6 +146,23 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         preStake(_validatorPubkey, _validatorSignature, _depositDataRoot);
     }
 
+    // Upgrade an existing half deposit pool waiting for user deposit (match to start minipool) to a full deposit pool waiting for user deposit (refund)
+    function nodeDepositHalfToFull() override external onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) onlyInitialised {
+        require(depositType == MinipoolDeposit.Half, "Must be a current Half deposit pool");
+        require(status == MinipoolStatus.Initialised, "Must be waiting for user match");
+        require(msg.value + nodeDepositBalance == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount(), "Deposit amount must get DepositBalance to FullDeposit amount");
+
+        // Update to Full deposit
+        nodeDepositBalance.add(msg.value);
+        depositType = MinipoolDeposit.Full;
+        setStatus(MinipoolStatus.Prelaunch);
+
+        // remove from half queue and put into full queue
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        rocketMinipoolQueue.removeMinipool(queueKeyHalf);
+        rocketMinipoolQueue.enqueueMinipool(queueKeyFull);
+    }
+
     // Assign user deposited ETH to the minipool and mark it as prelaunch
     // Only accepts calls from the RocketDepositPool contract
     function userDeposit() override external payable onlyLatestContract("rocketDepositPool", msg.sender) onlyInitialised {
@@ -170,6 +190,34 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
         // Refund node
         _refund();
+    }
+
+    // Refund node by minting rETH instead of waiting for user deposited ETH
+    function reth_refund() override external onlyMinipoolOwnerOrWithdrawalAddress(msg.sender) onlyInitialised {
+        // Check refund balance
+        require(nodeRefundBalance == 0, "reth_refund should only be used when no user ETH has been assigned for the refund; please call refund()");
+        require(nodeDepositBalance == rocketDAOProtocolSettingsMinipool.getFullDepositNodeAmount(),
+            "reth_refund should only be used when a Full deposit was made and no refund has occurred");
+
+        // rETH minting will come from a virtual "User deposit" and reflect in balances; the user here just happens to be the NO
+        virtualDepositValue = rocketDAOProtocolSettingsMinipool.getHalfDepositNodeAmount();
+        nodeDepositBalance = nodeDepositBalance.sub(virtualDepositValue);
+        userDepositBalance = userDepositBalance.add(virtualDepositValue);
+        emit DepositReceived(msg.sender, virtualDepositValue, block.timestamp);
+
+        // Mint rETH to withdrawal address using the "User deposit"
+        address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
+        RocketTokenRETHInterface rocketTokenRETH = RocketTokenRETHInterface(getContractAddress("rocketTokenRETH"));
+        rocketTokenRETH.mint(virtualDepositValue, nodeWithdrawalAddress);
+        emit EtherWithdrawn(nodeWithdrawalAddress, virtualDepositValue, block.timestamp);
+
+        // Remove from queue
+        //   Note: the remove actually swaps the last item in the queue to the location occupied by
+        //   this minipool and then drops this minipool. This is computationally cheap, but could be
+        //   seen as unfair. That said - it's probably close enough. Someone moves up in the queue,
+        //   but nobody is actually pushed back any slots.
+        RocketMinipoolQueueInterface rocketMinipoolQueue = RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue"));
+        rocketMinipoolQueue.removeMinipool(queueKeyFull);
     }
 
     // Called to slash node operator's RPL balance if withdrawal balance was less than user deposit
