@@ -96,8 +96,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         checkDistributorInitialised();
         checkNodeFee(_minimumNodeFee);
         require(isValidDepositAmount(_bondAmount), "Invalid deposit amount");
-        // Emit deposit received event
-        emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Get launch constants
         uint256 launchAmount;
         uint256 preLaunchValue;
@@ -106,6 +104,13 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
             preLaunchValue = rocketDAOProtocolSettingsMinipool.getPreLaunchValue();
         }
+        // Check that pre deposit won't fail
+        if (msg.value < preLaunchValue) {
+            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+            require(preLaunchValue.sub(msg.value) <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");          
+        }
+        // Emit deposit received event
+        emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Increase ETH matched (used to calculate RPL collateral requirements)
         _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
         // Create the minipool
@@ -132,7 +137,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
             shortFall = _preLaunchValue.sub(msg.value);
             rocketDepositPool.nodeCreditWithdrawal(shortFall);
         }
-        // Perform the pre-deposit
         uint256 remaining = msg.value.add(shortFall).sub(_preLaunchValue);
         // Deposit the left over value into the deposit pool
         rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount.sub(_preLaunchValue));
