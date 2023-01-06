@@ -424,8 +424,12 @@ export default function() {
 
                     {
                         // Test: Same node deposits new 8 ETH minipool, supplying 0 ETH
+                        // Require deposit pool to have 1 ETH to avoid early revert
+                        await userDeposit({ from: random, value: '1'.ether });
                         // Expected: Should fail with not enough RPL stake
                         await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to create new minipool', 'ETH matched after deposit exceeds limit based on node RPL stake');
+                        // Remove the 1 ETH from the deposit pool
+                        await burnReth('1'.ether, {from: random});
                     }
 
                     {
@@ -434,7 +438,7 @@ export default function() {
                         await mintRPL(owner, node, rplStake);
                         await nodeStakeRPL(rplStake, {from: node});
                         // Expected: Should fail with empty DP
-                        await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to create new minipool', 'Insufficient contract ETH balance');
+                        await shouldRevert(createMinipoolWithBondAmount('8'.ether, { from: node, value: '0'.ether }), 'Was able to create new minipool', 'Deposit pool balance is insufficient for pre deposit');
                     }
 
                     {
