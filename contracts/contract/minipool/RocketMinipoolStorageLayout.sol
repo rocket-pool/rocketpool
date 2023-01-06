@@ -66,4 +66,7 @@ abstract contract RocketMinipoolStorageLayout {
     // Trusted member scrub votes
     mapping(address => bool) memberScrubVotes;
     uint256 totalScrubVotes;
+
+    // Initialise non-owner distribute prep time
+    uint256 internal prepareNonOwnerDistributeTime;
 }

@@ -124,6 +124,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         rocketMinipoolPenalty = getContractAddress("rocketMinipoolPenalty");
         // Intialise storage state
         storageState = StorageState.Initialised;
+        // Initialise non-owner distribute prep time
+        prepareNonOwnerDistributeTime = 0;
     }
 
     // Assign the node deposit to the minipool
@@ -282,8 +284,9 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     }
 
     // Distributes the contract's balance
-    // When called during staking status, requires 16 ether in the pool
-    // When called by non-owner with less than 16 ether, requires 14 days to have passed since being made withdrawable
+    // - Can normally only be called by owner
+    // - To handle cases where an owner _doesn't_ call this, anyone can call this if they first
+    //   call prepareNonOwnerDistribute() and wait 14 days.
     function distributeBalance() override external onlyInitialised {
         // Must be called while staking or withdrawable
         require(status == MinipoolStatus.Staking || status == MinipoolStatus.Withdrawable, "Minipool must be staking or withdrawable");
@@ -293,19 +296,34 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         // If it's not the owner calling
         if (msg.sender != nodeAddress && msg.sender != nodeWithdrawalAddress) {
-            // And the pool is in staking status
-            if (status == MinipoolStatus.Staking) {
-                // Then balance must be greater than 16 ETH
-                require(totalBalance >= 16 ether, "Balance must be greater than 16 ETH");
-            } else {
-                // Then enough time must have elapsed
-                require(block.timestamp > statusTime.add(14 days), "Non-owner must wait 14 days after withdrawal to distribute balance");
-                // And balance must be greater than 4 ETH
-                require(address(this).balance >= 4 ether, "Balance must be greater than 4 ETH");
-            }
+            require(_canNonOwnerDistribute(totalBalance), "Minipool doesn't meet conditions to allow non-owner distribution");
+            require(prepareNonOwnerDistributeTime != 0, "prepareNonOwnerDistribute must be called before distributeBalance");
+            require(block.timestamp > prepareNonOwnerDistributeTime.add(14 days), "prepareNonOwnerDistribute must be called at least 14 days before distributeBalance");
         }
         // Process withdrawal
         _distributeBalance(totalBalance);
+    }
+
+    // Non-owner distribution has two steps
+    // First, this function is called
+    // Then, after at least 14 days, distributeBalance() can be called
+    function prepareNonOwnerDistribute() override external onlyInitialised {
+        // Get withdrawal amount, we must also account for a possible node refund balance on the contract from users staking 32 ETH that have received a 16 ETH refund after the protocol bought out 16 ETH
+        uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
+        require(_canNonOwnerDistribute(totalBalance), "Minipool doesn't meet conditions to allow non-owner distribution");
+        prepareNonOwnerDistributeTime = block.timestamp;
+    }
+
+    // Returns true when conditions allow for non-owner distribution
+    // Note that this gets checked by both prepareNonOwnerDistribute and distributeBalacnce
+    function _canNonOwnerDistribute(uint256 _totalBalance) private view onlyInitialised returns (bool) {
+        if (status == MinipoolStatus.Staking && _totalBalance >= 16 ether) {
+            return true;
+        } else if (status == MinipoolStatus.Withdrawable && address(this).balance >= 4 ether) {
+            // TODO: Why doesn't this use totalBalance? I copied from previous version
+            return true;
+        }
+        return false;
     }
 
     // Perform any slashings, refunds, and unlock NO's stake
