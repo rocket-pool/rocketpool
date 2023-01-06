@@ -54,35 +54,8 @@ export async function deposit(minimumNodeFee, txOptions) {
 
     // Deposit
 
-    // Get artifact and bytecode
-    const RocketMinipool = artifacts.require('RocketMinipoolOld');
-    const contractBytecode = RocketMinipool.bytecode;
-
-    // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address'], [rocketStorage.address, txOptions.from]);
-    const deployCode = contractBytecode + constructorArgs.substr(2);
     const salt = minipoolSalt++;
-
-    // Calculate keccak(nodeAddress, salt)
-    const nodeSalt = web3.utils.soliditySha3(
-      {type: 'address', value: txOptions.from},
-      {type: 'uint256', value: salt}
-    )
-
-    // Calculate hash of deploy code
-    const bytecodeHash = web3.utils.soliditySha3(
-      {type: 'bytes', value: deployCode}
-    )
-
-    // Construct deterministic minipool address
-    const raw = web3.utils.soliditySha3(
-      {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolFactory.address},
-      {type: 'bytes32', value: nodeSalt},
-      {type: 'bytes32', value: bytecodeHash}
-    )
-
-    const minipoolAddress = '0x' + raw.substr(raw.length - 40);
+    const minipoolAddress = await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt);
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress.substr(2);
 
     // Get validator deposit data

@@ -68,16 +68,16 @@ export default function() {
             await nodeStakeRPL(rplStake, {from: node});
 
             // Deposit
-            await depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
+            const tx = await depositV2(noMinimumNodeFee, lebDepositNodeAmount, {
                 from: node,
                 value: lebDepositNodeAmount,
             });
 
             // Deposit
-            await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
-                from: node,
-                value: halfDepositNodeAmount,
-            });
+            // await depositV2(noMinimumNodeFee, halfDepositNodeAmount, {
+            //     from: node,
+            //     value: halfDepositNodeAmount,
+            // });
         });
 
 

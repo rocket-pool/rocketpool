@@ -3,11 +3,12 @@ pragma solidity 0.7.6;
 
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
+import "../../interface/minipool/RocketMinipoolBaseInterface.sol";
 import "../../types/MinipoolDeposit.sol";
 import "../../types/MinipoolStatus.sol";
 
 /// @notice Contains the initialisation and delegate upgrade logic for minipools
-contract RocketMinipoolBase is RocketMinipoolStorageLayout {
+contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorageLayout {
 
     // Events
     event EtherReceived(address indexed from, uint256 amount, uint256 time);
@@ -36,12 +37,14 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Sets up starting delegate contract and then delegates initialisation to it
-    function initialise(address _nodeAddress) external notSelf {
+    function initialise(address _rocketStorage, address _nodeAddress) external override notSelf {
         // Check input
         require(_nodeAddress != address(0), "Invalid node address");
         require(storageState == StorageState.Undefined, "Already initialised");
         // Set storage state to uninitialised
         storageState = StorageState.Uninitialised;
+        // Set rocketStorage
+        rocketStorage = RocketStorageInterface(_rocketStorage);
         // Set the current delegate
         address delegateAddress = getContractAddress("rocketMinipoolDelegate");
         rocketMinipoolDelegate = delegateAddress;
@@ -59,7 +62,7 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Upgrade this minipool to the latest network delegate contract
-    function delegateUpgrade() external onlyMinipoolOwner notSelf {
+    function delegateUpgrade() external override onlyMinipoolOwner notSelf {
         // Set previous address
         rocketMinipoolDelegatePrev = rocketMinipoolDelegate;
         // Set new delegate
@@ -71,7 +74,7 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
     }
 
     /// @notice Rollback to previous delegate contract
-    function delegateRollback() external onlyMinipoolOwner notSelf {
+    function delegateRollback() external override onlyMinipoolOwner notSelf {
         // Make sure they have upgraded before
         require(rocketMinipoolDelegatePrev != address(0x0), "Previous delegate contract is not set");
         // Store original
@@ -85,27 +88,27 @@ contract RocketMinipoolBase is RocketMinipoolStorageLayout {
 
     /// @notice Sets the flag to automatically use the latest delegate contract or not
     /// @param _setting If true, will always use the latest delegate contract
-    function setUseLatestDelegate(bool _setting) external onlyMinipoolOwner notSelf {
+    function setUseLatestDelegate(bool _setting) external override onlyMinipoolOwner notSelf {
         useLatestDelegate = _setting;
     }
 
     /// @notice Returns true if this minipool always uses the latest delegate contract
-    function getUseLatestDelegate() external view returns (bool) {
+    function getUseLatestDelegate() external override view returns (bool) {
         return useLatestDelegate;
     }
 
     /// @notice Returns the address of the minipool's stored delegate
-    function getDelegate() external view returns (address) {
+    function getDelegate() external override view returns (address) {
         return rocketMinipoolDelegate;
     }
 
     /// @notice Returns the address of the minipool's previous delegate (or address(0) if not set)
-    function getPreviousDelegate() external view returns (address) {
+    function getPreviousDelegate() external override view returns (address) {
         return rocketMinipoolDelegatePrev;
     }
 
     /// @notice Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
-    function getEffectiveDelegate() external view returns (address) {
+    function getEffectiveDelegate() external override view returns (address) {
         return useLatestDelegate ? getContractAddress("rocketMinipoolDelegate") : rocketMinipoolDelegate;
     }
 

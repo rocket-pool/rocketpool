@@ -99,48 +99,46 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
     // Get minipool contract bytecode
     let contractBytecode;
 
-    if (preUpdate) {
-        const RocketMinipool = artifacts.require('RocketMinipoolOld');
-        contractBytecode = RocketMinipool.bytecode;
-    } else {
-        const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
-        contractBytecode = RocketMinipoolProxy.bytecode;
-    }
-
-    // Construct creation code for minipool deploy
-    let constructorArgs
-    if (preUpdate) {
-        const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
-        constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
-    } else {
-        constructorArgs = web3.eth.abi.encodeParameters(['address'], [rocketStorage.address]);
-    }
-    const deployCode = contractBytecode + constructorArgs.substr(2);
-
     if (salt === null){
         salt = minipoolSalt++;
     }
 
-    // Calculate keccak(nodeAddress, salt)
-    const nodeSalt = web3.utils.soliditySha3(
-      {type: 'address', value: txOptions.from},
-      {type: 'uint256', value: salt}
-    )
+    let minipoolAddress;
 
-    // Calculate hash of deploy code
-    const bytecodeHash = web3.utils.soliditySha3(
-      {type: 'bytes', value: deployCode}
-    )
+    if (preUpdate) {
+        const RocketMinipool = artifacts.require('RocketMinipoolOld');
+        contractBytecode = RocketMinipool.bytecode;
 
-    // Construct deterministic minipool address
-    const raw = web3.utils.soliditySha3(
-      {type: 'bytes1', value: '0xff'},
-      {type: 'address', value: rocketMinipoolFactory.address},
-      {type: 'bytes32', value: nodeSalt},
-      {type: 'bytes32', value: bytecodeHash}
-    )
+        const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
+        const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
 
-    const minipoolAddress = raw.substr(raw.length - 40);
+        const deployCode = contractBytecode + constructorArgs.substr(2);
+
+        // Calculate keccak(nodeAddress, salt)
+        const nodeSalt = web3.utils.soliditySha3(
+            {type: 'address', value: txOptions.from},
+            {type: 'uint256', value: salt}
+        )
+
+        // Calculate hash of deploy code
+        const bytecodeHash = web3.utils.soliditySha3(
+            {type: 'bytes', value: deployCode}
+        )
+
+        // Construct deterministic minipool address
+        const raw = web3.utils.soliditySha3(
+            {type: 'bytes1', value: '0xff'},
+            {type: 'address', value: rocketMinipoolFactory.address},
+            {type: 'bytes32', value: nodeSalt},
+            {type: 'bytes32', value: bytecodeHash}
+        )
+
+        minipoolAddress = raw.substr(raw.length - 40);
+
+    } else {
+        minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
+    }
+
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
 
     // Make node deposit
@@ -196,39 +194,11 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
         RocketStorage.deployed()
     ]);
 
-    // Get minipool contract bytecode
-    const RocketMinipoolProxy = artifacts.require('RocketMinipoolProxy');
-    const contractBytecode = RocketMinipoolProxy.bytecode;
-
-    // Construct creation code for minipool deploy
-    const constructorArgs = web3.eth.abi.encodeParameters(['address'], [rocketStorage.address]);
-    const deployCode = contractBytecode + constructorArgs.substr(2);
-
     if (salt === null){
         salt = minipoolSalt++;
     }
 
-    // Calculate keccak(nodeAddress, salt)
-    const nodeSalt = web3.utils.soliditySha3(
-        {type: 'address', value: txOptions.from},
-        {type: 'uint256', value: salt}
-    )
-
-    // Calculate hash of deploy code
-    const bytecodeHash = web3.utils.soliditySha3(
-        {type: 'bytes', value: deployCode}
-    )
-
-    // Construct deterministic minipool address
-    const raw = web3.utils.soliditySha3(
-        {type: 'bytes1', value: '0xff'},
-        {type: 'address', value: rocketMinipoolFactory.address},
-        {type: 'bytes32', value: nodeSalt},
-        {type: 'bytes32', value: bytecodeHash}
-    )
-
-    // Create and return vacant minipool
-    const minipoolAddress = raw.substr(raw.length - 40);
+    const minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
 
     const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
     await rocketNodeDeposit.createVacantMinipool(bondAmount, '0'.ether, getValidatorPubkey(), salt, '0x' + minipoolAddress, currentBalance, txOptions);

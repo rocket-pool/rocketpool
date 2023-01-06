@@ -122,7 +122,6 @@ const abis = {
 const rocketMinipoolAbi = []
     .concat(artifacts.require('RocketMinipoolDelegate.sol').abi)
     .concat(artifacts.require('RocketMinipoolBase.sol').abi)
-    .concat(artifacts.require('RocketMinipoolProxy.sol').abi)
     .filter(i => i.type !== 'fallback' && i.type !== 'receive');
 
 rocketMinipoolAbi.push({ stateMutability: 'payable', type: 'fallback'});

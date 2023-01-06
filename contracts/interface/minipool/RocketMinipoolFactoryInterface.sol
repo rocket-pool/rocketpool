@@ -5,6 +5,6 @@ pragma solidity >0.5.0 <0.9.0;
 import "../../types/MinipoolDeposit.sol";
 
 interface RocketMinipoolFactoryInterface {
-    function getMinipoolBytecode() external pure returns (bytes memory);
+    function getExpectedAddress(address _nodeAddress, uint256 _salt) external view returns (address);
     function deployContract(address _nodeAddress, uint256 _salt) external returns (address);
 }
