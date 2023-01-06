@@ -8,6 +8,7 @@ import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../../../types/MinipoolDeposit.sol";
+import "../../../../contracts/contract/minipool/RocketMinipoolDelegate.sol";
 
 // Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
@@ -49,28 +50,24 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     }
 
     // Required node deposit amounts
-    function getDepositNodeAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
-        if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
-        if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
-        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
-        return 0;
-    }
     function getFullDepositNodeAmount() override public pure returns (uint256) {
         return getLaunchBalance();
     }
     function getHalfDepositNodeAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyDepositNodeAmount() override public pure returns (uint256) {
-        return 0 ether;
-    }
 
     // Required user deposit amounts
     function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
+        if (_depositType == MinipoolDeposit.Efficient) { return getEfficientDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
         return 0;
+    }
+    function getEfficientDepositUserAmount() override public pure returns (uint256) {
+        address delegateAddress = getContractAddress("rocketMinipoolDelegate");
+        return getLaunchBalance().sub(delegateAddress.efficientprelaunchAmount);
     }
     function getFullDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);

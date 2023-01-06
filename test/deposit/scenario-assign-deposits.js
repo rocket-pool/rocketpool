@@ -66,10 +66,9 @@ export async function assignDeposits(txOptions) {
     function getMinipoolQueueDetails() {
         return Promise.all([
             rocketMinipoolQueue.getTotalLength.call(),
-            rocketMinipoolQueue.getTotalCapacity.call(),
         ]).then(
-            ([totalLength, totalCapacity]) =>
-            ({totalLength, totalCapacity})
+            ([totalLength]) =>
+            ({totalLength})
         );
     }
 
@@ -94,7 +93,6 @@ export async function assignDeposits(txOptions) {
 
     // Check minipool queues
     assert(queue2.totalLength.eq(queue1.totalLength.sub(web3.utils.toBN(expectedDepositAssignments))), 'Incorrect updated minipool queue length');
-    assert(queue2.totalCapacity.eq(queue1.totalCapacity.sub(expectedEthAssigned)), 'Incorrect updated minipool queue capacity');
 
 }
 
