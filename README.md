@@ -1,7 +1,7 @@
 # Rocket Pool - Decentralised Ethereum liquid staking protocol
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="250" />
 </p>
 
 Rocket Pool is the base layer protocol for decentralised and trustless ETH staking, both liquid using rETH and node operator staking.
