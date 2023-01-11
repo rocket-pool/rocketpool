@@ -22,6 +22,7 @@ interface RocketMinipoolInterface {
     function getPreLaunchValue() external view returns (uint256);
     function getNodeTopUpValue() external view returns (uint256);
     function getVacant() external view returns (bool);
+    function getPreMigrationBalance() external view returns (uint256);
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
     function getUserDepositAssignedTime() external view returns (uint256);

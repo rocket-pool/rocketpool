@@ -66,6 +66,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getPreLaunchValue() override external view returns (uint256) { return preLaunchValue; }
     function getNodeTopUpValue() override external view returns (uint256) { return nodeDepositBalance.sub(preLaunchValue); }
     function getVacant() override external view returns (bool) { return vacant; }
+    function getPreMigrationBalance() override external view returns (uint256) { return preMigrationBalance; }
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) {
