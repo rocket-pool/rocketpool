@@ -126,7 +126,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     }
 
     /// @dev Processes a node deposit with the deposit pool
-    /// @param _preLaunchValue The prelaunch value (result of call to `getPreLaunchValue()`
+    /// @param _preLaunchValue The prelaunch value (result of call to `RocketDAOProtocolSettingsMinipool.getPreLaunchValue()`
     /// @param _bondAmount The bond amount for this deposit
     function _processNodeDeposit(uint256 _preLaunchValue, uint256 _bondAmount) private {
         // Get contracts
@@ -176,18 +176,11 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function _increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress).add(_amount);
         require(
-            rocketNodeStaking.getNodeETHMatched(_nodeAddress).add(_amount) <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
+            ethMatched <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
             "ETH matched after deposit exceeds limit based on node RPL stake"
         );
-        // Update ETH matched
-        uint256 ethMatched = getUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)));
-        if (ethMatched == 0) {
-            RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-            // Migration from legacy minipools which all had 16 ETH matched
-            ethMatched = rocketMinipoolManager.getNodeActiveMinipoolCount(_nodeAddress).mul(16 ether);
-        }
-        ethMatched = ethMatched.add(_amount);
         setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
     }
 
@@ -195,10 +188,6 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function enqueueMinipool(address _minipoolAddress) private {
         // Add minipool to queue
         RocketMinipoolQueueInterface(getContractAddress("rocketMinipoolQueue")).enqueueMinipool(_minipoolAddress);
-    }
-
-    /// @dev Returns the ETH amount used in a pre launch
-    function getPreLaunchValue(RocketDAOProtocolSettingsMinipoolInterface _rocketDAOProtocolSettingsMinipool) private view returns (uint256) {
     }
 
     /// @dev Reverts if node operator has not initialised their fee distributor
