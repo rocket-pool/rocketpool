@@ -28,4 +28,6 @@ struct MinipoolDetails {
     address effectiveDelegate;
     uint256 penaltyCount;
     uint256 penaltyRate;
+    bool userDistributed;
+    bool slashed;
 }

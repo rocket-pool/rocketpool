@@ -67,6 +67,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getNodeTopUpValue() override external view returns (uint256) { return nodeDepositBalance.sub(preLaunchValue); }
     function getVacant() override external view returns (bool) { return vacant; }
     function getPreMigrationBalance() override external view returns (uint256) { return preMigrationBalance; }
+    function getUserDistributed() override external view returns (bool) { return userDistributed; }
+    function getSlashed() override external view returns (bool) { return slashed; }
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) {
@@ -214,7 +216,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         _slash();
     }
 
-    /// @notice Returns true when `stake()` or `promote()` can be called by node operator taking into consideration the scrub period
+    /// @notice Returns true when `stake()` can be called by node operator taking into consideration the scrub period
     function canStake() override external view onlyInitialised returns (bool) {
         // Check status
         if (status != MinipoolStatus.Prelaunch) {
@@ -224,6 +226,20 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
         // Get scrub period
         uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
+        // Check if we have been in prelaunch status for long enough
+        return block.timestamp > statusTime + scrubPeriod;
+    }
+
+    /// @notice Returns true when `promote()` can be called by node operator taking into consideration the scrub period
+    function canPromote() override external view onlyInitialised returns (bool) {
+        // Check status
+        if (status != MinipoolStatus.Prelaunch) {
+            return false;
+        }
+        // Get contracts
+        RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
+        // Get scrub period
+        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getPromotionScrubPeriod();
         // Check if we have been in prelaunch status for long enough
         return block.timestamp > statusTime + scrubPeriod;
     }
@@ -302,7 +318,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Clear vacant flag
         vacant = false;
         // Check scrub period
-        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getScrubPeriod();
+        uint256 scrubPeriod = rocketDAONodeTrustedSettingsMinipool.getPromotionScrubPeriod();
         require(block.timestamp > statusTime + scrubPeriod, "Not enough time has passed to promote");
         // Progress to staking
         setStatus(MinipoolStatus.Staking);
@@ -675,6 +691,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 slashAmount = nodeSlashBalance;
         nodeSlashBalance = 0;
         rocketNodeStaking.slashRPL(nodeAddress, slashAmount);
+        // Record slashing
+        slashed = true;
     }
 
     /// @dev Dissolve this minipool

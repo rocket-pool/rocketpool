@@ -21,6 +21,7 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
         if (!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
             setSettingUint("minipool.scrub.period", 12 hours);
+            setSettingUint("minipool.promotion.scrub.period", 3 days);
             setSettingUint("minipool.scrub.quorum", 0.51 ether);
             setSettingBool("minipool.scrub.penalty.enabled", false);
             setSettingUint("minipool.bond.reduction.window.start", 2 days);
@@ -51,6 +52,11 @@ contract RocketDAONodeTrustedSettingsMinipool is RocketDAONodeTrustedSettings, R
     /// @notice How long minipools must wait before moving to staking status (can be scrubbed by ODAO before then)
     function getScrubPeriod() override external view returns (uint256) {
         return getSettingUint("minipool.scrub.period");
+    }
+
+    /// @notice How long minipools must wait before promoting a vacant minipool to staking status (can be scrubbed by ODAO before then)
+    function getPromotionScrubPeriod() override external view returns (uint256) {
+        return getSettingUint("minipool.promotion.scrub.period");
     }
 
     /// @notice Returns the required number of trusted nodes to vote to scrub a minipool

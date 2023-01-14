@@ -23,6 +23,8 @@ interface RocketMinipoolInterface {
     function getNodeTopUpValue() external view returns (uint256);
     function getVacant() external view returns (bool);
     function getPreMigrationBalance() external view returns (uint256);
+    function getUserDistributed() external view returns (bool);
+    function getSlashed() external view returns (bool);
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
     function getUserDepositAssignedTime() external view returns (uint256);
@@ -39,6 +41,7 @@ interface RocketMinipoolInterface {
     function slash() external;
     function finalise() external;
     function canStake() external view returns (bool);
+    function canPromote() external view returns (bool);
     function stake(bytes calldata _validatorSignature, bytes32 _depositDataRoot) external;
     function prepareVacancy(uint256 _bondAmount, uint256 _currentBalance) external;
     function promote() external;

@@ -78,4 +78,6 @@ abstract contract RocketMinipoolStorageLayout {
     // User distribution
     bool internal userDistributed;
     uint256 internal userDistributeTime;
+
+    bool internal slashed;
 }

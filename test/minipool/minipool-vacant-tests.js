@@ -46,7 +46,7 @@ export default function() {
         // Setup
         let launchTimeout =  (60 * 60 * 72); // 72 hours
         let withdrawalDelay = 20;
-        let scrubPeriod = (60 * 60 * 24); // 24 hours
+        let promotionScrubDelay = (60 * 60 * 24); // 24 hours
         let prelaunchMinipool16;
         let prelaunchMinipool8;
 
@@ -70,7 +70,7 @@ export default function() {
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.withdrawal.delay', withdrawalDelay, {from: owner});
-            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.promotion.scrub.period', promotionScrubDelay, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
@@ -101,7 +101,7 @@ export default function() {
 
         it(printTitle('node operator', 'can promote a 16 ETH vacant minipool after scrub period has elapsed'), async () => {
             // Wait required scrub period
-            await increaseTime(web3, scrubPeriod + 1);
+            await increaseTime(web3, promotionScrubDelay + 1);
             // Promote the minipool
             await promoteMinipool(prelaunchMinipool16, {from: node});
             // Verify new status
@@ -115,7 +115,7 @@ export default function() {
 
         it(printTitle('node operator', 'can promote an 8 ETH vacant minipool after scrub period has elapsed'), async () => {
             // Wait required scrub period
-            await increaseTime(web3, scrubPeriod + 1);
+            await increaseTime(web3, promotionScrubDelay + 1);
             // Promote the minipool
             await promoteMinipool(prelaunchMinipool8, {from: node});
             // Verify new status
@@ -137,7 +137,7 @@ export default function() {
             // Create a vacant minipool with current balance of 33
             let minipool = await createVacantMinipool('8'.ether, {from: node}, null, '33'.ether);
             // Wait required scrub period
-            await increaseTime(web3, scrubPeriod + 1);
+            await increaseTime(web3, promotionScrubDelay + 1);
             // Promote the minipool
             await promoteMinipool(minipool, {from: node});
             // Verify refund balance

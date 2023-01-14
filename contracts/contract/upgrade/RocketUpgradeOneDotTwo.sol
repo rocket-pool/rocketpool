@@ -193,6 +193,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.window.start")), 2 days);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.window.length")), 2 days);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.cancel.bond.reduction.quorum")), 0.51 ether);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.promotion.scrub.period")), 3 days);
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "minipool"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.start")), 14 days);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.length")), 2 days);

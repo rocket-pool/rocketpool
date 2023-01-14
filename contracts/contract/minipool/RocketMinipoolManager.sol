@@ -492,6 +492,8 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         details.userDepositBalance = minipoolInterface.getUserDepositBalance();
         details.userDepositAssigned = minipoolInterface.getUserDepositAssigned();
         details.userDepositAssignedTime = minipoolInterface.getUserDepositAssignedTime();
+        details.userDistributed = minipoolInterface.getUserDistributed();
+        details.slashed = minipoolInterface.getSlashed();
         // Delegate details
         details.useLatestDelegate = minipool.getUseLatestDelegate();
         details.delegate = minipool.getDelegate();
