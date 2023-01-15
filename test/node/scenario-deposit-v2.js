@@ -68,7 +68,11 @@ export async function depositV2(minimumNodeFee, bondAmount, txOptions) {
     let depositDataRoot = getDepositDataRoot(depositData);
 
     // Make node deposit
-    await rocketNodeDeposit.deposit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    if (bondAmount.eq(txOptions.from)) {
+        await rocketNodeDeposit.deposit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    } else {
+        await rocketNodeDeposit.depositWithCredit(bondAmount, minimumNodeFee, depositData.pubkey, depositData.signature, depositDataRoot, salt, minipoolAddress, txOptions);
+    }
 
     // Get updated minipool indexes & created minipool details
     let minipoolCounts2 = await getMinipoolCounts(txOptions.from);

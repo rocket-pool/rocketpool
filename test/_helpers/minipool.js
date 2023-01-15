@@ -167,7 +167,11 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
 
         let depositDataRoot = getDepositDataRoot(depositData);
 
-        await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        if (txOptions.value.eq(bondAmount)) {
+            await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        } else {
+            await rocketNodeDeposit.depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+        }
 
         const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
 
