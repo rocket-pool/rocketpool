@@ -10,6 +10,7 @@ import "../../interface/minipool/RocketMinipoolBondReducerInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 
 /// @notice Handles bond reduction window and trusted node cancellation
 contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInterface {
@@ -31,9 +32,12 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
     /// @param _minipoolAddress Address of the minipool
     /// @param _newBondAmount The new bond amount
     function beginReduceBondAmount(address _minipoolAddress, uint256 _newBondAmount) override external onlyLatestContract("rocketMinipoolBondReducer", address(this)) {
+        // Only minipool owner can call
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         require(msg.sender == minipool.getNodeAddress(), "Only minipool owner");
+        // Get contracts
+        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
+        RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
         // Check if has been previously cancelled
         bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(minipool))));
         require(!reductionCancelled, "This minipool is not allowed to reduce bond");
@@ -42,6 +46,10 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         require(rocketNodeDeposit.isValidDepositAmount(_newBondAmount), "Invalid bond amount");
         uint256 existing = minipool.getNodeDepositBalance();
         require(_newBondAmount < existing, "Bond must be lower than current amount");
+        // Check if enough time has elapsed since last reduction
+        uint256 lastReduction = getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", _minipoolAddress)));
+        uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
+        require(block.timestamp >= lastReduction.add(rewardInterval), "Not enough time has passed since last bond reduction");
         // Store time and new bond amount
         setUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", _minipoolAddress)), block.timestamp);
         setUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", _minipoolAddress)), _newBondAmount);
@@ -132,7 +140,24 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         // Clean up state
         deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", msg.sender)));
         deleteUint(keccak256(abi.encodePacked("minipool.bond.reduction.value", msg.sender)));
+        // Store last bond reduction time and previous bond amount
+        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", msg.sender)), block.timestamp);
+        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", msg.sender)), existingBondAmount);
         // Return
         return newBondAmount;
+    }
+
+    /// @notice Returns a timestamp of when the given minipool last performed a bond reduction
+    /// @param _minipoolAddress The address of the minipool to query
+    /// @return Unix timestamp of last bond reduction (or 0 if never reduced)
+    function getLastBondReductionTime(address _minipoolAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", _minipoolAddress)));
+    }
+
+    /// @notice Returns the previous bond value of the given minipool on their last bond reduction
+    /// @param _minipoolAddress The address of the minipool to query
+    /// @return Previous bond value in wei (or 0 if never reduced)
+    function getLastBondReductionPrevValue(address _minipoolAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", _minipoolAddress)));
     }
 }

@@ -10,4 +10,6 @@ interface RocketMinipoolBondReducerInterface {
     function canReduceBondAmount(address _minipoolAddress) external view returns (bool);
     function voteCancelReduction(address _minipoolAddress) external;
     function reduceBondAmount() external returns (uint256);
+    function getLastBondReductionTime(address _minipoolAddress) external view returns (uint256);
+    function getLastBondReductionPrevValue(address _minipoolAddress) external view returns (uint256);
 }

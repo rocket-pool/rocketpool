@@ -132,7 +132,7 @@ export async function upgrade() {
                                 compressABI(contracts.rocketDAOProtocolSettingsNode.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
                                 compressABI(contracts.rocketMinipoolBondReducer.abi),
-                                rocketMinipoolAbi
+                                compressABI(rocketMinipoolAbi),
                             ],
                         ];
                         await instance.set(...args);

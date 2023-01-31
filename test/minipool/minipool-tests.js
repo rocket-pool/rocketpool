@@ -5,7 +5,10 @@ import {
     RevertOnTransfer,
     RocketVault,
     RocketTokenRPL,
-    RocketDAONodeTrustedSettingsMinipool, RocketMinipoolBase, RocketMinipoolBondReducer,
+    RocketDAONodeTrustedSettingsMinipool,
+    RocketMinipoolBase,
+    RocketMinipoolBondReducer,
+    RocketDAOProtocolSettingsRewards,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -40,6 +43,7 @@ import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from './scenario-reduce-bond';
 import { assertBN } from '../_helpers/bn';
 import { skimRewards } from './scenario-skim-rewards';
+import { artifacts } from 'hardhat';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -63,6 +67,7 @@ export default function() {
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let bondReductionWindowStart = (2 * 24 * 60 * 60);
         let bondReductionWindowLength = (2 * 24 * 60 * 60);
+        let rewardClaimPeriodTime = (28 * 24 * 60 * 60); // 28 days
         let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
@@ -94,6 +99,7 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
@@ -738,6 +744,50 @@ export default function() {
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
             await reduceBond(stakingMinipool, {from: node});
+        });
+
+
+        it(printTitle('node operator', 'can reduce bond amount to a valid deposit amount after reward period'), async () => {
+            // Upgrade RocketNodeDeposit to add 4 ETH LEB support
+            const RocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
+            const rocketNodeDepositLEB4 = await RocketNodeDepositLEB4.deployed();
+            await setDaoNodeTrustedBootstrapUpgrade("upgradeContract", "rocketNodeDeposit", RocketNodeDepositLEB4.abi, rocketNodeDepositLEB4.address, {from: owner});
+
+            // Get contracts
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            // Signal wanting to reduce
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await reduceBond(stakingMinipool, {from: node});
+
+            // Increase
+            await increaseTime(web3, rewardClaimPeriodTime + 1);
+
+            // Signal wanting to reduce again
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '4'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await reduceBond(stakingMinipool, {from: node});
+        });
+
+
+        it(printTitle('node operator', 'can not reduce bond amount to a valid deposit amount within reward period'), async () => {
+            // Upgrade RocketNodeDeposit to add 4 ETH LEB support
+            const RocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
+            const rocketNodeDepositLEB4 = await RocketNodeDepositLEB4.deployed();
+            await setDaoNodeTrustedBootstrapUpgrade("upgradeContract", "rocketNodeDeposit", RocketNodeDepositLEB4.abi, rocketNodeDepositLEB4.address, {from: owner});
+
+            // Get contracts
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            // Signal wanting to reduce
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await reduceBond(stakingMinipool, {from: node});
+
+            // Signal wanting to reduce again
+            await shouldRevert(rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '4'.ether, {from: node}), 'Was able to reduce without waiting', 'Not enough time has passed since last bond reduction');
         });
 
 

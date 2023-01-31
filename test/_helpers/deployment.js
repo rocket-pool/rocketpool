@@ -1,4 +1,5 @@
 /*** Dependencies ********************/
+import { RocketStorage } from '../_utils/artifacts';
 
 const hre = require('hardhat');
 const pako = require('pako');
@@ -111,6 +112,7 @@ const contracts = {
 
 // Development helper contracts
 const revertOnTransfer = artifacts.require('RevertOnTransfer.sol');
+const rocketNodeDepositLEB4 = artifacts.require('RocketNodeDepositLEB4.sol');
 
 // Instance contract ABIs
 const abis = {
@@ -429,6 +431,9 @@ export async function deployRocketPool() {
     if (network.name !== 'live' && network.name !== 'goerli') {
         let instance = await revertOnTransfer.new();
         revertOnTransfer.setAsDeployed(instance);
+
+        instance = await rocketNodeDepositLEB4.new(rocketStorageInstance.address);
+        rocketNodeDepositLEB4.setAsDeployed(instance);
     }
 
     // Perform upgrade if we are not running in test environment
