@@ -26,6 +26,7 @@ import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { voteScrub } from './scenario-scrub';
 import { assertBN } from '../_helpers/bn';
 import { refund } from './scenario-refund';
+import { getValidatorPubkey } from '../_utils/beacon';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -151,6 +152,15 @@ export default function() {
             });
             // Try to refund
             await refund(minipool, { from: node });
+        });
+
+
+        it(printTitle('node operator', 'can not create a vacant minipool with an existing pubkey'), async () => {
+            // Create minipool with a pubkey
+            const pubkey = getValidatorPubkey();
+            await createVacantMinipool('16'.ether, {from: node}, null, '32'.ether, pubkey);
+            // Try to create a new vacant minipool using the same pubkey
+            await shouldRevert(createVacantMinipool('16'.ether, {from: node}, null, '32'.ether, pubkey), 'Was able to reuse pubkey', 'Validator pubkey is in use');
         });
 
 

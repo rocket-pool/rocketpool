@@ -446,12 +446,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         _setMinipoolPubkey(msg.sender, _pubkey);
     }
 
-    /// @dev Internal logic to set a minipool's pubkey
+    /// @dev Internal logic to set a minipool's pubkey, reverts if pubkey already set
     /// @param _pubkey The pubkey to set for the calling minipool
     function _setMinipoolPubkey(address _minipool, bytes calldata _pubkey) private {
+        // Check validator pubkey is not in use
+        require(getMinipoolByPubkey(_pubkey) == address(0x0), "Validator pubkey is in use");
         // Load contracts
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Initialize minipool & get properties
+        // Initialise minipool & get properties
         RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipool);
         address nodeAddress = minipool.getNodeAddress();
         // Set minipool validator pubkey & validator minipool address
@@ -480,6 +482,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Minipool details
         MinipoolDetails memory details;
         details.exists = getMinipoolExists(_minipoolAddress);
+        details.minipoolAddress = _minipoolAddress;
         details.pubkey = getMinipoolPubkey(_minipoolAddress);
         details.status = minipoolInterface.getStatus();
         details.statusBlock = minipoolInterface.getStatusBlock();
