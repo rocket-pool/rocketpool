@@ -29,4 +29,5 @@ struct NodeDetails {
     address pendingWithdrawalAddress;
     bool smoothingPoolRegistrationState;
     uint256 smoothingPoolRegistrationChanged;
+    address nodeAddress;
 }

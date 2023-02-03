@@ -30,4 +30,7 @@ struct MinipoolDetails {
     uint256 penaltyRate;
     bool userDistributed;
     bool slashed;
+    address nodeAddress;
+    uint256 lastBondReductionTime;
+    uint256 lastBondReductionPrevValue;
 }

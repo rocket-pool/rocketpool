@@ -473,14 +473,16 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
 
     /// @notice Retrieves all on-chain information about a given minipool in a single convenience view function
     /// @param _minipoolAddress The address of the minipool to query details about
-    function getMinipoolDetails(address _minipoolAddress) override external view returns (MinipoolDetails memory) {
+    function getMinipoolDetails(address _minipoolAddress) override public view returns (MinipoolDetails memory) {
         // Get contracts
         RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
         RocketMinipoolBase minipool = RocketMinipoolBase(payable(_minipoolAddress));
         RocketNetworkPenaltiesInterface rocketNetworkPenalties = RocketNetworkPenaltiesInterface(getContractAddress("rocketNetworkPenalties"));
         RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
+        RocketMinipoolBondReducerInterface rocketMinipoolBondReducer = RocketMinipoolBondReducerInterface(getContractAddress("rocketMinipoolBondReducer"));
         // Minipool details
         MinipoolDetails memory details;
+        details.nodeAddress = minipoolInterface.getNodeAddress();
         details.exists = getMinipoolExists(_minipoolAddress);
         details.minipoolAddress = _minipoolAddress;
         details.pubkey = getMinipoolPubkey(_minipoolAddress);
@@ -505,6 +507,50 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Penalty details
         details.penaltyCount = rocketNetworkPenalties.getPenaltyCount(_minipoolAddress);
         details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
+        // Bond reduction
+        details.lastBondReductionTime = rocketMinipoolBondReducer.getLastBondReductionTime(_minipoolAddress);
+        details.lastBondReductionPrevValue = rocketMinipoolBondReducer.getLastBondReductionPrevValue(_minipoolAddress);
         return details;
+    }
+
+    /// @notice Returns a slice of the minipool details owned by a given node operator
+    /// @param _nodeAddress The address of the node operator to query
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
+    function getNodeMinipoolDetails(address _nodeAddress, uint256 _offset, uint256 _limit) override external view returns (MinipoolDetails[] memory) {
+        return getMinipoolDetailsByKey(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _offset, _limit);
+    }
+
+    /// @notice Returns a slice of all the minipool details
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
+    function getAllMinipoolDetails(uint256 _offset, uint256 _limit) override external view returns (MinipoolDetails[] memory) {
+        return getMinipoolDetailsByKey(keccak256(abi.encodePacked("minipools.index")), _offset, _limit);
+    }
+
+
+    /// @dev Returns a slice of all minipool details by a given key
+    /// @param _key The addressSetStorage key to query
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
+    function getMinipoolDetailsByKey(bytes32 _key, uint256 _offset, uint256 _limit) internal view returns (MinipoolDetails[] memory) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Iterate over the requested minipool range
+        uint256 totalMinipools = addressSetStorage.getCount(_key);
+        uint256 max = _offset.add(_limit);
+        if (max > totalMinipools || _limit == 0) { max = totalMinipools; }
+        // Create array big enough for every minipool
+        MinipoolDetails[] memory nodes = new MinipoolDetails[](max.sub(_offset));
+        uint256 total = 0;
+        for (uint256 i = _offset; i < max; i++) {
+            nodes[total] = getMinipoolDetails(addressSetStorage.getItem(_key, i));
+            total++;
+        }
+        // Dirty hack to cut unused elements off end of return value
+        assembly {
+            mstore(nodes, total)
+        }
+        return nodes;
     }
 }

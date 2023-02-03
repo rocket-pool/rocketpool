@@ -404,6 +404,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         IERC20 rocketTokenRPLFixedSupply
     ) internal view returns (NodeDetails memory nodeDetails) {
         // Node details
+        nodeDetails.nodeAddress = _nodeAddress;
         nodeDetails.withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
         nodeDetails.pendingWithdrawalAddress = rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
         nodeDetails.exists = getNodeExists(_nodeAddress);
