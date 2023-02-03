@@ -40,4 +40,5 @@ interface RocketMinipoolManagerInterface {
     function setMinipoolPubkey(bytes calldata _pubkey) external;
     function getMinipoolDetails(address _minipoolAddress) external view returns (MinipoolDetails memory);
     function getNodeMinipoolDetails(address _nodeAddress, uint256 _offset, uint256 _limit) external view returns (MinipoolDetails[] memory);
+    function getAllMinipoolDetails(uint256 _offset, uint256 _limit) external view returns (MinipoolDetails[] memory);
 }

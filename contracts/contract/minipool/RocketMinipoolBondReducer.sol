@@ -11,6 +11,7 @@ import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 
 /// @notice Handles bond reduction window and trusted node cancellation
 contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInterface {
@@ -38,6 +39,9 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         // Get contracts
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         RocketDAOProtocolSettingsRewardsInterface daoSettingsRewards = RocketDAOProtocolSettingsRewardsInterface(getContractAddress("rocketDAOProtocolSettingsRewards"));
+        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        // Check if enabled
+        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
         // Check if has been previously cancelled
         bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(minipool))));
         require(!reductionCancelled, "This minipool is not allowed to reduce bond");
@@ -120,6 +124,9 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         // Get contracts
         RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
         RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        RocketDAOProtocolSettingsMinipoolInterface daoSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
+        // Check if enabled
+        require(daoSettingsMinipool.getBondReductionEnabled(), "Bond reduction currently disabled");
         // Check if has been cancelled
         bool reductionCancelled = getBool(keccak256(abi.encodePacked("minipool.bond.reduction.cancelled", address(msg.sender))));
         require(!reductionCancelled, "This minipool is not allowed to reduce bond");

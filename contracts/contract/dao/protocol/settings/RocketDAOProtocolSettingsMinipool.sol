@@ -21,6 +21,7 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", false);
+            setSettingBool("minipool.bond.reduction.enabled", false);
             setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
             setSettingUint("minipool.user.distribute.window.start", 14 days);
@@ -80,6 +81,11 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
     /// @notice Submit minipool withdrawable events currently enabled (trusted nodes only)
     function getSubmitWithdrawableEnabled() override external view returns (bool) {
         return getSettingBool("minipool.submit.withdrawable.enabled");
+    }
+
+    /// @notice Returns true if bond reductions are currentl enabled
+    function getBondReductionEnabled() override external view returns (bool) {
+        return getSettingBool("minipool.bond.reduction.enabled");
     }
 
     /// @notice Returns the timeout period in seconds for prelaunch minipools to launch
