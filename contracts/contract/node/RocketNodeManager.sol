@@ -10,8 +10,7 @@ import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
 import "../../types/NodeDetails.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/rewards/claims/RocketClaimNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol"; 
+import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/util/AddressSetStorageInterface.sol";
 import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
@@ -326,83 +325,6 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         IERC20 rocketTokenRETH = IERC20(getContractAddress("rocketTokenRETH"));
         IERC20 rocketTokenRPL = IERC20(getContractAddress("rocketTokenRPL"));
         IERC20 rocketTokenRPLFixedSupply = IERC20(getContractAddress("rocketTokenRPLFixedSupply"));
-        // Call internal method
-        return _getNodeDetails(_nodeAddress, rocketNodeStaking, rocketNodeDeposit, rocketNodeDistributorFactory, rocketMinipoolManager, rocketTokenRETH, rocketTokenRPL, rocketTokenRPLFixedSupply);
-    }
-
-    /// @notice Returns a slice of the node operator address set
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getNodeAddresses(uint256 _offset, uint256 _limit) override external view returns (address[] memory) {
-        // Get contracts
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Precompute node key
-        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
-        // Iterate over the requested minipool range
-        uint256 totalNodes = getNodeCount();
-        uint256 max = _offset.add(_limit);
-        if (max > totalNodes || _limit == 0) { max = totalNodes; }
-        // Create array big enough for every minipool
-        address[] memory nodes = new address[](max.sub(_offset));
-        uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
-            nodes[total] = addressSetStorage.getItem(nodeKey, i);
-            total++;
-        }
-        // Dirty hack to cut unused elements off end of return value
-        assembly {
-            mstore(nodes, total)
-        }
-        return nodes;
-    }
-
-    /// @notice Returns a slice of node operator details
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getAllNodeDetails(uint256 _offset, uint256 _limit) override external view returns (NodeDetails[] memory) {
-        // Get contracts
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        RocketNodeDepositInterface rocketNodeDeposit = RocketNodeDepositInterface(getContractAddress("rocketNodeDeposit"));
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        IERC20 rocketTokenRETH = IERC20(getContractAddress("rocketTokenRETH"));
-        IERC20 rocketTokenRPL = IERC20(getContractAddress("rocketTokenRPL"));
-        IERC20 rocketTokenRPLFixedSupply = IERC20(getContractAddress("rocketTokenRPLFixedSupply"));
-        // Precompute node key
-        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
-        // Iterate over the requested minipool range
-        uint256 max = _offset.add(_limit);
-        {
-            uint256 totalNodes = getNodeCount();
-            if (max > totalNodes || _limit == 0) { max = totalNodes; }
-        }
-        // Create array big enough for every minipool
-        NodeDetails[] memory nodeDetails = new NodeDetails[](max.sub(_offset));
-        uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
-            nodeDetails[total] = _getNodeDetails(addressSetStorage.getItem(nodeKey, i),
-                rocketNodeStaking, rocketNodeDeposit, rocketNodeDistributorFactory,
-                rocketMinipoolManager, rocketTokenRETH, rocketTokenRPL, rocketTokenRPLFixedSupply);
-            total++;
-        }
-        // Dirty hack to cut unused elements off end of return value
-        assembly {
-            mstore(nodeDetails, total)
-        }
-        return nodeDetails;
-    }
-
-    /// @dev Internal method to get all details about a node
-    function _getNodeDetails(address _nodeAddress,
-        RocketNodeStakingInterface rocketNodeStaking,
-        RocketNodeDepositInterface rocketNodeDeposit,
-        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory,
-        RocketMinipoolManagerInterface rocketMinipoolManager,
-        IERC20 rocketTokenRETH,
-        IERC20 rocketTokenRPL,
-        IERC20 rocketTokenRPLFixedSupply
-    ) internal view returns (NodeDetails memory nodeDetails) {
         // Node details
         nodeDetails.nodeAddress = _nodeAddress;
         nodeDetails.withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
@@ -437,4 +359,29 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         return nodeDetails;
     }
 
+    /// @notice Returns a slice of the node operator address set
+    /// @param _offset The starting point into the slice
+    /// @param _limit The maximum number of results to return
+    function getNodeAddresses(uint256 _offset, uint256 _limit) override external view returns (address[] memory) {
+        // Get contracts
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        // Precompute node key
+        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
+        // Iterate over the requested minipool range
+        uint256 totalNodes = getNodeCount();
+        uint256 max = _offset.add(_limit);
+        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        // Create array big enough for every minipool
+        address[] memory nodes = new address[](max.sub(_offset));
+        uint256 total = 0;
+        for (uint256 i = _offset; i < max; i++) {
+            nodes[total] = addressSetStorage.getItem(nodeKey, i);
+            total++;
+        }
+        // Dirty hack to cut unused elements off end of return value
+        assembly {
+            mstore(nodes, total)
+        }
+        return nodes;
+    }
 }

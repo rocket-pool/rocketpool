@@ -81,7 +81,6 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
     /// @notice Returns whether owner of given minipool can reduce bond amount given the waiting period constraint
     /// @param _minipoolAddress Address of the minipool
     function canReduceBondAmount(address _minipoolAddress) override public view returns (bool) {
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         RocketDAONodeTrustedSettingsMinipoolInterface rocketDAONodeTrustedSettingsMinipool = RocketDAONodeTrustedSettingsMinipoolInterface(getContractAddress("rocketDAONodeTrustedSettingsMinipool"));
         uint256 reduceBondTime = getUint(keccak256(abi.encodePacked("minipool.bond.reduction.time", _minipoolAddress)));
         return rocketDAONodeTrustedSettingsMinipool.isWithinBondReductionWindow(block.timestamp.sub(reduceBondTime));
@@ -93,7 +92,6 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         // Prevent calling if consensus has already been reached
         require(!getReduceBondCancelled(_minipoolAddress), "Already cancelled");
         // Get contracts
-        RocketMinipoolInterface minipool = RocketMinipoolInterface(_minipoolAddress);
         RocketDAONodeTrustedInterface rocketDAONode = RocketDAONodeTrustedInterface(getContractAddress("rocketDAONodeTrusted"));
         // Check for multiple votes
         bytes32 memberVotedKey = keccak256(abi.encodePacked("minipool.bond.reduction.member.voted", _minipoolAddress, msg.sender));

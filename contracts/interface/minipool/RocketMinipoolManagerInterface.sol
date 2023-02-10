@@ -12,6 +12,7 @@ interface RocketMinipoolManagerInterface {
     function getStakingMinipoolCount() external view returns (uint256);
     function getFinalisedMinipoolCount() external view returns (uint256);
     function getActiveMinipoolCount() external view returns (uint256);
+    function getMinipoolRPLSlashed(address _minipoolAddress) external view returns (bool);
     function getMinipoolCountPerStatus(uint256 offset, uint256 limit) external view returns (uint256, uint256, uint256, uint256, uint256);
     function getPrelaunchMinipools(uint256 offset, uint256 limit) external view returns (address[] memory);
     function getMinipoolAt(uint256 _index) external view returns (address);
@@ -39,6 +40,4 @@ interface RocketMinipoolManagerInterface {
     function incrementNodeFinalisedMinipoolCount(address _nodeAddress) external;
     function setMinipoolPubkey(bytes calldata _pubkey) external;
     function getMinipoolDetails(address _minipoolAddress) external view returns (MinipoolDetails memory);
-    function getNodeMinipoolDetails(address _nodeAddress, uint256 _offset, uint256 _limit) external view returns (MinipoolDetails[] memory);
-    function getAllMinipoolDetails(uint256 _offset, uint256 _limit) external view returns (MinipoolDetails[] memory);
 }

@@ -5,19 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../RocketBase.sol";
-import "../../types/MinipoolStatus.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/minipool/RocketMinipoolBaseInterface.sol";
-import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
-import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
-import "../../interface/node/RocketNodeStakingInterface.sol";
-import "../../interface/util/AddressSetStorageInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNodeInterface.sol";
 import "../../interface/minipool/RocketMinipoolFactoryInterface.sol";
 
 /// @notice Performs CREATE2 deployment of minipool contracts

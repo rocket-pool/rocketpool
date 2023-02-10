@@ -68,6 +68,11 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return total.sub(finalised);
     }
 
+    /// @notice Returns true if a minipool has had an RPL slashing
+    function getMinipoolRPLSlashed(address _minipoolAddress) override external view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("minipool.rpl.slashed", _minipoolAddress)));
+    }
+
     /// @notice Get the number of minipools in each status.
     ///         Returns the counts for Initialised, Prelaunch, Staking, Withdrawable, and Dissolved in that order.
     /// @param _offset The offset into the minipool set to start
@@ -391,6 +396,9 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Remove from vacant set
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
         addressSetStorage.removeItem(keccak256(abi.encodePacked("minipools.vacant.index")), msg.sender);
+        // Remove mapping of pubkey to minipool to allow NO to try again in future
+        bytes memory pubkey = getMinipoolPubkey(msg.sender);
+        deleteAddress(keccak256(abi.encodePacked("validator.minipool", pubkey)));
     }
 
     /// @notice Returns the number of minipools in the vacant minipool set
@@ -463,29 +471,22 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), _minipool);
     }
 
-    /// @dev Performs a CREATE2 deployment of a minipool contract with given salt
-    /// @param _nodeAddress The owning node operator's address
-    /// @param _salt A salt used in determining the minipool's address
-    function deployContract(address _nodeAddress, uint256 _salt) private returns (address) {
-        RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
-        return rocketMinipoolFactory.deployContract(_nodeAddress, _salt);
-    }
-
     /// @notice Retrieves all on-chain information about a given minipool in a single convenience view function
     /// @param _minipoolAddress The address of the minipool to query details about
     function getMinipoolDetails(address _minipoolAddress) override public view returns (MinipoolDetails memory) {
         // Get contracts
         RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
         RocketMinipoolBase minipool = RocketMinipoolBase(payable(_minipoolAddress));
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
         RocketNetworkPenaltiesInterface rocketNetworkPenalties = RocketNetworkPenaltiesInterface(getContractAddress("rocketNetworkPenalties"));
         RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
-        RocketMinipoolBondReducerInterface rocketMinipoolBondReducer = RocketMinipoolBondReducerInterface(getContractAddress("rocketMinipoolBondReducer"));
         // Minipool details
         MinipoolDetails memory details;
         details.nodeAddress = minipoolInterface.getNodeAddress();
-        details.exists = getMinipoolExists(_minipoolAddress);
+        details.exists = rocketMinipoolManager.getMinipoolExists(_minipoolAddress);
+        details.vacant = minipoolInterface.getVacant();
         details.minipoolAddress = _minipoolAddress;
-        details.pubkey = getMinipoolPubkey(_minipoolAddress);
+        details.pubkey = rocketMinipoolManager.getMinipoolPubkey(_minipoolAddress);
         details.status = minipoolInterface.getStatus();
         details.statusBlock = minipoolInterface.getStatusBlock();
         details.statusTime = minipoolInterface.getStatusTime();
@@ -497,8 +498,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         details.userDepositBalance = minipoolInterface.getUserDepositBalance();
         details.userDepositAssigned = minipoolInterface.getUserDepositAssigned();
         details.userDepositAssignedTime = minipoolInterface.getUserDepositAssignedTime();
-        details.userDistributed = minipoolInterface.getUserDistributed();
-        details.slashed = minipoolInterface.getSlashed();
         // Delegate details
         details.useLatestDelegate = minipool.getUseLatestDelegate();
         details.delegate = minipool.getDelegate();
@@ -507,50 +506,14 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         // Penalty details
         details.penaltyCount = rocketNetworkPenalties.getPenaltyCount(_minipoolAddress);
         details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
-        // Bond reduction
-        details.lastBondReductionTime = rocketMinipoolBondReducer.getLastBondReductionTime(_minipoolAddress);
-        details.lastBondReductionPrevValue = rocketMinipoolBondReducer.getLastBondReductionPrevValue(_minipoolAddress);
         return details;
     }
 
-    /// @notice Returns a slice of the minipool details owned by a given node operator
-    /// @param _nodeAddress The address of the node operator to query
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getNodeMinipoolDetails(address _nodeAddress, uint256 _offset, uint256 _limit) override external view returns (MinipoolDetails[] memory) {
-        return getMinipoolDetailsByKey(keccak256(abi.encodePacked("node.minipools.index", _nodeAddress)), _offset, _limit);
-    }
-
-    /// @notice Returns a slice of all the minipool details
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getAllMinipoolDetails(uint256 _offset, uint256 _limit) override external view returns (MinipoolDetails[] memory) {
-        return getMinipoolDetailsByKey(keccak256(abi.encodePacked("minipools.index")), _offset, _limit);
-    }
-
-
-    /// @dev Returns a slice of all minipool details by a given key
-    /// @param _key The addressSetStorage key to query
-    /// @param _offset The starting point into the slice
-    /// @param _limit The maximum number of results to return
-    function getMinipoolDetailsByKey(bytes32 _key, uint256 _offset, uint256 _limit) internal view returns (MinipoolDetails[] memory) {
-        // Get contracts
-        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
-        // Iterate over the requested minipool range
-        uint256 totalMinipools = addressSetStorage.getCount(_key);
-        uint256 max = _offset.add(_limit);
-        if (max > totalMinipools || _limit == 0) { max = totalMinipools; }
-        // Create array big enough for every minipool
-        MinipoolDetails[] memory nodes = new MinipoolDetails[](max.sub(_offset));
-        uint256 total = 0;
-        for (uint256 i = _offset; i < max; i++) {
-            nodes[total] = getMinipoolDetails(addressSetStorage.getItem(_key, i));
-            total++;
-        }
-        // Dirty hack to cut unused elements off end of return value
-        assembly {
-            mstore(nodes, total)
-        }
-        return nodes;
+    /// @dev Performs a CREATE2 deployment of a minipool contract with given salt
+    /// @param _nodeAddress The owning node operator's address
+    /// @param _salt A salt used in determining the minipool's address
+    function deployContract(address _nodeAddress, uint256 _salt) private returns (address) {
+        RocketMinipoolFactoryInterface rocketMinipoolFactory = RocketMinipoolFactoryInterface(getContractAddress("rocketMinipoolFactory"));
+        return rocketMinipoolFactory.deployContract(_nodeAddress, _salt);
     }
 }

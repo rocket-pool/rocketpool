@@ -21,10 +21,20 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
     uint8 public constant version = 2;
     uint256 constant calcBase = 1 ether;
 
+    uint256 private constant NOT_ENTERED = 1;
+    uint256 private constant ENTERED = 2;
+
     // Precomputed constants
     bytes32 immutable rocketNodeManagerKey;
     bytes32 immutable rocketNodeStakingKey;
     bytes32 immutable rocketTokenRETHKey;
+
+    modifier nonReentrant() {
+        require(lock != ENTERED, "Reentrant call");
+        lock = ENTERED;
+        _;
+        lock = NOT_ENTERED;
+    }
 
     constructor() {
         // Precompute storage keys
@@ -34,6 +44,7 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
         // These values must be set by proxy contract as this contract should only be delegatecalled
         rocketStorage = RocketStorageInterface(address(0));
         nodeAddress = address(0);
+        lock = NOT_ENTERED;
     }
 
     /// @notice Returns the portion of the contract's balance that belongs to the node operator
@@ -57,7 +68,7 @@ contract RocketNodeDistributorDelegate is RocketNodeDistributorStorageLayout, Ro
     }
 
     /// @notice Distributes the balance of this contract to its owners
-    function distribute() override external {
+    function distribute() override external nonReentrant {
         // Calculate node share
         uint256 nodeShare = getNodeShare();
         // Transfer node share

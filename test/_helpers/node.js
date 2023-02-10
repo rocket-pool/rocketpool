@@ -130,6 +130,33 @@ export async function nodeStakeRPL(amount, txOptions) {
 }
 
 
+// Submit a node RPL stake on behalf of another node
+export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {
+    const preUpdate = !(await upgradeExecuted());
+
+    const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
+        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
+        RocketTokenRPL.deployed(),
+    ]);
+    await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
+    const before = await rocketNodeStaking.getNodeRPLStake(nodeAddress);
+    await rocketNodeStaking.stakeRPLFor(nodeAddress, amount, txOptions);
+    const after = await rocketNodeStaking.getNodeRPLStake(nodeAddress);
+    assertBN.equal(after.sub(before), amount, 'Staking balance did not increase by amount staked');
+}
+
+
+// Sets allow state for staking on behalf
+export async function setStakeRPLForAllowed(caller, state, txOptions) {
+    const preUpdate = !(await upgradeExecuted());
+
+    const [rocketNodeStaking] = await Promise.all([
+        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
+    ]);
+    await rocketNodeStaking.setStakeRPLForAllowed(caller, state, txOptions);
+}
+
+
 // Withdraw a node RPL stake
 export async function nodeWithdrawRPL(amount, txOptions) {
     const rocketNodeStaking= await RocketNodeStaking.deployed();

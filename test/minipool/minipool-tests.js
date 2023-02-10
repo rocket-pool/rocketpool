@@ -323,7 +323,7 @@ export default function() {
             // Call slash method
             await prelaunchMinipool.slash({ from: random });
             // Check slashed flag
-            const slashed = await prelaunchMinipool.getSlashed();
+            const slashed = await (await RocketMinipoolManager.deployed()).getMinipoolRPLSlashed(prelaunchMinipool.address);
             assert(slashed, "Slashed flag not set");
             // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
             const rocketVault = await RocketVault.deployed();
@@ -339,7 +339,7 @@ export default function() {
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(prelaunchMinipool, '8'.ether, nodeWithdrawalAddress, true);
             // Check slashed flag
-            const slashed = await prelaunchMinipool.getSlashed();
+            const slashed = await (await RocketMinipoolManager.deployed()).getMinipoolRPLSlashed(prelaunchMinipool.address);
             assert(slashed, "Slashed flag not set");
             // Auction house should now have slashed 8 ETH worth of RPL (which is 800 RPL at starting price)
             const rocketVault = await RocketVault.deployed();

@@ -24,9 +24,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLStaked(address indexed from, uint256 amount, uint256 time);
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
+    event StakeRPLForAllowed(address indexed node, address indexed caller, bool allowed, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 4;
     }
 
     /// @notice Returns the total quantity of RPL staked on the network
@@ -187,7 +188,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     /// @param _nodeAddress The address of the node operator to calculate for
     function getNodeETHMatchedLimit(address _nodeAddress) override external view returns (uint256) {
         // Load contracts
-        RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         // Calculate & return limit
@@ -207,10 +207,26 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @notice Accept an RPL stake from any address for a specified node
     ///         Requires caller to have approved this contract to spend RPL
+    ///         Requires caller to be on the node operator's allow list (see `setStakeForAllowed`)
     /// @param _nodeAddress The address of the node operator to stake on behalf of
     /// @param _amount The amount of RPL to stake
     function stakeRPLFor(address _nodeAddress, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(_nodeAddress) {
-        _stakeRPL(_nodeAddress, _amount);
+       // Must be node's withdrawal address, allow listed address or rocketMerkleDistributorMainnet
+       if (msg.sender != getAddress(keccak256(abi.encodePacked("contract.address", "rocketMerkleDistributorMainnet")))) {
+           address withdrawalAddress = rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+           if (msg.sender != withdrawalAddress) {
+               require(getBool(keccak256(abi.encodePacked("node.stake.for.allowed", _nodeAddress, msg.sender))), "Not allowed to stake for");
+           }
+       }
+       _stakeRPL(_nodeAddress, _amount);
+    }
+
+    /// @notice Explicitly allow or remove allowance of an address to be able to stake on behalf of a node
+    /// @param _caller The address you wish to allow
+    /// @param _allowed Whether the address is allowed or denied
+    function setStakeRPLForAllowed(address _caller, bool _allowed) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNode(msg.sender) {
+        setBool(keccak256(abi.encodePacked("node.stake.for.allowed", msg.sender, _caller)), _allowed);
+        emit StakeRPLForAllowed(msg.sender, _caller, _allowed, block.timestamp);
     }
 
     /// @dev Internal logic for staking RPL
@@ -227,8 +243,6 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Deposit RPL tokens to vault
         require(rplToken.approve(rocketVaultAddress, _amount), "Could not approve vault RPL deposit");
         rocketVault.depositToken("rocketNodeStaking", rplToken, _amount);
-        // Get node's current stake
-        uint256 rplStake = getNodeRPLStake(_nodeAddress);
         // Update RPL stake amounts & node RPL staked block
         increaseTotalRPLStake(_amount);
         increaseNodeRPLStake(_nodeAddress, _amount);
@@ -279,6 +293,8 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         // Update RPL stake amounts
         decreaseTotalRPLStake(rplSlashAmount);
         decreaseNodeRPLStake(_nodeAddress, rplSlashAmount);
+        // Mark minipool as slashed
+        setBool(keccak256(abi.encodePacked("minipool.rpl.slashed", msg.sender)), true);
         // Emit RPL slashed event
         emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, block.timestamp);
     }

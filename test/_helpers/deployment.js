@@ -75,7 +75,7 @@ const contracts = {
     rocketDAOProtocolSettingsInflation:       artifacts.require('RocketDAOProtocolSettingsInflation.sol'),
     rocketDAOProtocolSettingsRewards:         artifacts.require('RocketDAOProtocolSettingsRewards.sol'),
     rocketDAOProtocolSettingsAuction:         artifacts.require('RocketDAOProtocolSettingsAuction.sol'),
-    rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNode.sol'),
+    rocketDAOProtocolSettingsNode:            artifacts.require('RocketDAOProtocolSettingsNodeOld.sol'),
     rocketDAOProtocolSettingsNetwork:         artifacts.require('RocketDAOProtocolSettingsNetwork.sol'),
     rocketDAOProtocolSettingsDeposit:         artifacts.require('RocketDAOProtocolSettingsDepositOld.sol'),
     rocketDAOProtocolSettingsMinipool:        artifacts.require('RocketDAOProtocolSettingsMinipoolOld.sol'),

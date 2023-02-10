@@ -15,6 +15,7 @@ interface RocketNodeStakingInterface {
     function getNodeETHMatchedLimit(address _nodeAddress) external view returns (uint256);
     function stakeRPL(uint256 _amount) external;
     function stakeRPLFor(address _nodeAddress, uint256 _amount) external;
+    function setStakeRPLForAllowed(address _caller, bool _allowed) external;
     function withdrawRPL(uint256 _amount) external;
     function slashRPL(address _nodeAddress, uint256 _ethSlashAmount) external;
 }

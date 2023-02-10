@@ -7,4 +7,5 @@ import "../../interface/RocketStorageInterface.sol";
 abstract contract RocketNodeDistributorStorageLayout {
     RocketStorageInterface rocketStorage;
     address nodeAddress;
+    uint256 lock;   // Reentrancy guard
 }

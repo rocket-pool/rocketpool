@@ -68,7 +68,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address immutable deployer;
 
     // Claim intervals
-    ClaimInterval[] intervals;
+    ClaimInterval[] public intervals;
 
     // Construct
     constructor(
@@ -165,6 +165,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketNetworkPrices", newRocketNetworkPrices, newRocketNetworkPricesAbi);
         _upgradeContract("rocketDAONodeTrustedSettingsMinipool", newRocketDAONodeTrustedSettingsMinipool, newRocketDAONodeTrustedSettingsMinipoolAbi);
         _upgradeContract("rocketNodeManager", newRocketNodeManager, newRocketNodeManagerAbi);
+        _upgradeContract("rocketDAOProtocolSettingsNode", newRocketDAOProtocolSettingsNode, newRocketDAOProtocolSettingsNodeAbi);
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);
@@ -197,9 +198,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "minipool"));
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.start")), 14 days);
         setUint(keccak256(abi.encodePacked(settingNameSpace, "minipool.user.distribute.window.length")), 2 days);
-        setBool(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.enabled")), true);
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "minipool.bond.reduction.enabled")), false);
         settingNameSpace = keccak256(abi.encodePacked("dao.protocol.setting.", "node"));
-        setBool(keccak256(abi.encodePacked(settingNameSpace, "node.vacant.minipools.enabled")), true);
+        setBool(keccak256(abi.encodePacked(settingNameSpace, "node.vacant.minipools.enabled")), false);
 
         // Claim intervals
         for (uint256 i = 0; i < intervals.length; i++) {

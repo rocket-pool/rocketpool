@@ -4,8 +4,6 @@ pragma solidity 0.7.6;
 import "./RocketMinipoolStorageLayout.sol";
 import "../../interface/RocketStorageInterface.sol";
 import "../../interface/minipool/RocketMinipoolBaseInterface.sol";
-import "../../types/MinipoolDeposit.sol";
-import "../../types/MinipoolStatus.sol";
 
 /// @notice Contains the initialisation and delegate upgrade logic for minipools
 contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorageLayout {
@@ -141,7 +139,7 @@ contract RocketMinipoolBase is RocketMinipoolBaseInterface, RocketMinipoolStorag
     }
 
     /// @dev Returns true if contract exists at _contractAddress (if called during that contract's construction it will return a false negative)
-    function contractExists(address _contractAddress) private returns (bool) {
+    function contractExists(address _contractAddress) private view returns (bool) {
         uint32 codeSize;
         assembly {
             codeSize := extcodesize(_contractAddress)

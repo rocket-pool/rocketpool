@@ -10,8 +10,6 @@ import "../../interface/minipool/RocketMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/minipool/RocketMinipoolPenaltyInterface.sol";
-import "../../interface/network/RocketNetworkPricesInterface.sol";
-import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
@@ -29,7 +27,7 @@ import "../../interface/minipool/RocketMinipoolBondReducerInterface.sol";
 contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolInterface {
 
     // Constants
-    uint8 public constant version = 3;                            // Used to identify which delegate contract each minipool is using
+    uint8 public constant override version = 3;                   // Used to identify which delegate contract each minipool is using
     uint256 constant calcBase = 1 ether;                          // Fixed point arithmetic uses this for value for precision
     uint256 constant legacyPrelaunchAmount = 16 ether;            // The amount of ETH initially deposited when minipool is created (for legacy minipools)
 
@@ -43,6 +41,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     event MinipoolScrubbed(uint256 time);
     event MinipoolPrestaked(bytes validatorPubkey, bytes validatorSignature, bytes32 depositDataRoot, uint256 amount, bytes withdrawalCredentials, uint256 time);
     event MinipoolPromoted(uint256 time);
+    event MinipoolVacancyPrepared(uint256 bondAmount, uint256 currentBalance, uint256 time);
     event EtherDeposited(address indexed from, uint256 amount, uint256 time);
     event EtherWithdrawn(address indexed to, uint256 amount, uint256 time);
     event EtherWithdrawalProcessed(address indexed executed, uint256 nodeAmount, uint256 userAmount, uint256 totalBalance, uint256 time);
@@ -68,7 +67,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     function getVacant() override external view returns (bool) { return vacant; }
     function getPreMigrationBalance() override external view returns (uint256) { return preMigrationBalance; }
     function getUserDistributed() override external view returns (bool) { return userDistributed; }
-    function getSlashed() override external view returns (bool) { return slashed; }
 
     // User deposit detail getters
     function getUserDepositBalance() override public view returns (uint256) {
@@ -202,10 +200,12 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         require(nodeRefundBalance > 0, "No amount of the node deposit is available for refund");
         // If this minipool was distributed by a user, force finalisation on the node operator
         if (!finalised && userDistributed) {
+            // Note: _refund is called inside _finalise
             _finalise();
+        } else {
+            // Refund node
+            _refund();
         }
-        // Refund node
-        _refund();
     }
 
     /// @notice Called to slash node operator's RPL balance if withdrawal balance was less than user deposit
@@ -306,6 +306,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         nodeRefundBalance = _currentBalance.sub(launchAmount);
         // Set status to preLaunch
         setStatus(MinipoolStatus.Prelaunch);
+        // Emit event
+        emit MinipoolVacancyPrepared(_bondAmount, _currentBalance, block.timestamp);
     }
 
     /// @dev Promotes this minipool to a complete minipool
@@ -482,7 +484,7 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
             }
         } else {
             // Calculate node's share of the balance
-            nodeAmount = calculateNodeShare(_balance);
+            nodeAmount = _calculateNodeShare(_balance);
         }
         // User amount is what's left over from node's share
         uint256 userAmount = _balance.sub(nodeAmount);
@@ -499,10 +501,32 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         emit EtherWithdrawalProcessed(msg.sender, nodeAmount, userAmount, _balance, block.timestamp);
     }
 
-    /// @notice Given a validator balance, this function returns what portion of it belongs to the node taking into
-    /// consideration the minipool's commission rate and any penalties it may have attracted
-    /// @param _balance The balance to calculate the node share of
+    /// @notice Given a balance, this function returns what portion of it belongs to the node taking into
+    /// consideration the 8 ether reward threshold, the minipool's commission rate and any penalties it may have
+    /// attracted. Another way of describing this function is that if this contract's balance was
+    /// `_balance + nodeRefundBalance` this function would return how much of that balance would be paid to the node
+    /// operator if a distribution occurred
+    /// @param _balance The balance to calculate the node share of. Should exclude nodeRefundBalance
     function calculateNodeShare(uint256 _balance) override public view returns (uint256) {
+        // Sub 8 ether balance is treated as rewards
+        if (_balance < 8 ether) {
+            return calculateNodeRewards(nodeDepositBalance, getUserDepositBalance(), _balance);
+        } else {
+            return _calculateNodeShare(_balance);
+        }
+    }
+
+    /// @notice Performs the same calculation as `calculateNodeShare` but on the user side
+    /// @param _balance The balance to calculate the node share of. Should exclude nodeRefundBalance
+    function calculateUserShare(uint256 _balance) override external view returns (uint256) {
+        // User's share is just the balance minus node refund minus node's share
+        return _balance.sub(calculateNodeShare(_balance));
+    }
+
+    /// @dev Given a balance, this function returns what portion of it belongs to the node taking into
+    /// consideration the minipool's commission rate and any penalties it may have attracted
+    /// @param _balance The balance to calculate the node share of (with nodeRefundBalance already subtracted)
+    function _calculateNodeShare(uint256 _balance) internal view returns (uint256) {
         uint256 userCapital = getUserDepositBalance();
         uint256 nodeCapital = nodeDepositBalance;
         uint256 nodeShare = 0;
@@ -537,14 +561,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 userPortion = _rewards.sub(nodePortion);
         // Calculate final node amount as combination of node capital, node share and commission on user share
         return nodePortion.add(userPortion.mul(nodeFee).div(calcBase));
-    }
-
-    /// @notice Given a validator balance, this function returns what portion of it belongs to rETH users taking into
-    /// consideration the minipool's commission rate and any penalties it may have attracted
-    /// @param _balance The balance to calculate the user share of
-    function calculateUserShare(uint256 _balance) override external view returns (uint256) {
-        // User's share is just the balance minus node's share
-        return _balance.sub(calculateNodeShare(_balance));
     }
 
     /// @notice Dissolve the minipool, returning user deposited ETH to the deposit pool.
@@ -689,8 +705,6 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         uint256 slashAmount = nodeSlashBalance;
         nodeSlashBalance = 0;
         rocketNodeStaking.slashRPL(nodeAddress, slashAmount);
-        // Record slashing
-        slashed = true;
     }
 
     /// @dev Dissolve this minipool

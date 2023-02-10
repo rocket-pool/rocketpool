@@ -7,6 +7,7 @@ import "../../types/MinipoolStatus.sol";
 import "../RocketStorageInterface.sol";
 
 interface RocketMinipoolInterface {
+    function version() external view returns (uint8);
     function initialise(address _nodeAddress) external;
     function getStatus() external view returns (MinipoolStatus);
     function getFinalised() external view returns (bool);
@@ -24,7 +25,6 @@ interface RocketMinipoolInterface {
     function getVacant() external view returns (bool);
     function getPreMigrationBalance() external view returns (uint256);
     function getUserDistributed() external view returns (bool);
-    function getSlashed() external view returns (bool);
     function getUserDepositBalance() external view returns (uint256);
     function getUserDepositAssigned() external view returns (bool);
     function getUserDepositAssignedTime() external view returns (uint256);

@@ -4,7 +4,14 @@ import {
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
-import { registerNode, nodeStakeRPL, nodeDeposit, setNodeTrusted } from '../_helpers/node'
+import {
+    registerNode,
+    nodeStakeRPL,
+    nodeDeposit,
+    setNodeTrusted,
+    nodeStakeRPLFor,
+    setStakeRPLForAllowed,
+} from '../_helpers/node';
 import { mintRPL, approveRPL } from '../_helpers/tokens';
 import { stakeRpl } from './scenario-stake-rpl';
 import { withdrawRpl } from './scenario-withdraw-rpl';
@@ -255,5 +262,25 @@ export default function() {
             }), 'Random address withdrew staked RPL');
         });
 
+
+        it(printTitle('random address', 'cannot stake on behalf of a node without allowance'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Stake RPL
+            await shouldRevert(nodeStakeRPLFor(node, rplAmount, {from: random}), 'Was able to stake', 'Not allowed to stake for');
+        });
+
+
+        it(printTitle('random address', 'can stake on behalf of a node with allowance'), async () => {
+            // Set parameters
+            const rplAmount = '10000'.ether;
+
+            // Allow
+            await setStakeRPLForAllowed(random, true, {from: node});
+
+            // Stake RPL
+            await nodeStakeRPLFor(node, rplAmount, {from: random});
+        });
     });
 }
