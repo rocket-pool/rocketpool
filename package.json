@@ -25,8 +25,8 @@
     "glob": "^7.1.7",
     "prettier": "^1.10.2",
     "query-string": "^7.0.1",
-    "solidity-coverage": "^0.5.11",
-    "truffle": "^5.1.51",
+    "solidity-coverage": "^0.8.2",
+    "truffle": "^5.7.9",
     "truffle-contract": "^3.*",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.8"
@@ -44,7 +44,7 @@
     "bn.js": "^4.11.8",
     "eth-crypto": "^1.5.2",
     "ethereumjs-util": "^6.2.0",
-    "lerna": "^2.10.1",
+    "lerna": "^6.5.1",
     "pako": "^1.0.6",
     "rlp": "^2.0.0",
     "underscore": "^1.9.0"
