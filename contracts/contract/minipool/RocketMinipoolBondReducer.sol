@@ -135,6 +135,7 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         require(rocketNodeDeposit.isValidDepositAmount(newBondAmount), "Invalid bond amount");
         // Calculate difference
         uint256 existingBondAmount = minipool.getNodeDepositBalance();
+        uint256 existingNodeFee = minipool.getNodeFee();
         uint256 delta = existingBondAmount.sub(newBondAmount);
         // Get node address
         address nodeAddress = minipool.getNodeAddress();
@@ -148,6 +149,7 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         // Store last bond reduction time and previous bond amount
         setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.time", msg.sender)), block.timestamp);
         setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", msg.sender)), existingBondAmount);
+        setUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.fee", msg.sender)), existingNodeFee);
         // Return
         return newBondAmount;
     }
@@ -164,5 +166,12 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
     /// @return Previous bond value in wei (or 0 if never reduced)
     function getLastBondReductionPrevValue(address _minipoolAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.value", _minipoolAddress)));
+    }
+
+    /// @notice Returns the previous node fee of the given minipool on their last bond reduction
+    /// @param _minipoolAddress The address of the minipool to query
+    /// @return Previous node fee
+    function getLastBondReductionPrevNodeFee(address _minipoolAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.fee", _minipoolAddress)));
     }
 }
