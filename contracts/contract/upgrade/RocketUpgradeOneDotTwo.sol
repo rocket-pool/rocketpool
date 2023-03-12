@@ -40,6 +40,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     address public newRocketDAONodeTrustedSettingsMinipool;
     address public newRocketNodeManager;
     address public newRocketDAOProtocolSettingsNode;
+    address public newRocketNetworkBalances;
     address public rocketMinipoolBase;
     address public rocketMinipoolBondReducer;
 
@@ -59,8 +60,10 @@ contract RocketUpgradeOneDotTwo is RocketBase {
     string public newRocketDAONodeTrustedSettingsMinipoolAbi;
     string public newRocketNodeManagerAbi;
     string public newRocketDAOProtocolSettingsNodeAbi;
+    string public newRocketNetworkBalancesAbi;
     string public rocketMinipoolBaseAbi;
     string public rocketMinipoolBondReducerAbi;
+    string public rocketNetworkBalancesAbi;
 
     string public newRocketMinipoolAbi;
 
@@ -104,8 +107,9 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAONodeTrustedSettingsMinipool = _addresses[12];
         newRocketNodeManager = _addresses[13];
         newRocketDAOProtocolSettingsNode = _addresses[14];
-        rocketMinipoolBase = _addresses[15];
-        rocketMinipoolBondReducer = _addresses[16];
+        newRocketNetworkBalances = _addresses[15];
+        rocketMinipoolBase = _addresses[16];
+        rocketMinipoolBondReducer = _addresses[17];
 
         // Set ABIs
         newRocketNodeDepositAbi = _abis[0];
@@ -123,10 +127,11 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         newRocketDAONodeTrustedSettingsMinipoolAbi = _abis[12];
         newRocketNodeManagerAbi = _abis[13];
         newRocketDAOProtocolSettingsNodeAbi = _abis[14];
-        rocketMinipoolBaseAbi = _abis[15];
-        rocketMinipoolBondReducerAbi = _abis[16];
+        newRocketNetworkBalancesAbi = _abis[15];
+        rocketMinipoolBaseAbi = _abis[16];
+        rocketMinipoolBondReducerAbi = _abis[17];
 
-        newRocketMinipoolAbi = _abis[17];
+        newRocketMinipoolAbi = _abis[18];
     }
 
     function setInterval(uint256 _interval, uint256 _block) external {
@@ -166,6 +171,7 @@ contract RocketUpgradeOneDotTwo is RocketBase {
         _upgradeContract("rocketDAONodeTrustedSettingsMinipool", newRocketDAONodeTrustedSettingsMinipool, newRocketDAONodeTrustedSettingsMinipoolAbi);
         _upgradeContract("rocketNodeManager", newRocketNodeManager, newRocketNodeManagerAbi);
         _upgradeContract("rocketDAOProtocolSettingsNode", newRocketDAOProtocolSettingsNode, newRocketDAOProtocolSettingsNodeAbi);
+        _upgradeContract("rocketNetworkBalances", newRocketNetworkBalances, newRocketNetworkBalancesAbi);
 
         // Add new contracts
         _addContract("rocketMinipoolBase", rocketMinipoolBase, rocketMinipoolBaseAbi);

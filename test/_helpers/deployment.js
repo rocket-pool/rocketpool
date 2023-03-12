@@ -49,7 +49,7 @@ const contracts = {
     rocketMinipoolStatus:                     artifacts.require('RocketMinipoolStatus.sol'),
     rocketMinipoolPenalty:                    artifacts.require('RocketMinipoolPenalty.sol'),
     // Network
-    rocketNetworkBalances:                    artifacts.require('RocketNetworkBalances.sol'),
+    rocketNetworkBalances:                    artifacts.require('RocketNetworkBalancesOld.sol'),
     rocketNetworkFees:                        artifacts.require('RocketNetworkFeesOld.sol'),
     rocketNetworkPrices:                      artifacts.require('RocketNetworkPricesOld.sol'),
     rocketNetworkPenalties:                   artifacts.require('RocketNetworkPenalties.sol'),
@@ -104,6 +104,7 @@ const contracts = {
     rocketNodeManagerNew:                     artifacts.require('RocketNodeManager.sol'),
     rocketDAOProtocolSettingsNodeNew:         artifacts.require('RocketDAOProtocolSettingsNode.sol'),
     rocketMinipoolBondReducer:                artifacts.require('RocketMinipoolBondReducer.sol'),
+    rocketNetworkBalancesNew:                 artifacts.require('RocketNetworkBalances.sol'),
     rocketUpgradeOneDotTwo:                   artifacts.require('RocketUpgradeOneDotTwo.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
@@ -260,6 +261,7 @@ export async function deployRocketPool() {
                                 (await contracts.rocketDAONodeTrustedSettingsMinipoolNew.deployed()).address,
                                 (await contracts.rocketNodeManagerNew.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsNodeNew.deployed()).address,
+                                (await contracts.rocketNetworkBalancesNew.deployed()).address,
                                 (await contracts.rocketMinipoolBase.deployed()).address,
                                 (await contracts.rocketMinipoolBondReducer.deployed()).address,
                             ],
@@ -280,6 +282,7 @@ export async function deployRocketPool() {
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipoolNew.abi),
                                 compressABI(contracts.rocketNodeManagerNew.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsNodeNew.abi),
+                                compressABI(contracts.rocketNetworkBalancesNew.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
                                 compressABI(contracts.rocketMinipoolBondReducer.abi),
                                 compressABI(rocketMinipoolAbi),
@@ -335,6 +338,7 @@ export async function deployRocketPool() {
                     case 'rocketDAONodeTrustedSettingsMinipoolNew':
                     case 'rocketNodeManagerNew':
                     case 'rocketDAOProtocolSettingsNodeNew':
+                    case 'rocketNetworkBalancesNew':
                     case 'rocketMinipoolBase':
                     case 'rocketMinipoolBondReducer':
                         break;

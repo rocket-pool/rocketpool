@@ -4,14 +4,14 @@ pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../RocketBase.sol";
-import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
-import "../../interface/network/RocketNetworkBalancesInterface.sol";
-import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
+import "../../RocketBase.sol";
+import "../../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
+import "../../../interface/network/RocketNetworkBalancesInterface.sol";
+import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
 // Network balances
 
-contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
+contract RocketNetworkBalancesOld is RocketBase, RocketNetworkBalancesInterface {
 
     // Libs
     using SafeMath for uint;
@@ -22,7 +22,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 2;
+        version = 1;
     }
 
     // The block number which balances are current for
@@ -75,6 +75,8 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check block
         require(_block < block.number, "Balances can not be submitted for a future block");
         require(_block > getBalancesBlock(), "Network balances for an equal or higher block are set");
+        // Check balances
+        require(_stakingEth <= _totalEth, "Invalid network balances");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _totalEth, _stakingEth, _rethSupply));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _totalEth, _stakingEth, _rethSupply));

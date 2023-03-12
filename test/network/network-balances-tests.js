@@ -191,22 +191,6 @@ export default function() {
         });
 
 
-        it(printTitle('trusted nodes', 'cannot submit invalid network balances'), async () => {
-
-            // Set parameters
-            let block = 1;
-            let totalBalance = '9'.ether;
-            let stakingBalance = '10'.ether;
-            let rethSupply = '8'.ether;
-
-            // Submit balances for block
-            await shouldRevert(submitBalances(block, totalBalance, stakingBalance, rethSupply, {
-                from: trustedNode1,
-            }), 'Submitted invalid balances');
-
-        });
-
-
         it(printTitle('trusted nodes', 'cannot submit the same network balances twice'), async () => {
 
             // Set parameters
