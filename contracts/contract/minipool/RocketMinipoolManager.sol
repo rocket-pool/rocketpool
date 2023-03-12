@@ -509,6 +509,22 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return details;
     }
 
+    /// @dev Wrapper around minipool getDepositType which handles backwards compatibility with v1 and v2 delegates
+    /// @param _minipoolAddress Minipool address to get the deposit type of
+    function getMinipoolDepositType(address _minipoolAddress) external override view returns (MinipoolDeposit) {
+        RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
+        uint8 version = minipoolInterface.version();
+
+        if (version == 1 || version == 2) {
+            try minipoolInterface.getDepositType{gas: 30000}() returns (MinipoolDeposit depositType) {
+                return depositType;
+            } catch (bytes memory /*lowLevelData*/) {
+                return MinipoolDeposit.Variable;
+            }
+        }
+        return minipoolInterface.getDepositType();
+    }
+
     /// @dev Performs a CREATE2 deployment of a minipool contract with given salt
     /// @param _nodeAddress The owning node operator's address
     /// @param _salt A salt used in determining the minipool's address
