@@ -8,7 +8,7 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketMinipoolBase,
     RocketMinipoolBondReducer,
-    RocketDAOProtocolSettingsRewards,
+    RocketDAOProtocolSettingsRewards, RocketNodeManager,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -744,6 +744,49 @@ export default function() {
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
             await reduceBond(stakingMinipool, {from: node});
+        });
+
+
+        it(printTitle('node operator', 'average node fee gets updated correctly on bond reduction'), async () => {
+            // Get contracts
+            const rocketNodeManager = await RocketNodeManager.deployed();
+            // Set the network node fee to 20%
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', '0.20'.ether, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', '0.20'.ether, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', '0.20'.ether, {from: owner});
+            // Stake RPL to cover a 16 ETH and an 8 ETH minipool (1.6 + 2.4)
+            let rplStake = '400'.ether
+            await mintRPL(owner, emptyNode, rplStake);
+            await nodeStakeRPL(rplStake, {from: emptyNode});
+            // Deposit enough user funds to cover minipool creation
+            await userDeposit({ from: random, value: '64'.ether, });
+            // Create the minipools
+            let minipool1 = await createMinipool({from: emptyNode, value: '16'.ether});
+            let minipool2 = await createMinipool({from: emptyNode, value: '16'.ether});
+            // Wait required scrub period
+            await increaseTime(web3, scrubPeriod + 1);
+            // Progress minipools into desired statuses
+            await stakeMinipool(minipool1, {from: emptyNode});
+            await stakeMinipool(minipool2, {from: emptyNode});
+            // Set the network node fee to 10%
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', '0.10'.ether, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', '0.10'.ether, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', '0.10'.ether, {from: owner});
+            // Get contracts
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            // Signal wanting to reduce
+            await rocketMinipoolBondReducer.beginReduceBondAmount(minipool1.address, '8'.ether, {from: emptyNode});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+            // Reduction from 16 ETH to 8 ETH should be valid
+            let fee1 = await rocketNodeManager.getAverageNodeFee(emptyNode);
+            await reduceBond(minipool1, {from: emptyNode});
+            let fee2 = await rocketNodeManager.getAverageNodeFee(emptyNode);
+            /*
+                Node operator now has 1x 16 ETH bonded minipool at 20% node fee and 1x 8 ETH bonded minipool at 10% fee
+                Before bond reduction average node fee should be 20%, weighted average node fee after should be 14%
+             */
+            assertBN.equal(fee1, '0.20'.ether, 'Incorrect node fee');
+            assertBN.equal(fee2, '0.14'.ether, 'Incorrect node fee');
         });
 
 
