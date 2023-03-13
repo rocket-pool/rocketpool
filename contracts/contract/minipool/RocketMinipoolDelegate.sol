@@ -690,6 +690,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
 
     /// @dev Transfer refunded ETH balance to the node operator
     function _refund() private {
+        // Prevent vacant minipools from calling
+        require(vacant == false, "Vacant minipool cannot refund");
         // Update refund balance
         uint256 refundAmount = nodeRefundBalance;
         nodeRefundBalance = 0;

@@ -155,6 +155,14 @@ export default function() {
         });
 
 
+        it(printTitle('node operator', 'cannot call refund while vacant'), async () => {
+            // Create a vacant minipool with current balance of 33
+            let minipool = await createVacantMinipool('8'.ether, {from: node}, null, '33'.ether);
+            // Try to refund
+            await shouldRevert(refund(minipool, { from: node }), 'Was able to refund', 'Vacant minipool cannot refund');
+        });
+
+
         it(printTitle('node operator', 'can not create a vacant minipool with an existing pubkey'), async () => {
             // Create minipool with a pubkey
             const pubkey = getValidatorPubkey();
