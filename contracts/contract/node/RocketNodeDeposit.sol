@@ -275,10 +275,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
 
     /// @dev Executes an assignDeposits call on the deposit pool
     function assignDeposits() private {
-        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
-        if (rocketDAOProtocolSettingsDeposit.getAssignDepositsEnabled()) {
-            RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            rocketDepositPool.assignDeposits();
-        }
+        RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
+        rocketDepositPool.maybeAssignDeposits();
     }
 }

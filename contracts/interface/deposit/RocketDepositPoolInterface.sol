@@ -15,5 +15,6 @@ interface RocketDepositPoolInterface {
     function recycleExcessCollateral() external payable;
     function recycleLiquidatedStake() external payable;
     function assignDeposits() external;
+    function maybeAssignDeposits() external returns (bool);
     function withdrawExcessBalance(uint256 _amount) external;
 }

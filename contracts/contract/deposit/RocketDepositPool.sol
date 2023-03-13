@@ -203,12 +203,20 @@ contract RocketDepositPool is RocketBase, RocketDepositPoolInterface, RocketVaul
         _assignDeposits(_rocketDAOProtocolSettingsDeposit);
     }
 
-    /// @dev Assign deposits to available minipools
+    /// @notice Assign deposits to available minipools. Reverts if assigning deposits is disabled.
     function assignDeposits() override external onlyThisLatestContract {
         // Load contracts
         RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
         // Revert if assigning is disabled
         require(_assignDeposits(rocketDAOProtocolSettingsDeposit), "Deposit assignments are currently disabled");
+    }
+
+    /// @dev Assign deposits to available minipools. Does nothing if assigning deposits is disabled.
+    function maybeAssignDeposits() override external onlyThisLatestContract returns (bool) {
+        // Load contracts
+        RocketDAOProtocolSettingsDepositInterface rocketDAOProtocolSettingsDeposit = RocketDAOProtocolSettingsDepositInterface(getContractAddress("rocketDAOProtocolSettingsDeposit"));
+        // Revert if assigning is disabled
+        return _assignDeposits(rocketDAOProtocolSettingsDeposit);
     }
 
     /// @dev Assigns deposits to available minipools, returns false if assignment is currently disabled
