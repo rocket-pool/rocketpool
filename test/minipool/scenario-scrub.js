@@ -65,7 +65,7 @@ export async function voteScrub(minipool, txOptions) {
             const slashAmountEth = slashAmount.mul(rplPrice).div('1'.ether);
             // Calculate expected slash amount
             const minimumStake = await rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
-            const expectedSlash = '16'.ether.mul(minimumStake).div('1'.ether);
+            const expectedSlash = details1.userDepositBalance.mul(minimumStake).div('1'.ether);
             // Perform checks
             assertBN.equal(slashAmountEth, expectedSlash, 'Amount of RPL slashed is incorrect');
             assertBN.equal(details2.auctionBalance.sub(details1.auctionBalance), slashAmount, 'RPL was not sent to auction manager');

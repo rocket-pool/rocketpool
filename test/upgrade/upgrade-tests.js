@@ -95,7 +95,7 @@ export default function() {
                 await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.length', bondReductionWindowLength, {from: owner});
 
                 // Stake RPL to cover minipools
-                let rplStake = '2000'.ether;
+                let rplStake = '2400'.ether;
                 await mintRPL(owner, node, rplStake);
                 await nodeStakeRPL(rplStake, {from: node});
 
