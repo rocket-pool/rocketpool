@@ -251,6 +251,42 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         return abi.encodePacked(byte(0x01), bytes11(0x0), address(_minipoolAddress));
     }
 
+    /// @notice Decrements a node operator's number of staking minipools based on the minipools prior bond amount and
+    ///         increments it based on their new bond amount.
+    /// @param _previousBond The minipool's previous bond value
+    /// @param _newBond The minipool's new bond value
+    /// @param _previousFee The fee of the minipool prior to the bond change
+    /// @param _newFee The fee of the minipool after the bond change
+    function updateNodeStakingMinipoolCount(uint256 _previousBond, uint256 _newBond, uint256 _previousFee, uint256 _newFee) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        bytes32 nodeKey;
+        bytes32 numeratorKey;
+        // Get contracts
+        RocketMinipoolInterface minipool = RocketMinipoolInterface(msg.sender);
+        address nodeAddress = minipool.getNodeAddress();
+        // Try to distribute current fees at previous average commission rate
+        _tryDistribute(nodeAddress);
+        // Decrement previous bond count
+        if (_previousBond == 16 ether){
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", nodeAddress));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", nodeAddress));
+        } else {
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", nodeAddress, _previousBond));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", nodeAddress, _previousBond));
+        }
+        subUint(nodeKey, 1);
+        subUint(numeratorKey, _previousFee);
+        // Increment new bond count
+        if (_newBond == 16 ether){
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", nodeAddress));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", nodeAddress));
+        } else {
+            nodeKey = keccak256(abi.encodePacked("node.minipools.staking.count", nodeAddress, _newBond));
+            numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", nodeAddress, _newBond));
+        }
+        addUint(nodeKey, 1);
+        addUint(numeratorKey, _newFee);
+    }
+
     /// @dev Increments a node operator's number of staking minipools and calculates updated average node fee.
     ///      Must be called from the minipool itself as msg.sender is used to query the minipool's node fee
     /// @param _nodeAddress The node address to increment the number of staking minipools of

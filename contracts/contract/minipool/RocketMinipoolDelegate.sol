@@ -646,20 +646,25 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Approve reduction and handle external state changes
         RocketMinipoolBondReducerInterface rocketBondReducer = RocketMinipoolBondReducerInterface(getContractAddress("rocketMinipoolBondReducer"));
         uint256 previousBond = nodeDepositBalance;
-        uint256 newBondAmount = rocketBondReducer.reduceBondAmount();
+        uint256 newBond = rocketBondReducer.reduceBondAmount();
         // Update user/node balances
-        userDepositBalance = getUserDepositBalance().add(previousBond.sub(newBondAmount));
-        nodeDepositBalance = newBondAmount;
+        userDepositBalance = getUserDepositBalance().add(previousBond.sub(newBond));
+        nodeDepositBalance = newBond;
         // Reset node fee to current network rate
         RocketNetworkFeesInterface rocketNetworkFees = RocketNetworkFeesInterface(getContractAddress("rocketNetworkFees"));
-        nodeFee = rocketNetworkFees.getNodeFee();
+        uint256 prevFee = nodeFee;
+        uint256 newFee = rocketNetworkFees.getNodeFee();
+        nodeFee = newFee;
+        // Update staking minipool counts and fee numerator
+        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
+        rocketMinipoolManager.updateNodeStakingMinipoolCount(previousBond, newBond, prevFee, newFee);
         // Break state to prevent rollback exploit
         if (depositType != MinipoolDeposit.Variable) {
-            userDepositBalanceLegacy = 2**256-1;
+            userDepositBalanceLegacy = 2 ** 256 - 1;
             depositType = MinipoolDeposit.Variable;
         }
         // Emit event
-        emit BondReduced(previousBond, newBondAmount, block.timestamp);
+        emit BondReduced(previousBond, newBond, block.timestamp);
     }
 
     /// @dev Distributes the current contract balance based on capital ratio and node fee

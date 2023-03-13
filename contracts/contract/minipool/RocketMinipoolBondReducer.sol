@@ -12,6 +12,7 @@ import "../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolIn
 import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
 
 /// @notice Handles bond reduction window and trusted node cancellation
 contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInterface {
