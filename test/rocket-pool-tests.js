@@ -26,6 +26,7 @@ import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
 import upgradeTests from './upgrade/upgrade-tests';
 import { injectBNHelpers } from './_helpers/bn';
+import { checkInvariants } from './_helpers/invariants';
 
 // Header
 console.log('\n');
@@ -42,6 +43,7 @@ injectBNHelpers();
 // State snapshotting and gas usage tracking
 beforeEach(startSnapShot);
 beforeEach(startGasUsage);
+afterEach(checkInvariants);
 afterEach(endGasUsage);
 afterEach(endSnapShot);
 after(printGasUsage);

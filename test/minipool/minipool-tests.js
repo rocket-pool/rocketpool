@@ -8,7 +8,7 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketMinipoolBase,
     RocketMinipoolBondReducer,
-    RocketDAOProtocolSettingsRewards, RocketNodeManager,
+    RocketDAOProtocolSettingsRewards, RocketNodeManager, RocketMinipoolDelegate,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -75,6 +75,7 @@ export default function() {
         let dissolvedMinipool;
         let withdrawalBalance = '36'.ether;
         let newDelegateAddress = '0x0000000000000000000000000000000000000001';
+        let oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
 
         const lebDepositNodeAmount = '8'.ether;
         const halfDepositNodeAmount = '16'.ether;
@@ -156,6 +157,14 @@ export default function() {
         }
 
 
+        async function resetNetworkDelegateContract() {
+            // Upgrade the delegate contract
+            await setDaoNodeTrustedBootstrapUpgrade('upgradeContract', 'rocketMinipoolDelegate', [], oldDelegateAddress, {
+                from: owner,
+            });
+        }
+
+
         //
         // General
         //
@@ -234,6 +243,8 @@ export default function() {
           // Staking should fail now
           await shouldRevert(stakeMinipool(newMinipool, {from: node}), 'Was able to create a minipool with bad delegate address', 'Delegate contract does not exist');
 
+          // Reset the delegate to working contract to prevent invariant tests from failing
+          await resetNetworkDelegateContract();
         });
 
 

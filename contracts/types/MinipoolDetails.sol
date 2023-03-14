@@ -29,5 +29,4 @@ struct MinipoolDetails {
     uint256 penaltyCount;
     uint256 penaltyRate;
     address nodeAddress;
-    bool vacant;
 }
