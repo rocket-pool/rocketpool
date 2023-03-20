@@ -365,6 +365,10 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @dev Increments a node operator's number of minipools that have been finalised
     /// @param _nodeAddress The node operator to increment finalised minipool count for
     function incrementNodeFinalisedMinipoolCount(address _nodeAddress) override external onlyLatestContract("rocketMinipoolManager", address(this)) onlyRegisteredMinipool(msg.sender) {
+        // Can only finalise a minipool once
+        bytes32 finalisedKey = keccak256(abi.encodePacked("node.minipools.finalised", msg.sender));
+        require(!getBool(finalisedKey), "Minipool has already been finalised");
+        setBool(finalisedKey, true);
         // Update the node specific count
         addUint(keccak256(abi.encodePacked("node.minipools.finalised.count", _nodeAddress)), 1);
         // Update the total count
@@ -505,43 +509,6 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
         setAddress(keccak256(abi.encodePacked("validator.minipool", _pubkey)), _minipool);
         // Add minipool to node validating minipools index
         addressSetStorage.addItem(keccak256(abi.encodePacked("node.minipools.validating.index", nodeAddress)), _minipool);
-    }
-
-    /// @notice Retrieves all on-chain information about a given minipool in a single convenience view function
-    /// @param _minipoolAddress The address of the minipool to query details about
-    function getMinipoolDetails(address _minipoolAddress) override public view returns (MinipoolDetails memory) {
-        // Get contracts
-        RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
-        RocketMinipoolBase minipool = RocketMinipoolBase(payable(_minipoolAddress));
-        RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
-        RocketNetworkPenaltiesInterface rocketNetworkPenalties = RocketNetworkPenaltiesInterface(getContractAddress("rocketNetworkPenalties"));
-        RocketMinipoolPenaltyInterface rocketMinipoolPenalty = RocketMinipoolPenaltyInterface(getContractAddress("rocketMinipoolPenalty"));
-        // Minipool details
-        MinipoolDetails memory details;
-        details.nodeAddress = minipoolInterface.getNodeAddress();
-        details.exists = rocketMinipoolManager.getMinipoolExists(_minipoolAddress);
-        details.minipoolAddress = _minipoolAddress;
-        details.pubkey = rocketMinipoolManager.getMinipoolPubkey(_minipoolAddress);
-        details.status = minipoolInterface.getStatus();
-        details.statusBlock = minipoolInterface.getStatusBlock();
-        details.statusTime = minipoolInterface.getStatusTime();
-        details.finalised = minipoolInterface.getFinalised();
-        details.depositType = minipoolInterface.getDepositType();
-        details.nodeFee = minipoolInterface.getNodeFee();
-        details.nodeDepositBalance = minipoolInterface.getNodeDepositBalance();
-        details.nodeDepositAssigned = minipoolInterface.getNodeDepositAssigned();
-        details.userDepositBalance = minipoolInterface.getUserDepositBalance();
-        details.userDepositAssigned = minipoolInterface.getUserDepositAssigned();
-        details.userDepositAssignedTime = minipoolInterface.getUserDepositAssignedTime();
-        // Delegate details
-        details.useLatestDelegate = minipool.getUseLatestDelegate();
-        details.delegate = minipool.getDelegate();
-        details.previousDelegate = minipool.getPreviousDelegate();
-        details.effectiveDelegate = minipool.getEffectiveDelegate();
-        // Penalty details
-        details.penaltyCount = rocketNetworkPenalties.getPenaltyCount(_minipoolAddress);
-        details.penaltyRate = rocketMinipoolPenalty.getPenaltyRate(_minipoolAddress);
-        return details;
     }
 
     /// @dev Wrapper around minipool getDepositType which handles backwards compatibility with v1 and v2 delegates
