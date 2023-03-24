@@ -515,7 +515,12 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
     /// @param _minipoolAddress Minipool address to get the deposit type of
     function getMinipoolDepositType(address _minipoolAddress) external override view returns (MinipoolDeposit) {
         RocketMinipoolInterface minipoolInterface = RocketMinipoolInterface(_minipoolAddress);
-        uint8 version = minipoolInterface.version();
+        uint8 version = 1;
+
+        // Version 1 minipools did not have a version() function
+        try minipoolInterface.version() returns (uint8 tryVersion) {
+            version = tryVersion;
+        } catch (bytes memory /*lowLevelData*/) {}
 
         if (version == 1 || version == 2) {
             try minipoolInterface.getDepositType{gas: 30000}() returns (MinipoolDeposit depositType) {
@@ -524,6 +529,7 @@ contract RocketMinipoolManager is RocketBase, RocketMinipoolManagerInterface {
                 return MinipoolDeposit.Variable;
             }
         }
+
         return minipoolInterface.getDepositType();
     }
 
