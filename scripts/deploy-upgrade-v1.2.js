@@ -36,6 +36,8 @@ const contracts = {
     rocketNodeManager: artifacts.require('RocketNodeManager.sol'),
     rocketDAONodeTrustedSettingsMinipool: artifacts.require('RocketDAONodeTrustedSettingsMinipool.sol'),
     rocketDAOProtocolSettingsNode: artifacts.require('RocketDAOProtocolSettingsNode.sol'),
+    rocketNetworkBalances: artifacts.require('RocketNetworkBalances.sol'),
+    rocketRewardsPool: artifacts.require('RocketRewardsPool.sol'),
     rocketMinipoolBondReducer: artifacts.require('RocketMinipoolBondReducer.sol'),
     rocketUpgradeOneDotTwo: artifacts.require('RocketUpgradeOneDotTwo.sol'),
 };
@@ -110,6 +112,8 @@ export async function upgrade() {
                                 (await contracts.rocketDAONodeTrustedSettingsMinipool.deployed()).address,
                                 (await contracts.rocketNodeManager.deployed()).address,
                                 (await contracts.rocketDAOProtocolSettingsNode.deployed()).address,
+                                (await contracts.rocketNetworkBalances.deployed()).address,
+                                (await contracts.rocketRewardsPool.deployed()).address,
                                 (await contracts.rocketMinipoolBase.deployed()).address,
                                 (await contracts.rocketMinipoolBondReducer.deployed()).address,
                             ],
@@ -130,6 +134,8 @@ export async function upgrade() {
                                 compressABI(contracts.rocketDAONodeTrustedSettingsMinipool.abi),
                                 compressABI(contracts.rocketNodeManager.abi),
                                 compressABI(contracts.rocketDAOProtocolSettingsNode.abi),
+                                compressABI(contracts.rocketNetworkBalances.abi),
+                                compressABI(contracts.rocketRewardsPool.abi),
                                 compressABI(contracts.rocketMinipoolBase.abi),
                                 compressABI(contracts.rocketMinipoolBondReducer.abi),
                                 compressABI(rocketMinipoolAbi),
@@ -140,6 +146,7 @@ export async function upgrade() {
 
                     // All other contracts - pass storage address
                     default:
+                        console.log(`  ABI: ${compressABI(contracts[contract].abi)}`);
                         instance = await contracts[contract].new(rocketStorageInstance.address);
                         contracts[contract].setAsDeployed(instance);
 
