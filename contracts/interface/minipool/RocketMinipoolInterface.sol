@@ -34,7 +34,7 @@ interface RocketMinipoolInterface {
     function preDeposit(uint256 _bondingValue, bytes calldata _validatorPubkey, bytes calldata _validatorSignature, bytes32 _depositDataRoot) external payable;
     function deposit() external payable;
     function userDeposit() external payable;
-    function distributeBalance() external;
+    function distributeBalance(bool _rewardsOnly) external;
     function beginUserDistribute() external;
     function userDistributeAllowed() external view returns (bool);
     function refund() external;

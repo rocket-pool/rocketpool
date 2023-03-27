@@ -18,7 +18,7 @@ import {
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
     RocketDepositPool,
-    RocketMinipoolBase, RocketMinipoolBondReducer,
+    RocketMinipoolBase, RocketMinipoolBondReducer, RocketMinipoolDelegateOld,
     RocketMinipoolQueue,
     RocketMinipoolQueueOld,
     RocketNetworkFees, RocketNodeDeposit, RocketNodeStaking,
@@ -576,7 +576,8 @@ export default function() {
                 });
                 const nodeBalance1 = await web3.eth.getBalance(node);
                 const rethBalance1 = await web3.eth.getBalance(rocketTokenReth.address);
-                await minipool.distributeBalance({ from: node });
+                const oldMinipool = await RocketMinipoolDelegateOld.at(minipool.address)
+                await oldMinipool.distributeBalance({ from: node });
                 const nodeBalance2 = await web3.eth.getBalance(node);
                 const rethBalance2 = await web3.eth.getBalance(rocketTokenReth.address);
 

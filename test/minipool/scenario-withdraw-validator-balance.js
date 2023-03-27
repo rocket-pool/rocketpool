@@ -77,7 +77,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     let gasPrice = '20'.gwei;
 
     // Payout the balances now
-    let txReceipt = await minipool.distributeBalance({
+    let txReceipt = await minipool.distributeBalance(false, {
         from: from,
         gasPrice: gasPrice
     });

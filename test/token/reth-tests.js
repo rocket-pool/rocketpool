@@ -8,9 +8,9 @@ import { depositExcessCollateral, getRethBalance, getRethCollateralRate, getReth
 import { burnReth } from './scenario-reth-burn';
 import { transferReth } from './scenario-reth-transfer'
 import {
-    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
-    RocketTokenRETH
+    RocketTokenRETH,
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance';
@@ -41,6 +41,7 @@ export default function() {
         let rethBalance;
         let submitPricesFrequency = 500;
         let depositDeplay = 100;
+        const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         before(async () => {
             await upgradeOneDotTwo(owner);
@@ -64,6 +65,7 @@ export default function() {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.submit.prices.frequency', submitPricesFrequency, {from: owner});
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.deposit.delay', depositDeplay, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
 
             // Stake RPL to cover minipools
             let rplStake = await getMinipoolMinimumRPLStake();
@@ -144,8 +146,8 @@ export default function() {
 
             // Begin user distribution process
             await beginUserDistribute(minipool, {from: random});
-            // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Wait
+            await increaseTime(web3, userDistributeStartTime + 1)
             // Withdraw without finalising
             await withdrawValidatorBalance(minipool, '0'.ether, random);
 
@@ -188,8 +190,8 @@ export default function() {
 
             // Begin user distribution process
             await beginUserDistribute(minipool, {from: random});
-            // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Wait
+            await increaseTime(web3, userDistributeStartTime + 1)
             // Withdraw without finalising
             await withdrawValidatorBalance(minipool, '0'.ether, random);
 

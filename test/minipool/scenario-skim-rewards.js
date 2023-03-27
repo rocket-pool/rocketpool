@@ -47,13 +47,14 @@ export async function skimRewards(minipool, txOptions) {
     // Get initial balances & withdrawal processed status
     const balances1 = await getBalances();
 
-    assertBN.isBelow(balances1.minipoolEth, '8'.ether, 'Cannot skim rewards greater than 8 ETH');
+    const realBalance = balances1.minipoolEth.sub(balances1.nodeRefundBalance);
+    assertBN.isBelow(realBalance, '8'.ether, 'Cannot skim rewards greater than 8 ETH');
 
     // Set gas price
     txOptions.gasPrice = '20'.gwei;
 
     // Payout the balances now
-    let txReceipt = await minipool.distributeBalance(txOptions);
+    let txReceipt = await minipool.distributeBalance(true, txOptions);
 
     let txFee = txOptions.gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 

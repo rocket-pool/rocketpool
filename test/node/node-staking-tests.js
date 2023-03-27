@@ -1,5 +1,5 @@
 import {
-    RocketDAONodeTrustedSettingsMinipool,
+    RocketDAONodeTrustedSettingsMinipool, RocketDAOProtocolSettingsMinipool,
     RocketNodeStaking,
 } from '../_utils/artifacts';
 import { printTitle } from '../_utils/formatting';
@@ -21,7 +21,7 @@ import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { upgradeOneDotTwo } from '../_utils/upgrade';
-import { setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
+import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
     contract('RocketNodeStaking', async (accounts) => {
@@ -36,6 +36,7 @@ export default function() {
         ] = accounts;
 
         let scrubPeriod = (60 * 60 * 24); // 24 hours
+        const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         // Setup
         let rocketNodeStaking;
@@ -47,6 +48,7 @@ export default function() {
 
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeStartTime, {from: owner});
 
             // Register node
             await registerNode({from: node});
@@ -226,8 +228,8 @@ export default function() {
 
             // Begin user distribution process
             await beginUserDistribute(minipool, {from: random});
-            // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            // Wait
+            await increaseTime(web3, userDistributeStartTime + 1)
             // Withdraw without finalising
             await withdrawValidatorBalance(minipool, '0'.ether, random);
 

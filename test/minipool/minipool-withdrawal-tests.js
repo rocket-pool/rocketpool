@@ -240,6 +240,20 @@ export default function() {
         });
 
 
+        it(printTitle('node operator withdrawal address', 'should fail when trying to distribute rewards with greater than 8 ETH balance'), async () => {
+            // Process withdraw
+            await web3.eth.sendTransaction({
+                from: random,
+                to: minipool.address,
+                gas: 12450000,
+                value: '8.001'.ether
+            });
+
+            await shouldRevert(minipool.distributeBalance(true, {
+                from: nodeWithdrawalAddress
+            }), 'Distribute succeeded', 'Balance exceeds 8 ether');
+        });
+
         // ETH penalty events
 
 

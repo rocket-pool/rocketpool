@@ -361,7 +361,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
     ///         amount of time can call to distribute capital.
     ///         If balance is lower than 8 ETH, can be called by anyone and is considered a partial withdrawal and funds are
     ///         split as rewards.
-    function distributeBalance() override external onlyInitialised {
+    /// @param _rewardsOnly If set to true, will revert if balance is not being treated as rewards
+    function distributeBalance(bool _rewardsOnly) override external onlyInitialised {
         // Get node withdrawal address
         address nodeWithdrawalAddress = rocketStorage.getNodeWithdrawalAddress(nodeAddress);
         bool ownerCalling = msg.sender == nodeAddress || msg.sender == nodeWithdrawalAddress;
@@ -376,6 +377,8 @@ contract RocketMinipoolDelegate is RocketMinipoolStorageLayout, RocketMinipoolIn
         // Get withdrawal amount, we must also account for a possible node refund balance on the contract
         uint256 totalBalance = address(this).balance.sub(nodeRefundBalance);
         if (totalBalance >= 8 ether) {
+            // Prevent funding front runs of distribute balance
+            require(!_rewardsOnly, "Balance exceeds 8 ether");
             // Consider this a full withdrawal
             _distributeBalance(totalBalance);
             if (ownerCalling) {
