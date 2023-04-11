@@ -1,40 +1,79 @@
-# Rocket Pool - Decentralised Ethereum liquid staking protocol
+# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="250" />
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
 </p>
 
-Rocket Pool is the base layer protocol for decentralised and trustless ETH staking, both liquid using rETH and node operator staking.
+---
 
-Designed to support stakers of all shapes and sizes, Rocket Pool was built with the intent to allow anyone to trustlessly stake ETH to a network of decentralised node operators with full autonomy using protocol based incentives to make sure all parties work in each others best interests.
+`Rocket Pool` is a first of its kind Ethereum Proof of Stake (PoS) infrastructure service, designed to be highly decentralised, distributed and compatible with staking in Ethereum  2.0 on the beacon chain. It was first conceived in late 2016 and has since had several successful public betas over the life span of ETH2 development. The staking network allows any individual, business, defi dapp, wallet provider, SaaS provider, exchange — just about any service — the ability to provide their users with the option to earn staking rewards on their ETH holdings without worrying about maintaining an extensive staking infrastructure, just plug and play.
 
-The core premise behind a protocol is to ensure the network is not beholden to any one party. This is a principle directly linked to Ethereum itself, and a mindset used at every stage of the process as Rocket Pool was developed.
+Staking with the Rocket Pool network is very flexible and unlike any other staking infrastructure for Ethereum 2.0 to date. When depositing ETH into the Rocket Pool smart contracts, you will be instantly issued a token called rETH which represents a tokenised staking deposit in the network. Its value and the rewards it gains over time will be reflected by the work each individual decentralised node operator gives the Rocket Pool network. Rocket Pool’s unique decentralised staking infrastructure is economically bonded to both be secure and scalable.
 
-Rocket Pool strives to bring staking to the masses and embody the core ethos of Ethereum, DeFi, specifically the non-custodial, trustless nature that allows self-sovereignty to truly thrive in a decentralised ecosystem.
-
-This is why creating the decentralised staking protocol layer for ETH is so important, especially with the vast majority of players either not having the technical skills to run a node, or the financial capacity to own 32 ETH.
+Rocket Pool isn't just a whitepaper, it's actual code. Be sure to read the [Rocket Pool 101 - FAQ for more information](https://medium.com/rocket-pool/rocket-pool-101-faq-ee683af10da9).
 
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-atlas-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-casper-pos-beacon-chain-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
 </p>
 
-To see Rocket Pool in action, clone the repo and run Ganache with the latest version of truffle installed. A quick and easy way to do this is to use the test script provided with the project:
+To see Rocket Pool in action, clone the repo and run the test suite with the following commands:
 ```bash
-$ npm install && npm test
+$ npm install
+$ npm test
 ```
-This will start a local development node (if not already started) and put Rocket Pool through its paces. * These tests are extensive and can take up to 2-10 mins to run depending on your machines specs *.
+
+# Rocket Pool White Paper
+
+You can read the current Rocket Pool white paper here: [http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf](http://www.rocketpool.net/files/RocketPoolWhitePaper.pdf).
 
 # Contact and Additional Information
 
-Check out [our website](https://www.rocketpool.net) for more information on Rocket Pool.
+Check out [our website](http://www.rocketpool.net) for more information on Rocket Pool.
 
-Read [our explainer series](https://medium.com/rocket-pool/rocket-pool-staking-protocol-part-1-8be4859e5fbd) for a 1000 foot overview of the protocol.
+Contact form: https://www.rocketpool.net/#contact
 
-Read [our docs](https://docs.rocketpool.net) for more technical information on running a node.
+Twitter: https://twitter.com/Rocket_Pool
 
-Follow us on twitter at [@Rocket_Pool](https://twitter.com/Rocket_Pool)
+Join our Discord chat channel! https://discordapp.com/invite/rocketpool
 
-Join [our Discord chat channel](https://discord.gg/rocketpool)! 
+---
 
+# A Step-by-Step Beginners Guide
+
+The following worked example uses macOS Sierra 10.12.6 and VMware Fusion 8.5.8 - all versions correct as of 15/09/2017.
+
+Download and install Ubuntu onto a new VM -> https://www.ubuntu.com/download/desktop - tested with v16.04
+
+Open a terminal window and install some pre-requisites:
+
+install git:
+```bash
+$ sudo apt -y install git
+```
+install curl:  
+```bash
+$ sudo apt -y install curl
+```
+install npm:
+```bash
+$ sudo apt -y install npm
+```
+install node.js:
+```bash
+$ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+$ sudo apt-get -y install nodejs
+```
+get rocketpool:
+```bash
+$ git clone https://github.com/rocket-pool/rocketpool
+```
+open the rocketpool directory:
+```bash
+$ cd rocketpool
+```
+install npm packages and run tests:
+```bash
+$ npm install && npm test
+```

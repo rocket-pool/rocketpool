@@ -5,6 +5,7 @@ import {
   RocketStorage,
   RocketTokenRETH
 } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 export async function distributeRewards(nodeAddress, txOptions) {
@@ -62,7 +63,7 @@ export async function distributeRewards(nodeAddress, txOptions) {
 
   // Calculate expected node and user amounts from average fee
   const halfAmount = distributorBalance.div(new web3.utils.BN(2));
-  const expectedNodeAmount = halfAmount.add(halfAmount.mul(averageFee).div(new web3.utils.BN(web3.utils.toWei('1', 'ether'))));
+  const expectedNodeAmount = halfAmount.add(halfAmount.mul(averageFee).div(new web3.utils.BN('1'.ether)));
   const expectedUserAmount = distributorBalance.sub(expectedNodeAmount);
 
   async function getBalances() {
@@ -87,6 +88,6 @@ export async function distributeRewards(nodeAddress, txOptions) {
   // Check results
   const nodeEthChange = balances2.nodeEth.sub(balances1.nodeEth);
   const userEthChange = balances2.userEth.sub(balances1.userEth);
-  assert.strictEqual(nodeEthChange.toString(), expectedNodeAmount.toString(), 'Node ETH balance not correct');
-  assert.strictEqual(userEthChange.toString(), expectedUserAmount.toString(), 'User ETH balance not correct');
+  assertBN.equal(nodeEthChange, expectedNodeAmount, 'Node ETH balance not correct');
+  assertBN.equal(userEthChange, expectedUserAmount, 'User ETH balance not correct');
 }

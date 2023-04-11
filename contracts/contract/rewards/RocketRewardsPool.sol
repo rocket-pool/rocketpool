@@ -31,7 +31,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         // Version
-        version = 2;
+        version = 3;
     }
 
     function getRewardIndex() override public view returns(uint256) {
@@ -90,6 +90,12 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
     */
     function getClaimIntervalsPassed() override public view returns(uint256) {
         return block.timestamp.sub(getClaimIntervalTimeStart()).div(getClaimIntervalTime());
+    }
+
+    /// @notice Returns the block number that the given claim interval was executed at
+    /// @param _interval The interval for which to grab the execution block of
+    function getClaimIntervalExecutionBlock(uint256 _interval) override external view returns(uint256) {
+        return getUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", _interval)));
     }
 
     /**
@@ -209,6 +215,7 @@ contract RocketRewardsPool is RocketBase, RocketRewardsPoolInterface {
         uint256 claimIntervalTimeEnd = claimIntervalTimeStart.add(getClaimIntervalTime().mul(_submission.intervalsPassed));
         // Emit reward snapshot event
         emit RewardSnapshot(_submission.rewardIndex, _submission, claimIntervalTimeStart, claimIntervalTimeEnd, block.timestamp);
+        setUint(keccak256(abi.encodePacked("rewards.pool.interval.execution.block", _submission.rewardIndex)), block.number);
         setUint(keccak256("rewards.pool.claim.interval.time.start"), claimIntervalTimeEnd);
         // Send out the treasury rewards
         if (_submission.treasuryRPL > 0) {

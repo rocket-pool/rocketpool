@@ -2,13 +2,12 @@ import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedProposals,
     RocketDAONodeTrustedActions,
-    RocketDAONodeTrustedSettings,
     RocketDAOProposal,
     RocketTokenRPL,
     RocketVault,
-    RocketDAONodeTrustedActionsOld,
 } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState } from './scenario-dao-proposal';
+import { assertBN } from '../_helpers/bn';
 
 
 // Returns true if the address is a DAO member
@@ -16,21 +15,21 @@ export async function getDAOMemberIsValid(_nodeAddress, txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     return await rocketDAONodeTrusted.getMemberIsValid.call(_nodeAddress);
-};
+}
 
 // Get the total members
 export async function getDAONodeMemberCount(txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     return await rocketDAONodeTrusted.getMemberCount.call();
-};
+}
 
 // Get the number of votes needed for a proposal to pass
 export async function getDAONodeProposalQuorumVotesRequired(proposalID, txOptions) {
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     return await rocketDAONodeTrusted.getProposalQuorumVotesRequired.call();
-};
+}
 
 // Create a proposal for this DAO
 export async function daoNodeTrustedPropose(_proposalMessage, _payload, txOptions) {
@@ -58,24 +57,20 @@ export async function daoNodeTrustedPropose(_proposalMessage, _payload, txOption
     // Capture data
     let ds2 = await getTxData();
 
-    // console.log(Number(ds1.proposalTotal), Number(ds2.proposalTotal));
-
     // Get the current state, new proposal should be in pending
     let state = Number(await getDAOProposalState(ds2.proposalTotal));
 
     // Check proposals
-    assert(ds2.proposalTotal.eq(ds1.proposalTotal.add(web3.utils.toBN(1))), 'Incorrect proposal total count');
-    assert(state == proposalStates.Pending, 'Incorrect proposal state, should be pending');
+    assertBN.equal(ds2.proposalTotal, ds1.proposalTotal.add('1'.BN), 'Incorrect proposal total count');
+    assert.strictEqual(state, proposalStates.Pending, 'Incorrect proposal state, should be pending');
     
     // Return the proposal ID
     return Number(ds2.proposalTotal);
-
 }
 
 
 // Vote on a proposal for this DAO
 export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
-
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAONodeTrustedProposals = await RocketDAONodeTrustedProposals.deployed();
@@ -93,9 +88,6 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
         );
     }
 
-    // Capture data
-    let ds1 = await getTxData();
-
     // Add a new proposal
     await rocketDAONodeTrustedProposals.vote(_proposalID, _vote, txOptions);
 
@@ -103,15 +95,17 @@ export async function daoNodeTrustedVote(_proposalID, _vote, txOptions) {
     let ds2 = await getTxData();
 
     // Check proposals
-    if(ds2.proposalState == proposalStates.Active) assert(ds2.proposalVotesFor.lt(ds2.proposalVotesRequired), 'Proposal state is active, votes for proposal should be less than the votes required');
-    if(ds2.proposalState == proposalStates.Succeeded) assert(ds2.proposalVotesFor.gte(ds2.proposalVotesRequired), 'Proposal state is successful, yet does not have the votes required');
-
+    if(ds2.proposalState === proposalStates.Active) {
+        assertBN.isBelow(ds2.proposalVotesFor, ds2.proposalVotesRequired, 'Proposal state is active, votes for proposal should be less than the votes required');
+    }
+    if(ds2.proposalState === proposalStates.Succeeded) {
+        assertBN.isAtLeast(ds2.proposalVotesFor, ds2.proposalVotesRequired, 'Proposal state is successful, yet does not have the votes required');
+    }
 }
 
 
 // Cancel a proposal for this DAO
 export async function daoNodeTrustedCancel(_proposalID, txOptions) {
-
     // Load contracts
     const rocketDAONodeTrustedProposals = await RocketDAONodeTrustedProposals.deployed();
 
@@ -122,14 +116,12 @@ export async function daoNodeTrustedCancel(_proposalID, txOptions) {
     let state = Number(await getDAOProposalState(_proposalID));
 
     // Check proposals
-    assert(state == proposalStates.Cancelled, 'Incorrect proposal state, should be cancelled');
-
+    assert.strictEqual(state, proposalStates.Cancelled, 'Incorrect proposal state, should be cancelled');
 }
 
 
 // Execute a successful proposal
 export async function daoNodeTrustedExecute(_proposalID, txOptions) {
-
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAONodeTrustedProposals = await RocketDAONodeTrustedProposals.deployed();
@@ -144,26 +136,19 @@ export async function daoNodeTrustedExecute(_proposalID, txOptions) {
         );
     }
 
-    // Capture data
-    let ds1 = await getTxData();
-    //console.log(Number(ds1.proposalState));
-
     // Execute a proposal
     await rocketDAONodeTrustedProposals.execute(_proposalID, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    //console.log(Number(ds2.proposalState));
 
     // Check it was updated
-    assert(ds2.proposalState.eq(web3.utils.toBN(6)), 'Proposal is not in the executed state');
-
+    assertBN.equal(ds2.proposalState, proposalStates.Executed, 'Proposal is not in the executed state');
 }
 
 
 // Join the DAO after a successful invite proposal has passed
 export async function daoNodeTrustedMemberJoin(txOptions) {
-
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed()
@@ -184,26 +169,21 @@ export async function daoNodeTrustedMemberJoin(txOptions) {
 
     // Capture data
     let ds1 = await getTxData();
-    //console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceBond), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionJoin(txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    //console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceBond), web3.utils.fromWei(ds2.rplBalanceVault));
 
     // Check member count has increased
-    assert(ds2.memberTotal.eq(ds1.memberTotal.add(web3.utils.toBN(1))), 'Member count has not increased');
-    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault.add(ds1.rplBalanceBond)), 'RocketVault address does not contain the correct RPL bond amount');
-
+    assertBN.equal(ds2.memberTotal, ds1.memberTotal.add('1'.BN), 'Member count has not increased');
+    assertBN.equal(ds2.rplBalanceVault, ds1.rplBalanceVault.add(ds1.rplBalanceBond), 'RocketVault address does not contain the correct RPL bond amount');
 }
-
 
 
 // Leave the DAO after a successful leave proposal has passed
 export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
-
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
@@ -224,25 +204,21 @@ export async function daoNodeTrustedMemberLeave(_rplRefundAddress, txOptions) {
 
     // Capture data
     let ds1 = await getTxData();
-    // console.log('Member Total', Number(ds1.memberTotal), web3.utils.fromWei(ds1.rplBalanceRefund), web3.utils.fromWei(ds1.rplBalanceVault));
 
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionLeave(_rplRefundAddress, txOptions);
 
     // Capture data
     let ds2 = await getTxData();
-    // console.log('Member Total', Number(ds2.memberTotal), web3.utils.fromWei(ds2.rplBalanceRefund), web3.utils.fromWei(ds2.rplBalanceVault));
 
     // Verify
-    assert(ds2.memberTotal.eq(ds1.memberTotal.sub(web3.utils.toBN(1))), 'Member count has not decreased');
-    assert(ds2.rplBalanceVault.eq(ds1.rplBalanceVault.sub(ds2.rplBalanceRefund)), 'Member RPL refund address does not contain the correct RPL bond amount');
-
+    assertBN.equal(ds2.memberTotal, ds1.memberTotal.sub('1'.BN), 'Member count has not decreased');
+    assertBN.equal(ds2.rplBalanceVault, ds1.rplBalanceVault.sub(ds2.rplBalanceRefund), 'Member RPL refund address does not contain the correct RPL bond amount');
 }
 
 
 // Challenger a members node to respond and signal it is still alive
 export async function daoNodeTrustedMemberChallengeMake(_nodeAddress, txOptions) {
-
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
@@ -268,16 +244,14 @@ export async function daoNodeTrustedMemberChallengeMake(_nodeAddress, txOptions)
     let ds2 = await getTxData();
 
     // Check member count has increased
-    assert(ds1.currentMemberStatus == true, 'Challenged member has had their membership removed');
-    assert(ds1.memberChallengedStatus == false, 'Challenged a member that was already challenged');
-    assert(ds2.memberChallengedStatus == true, 'Member did not become challenged');
-
+    assert.strictEqual(ds1.currentMemberStatus, true, 'Challenged member has had their membership removed');
+    assert.strictEqual(ds1.memberChallengedStatus, false, 'Challenged a member that was already challenged');
+    assert.strictEqual(ds2.memberChallengedStatus, true, 'Member did not become challenged');
 }
 
 
 // Decide a challenges outcome
 export async function daoNodeTrustedMemberChallengeDecide(_nodeAddress, _expectedMemberStatus, txOptions) {
-
     // Load contracts
     const rocketDAONodeTrusted = await RocketDAONodeTrusted.deployed();
     const rocketDAONodeTrustedActions = await RocketDAONodeTrustedActions.deployed();
@@ -293,9 +267,6 @@ export async function daoNodeTrustedMemberChallengeDecide(_nodeAddress, _expecte
         );
     }
 
-    // Capture data
-    let ds1 = await getTxData();
-
     // Add a new proposal
     await rocketDAONodeTrustedActions.actionChallengeDecide(_nodeAddress, txOptions);
 
@@ -303,8 +274,5 @@ export async function daoNodeTrustedMemberChallengeDecide(_nodeAddress, _expecte
     let ds2 = await getTxData();
 
     // Check member count has increased
-    assert(ds2.currentMemberStatus == _expectedMemberStatus, 'Challenged member did not become their expected status');
-
+    assert.strictEqual(ds2.currentMemberStatus, _expectedMemberStatus, 'Challenged member did not become their expected status');
 }
-
-

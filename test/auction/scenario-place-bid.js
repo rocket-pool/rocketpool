@@ -1,4 +1,5 @@
 import { RocketAuctionManager, RocketDAOProtocolSettingsAuction, RocketVault } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Place a bid on a lot
@@ -16,7 +17,7 @@ export async function placeBid(lotIndex, txOptions) {
     ]);
 
     // Calculation base value
-    const calcBase = web3.utils.toBN(web3.utils.toWei('1', 'ether'));
+    const calcBase = '1'.ether;
 
     // Get lot details
     function getLotDetails(bidderAddress) {
@@ -37,8 +38,8 @@ export async function placeBid(lotIndex, txOptions) {
     // Get balances
     function getBalances(bidderAddress) {
         return Promise.all([
-            web3.eth.getBalance(bidderAddress).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(rocketVault.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(bidderAddress).then(value => value.BN),
+            web3.eth.getBalance(rocketVault.address).then(value => value.BN),
             rocketVault.balanceOf.call('rocketDepositPool'),
         ]).then(
             ([bidderEth, vaultEth, depositPoolEth]) =>
@@ -59,12 +60,12 @@ export async function placeBid(lotIndex, txOptions) {
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Place bid
     let txReceipt = await rocketAuctionManager.placeBid(lotIndex, txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated lot details & balances
     let [lot2, balances2] = await Promise.all([
@@ -78,20 +79,18 @@ export async function placeBid(lotIndex, txOptions) {
 
     // Get expected values
     const maxBidAmount = lotRemainingRplAmount.mul(lotBlockPrice).div(calcBase);
-    const txValue = web3.utils.toBN(txOptions.value);
+    const txValue = txOptions.value;
     const bidAmount = (txValue.gt(maxBidAmount) ? maxBidAmount : txValue);
 
     // Check lot details
-    assert(lot2.totalBidAmount.eq(lot1.totalBidAmount.add(bidAmount)), 'Incorrect updated total bid amount');
-    assert(lot2.addressBidAmount.eq(lot1.addressBidAmount.add(bidAmount)), 'Incorrect updated address bid amount');
-    assert(lot2.priceByTotalBids.eq(calcBase.mul(lot2.totalBidAmount).div(lot2.totalRplAmount)), 'Incorrect updated price by total bids');
-    assert(lot2.claimedRplAmount.eq(calcBase.mul(lot2.totalBidAmount).div(lot2.currentPrice)), 'Incorrect updated claimed RPL amount');
-    assert(lot2.totalRplAmount.eq(lot2.claimedRplAmount.add(lot2.remainingRplAmount)), 'Incorrect updated RPL amounts');
+    assertBN.equal(lot2.totalBidAmount, lot1.totalBidAmount.add(bidAmount), 'Incorrect updated total bid amount');
+    assertBN.equal(lot2.addressBidAmount, lot1.addressBidAmount.add(bidAmount), 'Incorrect updated address bid amount');
+    assertBN.equal(lot2.priceByTotalBids, calcBase.mul(lot2.totalBidAmount).div(lot2.totalRplAmount), 'Incorrect updated price by total bids');
+    assertBN.equal(lot2.claimedRplAmount, calcBase.mul(lot2.totalBidAmount).div(lot2.currentPrice), 'Incorrect updated claimed RPL amount');
+    assertBN.equal(lot2.totalRplAmount, lot2.claimedRplAmount.add(lot2.remainingRplAmount), 'Incorrect updated RPL amounts');
 
     // Check balances
-    assert(balances2.bidderEth.eq(balances1.bidderEth.sub(bidAmount).sub(txFee)), 'Incorrect updated address ETH balance');
-    assert(balances2.depositPoolEth.eq(balances1.depositPoolEth.add(bidAmount)), 'Incorrect updated deposit pool ETH balance');
-    assert(balances2.vaultEth.eq(balances1.vaultEth.add(bidAmount)), 'Incorrect updated vault ETH balance');
-
+    assertBN.equal(balances2.bidderEth, balances1.bidderEth.sub(bidAmount).sub(txFee), 'Incorrect updated address ETH balance');
+    assertBN.equal(balances2.depositPoolEth, balances1.depositPoolEth.add(bidAmount), 'Incorrect updated deposit pool ETH balance');
+    assertBN.equal(balances2.vaultEth, balances1.vaultEth.add(bidAmount), 'Incorrect updated vault ETH balance');
 }
-

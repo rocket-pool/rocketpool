@@ -1,6 +1,5 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
@@ -11,21 +10,19 @@ import "../../interface/minipool/RocketMinipoolQueueInterface.sol";
 import "../../interface/network/RocketNetworkFeesInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsNetworkInterface.sol";
 
-// Network node demand and commission rate
-
+/// @notice Network node demand and commission rate
 contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
 
     // Libs
     using SafeMath for uint;
     using SafeCast for uint;
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
-    // Get the current RP network node demand in ETH
-    // Node demand is equal to deposit pool balance minus available minipool capacity
+    /// @notice Returns the current RP network node demand in ETH
+    ///         Node demand is equal to deposit pool balance minus available minipool capacity
     function getNodeDemand() override public view returns (int256) {
         // Load contracts
         RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
@@ -38,12 +35,13 @@ contract RocketNetworkFees is RocketBase, RocketNetworkFeesInterface {
         return demand;
     }
 
-    // Get the current RP network node fee as a fraction of 1 ETH
+    /// @notice Returns the current RP network node fee as a fraction of 1 ETH
     function getNodeFee() override external view returns (uint256) {
         return getNodeFeeByDemand(getNodeDemand());
     }
 
-    // Get the RP network node fee for a node demand value
+    /// @notice Returns the network node fee for a given node demand value
+    /// @param _nodeDemand The node demand to calculate the fee for
     function getNodeFeeByDemand(int256 _nodeDemand) override public view returns (uint256) {
         // Calculation base values
         uint256 demandDivisor = 1000000000000;

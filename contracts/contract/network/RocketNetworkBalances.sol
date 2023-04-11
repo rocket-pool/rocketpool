@@ -22,7 +22,7 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 1;
+        version = 2;
     }
 
     // The block number which balances are current for
@@ -75,8 +75,6 @@ contract RocketNetworkBalances is RocketBase, RocketNetworkBalancesInterface {
         // Check block
         require(_block < block.number, "Balances can not be submitted for a future block");
         require(_block > getBalancesBlock(), "Network balances for an equal or higher block are set");
-        // Check balances
-        require(_stakingEth <= _totalEth, "Invalid network balances");
         // Get submission keys
         bytes32 nodeSubmissionKey = keccak256(abi.encodePacked("network.balances.submitted.node", msg.sender, _block, _totalEth, _stakingEth, _rethSupply));
         bytes32 submissionCountKey = keccak256(abi.encodePacked("network.balances.submitted.count", _block, _totalEth, _stakingEth, _rethSupply));

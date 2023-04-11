@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -8,4 +8,5 @@ interface RocketDAOProtocolSettingsDepositInterfaceOld {
     function getMinimumDeposit() external view returns (uint256);
     function getMaximumDepositPoolSize() external view returns (uint256);
     function getMaximumDepositAssignments() external view returns (uint256);
+    function getDepositFee() external view returns (uint256);
 }

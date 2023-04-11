@@ -1,14 +1,11 @@
 import { RocketTokenRETH } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Burn rETH for ETH
 export async function burnReth(amount, txOptions) {
-
     // Load contracts
     const rocketTokenRETH = await RocketTokenRETH.deployed();
-
-    // Get parameters
-    let rethExchangeRate = await rocketTokenRETH.getExchangeRate.call();
 
     // Get balances
     function getBalances() {
@@ -26,7 +23,7 @@ export async function burnReth(amount, txOptions) {
     let balances1 = await getBalances();
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Burn tokens & get tx fee
@@ -41,9 +38,7 @@ export async function burnReth(amount, txOptions) {
     let expectedEthTransferred = await rocketTokenRETH.getEthValue(burnAmount);
 
     // Check balances
-    assert(balances2.tokenSupply.eq(balances1.tokenSupply.sub(burnAmount)), 'Incorrect updated token supply');
-    assert(balances2.userTokenBalance.eq(balances1.userTokenBalance.sub(burnAmount)), 'Incorrect updated user token balance');
-    assert(balances2.userEthBalance.eq(balances1.userEthBalance.add(expectedEthTransferred).sub(txFee)), 'Incorrect updated user ETH balance');
-
+    assertBN.equal(balances2.tokenSupply, balances1.tokenSupply.sub(burnAmount), 'Incorrect updated token supply');
+    assertBN.equal(balances2.userTokenBalance, balances1.userTokenBalance.sub(burnAmount), 'Incorrect updated user token balance');
+    assertBN.equal(balances2.userEthBalance, balances1.userEthBalance.add(expectedEthTransferred).sub(txFee), 'Incorrect updated user ETH balance');
 }
-

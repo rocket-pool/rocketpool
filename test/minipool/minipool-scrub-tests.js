@@ -1,10 +1,9 @@
 import {
-  RocketDAONodeTrusted, RocketDAONodeTrustedSettingsMinipool,
+  RocketDAONodeTrustedSettingsMinipool,
   RocketDAOProtocolSettingsMinipool,
   RocketDAOProtocolSettingsNetwork,
-  RocketMinipool
 } from '../_utils/artifacts';
-import { increaseTime, mineBlocks } from '../_utils/evm';
+import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
@@ -19,10 +18,10 @@ import { close } from './scenario-close';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { voteScrub } from './scenario-scrub';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
-
 
         // Accounts
         const [
@@ -46,6 +45,8 @@ export default function() {
         let prelaunchMinipool;
 
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
@@ -64,20 +65,20 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', web3.utils.toWei('50', 'ether'), {from: owner});
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
 
-            // Make user deposit to refund first prelaunch minipool
-            let refundAmount = web3.utils.toWei('16', 'ether');
+            // Make user deposit to fund a prelaunch minipool
+            let refundAmount = '16'.ether;
             await userDeposit({from: random, value: refundAmount});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
+            let rplStake = minipoolRplStake.mul('7'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipool
-            prelaunchMinipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt);
+            prelaunchMinipool = await createMinipool({from: node, value: '16'.ether}, minipoolSalt);
         });
 
 
@@ -99,11 +100,11 @@ export default function() {
         });
 
 
-        it(printTitle('node', 'cannot close a scrubbed minipool before funds are returned'), async () => {
+        it(printTitle('node', 'can close a scrubbed minipool before funds are returned'), async () => {
           await voteScrub(prelaunchMinipool, {from: trustedNode1});
           await voteScrub(prelaunchMinipool, {from: trustedNode2});
 
-          await shouldRevert(close(prelaunchMinipool, { from: node, }), 'Closed minipool before fund were returned', 'Node ETH balance was not successfully transferred to node operator');
+          await close(prelaunchMinipool, { from: node, });
         });
 
 
@@ -115,10 +116,20 @@ export default function() {
           await web3.eth.sendTransaction({
             from: random,
             to: prelaunchMinipool.address,
-            value: web3.utils.toWei('16', 'ether'),
+            value: '16'.ether,
           });
 
           await close(prelaunchMinipool, { from: node, });
+        });
+
+
+        it(printTitle('node', 'cannot close a scrubbed minipool twice'), async () => {
+            await voteScrub(prelaunchMinipool, {from: trustedNode1});
+            await voteScrub(prelaunchMinipool, {from: trustedNode2});
+
+            await close(prelaunchMinipool, { from: node, });
+
+            await shouldRevert(close(prelaunchMinipool, { from: node, }), 'Was able to close twice', 'Minipool already closed');
         });
 
 
@@ -130,13 +141,13 @@ export default function() {
           await web3.eth.sendTransaction({
             from: random,
             to: prelaunchMinipool.address,
-            value: web3.utils.toWei('16', 'ether'),
+            value: '16'.ether,
           });
 
           await close(prelaunchMinipool, { from: node, });
 
           // Try to create the pool again
-          await shouldRevert(createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, minipoolSalt), 'Was able to recreate minipool at same address', 'Minipool already exists or was previously destroyed');
+          await shouldRevert(createMinipool({from: node, value: '16'.ether}, minipoolSalt), 'Was able to recreate minipool at same address', 'Minipool already exists or was previously destroyed');
         });
 
 

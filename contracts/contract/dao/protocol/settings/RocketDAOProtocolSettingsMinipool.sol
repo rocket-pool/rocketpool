@@ -1,6 +1,5 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -9,28 +8,32 @@ import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMin
 import "../../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMinipoolInterface.sol";
 import "../../../../types/MinipoolDeposit.sol";
 
-// Network minipool settings
+/// @notice Network minipool settings
 contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketDAOProtocolSettingsMinipoolInterface {
 
     // Libs
     using SafeMath for uint;
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "minipool") {
         // Set version
-        version = 1;
+        version = 2;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("minipool.submit.withdrawable.enabled", false);
+            setSettingBool("minipool.bond.reduction.enabled", false);
             setSettingUint("minipool.launch.timeout", 72 hours);
             setSettingUint("minipool.maximum.count", 14);
+            setSettingUint("minipool.user.distribute.window.start", 14 days);
+            setSettingUint("minipool.user.distribute.window.length", 2 days);
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
     }
 
-    // Update a setting, overrides inherited setting method with extra checks for this contract
+    /// @notice Update a setting, overrides inherited setting method with extra checks for this contract
+    /// @param _settingPath The path of the setting within this contract's namespace
+    /// @param _value The value to set it to
     function setSettingUint(string memory _settingPath, uint256 _value) override public onlyDAOProtocolProposal {
         // Some safety guards for certain settings
         if(getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
@@ -43,58 +46,80 @@ contract RocketDAOProtocolSettingsMinipool is RocketDAOProtocolSettings, RocketD
         setUint(keccak256(abi.encodePacked(settingNameSpace, _settingPath)), _value);
     }
 
-    // Balance required to launch minipool
+    /// @notice Returns the balance required to launch minipool
     function getLaunchBalance() override public pure returns (uint256) {
         return 32 ether;
     }
 
-    // Required node deposit amounts
-    function getDepositNodeAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
-        if (_depositType == MinipoolDeposit.Full) { return getFullDepositNodeAmount(); }
-        if (_depositType == MinipoolDeposit.Half) { return getHalfDepositNodeAmount(); }
-        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositNodeAmount(); }
-        return 0;
-    }
-    function getFullDepositNodeAmount() override public pure returns (uint256) {
-        return getLaunchBalance();
-    }
-    function getHalfDepositNodeAmount() override public pure returns (uint256) {
-        return getLaunchBalance().div(2);
-    }
-    function getEmptyDepositNodeAmount() override public pure returns (uint256) {
-        return 0 ether;
+    /// @notice Returns the value required to pre-launch a minipool
+    function getPreLaunchValue() override public pure returns (uint256) {
+        return 1 ether;
     }
 
-    // Required user deposit amounts
+    /// @notice Returns the deposit amount for a given deposit type (only used for legacy minipool types)
     function getDepositUserAmount(MinipoolDeposit _depositType) override external pure returns (uint256) {
         if (_depositType == MinipoolDeposit.Full) { return getFullDepositUserAmount(); }
         if (_depositType == MinipoolDeposit.Half) { return getHalfDepositUserAmount(); }
-        if (_depositType == MinipoolDeposit.Empty) { return getEmptyDepositUserAmount(); }
         return 0;
     }
+
+    /// @notice Returns the user amount for a "Full" deposit minipool
     function getFullDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
+
+    /// @notice Returns the user amount for a "Half" deposit minipool
     function getHalfDepositUserAmount() override public pure returns (uint256) {
         return getLaunchBalance().div(2);
     }
-    function getEmptyDepositUserAmount() override public pure returns (uint256) {
-        return getLaunchBalance();
+
+    /// @notice Returns the amount a "Variable" minipool requires to move to staking status
+    function getVariableDepositAmount() override public pure returns (uint256) {
+        return getLaunchBalance().sub(getPreLaunchValue());
     }
 
-    // Submit minipool withdrawable events currently enabled (trusted nodes only)
+    /// @notice Submit minipool withdrawable events currently enabled (trusted nodes only)
     function getSubmitWithdrawableEnabled() override external view returns (bool) {
         return getSettingBool("minipool.submit.withdrawable.enabled");
     }
 
-    // Timeout period in seconds for prelaunch minipools to launch
+    /// @notice Returns true if bond reductions are currentl enabled
+    function getBondReductionEnabled() override external view returns (bool) {
+        return getSettingBool("minipool.bond.reduction.enabled");
+    }
+
+    /// @notice Returns the timeout period in seconds for prelaunch minipools to launch
     function getLaunchTimeout() override external view returns (uint256) {
         return getSettingUint("minipool.launch.timeout");
     }
 
-    // Maximum number of minipools allowed at one time
+    /// @notice Returns the maximum number of minipools allowed at one time
     function getMaximumCount() override external view returns (uint256) {
       return getSettingUint("minipool.maximum.count");
+    }
+
+    /// @notice Returns true if the given time is within the user distribute window
+    function isWithinUserDistributeWindow(uint256 _time) override external view returns (bool) {
+        uint256 start = getUserDistributeWindowStart();
+        uint256 length = getUserDistributeWindowLength();
+        return (_time >= start && _time < (start.add(length)));
+    }
+
+    /// @notice Returns true if the given time has passed the distribute window
+    function hasUserDistributeWindowPassed(uint256 _time) override external view returns (bool) {
+        uint256 start = getUserDistributeWindowStart();
+        uint256 length = getUserDistributeWindowLength();
+        return _time >= start.add(length);
+    }
+
+    /// @notice Returns the start of the user distribute window
+    function getUserDistributeWindowStart() override public view returns (uint256) {
+        return getSettingUint("minipool.user.distribute.window.start");
+    }
+
+    /// @notice Returns the length of the user distribute window
+    function getUserDistributeWindowLength() override public view returns (uint256) {
+        return getSettingUint("minipool.user.distribute.window.length");
     }
 
 }

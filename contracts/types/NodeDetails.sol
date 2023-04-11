@@ -15,14 +15,19 @@ struct NodeDetails {
     uint256 effectiveRPLStake;
     uint256 minimumRPLStake;
     uint256 maximumRPLStake;
-    uint256 minipoolLimit;
+    uint256 ethMatched;
+    uint256 ethMatchedLimit;
     uint256 minipoolCount;
     uint256 balanceETH;
     uint256 balanceRETH;
     uint256 balanceRPL;
     uint256 balanceOldRPL;
+    uint256 depositCreditBalance;
+    uint256 distributorBalanceUserETH;
+    uint256 distributorBalanceNodeETH;
     address withdrawalAddress;
     address pendingWithdrawalAddress;
     bool smoothingPoolRegistrationState;
     uint256 smoothingPoolRegistrationChanged;
+    address nodeAddress;
 }

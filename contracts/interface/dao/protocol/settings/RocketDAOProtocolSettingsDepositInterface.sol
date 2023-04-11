@@ -8,5 +8,6 @@ interface RocketDAOProtocolSettingsDepositInterface {
     function getMinimumDeposit() external view returns (uint256);
     function getMaximumDepositPoolSize() external view returns (uint256);
     function getMaximumDepositAssignments() external view returns (uint256);
+    function getMaximumDepositSocialisedAssignments() external view returns (uint256);
     function getDepositFee() external view returns (uint256);
 }

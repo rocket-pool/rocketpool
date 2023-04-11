@@ -1,6 +1,8 @@
 // Dissolve a minipool
-export async function dissolve(minipool, txOptions) {
+import { minipoolStates } from '../_helpers/minipool';
+import { assertBN } from '../_helpers/bn';
 
+export async function dissolve(minipool, txOptions) {
     // Get minipool details
     function getMinipoolDetails() {
         return Promise.all([
@@ -22,10 +24,6 @@ export async function dissolve(minipool, txOptions) {
     let details2 = await getMinipoolDetails();
 
     // Check minipool details
-    const dissolved = web3.utils.toBN(4);
-    assert(!details1.status.eq(dissolved), 'Incorrect initial minipool status');
-    assert(details2.status.eq(dissolved), 'Incorrect updated minipool status');
-    assert(details2.userDepositBalance.eq(web3.utils.toBN(0)), 'Incorrect updated minipool user deposit balance');
-
+    assertBN.notEqual(details1.status, minipoolStates.Dissolved, 'Incorrect initial minipool status');
+    assertBN.equal(details2.status, minipoolStates.Dissolved, 'Incorrect updated minipool status');
 }
-

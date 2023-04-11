@@ -1,8 +1,8 @@
-pragma solidity 0.7.6;
+pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-interface RocketDepositPoolOldInterface {
+interface RocketDepositPoolInterfaceOld {
     function getBalance() external view returns (uint256);
     function getExcessBalance() external view returns (uint256);
     function deposit() external payable;
@@ -11,5 +11,4 @@ interface RocketDepositPoolOldInterface {
     function recycleLiquidatedStake() external payable;
     function assignDeposits() external;
     function withdrawExcessBalance(uint256 _amount) external;
-    function getUserLastDepositBlock(address _address) external view returns (uint256);
 }

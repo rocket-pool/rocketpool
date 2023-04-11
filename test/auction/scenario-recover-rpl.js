@@ -1,4 +1,5 @@
 import { RocketAuctionManager } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Recover unclaimed RPL from a lot
@@ -45,9 +46,8 @@ export async function recoverUnclaimedRPL(lotIndex, txOptions) {
     ]);
 
     // Check details
-    assert(details2.allottedRplBalance.eq(details1.allottedRplBalance.sub(lot1.remainingRplAmount)), 'Incorrect updated contract allotted RPL balance');
-    assert(details2.remainingRplBalance.eq(details1.remainingRplBalance.add(lot1.remainingRplAmount)), 'Incorrect updated contract remaining RPL balance');
+    assertBN.equal(details2.allottedRplBalance, details1.allottedRplBalance.sub(lot1.remainingRplAmount), 'Incorrect updated contract allotted RPL balance');
+    assertBN.equal(details2.remainingRplBalance, details1.remainingRplBalance.add(lot1.remainingRplAmount), 'Incorrect updated contract remaining RPL balance');
     assert.isTrue(lot2.rplRecovered, 'Incorrect updated lot RPL recovered status');
-
 }
 

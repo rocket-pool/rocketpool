@@ -1,54 +1,46 @@
-import { RocketNodeManager } from '../_utils/artifacts';
+import { RocketNodeManager, RocketNodeStaking } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Close a minipool
 export async function close(minipool, txOptions) {
-
     // Load contracts
     const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
 
     // Get parameters
     let nodeAddress = await minipool.getNodeAddress.call();
     let nodeWithdrawalAddress = await rocketNodeManager.getNodeWithdrawalAddress.call(nodeAddress);
 
-    // Get minipool balances
-    function getMinipoolBalances() {
-        return Promise.all([
-            minipool.getNodeDepositBalance.call(),
-            minipool.getNodeRefundBalance.call(),
-        ]).then(
-            ([nodeDeposit, nodeRefund]) =>
-            ({nodeDeposit, nodeRefund})
-        );
-    }
-
     // Get initial node balance & minipool balances
-    let [nodeBalance1, minipoolBalances] = await Promise.all([
-        web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
-        getMinipoolBalances(),
+    let [nodeBalance1, ethMatched1, minipoolBalance, userDepositBalance] = await Promise.all([
+        web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+        rocketNodeStaking.getNodeETHMatched(txOptions.from),
+        web3.eth.getBalance(minipool.address).then(value => value.BN),
+        minipool.getUserDepositBalance()
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
     txOptions.gasPrice = gasPrice;
 
     // Close & get tx fee
     let txReceipt = await minipool.close(txOptions);
-    let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
+    let txFee = gasPrice.mul(txReceipt.receipt.gasUsed.BN);
 
     // Get updated node balance & minipool contract code
-    let [nodeBalance2, minipoolCode] = await Promise.all([
-        web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
+    let [nodeBalance2, ethMatched2, minipoolCode] = await Promise.all([
+        web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+        rocketNodeStaking.getNodeETHMatched(txOptions.from),
         web3.eth.getCode(minipool.address),
     ]);
 
     // Check balances
-    let expectedNodeBalance = nodeBalance1.add(minipoolBalances.nodeDeposit).add(minipoolBalances.nodeRefund);
-    if (nodeWithdrawalAddress == nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
-    assert(nodeBalance2.eq(expectedNodeBalance), 'Incorrect updated node nETH balance');
+    let expectedNodeBalance = nodeBalance1.add(minipoolBalance);
+    if (nodeWithdrawalAddress === nodeAddress) expectedNodeBalance = expectedNodeBalance.sub(txFee);
+    assertBN.equal(nodeBalance2, expectedNodeBalance, 'Incorrect updated node nETH balance');
 
-    // Check minipool contract code
-    assert.equal(minipoolCode, '0x', 'Minipool contract was not destroyed');
-
+    // Expect node's ETH matched to be decreased by userDepositBalance
+    assertBN.equal(ethMatched1.sub(ethMatched2), userDepositBalance, 'Incorrect ETH matched');
 }
 

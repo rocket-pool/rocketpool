@@ -1,4 +1,5 @@
 import { RocketDAONodeTrusted, RocketNetworkBalances, RocketStorage } from '../_utils/artifacts';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit network balances
@@ -59,31 +60,29 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
     ]);
 
     // Check if balances should be updated
-    let expectUpdatedBalances = submission2.count.mul(web3.utils.toBN(2)).gt(trustedNodeCount);
+    let expectUpdatedBalances = submission2.count.mul('2'.BN).gt(trustedNodeCount);
 
     // Check submission details
     assert.isFalse(submission1.nodeSubmitted, 'Incorrect initial node submitted status');
     assert.isTrue(submission2.nodeSubmitted, 'Incorrect updated node submitted status');
-    assert(submission2.count.eq(submission1.count.add(web3.utils.toBN(1))), 'Incorrect updated submission count');
+    assertBN.equal(submission2.count, submission1.count.add('1'.BN), 'Incorrect updated submission count');
 
     // Check balances
     if (expectUpdatedBalances) {
-        assert(balances.block.eq(web3.utils.toBN(block)), 'Incorrect updated network balances block');
-        assert(balances.totalEth.eq(web3.utils.toBN(totalEth)), 'Incorrect updated network total ETH balance');
-        assert(balances.stakingEth.eq(web3.utils.toBN(stakingEth)), 'Incorrect updated network staking ETH balance');
-        assert(balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrect updated network total rETH supply');
+        assertBN.equal(balances.block, web3.utils.toBN(block), 'Incorrect updated network balances block');
+        assertBN.equal(balances.totalEth, web3.utils.toBN(totalEth), 'Incorrect updated network total ETH balance');
+        assertBN.equal(balances.stakingEth, web3.utils.toBN(stakingEth), 'Incorrect updated network staking ETH balance');
+        assertBN.equal(balances.rethSupply, web3.utils.toBN(rethSupply), 'Incorrect updated network total rETH supply');
     } else {
-        assert(!balances.block.eq(web3.utils.toBN(block)), 'Incorrectly updated network balances block');
-        assert(!balances.totalEth.eq(web3.utils.toBN(totalEth)), 'Incorrectly updated network total ETH balance');
-        assert(!balances.stakingEth.eq(web3.utils.toBN(stakingEth)), 'Incorrectly updated network staking ETH balance');
-        assert(!balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrectly updated network total rETH supply');
+        assertBN.notEqual(balances.block, web3.utils.toBN(block), 'Incorrectly updated network balances block');
+        assertBN.notEqual(balances.totalEth, web3.utils.toBN(totalEth), 'Incorrectly updated network total ETH balance');
+        assertBN.notEqual(balances.stakingEth, web3.utils.toBN(stakingEth), 'Incorrectly updated network staking ETH balance');
+        assertBN.notEqual(balances.rethSupply, web3.utils.toBN(rethSupply), 'Incorrectly updated network total rETH supply');
     }
-
 }
 
 // Execute update network balances
 export async function executeUpdateBalances(block, totalEth, stakingEth, rethSupply, txOptions) {
-
     // Load contracts
     const rocketNetworkBalances = await RocketNetworkBalances.deployed()
 
@@ -107,10 +106,8 @@ export async function executeUpdateBalances(block, totalEth, stakingEth, rethSup
     let balances = await getBalances()
 
     // Check balances
-    assert(balances.block.eq(web3.utils.toBN(block)), 'Incorrect updated network balances block');
-    assert(balances.totalEth.eq(web3.utils.toBN(totalEth)), 'Incorrect updated network total ETH balance');
-    assert(balances.stakingEth.eq(web3.utils.toBN(stakingEth)), 'Incorrect updated network staking ETH balance');
-    assert(balances.rethSupply.eq(web3.utils.toBN(rethSupply)), 'Incorrect updated network total rETH supply');
-
+    assertBN.equal(balances.block, web3.utils.toBN(block), 'Incorrect updated network balances block');
+    assertBN.equal(balances.totalEth, web3.utils.toBN(totalEth), 'Incorrect updated network total ETH balance');
+    assertBN.equal(balances.stakingEth, web3.utils.toBN(stakingEth), 'Incorrect updated network staking ETH balance');
+    assertBN.equal(balances.rethSupply, web3.utils.toBN(rethSupply), 'Incorrect updated network total rETH supply');
 }
-

@@ -9,9 +9,9 @@ import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { setDaoNodeTrustedBootstrapMember, setDAONodeTrustedBootstrapSetting, setDaoNodeTrustedBootstrapModeDisabled, setDaoNodeTrustedBootstrapUpgrade, setDaoNodeTrustedMemberRequired } from './scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedExecute, getDAOMemberIsValid, daoNodeTrustedPropose, daoNodeTrustedVote, daoNodeTrustedCancel, daoNodeTrustedMemberJoin, daoNodeTrustedMemberLeave, daoNodeTrustedMemberChallengeMake, daoNodeTrustedMemberChallengeDecide } from './scenario-dao-node-trusted';
 import { proposalStates, getDAOProposalState, getDAOProposalStartTime, getDAOProposalEndTime, getDAOProposalExpires } from './scenario-dao-proposal';
-
-// Contracts
+import { assertBN } from '../_helpers/bn';
 import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers, RocketDAONodeTrustedSettingsProposals, RocketTokenRPL, RocketMinipoolManager, RocketDAONodeTrustedUpgrade, RocketStorage } from '../_utils/artifacts';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 
 export default function() {
@@ -70,6 +70,8 @@ export default function() {
         let rocketDAONodeTrustedUpgradeNew;
 
         before(async () => {
+            await upgradeOneDotTwo(guardian);
+
             // Load contracts
             // Get RocketStorage
             const rocketStorage = await RocketStorage.deployed();
@@ -186,7 +188,7 @@ export default function() {
                 from: registeredNode1,
             });
             // Verify
-            assert(expectedVotes == Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");         
+            assert.strictEqual(expectedVotes, Number(web3.utils.fromWei(quorumVotes)).toFixed(2), "Expected vote threshold does not match contracts");
         });
 
         // The big test
@@ -297,7 +299,7 @@ export default function() {
                 from: registeredNodeTrusted1
             });
             // Verify the proposal is pending
-            assert(await getDAOProposalState(proposalID) == proposalStates.Pending, 'Proposal state is not Pending');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Pending, 'Proposal state is not Pending');
             // Verify voting will not work while pending
             await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode1 }), 'Member voted while proposal was pending', 'Voting is not active for this proposal');
             // Current time
@@ -309,11 +311,11 @@ export default function() {
             await daoNodeTrustedVote(proposalID, true, { from: registeredNodeTrusted2 });   
             await shouldRevert(daoNodeTrustedVote(proposalID, false, { from: registeredNodeTrusted1 }), 'Member voted after proposal has passed', 'Proposal has passed, voting is complete and the proposal can now be executed');
             // Verify the proposal is successful
-            assert(await getDAOProposalState(proposalID) == proposalStates.Succeeded, 'Proposal state is not succeeded');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Succeeded, 'Proposal state is not succeeded');
             // Proposal has passed, lets execute it now
             await daoNodeTrustedExecute(proposalID, { from: registeredNode1 });
             // Verify the proposal has executed
-            assert(await getDAOProposalState(proposalID) == proposalStates.Executed, 'Proposal state is not executed');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Executed, 'Proposal state is not executed');
         });
         
 
@@ -333,7 +335,7 @@ export default function() {
                 from: registeredNodeTrusted1
             });
             // Verify the proposal is pending
-            assert(await getDAOProposalState(proposalID) == proposalStates.Pending, 'Proposal state is not Pending');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Pending, 'Proposal state is not Pending');
             // Verify voting will not work while pending
             await shouldRevert(daoNodeTrustedVote(proposalID, true, { from: registeredNode1 }), 'Member voted while proposal was pending', 'Voting is not active for this proposal');
             // Current time
@@ -347,7 +349,7 @@ export default function() {
             // Fast forward to this voting period finishing
             await increaseTime(web3, (await getDAOProposalEndTime(proposalID)-timeCurrent)+2);
             // Verify the proposal is defeated
-            assert(await getDAOProposalState(proposalID) == proposalStates.Defeated, 'Proposal state is not defeated');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Defeated, 'Proposal state is not defeated');
             // Proposal has failed, can we execute it anyway?
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode1 }), 'Executed defeated proposal', 'Proposal has not succeeded, has expired or has already been executed');;
         });
@@ -483,7 +485,7 @@ export default function() {
             // How much bond has registeredNodeTrusted2 paid?
             let registeredNodeTrusted2BondAmount = await daoNode.getMemberRPLBondAmount.call(registeredNodeTrusted2);
             // How much to fine? 33%
-            let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div(web3.utils.toBN(3));
+            let registeredNodeTrusted2BondAmountFine = registeredNodeTrusted2BondAmount.div('3'.BN);
             // Encode the calldata for the proposal
             let proposalCalldata = web3.eth.abi.encodeFunctionCall(
               {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
@@ -509,11 +511,11 @@ export default function() {
             // Member should be kicked now, let's check their RPL balance has their 33% bond returned
             let rplBalance = await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2);
             //console.log(web3.utils.fromWei(await rocketTokenRPL.balanceOf.call(registeredNodeTrusted2)));
-            assert((registeredNodeTrusted2BondAmount.sub(registeredNodeTrusted2BondAmountFine)).eq(rplBalance), "registeredNodeTrusted2 remaining RPL balance is incorrect");
-            assert(await getDAOMemberIsValid(registeredNodeTrusted2) === false, "registeredNodeTrusted2 is still a member of the DAO");
+            assertBN.equal((registeredNodeTrusted2BondAmount.sub(registeredNodeTrusted2BondAmountFine)), rplBalance, "registeredNodeTrusted2 remaining RPL balance is incorrect");
+            assert.isFalse(await getDAOMemberIsValid(registeredNodeTrusted2), "registeredNodeTrusted2 is still a member of the DAO");
             // The 33% fine should be burned
             let rplTotalSupply2 = await rocketTokenRPL.totalSupply.call()
-            assert(rplTotalSupply1.sub(rplTotalSupply2).eq(registeredNodeTrusted2BondAmountFine), "RPL total supply did not decrease by fine amount");
+            assertBN.equal(rplTotalSupply1.sub(rplTotalSupply2), registeredNodeTrusted2BondAmountFine, "RPL total supply did not decrease by fine amount");
         });
 
 
@@ -566,7 +568,7 @@ export default function() {
             // Fast forward to this voting period finishing and executing period expiring
             await increaseTime(web3, (await getDAOProposalExpires(proposalID)-timeCurrent)+2);
             // Verify correct expired status
-            assert(await getDAOProposalState(proposalID) == proposalStates.Expired, 'Proposal state is not Expired');
+            assertBN.equal(await getDAOProposalState(proposalID), proposalStates.Expired, 'Proposal state is not Expired');
             // Execution should fail
             await shouldRevert(daoNodeTrustedExecute(proposalID, { from: registeredNode2 }), 'Member execute proposal after it had expired', 'Proposal has not succeeded, has expired or has already been executed');
         });    
@@ -894,7 +896,7 @@ export default function() {
             // Add a small wait
             await increaseTime(web3, 2);
             // Check the member is now valid
-            assert(await getDAOMemberIsValid(registeredNode1), "registeredNode1 is not a membmer of the DAO");
+            assert.isTrue(await getDAOMemberIsValid(registeredNode1), "registeredNode1 is not a membmer of the DAO");
             // Now we kick the member
             let proposalCalldata2 = web3.eth.abi.encodeFunctionCall(
               {name: 'proposalKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}, {type: 'uint256', name: '_rplFine'}]},
@@ -915,7 +917,7 @@ export default function() {
             // Proposal has passed, lets execute it now
             await daoNodeTrustedExecute(proposalId2, { from: registeredNodeTrusted1 });
             // The new member has now been kicked
-            assert(await getDAOMemberIsValid(registeredNode1) === false, "registeredNode1 is still a member of the DAO");
+            assert.isFalse(await getDAOMemberIsValid(registeredNode1), "registeredNode1 is still a member of the DAO");
             // They should not be able to rejoin
             await rplAllowanceDAO(registeredNode1, rplBondAmount);
             await shouldRevert(daoNodeTrustedMemberJoin({from: registeredNode1}), "Member was able to join after being kicked", "This node has not been invited to join");

@@ -8,6 +8,7 @@ import { setTimezoneLocation } from './scenario-set-timezone';
 import { setWithdrawalAddress, confirmWithdrawalAddress } from './scenario-set-withdrawal-address';
 import { setSmoothingPoolRegistrationState } from './scenario-register-smoothing-pool';
 import { increaseTime } from '../_utils/evm';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 
 export default function() {
@@ -35,6 +36,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Enable smoothing pool registrations
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', true, {from: owner});
 
@@ -53,17 +56,14 @@ export default function() {
 
 
         it(printTitle('node operator', 'can register a node'), async () => {
-
             // Register node
             await register('Australia/Brisbane', {
                 from: node,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot register a node while registrations are disabled'), async () => {
-
             // Disable registrations
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.registration.enabled', false, {from: owner});
 
@@ -71,22 +71,18 @@ export default function() {
             await shouldRevert(register('Australia/Brisbane', {
                 from: node,
             }), 'Registered a node while registrations were disabled');
-
         });
 
 
         it(printTitle('node operator', 'cannot register a node with an invalid timezone location'), async () => {
-
             // Attempt to register node
             await shouldRevert(register('a', {
                 from: node,
             }), 'Registered a node with an invalid timezone location');
-
         });
 
 
         it(printTitle('node operator', 'cannot register a node which is already registered'), async () => {
-
             // Register
             await register('Australia/Brisbane', {from: node});
 
@@ -94,7 +90,6 @@ export default function() {
             await shouldRevert(register('Australia/Brisbane', {
                 from: node,
             }), 'Registered a node which is already registered');
-
         });
 
 
@@ -104,7 +99,6 @@ export default function() {
 
 
         it(printTitle('node operator', 'can set their withdrawal address immediately'), async () => {
-
             // Set withdrawal address
             await setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
                 from: registeredNode1,
@@ -114,12 +108,10 @@ export default function() {
             await setWithdrawalAddress(registeredNode1, withdrawalAddress2, true, {
                 from: withdrawalAddress1,
             });
-
         });
 
 
         it(printTitle('node operator', 'can set their withdrawal address to the same value as another node operator'), async () => {
-
             // Set withdrawal addresses
             await setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
                 from: registeredNode1,
@@ -137,32 +129,26 @@ export default function() {
             await setWithdrawalAddress(registeredNode2, withdrawalAddress2, true, {
                 from: withdrawalAddress1,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot set their withdrawal address to an invalid address'), async () => {
-
             // Attempt to set withdrawal address
             await shouldRevert(setWithdrawalAddress(registeredNode1, '0x0000000000000000000000000000000000000000', true, {
                 from: registeredNode1,
             }), 'Set a withdrawal address to an invalid address');
-
         });
 
 
         it(printTitle('random address', 'cannot set a withdrawal address'), async () => {
-
             // Attempt to set withdrawal address
             await shouldRevert(setWithdrawalAddress(registeredNode1, withdrawalAddress1, true, {
                 from: random,
             }), 'Random address set a withdrawal address');
-
         });
 
 
         it(printTitle('node operator', 'can set and confirm their withdrawal address'), async () => {
-
             // Set & confirm withdrawal address
             await setWithdrawalAddress(registeredNode1, withdrawalAddress1, false, {
                 from: registeredNode1,
@@ -178,17 +164,14 @@ export default function() {
             await confirmWithdrawalAddress(registeredNode1, {
                 from: withdrawalAddress2,
             });
-
         });
 
 
         it(printTitle('random address', 'cannot confirm itself as a withdrawal address'), async () => {
-
             // Attempt to confirm a withdrawal address
             await shouldRevert(confirmWithdrawalAddress(registeredNode1, {
                 from: random,
             }), 'Random address confirmed itself as a withdrawal address');
-
         });
 
 
@@ -198,32 +181,26 @@ export default function() {
 
 
         it(printTitle('node operator', 'can set their timezone location'), async () => {
-
             // Set timezone location
             await setTimezoneLocation('Australia/Sydney', {
                 from: registeredNode1,
             });
-
         });
 
 
         it(printTitle('node operator', 'cannot set their timezone location to an invalid value'), async () => {
-
             // Attempt to set timezone location
             await shouldRevert(setTimezoneLocation('a', {
                 from: registeredNode1,
             }), 'Set a timezone location to an invalid value');
-
         });
 
 
         it(printTitle('random address', 'cannot set a timezone location'), async () => {
-
             // Attempt to set timezone location
             await shouldRevert(setTimezoneLocation('Australia/Brisbane', {
                 from: random,
             }), 'Random address set a timezone location');
-
         });
 
 
@@ -232,7 +209,7 @@ export default function() {
         //
 
 
-        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disbaled'), async () => {
+        it(printTitle('node operator', 'can not register for smoothing pool if registrations are disabled'), async () => {
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.smoothing.pool.registration.enabled', false, {from: owner});
             await shouldRevert(setSmoothingPoolRegistrationState(true, { from: registeredNode1 }), 'Was able to register while registrations were disabled', 'Smoothing pool registrations are not active');
         });
@@ -267,7 +244,6 @@ export default function() {
 
 
         it(printTitle('random', 'can query timezone counts'), async () => {
-
             const rocketNodeManager = await RocketNodeManager.deployed();
             await rocketNodeManager.registerNode('Australia/Sydney', {from: random2});
             await rocketNodeManager.registerNode('Australia/Perth', {from: random3});
@@ -285,5 +261,6 @@ export default function() {
               assert(actual && Number(actual.count) === expects[expectTimezone], "Timezone count was incorrect for " + expectTimezone + ", expected " + expects[expectTimezone] + " but got " + actual);
             }
         });
+
     });
 }

@@ -1,21 +1,16 @@
-import { mineBlocks, increaseTime, getCurrentTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { nodeStakeRPL, registerNode, setNodeTrusted } from '../_helpers/node';
-import { executeUpdateBalances, submitBalances } from './scenario-submit-balances'
 import {
-    RocketDAONodeTrusted,
-    RocketDAONodeTrustedSettingsMinipool,
     RocketDAONodeTrustedSettingsProposals,
-    RocketDAOProtocolSettingsNetwork, RocketMinipoolPenalty
+    RocketMinipoolPenalty
 } from '../_utils/artifacts';
-import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
-import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
-import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
 import { createMinipool, getMinipoolMinimumRPLStake } from '../_helpers/minipool';
 import { submitPenalty } from './scenario-submit-penalties';
 import { mintRPL } from '../_helpers/tokens';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { userDeposit } from '../_helpers/deposit';
 
 export default function() {
     contract('RocketNetworkPenalties', async (accounts) => {
@@ -41,6 +36,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Register node
             await registerNode({from: node});
 
@@ -59,21 +56,21 @@ export default function() {
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.vote.delay.blocks', 4, { from: owner });
             // Set max penalty rate
             let rocketMinipoolPenalty = await RocketMinipoolPenalty.deployed();
-            rocketMinipoolPenalty.setMaxPenaltyRate(web3.utils.toWei('1', 'ether'), {from: owner})
+            rocketMinipoolPenalty.setMaxPenaltyRate('1'.ether, {from: owner})
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(1));
+            let rplStake = minipoolRplStake.mul('1'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create a minipool
-            minipool = await createMinipool({from: node, value: web3.utils.toWei('32', 'ether')}, 0);
+            await userDeposit({from: random, value: '16'.ether})
+            minipool = await createMinipool({from: node, value: '16'.ether}, 0);
         });
 
 
         it(printTitle('trusted nodes', 'can submit penalties'), async () => {
-
             // Set parameters
             let minipoolAddress = minipool.address;
 
@@ -88,12 +85,10 @@ export default function() {
                     from: trustedNode3,
                 });
             }
-
         });
 
 
         it(printTitle('node operator', 'cannot submit penalties'), async () => {
-
             // Set parameters
             let block = 1;
             let minipoolAddress = minipool.address;
@@ -102,7 +97,6 @@ export default function() {
             await shouldRevert(submitPenalty(minipoolAddress, block, {
                 from: node,
             }), 'Was able to submit penalty', 'Invalid trusted node');
-
         });
 
     });

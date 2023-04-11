@@ -2,13 +2,12 @@ import { printTitle } from '../_utils/formatting';
 import {
     RocketNodeManager,
     RocketDAONodeTrustedSettingsMinipool,
-    RocketNodeDistributorFactory, RocketNodeManagerNew, RocketNodeManagerOld
+    RocketNodeDistributorFactory
 } from '../_utils/artifacts';
 import {
     createMinipool,
     getMinipoolMinimumRPLStake,
     stakeMinipool,
-    submitMinipoolWithdrawable
 } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
@@ -16,6 +15,8 @@ import { distributeRewards } from './scenario-distribute-rewards';
 import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { shouldRevert } from '../_utils/testing';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { userDeposit } from '../_helpers/deposit';
 
 export default function() {
     contract('RocketNodeDistributor', async (accounts) => {
@@ -36,6 +37,8 @@ export default function() {
         let rplStake;
 
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Get contracts
             const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Set settings
@@ -48,7 +51,7 @@ export default function() {
             await setNodeTrusted(trustedNode, 'saas_1', 'node@home.com', owner);
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            rplStake = minipoolRplStake.mul(web3.utils.toBN(7));
+            rplStake = minipoolRplStake.mul('7'.BN);
             await mintRPL(owner, node1, rplStake);
             await nodeStakeRPL(rplStake, {from: node1}, true);
             await mintRPL(owner, node2, rplStake);
@@ -81,50 +84,62 @@ export default function() {
 
 
         it(printTitle('node operator', 'can distribute rewards with 1 minipool'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
-            let stakingMinipool = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: '16'.ether})
+            let stakingMinipool = await createMinipool({from: node2, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool, {from: node2});
             // Distribute
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
 
 
         it(printTitle('node operator', 'can distribute rewards with multiple minipools'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
-            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
-            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: '32'.ether})
+            let stakingMinipool1 = await createMinipool({from: node2, value: '16'.ether});
+            let stakingMinipool2 = await createMinipool({from: node2, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool1, {from: node2});
             await stakeMinipool(stakingMinipool2, {from: node2});
 
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
 
 
         it(printTitle('node operator', 'can distribute rewards after staking and withdrawing'), async () => {
+            // Get contracts
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Register node
             await registerNode({from: node2});
             await nodeStakeRPL(rplStake, {from: node2});
+            const distributorAddress2 = await rocketNodeDistributorFactory.getProxyAddress(node2);
             // Create and stake a minipool
-            let stakingMinipool1 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
-            let stakingMinipool2 = await createMinipool({from: node2, value: web3.utils.toWei('32', 'ether')});
+            await userDeposit({from: random, value: '32'.ether})
+            let stakingMinipool1 = await createMinipool({from: node2, value: '16'.ether});
+            let stakingMinipool2 = await createMinipool({from: node2, value: '16'.ether});
             await increaseTime(web3, scrubPeriod + 1);
             await stakeMinipool(stakingMinipool1, {from: node2});
             await stakeMinipool(stakingMinipool2, {from: node2});
 
             // Mark minipool as withdrawable to remove it from the average fee calculation
-            await submitMinipoolWithdrawable(stakingMinipool1.address, {from: trustedNode});
+            // await submitMinipoolWithdrawable(stakingMinipool1.address, {from: trustedNode});
 
-            await web3.eth.sendTransaction({to: distributorAddress, from: owner, value: web3.utils.toWei("1", "ether")});
+            await web3.eth.sendTransaction({to: distributorAddress2, from: owner, value: web3.utils.toWei("1", "ether")});
             await distributeRewards(node2, null)
         });
     });

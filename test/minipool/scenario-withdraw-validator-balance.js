@@ -1,17 +1,12 @@
 import {
-    RocketDAOProtocolSettingsNetwork,
     RocketDepositPool,
-    RocketMinipoolManager,
     RocketMinipoolPenalty,
     RocketNodeManager,
     RocketTokenRETH
 } from '../_utils/artifacts'
+import { assertBN } from '../_helpers/bn';
 
-
-export async function withdrawValidatorBalance(minipool, withdrawalBalance, from, finalise = false) {
-    // Convert to BN
-    withdrawalBalance = web3.utils.toBN(withdrawalBalance);
-
+export async function withdrawValidatorBalance(minipool, withdrawalBalance, from) {
     // Load contracts
     const [
         rocketDepositPool,
@@ -37,10 +32,10 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // Get balances
     function getBalances() {
         return Promise.all([
-            web3.eth.getBalance(rocketTokenRETH.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(rocketTokenRETH.address).then(value => value.BN),
             rocketDepositPool.getBalance.call(),
-            web3.eth.getBalance(nodeWithdrawalAddress).then(value => web3.utils.toBN(value)),
-            web3.eth.getBalance(minipool.address).then(value => web3.utils.toBN(value)),
+            web3.eth.getBalance(nodeWithdrawalAddress).then(value => value.BN),
+            web3.eth.getBalance(minipool.address).then(value => value.BN),
         ]).then(
           ([rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth]) =>
             ({rethContractEth, depositPoolEth, nodeWithdrawalEth, minipoolEth})
@@ -48,14 +43,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Get minipool balances
-    function getMinipoolBalances(finalised = false) {
-        if (finalised) {
-            return {
-                nodeDepositBalance: web3.utils.toBN('0'),
-                nodeRefundBalance: web3.utils.toBN('0'),
-                userDepositBalance: web3.utils.toBN('0')
-            }
-        }
+    function getMinipoolBalances() {
         return Promise.all([
             minipool.getNodeDepositBalance.call(),
             minipool.getNodeRefundBalance.call(),
@@ -67,7 +55,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Send validator balance to minipool
-    if (withdrawalBalance.gt('0')) {
+    if (withdrawalBalance.gt('0'.BN)) {
         await web3.eth.sendTransaction({
             from: from,
             to: minipool.address,
@@ -77,7 +65,7 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     }
 
     // Get total withdrawal balance
-    withdrawalBalance = web3.utils.toBN(await web3.eth.getBalance(minipool.address));
+    withdrawalBalance = (await web3.eth.getBalance(minipool.address)).BN;
 
     // Get initial balances & withdrawal processed status
     let [balances1, minipoolBalances1] = await Promise.all([
@@ -86,29 +74,20 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     ]);
 
     // Set gas price
-    let gasPrice = web3.utils.toBN(web3.utils.toWei('20', 'gwei'));
+    let gasPrice = '20'.gwei;
 
     // Payout the balances now
-    let txReceipt;
-
-    if (finalise) {
-        txReceipt = await minipool.distributeBalanceAndFinalise({
-            from: from,
-            gasPrice: gasPrice
-        });
-    } else {
-        txReceipt = await minipool.distributeBalance({
-            from: from,
-            gasPrice: gasPrice
-        });
-    }
+    let txReceipt = await minipool.distributeBalance(false, {
+        from: from,
+        gasPrice: gasPrice
+    });
 
     let txFee = gasPrice.mul(web3.utils.toBN(txReceipt.receipt.gasUsed));
 
     // Get updated balances & withdrawal processed status
     let [balances2, minipoolBalances2] = await Promise.all([
         getBalances(),
-        getMinipoolBalances(finalise)
+        getMinipoolBalances()
     ]);
 
     // Add the fee back into the balance to make assertions easier
@@ -127,24 +106,40 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
     // console.log('Minipool Amount:', web3.utils.fromWei(balances1.minipoolEth), web3.utils.fromWei(balances2.minipoolEth), web3.utils.fromWei(balances2.minipoolEth.sub(balances1.minipoolEth)));
     // console.log('Node Withdrawal Address Amount:', web3.utils.fromWei(balances1.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth), web3.utils.fromWei(balances2.nodeWithdrawalEth.sub(balances1.nodeWithdrawalEth)));
     // console.log('rETH Contract Amount:', web3.utils.fromWei(balances1.rethContractEth), web3.utils.fromWei(balances2.rethContractEth), web3.utils.fromWei(balances2.rethContractEth.sub(balances1.rethContractEth)));
+    //
+    // console.log('Node balance change: ', web3.utils.fromWei(nodeBalanceChange));
+    // console.log('User balance change: ', web3.utils.fromWei(rethBalanceChange));
+    // console.log('Deposit pool change: ', web3.utils.fromWei(depositPoolChange));
+    //
+    // const calculatedNodeShare = await minipool.calculateNodeShare(balances1.minipoolEth);
+    // console.log('Calculated node share: ' + web3.utils.fromWei(calculatedNodeShare));
 
     // Get penalty rate for this minipool
     const rocketMinipoolPenalty = await RocketMinipoolPenalty.deployed();
     const penaltyRate = await rocketMinipoolPenalty.getPenaltyRate(minipool.address);
 
     // Calculate rewards
-    let depositBalance = web3.utils.toBN(web3.utils.toWei('32'));
+    let depositBalance = '32'.ether;
     if (withdrawalBalance.gte(depositBalance)) {
         let depositType = await minipool.getDepositType();
         let userAmount = minipoolBalances1.userDepositBalance;
         let rewards = withdrawalBalance.sub(depositBalance);
-        let halfRewards = rewards.divn(2);
-        let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
         if (depositType.toString() === '3'){
             // Unbonded
+            let halfRewards = rewards.divn(2);
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
             userAmount = userAmount.add(rewards.sub(nodeCommissionFee));
-        } else {
+        } else if (depositType.toString() === '2' || depositType.toString() === '1'){
+            // Half or full
+            let halfRewards = rewards.divn(2);
+            let nodeCommissionFee = halfRewards.mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1')));
             userAmount = userAmount.add(halfRewards.sub(nodeCommissionFee));
+        } else if (depositType.toString() === '4') {
+            // Variable
+            const nodeCapital = minipoolBalances1.nodeDepositBalance;
+            let nodeRewards = rewards.mul(nodeCapital).div(userAmount.add(nodeCapital));
+            nodeRewards = nodeRewards.add(rewards.sub(nodeRewards).mul(nodeFee).div(web3.utils.toBN(web3.utils.toWei('1'))));
+            userAmount = userAmount.add(rewards.sub(nodeRewards));
         }
         let nodeAmount = withdrawalBalance.sub(userAmount);
 
@@ -163,14 +158,14 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         // console.log('User amount: ', web3.utils.fromWei(userAmount));
 
         // Check balances
-        assert(rethBalanceChange.add(depositPoolChange).eq(userAmount), "rETH balance was not correct");
-        assert(nodeBalanceChange.eq(nodeAmount), "Node balance was not correct");
+        assertBN.equal(rethBalanceChange.add(depositPoolChange), userAmount, "rETH balance was not correct");
+        assertBN.equal(nodeBalanceChange, nodeAmount, "Node balance was not correct");
 
         // If not sent from node operator then refund balance should be correct
         if (!(from === nodeWithdrawalAddress || from === nodeAddress)) {
             let refundBalance = await minipool.getNodeRefundBalance.call();
             // console.log('Node refund balance after withdrawal:', web3.utils.fromWei(refundBalance));
-            assert(refundBalance.eq(minipoolBalances1.nodeRefundBalance.add(nodeAmount)), "Node balance was not correct");
+            assertBN.equal(refundBalance, minipoolBalances1.nodeRefundBalance.add(nodeAmount), "Node balance was not correct");
         }
     }
 
@@ -178,4 +173,8 @@ export async function withdrawValidatorBalance(minipool, withdrawalBalance, from
         nodeBalanceChange,
         rethBalanceChange
     }
+}
+
+export async function beginUserDistribute(minipool, txOptions) {
+    await minipool.beginUserDistribute(txOptions);
 }

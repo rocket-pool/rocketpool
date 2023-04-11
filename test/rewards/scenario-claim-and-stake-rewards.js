@@ -1,11 +1,11 @@
 import {
-    RocketDAONodeTrusted,
     RocketMerkleDistributorMainnet,
-    RocketNetworkPrices, RocketNodeManager, RocketNodeStaking,
+    RocketNodeManager, RocketNodeStaking,
     RocketRewardsPool,
     RocketStorage, RocketTokenRPL
 } from '../_utils/artifacts';
 import { parseRewardsMap } from '../_utils/merkle-tree';
+import { assertBN } from '../_helpers/bn';
 
 
 // Submit network prices
@@ -54,8 +54,8 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     let amountsRPL = [];
     let amountsETH = [];
     let proofs = [];
-    let totalAmountRPL = web3.utils.toBN(0);
-    let totalAmountETH = web3.utils.toBN(0);
+    let totalAmountRPL = '0'.BN;
+    let totalAmountETH = '0'.BN;
 
     for (let i = 0; i < indices.length; i++) {
         let treeData = parseRewardsMap(rewards[i]);
@@ -75,7 +75,7 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
     }
 
     const tx = await rocketMerkleDistributorMainnet.claimAndStake(nodeAddress, indices, amountsRPL, amountsETH, proofs, stakeAmount, txOptions);
-    let gasUsed = web3.utils.toBN('0');
+    let gasUsed = '0'.BN;
 
     if(nodeWithdrawalAddress.toLowerCase() === txOptions.from.toLowerCase()) {
         gasUsed = web3.utils.toBN(tx.receipt.gasUsed).mul(web3.utils.toBN(tx.receipt.effectiveGasPrice));
@@ -87,7 +87,6 @@ export async function claimAndStakeRewards(nodeAddress, indices, rewards, stakeA
 
     let amountStaked = balances2.rplStake.sub(balances1.rplStake);
 
-    assert(balances2.nodeRpl.sub(balances1.nodeRpl).eq(totalAmountRPL.sub(amountStaked)), 'Incorrect updated node RPL balance');
-    assert(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed).eq(totalAmountETH), 'Incorrect updated node ETH balance');
+    assertBN.equal(balances2.nodeRpl.sub(balances1.nodeRpl), totalAmountRPL.sub(amountStaked), 'Incorrect updated node RPL balance');
+    assertBN.equal(balances2.nodeEth.sub(balances1.nodeEth).add(gasUsed), totalAmountETH, 'Incorrect updated node ETH balance');
 }
-

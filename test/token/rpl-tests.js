@@ -1,4 +1,4 @@
-import { takeSnapshot, revertSnapshot, getCurrentTime, increaseTime } from '../_utils/evm'
+import { getCurrentTime, increaseTime } from '../_utils/evm'
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import { mintDummyRPL } from './scenario-rpl-mint-fixed';
@@ -9,6 +9,8 @@ import { setRPLInflationIntervalRate, setRPLInflationStartTime } from '../dao/sc
 
 // Contracts
 import { RocketTokenRPL } from '../_utils/artifacts';
+import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 
 export default function() {
@@ -26,10 +28,12 @@ export default function() {
 
 
         // Setup
-        let userOneRPLBalance = web3.utils.toBN(web3.utils.toWei('100', 'ether'));
+        let userOneRPLBalance = '100'.ether;
 
 
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Mint RPL fixed supply for the users to simulate current users having RPL
             await mintDummyRPL(userOne, userOneRPLBalance, {from: owner});
         });
@@ -53,13 +57,13 @@ export default function() {
             // Load contracts
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // The allowance
-            let allowance = userOneRPLBalance.div(web3.utils.toBN(2));
+            let allowance = userOneRPLBalance.div('2'.BN);
             // Give allowance for half to be spent
             await allowDummyRPL(rocketTokenRPL.address, allowance, {
                 from: userOne,
             });
             // Burn existing fixed supply RPL for new RPL
-            await burnFixedRPL(allowance.sub(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether'))), {
+            await burnFixedRPL(allowance.sub('0.000001'.ether), {
                 from: userOne,
             });
         });
@@ -69,7 +73,7 @@ export default function() {
              // Load contracts
             const rocketTokenRPL = await RocketTokenRPL.deployed();
             // The allowance
-            let allowance = userOneRPLBalance.sub(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether')));
+            let allowance = userOneRPLBalance.sub('0.000001'.ether);
             // Give allowance for all to be sent
             await allowDummyRPL(rocketTokenRPL.address, allowance, {
                 from: userOne,
@@ -91,7 +95,7 @@ export default function() {
                from: userOne,
            });
            // Burn existing fixed supply RPL for new RPL
-           await shouldRevert(burnFixedRPL(userOneRPLBalance.add(web3.utils.toBN(web3.utils.toWei('0.000001', 'ether'))), {
+           await shouldRevert(burnFixedRPL(userOneRPLBalance.add('0.000001'.ether), {
                from: userOne,
            }), 'Burned more RPL than had owned and had given allowance for');
         });
@@ -180,7 +184,7 @@ export default function() {
 
             // Run the test now
             const newTokens = await rplClaimInflation(config, { from: userOne });
-            assert(newTokens.eq(web3.utils.toBN(0)), 'Inflation claimed before start block has passed')
+            assertBN.equal(newTokens, 0, 'Inflation claimed before start block has passed')
         });
 
         
@@ -199,7 +203,7 @@ export default function() {
 
             // Run the test now
             const newTokens = await rplClaimInflation(config, { from: userOne });
-            assert(newTokens.eq(web3.utils.toBN(0)), 'Inflation claimed before interval has passed');
+            assertBN.equal(newTokens, 0, 'Inflation claimed before interval has passed');
         });
         
 
@@ -367,7 +371,7 @@ export default function() {
             // Attempt to collect inflation
             config.timeClaim += (ONE_DAY * 365);
             const newTokens = await rplClaimInflation(config, { from: userOne });
-            assert(newTokens.eq(web3.utils.toBN(0)), "Minted inflation after rate set to 0");
+            assertBN.equal(newTokens, 0, "Minted inflation after rate set to 0");
         });
 
 

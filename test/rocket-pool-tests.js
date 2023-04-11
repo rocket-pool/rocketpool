@@ -1,8 +1,14 @@
+import { printGasUsage, startGasUsage, endGasUsage } from './_utils/gasusage';
+import { endSnapShot, injectGlobalSnapShot, startSnapShot } from './_utils/snapshotting';
+import { deployRocketPool } from './_helpers/deployment';
+import { setDefaultParameters } from './_helpers/defaults';
+import { suppressLog } from './_helpers/console';
 // Import tests
 import auctionTests from './auction/auction-tests';
 import depositPoolTests from './deposit/deposit-pool-tests';
 import minipoolScrubTests from './minipool/minipool-scrub-tests';
 import minipoolTests from './minipool/minipool-tests';
+import minipoolVacantTests from './minipool/minipool-vacant-tests';
 import minipoolStatusTests from './minipool/minipool-status-tests';
 import minipoolWithdrawalTests from './minipool/minipool-withdrawal-tests';
 import networkBalancesTests from './network/network-balances-tests';
@@ -18,16 +24,9 @@ import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
-import networkStakingTests from './network/network-staking-tests';
-import { printGasUsage, startGasUsage, endGasUsage } from './_utils/gasusage';
-import { endSnapShot, startSnapShot } from './_utils/snapshotting';
-import { setDAOProtocolBootstrapSetting } from './dao/scenario-dao-protocol-bootstrap';
-import {
-  RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
-  RocketDAOProtocolSettingsMinipool,
-  RocketDAOProtocolSettingsNetwork,
-  RocketDAOProtocolSettingsNode
-} from './_utils/artifacts';
+import upgradeTests from './upgrade/upgrade-tests';
+import { injectBNHelpers } from './_helpers/bn';
+import { checkInvariants } from './_helpers/invariants';
 
 // Header
 console.log('\n');
@@ -38,27 +37,24 @@ console.log('|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |');
 console.log('| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |');
 console.log('\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|');
 
+// BN helpers
+injectBNHelpers();
+
 // State snapshotting and gas usage tracking
 beforeEach(startSnapShot);
 beforeEach(startGasUsage);
+afterEach(checkInvariants);
 afterEach(endGasUsage);
 afterEach(endSnapShot);
 after(printGasUsage);
 
-// Setup starting parameters for all tests
 before(async function() {
-  const [guardian] = await web3.eth.getAccounts();
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.assign.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsDeposit, 'deposit.pool.maximum', web3.utils.toWei('1000', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.registration.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.deposit.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.submit.withdrawable.enabled', true, { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.minimum', web3.utils.toWei('0.05', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.target', web3.utils.toWei('0.1', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.fee.maximum', web3.utils.toWei('0.2', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.node.demand.range', web3.utils.toWei('1000', 'ether'), { from: guardian });
-  await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', Math.floor(new Date().getTime() / 1000) + (60 * 60 * 24 * 14), { from: guardian });
+  // Deploy Rocket Pool
+  await suppressLog(deployRocketPool);
+  // Set starting parameters for all tests
+  await setDefaultParameters();
+  // Inject a global snapshot before every suite
+  injectGlobalSnapShot(this.test.parent)
 });
 
 // Run tests
@@ -68,13 +64,13 @@ auctionTests();
 depositPoolTests();
 minipoolScrubTests();
 minipoolTests();
+minipoolVacantTests();
 minipoolStatusTests();
 minipoolWithdrawalTests();
 networkBalancesTests();
 networkPenaltiesTests();
 networkFeesTests();
 networkPricesTests();
-networkStakingTests();
 nodeDepositTests();
 nodeManagerTests();
 nodeStakingTests();
@@ -82,3 +78,4 @@ nodeDistributorTests();
 rethTests();
 rplTests();
 rewardsPoolTests();
+upgradeTests();

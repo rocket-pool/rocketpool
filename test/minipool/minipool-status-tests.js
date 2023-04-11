@@ -1,20 +1,17 @@
 import { mineBlocks, getCurrentTime, increaseTime } from '../_utils/evm'
-import { printTitle } from '../_utils/formatting';
-import { shouldRevert } from '../_utils/testing';
 import { userDeposit } from '../_helpers/deposit';
-import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool } from '../_helpers/minipool';
+import { getMinipoolMinimumRPLStake, createMinipool, stakeMinipool, minipoolStates } from '../_helpers/minipool';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
-import { executeSetWithdrawable, submitWithdrawable } from './scenario-submit-withdrawable'
 import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketDAONodeTrustedSettingsProposals,
-    RocketDAOProtocolSettingsMinipool
 } from '../_utils/artifacts';
-import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
+import { upgradeOneDotTwo } from '../_utils/upgrade';
+import { assertBN } from '../_helpers/bn';
 
 export default function() {
     contract('RocketMinipoolStatus', async (accounts) => {
@@ -43,6 +40,8 @@ export default function() {
         let stakingMinipool2;
         let stakingMinipool3;
         before(async () => {
+            await upgradeOneDotTwo(owner);
+
             // Register node
             await registerNode({from: node});
 
@@ -57,19 +56,19 @@ export default function() {
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
-            let rplStake = minipoolRplStake.mul(web3.utils.toBN(3));
+            let rplStake = minipoolRplStake.mul('3'.BN);
             await mintRPL(owner, node, rplStake);
             await nodeStakeRPL(rplStake, {from: node});
 
             // Create minipools
-            stakingMinipool1 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            stakingMinipool2 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
-            stakingMinipool3 = await createMinipool({from: node, value: web3.utils.toWei('16', 'ether')});
+            stakingMinipool1 = await createMinipool({from: node, value: '16'.ether});
+            stakingMinipool2 = await createMinipool({from: node, value: '16'.ether});
+            stakingMinipool3 = await createMinipool({from: node, value: '16'.ether});
 
             // Make and assign deposits to minipools
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
-            await userDeposit({from: staker, value: web3.utils.toWei('16', 'ether')});
+            await userDeposit({from: staker, value: '16'.ether});
+            await userDeposit({from: staker, value: '16'.ether});
+            await userDeposit({from: staker, value: '16'.ether});
 
             // Wait required scrub period
             await increaseTime(web3, scrubPeriod + 1);
@@ -83,9 +82,9 @@ export default function() {
             let stakingStatus1 = await stakingMinipool1.getStatus.call();
             let stakingStatus2 = await stakingMinipool2.getStatus.call();
             let stakingStatus3 = await stakingMinipool3.getStatus.call();
-            assert(stakingStatus1.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(stakingStatus2.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
-            assert(stakingStatus3.eq(web3.utils.toBN(2)), 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus1, minipoolStates.Staking, 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus2, minipoolStates.Staking, 'Incorrect staking minipool status');
+            assertBN.equal(stakingStatus3, minipoolStates.Staking, 'Incorrect staking minipool status');
 
             // Set a small proposal cooldown
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsProposals, 'proposal.cooldown', proposalCooldown, { from: owner });
@@ -132,142 +131,5 @@ export default function() {
             await daoNodeTrustedMemberLeave(trustedNode4, { from: trustedNode4 });
         }
 
-
-        //
-        // Submit withdrawable
-        //
-
-
-        it(printTitle('trusted nodes', 'can submit a withdrawable event for a staking minipool'), async () => {
-
-            // Submit identical withdrawable events to trigger update:
-
-            // Minipool 1 - rewards earned
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode2,
-            });
-
-            // Minipool 2 - penalties applied
-            await submitWithdrawable(stakingMinipool2.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool2.address, {
-                from: trustedNode2,
-            });
-
-            // Minipool 3 - penalties applied & RPL slashed
-            await submitWithdrawable(stakingMinipool3.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool3.address, {
-                from: trustedNode2,
-            });
-
-        });
-
-
-        it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool while withdrawable submissions are disabled'), async () => {
-
-            // Disable submissions
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.submit.withdrawable.enabled', false, {from: owner});
-
-            // Attempt to submit withdrawable event for staking minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            }), 'Submitted a withdrawable event while withdrawable submissions were disabled');
-
-        });
-
-
-        it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool which is not staking'), async () => {
-
-            // Submit withdrawable events to trigger update
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode2,
-            });
-
-            // Attempt to submit withdrawable event for withdrawable minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode3,
-            }), 'Submitted a withdrawable event for a minipool which was not staking');
-
-        });
-
-
-        it(printTitle('trusted nodes', 'cannot submit a withdrawable event for an invalid minipool'), async () => {
-
-            // Attempt to submit withdrawable event for invalid minipool
-            await shouldRevert(submitWithdrawable(random, {
-                from: trustedNode1,
-            }), 'Submitted a withdrawable event for an invalid minipool');
-
-        });
-
-
-        it(printTitle('trusted nodes', 'cannot submit a withdrawable event for a minipool twice'), async () => {
-
-            // Submit withdrawable event for staking minipool
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            });
-
-            // Attempt to submit withdrawable event for staking minipool again
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            }), 'Submitted the same withdrawable event for a minipool twice');
-
-        });
-
-
-        it(printTitle('regular nodes', 'cannot submit a withdrawable event for a minipool'), async () => {
-
-            // Attempt to submit withdrawable event for staking minipool
-            await shouldRevert(submitWithdrawable(stakingMinipool1.address, {
-                from: node,
-            }), 'Regular node submitted a withdrawable event for a minipool');
-
-        });
-
-
-        it(printTitle('random', 'can execute status update when consensus is reached after member count changes'), async () => {
-            // Setup
-            await trustedNode4JoinDao();
-            // Submit status from 2 nodes (not enough for 4 member consensus but enough for 3)
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode2,
-            });
-            // trustedNode4 leaves the DAO
-            await trustedNode4LeaveDao();
-            // There is now consensus with the remaining 3 trusted nodes about the status, try to execute the update
-            await executeSetWithdrawable(stakingMinipool1.address, {
-                from: random
-            })
-        });
-
-
-        it(printTitle('random', 'cannot execute status update without consensus'), async () => {
-            // Setup
-            await trustedNode4JoinDao();
-            // Submit same price from 2 nodes (not enough for 4 member consensus)
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode1,
-            });
-            await submitWithdrawable(stakingMinipool1.address, {
-                from: trustedNode2,
-            });
-            // There is no consensus so execute should fail
-            await shouldRevert(executeSetWithdrawable(stakingMinipool1.address, {
-                from: random
-            }), 'Random account could execute update status without consensus')
-        });
     });
 }

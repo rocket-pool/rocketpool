@@ -1,17 +1,16 @@
-import { RocketNodeManager } from '../_utils/artifacts';
+import { RocketNodeManager, RocketNodeManagerOld } from '../_utils/artifacts';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Register a node
 export async function setSmoothingPoolRegistrationState(state, txOptions) {
-
     // Load contracts
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeManager = await upgradeExecuted() ? await RocketNodeManager.deployed() : await RocketNodeManagerOld.deployed();
 
     // Register
     await rocketNodeManager.setSmoothingPoolRegistrationState(state, txOptions);
 
     // Check details
     const newState = await rocketNodeManager.getSmoothingPoolRegistrationState(txOptions.from);
-    assert.equal(newState, state, 'Incorrect smoothing pool registration state');
+    assert.strictEqual(newState, state, 'Incorrect smoothing pool registration state');
 }
-

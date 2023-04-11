@@ -12,15 +12,16 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "node") {
         // Set version
-        version = 2;
+        version = 3;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Apply settings
             setSettingBool("node.registration.enabled", false);
             setSettingBool("node.smoothing.pool.registration.enabled", true);
             setSettingBool("node.deposit.enabled", false);
-            setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value
-            setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of user ETH value
+            setSettingBool("node.vacant.minipools.enabled", false);
+            setSettingUint("node.per.minipool.stake.minimum", 0.1 ether);      // 10% of user ETH value (matched ETH)
+            setSettingUint("node.per.minipool.stake.maximum", 1.5 ether);      // 150% of node ETH value (provided ETH)
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }
@@ -39,6 +40,11 @@ contract RocketDAOProtocolSettingsNode is RocketDAOProtocolSettings, RocketDAOPr
     // Node deposits currently enabled
     function getDepositEnabled() override external view returns (bool) {
         return getSettingBool("node.deposit.enabled");
+    }
+
+    // Vacant minipools currently enabled
+    function getVacantMinipoolsEnabled() override external view returns (bool) {
+        return getSettingBool("node.vacant.minipools.enabled");
     }
 
     // Minimum RPL stake per minipool as a fraction of assigned user ETH value
