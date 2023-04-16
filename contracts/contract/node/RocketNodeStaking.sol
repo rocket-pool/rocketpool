@@ -299,4 +299,52 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         emit RPLSlashed(_nodeAddress, rplSlashAmount, _ethSlashAmount, block.timestamp);
     }
 
+    /// @notice Get the combined effective RPL stake for all nodes in the provided range.
+    /// @param _offset The offset into the node set to start
+    /// @param _limit The maximum number of nodes to iterate
+    function getAggregatedEffectiveRPLStake (uint256 _offset, uint256 _limit) override external view
+    returns (uint256 aggregatedStake) {
+        // Load contracts
+        RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
+        RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
+        AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+
+        // Get min and max
+        uint256 rplPrice = rocketNetworkPrices.getRPLPrice();
+        uint256 minimumStakePercent = rocketDAOProtocolSettingsNode.getMinimumPerMinipoolStake();
+        uint256 maximumStakePercent = rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake();
+
+        // Precompute node key
+        bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
+
+        // Iterate over the requested node range
+        uint256 totalNodes =  addressSetStorage.getCount(keccak256(abi.encodePacked("nodes.index")));
+        uint256 max = _offset.add(_limit);
+        if (max > totalNodes || _limit == 0) { max = totalNodes; }
+        for (uint256 i = _offset; i < max; i++) {
+            // Get the node at index i
+            address _nodeAddress = addressSetStorage.getItem(nodeKey, i);
+
+            // Get node's current RPL stake
+            uint256 rplStake = getNodeRPLStake(_nodeAddress);
+
+            // Retrieve variables for calculations
+            uint256 matchedETH = getNodeETHMatched(_nodeAddress);
+            uint256 providedETH = getNodeETHProvided(_nodeAddress);
+            uint256 minimumStake = matchedETH.mul(minimumStakePercent).div(rplPrice);
+            uint256 maximumStake = providedETH.mul(maximumStakePercent).div(rplPrice);
+
+            if (rplStake > maximumStake) {
+                // RPL stake cannot exceed maximum
+                aggregatedStake += maximumStake;
+            }
+            else if (rplStake < minimumStake) {
+                // If RPL stake is lower than minimum, node has no effective stake
+            }
+            else {
+                aggregatedStake += rplStake
+            }
+        }
+    }
+
 }
