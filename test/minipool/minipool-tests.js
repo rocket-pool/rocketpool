@@ -8,7 +8,11 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketMinipoolBase,
     RocketMinipoolBondReducer,
-    RocketDAOProtocolSettingsRewards, RocketNodeManager, RocketMinipoolDelegate, RocketNodeDistributorFactory,
+    RocketDAOProtocolSettingsRewards,
+    RocketNodeManager,
+    RocketMinipoolDelegate,
+    RocketNodeDistributorFactory,
+    RocketStorage,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -762,6 +766,39 @@ export default function() {
             await increaseTime(web3, bondReductionWindowStart + 1);
             // Reduction from 16 ETH to 8 ETH should be valid
             await reduceBond(stakingMinipool, {from: node});
+        });
+
+
+        it(printTitle('node operator', 'receives correct distributor rewards during a bond reduction'), async () => {
+            // Get contracts
+            const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+            const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
+            const rocketNodeManager = await RocketNodeManager.deployed();
+            const rocketStorage = await RocketStorage.deployed();
+            const distributor = await rocketNodeDistributorFactory.getProxyAddress(node);
+            // Send 1 ETH to distributor
+            const rewards = '1'.ether
+            await web3.eth.sendTransaction({
+                from: owner,
+                to: distributor,
+                value: rewards
+            });
+            // Signal wanting to reduce
+            await rocketMinipoolBondReducer.beginReduceBondAmount(stakingMinipool.address, '8'.ether, {from: node});
+            await increaseTime(web3, bondReductionWindowStart + 1);
+            // Grab balance before
+            const balance1 = (await web3.eth.getBalance(nodeWithdrawalAddress)).BN;
+            // Reduction from 16 ETH to 8 ETH should be valid
+            await reduceBond(stakingMinipool, {from: node});
+            // Get node fee and new balance
+            const fee = await rocketNodeManager.getAverageNodeFee(node);
+            const balance2 = (await web3.eth.getBalance(nodeWithdrawalAddress)).BN;
+            /**
+            * Node operator went from having 1x 16 ETH bonded minipool to 1x 8 ETH bonded.
+            * Amount distributed by distributor should be 1 ETH * 0.5 + (1 ETH * 0.5 * fee)
+            */
+            const expectedRewards = rewards.div('2'.BN).add(rewards.div('2'.BN).mul(fee).div('1'.ether));
+            assertBN.equal(balance2.sub(balance1), expectedRewards, 'Invalid rewards distributed');
         });
 
 

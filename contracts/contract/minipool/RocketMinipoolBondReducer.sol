@@ -13,6 +13,9 @@ import "../../interface/dao/node/RocketDAONodeTrustedInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
 import "../../interface/minipool/RocketMinipoolManagerInterface.sol";
+import "../../interface/node/RocketNodeDistributorFactoryInterface.sol";
+import "../../interface/node/RocketNodeManagerInterface.sol";
+import "../../interface/node/RocketNodeDistributorInterface.sol";
 
 /// @notice Handles bond reduction window and trusted node cancellation
 contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInterface {
@@ -140,6 +143,8 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
         uint256 delta = existingBondAmount.sub(newBondAmount);
         // Get node address
         address nodeAddress = minipool.getNodeAddress();
+        // Try distributing the node's fee distributor
+        _tryDistribute(nodeAddress);
         // Increase ETH matched or revert if exceeds limit based on current RPL stake
         rocketNodeDeposit.increaseEthMatched(nodeAddress, delta);
         // Increase node operator's deposit credit
@@ -174,5 +179,22 @@ contract RocketMinipoolBondReducer is RocketBase, RocketMinipoolBondReducerInter
     /// @return Previous node fee
     function getLastBondReductionPrevNodeFee(address _minipoolAddress) override external view returns (uint256) {
         return getUint(keccak256(abi.encodePacked("minipool.last.bond.reduction.prev.fee", _minipoolAddress)));
+    }
+
+    /// @dev Calls distribute on the given node's distributor if it has a balance and has been initialised
+    /// @param _nodeAddress The node operator to try distribute rewards for
+    function _tryDistribute(address _nodeAddress) internal {
+        // Get contracts
+        RocketNodeDistributorFactoryInterface rocketNodeDistributorFactory = RocketNodeDistributorFactoryInterface(getContractAddress("rocketNodeDistributorFactory"));
+        address distributorAddress = rocketNodeDistributorFactory.getProxyAddress(_nodeAddress);
+        // If there are funds to distribute than call distribute
+        if (distributorAddress.balance > 0) {
+            // Get contracts
+            RocketNodeManagerInterface rocketNodeManager = RocketNodeManagerInterface(getContractAddress("rocketNodeManager"));
+            // Ensure distributor has been initialised
+            require(rocketNodeManager.getFeeDistributorInitialised(_nodeAddress), "Distributor not initialised");
+            RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(distributorAddress);
+            distributor.distribute();
+        }
     }
 }
