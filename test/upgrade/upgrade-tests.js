@@ -31,6 +31,7 @@ import { assertBN } from '../_helpers/bn';
 import { reduceBond } from '../minipool/scenario-reduce-bond';
 import { voteScrub } from '../minipool/scenario-scrub';
 import { close } from '../minipool/scenario-close';
+import { skimRewards } from '../minipool/scenario-skim-rewards';
 
 
 export default function() {
@@ -584,6 +585,95 @@ export default function() {
                 // Check balance changes
                 assertBN.isAtMost(nodeBalance2, nodeBalance1, 'Node balance incorrect');
                 assertBN.equal(rethBalance2.BN.sub(rethBalance1.BN), '32'.ether, 'User balance incorrect');
+            });
+
+
+            it('Stops node operator from withdrawing after rolling back an LEB8 (with useLatest)', async () => {
+                // Get contracts
+                const rocketTokenReth = await RocketTokenRETH.deployed();
+                const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+
+                // 1. Create 16 ETH minipool and progress to staking
+                let rplStake = '1600'.ether;
+                await mintRPL(owner, node, rplStake);
+                await nodeStakeRPL(rplStake, {from: node});
+                const minipool = await createMinipool({from: node, value: '16'.ether});
+                assertBN.equal(await minipool.getStatus(), minipoolStates.Initialised, 'Incorrect minipool status');
+                await userDeposit({ from: random, value: '16'.ether });
+                assertBN.equal(await minipool.getStatus(), minipoolStates.Prelaunch, 'Incorrect minipool status');
+                await increaseTime(web3, scrubPeriod + 1);
+                await stakeMinipool(minipool, {from: node});
+
+                // 2. Upgrade
+                await upgradeOneDotTwo(owner);
+
+                // 3. Upgrade delegate
+                const minipoolBase = await RocketMinipoolBase.at(minipool.address);
+                await minipoolBase.setUseLatestDelegate(true, {from: node});
+
+                // 4. Reduce bond
+                await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, '8'.ether, {from: node});
+                await increaseTime(web3, bondReductionWindowStart + 1);
+                await reduceBond(minipool, {from: node});
+
+                // 5. Rollback delegate
+                await minipoolBase.setUseLatestDelegate(false, {from: node});
+                assertBN.equal(await minipool.calculateNodeShare('32'.ether), '0'.ether, 'Incorrect node deposit balance');
+
+                // 6. Try to distribute 32 ETH but receive nothing
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: minipool.address,
+                    value: '32'.ether
+                });
+                const nodeBalance1 = await web3.eth.getBalance(node);
+                const rethBalance1 = await web3.eth.getBalance(rocketTokenReth.address);
+                const oldMinipool = await RocketMinipoolDelegateOld.at(minipool.address)
+                await oldMinipool.distributeBalance({ from: node });
+                const nodeBalance2 = await web3.eth.getBalance(node);
+                const rethBalance2 = await web3.eth.getBalance(rocketTokenReth.address);
+
+                // Check balance changes
+                assertBN.isAtMost(nodeBalance2, nodeBalance1, 'Node balance incorrect');
+                assertBN.equal(rethBalance2.BN.sub(rethBalance1.BN), '32'.ether, 'User balance incorrect');
+            });
+
+
+            it('Handles a bond reduction with useLatest delegate setting', async () => {
+                // Get contracts
+                const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
+
+                // 1. Create 16 ETH minipool and progress to staking
+                let rplStake = '1600'.ether;
+                await mintRPL(owner, node, rplStake);
+                await nodeStakeRPL(rplStake, {from: node});
+                const minipool = await createMinipool({from: node, value: '16'.ether});
+                assertBN.equal(await minipool.getStatus(), minipoolStates.Initialised, 'Incorrect minipool status');
+                await userDeposit({ from: random, value: '16'.ether });
+                assertBN.equal(await minipool.getStatus(), minipoolStates.Prelaunch, 'Incorrect minipool status');
+                await increaseTime(web3, scrubPeriod + 1);
+                await stakeMinipool(minipool, {from: node});
+
+                // 2. Enable useDelegate
+                const minipoolBase = await RocketMinipoolBase.at(minipool.address);
+                await minipoolBase.setUseLatestDelegate(true, {from: node});
+
+                // 3. Upgrade
+                await upgradeOneDotTwo(owner);
+
+                // 4. Reduce bond
+                await rocketMinipoolBondReducer.beginReduceBondAmount(minipool.address, '8'.ether, {from: node});
+                await increaseTime(web3, bondReductionWindowStart + 1);
+                await reduceBond(minipool, {from: node});
+
+                // 5. Distribute some funds
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: minipool.address,
+                    value: '1'.ether,
+                });
+                // Skim rewards from node
+                await skimRewards(minipool, {from: node});
             });
 
 

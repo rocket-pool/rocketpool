@@ -8,7 +8,7 @@ import {
     RocketDAONodeTrustedSettingsMinipool,
     RocketMinipoolBase,
     RocketMinipoolBondReducer,
-    RocketDAOProtocolSettingsRewards, RocketNodeManager, RocketMinipoolDelegate,
+    RocketDAOProtocolSettingsRewards, RocketNodeManager, RocketMinipoolDelegate, RocketNodeDistributorFactory,
 } from '../_utils/artifacts';
 import { increaseTime } from '../_utils/evm';
 import { printTitle } from '../_utils/formatting';
@@ -48,7 +48,6 @@ import { artifacts } from 'hardhat';
 export default function() {
     contract('RocketMinipool', async (accounts) => {
 
-
         // Accounts
         const [
             owner,
@@ -68,6 +67,7 @@ export default function() {
         let bondReductionWindowStart = (2 * 24 * 60 * 60);
         let bondReductionWindowLength = (2 * 24 * 60 * 60);
         let rewardClaimPeriodTime = (28 * 24 * 60 * 60); // 28 days
+        let userDistributeTime = (90 * 24 * 60 * 60); // 90 days
         let initialisedMinipool;
         let prelaunchMinipool;
         let prelaunchMinipool2;
@@ -75,12 +75,14 @@ export default function() {
         let dissolvedMinipool;
         let withdrawalBalance = '36'.ether;
         let newDelegateAddress = '0x0000000000000000000000000000000000000001';
-        let oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
+        let oldDelegateAddress;
 
         const lebDepositNodeAmount = '8'.ether;
         const halfDepositNodeAmount = '16'.ether;
 
         before(async () => {
+            oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
+
             await upgradeOneDotTwo(owner);
 
             // Register node & set withdrawal address
@@ -263,7 +265,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Withdraw without finalising
             await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random);
             // Get number of active minipools before
@@ -287,7 +289,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Withdraw without finalising
             await withdrawValidatorBalance(stakingMinipool, withdrawalBalance, random);
             // Finalise
@@ -328,7 +330,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(prelaunchMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(prelaunchMinipool, '0'.ether, random);
             // Call slash method
@@ -483,7 +485,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
@@ -522,7 +524,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
@@ -538,7 +540,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
@@ -564,7 +566,7 @@ export default function() {
             // Begin user distribution process
             await beginUserDistribute(stakingMinipool, {from: random});
             // Wait 14 days
-            await increaseTime(web3, 60 * 60 * 24 * 14 + 1)
+            await increaseTime(web3, userDistributeTime + 1)
             // Post an 8 ETH balance which should result in 8 ETH worth of RPL slashing
             await withdrawValidatorBalance(stakingMinipool, '0'.ether, random);
         });
@@ -724,6 +726,8 @@ export default function() {
           // Check effective delegate
           effectiveDelegate = await minipool.getEffectiveDelegate.call();
           assert.strictEqual(effectiveDelegate, newDelegateAddress, "Effective delegate was not updated");
+          // Reset the delegate to working contract to prevent invariant tests from failing
+          await resetNetworkDelegateContract();
         });
 
 
@@ -739,6 +743,9 @@ export default function() {
           await shouldRevert(minipool.delegateRollback({from: random}), "Random was able to rollback delegate", "Only the node operator can access this method") ;
           // Call set use latest from random
           await shouldRevert(minipool.setUseLatestDelegate(true, {from: random}), "Random was able to set use latest delegate", "Only the node operator can access this method") ;
+          // Reset the delegate to working contract to prevent invariant tests from failing
+          await resetNetworkDelegateContract();
+          await minipool.delegateUpgrade({from: node});
         });
 
 
