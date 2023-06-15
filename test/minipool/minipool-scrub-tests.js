@@ -18,7 +18,6 @@ import { close } from './scenario-close';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { voteScrub } from './scenario-scrub';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -45,8 +44,6 @@ export default function() {
         let prelaunchMinipool;
 
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});

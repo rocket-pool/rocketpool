@@ -16,7 +16,6 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance';
 import { increaseTime, mineBlocks } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assertBN } from '../_helpers/bn';
 
 export default function() {
@@ -44,8 +43,6 @@ export default function() {
         const userDistributeStartTime = 60 * 60 * 24 * 90; // 90 days
 
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Get current rETH exchange rate
             let exchangeRate1 = await getRethExchangeRate();
 

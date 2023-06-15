@@ -15,7 +15,7 @@ Rocket Pool isn't just a whitepaper, it's actual code. Be sure to read the [Rock
 # Test Rocket Pool
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-casper-pos-beacon-chain-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
+  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/rocket-pool-atlas-test.png?raw=true" alt="Rocket Pool - Testing Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool for Ethereum 2.0 Beacon Chain"/>
 </p>
 
 To see Rocket Pool in action, clone the repo and run the test suite with the following commands:

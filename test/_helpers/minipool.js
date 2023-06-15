@@ -7,14 +7,9 @@ import {
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
     RocketStorage,
-    RocketNodeDepositOld,
-    RocketMinipoolFactoryOld,
-    RocketMinipoolManagerOld,
     RocketNodeStaking,
-    RocketNodeStakingOld,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
-import { upgradeExecuted } from '../_utils/upgrade';
 import { assertBN } from './bn';
 
 // Possible states that a proposal may be in
@@ -81,8 +76,6 @@ export async function createMinipool(txOptions, salt = null) {
 }
 
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
-    const preUpdate = !(await upgradeExecuted());
-
     // Load contracts
     const [
         rocketMinipoolFactory,
@@ -90,9 +83,9 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
         rocketNodeStaking,
         rocketStorage,
     ] = await Promise.all([
-        preUpdate ? RocketMinipoolFactoryOld.deployed() : RocketMinipoolFactory.deployed(),
-        preUpdate ? RocketNodeDepositOld.deployed() : RocketNodeDeposit.deployed(),
-        preUpdate ? RocketNodeStakingOld.deployed() : RocketNodeStaking.deployed(),
+        RocketMinipoolFactory.deployed(),
+        RocketNodeDeposit.deployed(),
+        RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -103,81 +96,33 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
         salt = minipoolSalt++;
     }
 
-    let minipoolAddress;
-
-    if (preUpdate) {
-        const RocketMinipool = artifacts.require('RocketMinipoolOld');
-        contractBytecode = RocketMinipool.bytecode;
-
-        const depositType = await rocketNodeDeposit.getDepositType(txOptions.value);
-        const constructorArgs = web3.eth.abi.encodeParameters(['address', 'address', 'uint8'], [rocketStorage.address, txOptions.from, depositType]);
-
-        const deployCode = contractBytecode + constructorArgs.substr(2);
-
-        // Calculate keccak(nodeAddress, salt)
-        const nodeSalt = web3.utils.soliditySha3(
-            {type: 'address', value: txOptions.from},
-            {type: 'uint256', value: salt}
-        )
-
-        // Calculate hash of deploy code
-        const bytecodeHash = web3.utils.soliditySha3(
-            {type: 'bytes', value: deployCode}
-        )
-
-        // Construct deterministic minipool address
-        const raw = web3.utils.soliditySha3(
-            {type: 'bytes1', value: '0xff'},
-            {type: 'address', value: rocketMinipoolFactory.address},
-            {type: 'bytes32', value: nodeSalt},
-            {type: 'bytes32', value: bytecodeHash}
-        )
-
-        minipoolAddress = raw.substr(raw.length - 40);
-
-    } else {
-        minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
-    }
+    let minipoolAddress = (await rocketMinipoolFactory.getExpectedAddress(txOptions.from, salt)).substr(2);
 
     let withdrawalCredentials = '0x010000000000000000000000' + minipoolAddress;
 
     // Make node deposit
-    if (preUpdate){
-        // Get validator deposit data
-        let depositData = {
-            pubkey: getValidatorPubkey(),
-            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-            amount: BigInt(16000000000), // gwei
-            signature: getValidatorSignature(),
-        };
+    const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
 
-        let depositDataRoot = getDepositDataRoot(depositData);
+    // Get validator deposit data
+    let depositData = {
+        pubkey: getValidatorPubkey(),
+        withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
+        amount: BigInt(1000000000), // gwei
+        signature: getValidatorSignature(),
+    };
 
-        await rocketNodeDeposit.deposit('0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
+    let depositDataRoot = getDepositDataRoot(depositData);
+
+    if (txOptions.value.eq(bondAmount)) {
+        await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     } else {
-        const ethMatched1 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
-
-        // Get validator deposit data
-        let depositData = {
-            pubkey: getValidatorPubkey(),
-            withdrawalCredentials: Buffer.from(withdrawalCredentials.substr(2), 'hex'),
-            amount: BigInt(1000000000), // gwei
-            signature: getValidatorSignature(),
-        };
-
-        let depositDataRoot = getDepositDataRoot(depositData);
-
-        if (txOptions.value.eq(bondAmount)) {
-            await rocketNodeDeposit.deposit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
-        } else {
-            await rocketNodeDeposit.depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
-        }
-
-        const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
-
-        // Expect node's ETH matched to be increased by (32 - bondAmount)
-        assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
+        await rocketNodeDeposit.depositWithCredit(bondAmount, '0'.ether, depositData.pubkey, depositData.signature, depositDataRoot, salt, '0x' + minipoolAddress, txOptions);
     }
+
+    const ethMatched2 = await rocketNodeStaking.getNodeETHMatched(txOptions.from);
+
+    // Expect node's ETH matched to be increased by (32 - bondAmount)
+    assertBN.equal(ethMatched2.sub(ethMatched1), '32'.ether.sub(bondAmount), 'Incorrect ETH matched');
 
     return RocketMinipoolDelegate.at('0x' + minipoolAddress);
 }
@@ -228,10 +173,8 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 // Progress a minipool to staking
 export async function stakeMinipool(minipool, txOptions) {
 
-    const preUpdate = !(await upgradeExecuted());
-
     // Get contracts
-    const rocketMinipoolManager = preUpdate ? await RocketMinipoolManagerOld.deployed() : await RocketMinipoolManager.deployed()
+    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
 
     // Get minipool validator pubkey
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);

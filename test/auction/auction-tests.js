@@ -19,7 +19,6 @@ import { claimBid } from './scenario-claim-bid';
 import { recoverUnclaimedRPL } from './scenario-recover-rpl';
 import { withdrawValidatorBalance } from '../minipool/scenario-withdraw-validator-balance'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assertBN } from '../_helpers/bn';
 
 export default function() {
@@ -40,8 +39,6 @@ export default function() {
         let scrubPeriod = (60 * 60 * 24); // 24 hours
         let minipool;
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 

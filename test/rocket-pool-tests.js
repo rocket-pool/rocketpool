@@ -24,7 +24,6 @@ import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
-import upgradeTests from './upgrade/upgrade-tests';
 import { injectBNHelpers } from './_helpers/bn';
 import { checkInvariants } from './_helpers/invariants';
 
@@ -78,4 +77,3 @@ nodeDistributorTests();
 rethTests();
 rplTests();
 rewardsPoolTests();
-upgradeTests();

@@ -12,7 +12,6 @@ import { getNodeFee } from '../_helpers/network';
 import { registerNode, setNodeTrusted, nodeStakeRPL } from '../_helpers/node';
 import { mintRPL } from '../_helpers/tokens';
 import { depositV2 } from './scenario-deposit-v2';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from '../minipool/scenario-reduce-bond';
 import { userDeposit } from '../_helpers/deposit';
 import { increaseTime } from '../_utils/evm';
@@ -39,9 +38,6 @@ export default function() {
         let halfDepositNodeAmount;
 
         before(async () => {
-            // Upgrade
-            await upgradeOneDotTwo(owner)
-
             // Set settings
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.launch.timeout', launchTimeout, {from: owner});
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.bond.reduction.window.start', bondReductionWindowStart, {from: owner});

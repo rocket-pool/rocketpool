@@ -10,7 +10,6 @@ import {
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assertBN } from '../_helpers/bn';
 
 export default function() {
@@ -40,8 +39,6 @@ export default function() {
         let stakingMinipool2;
         let stakingMinipool3;
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node
             await registerNode({from: node});
 

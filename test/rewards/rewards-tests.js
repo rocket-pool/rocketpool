@@ -32,7 +32,6 @@ import { claimAndStakeRewards } from './scenario-claim-and-stake-rewards';
 import { parseRewardsMap } from '../_utils/merkle-tree';
 import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted';
 import { getDAOProposalStartTime } from '../dao/scenario-dao-proposal';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assertBN } from '../_helpers/bn';
 
 
@@ -116,8 +115,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Disable RocketClaimNode claims contract
             await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0'.ether, {from: owner});
 

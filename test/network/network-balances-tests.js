@@ -8,7 +8,6 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import { daoNodeTrustedExecute, daoNodeTrustedMemberLeave, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted'
 import { getDAOProposalEndTime, getDAOProposalStartTime } from '../dao/scenario-dao-proposal'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkBalances', async (accounts) => {
@@ -33,8 +32,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node
             await registerNode({from: node});
 

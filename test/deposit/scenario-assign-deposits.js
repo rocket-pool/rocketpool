@@ -3,7 +3,7 @@ import {
     RocketMinipoolQueue,
     RocketDAOProtocolSettingsMinipool,
     RocketVault,
-    RocketDepositPoolOld,
+    RocketDepositPool,
 } from '../_utils/artifacts';
 
 
@@ -18,7 +18,7 @@ export async function assignDeposits(txOptions) {
         rocketDAOProtocolSettingsMinipool,
         rocketVault,
     ] = await Promise.all([
-        RocketDepositPoolOld.deployed(),
+        RocketDepositPool.deployed(),
         RocketDAOProtocolSettingsDeposit.deployed(),
         RocketMinipoolQueue.deployed(),
         RocketDAOProtocolSettingsMinipool.deployed(),

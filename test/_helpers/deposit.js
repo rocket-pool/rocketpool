@@ -1,5 +1,4 @@
-import { RocketDepositPool, RocketDepositPoolOld } from '../_utils/artifacts';
-import { upgradeExecuted } from '../_utils/upgrade';
+import { RocketDepositPool } from '../_utils/artifacts';
 
 
 // Get the deposit pool excess ETH balance
@@ -12,9 +11,7 @@ export async function getDepositExcessBalance() {
 
 // Make a deposit
 export async function userDeposit(txOptions) {
-    const preUpdate = !(await upgradeExecuted());
-
-    const rocketDepositPool = preUpdate ? await RocketDepositPoolOld.deployed() : await RocketDepositPool.deployed();
+    const rocketDepositPool = await RocketDepositPool.deployed();
     await rocketDepositPool.deposit(txOptions);
 }
 

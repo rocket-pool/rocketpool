@@ -22,7 +22,6 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import {
   setDAONodeTrustedBootstrapSetting,
 } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { voteScrub } from './scenario-scrub';
 import { assertBN } from '../_helpers/bn';
 import { refund } from './scenario-refund';
@@ -55,8 +54,6 @@ export default function() {
 
         before(async () => {
             rocketNodeStaking = await RocketNodeStaking.deployed();
-
-            await upgradeOneDotTwo(owner);
 
             // Register node & set withdrawal address
             await registerNode({from: node});

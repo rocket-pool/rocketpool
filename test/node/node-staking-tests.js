@@ -20,7 +20,6 @@ import { beginUserDistribute, withdrawValidatorBalance } from '../minipool/scena
 import { userDeposit } from '../_helpers/deposit'
 import { increaseTime } from '../_utils/evm'
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime } from '../dao/scenario-dao-protocol-bootstrap';
 
 export default function() {
@@ -41,8 +40,6 @@ export default function() {
         // Setup
         let rocketNodeStaking;
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Load contracts
             rocketNodeStaking = await RocketNodeStaking.deployed();
 

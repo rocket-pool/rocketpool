@@ -13,7 +13,6 @@ import {
 } from '../_utils/artifacts';
 import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-bootstrap';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap'
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assignDepositsV2 } from './scenario-assign-deposits-v2';
 import { assertBN } from '../_helpers/bn';
 
@@ -33,8 +32,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node
             await registerNode({from: node});
 

@@ -39,7 +39,6 @@ import {
   setDAONodeTrustedBootstrapSetting,
   setDaoNodeTrustedBootstrapUpgrade
 } from '../dao/scenario-dao-node-trusted-bootstrap';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { reduceBond } from './scenario-reduce-bond';
 import { assertBN } from '../_helpers/bn';
 import { skimRewards } from './scenario-skim-rewards';
@@ -83,8 +82,6 @@ export default function() {
         before(async () => {
             oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
 
-            await upgradeOneDotTwo(owner);
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});
@@ -106,6 +103,9 @@ export default function() {
 
             // Set rETH collateralisation target to a value high enough it won't cause excess ETH to be funneled back into deposit pool and mess with our calcs
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNetwork, 'network.reth.collateral.target', '50'.ether, {from: owner});
+
+            // Set user distribute time
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.user.distribute.window.start', userDistributeTime, {from: owner});
 
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();

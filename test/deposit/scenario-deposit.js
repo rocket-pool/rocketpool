@@ -1,7 +1,6 @@
 import {
     RocketDAOProtocolSettingsDeposit,
     RocketDepositPool,
-    RocketDepositPoolOld,
     RocketTokenRETH,
     RocketVault,
 } from '../_utils/artifacts';
@@ -9,7 +8,7 @@ import { assertBN } from '../_helpers/bn';
 
 
 // Make a deposit into the deposit pool
-export async function deposit(txOptions, preUpdate = false) {
+export async function deposit(txOptions) {
     // Load contracts
     const [
         rocketDAOProtocolSettingsDeposit,
@@ -18,7 +17,7 @@ export async function deposit(txOptions, preUpdate = false) {
         rocketVault,
     ] = await Promise.all([
         RocketDAOProtocolSettingsDeposit.deployed(),
-        preUpdate ? RocketDepositPoolOld.deployed() : RocketDepositPool.deployed(),
+        RocketDepositPool.deployed(),
         RocketTokenRETH.deployed(),
         RocketVault.deployed(),
     ]);

@@ -20,7 +20,6 @@ import {
     setDaoNodeTrustedBootstrapUpgrade
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { submitPrices } from '../_helpers/network';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { assertBN } from '../_helpers/bn';
 
 export default function() {
@@ -47,8 +46,6 @@ export default function() {
         let userDistributeLength = (60 * 60);
 
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Register node & set withdrawal address
             await registerNode({from: node});
             await setNodeWithdrawalAddress(node, nodeWithdrawalAddress, {from: node});

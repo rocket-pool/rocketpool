@@ -15,7 +15,6 @@ import { distributeRewards } from './scenario-distribute-rewards';
 import { increaseTime } from '../_utils/evm';
 import { setDAONodeTrustedBootstrapSetting } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { shouldRevert } from '../_utils/testing';
-import { upgradeOneDotTwo } from '../_utils/upgrade';
 import { userDeposit } from '../_helpers/deposit';
 
 export default function() {
@@ -37,8 +36,6 @@ export default function() {
         let rplStake;
 
         before(async () => {
-            await upgradeOneDotTwo(owner);
-
             // Get contracts
             const rocketNodeDistributorFactory = await RocketNodeDistributorFactory.deployed();
             // Set settings
