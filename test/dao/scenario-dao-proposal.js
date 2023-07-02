@@ -54,3 +54,9 @@ export async function getDAOProposalVotesAgainst(proposalID, txOptions) {
     return await rocketDAOProposal.getVotesAgainst.call(proposalID);
 }
 
+// Get the quroum for a proposal
+export async function getDAOProposalVotesRequired(proposalID, txOptions) {
+    // Load contracts
+    const rocketDAOProposal = await RocketDAOProposal.deployed();
+    return await rocketDAOProposal.getVotesRequired.call(proposalID);
+}

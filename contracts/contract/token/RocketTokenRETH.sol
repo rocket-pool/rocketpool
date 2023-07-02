@@ -2,7 +2,7 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../util/ERC20.sol";
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";

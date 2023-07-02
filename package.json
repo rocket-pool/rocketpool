@@ -7,7 +7,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js",
-    "test": "hardhat test test/rocket-pool-tests.js",
+    "test": "hardhat test test/rocket-pool-tests.js --bail",
     "slither": "slither --filter-paths node_modules,old --exclude conformance-to-solidity-naming-conventions ."
   },
   "devDependencies": {
@@ -19,12 +19,13 @@
     "@chainsafe/ssz": "^0.6.1",
     "@nomiclabs/hardhat-truffle5": "^2.0.7",
     "@nomiclabs/hardhat-web3": "^2.0.0",
-    "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/contracts": "^3.4.0",
+    "@openzeppelin4/contracts": "npm:@openzeppelin/contracts@^4.9.2",
     "axios": "^0.21.1",
     "dotenv": "^16.0.3",
     "ethereumjs-util": "^6.2.0",
     "glob": "^7.1.7",
-    "hardhat": "^2.12.2",
+    "hardhat": "^2.16.0",
     "mocha": "^10.1.0",
     "pako": "^1.0.6",
     "query-string": "^7.0.1",

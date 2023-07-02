@@ -7,7 +7,7 @@ import {
     RocketDAONodeTrustedSettingsMembers,
     RocketStorage,
     RocketDAONodeTrusted,
-    RocketMinipoolFactory,
+    RocketMinipoolFactory, RocketNetworkVoting,
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -121,6 +121,14 @@ export async function nodeStakeRPL(amount, txOptions) {
     assertBN.equal(after.sub(before), amount, 'Staking balance did not increase by amount staked');
 }
 
+
+// Delegate voting power
+export async function nodeSetDelegate(to, txOptions) {
+    const rocketNetworkVoting = await RocketNetworkVoting.deployed();
+    await rocketNetworkVoting.setDelegate(to, txOptions);
+    const newDelegate = await rocketNetworkVoting.getCurrentDelegate(txOptions.from);
+    assert.equal(newDelegate, to);
+}
 
 // Submit a node RPL stake on behalf of another node
 export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {

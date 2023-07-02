@@ -3,11 +3,11 @@ pragma solidity 0.7.6;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "./RocketBase.sol";
+import "./util/SafeERC20.sol";
 import "../interface/RocketVaultInterface.sol";
 import "../interface/RocketVaultWithdrawerInterface.sol";
+import "../interface/util/IERC20Burnable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 // ETH and rETH are stored here to prevent contract upgrades from affecting balances
 // The RocketVault contract must not be upgraded
@@ -129,13 +129,13 @@ contract RocketVault is RocketBase, RocketVaultInterface {
 
     // Burns an amount of a token that implements a burn(uint256) method
     // Only accepts calls from Rocket Pool network contracts
-    function burnToken(ERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
+    function burnToken(IERC20Burnable _tokenAddress, uint256 _amount) override external onlyLatestNetworkContract {
         // Get contract key
         bytes32 contractKey = keccak256(abi.encodePacked(getContractName(msg.sender), _tokenAddress));
         // Update balances
         tokenBalances[contractKey] = tokenBalances[contractKey].sub(_amount);
         // Get the token ERC20 instance
-        ERC20Burnable tokenContract = ERC20Burnable(_tokenAddress);
+        IERC20Burnable tokenContract = IERC20Burnable(_tokenAddress);
         // Burn the tokens
         tokenContract.burn(_amount);
         // Emit token burn event

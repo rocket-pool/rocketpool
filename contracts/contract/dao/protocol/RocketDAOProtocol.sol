@@ -35,6 +35,10 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
         return getBool(keccak256(abi.encodePacked(daoNameSpace, "bootstrapmode.disabled")));
     }
 
+    // Get the last time this user made a proposal
+    function getMemberLastProposalTime(address _nodeAddress) override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "member.proposal.lasttime", _nodeAddress)));
+    }
 
     /**** Bootstrapping ***************/
     // While bootstrap mode is engaged, RP can change settings alongside the DAO (when its implemented). When disabled, only DAO will be able to control settings

@@ -10,10 +10,9 @@ import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsMembers
 import "../../../interface/dao/node/settings/RocketDAONodeTrustedSettingsProposalsInterface.sol";
 import "../../../interface/rewards/claims/RocketClaimTrustedNodeInterface.sol";
 import "../../../interface/util/AddressSetStorageInterface.sol";
+import "../../../interface/util/IERC20Burnable.sol";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 
 // The Trusted Node DAO Actions
@@ -169,7 +168,7 @@ contract RocketDAONodeTrustedActions is RocketBase, RocketDAONodeTrustedActionsI
         }
         // Burn the fine
         if (_rplFine > 0) {
-            rocketVault.burnToken(ERC20Burnable(getContractAddress("rocketTokenRPL")), _rplFine);
+            rocketVault.burnToken(IERC20Burnable(getContractAddress("rocketTokenRPL")), _rplFine);
         }
         // Remove the member now
         _memberRemove(_nodeAddress);

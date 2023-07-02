@@ -24,13 +24,26 @@ const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
     solidity: {
-        version: '0.7.6',
-        settings: {
-            optimizer: {
-                enabled: true,
-                runs: 15000,
+        compilers: [
+            {
+                version: '0.7.6',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
             },
-        },
+            {
+                version: '0.8.18',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 15000,
+                    },
+                },
+            }
+        ]
     },
     networks: {
         hardhat: {},

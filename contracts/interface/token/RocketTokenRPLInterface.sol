@@ -2,7 +2,7 @@ pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../util/IERC20.sol";
 
 interface RocketTokenRPLInterface is IERC20 {
     function getInflationCalcTime() external view returns(uint256);

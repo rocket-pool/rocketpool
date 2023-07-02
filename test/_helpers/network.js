@@ -1,4 +1,10 @@
-import { RocketNetworkBalances, RocketNetworkFees, RocketNetworkPrices, RocketNetworkWithdrawal } from '../_utils/artifacts';
+import {
+    RocketNetworkBalances,
+    RocketNetworkFees,
+    RocketNetworkPrices,
+    RocketNetworkVoting,
+    RocketNetworkWithdrawal,
+} from '../_utils/artifacts';
 
 
 // Get the network total ETH balance
@@ -71,4 +77,8 @@ export async function getNodeFeeByDemand(nodeDemand) {
 }
 
 
+export async function setDelegate(nodeAddress, txOptions) {
+    const rocketNetworkVoting = await RocketNetworkVoting.deployed();
+    await rocketNetworkVoting.setDelegate(nodeAddress, txOptions);
+}
 

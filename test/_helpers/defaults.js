@@ -2,7 +2,7 @@ import { setDAOProtocolBootstrapSetting } from '../dao/scenario-dao-protocol-boo
 import {
     RocketDAOProtocolSettingsDeposit, RocketDAOProtocolSettingsInflation,
     RocketDAOProtocolSettingsMinipool, RocketDAOProtocolSettingsNetwork,
-    RocketDAOProtocolSettingsNode,
+    RocketDAOProtocolSettingsNode, RocketNetworkBalances, RocketNetworkPrices,
 } from '../_utils/artifacts';
 
 export async function setDefaultParameters() {
@@ -20,4 +20,7 @@ export async function setDefaultParameters() {
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsInflation, 'rpl.inflation.interval.start', Math.floor(new Date().getTime() / 1000) + (60 * 60 * 24 * 14), { from: guardian });
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsMinipool, 'minipool.bond.reduction.enabled', true, { from: guardian });
     await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsNode, 'node.vacant.minipools.enabled', true, { from: guardian });
+
+    // TODO: Remove when handle default price properly
+    await (await RocketNetworkPrices.deployed()).initialisePrice();
 }

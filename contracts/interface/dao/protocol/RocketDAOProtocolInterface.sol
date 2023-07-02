@@ -6,6 +6,7 @@ import "../../../types/SettingType.sol";
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketDAOProtocolInterface {
+    function getMemberLastProposalTime(address _nodeAddress) external view returns (uint256);
     function getBootstrapModeDisabled() external view returns (bool);
     function bootstrapSettingMulti(string[] memory _settingContractNames, string[] memory _settingPaths, SettingType[] memory _types, bytes[] memory _values) external;
     function bootstrapSettingUint(string memory _settingContractName, string memory _settingPath, uint256 _value) external;

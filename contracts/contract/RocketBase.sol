@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity >0.5.0 <0.9.0;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
@@ -16,7 +16,7 @@ abstract contract RocketBase {
     uint8 public version;
 
     // The main storage contract where primary persistant storage is maintained
-    RocketStorageInterface rocketStorage = RocketStorageInterface(0);
+    RocketStorageInterface rocketStorage = RocketStorageInterface(address(0));
 
 
     /*** Modifiers **********************************************************/

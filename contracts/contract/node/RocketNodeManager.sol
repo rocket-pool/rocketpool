@@ -1,10 +1,6 @@
-pragma solidity 0.7.6;
-pragma abicoder v2;
-
 // SPDX-License-Identifier: GPL-3.0-only
-
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+pragma solidity 0.8.18;
+pragma abicoder v2;
 
 import "../RocketBase.sol";
 import "../../types/MinipoolStatus.sol";
@@ -20,13 +16,12 @@ import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsIn
 import "../../interface/node/RocketNodeStakingInterface.sol";
 import "../../interface/node/RocketNodeDepositInterface.sol";
 import "../../interface/dao/protocol/settings/RocketDAOProtocolSettingsMinipoolInterface.sol";
+import "../../interface/util/IERC20.sol";
+import "../../interface/network/RocketNetworkSnapshotsInterface.sol";
 
 
 // Node registration and management 
 contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
-
-    // Libraries
-    using SafeMath for uint256;
 
     // Events
     event NodeRegistered(address indexed node, uint256 time);
@@ -36,7 +31,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
-        version = 3;
+        version = 4;
     }
 
     // Get the number of nodes in the network
@@ -53,10 +48,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
         // Calculate range
         uint256 totalNodes = addressSetStorage.getCount(nodeKey);
-        uint256 max = _offset.add(_limit);
+        uint256 max = _offset + _limit;
         if (max > totalNodes || _limit == 0) { max = totalNodes; }
         // Create an array with as many elements as there are potential values to return
-        TimezoneCount[] memory counts = new TimezoneCount[](max.sub(_offset));
+        TimezoneCount[] memory counts = new TimezoneCount[](max - _offset);
         uint256 uniqueTimezoneCount = 0;
         // Iterate the minipool range
         for (uint256 i = _offset; i < max; i++) {
@@ -117,19 +112,26 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Load contracts
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
         AddressSetStorageInterface addressSetStorage = AddressSetStorageInterface(getContractAddress("addressSetStorage"));
+        RocketNetworkSnapshotsInterface rocketNetworkSnapshots = RocketNetworkSnapshotsInterface(getContractAddress("rocketNetworkSnapshots"));
         // Check node settings
         require(rocketDAOProtocolSettingsNode.getRegistrationEnabled(), "Rocket Pool node registrations are currently disabled");
         // Check timezone location
         require(bytes(_timezoneLocation).length >= 4, "The timezone location is invalid");
         // Initialise node data
         setBool(keccak256(abi.encodePacked("node.exists", msg.sender)), true);
+        setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
         setString(keccak256(abi.encodePacked("node.timezone.location", msg.sender)), _timezoneLocation);
         // Add node to index
-        addressSetStorage.addItem(keccak256(abi.encodePacked("nodes.index")), msg.sender);
+        bytes32 nodeIndexKey = keccak256(abi.encodePacked("nodes.index"));
+        addressSetStorage.addItem(nodeIndexKey, msg.sender);
         // Initialise fee distributor for this node
         _initialiseFeeDistributor(msg.sender);
         // Set node registration time (uses old storage key name for backwards compatibility)
         setUint(keccak256(abi.encodePacked("rewards.pool.claim.contract.registered.time", "rocketClaimNode", msg.sender)), block.timestamp);
+        // Update count
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.count")), uint32(block.number), uint224(addressSetStorage.getCount(nodeIndexKey)));
+        // Default voting delegate to themself
+        rocketNetworkSnapshots.push(keccak256(abi.encodePacked("node.delegate", msg.sender)), uint32(block.number), uint224(uint160(msg.sender)));
         // Emit node registered event
         emit NodeRegistered(msg.sender, block.timestamp);
     }
@@ -178,7 +180,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
             for (uint256 i = 0; i < count; i++) {
                 RocketMinipoolInterface minipool = RocketMinipoolInterface(rocketMinipoolManager.getNodeMinipoolAt(msg.sender, i));
                 if (minipool.getStatus() == MinipoolStatus.Staking){
-                    numerator = numerator.add(minipool.getNodeFee());
+                    numerator = numerator + minipool.getNodeFee();
                 }
             }
             setUint(keccak256(abi.encodePacked("node.average.fee.numerator", msg.sender)), numerator);
@@ -212,18 +214,18 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         // Retrieve the number of staking minipools per deposit size
         for (uint256 i = 0; i < depositSizes.length; i++) {
             depositCounts[i] = rocketMinipoolManager.getNodeStakingMinipoolCountBySize(_nodeAddress, depositSizes[i]);
-            totalCount = totalCount.add(depositCounts[i]);
+            totalCount = totalCount + depositCounts[i];
         }
         if (totalCount == 0) {
             return 0;
         }
         // Calculate the weights of each deposit size
         for (uint256 i = 0; i < depositSizes.length; i++) {
-            depositWeights[i] = launchAmount.sub(depositSizes[i]).mul(depositCounts[i]);
-            depositWeightTotal = depositWeightTotal.add(depositWeights[i]);
+            depositWeights[i] = (launchAmount - depositSizes[i]) * depositCounts[i];
+            depositWeightTotal = depositWeightTotal + depositWeights[i];
         }
         for (uint256 i = 0; i < depositSizes.length; i++) {
-            depositWeights[i] = depositWeights[i].mul(calcBase).div(depositWeightTotal);
+            depositWeights[i] = depositWeights[i] * calcBase / depositWeightTotal;
         }
         // Calculate the weighted average
         uint256 weightedAverage = 0;
@@ -236,10 +238,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
                     numeratorKey = keccak256(abi.encodePacked("node.average.fee.numerator", _nodeAddress, depositSizes[i]));
                 }
                 uint256 numerator = getUint(numeratorKey);
-                weightedAverage = weightedAverage.add(numerator.mul(depositWeights[i]).div(depositCounts[i]));
+                weightedAverage = weightedAverage + (numerator * depositWeights[i] / depositCounts[i]);
             }
         }
-        return weightedAverage.div(calcBase);
+        return weightedAverage / calcBase;
     }
 
     // Designates which network a node would like their rewards relayed to
@@ -274,7 +276,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 rewardInterval = daoSettingsRewards.getRewardsClaimIntervalTime();
         // Ensure node operator has waited the required time
         uint256 lastChange = getUint(changeKey);
-        require(block.timestamp >= lastChange.add(rewardInterval), "Not enough time has passed since changing state");
+        require(block.timestamp >= lastChange + rewardInterval, "Not enough time has passed since changing state");
         // Ensure state is actually changing
         require(getBool(stateKey) != _state, "Invalid state change");
         // Update registration state
@@ -302,7 +304,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
         // Iterate over the requested minipool range
         uint256 totalNodes = getNodeCount();
-        uint256 max = _offset.add(_limit);
+        uint256 max = _offset + _limit;
         if (max > totalNodes || _limit == 0) { max = totalNodes; }
         uint256 count = 0;
         for (uint256 i = _offset; i < max; i++) {
@@ -346,7 +348,7 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         uint256 distributorBalance = nodeDetails.feeDistributorAddress.balance;
         RocketNodeDistributorInterface distributor = RocketNodeDistributorInterface(nodeDetails.feeDistributorAddress);
         nodeDetails.distributorBalanceNodeETH = distributor.getNodeShare();
-        nodeDetails.distributorBalanceUserETH = distributorBalance.sub(nodeDetails.distributorBalanceNodeETH);
+        nodeDetails.distributorBalanceUserETH = distributorBalance - nodeDetails.distributorBalanceNodeETH;
         // Minipool details
         nodeDetails.minipoolCount = rocketMinipoolManager.getNodeMinipoolCount(_nodeAddress);
         // Balance details
@@ -369,10 +371,10 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
         bytes32 nodeKey = keccak256(abi.encodePacked("nodes.index"));
         // Iterate over the requested minipool range
         uint256 totalNodes = getNodeCount();
-        uint256 max = _offset.add(_limit);
+        uint256 max = _offset + _limit;
         if (max > totalNodes || _limit == 0) { max = totalNodes; }
         // Create array big enough for every minipool
-        address[] memory nodes = new address[](max.sub(_offset));
+        address[] memory nodes = new address[](max - _offset);
         uint256 total = 0;
         for (uint256 i = _offset; i < max; i++) {
             nodes[total] = addressSetStorage.getItem(nodeKey, i);

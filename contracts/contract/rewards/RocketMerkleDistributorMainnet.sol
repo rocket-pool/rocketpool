@@ -11,6 +11,7 @@ import "../../interface/rewards/RocketRewardsRelayInterface.sol";
 import "../../interface/rewards/RocketSmoothingPoolInterface.sol";
 import "../../interface/RocketVaultWithdrawerInterface.sol";
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
 /*

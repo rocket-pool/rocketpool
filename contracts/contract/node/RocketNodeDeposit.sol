@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.7.6;
-
-import "@openzeppelin/contracts/math/SafeMath.sol";
+pragma solidity 0.8.18;
 
 import "../RocketBase.sol";
 import "../../interface/deposit/RocketDepositPoolInterface.sol";
@@ -20,12 +18,10 @@ import "../../types/MinipoolDeposit.sol";
 import "../../interface/node/RocketNodeManagerInterface.sol";
 import "../../interface/RocketVaultInterface.sol";
 import "../../interface/node/RocketNodeStakingInterface.sol";
+import "../network/RocketNetworkSnapshots.sol";
 
 /// @notice Handles node deposits and minipool creation
 contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
-
-    // Libs
-    using SafeMath for uint;
 
     // Events
     event DepositReceived(address indexed from, uint256 amount, uint256 time);
@@ -80,7 +76,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         uint256 credit = getNodeDepositCredit(msg.sender);
         // Credit balance accounting
         if (credit < _bondAmount) {
-            uint256 shortFall = _bondAmount.sub(credit);
+            uint256 shortFall = _bondAmount - credit;
             require(msg.value == shortFall, "Invalid value");
             setUint(keccak256(abi.encodePacked("node.deposit.credit.balance", msg.sender)), 0);
         } else {
@@ -122,12 +118,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Check that pre deposit won't fail
         if (msg.value < preLaunchValue) {
             RocketDepositPoolInterface rocketDepositPool = RocketDepositPoolInterface(getContractAddress("rocketDepositPool"));
-            require(preLaunchValue.sub(msg.value) <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");          
+            require(preLaunchValue- msg.value <= rocketDepositPool.getBalance(), "Deposit pool balance is insufficient for pre deposit");
         }
         // Emit deposit received event
         emit DepositReceived(msg.sender, msg.value, block.timestamp);
         // Increase ETH matched (used to calculate RPL collateral requirements)
-        _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
+        _increaseEthMatched(msg.sender, launchAmount- _bondAmount);
         // Create the minipool
         RocketMinipoolInterface minipool = createMinipool(_salt, _expectedMinipoolAddress);
         // Process node deposit
@@ -149,12 +145,12 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Retrieve ETH from deposit pool if required
         uint256 shortFall = 0;
         if (msg.value < _preLaunchValue) {
-            shortFall = _preLaunchValue.sub(msg.value);
+            shortFall = _preLaunchValue- msg.value;
             rocketDepositPool.nodeCreditWithdrawal(shortFall);
         }
-        uint256 remaining = msg.value.add(shortFall).sub(_preLaunchValue);
+        uint256 remaining = msg.value + shortFall - _preLaunchValue;
         // Deposit the left over value into the deposit pool
-        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount.sub(_preLaunchValue));
+        rocketDepositPool.nodeDeposit{value: remaining}(_bondAmount - _preLaunchValue);
     }
 
     /// @notice Creates a "vacant" minipool which a node operator can use to migrate a validator with a BLS withdrawal credential
@@ -173,7 +169,7 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
         // Increase ETH matched (used to calculate RPL collateral requirements)
         RocketDAOProtocolSettingsMinipoolInterface rocketDAOProtocolSettingsMinipool = RocketDAOProtocolSettingsMinipoolInterface(getContractAddress("rocketDAOProtocolSettingsMinipool"));
         uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
-        _increaseEthMatched(msg.sender, launchAmount.sub(_bondAmount));
+        _increaseEthMatched(msg.sender, launchAmount - _bondAmount);
         // Create the minipool
         _createVacantMinipool(_salt, _validatorPubkey, _bondAmount, _expectedMinipoolAddress, _currentBalance);
     }
@@ -191,12 +187,15 @@ contract RocketNodeDeposit is RocketBase, RocketNodeDepositInterface {
     function _increaseEthMatched(address _nodeAddress, uint256 _amount) private {
         // Check amount doesn't exceed limits
         RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
-        uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress).add(_amount);
+        RocketNetworkSnapshots rocketNetworkSnapshots = RocketNetworkSnapshots(getContractAddress("rocketNetworkSnapshots"));
+        uint256 ethMatched = rocketNodeStaking.getNodeETHMatched(_nodeAddress) + _amount;
         require(
             ethMatched <= rocketNodeStaking.getNodeETHMatchedLimit(_nodeAddress),
             "ETH matched after deposit exceeds limit based on node RPL stake"
         );
-        setUint(keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress)), ethMatched);
+        // Push the change to snapshot manager
+        bytes32 key = keccak256(abi.encodePacked("eth.matched.node.amount", _nodeAddress));
+        rocketNetworkSnapshots.push(key, uint32(block.number), uint224(ethMatched));
     }
 
     /// @dev Adds a minipool to the queue

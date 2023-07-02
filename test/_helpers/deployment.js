@@ -88,6 +88,11 @@ const contracts = {
     // v1.2
     rocketMinipoolBase:                       artifacts.require('RocketMinipoolBase.sol'),
     rocketMinipoolBondReducer:                artifacts.require('RocketMinipoolBondReducer.sol'),
+    // v1.3
+    rocketNetworkSnapshots:                   artifacts.require('RocketNetworkSnapshots.sol'),
+    rocketNetworkVoting:                      artifacts.require('RocketNetworkVoting.sol'),
+    rocketDAOProtocolSettingsProposals:       artifacts.require('RocketDAOProtocolSettingsProposals.sol'),
+    rocketDAOProtocolVerifier:                artifacts.require('RocketDAOProtocolVerifier.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
     addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),

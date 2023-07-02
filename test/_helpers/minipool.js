@@ -68,6 +68,32 @@ export async function getMinipoolMinimumRPLStake() {
 
 }
 
+// Get the minimum required RPL stake for a minipool
+export async function getMinipoolMaximumRPLStake() {
+
+    // Load contracts
+    const [
+        rocketDAOProtocolSettingsMinipool,
+        rocketNetworkPrices,
+        rocketDAOProtocolSettingsNode,
+    ] = await Promise.all([
+        RocketDAOProtocolSettingsMinipool.deployed(),
+        RocketNetworkPrices.deployed(),
+        RocketDAOProtocolSettingsNode.deployed(),
+    ]);
+
+    // Load data
+    let [depositUserAmount, maxMinipoolStake, rplPrice] = await Promise.all([
+        rocketDAOProtocolSettingsMinipool.getHalfDepositUserAmount(),
+        rocketDAOProtocolSettingsNode.getMaximumPerMinipoolStake(),
+        rocketNetworkPrices.getRPLPrice(),
+    ]);
+
+    // Calculate & return
+    return depositUserAmount.mul(maxMinipoolStake).div(rplPrice);
+
+}
+
 let minipoolSalt = 1
 
 // Create a minipool

@@ -1,4 +1,9 @@
-import { RocketDAONodeTrusted, RocketDAONodeTrustedActions, RocketDAONodeTrustedSettingsMembers } from '../_utils/artifacts';
+import {
+    RocketDAONodeTrusted,
+    RocketDAONodeTrustedActions,
+    RocketDAONodeTrustedSettingsMembers,
+    RocketDAOProtocolVerifier,
+} from '../_utils/artifacts';
 import { mintRPL, approveRPL } from './tokens';
 
 
@@ -34,3 +39,13 @@ export async function memberJoin(txOptions) {
     await rocketDAONodeTrustedActions.actionJoin(txOptions);
 }
 
+export async function getDaoProtocolChallenge(proposalID, challengeID) {
+    // Load contracts
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    return rocketDAOProtocolVerifier.getChallenge(proposalID, challengeID);
+}
+export async function getDaoProtocolDepthPerRound() {
+    // Load contracts
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    return Number(await rocketDAOProtocolVerifier.getDepthPerRound());
+}

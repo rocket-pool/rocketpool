@@ -2,10 +2,9 @@ pragma solidity 0.7.6;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "../../RocketBase.sol";
 import "../../../interface/dao/node/RocketDAONodeTrustedUpgradeInterface.sol";
+import "../../../interface/util/IERC20.sol";
 
 // Handles network contract upgrades
 
