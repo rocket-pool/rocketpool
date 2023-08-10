@@ -71,7 +71,7 @@ abstract contract RocketBase {
     }
 
     /**
-    * @dev Throws if called by any sender that isn't a registered node or the minipool withdrawal address
+    * @dev Throws if called by any sender that isn't a registered node or the their respective withdrawal address
     */
     modifier onlyRegisteredNodeOrWithdrawalAddress(address _nodeAddress) {
         require(getBool(keccak256(abi.encodePacked("node.exists", _nodeAddress))) || _nodeAddress == rocketStorage.getNodeWithdrawalAddress(_nodeAddress), "Invalid minipool owner");

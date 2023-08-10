@@ -252,7 +252,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     }
 
     /// @notice Withdraw staked RPL back to the node account
-    ///         Only accepts calls from registered nodes their respective withdrawal addresses
+    ///         Only accepts calls from registered nodes or their respective withdrawal addresses
     ///         Withdraws to withdrawal address if set, otherwise defaults to node address
     /// @param _amount The amount of RPL to withdraw
     function withdrawRPL(uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyRegisteredNodeOrWithdrawalAddress(msg.sender) {
