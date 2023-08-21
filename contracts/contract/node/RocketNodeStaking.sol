@@ -26,6 +26,9 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
     event RPLWithdrawn(address indexed to, uint256 amount, uint256 time);
     event RPLSlashed(address indexed node, uint256 amount, uint256 ethValue, uint256 time);
     event StakeRPLForAllowed(address indexed node, address indexed caller, bool allowed, uint256 time);
+    event RPLLocked(address indexed from, uint256 amount, uint256 time);
+    event RPLUnlocked(address indexed from, uint256 amount, uint256 time);
+    event RPLTransferred(address indexed from, address indexed to, uint256 amount, uint256 time);
 
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
         version = 5;
@@ -163,7 +166,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
 
     /// @notice Calculate and return a node's effective RPL stake amount
     /// @param _nodeAddress The address of the node operator to calculate for
-    function getNodeEffectiveRPLStake(address _nodeAddress) override external view returns (uint256) {
+    function getNodeEffectiveRPLStake(address _nodeAddress) override public view returns (uint256) {
         // Load contracts
         RocketNetworkPricesInterface rocketNetworkPrices = RocketNetworkPricesInterface(getContractAddress("rocketNetworkPrices"));
         RocketDAOProtocolSettingsNodeInterface rocketDAOProtocolSettingsNode = RocketDAOProtocolSettingsNodeInterface(getContractAddress("rocketDAOProtocolSettingsNode"));
@@ -278,6 +281,52 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         emit RPLStaked(_nodeAddress, _amount, block.timestamp);
     }
 
+    /// @notice Returns the amount of RPL that is locked for a given node
+    function getNodeRPLLocked(address _node) override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked("rpl.locked.node.amount", _node)));
+    }
+
+    /// @notice Locks an amount of RPL from being withdrawn even if the node operator is over capitalised
+    /// @param _node The address of the node operator
+    /// @param _amount The amount of RPL to lock
+    function lockRPL(address _node, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() {
+        // The node must have unlocked effective stake equaling or greater than the amount
+        uint256 effectiveStake = getNodeEffectiveRPLStake(_node);
+        bytes32 lockedStakeKey = keccak256(abi.encodePacked("rpl.locked.node.amount", _node));
+        uint256 lockedStake = getUint(lockedStakeKey);
+        require(effectiveStake - lockedStake >= _amount, "Not enough staked RPL");
+        // Increase locked RPL
+        setUint(lockedStakeKey, lockedStake + _amount);
+        // Emit event
+        emit RPLLocked(_node, _amount, block.timestamp);
+    }
+
+    /// @notice Unlocks an amount of RPL making it possible to withdraw if the nod is over capitalised
+    /// @param _node The address of the node operator
+    /// @param _amount The amount of RPL to unlock
+    function unlockRPL(address _node, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() {
+        // The node must have locked stake equaling or greater than the amount
+        bytes32 lockedStakeKey = keccak256(abi.encodePacked("rpl.locked.node.amount", _node));
+        uint256 lockedStake = getUint(lockedStakeKey);
+        require(_amount <= lockedStake, "Not enough locked RPL");
+        // Decrease locked RPL
+        setUint(lockedStakeKey, lockedStake - _amount);
+        // Emit event
+        emit RPLUnlocked(_node, _amount, block.timestamp);
+    }
+
+    /// @notice Transfers RPL from one node to another
+    /// @param _from The node to transfer from
+    /// @param _to The node to transfer to
+    /// @param _amount The amount of RPL to transfer
+    function transferRPL(address _from, address _to, uint256 _amount) override external onlyLatestContract("rocketNodeStaking", address(this)) onlyLatestNetworkContract() {
+        // Transfer the stake
+        decreaseNodeRPLStake(_from, _amount);
+        increaseNodeRPLStake(_to, _amount);
+        // Emit event
+        emit RPLTransferred(_from, _to, _amount, block.timestamp);
+    }
+
     /// @notice Withdraw staked RPL back to the node account
     ///         Only accepts calls from registered nodes
     ///         Withdraws to withdrawal address if set, otherwise defaults to node address
@@ -290,9 +339,10 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
         require(block.timestamp - getNodeRPLStakedTime(msg.sender) >= rocketDAOProtocolSettingsRewards.getRewardsClaimIntervalTime(), "The withdrawal cooldown period has not passed");
         // Get & check node's current RPL stake
         uint256 rplStake = getNodeRPLStake(msg.sender);
+        uint256 lockedStake = getNodeRPLLocked(msg.sender);
         require(rplStake >= _amount, "Withdrawal amount exceeds node's staked RPL balance");
         // Check withdrawal would not undercollateralize node
-        require(rplStake - _amount >= getNodeMaximumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than required balance");
+        require(rplStake - _amount - lockedStake >= getNodeMaximumRPLStake(msg.sender), "Node's staked RPL balance after withdrawal is less than required balance");
         // Update RPL stake amounts
         decreaseTotalRPLStake(_amount);
         decreaseNodeRPLStake(msg.sender, _amount);

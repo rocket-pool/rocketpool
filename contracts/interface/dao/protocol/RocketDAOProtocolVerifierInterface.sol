@@ -31,6 +31,6 @@ interface Types {
 
 interface RocketDAOProtocolVerifierInterface {
     function submitProposalRoot(uint256 _proposalId, address _proposer, uint32 _blockNumber, Types.Node[] memory _treeNodes) external;
-    function createChallenge(uint256 propId, uint64 index) external;
+    function createChallenge(uint256 propId, uint256 index) external;
     function submitRoot(uint256 propId, uint256 index, Types.Node[] calldata witness, Types.Node[] memory nodes) external;
 }
