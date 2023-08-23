@@ -10,7 +10,7 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "proposals") {
         // Set version
-        version = 2;
+        version = 1;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings

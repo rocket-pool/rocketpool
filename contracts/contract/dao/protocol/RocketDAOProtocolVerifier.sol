@@ -7,8 +7,6 @@ import "../../../interface/dao/protocol/RocketDAOProtocolVerifierInterface.sol";
 import "../../../interface/network/RocketNetworkVotingInterface.sol";
 import "../../../interface/node/RocketNodeManagerInterface.sol";
 
-import "hardhat/console.sol";
-
 import "@openzeppelin4/contracts/utils/math/Math.sol";
 import "../../../interface/token/RocketTokenRPLInterface.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolProposalsInterface.sol";
@@ -121,7 +119,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         // Check depth is exactly one round deeper than a previous challenge (or the proposal root)
         uint256 previousIndex = getPollardRootIndex(_index);
-        require(previousIndex == 1 || getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex))) != 0, "Invalid challenge depth");
+        require(getChallengeState(getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex)))) == Types.ChallengeState.Responded, "Invalid challenge depth");
 
         // Precompute the proposal key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
@@ -162,7 +160,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Precompute defeat index key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
         bytes32 defeatIndexKey = bytes32(proposalKey+defeatIndexOffset);
-        uint256 challengePeriod = getUint(bytes32(proposalKey + challengeBondOffset));
+        uint256 challengePeriod = getUint(bytes32(proposalKey + challengePeriodOffset));
 
         // Check the proposal hasn't already been defeated
         uint256 defeatIndex = getUint(defeatIndexKey);
@@ -210,10 +208,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
             // Increment reward indices if required
             if (isRewardedIndex(defeatIndex, _indices[i])) {
-                console.log("Index %s defeated proposal, paying reward", _indices[i]);
                 rewardedIndices++;
-            } else {
-                console.log("Index %s was not used, returning bond", _indices[i]);
             }
 
             // Mark index as paid
@@ -229,7 +224,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         uint256 challengeBond = getUint(bytes32(proposalKey + challengeBondOffset));
         uint256 totalBond = _indices.length * challengeBond;
         rocketNodeStaking.unlockRPL(msg.sender, totalBond);
-        console.log("Return challenger %s RPL bond", totalBond);
 
         // Pay challenger their reward
         if (rewardedIndices > 0) {
@@ -237,7 +231,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             // Calculate the number of challenges involved in defeating the proposal
             uint256 totalDefeatingIndices = getDepthFromIndex(defeatIndex) / depthPerRound;
             uint256 totalReward = proposalBond * rewardedIndices / totalDefeatingIndices;
-            console.log("Paying challenger %s RPL reward", totalReward);
             // Unlock the reward amount from the proposer and transfer it to the challenger
             uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
@@ -259,7 +252,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         {
             RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
             RocketDAOProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProposalInterface.ProposalState.Succeeded, "Invalid proposal state");
+            require(proposalState >= RocketDAOProposalInterface.ProposalState.Active, "Invalid proposal state");
         }
 
         address proposer;
@@ -290,16 +283,14 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             state = setChallengeState(state, Types.ChallengeState.Paid);
             setUint(challengeKey, state);
 
-            // Unlock the challenger bond and pay to proposer
-            address challenger = getChallengeAddress(state);
-            rocketNodeStaking.unlockRPL(challenger, challengeBond);
-            rocketNodeStaking.transferRPL(challenger, proposer, challengeBond);
-            console.log("Paying proposer %s RPL", challengeBond);
-
             // If claiming the root at this stage, then we return the proposal bond
             if (_indices[i] == 1) {
                 rocketNodeStaking.unlockRPL(proposer, proposalBond);
-                console.log("Refunding proposer %s RPL", proposalBond);
+            } else {
+                // Unlock the challenger bond and pay to proposer
+                address challenger = getChallengeAddress(state);
+                rocketNodeStaking.unlockRPL(challenger, challengeBond);
+                rocketNodeStaking.transferRPL(challenger, proposer, challengeBond);
             }
         }
     }
@@ -414,8 +405,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Computes the root node given a witness
-    function computeRootFromWitness(uint256 _index, Types.Node memory _leaf, Types.Node[] calldata _witness) internal returns (Types.Node memory root) {
-        root = _leaf;
+    /// @param _index The global index the proof is for
+    /// @param _leaf The node at the global index `_index`
+    /// @param _witness A merkle proof starting at the global index `_index`
+    /// @return The computed root node for the given witness
+    function computeRootFromWitness(uint256 _index, Types.Node memory _leaf, Types.Node[] calldata _witness) internal returns (Types.Node memory) {
+        Types.Node memory root = _leaf;
         for (uint256 i = 0; i < _witness.length; i++) {
             if (_index % 2 == 1) {
                 root.hash = keccak256(abi.encodePacked(
@@ -432,9 +427,12 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             root.sum += _witness[i].sum;
             _index = _index / 2;
         }
+        return root;
     }
 
     /// @dev Computes the root node given a pollard
+    /// @param _nodes An array of nodes to compute a root node for
+    /// @return The computed root node
     function computeRootFromNodes(Types.Node[] memory _nodes) internal view returns (Types.Node memory) {
         uint256 len = _nodes.length / 2;
         // Perform first step into a new temporary memory buffer to leave original intact
@@ -461,16 +459,23 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Calculates the depth of a given index
+    /// @param _index The global index to calculate a depth for
+    /// @return The depth of the global index `_index`
     function getDepthFromIndex(uint256 _index) internal pure returns (uint256) {
         return Math.log2(_index, Math.Rounding.Down);
     }
 
     /// @dev Calculates the max depth of a tree containing specified number of nodes
+    /// @param _nodeCount The number of nodes
+    /// @return The max depth of a tree with `_nodeCount` many nodes
     function getMaxDepth(uint256 _nodeCount) internal pure returns (uint256) {
         return 2 * Math.log2(_nodeCount, Math.Rounding.Up);
     }
 
     /// @dev Calculates the depth of the next round taking into account the max depth
+    /// @param _currentIndex The index to calculate the next depth for
+    /// @param _nodeCount The number of nodes
+    /// @return The next depth for a challenge
     function getNextDepth(uint256 _currentIndex, uint256 _nodeCount) internal pure returns (uint256) {
         uint256 currentDepth = getDepthFromIndex(_currentIndex);
         uint256 maxDepth = getMaxDepth(_nodeCount);
@@ -482,6 +487,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @dev Calculates the root index of a pollard given the index of of one of its nodes
+    /// @param _index The index to calculate a pollard root index from
+    /// @return The pollard root index for node with global index of `_index`
     function getPollardRootIndex(uint256 _index) internal pure returns (uint256) {
         // Index is within the first pollard depth
         if (_index < 2 ** depthPerRound) {
@@ -490,8 +497,10 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return _index / (2 ** depthPerRound);
     }
 
-
     /// @dev Returns true if the given `_index` is in the path from the proposal root down to `_defeatIndex`
+    /// @param _defeatIndex The index which resulted in the defeat of the proposal
+    /// @param _index The index to check if it's within the defeat path
+    /// @return True if `_index` was part of the path which defeated the proposal
     function isRewardedIndex(uint256 _defeatIndex, uint256 _index) internal pure returns (bool) {
         for (uint256 i = _defeatIndex; i > 1; i /= 2) {
             if (_index == i) {

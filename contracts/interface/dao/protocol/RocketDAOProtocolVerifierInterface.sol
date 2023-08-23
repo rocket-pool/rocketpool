@@ -19,8 +19,8 @@ interface Types {
     }
 
     struct Node {
-        bytes32 hash;
         uint256 sum;
+        bytes32 hash;
     }
 
     struct Leaf {

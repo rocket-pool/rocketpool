@@ -1,8 +1,14 @@
 import {
-    RocketDAOProposal, RocketNetworkVoting, RocketNodeManager, RocketDAOProtocolProposals, RocketDAOProtocolVerifier,
+    RocketDAOProposal,
+    RocketNetworkVoting,
+    RocketNodeManager,
+    RocketDAOProtocolProposals,
+    RocketDAOProtocolVerifier,
+    RocketTokenRPL, RocketNodeStaking,
 } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState, getDAOProposalVotesRequired } from './scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';
+import { getRplBalance } from '../_helpers/tokens';
 
 /**
  * Returns a 2d array of delegated voting power at a given block
@@ -125,20 +131,12 @@ export async function daoProtocolGeneratePollard(leaves, order, index = 1) {
     const pollardDepth = offset + order;
     const pollardOffset = index * (2 ** order) - (2 ** (order + offset));
 
-    // console.log("# Level " + depth);
-    // const t = leaves;
-    // for (const u of t) {
-    //     console.log(`Hash: ${u.hash}, Sum: ${u.sum.toString()}`);
-    // }
-
     // The
     if (depth === pollardDepth) {
         nodes = leaves.slice(pollardOffset, pollardOffset + pollardSize);
     }
     // Walk up the merkle tree until we get to the offset height
     for (let level = depth; level > offset; level--) {
-        // console.log("# Level " + (level-1));
-
         let n = 2 ** level;
         for (let i = 0; i < n / 2; i++) {
             const a = i * 2;
@@ -158,11 +156,6 @@ export async function daoProtocolGeneratePollard(leaves, order, index = 1) {
         if (level-1 === offset + order) {
             nodes = leaves.slice(pollardOffset, pollardOffset + pollardSize);
         }
-
-        // const t = leaves.slice(0, 2 ** (level-1));
-        // for (const u of t) {
-        //     console.log(`Hash: ${u.hash}, Sum: ${u.sum.toString()}`);
-        // }
     }
 
     // Build a proof from the offset up to the root node
@@ -236,11 +229,6 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     }
     quorum = quorum.div('2'.BN);
 
-    console.log('# Proposal:');
-    console.log('Nodes :');
-    console.log(treeNodes);
-    console.log('-');
-
     await rocketDAOProtocolProposals.propose(_proposalMessage, _payload, _block, treeNodes, txOptions);
 
     // Capture data
@@ -259,15 +247,12 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     return Number(ds2.proposalTotal);
 }
 
+
 export async function daoProtocolCreateChallenge(_proposalID, _index, txOptions) {
     // Load contracts
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
     // Create the challenge
     await rocketDAOProtocolVerifier.createChallenge(_proposalID, _index, txOptions);
-    // Grab the challenge ID
-    console.log('# Create Challenge');
-    console.log('Index: ' + _index);
-    console.log('-');
 }
 
 
@@ -276,33 +261,8 @@ export async function daoProtocolDefeatProposal(_proposalID, _index, txOptions) 
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
     // Create the challenge
     await rocketDAOProtocolVerifier.defeatProposal(_proposalID, _index, txOptions);
-    // Grab the challenge ID
-    console.log('# Proposal defeated');
-    console.log('Index: ' + _index);
-    console.log('-');
 }
 
-
-export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
-    console.log('# Claiming bond as challenger');
-    console.log('Indices: ');
-    console.log(_indices);
-    console.log('-');
-    // Load contracts
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    // Create the challenge
-    await rocketDAOProtocolVerifier.claimBondChallenger(_proposalID, _indices, txOptions);
-}
-
-
-export async function daoProtocolChallengeRefresh(_proposalID, _challengeID, _index, txOptions) {
-    // Load contracts
-    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    console.log('# Refresh Challenge');
-    console.log('Index: ' + _index);
-    console.log('-');
-    await rocketDAOProtocolVerifier.challengeRefresh(_proposalID, _challengeID, _index, txOptions);
-}
 
 export async function daoProtocolSubmitRoot(_proposalID, _challengeID, _witness, _treeNodes, txOptions) {
     // Create mutable copy
@@ -317,13 +277,6 @@ export async function daoProtocolSubmitRoot(_proposalID, _challengeID, _witness,
     for (let i = 0; i < _witness.length; i++) {
         _witness[i].sum = _witness[i].sum.toString();
     }
-
-    console.log('# Response:');
-    console.log('Witness:');
-    console.log(_witness);
-    console.log('Nodes:');
-    console.log(_treeNodes);
-    console.log('-');
 
     // Create the challenge
     await rocketDAOProtocolVerifier.submitRoot(_proposalID, _challengeID, _witness, _treeNodes, txOptions);
@@ -406,3 +359,38 @@ export async function daoProtocolExecute(_proposalID, txOptions) {
     assertBN.equal(ds2.proposalState, proposalStates.Executed, 'Proposal is not in the executed state');
 }
 
+export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOptions) {
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+
+    const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
+    const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+
+    await rocketDAOProtocolVerifier.claimBondProposer(_proposalID, _indices, txOptions);
+
+    const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
+    const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+
+    return {
+        staked: balanceAfter.sub(balanceBefore),
+        locked: lockedBalanceAfter.sub(lockedBalanceBefore),
+    }
+}
+
+export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
+    const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
+    const rocketNodeStaking = await RocketNodeStaking.deployed();
+
+    const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
+    const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+
+    await rocketDAOProtocolVerifier.claimBondChallenger(_proposalID, _indices, txOptions);
+
+    const lockedBalanceAfter = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
+    const balanceAfter = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
+
+    return {
+        staked: balanceAfter.sub(balanceBefore),
+        locked: lockedBalanceAfter.sub(lockedBalanceBefore),
+    }
+}
