@@ -26,7 +26,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     }
 
     /// @notice Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)
-    function enableVoting() onlyRegisteredNode(msg.sender) external override {
+    function initialiseVoting() onlyRegisteredNode(msg.sender) external override {
         // Check if already registered
         require (!getBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender))), "Already registered");
         setBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)), true);
@@ -53,6 +53,10 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
         // Set starting delegate to themself
         key = keccak256(abi.encodePacked("node.delegate", msg.sender));
         rocketNetworkSnapshots.push(key, uint32(block.number), uint224(uint160(msg.sender)));
+    }
+
+    function getVotingInitialised(address _nodeAddress) external override view returns (bool) {
+        return getBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)));
     }
 
     /// @notice Returns the number of registered nodes at a given block

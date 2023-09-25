@@ -75,7 +75,7 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
 
     // Bootstrap mode -Spend DAO treasury
     function bootstrapSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
-        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSpendTreasury(_invoiceID, _recipientAddress, _amount);
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalTreasuryOneTimeSpend(_invoiceID, _recipientAddress, _amount);
     }
 
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)

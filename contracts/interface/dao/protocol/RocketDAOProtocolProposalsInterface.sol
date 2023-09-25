@@ -7,6 +7,8 @@ import "./RocketDAOProtocolVerifierInterface.sol";
 // SPDX-License-Identifier: GPL-3.0-only
 
 interface RocketDAOProtocolProposalsInterface {
+    function getProposalBlock(uint256 _proposalID) external view returns (uint256);
+
     function propose(string memory _proposalMessage, bytes memory _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) external returns (uint256);
     function vote(uint256 _proposalID, bool _support) external;
     function cancel(uint256 _proposalID) external;
@@ -18,5 +20,8 @@ interface RocketDAOProtocolProposalsInterface {
     function proposalSettingBool(string memory _settingContractName, string memory _settingPath, bool _value) external;
     function proposalSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) external;
     function proposalSettingRewardsClaimer(string memory _contractName, uint256 _perc) external;
-    function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;
+
+    function proposalTreasuryOneTimeSpend(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;
+    function proposalTreasuryNewContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) external;
+    function proposalTreasuryUpdateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) external;
 }

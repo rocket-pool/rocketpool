@@ -18,7 +18,6 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
             setSettingUint("proposal.vote.time", 2 weeks);                  // How long a proposal can be voted on
             setSettingUint("proposal.vote.delay.time", 1 weeks);            // How long before a proposal can be voted on after it is created
             setSettingUint("proposal.execute.time", 4 weeks);               // How long a proposal can be executed after its voting period is finished
-            setSettingUint("proposal.action.time", 4 weeks);                // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
             setSettingUint("proposal.bond", 100 ether);                     // The amount of RPL a proposer has to put up as a bond for creating a new proposal
             setSettingUint("proposal.challenge.bond", 10 ether);            // The amount of RPL a challenger has to put up as a bond for challenging a proposal
             setSettingUint("proposal.challenge.period", 30 minutes);        // The amount of time a proposer has to respond to a challenge before a proposal is defeated
@@ -50,11 +49,6 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
         return getSettingUint("proposal.execute.time");
     }
 
-    // Certain proposals require a secondary action to be run after the proposal is successful (joining, leaving etc). This is how long until that action expires
-    function getActionTime() override external view returns (uint256) {
-        return getSettingUint("proposal.action.time");
-    }
-
     function getProposalBond() override external view returns (uint256) {
         return getSettingUint("proposal.bond");
     }
@@ -65,5 +59,17 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
 
     function getChallengePeriod() override external view returns (uint256) {
         return getSettingUint("proposal.challenge.period");
+    }
+
+    function getProposalQuorum() override external view returns (uint256) {
+        return getSettingUint("proposal.quorum");
+    }
+
+    function getProposalVetoQuorum() override external view returns (uint256) {
+        return getSettingUint("proposal.veto.quorum");
+    }
+
+    function getProposalMaxBlockAge() override external view returns (uint256) {
+        return getSettingUint("proposal.max.block.age");
     }
 }

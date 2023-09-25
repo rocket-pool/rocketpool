@@ -37,6 +37,10 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
 
     /*** Proposals **********************/
 
+    function getProposalBlock(uint256 _proposalID) external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.block", _proposalID)));
+    }
+
     // Create a DAO proposal with calldata, if successful will be added to a queue where it can be executed
     // A general message can be passed by the proposer along with the calldata payload that can be executed if the proposal passes
     function propose(string memory _proposalMessage, bytes memory _payload, uint32 _blockNumber, Types.Node[] calldata _treeNodes) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) returns (uint256) {
@@ -155,11 +159,35 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         rocketDAOProtocolSettingsRewards.setSettingRewardsClaimer(_contractName, _perc);
     }
 
-    // Spend RPL from the DAO's treasury
-    function proposalSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyExecutingContracts() {
-        // Load contracts
+    /// @notice Spend RPL from the DAO's treasury immediately
+    /// @param _invoiceID Arbitrary string for book keeping
+    /// @param _recipientAddress Address to receive the RPL
+    /// @param _amount Amount of RPL to send
+    function proposalTreasuryOneTimeSpend(string memory _invoiceID, address _recipientAddress, uint256 _amount) override external onlyExecutingContracts() {
         RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
-        // Update now
         rocketDAOTreasury.spend(_invoiceID, _recipientAddress, _amount);
+    }
+
+    /// @notice Add a new recurring payment contract to the treasury
+    /// @param _contractName A unique string to refer to this payment contract
+    /// @param _recipientAddress Address to receive the periodic RPL
+    /// @param _amountPerPeriod Amount of RPL to pay per period
+    /// @param _periodLength Number of seconds between each period
+    /// @param _startTime Timestamp of when payments should begin
+    /// @param _numPeriods Number periods to pay, or zero for a never ending contract
+    function proposalTreasuryNewContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _startTime, uint256 _numPeriods) override external onlyExecutingContracts() {
+        RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
+        rocketDAOTreasury.newContract(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _startTime, _numPeriods);
+    }
+
+    /// @notice Modifies and existing recurring payment contract
+    /// @param _contractName The unique string of the payment contract
+    /// @param _recipientAddress New address to receive the periodic RPL
+    /// @param _amountPerPeriod New amount of RPL to pay per period
+    /// @param _periodLength New number of seconds between each period
+    /// @param _numPeriods New number periods to pay, or zero for a never ending contract
+    function proposalTreasuryUpdateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external onlyExecutingContracts() {
+        RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
+        rocketDAOTreasury.updateContract(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _numPeriods);
     }
 }

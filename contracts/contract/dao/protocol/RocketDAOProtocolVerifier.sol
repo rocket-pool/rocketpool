@@ -35,8 +35,8 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     uint256 constant challengePeriodOffset = 8;
 
     // Events
-    event RootSubmitted(uint256 indexed proposalId, address indexed challenger, uint256 blockNumber, uint256 index, bytes32 rootHash, uint256 sum, Types.Node[] treeNodes);
-    event ChallengeSubmitted(uint256 indexed proposalID, address indexed proposer, uint256 timestamp, uint256 index);
+    event RootSubmitted(uint256 indexed proposalId, address indexed proposer, uint32 blockNumber, uint256 index, bytes32 rootHash, uint256 sum, Types.Node[] treeNodes, uint256 timestamp);
+    event ChallengeSubmitted(uint256 indexed proposalID, address indexed challenger, uint256 index, uint256 timestamp);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -105,7 +105,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         setUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, uint256(1))), state);
 
         // Emit event
-        emit RootSubmitted(_proposalID, _proposer, _blockNumber, 1, root.hash, root.sum, _treeNodes);
+        emit RootSubmitted(_proposalID, _proposer, _blockNumber, 1, root.hash, root.sum, _treeNodes, block.timestamp);
     }
 
     /// @notice Used by a verifier to challenge a specific index of a proposal's voting power tree
@@ -144,7 +144,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         rocketNodeStaking.lockRPL(msg.sender, challengeBond);
 
         // Emit event
-        emit ChallengeSubmitted(_proposalID, msg.sender, block.timestamp, _index);
+        emit ChallengeSubmitted(_proposalID, msg.sender, _index, block.timestamp);
     }
 
     /// @notice Can be called if proposer fails to respond to a challenge within the required time limit. Destroys the proposal if successful
@@ -360,7 +360,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Emit event
         {
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
-            emit RootSubmitted(_proposalID, proposer, block.number, _index, root.hash, root.sum, _nodes);
+            emit RootSubmitted(_proposalID, proposer, uint32(block.number), _index, root.hash, root.sum, _nodes, block.timestamp);
         }
     }
 

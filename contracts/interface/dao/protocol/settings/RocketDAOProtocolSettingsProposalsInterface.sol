@@ -7,8 +7,10 @@ interface RocketDAOProtocolSettingsProposalsInterface {
     function getVoteTime() external view returns(uint256);
     function getVoteDelayTime() external view returns(uint256);
     function getExecuteTime() external view returns(uint256);
-    function getActionTime() external view returns(uint256);
     function getProposalBond() external view returns(uint256);
     function getChallengeBond() external view returns(uint256);
     function getChallengePeriod() external view returns(uint256);
+    function getProposalQuorum() external view returns (uint256);
+    function getProposalVetoQuorum() external view returns (uint256);
+    function getProposalMaxBlockAge() external view returns (uint256);
 }
