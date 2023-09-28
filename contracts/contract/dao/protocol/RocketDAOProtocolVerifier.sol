@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
-pragma abicoder v2;
 
 import "../../RocketBase.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolVerifierInterface.sol";
@@ -45,7 +44,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @notice Returns the depth per round
-    function getDepthPerRound() external view returns (uint256) {
+    function getDepthPerRound() external pure returns (uint256) {
         return depthPerRound;
     }
 
@@ -232,7 +231,6 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 totalDefeatingIndices = getDepthFromIndex(defeatIndex) / depthPerRound;
             uint256 totalReward = proposalBond * rewardedIndices / totalDefeatingIndices;
             // Unlock the reward amount from the proposer and transfer it to the challenger
-            uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
             address proposer = getAddress(bytes32(proposalKey + proposerOffset));
             rocketNodeStaking.unlockRPL(proposer, totalReward);
             rocketNodeStaking.transferRPL(proposer, msg.sender, totalReward);
@@ -248,11 +246,11 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Proposer has nothing to claim if their proposal was defeated
         require(defeatIndex == 0, "Proposal defeated");
 
-        // Check the proposal has passed the waiting period
+        // Check the proposal has passed the waiting period and the voting period
         {
             RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
             RocketDAOProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProposalInterface.ProposalState.Active, "Invalid proposal state");
+            require(proposalState >= RocketDAOProposalInterface.ProposalState.Cancelled, "Invalid proposal state");
         }
 
         address proposer;
@@ -409,7 +407,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @param _leaf The node at the global index `_index`
     /// @param _witness A merkle proof starting at the global index `_index`
     /// @return The computed root node for the given witness
-    function computeRootFromWitness(uint256 _index, Types.Node memory _leaf, Types.Node[] calldata _witness) internal returns (Types.Node memory) {
+    function computeRootFromWitness(uint256 _index, Types.Node memory _leaf, Types.Node[] calldata _witness) internal pure returns (Types.Node memory) {
         Types.Node memory root = _leaf;
         for (uint256 i = 0; i < _witness.length; i++) {
             if (_index % 2 == 1) {
@@ -433,7 +431,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     /// @dev Computes the root node given a pollard
     /// @param _nodes An array of nodes to compute a root node for
     /// @return The computed root node
-    function computeRootFromNodes(Types.Node[] memory _nodes) internal view returns (Types.Node memory) {
+    function computeRootFromNodes(Types.Node[] memory _nodes) internal pure returns (Types.Node memory) {
         uint256 len = _nodes.length / 2;
         // Perform first step into a new temporary memory buffer to leave original intact
         Types.Node[] memory temp = new Types.Node[](len);

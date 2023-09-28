@@ -249,3 +249,21 @@ export async function setDAOProtocolBootstrapSettingMulti(_settingContractInstan
     }
   }
 }
+
+/*** Security council *******/
+
+// Use bootstrap power to invite a member to the security council
+export async function setDAOProtocolBootstrapSecurityInvite(_id, _memberAddress, txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    // Execute the invite
+    await rocketDAOProtocol.bootstrapSecurityInvite(_id, _memberAddress, txOptions);
+}
+
+// Use bootstrap power to kick a member from the security council
+export async function setDAOProtocolBootstrapSecurityKick(_id, _memberAddress, txOptions) {
+    // Load contracts
+    const rocketDAOProtocol = await RocketDAOProtocol.deployed();
+    // Execute the kick
+    await rocketDAOProtocol.bootstrapSecurityKick(_memberAddress, txOptions);
+}

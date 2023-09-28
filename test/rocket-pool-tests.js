@@ -21,6 +21,7 @@ import nodeStakingTests from './node/node-staking-tests';
 import nodeDistributorTests from './node/node-distributor-tests';
 import daoProtocolTests from './dao/dao-protocol-tests';
 import daoNodeTrustedTests from './dao/dao-node-trusted-tests';
+import daoSecurityTests from './dao/dao-security-tests';
 import rethTests from './token/reth-tests';
 import rplTests from './token/rpl-tests';
 import rewardsPoolTests from './rewards/rewards-tests';
@@ -61,6 +62,7 @@ before(async function() {
 // Run tests
 daoProtocolTests();
 daoNodeTrustedTests();
+daoSecurityTests();
 auctionTests();
 depositPoolTests();
 minipoolScrubTests();

@@ -78,6 +78,16 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
         RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalTreasuryOneTimeSpend(_invoiceID, _recipientAddress, _amount);
     }
 
+    // Bootstrap mode - Invite security council member
+    function bootstrapSecurityInvite(string memory _id, address _memberAddress) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSecurityInvite(_id, _memberAddress);
+    }
+
+    // Bootstrap mode - Kick security council member
+    function bootstrapSecurityKick(address _memberAddress) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSecurityKick(_memberAddress);
+    }
+
     // Bootstrap mode - Disable RP Access (only RP can call this to hand over full control to the DAO)
     function bootstrapDisable(bool _confirmDisableBootstrapMode) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         require(_confirmDisableBootstrapMode == true, "You must confirm disabling bootstrap mode, it can only be done once!");

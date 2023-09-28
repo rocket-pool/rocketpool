@@ -93,6 +93,10 @@ const contracts = {
     rocketNetworkVoting:                      artifacts.require('RocketNetworkVoting.sol'),
     rocketDAOProtocolSettingsProposals:       artifacts.require('RocketDAOProtocolSettingsProposals.sol'),
     rocketDAOProtocolVerifier:                artifacts.require('RocketDAOProtocolVerifier.sol'),
+    rocketDAOSecurity:                        artifacts.require('RocketDAOSecurity.sol'),
+    rocketDAOSecurityActions:                 artifacts.require('RocketDAOSecurityActions.sol'),
+    rocketDAOSecurityProposals:               artifacts.require('RocketDAOSecurityProposals.sol'),
+    rocketDAOProtocolSettingsSecurity:        artifacts.require('RocketDAOProtocolSettingsSecurity.sol'),
     // Utils
     addressQueueStorage:                      artifacts.require('AddressQueueStorage.sol'),
     addressSetStorage:                        artifacts.require('AddressSetStorage.sol'),

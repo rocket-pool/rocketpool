@@ -1,7 +1,7 @@
 import { printTitle } from '../_utils/formatting';
 import { shouldRevert } from '../_utils/testing';
 import {
-    setDaoProtocolBootstrapModeDisabled,
+    setDaoProtocolBootstrapModeDisabled, setDAOProtocolBootstrapSecurityInvite,
     setDAOProtocolBootstrapSetting,
     setDAOProtocolBootstrapSettingMulti,
 } from './scenario-dao-protocol-bootstrap';
@@ -17,14 +17,14 @@ import {
     RocketDAOProtocolSettingsRewards,
 } from '../_utils/artifacts';
 import {
-    constructLeaves,
+    constructLeaves, daoProtocolCancel,
     daoProtocolClaimBondChallenger,
     daoProtocolClaimBondProposer,
     daoProtocolCreateChallenge,
-    daoProtocolDefeatProposal,
+    daoProtocolDefeatProposal, daoProtocolExecute,
     daoProtocolGeneratePollard,
     daoProtocolPropose,
-    daoProtocolSubmitRoot,
+    daoProtocolSubmitRoot, daoProtocolVote,
     getDelegatedVotingPower,
 } from './scenario-dao-protocol';
 import { nodeStakeRPL, nodeWithdrawRPL, registerNode } from '../_helpers/node';
@@ -36,10 +36,12 @@ import {
     getDaoProtocolChallengePeriod,
     getDaoProtocolDepthPerRound,
     getDaoProtocolProposalBond,
-    getDaoProtocolVoteDelayTime,
+    getDaoProtocolVoteDelayTime, getDaoProtocolVoteTime,
 } from '../_helpers/dao';
 import { increaseTime } from '../_utils/evm';
 import { assertBN } from '../_helpers/bn';
+import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
+import { daoSecurityMemberJoin, daoSecurityMemberLeave, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 
 export default function() {
     contract.only('RocketDAOProtocol', async (accounts) => {
@@ -51,6 +53,7 @@ export default function() {
             proposer,
             node1,
             node2,
+            securityMember1
         ] = accounts;
 
         let depthPerRound;
@@ -58,6 +61,7 @@ export default function() {
         let proposalBond;
         let challengePeriod;
         let voteDelayTime;
+        let voteTime;
 
         const rewardClaimPeriodTime = 60 * 60 * 24;
 
@@ -73,6 +77,7 @@ export default function() {
             proposalBond = await getDaoProtocolProposalBond();
             challengePeriod = await getDaoProtocolChallengePeriod();
             voteDelayTime = await getDaoProtocolVoteDelayTime();
+            voteTime = await getDaoProtocolVoteTime();
 
             // Set the reward claim period
             await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, { from: owner });
@@ -227,55 +232,6 @@ export default function() {
 
         });
 
-        async function proposalChallengeResponse(proposer, challenger, proposerLeaves, challengerLeaves, index) {
-            const block = await hre.web3.eth.getBlockNumber();
-            const depthPerRound = await getDaoProtocolDepthPerRound();
-
-            // Create the proposal
-            let { nodes } = await daoProtocolGeneratePollard(proposerLeaves, depthPerRound);
-            const propId = await daoProtocolPropose('Test proposal', '0x0', block, nodes, { from: proposer });
-
-            const maxDepth = Math.ceil(Math.log2(proposerLeaves.length));
-            const totalLeaves = 2 ** maxDepth;
-            let rounds = Math.ceil(Math.floor(Math.log2(totalLeaves)) / depthPerRound) - 1;
-
-            if (rounds === 0) {
-                rounds = 1;
-            }
-
-            const indices = [];
-
-            // Calculate the indices for each challenge round
-            for (let i = 1; i <= rounds; i++) {
-                let j = i * depthPerRound;
-                if (j > maxDepth) {
-                    j = maxDepth;
-                }
-                indices.push(index / (2 ** (maxDepth - j)));
-            }
-            indices.push(index);
-
-            // Create challenge
-            let challengeIndex = indices[0];
-            await daoProtocolCreateChallenge(propId, challengeIndex, { from: challenger });
-
-            for (let round = 0; round < rounds; round++) {
-                // Respond
-                let response = await daoProtocolGeneratePollard(proposerLeaves, depthPerRound, challengeIndex);
-                await daoProtocolSubmitRoot(propId, challengeIndex, response.proof, response.nodes, { from: proposer });
-
-                let challengeDepth = Math.min(Math.ceil(Math.log2(challengeIndex)) + depthPerRound, maxDepth);
-
-                if (challengeDepth === maxDepth) {
-                    return;
-                }
-
-                // Refresh
-                challengeIndex = indices[round + 1];
-                await daoProtocolCreateChallenge(propId, challengeIndex, { from: challenger });
-            }
-        }
-
         async function createNode(minipoolCount, node) {
             // Stake RPL to cover minipools
             let minipoolRplStake = await getMinipoolMinimumRPLStake();
@@ -286,7 +242,7 @@ export default function() {
             await createMinipool({ from: node, value: '16'.ether });
         }
 
-        async function createValidProposal() {
+        async function createValidProposal(name = 'Test proposal', payload = '0x0') {
             // Setup
             const block = await hre.web3.eth.getBlockNumber();
             const power = await getDelegatedVotingPower(block);
@@ -294,7 +250,7 @@ export default function() {
 
             // Create the proposal
             let { nodes } = await daoProtocolGeneratePollard(leaves, depthPerRound);
-            let propId = await daoProtocolPropose('Test proposal', '0x0', block, nodes, { from: proposer });
+            let propId = await daoProtocolPropose(name, payload, block, nodes, { from: proposer });
 
             return {
                 block,
@@ -309,6 +265,21 @@ export default function() {
                 // Create pseudo-random number of minpools
                 const count = ((i * 7) % 5) + 1;
                 await createNode(count, accounts[i]);
+            }
+        }
+
+        async function voteAll(proposalId, direction) {
+            // Vote from each account until the proposal passes
+            for (let i = 10; i < 20; i++) {
+                try {
+                    await daoProtocolVote(proposalId, direction, {from: accounts[i]});
+                } catch(e) {
+                    if (e.message.indexOf("Proposal has passed") !== -1) {
+                        return;
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
 
@@ -398,6 +369,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Claim bond
             const deltas = await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
             assertBN.equal(deltas.locked, proposalBond.neg());
@@ -430,6 +404,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Claim bond and rewards
             const deltas = await daoProtocolClaimBondProposer(propId, [1, ...indices], { from: proposer });
             assertBN.equal(deltas.locked, proposalBond.neg());
@@ -455,6 +432,9 @@ export default function() {
             // Wait for withdraw cooldown
             await increaseTime(hre.web3, Math.max(voteDelayTime, rewardClaimPeriodTime) + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Try to withdraw the 100 RPL bond (below 150% after lock)
             await shouldRevert(nodeWithdrawRPL(proposalBond, { from: proposer }), 'Was able to withdraw', 'Node\'s staked RPL balance after withdrawal is less than required balance');
 
@@ -476,6 +456,9 @@ export default function() {
 
             // Wait for withdraw cooldown
             await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
 
             // Claim bond
             await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
@@ -559,6 +542,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Claim bond
             await daoProtocolClaimBondProposer(propId, [1], { from: proposer });
 
@@ -592,6 +578,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Claim bond and rewards
             await daoProtocolClaimBondProposer(propId, [1, ...indices], { from: proposer });
 
@@ -621,6 +610,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Try to claim reward for unresponded index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [indices[0]], { from: proposer }), 'Was able to claim reward', 'Invalid challenge state');
         });
@@ -639,6 +631,9 @@ export default function() {
 
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
 
             // Try to claim reward for unchallenged index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [2], { from: proposer }), 'Was able to claim reward', 'Invalid challenge state');
@@ -820,6 +815,75 @@ export default function() {
             // Response
             let response = await daoProtocolGeneratePollard(leaves, depthPerRound, finalChallengeIndex);
             await shouldRevert(daoProtocolSubmitRoot(propId, finalChallengeIndex, response.proof, response.nodes, { from: proposer }), 'Accepted invalid leaves', 'Invalid leaves');
+        });
+
+        /**
+         * Successful Proposals
+         */
+
+        it(printTitle('proposer', 'can invite a security council member'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Invite security council member
+            let proposalCalldata = hre.web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalSecurityInvite', type: 'function', inputs: [{type: 'string', name: '_id'}, {type: 'address', name: '_nodeAddress'}]},
+                ['Security Member 1', securityMember1]
+            );
+
+            // Create a valid proposal
+            const { propId } = await createValidProposal('Invite security member to the council', proposalCalldata);
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, true);
+
+            // Execute the proposal
+            await daoProtocolExecute(propId, {from: proposer});
+
+            // Accept the invitation
+            await daoSecurityMemberJoin({from: securityMember1});
+        });
+
+
+        it(printTitle('proposer', 'can kick a security council member'), async () => {
+            // Setup
+            await mockNodeSet();
+            await createNode(1, proposer);
+            await setDAOProtocolBootstrapSecurityInvite("Member", securityMember1, {from: owner});
+            await daoSecurityMemberJoin({from: securityMember1});
+
+            // Create a minipool with a node to use as a challenger
+            let challenger = node1;
+            await createNode(1, challenger);
+
+            // Invite security council member
+            let proposalCalldata = hre.web3.eth.abi.encodeFunctionCall(
+                {name: 'proposalSecurityKick', type: 'function', inputs: [{type: 'address', name: '_nodeAddress'}]},
+                [securityMember1]
+            );
+
+            // Create a valid proposal
+            const { propId } = await createValidProposal('Kick security member from the council', proposalCalldata);
+
+            // Wait for proposal wait period to end
+            await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Vote all in favour
+            await voteAll(propId, true);
+
+            // Execute the proposal
+            await daoProtocolExecute(propId, {from: proposer});
+
+            // Member should no longer exists
+            assert(!await getDAOSecurityMemberIsValid(securityMember1), 'Member still exists in council');
         });
 
         /**
@@ -1135,6 +1199,9 @@ export default function() {
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
 
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
+
             // Claim bond on invalid index
             const deltas = await daoProtocolClaimBondChallenger(propId, [index], { from: challenger });
 
@@ -1189,6 +1256,9 @@ export default function() {
 
             // Wait for proposal wait period to end
             await increaseTime(hre.web3, voteDelayTime + 1);
+
+            // Let the proposal expire to unlock the bond
+            await increaseTime(hre.web3, voteTime + 1);
 
             // Claim bond on invalid index
             await shouldRevert(daoProtocolClaimBondProposer(propId, [1], { from: node2 }), 'Was able to claim proposal bond', 'Not proposer');

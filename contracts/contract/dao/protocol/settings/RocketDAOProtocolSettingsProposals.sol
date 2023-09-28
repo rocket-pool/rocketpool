@@ -4,17 +4,14 @@ pragma solidity 0.8.18;
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
 
-// The Trusted Node DAO Members 
+/// @notice Settings related to proposals in the protocol DAO
 contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, RocketDAOProtocolSettingsProposalsInterface {
 
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "proposals") {
-        // Set version
         version = 1;
         // Initialize settings on deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
             // Init settings
-            setSettingUint("proposal.cooldown.time", 2 days);               // How long before a member can make sequential proposals
             setSettingUint("proposal.vote.time", 2 weeks);                  // How long a proposal can be voted on
             setSettingUint("proposal.vote.delay.time", 1 weeks);            // How long before a proposal can be voted on after it is created
             setSettingUint("proposal.execute.time", 4 weeks);               // How long a proposal can be executed after its voting period is finished
@@ -26,49 +23,47 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
         }
     }
 
-  
-    // Getters
-
-    // How long before a member can make sequential proposals
-    function getCooldownTime() override external view returns (uint256) {
-        return getSettingUint("proposal.cooldown.time");
-    }
-
-    // How long a proposal can be voted on
+    /// @notice How long a proposal can be voted on
     function getVoteTime() override external view returns (uint256) {
         return getSettingUint("proposal.vote.time");
     }
 
-    // How long before a proposal can be voted on after it is created
+    /// @notice How long before a proposal can be voted on after it is created
     function getVoteDelayTime() override external view returns (uint256) {
         return getSettingUint("proposal.vote.delay.time");
     }
 
-    // How long a proposal can be executed after its voting period is finished
+    /// @notice How long a proposal can be executed after its voting period is finished
     function getExecuteTime() override external view returns (uint256) {
         return getSettingUint("proposal.execute.time");
     }
 
+    /// @notice The amount of RPL that is locked when raising a proposal
     function getProposalBond() override external view returns (uint256) {
         return getSettingUint("proposal.bond");
     }
 
+    /// @notice The amount of RPL that is locked when challenging a proposal
     function getChallengeBond() override external view returns (uint256) {
         return getSettingUint("proposal.challenge.bond");
     }
 
+    /// @notice How long (in seconds) a proposer has to respond to a challenge
     function getChallengePeriod() override external view returns (uint256) {
         return getSettingUint("proposal.challenge.period");
     }
 
+    /// @notice The quorum required for a proposal to be successful (as a fraction of 1e18)
     function getProposalQuorum() override external view returns (uint256) {
         return getSettingUint("proposal.quorum");
     }
 
+    /// @notice The quorum required for a proposal veto to be successful (as a fraction of 1e18)
     function getProposalVetoQuorum() override external view returns (uint256) {
         return getSettingUint("proposal.veto.quorum");
     }
 
+    /// @notice The maximum time in the past (in blocks) a proposal can be submitted for
     function getProposalMaxBlockAge() override external view returns (uint256) {
         return getSettingUint("proposal.max.block.age");
     }

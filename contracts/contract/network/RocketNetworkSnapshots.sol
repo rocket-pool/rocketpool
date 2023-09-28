@@ -130,9 +130,9 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
 
     function _push(bytes32 _key, Checkpoint224 memory _item) private {
         bytes32 lengthKey = keccak256(abi.encodePacked("snapshot.length", _key));
-        uint256 length = rocketStorage.getUint(lengthKey);
-        bytes32 key = bytes32(uint256(_key) + length);
-        rocketStorage.setUint(lengthKey, length + 1);
+        uint256 snapshotLength = rocketStorage.getUint(lengthKey);
+        bytes32 key = bytes32(uint256(_key) + snapshotLength);
+        rocketStorage.setUint(lengthKey, snapshotLength + 1);
         rocketStorage.setBytes32(key, _encode(_item));
     }
 
@@ -141,7 +141,7 @@ contract RocketNetworkSnapshots is RocketBase, RocketNetworkSnapshotsInterface {
         rocketStorage.setBytes32(key, _encode(_item));
     }
 
-    function _encode(Checkpoint224 memory _item) private view returns (bytes32) {
+    function _encode(Checkpoint224 memory _item) private pure returns (bytes32) {
         return bytes32(
             uint256(_item._block) << 224 | uint256(_item._value)
         );

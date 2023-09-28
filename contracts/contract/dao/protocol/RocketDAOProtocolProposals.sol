@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.18;
-pragma abicoder v2;
 
 import "../../RocketBase.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolInterface.sol";
@@ -14,6 +13,8 @@ import "../../../types/SettingType.sol";
 import "../../../interface/dao/protocol/RocketDAOProtocolVerifierInterface.sol";
 import "../../../interface/network/RocketNetworkVotingInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
+import "../../../interface/dao/security/RocketDAOSecurityInterface.sol";
+import "../../../interface/dao/security/RocketDAOSecurityProposalsInterface.sol";
 
 
 // The protocol DAO Proposals - Placeholder contracts until DAO is implemented
@@ -77,16 +78,8 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
         RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
         RocketNetworkVotingInterface rocketNetworkVoting = RocketNetworkVotingInterface(getContractAddress("rocketNetworkVoting"));
         // Vote now, one vote per trusted node member
-        uint32 block = uint32(getUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.block", _proposalID))));
-        daoProposal.vote(msg.sender, rocketNetworkVoting.getVotingPower(msg.sender, block), _proposalID, _support);
-    }
-
-    // Cancel a proposal
-    function cancel(uint256 _proposalID) override external onlyRegisteredNode(msg.sender) onlyLatestContract("rocketDAOProtocolProposals", address(this)) {
-        // Load contracts
-        RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
-        // Cancel now, will succeed if it is the original proposer
-        daoProposal.cancel(msg.sender, _proposalID);
+        uint32 blockNumber = uint32(getUint(keccak256(abi.encodePacked(daoNameSpace, "proposal.block", _proposalID))));
+        daoProposal.vote(msg.sender, rocketNetworkVoting.getVotingPower(msg.sender, blockNumber), _proposalID, _support);
     }
 
     // Execute a proposal
@@ -189,5 +182,20 @@ contract RocketDAOProtocolProposals is RocketBase, RocketDAOProtocolProposalsInt
     function proposalTreasuryUpdateContract(string memory _contractName, address _recipientAddress, uint256 _amountPerPeriod, uint256 _periodLength, uint256 _numPeriods) override external onlyExecutingContracts() {
         RocketClaimDAOInterface rocketDAOTreasury = RocketClaimDAOInterface(getContractAddress("rocketClaimDAO"));
         rocketDAOTreasury.updateContract(_contractName, _recipientAddress, _amountPerPeriod, _periodLength, _numPeriods);
+    }
+
+    /// @notice Invites an address to join the security council
+    /// @param _id A string to identify this member with
+    /// @param _memberAddress The address of the new member
+    function proposalSecurityInvite(string memory _id, address _memberAddress) override external onlyExecutingContracts() {
+        RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
+        rocketDAOSecurityProposals.proposalInvite(_id, _memberAddress);
+    }
+
+    /// @notice Propose to kick a current member from the security council
+    /// @param _memberAddress The address of the member to kick
+    function proposalSecurityKick(address _memberAddress) override external onlyExecutingContracts {
+        RocketDAOSecurityProposalsInterface rocketDAOSecurityProposals = RocketDAOSecurityProposalsInterface(getContractAddress("rocketDAOSecurityProposals"));
+        rocketDAOSecurityProposals.proposalKick(_memberAddress);
     }
 }

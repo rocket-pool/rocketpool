@@ -14,5 +14,7 @@ interface RocketDAOProtocolInterface {
     function bootstrapSettingAddress(string memory _settingContractName, string memory _settingPath, address _value) external;
     function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) external;
     function bootstrapSpendTreasury(string memory _invoiceID, address _recipientAddress, uint256 _amount) external;
+    function bootstrapSecurityInvite(string memory _id, address _memberAddress) external;
+    function bootstrapSecurityKick(address _memberAddress) external;
     function bootstrapDisable(bool _confirmDisableBootstrapMode) external;
 }

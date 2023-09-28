@@ -102,12 +102,6 @@ export function constructLeaves(votingPower) {
     return tree;
 }
 
-export async function daoProtocolGenerateCorrectPollard(block, order, index = 1) {
-    const votingPower = await getDelegatedVotingPower(block);
-    const leaves = await constructLeaves(votingPower);
-    return daoProtocolGeneratePollard(leaves, order, index);
-}
-
 export function getDepthFromIndex(index) {
     return Math.floor(Math.log2(index));
 }

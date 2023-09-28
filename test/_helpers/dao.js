@@ -1,7 +1,10 @@
 import {
     RocketDAONodeTrusted,
     RocketDAONodeTrustedActions,
-    RocketDAONodeTrustedSettingsMembers, RocketDAOProtocolProposals, RocketDAOProtocolSettingsProposals,
+    RocketDAONodeTrustedSettingsMembers,
+    RocketDAOProtocolProposals,
+    RocketDAOProtocolSettingsProposals,
+    RocketDAOProtocolSettingsSecurity,
     RocketDAOProtocolVerifier,
 } from '../_utils/artifacts';
 import { mintRPL, approveRPL } from './tokens';
@@ -45,10 +48,22 @@ export async function getDaoProtocolChallenge(proposalID, challengeID) {
     return rocketDAOProtocolVerifier.getChallenge(proposalID, challengeID);
 }
 
+export async function getDaoProtocolVoteTime() {
+    // Load contracts
+    const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
+    return Number(await rocketDAOProtocolSettingsProposals.getVoteTime());
+}
+
 export async function getDaoProtocolVoteDelayTime() {
     // Load contracts
     const rocketDAOProtocolSettingsProposals = await RocketDAOProtocolSettingsProposals.deployed();
     return Number(await rocketDAOProtocolSettingsProposals.getVoteDelayTime());
+}
+
+export async function getDaoProtocolSecurityLeaveTime() {
+    // Load contracts
+    const rocketDAOProtocolSettingsSecurity = await RocketDAOProtocolSettingsSecurity.deployed();
+    return Number(await rocketDAOProtocolSettingsSecurity.getLeaveTime());
 }
 
 export async function getDaoProtocolDepthPerRound() {

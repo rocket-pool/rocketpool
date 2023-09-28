@@ -56,7 +56,7 @@ contract RocketNetworkVoting is RocketBase, RocketNetworkVotingInterface {
     }
 
     function getVotingInitialised(address _nodeAddress) external override view returns (bool) {
-        return getBool(keccak256(abi.encodePacked("node.voting.enabled", msg.sender)));
+        return getBool(keccak256(abi.encodePacked("node.voting.enabled", _nodeAddress)));
     }
 
     /// @notice Returns the number of registered nodes at a given block
