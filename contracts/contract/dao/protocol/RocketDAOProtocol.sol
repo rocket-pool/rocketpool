@@ -68,9 +68,9 @@ contract RocketDAOProtocol is RocketBase, RocketDAOProtocolInterface {
     }
 
     // Bootstrap mode - Set a claiming contract to receive a % of RPL inflation rewards
-    function bootstrapSettingClaimer(string memory _contractName, uint256 _perc) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
+    function bootstrapSettingClaimers(uint256 _trustedNodePerc, uint256 _protocolPerc, uint256 _nodePerc) override external onlyGuardian onlyBootstrapMode onlyLatestContract("rocketDAOProtocol", address(this)) {
         // Ok good to go, lets update the rewards claiming contract amount 
-        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingRewardsClaimer(_contractName, _perc);
+        RocketDAOProtocolProposalsInterface(getContractAddress("rocketDAOProtocolProposals")).proposalSettingRewardsClaimers(_trustedNodePerc, _protocolPerc, _nodePerc);
     }
 
     // Bootstrap mode -Spend DAO treasury

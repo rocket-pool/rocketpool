@@ -148,7 +148,7 @@ contract RocketNodeStaking is RocketBase, RocketNodeStakingInterface {
             uint256 launchAmount = rocketDAOProtocolSettingsMinipool.getLaunchBalance();
             RocketMinipoolManagerInterface rocketMinipoolManager = RocketMinipoolManagerInterface(getContractAddress("rocketMinipoolManager"));
             uint256 totalEthStaked = rocketMinipoolManager.getNodeActiveMinipoolCount(_nodeAddress) * launchAmount;
-            return (totalEthStaked * calcBase / totalEthStaked) - ethMatched;
+            return (totalEthStaked * calcBase) / (totalEthStaked - ethMatched);
         }
     }
 

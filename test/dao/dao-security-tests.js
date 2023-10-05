@@ -51,7 +51,7 @@ import {
 import { getDepositSetting } from '../_helpers/settings';
 
 export default function() {
-    contract.only('RocketDAOSecurity', async (accounts) => {
+    contract('RocketDAOSecurity', async (accounts) => {
 
         // Accounts
         const [

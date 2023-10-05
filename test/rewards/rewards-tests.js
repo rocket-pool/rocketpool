@@ -16,7 +16,12 @@ import {
     RocketSmoothingPool,
     RocketStorage,
 } from '../_utils/artifacts';
-import { setDAOProtocolBootstrapSetting, setRewardsClaimIntervalTime, setRPLInflationStartTime } from '../dao/scenario-dao-protocol-bootstrap'
+import {
+    setDAONetworkBootstrapRewardsClaimers,
+    setDAOProtocolBootstrapSetting,
+    setRewardsClaimIntervalTime,
+    setRPLInflationStartTime,
+} from '../dao/scenario-dao-protocol-bootstrap';
 import { mintRPL } from '../_helpers/tokens';
 import { rewardsClaimersPercTotalGet } from './scenario-rewards-claim';
 import { setDAONetworkBootstrapRewardsClaimer, setRPLInflationIntervalRate } from '../dao/scenario-dao-protocol-bootstrap';
@@ -83,9 +88,9 @@ export default function() {
         }
 
         // Set a rewards claiming contract
-        let rewardsContractSetup = async function(_claimContract, _claimAmountPerc) {
+        let rewardsContractSetup = async function(_trustedNodePerc, _protocolPerc, _nodePerc, _claimAmountPerc) {
             // Set the amount this contract can claim
-            await setDAONetworkBootstrapRewardsClaimer(_claimContract, _claimAmountPerc, { from: owner });
+            await setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, { from: owner });
             // Set the claim interval blocks
             await setRewardsClaimIntervalTime(claimIntervalTime, { from: owner });
         }
@@ -115,9 +120,6 @@ export default function() {
 
         // Setup
         before(async () => {
-            // Disable RocketClaimNode claims contract
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0'.ether, {from: owner});
-
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
@@ -193,7 +195,7 @@ export default function() {
 
         it(printTitle('userOne', 'fails to set contract claimer percentage for rewards'), async () => {
             // Set the amount this contract can claim
-            await shouldRevert(setDAONetworkBootstrapRewardsClaimer('myHackerContract', '0.1'.ether, {
+            await shouldRevert(setDAONetworkBootstrapRewardsClaimers('0.1'.ether, '0.5'.ether, '0.4'.ether, {
                 from: userOne,
             }), 'Non owner set contract claimer percentage for rewards');
         });
@@ -201,56 +203,25 @@ export default function() {
 
         it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it'), async () => {
             // Set the amount this contract can claim
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimDAO', '0.0001'.ether, {
-                from: owner,
-            });
-            // Set the amount this contract can claim, then update it
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0.01'.ether, {
-                from: owner,
-            });
-            // Update now
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0.02'.ether, {
+            await setDAONetworkBootstrapRewardsClaimers('0.1'.ether, '0.1'.ether, '0.8'.ether,  {
                 from: owner,
             });
         });
 
 
-        it(printTitle('guardian', 'set contract claimer percentage for rewards, then update it to zero'), async () => {
-            // Get the total current claims amounts
-            let totalClaimersPerc = await rewardsClaimersPercTotalGet();
-            // Set the amount this contract can claim, then update it
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0.01'.ether, {
+        it(printTitle('guardian', 'fails to set contract claimer percentages to lower than 100% total'), async () => {
+            // Set the amount this contract can claim
+            await shouldRevert(setDAONetworkBootstrapRewardsClaimers('0.1'.ether, '0.1'.ether, '0.1'.ether,  {
                 from: owner,
-            });
-            // Update now
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', '0'.ether, {
-                from: owner,
-            }, totalClaimersPerc);
+            }), 'Percentages were updated', 'Total does not equal 100%');
         });
 
 
-
-        it(printTitle('guardian', 'set contract claimers total percentage to 100%'), async () => {
-            // Get the total current claims amounts
-            let totalClaimersPerc = await rewardsClaimersPercTotalGet();
-            // Get the total % needed to make 100%
-            let claimAmount = '1'.ether.sub(totalClaimersPerc);
-            // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
-            await setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', claimAmount, {
+        it(printTitle('guardian', 'fails to set contract claimer percentages to greater than 100% total'), async () => {
+            // Set the amount this contract can claim
+            await shouldRevert(setDAONetworkBootstrapRewardsClaimers('0.4'.ether, '0.4'.ether, '0.4'.ether,  {
                 from: owner,
-            }, '1'.ether);
-        });
-
-
-        it(printTitle('guardian', 'fail to set contract claimers total percentage over 100%'), async () => {
-            // Get the total current claims amounts
-            let totalClaimersPerc = await rewardsClaimersPercTotalGet();
-            // Get the total % needed to make 100%
-            let claimAmount = '1'.ether.sub(totalClaimersPerc).add('0.001'.ether);
-            // Set the amount this contract can claim and expect total claimers amount to equal 1 ether (100%)
-            await shouldRevert(setDAONetworkBootstrapRewardsClaimer('rocketClaimNode', claimAmount, {
-                from: owner,
-            }), "Total claimers percentrage over 100%");
+            }), 'Percentages were updated', 'Total does not equal 100%');
         });
 
 
@@ -260,7 +231,7 @@ export default function() {
         it(printTitle('node', 'can claim RPL and ETH'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -339,7 +310,7 @@ export default function() {
         it(printTitle('node', 'can claim from withdrawal address'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -373,7 +344,7 @@ export default function() {
         it(printTitle('node', 'can not claim with invalid proof'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -411,7 +382,7 @@ export default function() {
         it(printTitle('node', 'can not claim same interval twice'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -459,7 +430,7 @@ export default function() {
         it(printTitle('node', 'can claim mulitiple periods in a single tx'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -508,7 +479,7 @@ export default function() {
         it(printTitle('node', 'can claim RPL and stake'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -560,7 +531,7 @@ export default function() {
         it(printTitle('node', 'can not stake amount greater than claim'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -590,7 +561,7 @@ export default function() {
         it(printTitle('node', 'can claim RPL and stake multiple snapshots'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -625,7 +596,7 @@ export default function() {
         it(printTitle('random', 'can execute reward period if consensus is reached'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);
@@ -664,7 +635,7 @@ export default function() {
         it(printTitle('misc', 'claim bitmap is correct'), async () => {
             // Initialize RPL inflation & claims contract
             let rplInflationStartTime = await rplInflationSetup();
-            await rewardsContractSetup('rocketClaimNode', '0.5'.ether);
+            await rewardsContractSetup('0.5'.ether, '0'.ether, '0.5'.ether);
 
             // Move to inflation start plus one claim interval
             let currentTime = await getCurrentTime(web3);

@@ -13,8 +13,10 @@ import "../../../interface/dao/RocketDAOProposalInterface.sol";
 import "../../../interface/node/RocketNodeStakingInterface.sol";
 import "../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsProposalsInterface.sol";
 
+/// @notice Implements the protocol DAO optimistic fraud proof proposal system
 contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInterface {
 
+    // TODO: Set this to final value (5-6)
     uint256 constant depthPerRound = 1;
 
     // Packing constants for packing challenge into a single uint256
@@ -33,9 +35,13 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     uint256 constant challengeBondOffset = 7;
     uint256 constant challengePeriodOffset = 8;
 
+    // Burn address
+    address constant burnAddress = address(0x0000000000000000000000000000000000000000);
+
     // Events
     event RootSubmitted(uint256 indexed proposalId, address indexed proposer, uint32 blockNumber, uint256 index, bytes32 rootHash, uint256 sum, Types.Node[] treeNodes, uint256 timestamp);
     event ChallengeSubmitted(uint256 indexed proposalID, address indexed challenger, uint256 index, uint256 timestamp);
+    event ProposalBondBurned(uint256 indexed proposalID, address indexed proposer, uint256 amount, uint256 timestamp);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -44,7 +50,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
     }
 
     /// @notice Returns the depth per round
-    function getDepthPerRound() external pure returns (uint256) {
+    function getDepthPerRound() override external pure returns (uint256) {
         return depthPerRound;
     }
 
@@ -105,6 +111,20 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         // Emit event
         emit RootSubmitted(_proposalID, _proposer, _blockNumber, 1, root.hash, root.sum, _treeNodes, block.timestamp);
+    }
+
+    /// @dev Called by proposal contract to burn the bond of the proposer after a successful veto
+    function burnProposalBond(uint256 _proposalID) override external onlyLatestContract("rocketDAOProtocolProposals", address(msg.sender)) {
+        // Retrieved required inputs from storage
+        uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
+        address proposer = getAddress(bytes32(proposalKey + proposerOffset));
+        uint256 proposalBond = getUint(bytes32(proposalKey + proposalBondOffset));
+        // Unlock and burn
+        RocketNodeStakingInterface rocketNodeStaking = RocketNodeStakingInterface(getContractAddress("rocketNodeStaking"));
+        rocketNodeStaking.unlockRPL(proposer, proposalBond);
+        rocketNodeStaking.transferRPL(proposer, burnAddress, proposalBond);
+        // Log it
+        emit ProposalBondBurned(_proposalID, proposer, proposalBond, block.timestamp);
     }
 
     /// @notice Used by a verifier to challenge a specific index of a proposal's voting power tree
@@ -246,11 +266,11 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Proposer has nothing to claim if their proposal was defeated
         require(defeatIndex == 0, "Proposal defeated");
 
-        // Check the proposal has passed the waiting period and the voting period
+        // Check the proposal has passed the waiting period and the voting period and wasn't cancelled
         {
             RocketDAOProposalInterface daoProposal = RocketDAOProposalInterface(getContractAddress("rocketDAOProposal"));
             RocketDAOProposalInterface.ProposalState proposalState = daoProposal.getState(_proposalID);
-            require(proposalState >= RocketDAOProposalInterface.ProposalState.Cancelled, "Invalid proposal state");
+            require(proposalState >= RocketDAOProposalInterface.ProposalState.Defeated, "Invalid proposal state");
         }
 
         address proposer;

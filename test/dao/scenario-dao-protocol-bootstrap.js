@@ -55,30 +55,27 @@ export async function setDAOProtocolBootstrapSetting(_settingContractInstance, _
 }
 
 // Set a contract that can claim rewards
-export async function setDAONetworkBootstrapRewardsClaimer(_contractName, _perc, txOptions, expectedTotalPerc = null) {
+export async function setDAONetworkBootstrapRewardsClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions) {
     // Load contracts
     const rocketDAOProtocol = await RocketDAOProtocol.deployed();
     const rocketDAOProtocolSettingsRewards = await RocketDAOProtocolSettingsRewards.deployed();
     // Get data about the tx
     function getTxData() {
         return Promise.all([
-            rocketDAOProtocolSettingsRewards.getRewardsClaimerPerc(_contractName),
-            rocketDAOProtocolSettingsRewards.getRewardsClaimersPercTotal(),
+            rocketDAOProtocolSettingsRewards.getRewardsClaimersPerc(),
         ]).then(
-            ([rewardsClaimerPerc, rewardsClaimersPercTotal]) =>
-            ({rewardsClaimerPerc, rewardsClaimersPercTotal})
+            ([rewardsClaimerPerc]) =>
+            ({rewardsClaimerPerc})
         );
     }
     // Perform tx
-    await rocketDAOProtocol.bootstrapSettingClaimer(_contractName, _perc, txOptions);
+    await rocketDAOProtocol.bootstrapSettingClaimers(_trustedNodePerc, _protocolPerc, _nodePerc, txOptions);
     // Capture data
     let dataSet2 = await getTxData();
     // Verify
-    assertBN.equal(dataSet2.rewardsClaimerPerc, _perc, 'Claim percentage not updated correctly');
-    // Verify an expected total Perc if given
-    if (expectedTotalPerc) {
-        assertBN.equal(dataSet2.rewardsClaimersPercTotal, expectedTotalPerc, 'Total claim percentage not matching given target');
-    }
+    assertBN.equal(dataSet2.rewardsClaimerPerc[0], _trustedNodePerc, 'Claim percentage not updated correctly');
+    assertBN.equal(dataSet2.rewardsClaimerPerc[1], _protocolPerc, 'Claim percentage not updated correctly');
+    assertBN.equal(dataSet2.rewardsClaimerPerc[2], _nodePerc, 'Claim percentage not updated correctly');
 }
 
 
