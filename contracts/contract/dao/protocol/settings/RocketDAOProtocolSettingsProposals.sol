@@ -18,6 +18,9 @@ contract RocketDAOProtocolSettingsProposals is RocketDAOProtocolSettings, Rocket
             setSettingUint("proposal.bond", 100 ether);                     // The amount of RPL a proposer has to put up as a bond for creating a new proposal
             setSettingUint("proposal.challenge.bond", 10 ether);            // The amount of RPL a challenger has to put up as a bond for challenging a proposal
             setSettingUint("proposal.challenge.period", 30 minutes);        // The amount of time a proposer has to respond to a challenge before a proposal is defeated
+            setSettingUint("proposal.quorum", 0.51 ether);                  // The quorum required to pass a proposal
+            setSettingUint("proposal.veto.quorum", 0.51 ether);             // The quorum required to veto a proposal
+            setSettingUint("proposal.max.block.age", 1024);                 // The maximum age of a block a proposal can be raised at
             // Settings initialised
             setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);
         }

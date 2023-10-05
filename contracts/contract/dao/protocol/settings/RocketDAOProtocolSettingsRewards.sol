@@ -1,81 +1,79 @@
-pragma solidity 0.7.6;
-
 // SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.18;
 
 import "./RocketDAOProtocolSettings.sol";
 import "../../../../interface/dao/protocol/settings/RocketDAOProtocolSettingsRewardsInterface.sol";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-
-// Settings in RP which the DAO will have full control over
+/// @notice Settings relating to RPL reward intervals
 contract RocketDAOProtocolSettingsRewards is RocketDAOProtocolSettings, RocketDAOProtocolSettingsRewardsInterface {
 
-    using SafeMath for uint;
-
-    // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketDAOProtocolSettings(_rocketStorageAddress, "rewards") {
-        // Set version 
-        version = 1;
+        version = 2;
          // Set some initial settings on first deployment
         if(!getBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")))) {
-            // Each of the initial RPL reward claiming contracts
-            setSettingRewardsClaimer('rocketClaimDAO', 0.1 ether);                                              // DAO Rewards claim % amount - Percentage given of 1 ether
-            setSettingRewardsClaimer('rocketClaimNode', 0.70 ether);                                            // Bonded Node Rewards claim % amount - Percentage given of 1 ether
-            setSettingRewardsClaimer('rocketClaimTrustedNode', 0.2 ether);                                      // Trusted Node Rewards claim % amount - Percentage given of 1 ether
             // RPL Claims settings
-            setSettingUint("rpl.rewards.claim.period.time", 28 days);                                           // The time in which a claim period will span in seconds - 28 days by default
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimTrustedNode")), 0.2 ether);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimDAO")), 0.1 ether);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")), 0.7 ether);
+            setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")), block.timestamp);
+            setSettingUint("rpl.rewards.claim.period.time", 28 days);                  // The time in which a claim period will span in seconds - 28 days by default
             // Deployment check
-            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);                           // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
+            setBool(keccak256(abi.encodePacked(settingNameSpace, "deployed")), true);  // Flag that this contract has been deployed, so default settings don't get reapplied on a contract upgrade
         }
     }
 
-
     /*** Settings ****************/
 
-    // Set a new claimer for the rpl rewards, must specify a unique contract name that will be claiming from and a percentage of the rewards
-    function setSettingRewardsClaimer(string memory _contractName, uint256 _perc) override public onlyDAOProtocolProposal {
-        // Get the total perc set, can't be more than 100
-        uint256 percTotal = getRewardsClaimersPercTotal();
-        // If this group already exists, it will update the perc
-        uint256 percTotalUpdate = percTotal.add(_perc).sub(getRewardsClaimerPerc(_contractName));
-        // Can't be more than a total claim amount of 100%
-        require(percTotalUpdate <= 1 ether, "Claimers cannot total more than 100%");
-        // Update the total
-        setUint(keccak256(abi.encodePacked(settingNameSpace,"rewards.claims", "group.totalPerc")), percTotalUpdate);
-        // Update/Add the claimer amount
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", _contractName)), _perc);
-        // Set the time it was updated at
-        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)), block.timestamp);
+    /// @notice Updates the percentages the trusted nodes use when calculating RPL reward trees. Percentages must add up to 100%
+    /// @param _trustedNodePercent The percentage of rewards paid to the trusted node set (as a fraction of 1e18)
+    /// @param _protocolPercent The percentage of rewards paid to the protocol dao (as a fraction of 1e18)
+    /// @param _nodePercent The percentage of rewards paid to the node operators (as a fraction of 1e18)
+    function setSettingRewardsClaimers(uint256 _trustedNodePercent, uint256 _protocolPercent, uint256 _nodePercent) override external onlyDAOProtocolProposal {
+        // Check total
+        require(_trustedNodePercent + _protocolPercent + _nodePercent == 1 ether, "Total does not equal 100%");
+        // Update now
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimTrustedNode")), _trustedNodePercent);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimDAO")), _protocolPercent);
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")), _nodePercent);
+        // Set time last updated
+        setUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")), block.timestamp);
     }
 
-
-
-    /*** RPL Claims ***********************************************/
-
-
-    // RPL Rewards Claimers (own namespace to prevent DAO setting voting to overwrite them)
-
-    // Get the perc amount that this rewards contract get claim
+    /// @notice Get the percentage of rewards paid to a contract by its internal name. Deprecated in favour of individual
+    ///         getRewardClaimers*Perc() methods. Retained for backwards compatibility.
     function getRewardsClaimerPerc(string memory _contractName) override public view returns (uint256) {
         return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", _contractName)));
-    } 
-
-    // Get the time of when the claim perc was last updated
-    function getRewardsClaimerPercTimeUpdated(string memory _contractName) override external view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time", _contractName)));
-    } 
-
-    // Get the perc amount total for all claimers (remaining goes to DAO)
-    function getRewardsClaimersPercTotal() override public view returns (uint256) {
-        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.totalPerc")));
     }
 
+    /// @notice Get the percentages paid to each of the reward recipients on each internval
+    function getRewardsClaimersPerc() override public view returns (uint256 trustedNodePerc, uint256 protocolPerc, uint256 nodePerc) {
+        trustedNodePerc = getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimTrustedNode")));
+        protocolPerc = getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimDAO")));
+        nodePerc = getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")));
+    }
 
-    // RPL Rewards General Settings
+    /// @notice Get the percentage of rewards paid to the trusted nodes
+    function getRewardsClaimersTrustedNodePerc() override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimTrustedNode")));
+    }
+
+    /// @notice Get the percentage of rewards paid to the protocol dao
+    function getRewardsClaimersProtocolPerc() override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimDAO")));
+    }
+
+    /// @notice Get the percentage of rewards paid to the node operators
+    function getRewardsClaimersNodePerc() override public view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount", "rocketClaimNode")));
+    }
+
+    /// @notice Get the time of when the claim percentages were last updated
+    function getRewardsClaimersTimeUpdated() override external view returns (uint256) {
+        return getUint(keccak256(abi.encodePacked(settingNameSpace, "rewards.claims", "group.amount.updated.time")));
+    } 
 
     // The period over which claims can be made
     function getRewardsClaimIntervalTime() override external view returns (uint256) {
         return getSettingUint("rpl.rewards.claim.period.time");
     }
-
 }

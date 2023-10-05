@@ -4,7 +4,7 @@ import {
     RocketNodeManager,
     RocketDAOProtocolProposals,
     RocketDAOProtocolVerifier,
-    RocketTokenRPL, RocketNodeStaking,
+    RocketTokenRPL, RocketNodeStaking, RocketDAOProtocolSettingsProposals,
 } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState, getDAOProposalVotesRequired } from './scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';
@@ -197,6 +197,9 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
     const rocketDAOProtocolProposals = await RocketDAOProtocolProposals.deployed();
+    const rocketDAOProtocolSettingsProposal = await RocketDAOProtocolSettingsProposals.deployed();
+
+    const proposalQuorum = await rocketDAOProtocolSettingsProposal.getProposalQuorum.call();
 
     // Get data about the tx
     function getTxData() {
@@ -221,7 +224,7 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
             hash: _treeNodes[i].hash
         }
     }
-    quorum = quorum.div('2'.BN);
+    quorum = quorum.mul(proposalQuorum).div('1'.ether);
 
     await rocketDAOProtocolProposals.propose(_proposalMessage, _payload, _block, treeNodes, txOptions);
 

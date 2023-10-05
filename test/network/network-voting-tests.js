@@ -47,7 +47,7 @@ export default function() {
         });
 
 
-        it(printTitle('test', 'test'), async () => {
+        it(printTitle('Voting Power', 'Should correctly snapshot values'), async () => {
             // Create a minipool to set the active count to non-zero
             await createMinipool({from: node, value: '16'.ether});
             const blockBefore = (await web3.eth.getBlockNumber());
@@ -57,8 +57,8 @@ export default function() {
             const votingPowerBefore = await networkVoting.getVotingPower(node, blockBefore);
             const votingPowerAfter = await networkVoting.getVotingPower(node, blockAfter);
 
-            console.log(blockBefore + " : " + votingPowerBefore.toString());
-            console.log(blockAfter + " : " + votingPowerAfter.toString());
+            assertBN.equal(votingPowerBefore, '2400'.ether);
+            assertBN.equal(votingPowerAfter, '4800'.ether);
         });
     });
 }

@@ -44,7 +44,7 @@ export default function() {
             assertBN.equal(await snapshotTest.lookup("test", 3), "150".BN);
             assertBN.equal(await snapshotTest.lookup("test", 4), "150".BN);
             assertBN.equal(await snapshotTest.lookup("test", 5), "250".BN);
-            assertBN.equal(await snapshotTest.lookupRecent("test", 3, 10), "50".BN);
+            assertBN.equal(await snapshotTest.lookupRecent("test", 1, 10), "50".BN);
             assertBN.equal(await snapshotTest.lookupRecent("test", 2, 10), "150".BN);
             assertBN.equal(await snapshotTest.lookupRecent("test", 3, 10), "150".BN);
             assertBN.equal(await snapshotTest.lookupRecent("test", 4, 10), "150".BN);

@@ -44,7 +44,7 @@ import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
 import { daoSecurityMemberJoin, daoSecurityMemberLeave, getDAOSecurityMemberIsValid } from './scenario-dao-security';
 
 export default function() {
-    contract.only('RocketDAOProtocol', async (accounts) => {
+    contract('RocketDAOProtocol', async (accounts) => {
 
         // Accounts
         const [
@@ -65,7 +65,7 @@ export default function() {
 
         const rewardClaimPeriodTime = 60 * 60 * 24;
 
-        // Setup - This is a WIP DAO, onlyGuardians will be able to change settings before the DAO is officially rolled out
+        // Setup
         before(async () => {
             // Add some ETH into the DP
             await userDeposit({ from: random, value: '320'.ether });
