@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >0.5.0 <0.9.0;
 pragma abicoder v2;
-
-// SPDX-License-Identifier: GPL-3.0-only
 
 import "../../types/NodeDetails.sol";
 
@@ -19,6 +18,12 @@ interface RocketNodeManagerInterface {
     function getNodeExists(address _nodeAddress) external view returns (bool);
     function getNodeWithdrawalAddress(address _nodeAddress) external view returns (address);
     function getNodePendingWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function getNodeRPLWithdrawalAddress(address _nodeAddress) external view returns (address);
+    function getNodeRPLWithdrawalAddressIsSet(address _nodeAddress) external view returns (bool);
+    function unsetRPLWithdrawalAddress(address _nodeAddress) external;
+    function setRPLWithdrawalAddress(address _nodeAddress, address _newRPLWithdrawalAddress, bool _confirm) external;
+    function confirmRPLWithdrawalAddress(address _nodeAddress) external;
+    function getNodePendingRPLWithdrawalAddress(address _nodeAddress) external view returns (address);
     function getNodeTimezoneLocation(address _nodeAddress) external view returns (string memory);
     function registerNode(string calldata _timezoneLocation) external;
     function getNodeRegistrationTime(address _nodeAddress) external view returns (uint256);

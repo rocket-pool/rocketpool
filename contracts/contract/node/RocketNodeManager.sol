@@ -28,6 +28,8 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     event NodeTimezoneLocationSet(address indexed node, uint256 time);
     event NodeRewardNetworkChanged(address indexed node, uint256 network);
     event NodeSmoothingPoolStateChanged(address indexed node, bool state);
+    event NodeRPLWithdrawalAddressSet(address indexed node, address indexed withdrawalAddress, uint256 time);
+    event NodeRPLWithdrawalAddressUnset(address indexed node, uint256 time);
 
     // Construct
     constructor(RocketStorageInterface _rocketStorageAddress) RocketBase(_rocketStorageAddress) {
@@ -100,6 +102,74 @@ contract RocketNodeManager is RocketBase, RocketNodeManagerInterface {
     // Get a node's pending withdrawal address
     function getNodePendingWithdrawalAddress(address _nodeAddress) override public view returns (address) {
         return rocketStorage.getNodePendingWithdrawalAddress(_nodeAddress);
+    }
+
+    // Get a node's current RPL withdrawal address
+    function getNodeRPLWithdrawalAddress(address _nodeAddress) override public view returns (address) {
+        address withdrawalAddress = getAddress(keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress)));
+        if (withdrawalAddress == address(0)) {
+            // Defaults to current withdrawal address if unset
+            return rocketStorage.getNodeWithdrawalAddress(_nodeAddress);
+        }
+        return withdrawalAddress;
+    }
+
+    // Get a node's pending RPL withdrawal address
+    function getNodePendingRPLWithdrawalAddress(address _nodeAddress) override public view returns (address) {
+        return getAddress(keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress)));
+    }
+
+    function getNodeRPLWithdrawalAddressIsSet(address _nodeAddress) override external view returns (bool) {
+        return(getAddress(keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress))) != address(0));
+    }
+
+    // Unsets a node operator's RPL withdrawal address returning it to the default
+    function unsetRPLWithdrawalAddress(address _nodeAddress) external override {
+        bytes32 addressKey = keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress));
+        // Confirm the transaction is from the node's current RPL withdrawal address
+        require(getAddress(addressKey) == msg.sender, "Only a tx from a node's RPL withdrawal address can unset it");
+        // Unset the address
+        deleteAddress(addressKey);
+        // Emit withdrawal address unset event
+        emit NodeRPLWithdrawalAddressUnset(_nodeAddress, block.timestamp);
+    }
+
+    // Set a node's RPL withdrawal address
+    function setRPLWithdrawalAddress(address _nodeAddress, address _newRPLWithdrawalAddress, bool _confirm) external override {
+        // Check new RPL withdrawal address
+        require(_newRPLWithdrawalAddress != address(0x0), "Invalid RPL withdrawal address");
+        // Confirm the transaction is from the node's current RPL withdrawal address
+        address withdrawalAddress = getNodeRPLWithdrawalAddress(_nodeAddress);
+        require(withdrawalAddress == msg.sender, "Only a tx from a node's RPL withdrawal address can update it");
+        // Update immediately if confirmed
+        if (_confirm) {
+            // Delete any existing pending update
+            deleteAddress(keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress)));
+            // Perform the update
+            updateRPLWithdrawalAddress(_nodeAddress, _newRPLWithdrawalAddress);
+        }
+        // Set pending withdrawal address if not confirmed
+        else {
+            setAddress(keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress)), _newRPLWithdrawalAddress);
+        }
+    }
+
+    // Confirm a node's new RPL withdrawal address
+    function confirmRPLWithdrawalAddress(address _nodeAddress) external override {
+        bytes32 pendingKey = keccak256(abi.encodePacked("node.pending.rpl.withdrawal.address", _nodeAddress));
+        // Get node by pending withdrawal address
+        require(getAddress(pendingKey) == msg.sender, "Confirmation must come from the pending RPL withdrawal address");
+        deleteAddress(pendingKey);
+        // Update withdrawal address
+        updateRPLWithdrawalAddress(_nodeAddress, msg.sender);
+    }
+
+    // Update a node's withdrawal address
+    function updateRPLWithdrawalAddress(address _nodeAddress, address _newWithdrawalAddress) private {
+        // Set new withdrawal address
+        setAddress(keccak256(abi.encodePacked("node.rpl.withdrawal.address", _nodeAddress)), _newWithdrawalAddress);
+        // Emit withdrawal address set event
+        emit NodeRPLWithdrawalAddressSet(_nodeAddress, _newWithdrawalAddress, block.timestamp);
     }
 
     // Get a node's timezone location
