@@ -4,7 +4,11 @@ import {
     RocketNodeManager,
     RocketDAOProtocolProposals,
     RocketDAOProtocolVerifier,
-    RocketTokenRPL, RocketNodeStaking, RocketDAOProtocolSettingsProposals,
+    RocketTokenRPL,
+    RocketNodeStaking,
+    RocketDAOProtocolSettingsProposals,
+    RocketDAOProtocolProposalsNew,
+    RocketNodeStakingNew, RocketNodeManagerNew,
 } from '../_utils/artifacts';
 import { proposalStates, getDAOProposalState, getDAOProposalVotesRequired } from './scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';
@@ -16,7 +20,7 @@ import { getRplBalance } from '../_helpers/tokens';
 export async function getDelegatedVotingPower(block) {
     // Load contracts
     const rocketNetworkVoting = await RocketNetworkVoting.deployed();
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeManager = await RocketNodeManagerNew.deployed();
 
     // Grab the number of nodes at the block
     const nodeCount = (await rocketNetworkVoting.getNodeCount(block)).toNumber();
@@ -196,7 +200,7 @@ export async function daoProtocolPropose(_proposalMessage, _payload, _block, _tr
 
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
-    const rocketDAOProtocolProposals = await RocketDAOProtocolProposals.deployed();
+    const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
     const rocketDAOProtocolSettingsProposal = await RocketDAOProtocolSettingsProposals.deployed();
 
     const proposalQuorum = await rocketDAOProtocolSettingsProposal.getProposalQuorum.call();
@@ -283,7 +287,7 @@ export async function daoProtocolSubmitRoot(_proposalID, _challengeID, _witness,
 export async function daoProtocolVote(_proposalID, _vote, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
-    const rocketDAOProtocolProposals = await RocketDAOProtocolProposals.deployed();
+    const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
 
     // Get data about the tx
     function getTxData() {
@@ -317,7 +321,7 @@ export async function daoProtocolVote(_proposalID, _vote, txOptions) {
 // Cancel a proposal for this DAO
 export async function daoProtocolCancel(_proposalID, txOptions) {
     // Load contracts
-    const rocketDAOProtocolProposals = await RocketDAOProtocolProposals.deployed();
+    const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
 
     // Add a new proposal
     await rocketDAOProtocolProposals.cancel(_proposalID, txOptions);
@@ -334,7 +338,7 @@ export async function daoProtocolCancel(_proposalID, txOptions) {
 export async function daoProtocolExecute(_proposalID, txOptions) {
     // Load contracts
     const rocketDAOProposal = await RocketDAOProposal.deployed();
-    const rocketDAOProtocolProposals = await RocketDAOProtocolProposals.deployed();
+    const rocketDAOProtocolProposals = await RocketDAOProtocolProposalsNew.deployed();
 
     // Get data about the tx
     function getTxData() {
@@ -358,7 +362,7 @@ export async function daoProtocolExecute(_proposalID, txOptions) {
 
 export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);
@@ -376,7 +380,7 @@ export async function daoProtocolClaimBondProposer(_proposalID, _indices, txOpti
 
 export async function daoProtocolClaimBondChallenger(_proposalID, _indices, txOptions) {
     const rocketDAOProtocolVerifier = await RocketDAOProtocolVerifier.deployed();
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = await RocketNodeStakingNew.deployed();
 
     const lockedBalanceBefore = await rocketNodeStaking.getNodeRPLLocked(txOptions.from);
     const balanceBefore = await rocketNodeStaking.getNodeRPLStake(txOptions.from);

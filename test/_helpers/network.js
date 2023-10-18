@@ -1,10 +1,11 @@
 import {
     RocketNetworkBalances,
     RocketNetworkFees,
-    RocketNetworkPrices,
+    RocketNetworkPrices, RocketNetworkPricesNew,
     RocketNetworkVoting,
     RocketNetworkWithdrawal,
 } from '../_utils/artifacts';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get the network total ETH balance
@@ -40,14 +41,14 @@ export async function submitBalances(block, totalEth, stakingEth, rethSupply, tx
 
 // Submit network token prices
 export async function submitPrices(block, rplPrice, txOptions) {
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
     await rocketNetworkPrices.submitPrices(block, rplPrice, txOptions);
 }
 
 
 // Get network RPL price
 export async function getRPLPrice() {
-    const rocketNetworkPrices = await RocketNetworkPrices.deployed();
+    const rocketNetworkPrices = (await upgradeExecuted()) ? await RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed();
     let price = await rocketNetworkPrices.getRPLPrice.call();
     return price;
 }

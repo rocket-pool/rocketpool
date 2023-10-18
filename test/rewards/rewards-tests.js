@@ -38,6 +38,7 @@ import { parseRewardsMap } from '../_utils/merkle-tree';
 import { daoNodeTrustedExecute, daoNodeTrustedPropose, daoNodeTrustedVote } from '../dao/scenario-dao-node-trusted';
 import { getDAOProposalStartTime } from '../dao/scenario-dao-proposal';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 
 export default function() {
@@ -120,6 +121,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotThree();
+
             // Set settings
             await setDAONodeTrustedBootstrapSetting(RocketDAONodeTrustedSettingsMinipool, 'minipool.scrub.period', scrubPeriod, {from: owner});
 
