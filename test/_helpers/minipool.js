@@ -7,10 +7,11 @@ import {
     RocketNodeDeposit,
     RocketDAOProtocolSettingsNode,
     RocketStorage,
-    RocketNodeStaking,
+    RocketNodeStaking, RocketNodeDepositNew, RocketNodeStakingNew, RocketNetworkPricesNew, RocketMinipoolManagerNew,
 } from '../_utils/artifacts';
 import { getValidatorPubkey, getValidatorSignature, getDepositDataRoot } from '../_utils/beacon';
 import { assertBN } from './bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 // Possible states that a proposal may be in
 export const minipoolStates = {
@@ -72,13 +73,14 @@ export async function getMinipoolMinimumRPLStake() {
 export async function getMinipoolMaximumRPLStake() {
 
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const [
         rocketDAOProtocolSettingsMinipool,
         rocketNetworkPrices,
         rocketDAOProtocolSettingsNode,
     ] = await Promise.all([
         RocketDAOProtocolSettingsMinipool.deployed(),
-        RocketNetworkPrices.deployed(),
+        (upgraded) ? RocketNetworkPricesNew.deployed() : await RocketNetworkPrices.deployed(),
         RocketDAOProtocolSettingsNode.deployed(),
     ]);
 
@@ -103,16 +105,15 @@ export async function createMinipool(txOptions, salt = null) {
 
 export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt = null) {
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
         rocketNodeStaking,
-        rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
-        RocketNodeStaking.deployed(),
-        RocketStorage.deployed()
+        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
+        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
     ]);
 
     // Get minipool contract bytecode
@@ -157,6 +158,7 @@ export async function createMinipoolWithBondAmount(bondAmount, txOptions, salt =
 // Create a vacant minipool
 export async function createVacantMinipool(bondAmount, txOptions, salt = null, currentBalance = '32'.ether, pubkey = null) {
     // Load contracts
+    const upgraded = await upgradeExecuted();
     const [
         rocketMinipoolFactory,
         rocketNodeDeposit,
@@ -164,8 +166,8 @@ export async function createVacantMinipool(bondAmount, txOptions, salt = null, c
         rocketStorage,
     ] = await Promise.all([
         RocketMinipoolFactory.deployed(),
-        RocketNodeDeposit.deployed(),
-        RocketNodeStaking.deployed(),
+        (upgraded) ? RocketNodeDepositNew.deployed() : await RocketNodeDeposit.deployed(),
+        (upgraded) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
         RocketStorage.deployed()
     ]);
 
@@ -200,7 +202,7 @@ export async function refundMinipoolNodeETH(minipool, txOptions) {
 export async function stakeMinipool(minipool, txOptions) {
 
     // Get contracts
-    const rocketMinipoolManager = await RocketMinipoolManager.deployed();
+    const rocketMinipoolManager = (await upgradeExecuted()) ? await RocketMinipoolManagerNew.deployed() : await RocketMinipoolManager.deployed();
 
     // Get minipool validator pubkey
     const validatorPubkey = await rocketMinipoolManager.getMinipoolPubkey(minipool.address);

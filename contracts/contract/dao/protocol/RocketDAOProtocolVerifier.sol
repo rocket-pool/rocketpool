@@ -138,7 +138,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
 
         // Check depth is exactly one round deeper than a previous challenge (or the proposal root)
         uint256 previousIndex = getPollardRootIndex(_index);
-        require(getChallengeState(getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex)))) == Types.ChallengeState.Responded, "Invalid challenge depth");
+        require(_getChallengeState(getUint(keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, previousIndex)))) == Types.ChallengeState.Responded, "Invalid challenge depth");
 
         // Precompute the proposal key
         uint256 proposalKey = uint256(keccak256(abi.encodePacked("dao.protocol.proposal", _proposalID)));
@@ -173,7 +173,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         // Check the challenge at the given index has not been responded to
         bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
         uint256 data = getUint(challengeKey);
-        Types.ChallengeState state = getChallengeState(data);
+        Types.ChallengeState state = _getChallengeState(data);
         require(state == Types.ChallengeState.Challenged, "Invalid challenge state");
 
         // Precompute defeat index key
@@ -211,7 +211,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         for (uint256 i = 0; i < _indices.length; i++) {
             bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _indices[i]));
             uint256 challengeData = getUint(challengeKey);
-            Types.ChallengeState challengeState = getChallengeState(challengeData);
+            Types.ChallengeState challengeState = _getChallengeState(challengeData);
 
             if (defeated) {
                 // Refund all challenges if the proposal was defeated
@@ -295,7 +295,7 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
             uint256 state = getUint(challengeKey);
 
             // Proposer can only claim the reward on indices they responded to
-            require(getChallengeState(state) == Types.ChallengeState.Responded, "Invalid challenge state");
+            require(_getChallengeState(state) == Types.ChallengeState.Responded, "Invalid challenge state");
 
             // Mark index as paid
             state = setChallengeState(state, Types.ChallengeState.Paid);
@@ -528,8 +528,18 @@ contract RocketDAOProtocolVerifier is RocketBase, RocketDAOProtocolVerifierInter
         return false;
     }
 
+    /// @notice Returns the state of the given challenge
+    /// @param _proposalID The ID of the proposal the challenge is for
+    /// @param _index The global index of the node that is challenged
+    /// @return The state of the challenge for the given proposal and node
+    function getChallengeState(uint256 _proposalID, uint256 _index) override external view returns (Types.ChallengeState) {
+        bytes32 challengeKey = keccak256(abi.encodePacked("dao.protocol.proposal.challenge", _proposalID, _index));
+        uint256 data = getUint(challengeKey);
+        return _getChallengeState(data);
+    }
+
     /// @dev Extracts the packed challenge state from the given uint256
-    function getChallengeState(uint256 _data) internal pure returns (Types.ChallengeState) {
+    function _getChallengeState(uint256 _data) internal pure returns (Types.ChallengeState) {
         return Types.ChallengeState(uint8(_data >> stateOffset));
     }
 

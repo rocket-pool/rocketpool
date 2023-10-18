@@ -7,6 +7,7 @@ import {
     setDaoNodeTrustedBootstrapUpgrade,
 } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { assertBN } from '../_helpers/bn';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkSnapshots', async (accounts) => {
@@ -22,6 +23,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotThree();
+
             // Add penalty helper contract
             const rocketStorage = await RocketStorage.deployed();
             snapshotTest = await SnapshotTest.new(rocketStorage.address, {from: owner});

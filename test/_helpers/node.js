@@ -7,7 +7,12 @@ import {
     RocketDAONodeTrustedSettingsMembers,
     RocketStorage,
     RocketDAONodeTrusted,
-    RocketMinipoolFactory, RocketNetworkVoting,
+    RocketMinipoolFactory,
+    RocketNetworkVoting,
+    RocketDAOProtocolNew,
+    RocketDAOProtocol,
+    RocketNodeManagerNew,
+    RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { setDaoNodeTrustedBootstrapMember } from '../dao/scenario-dao-node-trusted-bootstrap';
 import { daoNodeTrustedMemberJoin } from '../dao/scenario-dao-node-trusted';
@@ -16,11 +21,12 @@ import { burnFixedRPL } from '../token/scenario-rpl-burn-fixed';
 import { allowDummyRPL } from '../token/scenario-rpl-allow-fixed';
 import { getDepositDataRoot, getValidatorPubkey, getValidatorSignature } from '../_utils/beacon';
 import { assertBN } from './bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Get a node's RPL stake
 export async function getNodeRPLStake(nodeAddress) {
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     let stake = await rocketNodeStaking.getNodeRPLStake.call(nodeAddress);
     return stake;
 }
@@ -28,7 +34,7 @@ export async function getNodeRPLStake(nodeAddress) {
 
 // Get a node's effective RPL stake
 export async function getNodeEffectiveRPLStake(nodeAddress) {
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     let effectiveStake = await rocketNodeStaking.getNodeEffectiveRPLStake.call(nodeAddress);
     return effectiveStake;
 }
@@ -36,7 +42,7 @@ export async function getNodeEffectiveRPLStake(nodeAddress) {
 
 // Get a node's minipool RPL stake
 export async function getNodeMinimumRPLStake(nodeAddress) {
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     let minimumStake = await rocketNodeStaking.getNodeMinimumRPLStake.call(nodeAddress);
     return minimumStake;
 }
@@ -44,7 +50,7 @@ export async function getNodeMinimumRPLStake(nodeAddress) {
 
 // Register a node
 export async function registerNode(txOptions) {
-    const rocketNodeManager = await RocketNodeManager.deployed();
+    const rocketNodeManager = (await upgradeExecuted()) ? await RocketNodeManagerNew.deployed() : await RocketNodeManager.deployed();
     await rocketNodeManager.registerNode('Australia/Brisbane', txOptions);
 }
 
@@ -111,7 +117,7 @@ export async function setNodeWithdrawalAddress(nodeAddress, withdrawalAddress, t
 // Submit a node RPL stake
 export async function nodeStakeRPL(amount, txOptions) {
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        (await upgradeExecuted()) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
@@ -133,7 +139,7 @@ export async function nodeSetDelegate(to, txOptions) {
 // Submit a node RPL stake on behalf of another node
 export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {
     const [rocketNodeStaking, rocketTokenRPL] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        (await upgradeExecuted()) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
         RocketTokenRPL.deployed(),
     ]);
     await rocketTokenRPL.approve(rocketNodeStaking.address, amount, txOptions);
@@ -147,7 +153,7 @@ export async function nodeStakeRPLFor(nodeAddress, amount, txOptions) {
 // Sets allow state for staking on behalf
 export async function setStakeRPLForAllowed(caller, state, txOptions) {
     const [rocketNodeStaking] = await Promise.all([
-        RocketNodeStaking.deployed(),
+        (await upgradeExecuted()) ? RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed(),
     ]);
     await rocketNodeStaking.setStakeRPLForAllowed(caller, state, txOptions);
 }
@@ -155,7 +161,7 @@ export async function setStakeRPLForAllowed(caller, state, txOptions) {
 
 // Withdraw a node RPL stake
 export async function nodeWithdrawRPL(amount, txOptions) {
-    const rocketNodeStaking= await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     await rocketNodeStaking.withdrawRPL(amount, txOptions);
 }
 

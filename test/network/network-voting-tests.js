@@ -12,6 +12,7 @@ import { createMinipool, getMinipoolMaximumRPLStake, getMinipoolMinimumRPLStake 
 import { mintRPL } from '../_helpers/tokens';
 import { userDeposit } from '../_helpers/deposit';
 import { increaseTime, mineBlocks } from '../_utils/evm';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketNetworkVoting', async (accounts) => {
@@ -29,6 +30,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotThree();
+
             // Get contracts
             networkSnapshots = await RocketNetworkSnapshots.deployed();
             networkVoting = await RocketNetworkVoting.deployed();

@@ -14,7 +14,7 @@ import {
     RocketDAOProtocolSettingsMinipool,
     RocketDAOProtocolSettingsNetwork,
     RocketDAOProtocolSettingsProposals,
-    RocketDAOProtocolSettingsRewards,
+    RocketDAOProtocolSettingsRewards, RocketDAOProtocolSettingsRewardsNew,
 } from '../_utils/artifacts';
 import {
     constructLeaves, daoProtocolCancel,
@@ -42,6 +42,7 @@ import { increaseTime } from '../_utils/evm';
 import { assertBN } from '../_helpers/bn';
 import { daoNodeTrustedPropose } from './scenario-dao-node-trusted';
 import { daoSecurityMemberJoin, daoSecurityMemberLeave, getDAOSecurityMemberIsValid } from './scenario-dao-security';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDAOProtocol', async (accounts) => {
@@ -67,6 +68,9 @@ export default function() {
 
         // Setup
         before(async () => {
+            // Upgrade to Houston
+            await upgradeOneDotThree();
+
             // Add some ETH into the DP
             await userDeposit({ from: random, value: '320'.ether });
 
@@ -80,7 +84,7 @@ export default function() {
             voteTime = await getDaoProtocolVoteTime();
 
             // Set the reward claim period
-            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewards, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, { from: owner });
+            await setDAOProtocolBootstrapSetting(RocketDAOProtocolSettingsRewardsNew, 'rpl.rewards.claim.period.time', rewardClaimPeriodTime, { from: owner });
         });
 
         //

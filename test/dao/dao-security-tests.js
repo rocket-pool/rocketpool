@@ -49,6 +49,7 @@ import {
     daoSecurityPropose, daoSecurityVote,
 } from './scenario-dao-security';
 import { getDepositSetting } from '../_helpers/settings';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketDAOSecurity', async (accounts) => {
@@ -68,6 +69,8 @@ export default function() {
 
         // Setup
         before(async () => {
+            await upgradeOneDotThree();
+
             await userDeposit({ from: random, value: '320'.ether });
 
             voteDelayTime = await getDaoProtocolVoteDelayTime();

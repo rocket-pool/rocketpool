@@ -1,18 +1,19 @@
 import {
     RocketMinipoolBondReducer,
-    RocketMinipoolManager,
+    RocketMinipoolManager, RocketMinipoolManagerNew,
     RocketNodeDeposit,
-    RocketNodeStaking,
+    RocketNodeStaking, RocketNodeStakingNew,
 } from '../_utils/artifacts';
 import { assertBN } from '../_helpers/bn';
+import { upgradeExecuted } from '../_utils/upgrade';
 
 
 // Reduce bonding amount of a minipool
 export async function reduceBond(minipool, txOptions = null) {
     const rocketNodeDeposit = await RocketNodeDeposit.deployed();
-    const rocketNodeStaking = await RocketNodeStaking.deployed();
+    const rocketNodeStaking = (await upgradeExecuted()) ? await RocketNodeStakingNew.deployed() : await RocketNodeStaking.deployed();
     const rocketMinipoolBondReducer = await RocketMinipoolBondReducer.deployed();
-    const rocketNodeManager = await RocketMinipoolManager.deployed();
+    const rocketMinipoolManager = (await upgradeExecuted()) ? await RocketMinipoolManagerNew.deployed() : await RocketMinipoolManager.deployed();
     const node = await minipool.getNodeAddress();
 
     const newBond = await rocketMinipoolBondReducer.getReduceBondValue(minipool.address);
@@ -34,9 +35,9 @@ export async function reduceBond(minipool, txOptions = null) {
     // Get node details
     function getNodeDetails() {
         return Promise.all([
-            rocketNodeManager.getNodeStakingMinipoolCountBySize(node, prevBond),
-            rocketNodeManager.getNodeStakingMinipoolCountBySize(node, newBond),
-            rocketNodeManager.getNodeStakingMinipoolCount(node),
+            rocketMinipoolManager.getNodeStakingMinipoolCountBySize(node, prevBond),
+            rocketMinipoolManager.getNodeStakingMinipoolCountBySize(node, newBond),
+            rocketMinipoolManager.getNodeStakingMinipoolCount(node),
         ]).then(
             ([prevBondCount, newBondCount, totalCount]) =>
                 ({prevBondCount, newBondCount, totalCount})

@@ -43,6 +43,7 @@ import { reduceBond } from './scenario-reduce-bond';
 import { assertBN } from '../_helpers/bn';
 import { skimRewards } from './scenario-skim-rewards';
 import { artifacts } from 'hardhat';
+import { upgradeOneDotThree } from '../_utils/upgrade';
 
 export default function() {
     contract('RocketMinipool', async (accounts) => {
@@ -80,6 +81,8 @@ export default function() {
         const halfDepositNodeAmount = '16'.ether;
 
         before(async () => {
+            await upgradeOneDotThree();
+
             oldDelegateAddress = (await RocketMinipoolDelegate.deployed()).address;
 
             // Register node & set withdrawal address
